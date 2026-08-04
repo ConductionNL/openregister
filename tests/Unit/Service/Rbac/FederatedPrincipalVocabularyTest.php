@@ -121,4 +121,63 @@ class FederatedPrincipalVocabularyTest extends TestCase
     }//end testBearerTypesAreNotPrincipals()
 
 
+    /**
+     * The bearer types ARE listed, even though they are not grantable.
+     *
+     * The complement of the test above, and the two must both hold. While
+     * listGrants() iterated GRANTABLE_TYPES, links and email invitations were
+     * WRITE-ONLY: createLink() minted a working public link that never appeared
+     * in the panel, so the revoke control for it did not exist and the only way
+     * to withdraw it was raw SQL or core's Files UI.
+     *
+     * A capability you cannot see is a capability you cannot revoke, which is
+     * the worse half of an access-control surface to get wrong.
+     */
+    public function testBearerTypesAreListedSoTheyCanBeRevoked(): void
+    {
+        $listable = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
+
+        $this->assertSame(
+            IShare::TYPE_LINK,
+            ($listable['link'] ?? null),
+            'a public link must be listed, or there is no way to revoke it through the UI'
+        );
+        $this->assertSame(
+            IShare::TYPE_EMAIL,
+            ($listable['email'] ?? null),
+            'an email invitation must be listed, or there is no way to revoke it through the UI'
+        );
+    }//end testBearerTypesAreListedSoTheyCanBeRevoked()
+
+
+    /**
+     * Listable is a strict SUPERSET of grantable.
+     *
+     * Two separate constants can drift, and drift in either direction is a
+     * defect: a principal type missing from the listable set becomes an
+     * invisible grant, and a bearer type leaking into the grantable set lets
+     * `type=link` posted at the grant endpoint bypass the link surface's own
+     * rules. This pins the relationship rather than the two lists separately.
+     */
+    public function testEveryGrantableTypeIsAlsoListable(): void
+    {
+        $grantable = $this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES');
+        $listable  = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
+
+        foreach ($grantable as $label => $shareType) {
+            $this->assertSame(
+                $shareType,
+                ($listable[$label] ?? null),
+                "grantable type '$label' is not listable — a grant that cannot be seen cannot be revoked"
+            );
+        }
+
+        $this->assertGreaterThan(
+            count($grantable),
+            count($listable),
+            'listable must be a STRICT superset — the bearer types belong to it and not to grantable'
+        );
+    }//end testEveryGrantableTypeIsAlsoListable()
+
+
 }//end class

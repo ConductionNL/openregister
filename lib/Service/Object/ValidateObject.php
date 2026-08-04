@@ -468,6 +468,27 @@ class ValidateObject
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
+        // 🔴 First, drop any `$ref` that CANNOT be a JSON Schema reference.
+        //
+        // OpenRegister stores a `$ref` as a relation marker, and every branch
+        // below already removes it before the schema reaches Opis — but only for
+        // the shapes those branches recognise. A `$ref` that is an int, a null,
+        // an array or an empty string is not one of them, survives, and makes
+        // Opis throw `$ref must be a non-empty string` from
+        // RefKeywordParser::parse().
+        //
+        // That exception fires LAZILY, when the offending property is present in
+        // the written data, so it names neither the property nor the schema and
+        // reads like a broken register rather than a stored schema defect. It is
+        // also unrecoverable for the caller: no payload shape fixes a schema.
+        //
+        // Registers imported before openregister#2321 already carry exactly this
+        // (an int `$ref` grafted onto an array property by ImportHandler), so
+        // this normalisation is what heals them without a migration. A VALID
+        // reference — a non-empty string — is untouched here and handled by the
+        // branches below exactly as before.
+        $this->dropUnusableRef(schema: $propertySchema);
+
         // UUID pattern for related object references.
         $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
 
@@ -539,6 +560,9 @@ class ValidateObject
         if ($isArrayType === true && $hasItems === true && is_object($propertySchema->items) === true) {
             $itemsSchema = $propertySchema->items;
 
+            // Same normalisation as the property itself — see dropUnusableRef().
+            $this->dropUnusableRef(schema: $itemsSchema);
+
             // Handle inversedBy relationships for array items.
             // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
             if (($itemsSchema->inversedBy ?? null) !== null) {
@@ -597,6 +621,37 @@ class ValidateObject
             }
         }
     }//end transformPropertyForOpenRegister()
+
+    /**
+     * Remove a `$ref` that cannot be a JSON Schema reference.
+     *
+     * A JSON Schema `$ref` MUST be a non-empty string; Opis enforces that in
+     * `RefKeywordParser::parse()` and throws `$ref must be a non-empty string`
+     * for anything else. OpenRegister only ever uses `$ref` as a relation
+     * marker, never for validation-time resolution, so removing an unusable one
+     * loses nothing and turns an opaque 500 back into a normal validation pass.
+     *
+     * Valid refs (non-empty strings) are deliberately left alone — the
+     * surrounding transform branches own those.
+     *
+     * @param object $schema The property or items schema to normalise in place.
+     *
+     * @return void
+     */
+    private function dropUnusableRef(object $schema): void
+    {
+        if (property_exists($schema, '$ref') === false) {
+            return;
+        }
+
+        $ref = $schema->{'$ref'};
+        if (is_string($ref) === true && $ref !== '') {
+            return;
+        }
+
+        unset($schema->{'$ref'});
+
+    }//end dropUnusableRef()
 
     /**
      * Transforms object properties based on OpenRegister object configuration.

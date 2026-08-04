@@ -39,7 +39,12 @@
 		<MultitenancyConfiguration />
 
 		<!-- Retention Configuration Section -->
+		<FlowConfiguration />
+
 		<RetentionConfiguration />
+
+		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
+		<LogIntegrity />
 
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :push-status="pushStatus" />
@@ -74,7 +79,9 @@ import RbacConfiguration from './sections/RbacConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import FlowConfiguration from './sections/FlowConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import LogIntegrity from './sections/LogIntegrity.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
@@ -100,7 +107,9 @@ export default {
 		PermissionMatrix,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
+		FlowConfiguration,
 		RetentionConfiguration,
+		LogIntegrity,
 		PushNotificationsConfiguration,
 		N8nConfiguration,
 		LlmConfiguration,

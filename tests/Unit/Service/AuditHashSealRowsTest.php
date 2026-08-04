@@ -446,21 +446,41 @@ class AuditHashSealRowsTest extends TestCase
             );
         $updateQb->method('executeStatement')->willReturn(1);
 
-        // --- verifyChain(): full walk over rows 1..3.
+        // --- verifyChain(): windowed walk over rows 1..3.
+        // verifyChain() pages by id rather than issuing one unbounded query,
+        // because libpq buffers a whole result set client-side and the real
+        // trail is large enough for that to get the process OOM-killed. So the
+        // mock must serve one populated window and then an empty one, which is
+        // how the walk terminates.
         $verifyCursor = $this->createMock(IResult::class);
         $verifyExpr   = $this->createMock(IExpressionBuilder::class);
+        $verifyExpr->method('gt')->willReturn('gt');
+        $verifyExpr->method('lte')->willReturn('lte');
 
         $verifyQb = $this->createMock(IQueryBuilder::class);
         $verifyQb->method('select')->willReturnSelf();
         $verifyQb->method('from')->willReturnSelf();
+        $verifyQb->method('where')->willReturnSelf();
         $verifyQb->method('andWhere')->willReturnSelf();
         $verifyQb->method('orderBy')->willReturnSelf();
+        $verifyQb->method('setMaxResults')->willReturnSelf();
         $verifyQb->method('expr')->willReturn($verifyExpr);
         $verifyQb->method('createNamedParameter')->willReturn(':p');
         $verifyQb->method('executeQuery')->willReturn($verifyCursor);
 
+        // The seal path consumes exactly three builders; every builder after
+        // that belongs to the verify walk, which asks for one per window.
+        $sealBuilders = [$rowQb, $beforeQb, $updateQb];
         $this->db->method('getQueryBuilder')
-            ->willReturnOnConsecutiveCalls($rowQb, $beforeQb, $updateQb, $verifyQb);
+            ->willReturnCallback(
+                function () use (&$sealBuilders, $verifyQb): IQueryBuilder {
+                    if (empty($sealBuilders) === false) {
+                        return array_shift($sealBuilders);
+                    }
+
+                    return $verifyQb;
+                }
+            );
 
         $this->assertTrue($this->service->sealRow(3));
 
@@ -475,8 +495,8 @@ class AuditHashSealRowsTest extends TestCase
         // carries h1 across the unsealed row and re-derives row 3 exactly.
         $row3['hash']          = $expectedHash3;
         $row3['previous_hash'] = $hash1;
-        $verifyCursor->method('fetch')
-            ->willReturnOnConsecutiveCalls($row1, $row2, $row3, false);
+        $verifyCursor->method('fetchAll')
+            ->willReturnOnConsecutiveCalls([$row1, $row2, $row3], []);
 
         $verification = $this->service->verifyChain();
 

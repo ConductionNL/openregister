@@ -11,7 +11,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCP\IL10N;
@@ -24,7 +24,7 @@ use UnexpectedValueException;
 class SubFlowNodeTest extends TestCase
 {
 
-    private FlowResolverRegistry $resolvers;
+    private FlowLocator $resolvers;
 
     private FlowRunService $runs;
 
@@ -35,7 +35,7 @@ class SubFlowNodeTest extends TestCase
         $l = $this->createMock(IL10N::class);
         $l->method('t')->willReturnArgument(0);
 
-        $this->resolvers = $this->createMock(FlowResolverRegistry::class);
+        $this->resolvers = $this->createMock(FlowLocator::class);
         $this->runs      = $this->createMock(FlowRunService::class);
 
         $this->node = new SubFlowNode(

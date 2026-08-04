@@ -31,6 +31,18 @@ concurrency:
   group: quality-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so it must cover the maximum
+# any nested job declares: journeydoc-capture (contents+actions write),
+# update-baseline / features-extract (contents write), and the Quality
+# Report PR comment (issues / pull-requests write).
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pull-requests: write
+
 jobs:
   quality:
     if: github.event_name != 'push' || github.event.created != true

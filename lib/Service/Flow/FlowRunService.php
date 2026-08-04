@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunStep;
+use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -48,12 +50,17 @@ class FlowRunService
     /**
      * Constructor.
      *
-     * @param FlowRunMapper      $mapper      Persists runs.
-     * @param FlowStateMapper    $stateMapper Persists state that outlives a run.
-     * @param FlowEngine         $engine      Walks the graph.
-     * @param FlowNodeRegistry   $registry    Resolves step types.
-     * @param LoggerInterface    $logger      The logger.
-     * @param ContainerInterface $container   Lazily resolves OrganisationService.
+     * @param FlowRunMapper          $mapper      Persists runs.
+     * @param FlowStateMapper        $stateMapper Persists state that outlives a run.
+     * @param FlowEngine             $engine      Walks the graph.
+     * @param FlowNodeRegistry       $registry    Resolves step types.
+     * @param LoggerInterface        $logger      The logger.
+     * @param ContainerInterface     $container   Lazily resolves OrganisationService.
+     * @param FlowRunStepMapper|null $steps       Records one row per node execution.
+     *                                            Nullable so the cron worker and the
+     *                                            unit tests can build this service
+     *                                            without it; history is then simply
+     *                                            not recorded, never faked.
      */
     public function __construct(
         private readonly FlowRunMapper $mapper,
@@ -61,7 +68,8 @@ class FlowRunService
         private readonly FlowEngine $engine,
         private readonly FlowNodeRegistry $registry,
         private readonly LoggerInterface $logger,
-        private readonly ContainerInterface $container
+        private readonly ContainerInterface $container,
+        private readonly ?FlowRunStepMapper $steps=null
     ) {
 
     }//end __construct()
@@ -375,6 +383,106 @@ class FlowRunService
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
+
+    /**
+     * Write one step row per node execution in this segment.
+     *
+     * The aggregate `log` column answers "what happened in this run" and
+     * nothing else — "which node type fails", "every failed step for this
+     * flow", "what did node X output" all require loading and walking every
+     * run's blob. One row per hop makes those queryable, and gives retention
+     * something it can prune per flow.
+     *
+     * Sequence CONTINUES from the highest already recorded rather than
+     * restarting at zero, so a run that suspends on a wait node and resumes
+     * later reads as one ordered history instead of two interleaved ones.
+     *
+     * Failing to record history must never fail the run itself: the run is the
+     * work, the rows are the account of it.
+     *
+     * @param FlowRun           $run     The run these steps belong to.
+     * @param array<int, mixed> $entries The engine log entries for this segment.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    private function recordSteps(FlowRun $run, array $entries): void
+    {
+        if ($this->steps === null || empty($entries) === true) {
+            return;
+        }
+
+        $runUuid = (string) $run->getUuid();
+
+        try {
+            $sequence = ($this->steps->highestSequence(runUuid: $runUuid) + 1);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[FlowRunService] Could not read the step sequence for run '.$runUuid.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            $step = new FlowRunStep();
+            $step->setRunUuid($runUuid);
+            $step->setFlowId((string) $run->getFlowId());
+            $step->setNodeId((string) ($entry['transition'] ?? ''));
+            $step->setNodeType(($entry['type'] ?? null));
+            $step->setSequence($sequence);
+            $step->setStatus((string) ($entry['status'] ?? 'unknown'));
+            $step->setDurationMs(($entry['durationMs'] ?? null));
+            $step->setCreated(new DateTime());
+            $step->setFinished(new DateTime());
+
+            // `error` and `reason` are distinct outcomes that both belong in
+            // the error column: a thrown step and a deliberately stopped one
+            // are each something a person needs to read back.
+            $step->setError(($entry['error'] ?? ($entry['reason'] ?? null)));
+
+            // What the node produced, minus the items themselves — a step row
+            // is an index into the run, not a second copy of its data.
+            $step->setOutput(
+                array_filter(
+                    [
+                        'itemsIn'  => ($entry['itemsIn'] ?? null),
+                        'itemsOut' => ($entry['itemsOut'] ?? null),
+                        'checkId'  => ($entry['checkId'] ?? null),
+                    ],
+                    static fn ($v): bool => $v !== null
+                )
+            );
+
+            try {
+                $this->steps->insert($step);
+            } catch (Throwable $e) {
+                $this->logger->warning(
+                    message: '[FlowRunService] Could not record a step row for run '.$runUuid.': '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+
+            $sequence++;
+        }//end foreach
+
+    }//end recordSteps()
+
+    /**
+     * Write back what a walk produced.
+     *
+     * @param FlowRun $run    The run to update.
+     * @param array   $result The engine's result envelope.
+     *
+     * @return FlowRun The updated run.
+     *
+     * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     */
     private function persistResult(FlowRun $run, array $result): FlowRun
     {
         $status = (string) ($result['status'] ?? FlowRun::STATUS_FAILED);
@@ -382,6 +490,11 @@ class FlowRunService
         // The log is appended, not replaced: a resumed run's history is the
         // whole run, not just the segment since it last woke up.
         $log = array_merge(($run->getLog() ?? []), (array) ($result['log'] ?? []));
+
+        // Promote THIS segment's entries to step rows. Only the new entries —
+        // `$result['log']`, not the merged `$log` — or every resume would
+        // re-record the whole history it had already written.
+        $this->recordSteps(run: $run, entries: (array) ($result['log'] ?? []));
 
         // The token travels as an object so steps can write to it; the column
         // holds JSON. Serialising here — on the suspended path as much as the

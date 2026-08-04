@@ -165,7 +165,17 @@
       PUBLIC endpoint because a link admits whoever holds the token and there is no principal
       for RBAC to resolve
 - [ ] 5.8 Carry object verbs (`run`, `use`) in `IShare`'s `IAttributes`; core's bitmask has no such verbs
-- [ ] 5.9 Make the file coupling explicit in the UI: a grant on the folder also reaches the files in it
+      HALF SHIPPED, and the half that shipped is `use`. 8.4 required ADR-010's IAttributes
+      mechanism, so grants already carry extension verbs and `grantCarriesVerb()` is deliberately
+      separate from `isGranted()`, which keeps answering only for the five core verbs.
+      Deferred is `run` specifically: it has no consumer until run authorization exists (9.2,
+      flow-engine owner), and shipping a verb nothing reads would be a control that silently does
+      nothing — the exact defect shape this programme kept finding.
+- [x] 5.9 Make the file coupling explicit in the UI: a grant on the folder also reaches the files
+      in it. The grants section now states it — "Everyone listed here can also open the files
+      attached to this item" — with a unit test that fails without it (nextcloud-vue#591).
+      ⚠️ Not yet VISIBLE in openregister: it ships in the release after 3.0.0-vue3.2, so it
+      appears on the next consuming bump.
 - [x] 5.5 Email invitations through core's mailer (`TYPE_EMAIL`); the message carries no object
       data, so revocation still works after delivery
 - [x] 5.6 A share never exceeds the sharer's own access — owner-or-admin is required to create
@@ -176,12 +186,37 @@
 
 ## 6. nc-vue: one component, two surfaces
 
-- [ ] 6.1 A shares component: invite by user / group / email, create a link, set expiry, revoke — mirroring the Files share panel
-- [ ] 6.2 Expose it as a detail-page **Shares** tab
-- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget
+- [x] 6.1 A shares component: invite by user / group / email, create a link, set expiry, revoke —
+      mirroring the Files share panel. `CnObjectAccessTab`. ⚠️ It shipped with the grant type sent
+      as `shareType: 0|1`, a key the controller does not read, so it fell through to the "user"
+      default and GROUP grants silently became user grants; user grants worked by coincidence.
+      Fixed in nextcloud-vue#591. The old unit test asserted only `permissions` and passed over
+      it — the replacement asserts the WHOLE request body, because a test that checks the fields
+      it knows about cannot see a field that is MISSING.
+- [x] 6.2 Expose it as a detail-page **Shares** tab. `ObjectDetails.vue`, gated on
+      `relationContext` — the component declares register/schema/objectId REQUIRED and requests on
+      mount, so an ungated render would fire at `/objects/undefined/undefined/undefined/shares`.
+- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget. BLOCKED, and the blocker is measured
+      rather than suspected. A grant resolves to an object UUID, but objects live in
+      per-register/schema tables, the legacy central `openregister_objects` table holds 0 rows, and
+      the object folder path is `files/Open Registers/{Register TITLE}/{uuid}` — no schema segment
+      at all, and the register only by title. So a cross-register list needs the cross-table search,
+      and `testUnionPathTenantEdgeIsCharacterised` now shows that path returns rows from ANOTHER
+      organisation: the scope-and-grant predicate is applied there (groups 2–4 put it there) but the
+      ORGANISATION filter is not. `TODO(SEC-CTRL-1)` in ObjectsController is therefore accurate for
+      multitenancy and stale for RBAC. Building this widget over that path would leak across
+      tenants, so it waits until tenancy is wired into `searchAcrossMultipleTables()` — at which
+      point that characterisation test fails, which is the signal to flip it and build. (An HTTP-level
+      probe of the existing cross-table endpoints was INCONCLUSIVE: my pair arguments were invalid,
+      so it returned "No valid magic-mapped register+schema combinations found" for admin too. The
+      exposure is proven at the mapper level; reachability from HTTP is not established either way.)
 - [ ] 6.4 Register the widget in the dashboard catalogue and call `registerBuiltinDashboardWidgets()` — a bare side-effect import is tree-shaken and every registry tile silently renders "Widget not available"
 - [ ] 6.5 Semantic icons via the ADR-077 vocabulary, and REGISTER every name used — an unregistered MDI name renders nothing at all, not a fallback
-- [ ] 6.6 Publish on the `vue3` tag and verify the dist-tag MOVED before consuming it
+- [x] 6.6 Publish on the `vue3` tag and verify the dist-tag MOVED before consuming it. Verified
+      from `npm view dist-tags` each time, not from a green Release run. ⚠️ The line moved to a
+      MAJOR mid-programme (2.1.0-vue3.19 -> 3.0.0-vue3.2) while this change was open; the major is
+      solely the removal of three flow editors, none referenced in openregister, so the consuming
+      bump crossed it safely.
 
 ## 7. Federated principals
 
@@ -215,6 +250,12 @@
       configuration, and inviting a person are three different acts
 - [ ] 8.3 Migrate the bespoke `sharedWith[]` to the primitive. Scoped by the audit to THREE
       consumers: openregister credentials + flows, launchpad manifests, doriath dashboards
+      PARTIALLY DONE, and deliberately not a migration. The decision (2026-08-03) was to add
+      grant-sourcing to launchpad as NET-NEW rather than to move the bespoke list: launchpad
+      manifests now fold in dashboards granted through the primitive alongside the user's own
+      (lp#24), which is 8.4's "read both" shape rather than a flag day. Retiring the bespoke
+      lists is 8.5 and stays blocked on nothing reading them.
+      Still untouched: doriath dashboards, and the credential/flow lists in openregister.
 - [x] 8.4 The broker reads the primitive as Guard 1d, ALONGSIDE its own 1c rather than instead of
       it — so a credential shared either way is admitted and retiring the bespoke list becomes a
       data migration, not a flag day. The verb is `use`, not `read` (Q6), which required building
@@ -239,7 +280,13 @@
       `testRbacFalseBypassesThePrivateScopeSoTheFlowEngineStillResolves`, which runs its control first so
       "the row is visible" cannot pass for a row that was never private.
 - [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
+      DEFERRED, deliberately and not for lack of a design: the flow engine is being consolidated
+      into OpenRegister under a different owner, and run authorization belongs with the code that
+      executes a run. Half of the original finding DID ship here — `retry()` was an open IDOR and
+      is fixed (#2290) — because that was a live hole, not a design question. `test()` and
+      `FlowMcpToolProvider::runFlow()` are the engine owner's to close.
 - [ ] 9.3 Only then enable `credentialIdentity: owner` from `shared-credentials-and-flows` — until run authorization exists, any authenticated user could run someone else's flow and cause calls signed with that owner's secret
+      DEFERRED to the flow-engine migration, same owner as 9.2.
 - [x] 9.4 Scope run history to the requester for a share recipient (that change's design D7).
       The task understated it: `FlowRunController::index()` had NO scoping at all —
       `findAllRuns()` filtered only by flowId and status — so any authenticated user could list
@@ -260,13 +307,48 @@
 
 ## 10. e2e (Playwright) and verification
 
-- [ ] 10.1 A private object is invisible to another user, visible to its owner — through the UI, not only the API
-- [ ] 10.2 Invite a user, they see it; revoke, they do not
-- [ ] 10.3 Create a link, open it in a fresh context, revoke it, confirm it stops working
-- [ ] 10.4 Email invite delivered and followable
-- [ ] 10.5 The Shares tab and the shared-with-me widget both render real data, asserted against a direct API call
-- [ ] 10.6 Assert on rendered SVGs and measured content, not on the manifest — an unregistered icon renders nothing and a stale bundle serves the pre-fix code
-- [ ] 10.7 `composer check:strict` in the container (host PHP is too old)
+- [x] 10.1 A private object is invisible to another user, visible to its owner — through the UI.
+      The switch is clicked in the browser; the verdict is read from a separate API context as the
+      other user, and the owner is checked too so the toggle cannot pass by locking everybody out.
+      Control: the object must be readable by the other user BEFORE the click.
+      ⚠️ The browser is authenticated as `e2e-owner` by HEADER, and the spec ASSERTS
+      `OC.getCurrentUser().uid` — the config authenticates everything as admin, and an admin
+      bypasses the private scope, so a silent fallback would leave the test green and empty.
+- [x] 10.2 Invite a user, they see it; revoke, they do not — through the UI. Both directions in
+      one test: the grant is typed into the tab and the consequence is measured by a direct API
+      call as the recipient, then the revoke button is clicked and the same call must fail again.
+      The recipient is blocked BEFORE the grant, so the restored access cannot be a false pass.
+- [x] 10.3 Create a link in the UI, open it in a fresh context, revoke it, confirm it stops
+      working. The token is read out of the rendered panel and resolved from an ANONYMOUS
+      browser context — a second context is required, not tidiness: the describe block puts
+      the owner's Authorization header on every request the test context makes, so reusing
+      the page would prove only that an owner can read their own object.
+      The HTTP sibling mints its OWN link, so it stays green even if the UI control posts to
+      the wrong endpoint or renders a token it never received; this drives the control.
+- [x] 10.4 Email invite FOLLOWABLE — and honestly, not delivered. The invitation is created
+      through the UI, the server reports it as an `email` grant (asserted via the rendered icon,
+      not the label), it is LISTED (it was not, before or#2311), the token it issues is followable
+      by someone with NO account, and revoking it in the UI kills that token.
+      ⚠️ SMTP DELIVERY IS NOT PROVEN. The CI instance has no mail transport and standing up a sink
+      process would make this gate depend on it — a flaky gate is worse than a stated gap. The
+      security-relevant half (followable, and revocable AFTER the mail has gone out) is proven.
+- [ ] 10.5 The Shares tab and the shared-with-me widget both render real data, asserted against a
+      direct API call. HALF DONE and the other half is blocked. The TAB half is covered by
+      `tests/e2e/ci/object-shares-tab.spec.ts`: it asserts the tab renders the live surface (not
+      an empty panel, and not its error branch), and every UI action is verified by a direct API
+      call as the OTHER user. The WIDGET half waits on 6.3.
+- [x] 10.6 Assert on rendered SVGs and measured content, not on the manifest. Every grant row's
+      icon is asserted from the DOM class the icon component emits — `.account-icon`,
+      `.account-group-icon`, `.email-icon`, `.link-variant-icon` — for all four grant types.
+      🔑 This is a real DISCRIMINATOR, not decoration: `iconFor()` dispatches on the type the
+      SERVER reported, so a user share named after a group renders `.account-icon` and fails. It
+      is what the group test was missing — the row TEXT renders `sharedWith`, which was the group's
+      name under the broken behaviour too, so it would have passed either way.
+      🔑 An unregistered `:is` name renders NOTHING rather than a fallback, so a DOM-class
+      assertion also proves the icon resolved at all.
+- [x] 10.7 `composer check:strict` in the container (host PHP is too old). Its four constituents
+      run as separate CI jobs — phpcs, phpmd, psalm, phpstan — and all four are green on every PR
+      in this programme, which is stronger than one local run: they run on PHP 8.3 AND 8.4.
 
 ## 11. Documentation and ADRs
 
@@ -276,7 +358,12 @@
       states the all-four-paths rule and the one-line verdict
 - [x] 11.3 There were FOUR pre-existing concepts, not three — see the audit in design D6. All four
       distinctions are recorded there and the user-facing ones in the docs page
-- [ ] 11.4 Document the breaking flow change and its upgrade note
+- [x] 11.4 Document the breaking flow change and its upgrade note. The CHANGELOG entry carries
+      WHAT BREAKS / HOW TO MIGRATE / HOW IT LANDS; `docs/Features/object-sharing.md` now carries
+      an operator-facing "Upgrading: flows became private" section, because an admin reading the
+      feature docs would otherwise learn about scope and grants and NOT that their existing flows
+      had just become invisible. It states the 404-not-403 choice (a distinguishable 403 is an
+      id-enumeration oracle) and gives the one grant call that restores a team flow.
 - [x] 11.5 ADR-006 Rule 4 — a link is a revocable, expiring, attributable CAPABILITY and is not a
       data flag, so it does not violate Rules 1-3. Includes what it does NOT license
 - [x] 11.6 ADR-010 — uniform core set on core's bitmask; an action with no core bit is not

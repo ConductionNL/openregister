@@ -655,6 +655,41 @@ class AuditTrailController extends Controller
     }//end clearAll()
 
     /**
+     * Report hash-chain seal coverage without verifying it.
+     *
+     * Backs the log-integrity card in admin settings. Separate from verify()
+     * because they cost wildly different amounts: this is three COUNT queries,
+     * verify() rehashes the entire table. Binding the page to verify() would
+     * make opening settings an expensive operation, and would tempt an admin to
+     * stop opening it.
+     *
+     * Admin-only at the framework level, matching verify()/export()/clearAll().
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Seal coverage counts.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function integrity(): JSONResponse
+    {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
+        try {
+            return new JSONResponse(data: $this->auditHashService->getIntegrityStatus());
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Integrity status failed: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }
+
+    }//end integrity()
+
+    /**
      * Verify the integrity of the audit trail hash chain.
      *
      * Admin-only at the framework level (no @NoAdminRequired): validates the

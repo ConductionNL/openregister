@@ -513,6 +513,25 @@ return [
         // so a dashboard can render slot occupancy (or#2216).
         ['name' => 'flow#state',        'url' => '/api/flow/{flowId}/state', 'verb' => 'GET', 'requirements' => ['flowId' => '[^/]+']],
 
+        // Flow definitions — the one native store every app's builder reads and
+        // writes (flow-engine-unification). PLURAL `/api/flows`, deliberately
+        // distinct from the singular `/api/flow/...` catalog surface above, so
+        // neither can ever capture the other's paths.
+        //
+        // `{id}/run` is declared BEFORE `{id}` so a POST to a run URL is never
+        // matched as an update of a flow whose uuid happens to end in "/run".
+        //
+        // All six are `#[NoAdminRequired]`: flows are per-organisation, not
+        // per-instance, so admin-gating them would make the feature unusable
+        // for the tenants it exists for. The authorisation that matters is the
+        // organisation scoping and per-flow guard inside FlowService.
+        ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
+        ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
+        ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#update',  'url' => '/api/flows/{id}',     'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#destroy', 'url' => '/api/flows/{id}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+
         ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -795,6 +814,7 @@ return [
         ['name' => 'auditTrail#statistics', 'url' => '/api/audit-trails/statistics', 'verb' => 'GET'],
         ['name' => 'auditTrail#export', 'url' => '/api/audit-trails/export', 'verb' => 'GET'],
         ['name' => 'auditTrail#verify', 'url' => '/api/audit-trails/verify', 'verb' => 'GET'],
+        ['name' => 'auditTrail#integrity', 'url' => '/api/audit-trails/integrity', 'verb' => 'GET'],
         ['name' => 'auditTrail#verwerkingsregister', 'url' => '/api/audit-trails/verwerkingsregister', 'verb' => 'GET'],
         ['name' => 'auditTrail#inzageverzoek', 'url' => '/api/audit-trails/inzageverzoek', 'verb' => 'GET'],
         ['name' => 'auditTrail#clearAll', 'url' => '/api/audit-trails/clear-all', 'verb' => 'DELETE'],

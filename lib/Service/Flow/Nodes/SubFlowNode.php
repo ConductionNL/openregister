@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -81,13 +81,13 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys
     /**
      * Constructor.
      *
-     * @param FlowResolverRegistry $resolvers Turns a flow id into a document.
-     * @param FlowRunService       $runs      Queues and executes the sub-run.
-     * @param IL10N                $l10n      Translations.
-     * @param IURLGenerator        $urls      For the palette icon.
+     * @param FlowLocator    $resolvers Turns a flow id into a document.
+     * @param FlowRunService $runs      Queues and executes the sub-run.
+     * @param IL10N          $l10n      Translations.
+     * @param IURLGenerator  $urls      For the palette icon.
      */
     public function __construct(
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runs,
         private readonly IL10N $l10n,
         private readonly IURLGenerator $urls
