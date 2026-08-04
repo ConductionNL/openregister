@@ -69,14 +69,27 @@ class ReplacementPlanner
     /**
      * Produce a plan for one flat text.
      *
-     * @param string                $text          The immutable original text.
-     * @param array<string, string> $substitutions Map of needle => placeholder, consumed verbatim.
-     * @param array<string, string> $entityTypes   Map of needle => entity type, for boundary policy.
+     * A needle absent from $entityTypes resolves via $fallbackPolicy when that is
+     * given, and otherwise through the unknown-type default (word-bounded). The
+     * distinction matters: an entity of an UNENUMERATED type should be bounded,
+     * because a boundary miss is reported while a literal false positive is
+     * silent — but ad-hoc find/replace through `replaceWords()` carries no entity
+     * context at all and must keep literal substring semantics, or a generic
+     * replace would silently start skipping matches.
+     *
+     * @param string                $text           The immutable original text.
+     * @param array<string, string> $substitutions  Map of needle => placeholder, consumed verbatim.
+     * @param array<string, string> $entityTypes    Map of needle => entity type, for boundary policy.
+     * @param string|null           $fallbackPolicy Policy for needles with no type; null = unknown-type default.
      *
      * @return ReplacementPlan
      */
-    public function plan(string $text, array $substitutions, array $entityTypes=[]): ReplacementPlan
-    {
+    public function plan(
+        string $text,
+        array $substitutions,
+        array $entityTypes=[],
+        ?string $fallbackPolicy=null
+    ): ReplacementPlan {
         if ($text === '' || empty($substitutions) === true) {
             return new ReplacementPlan(ranges: [], unmatched: $this->allNeedles(substitutions: $substitutions), partial: []);
         }
@@ -88,7 +101,8 @@ class ReplacementPlanner
             foldedText: $folded['text'],
             foldedMap: $folded['map'],
             substitutions: $substitutions,
-            entityTypes: $entityTypes
+            entityTypes: $entityTypes,
+            fallbackPolicy: $fallbackPolicy
         );
 
         $accepted = $this->selectMaximumCoverage(candidates: $candidates);
@@ -167,11 +181,12 @@ class ReplacementPlanner
     /**
      * Find every boundary-legal occurrence of every needle.
      *
-     * @param array<int, string>    $chars         The original text as codepoints.
-     * @param string                $foldedText    The case-folded haystack.
-     * @param array<int, int>       $foldedMap     Folded offset => original offset.
-     * @param array<string, string> $substitutions Map of needle => placeholder.
-     * @param array<string, string> $entityTypes   Map of needle => entity type.
+     * @param array<int, string>    $chars          The original text as codepoints.
+     * @param string                $foldedText     The case-folded haystack.
+     * @param array<int, int>       $foldedMap      Folded offset => original offset.
+     * @param array<string, string> $substitutions  Map of needle => placeholder.
+     * @param array<string, string> $entityTypes    Map of needle => entity type.
+     * @param string|null           $fallbackPolicy Policy for needles with no type.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -180,7 +195,8 @@ class ReplacementPlanner
         string $foldedText,
         array $foldedMap,
         array $substitutions,
-        array $entityTypes
+        array $entityTypes,
+        ?string $fallbackPolicy=null
     ): array {
         $candidates  = [];
         $originalLen = count($chars);
@@ -192,7 +208,14 @@ class ReplacementPlanner
                 continue;
             }
 
-            $type         = (string) ($entityTypes[$rawNeedle] ?? $entityTypes[$needle] ?? 'UNKNOWN');
+            $hasType = (isset($entityTypes[$rawNeedle]) === true || isset($entityTypes[$needle]) === true);
+            $type    = (string) ($entityTypes[$rawNeedle] ?? $entityTypes[$needle] ?? 'UNKNOWN');
+            if ($hasType === false && $fallbackPolicy !== null) {
+                $policy = $fallbackPolicy;
+            } else {
+                $policy = $this->boundaryPolicy->forType(entityType: $type);
+            }
+
             $foldedNeedle = mb_strtolower($needle);
             $needleLen    = mb_strlen($foldedNeedle);
             if ($needleLen === 0) {
@@ -214,11 +237,11 @@ class ReplacementPlanner
                     $end = $originalLen;
                 }
 
-                $allowed = $this->boundaryPolicy->allows(
+                $allowed = $this->boundaryPolicy->allowsUnderPolicy(
                     chars: $chars,
                     start: $start,
                     end: $end,
-                    entityType: $type
+                    policy: $policy
                 );
 
                 if ($allowed === true && $end > $start) {

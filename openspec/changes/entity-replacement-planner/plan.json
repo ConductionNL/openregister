@@ -129,7 +129,7 @@
     {
       "id": "5.1",
       "title": "Plain-text branch routed through the planner",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "5.2",
@@ -139,12 +139,12 @@
     {
       "id": "5.3",
       "title": "docx branch: collect PhpWord segments, then scatter",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "5.4",
       "title": "Verify PhpWord segment order is true document order",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "5.5",

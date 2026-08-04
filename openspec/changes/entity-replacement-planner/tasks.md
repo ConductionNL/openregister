@@ -35,10 +35,10 @@
 
 ## 5. Route the office and text branches through the planner
 
-- [ ] 5.1 Plain text (`lib/Service/File/DocumentProcessingHandler.php:1204-1284`): replace the `str_ireplace` loop at `:1216` with plan + `applyToString`. Single segment, no `SegmentMap` needed.
+- [x] 5.1 Plain text (`lib/Service/File/DocumentProcessingHandler.php:1204-1284`): replace the `str_ireplace` loop at `:1216` with plan + `applyToString`. Single segment, no `SegmentMap` needed.
 - [ ] 5.2 Sanitised office container (`:897-978`): replace the whole-XML `str_ireplace` at `:918` with a segment adapter over the sanitised XML's **text nodes**. This also removes the current risk of a needle matching inside XML markup rather than document content.
-- [ ] 5.3 docx (`:979-1203`): replace the recursive `$replaceInElements` closure (`:1027-1060`) with a two-phase walk — first collect PhpWord elements exposing `getText()`/`setText()` into a `SegmentMap` in document order (body, headers, footers, table cells, list items, nested elements), then `scatter()` the plan back via `setText()`. Preserve the existing traversal coverage exactly; the only change is collect-then-write instead of write-in-place.
-- [ ] 5.4 Verify the PhpWord segment order is true document order, since both DP determinism and residue attribution are defined on concatenation offsets.
+- [x] 5.3 docx (`:979-1203`): replace the recursive `$replaceInElements` closure (`:1027-1060`) with a two-phase walk — first collect PhpWord elements exposing `getText()`/`setText()` into a `SegmentMap` in document order (body, headers, footers, table cells, list items, nested elements), then `scatter()` the plan back via `setText()`. Preserve the existing traversal coverage exactly; the only change is collect-then-write instead of write-in-place.
+- [x] 5.4 Verify the PhpWord segment order is true document order, since both DP determinism and residue attribution are defined on concatenation offsets.
 - [ ] 5.5 Keep the `uksort` at `:489-495` as a defensive ordering for direct map consumers; add a comment stating the overlap guarantee now comes from the planner so a future reader does not delete the wrong one.
 - [ ] 5.6 Fixture tests: an entity split across two `<w:r>` runs is redacted and the placeholder lands in the first run; entities in headers, footers, table cells and list items are all redacted; all text not covered by an accepted range is byte-identical to the input; document structure is unchanged.
 

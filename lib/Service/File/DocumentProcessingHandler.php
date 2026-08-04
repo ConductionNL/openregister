@@ -18,6 +18,11 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\File\Anonymisation\BoundaryPolicy;
+use OCA\OpenRegister\Service\File\Anonymisation\PlanApplier;
+use OCA\OpenRegister\Service\File\Anonymisation\ReplacementPlan;
+use OCA\OpenRegister\Service\File\Anonymisation\ReplacementPlanner;
+use OCA\OpenRegister\Service\File\Anonymisation\SegmentMap;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Service\FileService;
@@ -90,6 +95,24 @@ class DocumentProcessingHandler
         'INCOME',
         'EDUCATION_LEVEL',
     ];
+
+    /**
+     * Map of needle => RAW (un-localised) entity type for the most recent
+     * `buildEntityReplacements()` call.
+     *
+     * The replacement map itself only carries the LOCALISED type inside the
+     * placeholder text, which is useless for boundary decisions — the planner
+     * needs the canonical `EntityRecognitionHandler::ENTITY_TYPE_*` value to
+     * pick bounded / delimited-token / literal matching. Kept as parallel
+     * state rather than changing `buildEntityReplacements()`'s return shape,
+     * because that shape is consumed by several call sites.
+     *
+     * Empty when `replaceWords()` is used ad-hoc with a caller-supplied map:
+     * that path has no entity context and passes an explicit literal policy.
+     *
+     * @var array<string, string>
+     */
+    private array $entityTypesByNeedle = [];
 
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -315,6 +338,9 @@ class DocumentProcessingHandler
         // (potentially reused) handler.
         $this->lastResidualEntities = [];
         $this->lastPlaceholderMap   = [];
+        $this->entityTypesByNeedle  = [];
+        $this->plannedMatched       = [];
+        $this->plannedPartial       = [];
 
         // Resolve the source file id once — the substitution placeholder
         // format and the post-redaction audit flag both key off it.
@@ -394,6 +420,165 @@ class DocumentProcessingHandler
     }//end anonymizeDocument()
 
     /**
+     * The range planner.
+     *
+     * Lazily constructed rather than injected: it and the applier are pure
+     * value transforms with no dependencies, and adding constructor parameters
+     * would break every existing test that builds this handler directly.
+     *
+     * @var ReplacementPlanner|null
+     */
+    private ?ReplacementPlanner $planner = null;
+
+    /**
+     * The single-pass plan applier.
+     *
+     * @var PlanApplier|null
+     */
+    private ?PlanApplier $planApplier = null;
+
+    /**
+     * Needles matched at least once by the planner during this run.
+     *
+     * Accumulated ACROSS apply calls on purpose: a document is redacted in
+     * several passes (an EML's subject, body and each attachment; an ODT's
+     * `content.xml` and `styles.xml`), and a needle absent from one part is
+     * routinely present in another. Reporting per pass would flag almost every
+     * needle as missing. Consumed by the reporting work in task 6; this task
+     * only records it.
+     *
+     * @var array<string, boolean>
+     */
+    private array $plannedMatched = [];
+
+    /**
+     * Needles the planner split-matched during this run.
+     *
+     * @var array<string, boolean>
+     */
+    private array $plannedPartial = [];
+
+    /**
+     * Plan against the immutable text and build the redacted result.
+     *
+     * Replaces the `foreach ($replacements as ...) { str_ireplace(...) }` idiom.
+     * That idiom fed each replacement the text the previous one had already
+     * rewritten, so overlapping entities clobbered each other and an emitted
+     * placeholder could be matched again by a later needle. Planning decides
+     * every range against the ORIGINAL text, then the output is built once.
+     *
+     * @param string                $text           The immutable original text.
+     * @param array<string, string> $replacements   Map of needle => placeholder.
+     * @param string|null           $fallbackPolicy Policy for needles carrying no entity
+     *                                              type. Pass `POLICY_LITERAL` for ad-hoc
+     *                                              replace, whose contract is plain
+     *                                              substring substitution.
+     *
+     * @return string
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    private function applyPlanned(string $text, array $replacements, ?string $fallbackPolicy=null): string
+    {
+        if ($text === '' || empty($replacements) === true) {
+            return $text;
+        }
+
+        if ($this->planner === null) {
+            $this->planner = new ReplacementPlanner();
+        }
+
+        if ($this->planApplier === null) {
+            $this->planApplier = new PlanApplier();
+        }
+
+        $plan = $this->planner->plan(
+            text: $text,
+            substitutions: $replacements,
+            entityTypes: $this->entityTypesByNeedle,
+            fallbackPolicy: $fallbackPolicy
+        );
+
+        $this->recordPlanOutcome(plan: $plan);
+
+        return $this->planApplier->applyToString(text: $text, plan: $plan);
+
+    }//end applyPlanned()
+
+    /**
+     * Redact one group of adjacent PhpWord text runs as a single flow.
+     *
+     * Flatten the group's values, plan against the concatenation, scatter the
+     * result back. The placeholder lands in the run holding the match's start,
+     * so that run's formatting is what survives; later overlapped runs have
+     * their covered portion removed and are kept as empty strings rather than
+     * being deleted, leaving the document's structure alone.
+     *
+     * @param array<int, mixed>     $group        Consecutive text-bearing PhpWord elements.
+     * @param array<string, string> $replacements Map of needle => placeholder.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    private function applyToRunGroup(array $group, array $replacements): void
+    {
+        if (empty($group) === true || empty($replacements) === true) {
+            return;
+        }
+
+        $values = [];
+        foreach ($group as $element) {
+            $values[] = (string) $element->getText();
+        }
+
+        $map       = new SegmentMap(segments: $values);
+        $flattened = $map->flatten();
+        if (trim($flattened) === '') {
+            return;
+        }
+
+        if ($this->planner === null) {
+            $this->planner = new ReplacementPlanner();
+        }
+
+        $plan = $this->planner->plan(
+            text: $flattened,
+            substitutions: $replacements,
+            entityTypes: $this->entityTypesByNeedle
+        );
+
+        $this->recordPlanOutcome(plan: $plan);
+
+        $updated = $map->scatter(plan: $plan);
+        foreach ($group as $index => $element) {
+            if (($updated[$index] ?? $values[$index]) !== $values[$index]) {
+                $element->setText($updated[$index]);
+            }
+        }
+
+    }//end applyToRunGroup()
+
+    /**
+     * Record which needles a plan accounted for, merging across passes.
+     *
+     * @param ReplacementPlan $plan The plan just applied.
+     *
+     * @return void
+     */
+    private function recordPlanOutcome(ReplacementPlan $plan): void
+    {
+        foreach ($plan->getRanges() as $range) {
+            $this->plannedMatched[$range->needle] = true;
+        }
+
+        foreach ($plan->getPartialNeedles() as $needle) {
+            $this->plannedPartial[(string) $needle] = true;
+        }
+
+    }//end recordPlanOutcome()
+
+    /**
      * Build the entity → placeholder replacement map for a file.
      *
      * Extracted from {@see anonymizeDocument()} so the message/rfc822
@@ -446,6 +631,9 @@ class DocumentProcessingHandler
 
         // Build replacements array from entities.
         $replacements = [];
+        $this->entityTypesByNeedle = [];
+        $this->plannedMatched      = [];
+        $this->plannedPartial      = [];
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';
@@ -468,6 +656,12 @@ class DocumentProcessingHandler
             if ($needle === '') {
                 continue;
             }
+
+            // Keep the RAW type against the needle: the placeholder built below
+            // carries only the localised label, from which the canonical type
+            // cannot be recovered, and the planner needs the canonical value to
+            // resolve the boundary policy.
+            $this->entityTypesByNeedle[$needle] = (string) $entityType;
 
             // Prefer stable per-entity placeholder. Fall back to the
             // legacy UUID-prefix only when there is no matching entity
@@ -694,11 +888,7 @@ class DocumentProcessingHandler
             return null;
         }
 
-        foreach ($replacements as $needle => $placeholder) {
-            $text = str_ireplace((string) $needle, $placeholder, $text);
-        }
-
-        return $text;
+        return $this->applyPlanned(text: $text, replacements: $replacements);
     }//end redactText()
 
     /**
@@ -1163,21 +1353,33 @@ class DocumentProcessingHandler
             $phpWord = IOFactory::load($tempFile);
 
             // Helper: Replace text in all elements recursively.
+            //
+            // Two passes per element list. The first groups CONSECUTIVE
+            // text-bearing leaves and redacts them as one flow, which is what
+            // makes an entity split across `<w:r>` runs matchable: PhpWord hands
+            // us `Jan` and `ssen` as separate Text elements, and the old
+            // per-element `str_ireplace` could never see `Jansen`. Grouping is
+            // deliberately scoped to ONE element list rather than the whole
+            // document — concatenating a header with the body would let a match
+            // span text that is not actually adjacent, inventing a redaction.
+            //
+            // The second pass descends exactly as the original did, so table,
+            // list and nested-element coverage is unchanged.
             $replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements): void {
+                $group = [];
                 foreach ($elements as $element) {
-                    // Replace in text runs.
                     if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
-                        $text = $element->getText();
-                        foreach ($replacements as $original => $replacement) {
-                            // Cast $original to string: PHP silently coerces numeric-string
-                            // array keys (e.g. a 9-digit BSN) to int, and str_ireplace()
-                            // rejects an int as its $search argument.
-                            $text = str_ireplace((string) $original, $replacement, $text);
-                        }
-
-                        $element->setText($text);
+                        $group[] = $element;
+                        continue;
                     }
 
+                    $this->applyToRunGroup(group: $group, replacements: $replacements);
+                    $group = [];
+                }
+
+                $this->applyToRunGroup(group: $group, replacements: $replacements);
+
+                foreach ($elements as $element) {
                     // Replace in tables.
                     if (method_exists($element, 'getRows') === true) {
                         foreach ($element->getRows() as $row) {
@@ -1428,11 +1630,10 @@ class DocumentProcessingHandler
             throw new Exception('Failed to get content from file: '.$node->getPath());
         }
 
-        // Apply replacements.
-        $modifiedContent = $content;
-        foreach ($replacements as $original => $replacement) {
-            $modifiedContent = str_ireplace((string) $original, $replacement, $modifiedContent);
-        }
+        // Plan every range against the original content, then build the output
+        // once. The previous sequential `str_ireplace` loop fed each needle the
+        // text an earlier needle had already rewritten.
+        $modifiedContent = $this->applyPlanned(text: (string) $content, replacements: $replacements);
 
         // Create output file.
         $parentFolder = $node->getParent();

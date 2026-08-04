@@ -130,8 +130,31 @@ final class BoundaryPolicy
      */
     public function allows(array $chars, int $start, int $end, string $entityType): bool
     {
-        $policy = $this->forType(entityType: $entityType);
+        return $this->allowsUnderPolicy(
+            chars: $chars,
+            start: $start,
+            end: $end,
+            policy: $this->forType(entityType: $entityType)
+        );
 
+    }//end allows()
+
+    /**
+     * Whether a match at [$start, $end) is allowed under an EXPLICIT policy.
+     *
+     * Used when the caller knows the policy but has no entity type — notably
+     * ad-hoc find/replace via `DocumentProcessingHandler::replaceWords()`, which
+     * is not entity anonymisation and must keep literal substring semantics.
+     *
+     * @param array<int, string> $chars  The ORIGINAL text as a codepoint array.
+     * @param integer            $start  Inclusive start offset of the match.
+     * @param integer            $end    Exclusive end offset of the match.
+     * @param string             $policy One of the POLICY_* constants.
+     *
+     * @return boolean
+     */
+    public function allowsUnderPolicy(array $chars, int $start, int $end, string $policy): bool
+    {
         if ($policy === self::POLICY_LITERAL) {
             return true;
         }
@@ -146,7 +169,7 @@ final class BoundaryPolicy
 
         return true;
 
-    }//end allows()
+    }//end allowsUnderPolicy()
 
     /**
      * No word codepoint directly before or after the match.
