@@ -428,6 +428,180 @@ class AuditHashService
     }//end countUnsealed()
 
     /**
+     * A cheap, page-load-safe summary of chain health.
+     *
+     * Deliberately NOT a verification. {@see verifyChain()} reads every row and
+     * recomputes every hash — on the instance this was written against that is
+     * 308,937 SHA-256 computations, far too slow to run because somebody opened
+     * a settings page. This is three COUNT/MAX queries, so an admin sees the one
+     * number that actually rots over time — how many rows the chain cannot vouch
+     * for — without paying for a full walk.
+     *
+     * Verification stays an explicit, operator-initiated action. The distinction
+     * matters: "no rows are unsealed" says the sweeper is keeping up, and says
+     * nothing at all about whether the hashes that ARE stored still agree with
+     * their rows. Only verifyChain() can answer that, and the UI must not let
+     * the cheap number stand in for the expensive one.
+     *
+     * @return array{total: int, sealed: int, unsealed: int, coverage: float, lastSealedId: int|null}
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function getIntegrityStatus(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('id', 'total'))
+            ->from('openregister_audit_trails');
+        $result = $qb->executeQuery();
+        $total  = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        $unsealed = $this->countUnsealed();
+        $sealed   = ($total - $unsealed);
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->max('id', 'last_sealed'))
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->isNotNull('hash'));
+        $result     = $qb->executeQuery();
+        $lastSealed = $result->fetchOne();
+        $result->closeCursor();
+
+        $coverage = 100.0;
+        if ($total > 0) {
+            $coverage = round((($sealed / $total) * 100), 2);
+        }
+
+        $lastSealedId = null;
+        if ($lastSealed !== false && $lastSealed !== null) {
+            $lastSealedId = (int) $lastSealed;
+        }
+
+        return [
+            'total'        => $total,
+            'sealed'       => $sealed,
+            'unsealed'     => $unsealed,
+            'coverage'     => $coverage,
+            'lastSealedId' => $lastSealedId,
+        ];
+
+    }//end getIntegrityStatus()
+
+    /**
+     * Re-chain EVERY row from genesis, replacing any stored hash.
+     *
+     * A deliberate, destructive repair — the only operation here that rewrites
+     * hashes that already exist. It is exposed as an occ command and never runs
+     * on a schedule, because "something rewrote the audit hashes" is precisely
+     * the event the chain is built to make suspicious. An operator must ask for
+     * it, and the run is logged at warning level so the rewrite is itself part
+     * of the record.
+     *
+     * It exists because sealing predates the seal lock. Before
+     * {@see self::SEAL_LOCK_KEY} was introduced, concurrent passes could each
+     * read the same predecessor and then write, so many rows ended up chained
+     * onto ONE predecessor — 5,314 such rows over 2,413 predecessors on the
+     * instance this was written against, one of them shared by 442 rows. That is
+     * a fan-out, not a chain, and verifyChain() rightly calls it broken.
+     * sealUnsealed() cannot repair it: it seals rows with NO hash, not rows with
+     * a WRONG one.
+     *
+     * Walks in id order under the seal lock, deriving each row's previousHash
+     * from the row actually before it, so the result is a single chain by
+     * construction rather than by luck.
+     *
+     * Re-chains EVERY row, including rows that never had a hash, so a single
+     * run repairs both failure modes at once: the gaps the sweeper exists to
+     * close, and the mis-chained rows it cannot touch.
+     *
+     * @param int $batchSize Rows re-chained per query window.
+     *
+     * @return array{rechained: int} The number of rows rewritten.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function rechainAll(int $batchSize=self::SWEEP_BATCH_SIZE): array
+    {
+        $this->logger->warning(
+            message: '[AuditHashService] FULL RE-CHAIN STARTED — every audit hash will be recomputed. '
+                .'This rewrites stored hashes and must only ever run as a deliberate operator repair.',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+        );
+
+        if ($this->acquireSealLock() === false) {
+            $this->logger->error(
+                message: '[AuditHashService] Re-chain aborted: seal lock unavailable. '
+                    .'Refusing to re-chain while another seal pass may be writing.',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+            );
+
+            return ['rechained' => 0];
+        }
+
+        try {
+            $previousHash = $this->getGenesisHash();
+            $rechained    = 0;
+            $afterId      = 0;
+
+            while (true) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('*')
+                    ->from('openregister_audit_trails')
+                    ->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+                    ->orderBy('id', 'ASC')
+                    ->setMaxResults($batchSize);
+
+                $result = $qb->executeQuery();
+                $rows   = $result->fetchAll();
+                $result->closeCursor();
+
+                if ($rows === []) {
+                    break;
+                }
+
+                foreach ($rows as $row) {
+                    $afterId = (int) $row['id'];
+
+                    $entry = new AuditTrail();
+                    $entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+                    $hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+                    $update = $this->db->getQueryBuilder();
+                    $update->update('openregister_audit_trails')
+                        ->set('hash', $update->createNamedParameter($hash))
+                        ->set('previous_hash', $update->createNamedParameter($previousHash))
+                        ->where(
+                            $update->expr()->eq(
+                                'id',
+                                $update->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)
+                            )
+                        );
+                    $update->executeStatement();
+
+                    // Every row becomes the predecessor of the next, which is
+                    // what makes the result one chain rather than a fan-out.
+                    $previousHash = $hash;
+                    $rechained++;
+                }//end foreach
+            }//end while
+
+            $this->logger->warning(
+                message: sprintf(
+                    '[AuditHashService] FULL RE-CHAIN COMPLETE — %d audit row(s) re-chained from genesis.',
+                    $rechained
+                ),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+            );
+
+            return ['rechained' => $rechained];
+        } finally {
+            $this->releaseSealLock();
+        }//end try
+
+    }//end rechainAll()
+
+    /**
      * Seal a batch of rows — body of {@see sealRows()}, caller holds the
      * seal lock and has already normalised `$ids` to positive integers.
      *
@@ -581,26 +755,6 @@ class AuditHashService
      */
     public function verifyChain(?int $from=null, ?int $to=null): array
     {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from('openregister_audit_trails')
-            ->orderBy('id', 'ASC');
-
-        if ($from !== null) {
-            $qb->andWhere(
-                $qb->expr()->gte('id', $qb->createNamedParameter($from, IQueryBuilder::PARAM_INT))
-            );
-        }
-
-        if ($to !== null) {
-            $qb->andWhere(
-                $qb->expr()->lte('id', $qb->createNamedParameter($to, IQueryBuilder::PARAM_INT))
-            );
-        }
-
-        $result = $qb->executeQuery();
-
         $entriesVerified   = 0;
         $skippedNullHashes = 0;
         $previousHash      = null;
@@ -610,50 +764,85 @@ class AuditHashService
             $previousHash = $this->getHashBefore(id: $from);
         }
 
-        while (($row = $result->fetch()) !== false) {
-            $storedHash = $row['hash'] ?? null;
+        // Walk in windows rather than one unbounded query. The DB is not the
+        // constraint here — Postgres returns the whole trail by index scan in
+        // ~350 ms — but the CLIENT is: libpq buffers an entire result set before
+        // PHP sees the first row, so `select *` over 309,090 rows at ~5.8 KB
+        // wide pulls ~1.8 GB into the driver. That memory is invisible to
+        // memory_get_peak_usage() because it is held in C, so the failure mode
+        // is not a clean PHP fatal but the OS killing the process — measured
+        // here as an occ run dying with SIGKILL while PHP still reported a 57 MB
+        // peak. Windowing keeps the driver's buffer bounded and, incidentally,
+        // cuts a partial walk from ~129 s to under a second.
+        $afterId = ($from - 1);
+        if ($from === null) {
+            $afterId = 0;
+        }
 
-            // Skip entries without hashes (pre-migration entries).
-            if ($storedHash === null || $storedHash === '') {
-                $skippedNullHashes++;
-                continue;
+        while (true) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_audit_trails')
+                ->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+                ->orderBy('id', 'ASC')
+                ->setMaxResults(self::SWEEP_BATCH_SIZE);
+
+            if ($to !== null) {
+                $qb->andWhere(
+                    $qb->expr()->lte('id', $qb->createNamedParameter($to, IQueryBuilder::PARAM_INT))
+                );
             }
 
-            $entry = new AuditTrail();
-            $entry->hydrate(object: $this->mapRowToEntity(row: $row));
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
 
-            // Determine the previous hash for verification.
-            if ($previousHash === null) {
-                $previousHash = $this->getGenesisHash();
+            if (empty($rows) === true) {
+                break;
             }
 
-            $computedHash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+            foreach ($rows as $row) {
+                $afterId    = (int) $row['id'];
+                $storedHash = ($row['hash'] ?? null);
 
-            if ($computedHash !== $storedHash) {
-                $result->closeCursor();
-
-                $response = [
-                    'valid'             => false,
-                    'entriesVerified'   => $entriesVerified,
-                    'brokenAt'          => (int) $row['id'],
-                    'skippedNullHashes' => $skippedNullHashes,
-                ];
-
-                if ($from !== null || $to !== null) {
-                    $response['range'] = [
-                        'from' => $from ?? (int) $row['id'],
-                        'to'   => $to ?? (int) $row['id'],
-                    ];
+                // Skip entries without hashes (pre-migration entries).
+                if ($storedHash === null || $storedHash === '') {
+                    $skippedNullHashes++;
+                    continue;
                 }
 
-                return $response;
-            }
+                $entry = new AuditTrail();
+                $entry->hydrate(object: $this->mapRowToEntity(row: $row));
 
-            $previousHash = $storedHash;
-            $entriesVerified++;
+                // Determine the previous hash for verification.
+                if ($previousHash === null) {
+                    $previousHash = $this->getGenesisHash();
+                }
+
+                $computedHash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+                if ($computedHash !== $storedHash) {
+                    $response = [
+                        'valid'             => false,
+                        'entriesVerified'   => $entriesVerified,
+                        'brokenAt'          => (int) $row['id'],
+                        'skippedNullHashes' => $skippedNullHashes,
+                    ];
+
+                    if ($from !== null || $to !== null) {
+                        $response['range'] = [
+                            'from' => ($from ?? (int) $row['id']),
+                            'to'   => ($to ?? (int) $row['id']),
+                        ];
+                    }
+
+                    return $response;
+                }
+
+                $previousHash = $storedHash;
+                $entriesVerified++;
+            }//end foreach
         }//end while
-
-        $result->closeCursor();
 
         $response = [
             'valid'             => true,
