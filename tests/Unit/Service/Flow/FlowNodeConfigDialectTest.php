@@ -216,12 +216,9 @@ class FlowNodeConfigDialectTest extends TestCase
     {
         $flow = [
             'name'  => 'hydra-analyze-verdicts (corrected)',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
+            'nodes' => [
                 [
                     'id'     => 'derive',
-                    'from'   => 'a',
-                    'to'     => 'b',
                     'type'   => 'openregister.set-fields',
                     'config' => [
                         'compute' => ['codePass' => ['var' => 'labels']],
@@ -229,8 +226,6 @@ class FlowNodeConfigDialectTest extends TestCase
                 ],
                 [
                     'id'     => 'code-contradiction',
-                    'from'   => 'b',
-                    'to'     => 'c',
                     'type'   => 'openregister.route',
                     'config' => [
                         'rules'   => [
@@ -240,6 +235,7 @@ class FlowNodeConfigDialectTest extends TestCase
                     ],
                 ],
             ],
+            'edges' => [['id' => 'onwards', 'from' => 'derive', 'to' => 'code-contradiction']],
         ];
 
         $report = $this->preflight()->inspect(flow: $flow);

@@ -244,4 +244,54 @@ class FlowNodePreflightTest extends TestCase
             )
         );
     }
+
+    /**
+     * A pre-inversion document is REFUSED, not reported valid.
+     *
+     * Measured on the live Hydra sequencer: after the preflight moved to walking
+     * nodes, an un-migrated flow — whose steps are all on edges — produced zero
+     * findings and validated clean, while being exactly the shape the builder
+     * refuses. Walking nodes closed one hole by opening another, and the author
+     * reading "the flow engine accepts this graph" in the editor is precisely
+     * who needed telling otherwise.
+     *
+     * @return void
+     */
+    public function testAPreInversionDocumentIsRefusedRatherThanReportedValid(): void
+    {
+        $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
+        $report    = $preflight->inspect(
+            flow: [
+                'name'  => 'un-migrated',
+                'nodes' => [['id' => 'a'], ['id' => 'b']],
+                'edges' => [['id' => 'scope', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.route']],
+            ]
+        );
+
+        $this->assertCount(1, $report['blocking']);
+        $this->assertSame(FlowNodePreflight::REASON_PRE_INVERSION_SHAPE, $report['blocking'][0]['reason']);
+        $this->assertSame('scope', $report['blocking'][0]['step']);
+    }
+
+    /**
+     * Positive control: the same flow validates once the step is on the node.
+     *
+     * Without this, the refusal above is satisfied by a preflight that refuses
+     * everything it is shown.
+     *
+     * @return void
+     */
+    public function testTheSameFlowValidatesOnceTheStepIsOnTheNode(): void
+    {
+        $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
+        $report    = $preflight->inspect(
+            flow: [
+                'name'  => 'migrated',
+                'nodes' => [['id' => 'scope', 'type' => 'openregister.route']],
+                'edges' => [],
+            ]
+        );
+
+        $this->assertSame(['blocking' => [], 'warnings' => []], $report);
+    }
 }

@@ -168,6 +168,13 @@ class FlowNodePreflight
     public const REASON_CONFIG_ONERROR_MISPLACED = 'node-config-onerror-misplaced';
 
     /**
+     * The document is in the pre-inversion shape: a step is on an EDGE.
+     *
+     * @var string
+     */
+    public const REASON_PRE_INVERSION_SHAPE = 'flow-pre-inversion-shape';
+
+    /**
      * The key the engine reads from the EDGE and never from `config`.
      */
     private const EDGE_LEVEL_ONERROR = 'onError';
@@ -307,6 +314,42 @@ class FlowNodePreflight
     {
         $blocking = [];
         $warnings = [];
+
+        // A pre-inversion document is refused here as well as by the builder.
+        //
+        // Walking nodes made this a hole rather than closing one: an un-migrated
+        // flow carries its steps on EDGES, so the loop below finds no typed
+        // nodes, produces no findings, and the report says "valid" — about the
+        // one document shape the engine will certainly refuse. Measured on the
+        // live Hydra sequencer, which validated clean while being unrunnable.
+        //
+        // The author reading "the flow engine accepts this graph" in the editor
+        // is exactly who needs to be told otherwise.
+        foreach (($flow['edges'] ?? []) as $index => $edge) {
+            if (is_array($edge) === false) {
+                continue;
+            }
+
+            $type = trim((string) ($edge['type'] ?? ''));
+            if ($type === '') {
+                continue;
+            }
+
+            $blocking[] = [
+                'type'   => $type,
+                'app'    => $this->ownerOf(type: $type),
+                'step'   => (string) ($edge['id'] ?? $edge['name'] ?? $index),
+                'reason' => self::REASON_PRE_INVERSION_SHAPE,
+                'detail' => 'the step is on an edge; a node is the action that runs',
+            ];
+        }
+
+        if ($blocking !== []) {
+            // Return early. Every later finding would be about a document in a
+            // shape nothing will read, and burying the one actionable message
+            // under them helps nobody.
+            return ['blocking' => $blocking, 'warnings' => $warnings];
+        }
 
         // NODES, not edges. A node is the action that runs (or-flow-action-nodes),
         // so a preflight still walking `edges[]` would inspect a list where
@@ -511,6 +554,17 @@ class FlowNodePreflight
                     $finding['type'],
                     $finding['step'],
                     ($finding['detail'] ?? 'no detail')
+                );
+                continue;
+            }
+
+            if ($finding['reason'] === self::REASON_PRE_INVERSION_SHAPE) {
+                $lines[] = sprintf(
+                    '"%s" (step %s) — the step is on an EDGE. A node is the action that runs and an edge is '
+                    .'sequence, so nothing reads this step. The flow has not been migrated; run '
+                    .'or-flow-migrate-definitions',
+                    $finding['type'],
+                    $finding['step']
                 );
                 continue;
             }
