@@ -121,3 +121,20 @@ jobs:
       # the same change as the gates themselves would confuse "this repo has an
       # accessibility defect" with "Nextcloud core does". Separate change.
       enable-sbom: true
+
+      # ── Frontend Check legs ──────────────────────────────────────────────
+      # `frontend-checks` defaults to `[]`, and an empty list means the shared
+      # workflow emits NO "Frontend Check" job at all — which is why this repo's
+      # validator family had never run in CI even though everything else here is
+      # switched on. Both entries are self-contained `node` scripts, which is
+      # what a leg has to be (each leg is a fresh job with its own checkout +
+      # `npm ci`).
+      # `check:specs` is the aggregate (json-strict + manifest + register),
+      # listed as ONE leg rather than three.
+      # Measured on this tree before enabling: `check:specs` PASSES (with
+      # warnings), `test:l10n` FAILS on source strings missing from
+      # l10n/en.json, e.g. "Write an audit-trail entry for every step"
+      # (src/views/settings/sections/FlowConfiguration.vue:29). A real
+      # pre-existing defect; the gate is what makes it visible.
+      # `test` is NOT listed: "Frontend Tests (unit)" already runs it.
+      frontend-checks: '["check:specs", "test:l10n"]'
