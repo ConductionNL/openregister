@@ -1587,7 +1587,7 @@ class DocumentProcessingHandler
 
                     $this->applyToRunGroup(group: $group, replacements: $replacements);
                     $group = [];
-                }
+                }//end foreach
 
                 $this->applyToRunGroup(group: $group, replacements: $replacements);
 
@@ -1695,6 +1695,10 @@ class DocumentProcessingHandler
             // idempotent and self-deletes as a concern once #1274 is fixed.
             $this->wrapSoftLineBreaksInRuns($outputTempFile);
 
+            // Hyperlinks are unreachable through PhpWord's object model (see
+            // redactHyperlinksInDocx), so they are redacted on the written file.
+            $this->redactHyperlinksInDocx(docxPath: $outputTempFile, replacements: $replacements);
+
             // Get the parent folder and create the new file.
             $parentFolder = $node->getParent();
             if ($parentFolder->nodeExists($outputName) === true) {
@@ -1737,6 +1741,270 @@ class DocumentProcessingHandler
             throw new Exception('Failed to replace words in Word document: '.$e->getMessage(), 0, $e);
         }//end try
     }//end replaceWordsInWordDocument()
+
+    /**
+     * Redact entity text carried by docx HYPERLINKS, which no text walk can reach.
+     *
+     * An email address in a Word hyperlink lives in two places and neither is a
+     * text node the element walk can see:
+     *
+     * - `word/_rels/document.xml.rels` holds the `mailto:` target. When the link's
+     *   display text is a person's NAME, the address exists ONLY here — invisible
+     *   in the rendered document, and absent from `document.xml` entirely.
+     * - the display text sits inside `<w:hyperlink>`, whose PhpWord element is
+     *   `Element\Link`. That class exposes `getText()` but NO `setText()` and no
+     *   `setSource()`, so PhpWord's object model cannot rewrite either half.
+     *
+     * Both halves therefore survived anonymisation. This is a pre-existing gap,
+     * not a consequence of moving to the planner — the previous per-element loop
+     * used the same `getText` + `setText` test and skipped links identically.
+     *
+     * Because PhpWord cannot express the fix, it is applied to the written output,
+     * the same approach `wrapSoftLineBreaksInRuns()` already takes for the
+     * soft-line-break bug. Two operations:
+     *
+     * 1. Display text inside each `<w:hyperlink>` is redacted through the planner,
+     *    treating the hyperlink's runs as ONE flow so an entity split across them
+     *    is still matched.
+     * 2. Any hyperlink whose TARGET contains entity text is UNWRAPPED — the
+     *    `<w:hyperlink>` element is removed and its runs kept — and the
+     *    relationship target is neutralised to `about:blank`. Rewriting the target
+     *    to `mailto:[PERSOON: 1]` would leave a malformed address masquerading as
+     *    a real one, so stripping the link is the honest redaction.
+     *
+     * Target matching is a plain case-insensitive substring test, deliberately NOT
+     * the boundary policy: a URL is not prose, and `mailto:jan@x.nl` gives the
+     * needle no word boundary to sit on.
+     *
+     * @param string                $docxPath     Path to the written .docx.
+     * @param array<string, string> $replacements Map of needle => placeholder.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    private function redactHyperlinksInDocx(string $docxPath, array $replacements): void
+    {
+        if (empty($replacements) === true) {
+            return;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        // Pass 1: find relationship ids whose target carries entity text.
+        $compromised = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === false || preg_match('#^word/_rels/[^/]+\.rels$#', $name) !== 1) {
+                continue;
+            }
+
+            $rels = $zip->getFromName($name);
+            if ($rels === false) {
+                continue;
+            }
+
+            $updated = $this->neutraliseCompromisedRelationships(
+                rels: $rels,
+                replacements: $replacements,
+                compromised: $compromised
+            );
+
+            if ($updated !== $rels) {
+                $zip->addFromString($name, $updated);
+            }
+        }//end for
+
+        // Pass 2: redact display text, and unwrap the compromised links.
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === false
+                || preg_match('#^word/(document|header\d*|footer\d*)\.xml$#', $name) !== 1
+            ) {
+                continue;
+            }
+
+            $xml = $zip->getFromName($name);
+            if ($xml === false || strpos($xml, '<w:hyperlink') === false) {
+                continue;
+            }
+
+            $fixed = $this->redactHyperlinksInXml(
+                xml: $xml,
+                replacements: $replacements,
+                compromised: $compromised
+            );
+
+            if ($fixed !== $xml) {
+                $zip->addFromString($name, $fixed);
+            }
+        }//end for
+
+        $zip->close();
+
+    }//end redactHyperlinksInDocx()
+
+    /**
+     * Point any hyperlink relationship whose target contains entity text at
+     * `about:blank`, collecting the affected relationship ids.
+     *
+     * @param string                 $rels         The `.rels` part contents.
+     * @param array<string, string>  $replacements Map of needle => placeholder.
+     * @param array<string, boolean> $compromised  Collects affected rIds, by reference.
+     *
+     * @return string The rewritten `.rels` contents.
+     */
+    private function neutraliseCompromisedRelationships(
+        string $rels,
+        array $replacements,
+        array &$compromised
+    ): string {
+        return (string) preg_replace_callback(
+            '#<Relationship\b[^>]*/>#',
+            function (array $match) use ($replacements, &$compromised): string {
+                $element = $match[0];
+                if (strpos($element, 'hyperlink') === false) {
+                    return $element;
+                }
+
+                if (preg_match('#\bTarget="([^"]*)"#', $element, $target) !== 1
+                    || preg_match('#\bId="([^"]*)"#', $element, $id) !== 1
+                ) {
+                    return $element;
+                }
+
+                $decoded = html_entity_decode($target[1], (ENT_QUOTES | ENT_XML1), 'UTF-8');
+                foreach (array_keys($replacements) as $needle) {
+                    $needle = (string) $needle;
+                    if (trim($needle) === '' || mb_stripos($decoded, $needle) === false) {
+                        continue;
+                    }
+
+                    $compromised[$id[1]] = true;
+
+                    return str_replace($target[0], 'Target="about:blank"', $element);
+                }
+
+                return $element;
+            },
+            $rels
+        );
+
+    }//end neutraliseCompromisedRelationships()
+
+    /**
+     * Redact hyperlink display text and unwrap compromised hyperlinks.
+     *
+     * @param string                 $xml          A `document`/`header`/`footer` part.
+     * @param array<string, string>  $replacements Map of needle => placeholder.
+     * @param array<string, boolean> $compromised  Relationship ids to unwrap.
+     *
+     * @return string
+     */
+    private function redactHyperlinksInXml(string $xml, array $replacements, array $compromised): string
+    {
+        // Hyperlinks cannot nest in OOXML, so a non-greedy match per element is
+        // unambiguous.
+        return (string) preg_replace_callback(
+            '#<w:hyperlink\b([^>]*)>(.*?)</w:hyperlink>#s',
+            function (array $match) use ($replacements, $compromised): string {
+                $attributes = $match[1];
+                $inner      = $match[2];
+
+                $inner = $this->redactRunTextsInXml(xml: $inner, replacements: $replacements);
+
+                $unwrap = false;
+                if (preg_match('#\br:id="([^"]*)"#', $attributes, $id) === 1
+                    && isset($compromised[$id[1]]) === true
+                ) {
+                    $unwrap = true;
+                }
+
+                if ($unwrap === true) {
+                    // Keep the runs, drop the link. The text remains readable;
+                    // the clickable target is gone.
+                    return $inner;
+                }
+
+                return '<w:hyperlink'.$attributes.'>'.$inner.'</w:hyperlink>';
+            },
+            $xml
+        );
+
+    }//end redactHyperlinksInXml()
+
+    /**
+     * Plan and rewrite the `<w:t>` values of a run fragment as ONE text flow.
+     *
+     * Concatenating the fragment's runs is what lets an entity split across them
+     * be matched, exactly as the element-level grouping does for ordinary runs.
+     *
+     * @param string                $xml          A fragment containing `<w:t>` elements.
+     * @param array<string, string> $replacements Map of needle => placeholder.
+     *
+     * @return string
+     */
+    private function redactRunTextsInXml(string $xml, array $replacements): string
+    {
+        if (preg_match_all('#(<w:t\b[^>]*>)(.*?)(</w:t>)#s', $xml, $matches, PREG_SET_ORDER) < 1) {
+            return $xml;
+        }
+
+        $values = [];
+        foreach ($matches as $match) {
+            $values[] = html_entity_decode($match[2], (ENT_QUOTES | ENT_XML1), 'UTF-8');
+        }
+
+        $map       = new SegmentMap(segments: $values);
+        $flattened = $map->flatten();
+        if (trim($flattened) === '') {
+            return $xml;
+        }
+
+        if ($this->planner === null) {
+            $this->planner = new ReplacementPlanner();
+        }
+
+        $plan = $this->planner->plan(
+            text: $flattened,
+            substitutions: $replacements,
+            entityTypes: $this->entityTypesByNeedle
+        );
+
+        $this->recordPlanOutcome(plan: $plan, replacements: $replacements);
+
+        if (empty($plan->getRanges()) === true) {
+            return $xml;
+        }
+
+        $updated = $map->scatter(plan: $plan);
+        $index   = 0;
+
+        return (string) preg_replace_callback(
+            '#(<w:t\b[^>]*>)(.*?)(</w:t>)#s',
+            function (array $match) use ($updated, &$index): string {
+                $value = ($updated[$index] ?? null);
+                $index++;
+                if ($value === null) {
+                    return $match[0];
+                }
+
+                $open = $match[1];
+                // An emptied or space-edged run needs xml:space="preserve" or Word
+                // discards the whitespace on load.
+                if (strpos($open, 'xml:space') === false) {
+                    $open = (string) preg_replace('#<w:t\b#', '<w:t xml:space="preserve"', $open, 1);
+                }
+
+                return $open.htmlspecialchars($value, (ENT_QUOTES | ENT_XML1), 'UTF-8').$match[3];
+            },
+            $xml
+        );
+
+    }//end redactRunTextsInXml()
 
     /**
      * Wrap bare `<w:br/>` soft line breaks in a run inside a saved .docx.

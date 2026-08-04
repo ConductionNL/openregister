@@ -74,3 +74,19 @@
 - [x] 9.2 Decide whether DocuDesk's grondslagen-summary must distinguish `unmatched` from `partial` residuals (design.md Open Questions). Recommendation put to DocuDesk in #373; the decision is theirs, not ours. `FileService::getLastPartialEntities()` already exists so no OR change is needed either way.
 - [x] 9.3 Coordinate with `openspec/changes/text-extraction-eml/`: whichever lands second, the EML redaction path consumes the planner rather than adding a fifth `str_ireplace` loop. EML redaction already consumes the planner; constraint recorded in `text-extraction-eml` design.md + new task 7.0.
 - [ ] 9.4 Port to `test/anonimiseren-bij-de-bron-or` as a **semantic port, not a cherry-pick** (`design.md` "Cherry-pick / Project-branch Port"). Delete that branch's ODF range implementation (`computeOdfReplacementRanges`, `rebuildOdfSegmentValues`, `extractOdfConcatenatedText`) in favour of the planner, and route its EML `redactText()` path through the planner too. **BLOCKED ON TESTING (decided 2026-08-03).** Direction is inverted — the work landed on test, so what remains is the port TO `development`. Not a cherry-pick: 1455 vs 2434 lines, 4 apply sites vs 5, plus StructurePreservation/SanitizationReport/preserveStructure/strict machinery absent here. Divergence table and the four newly-live tasks are recorded in design.md. Start only after the implementation is validated on a live instance.
+
+## 10. Hyperlink-carried entity text (found in live testing, 2026-08-03)
+
+Not in the original plan. Surfaced by the product owner testing a real docx: an
+email address in a Word hyperlink survived anonymisation. Pre-existing rather
+than a planner regression — the previous per-element loop used the same
+`getText` + `setText` test and skipped `Element\Link` identically.
+
+- [x] 10.1 Establish the mechanism rather than guess it. `PhpWord\Element\Link` exposes `getText()` but NO `setText()` and no `setSource()`, so neither half of a hyperlink is writable through PhpWord. When the display text is a NAME, the address exists ONLY in `word/_rels/document.xml.rels` — invisible in the document and absent from `document.xml`.
+- [x] 10.2 Confirm it is pre-existing: the base branch has the identical element condition (`DocumentProcessingHandler.php:1169`) and zero references to links, `getSource` or hyperlinks.
+- [x] 10.3 Redact hyperlink DISPLAY text via the planner, treating a hyperlink's runs as one flow so a split entity is still matched. Applied to the written docx, following the existing `wrapSoftLineBreaksInRuns()` precedent — PhpWord cannot express it.
+- [x] 10.4 Neutralise any relationship whose Target contains entity text to `about:blank`, and UNWRAP that hyperlink so no clickable link remains. Rewriting to `mailto:[EMAIL: 1]` would leave a malformed address masquerading as real, so stripping is the honest redaction.
+- [x] 10.5 Leave unrelated links intact — anonymisation must not strip every hyperlink from a document.
+- [x] 10.6 Tests: hidden-in-target address removed from every part; display text redacted; compromised link unwrapped + target neutralised; clean link keeps its target; clean link's display text still redacted; degenerate inputs are no-ops; output still loads as a valid docx.
+- [ ] 10.7 **NOT COVERED — remaining non-text structures.** Comments, tracked changes, footnotes, endnotes, metadata and custom XML can all carry entity text and are still untouched on this branch. `development` assigns these to `office-document-sanitization`, which does not exist here. Needs its own change; until then a docx whose PII lives only in those structures is not safe to publish.
+- [ ] 10.8 Target matching is a plain case-insensitive substring test, deliberately NOT the boundary policy (a URL gives a needle no word boundary to sit on). Confirm that is the right call for URL-shaped targets, or narrow it.

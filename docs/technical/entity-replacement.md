@@ -166,6 +166,36 @@ Grouping scope matters. Flattening more than one text flow lets a match span
 text a reader never sees as adjacent — this repository's own docx fixture
 concatenates to `Kerkstraat 123512 GK Utrecht` across two separate paragraphs.
 
+### Hyperlinks in `.docx`
+
+An entity in a Word hyperlink is unreachable by any text walk, so it is handled
+separately, on the written file.
+
+`PhpWord\Element\Link` exposes `getText()` but no `setText()` and no
+`setSource()`, so neither half of a hyperlink can be rewritten through PhpWord's
+object model. Worse, when a link's display text is a person's *name*, the email
+address exists **only** in `word/_rels/document.xml.rels` — invisible in the
+rendered document and absent from `document.xml` entirely.
+
+Two operations are therefore applied to the docx after it is written (the same
+approach already used to work around a PhpWord soft-line-break bug):
+
+1. Display text inside each `<w:hyperlink>` is redacted through the planner, with
+   the hyperlink's runs treated as one flow so a split entity still matches.
+2. A hyperlink whose **target** contains entity text is **unwrapped** — the
+   element is removed and its runs kept — and the relationship target is set to
+   `about:blank`. Rewriting it to `mailto:[EMAIL: 1]` would leave a malformed
+   address masquerading as a real one, so stripping the link is the honest
+   redaction. Links whose targets are clean keep working.
+
+Target matching is a plain case-insensitive substring test, not the boundary
+policy: a URL is not prose and gives a needle no word boundary to sit on.
+
+**Still not covered.** Comments, tracked changes, footnotes, endnotes, document
+metadata and custom XML can all carry entity text and are untouched. A `.docx`
+whose PII lives only in those structures is not safe to publish on the strength
+of anonymisation alone.
+
 ### PDF is different, deliberately
 
 The PDF path delegates matching and content-stream rewriting to SAPP, because

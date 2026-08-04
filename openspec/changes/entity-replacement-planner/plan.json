@@ -260,6 +260,46 @@
       "id": "9.4",
       "title": "Semantic port to test/anonimiseren-bij-de-bron-or",
       "status": "blocked-on-testing"
+    },
+    {
+      "id": "10.1",
+      "title": "Establish the hyperlink mechanism (Link has no setText/setSource)",
+      "status": "done"
+    },
+    {
+      "id": "10.2",
+      "title": "Confirm the gap is pre-existing, not a planner regression",
+      "status": "done"
+    },
+    {
+      "id": "10.3",
+      "title": "Redact hyperlink display text via the planner on the written docx",
+      "status": "done"
+    },
+    {
+      "id": "10.4",
+      "title": "Neutralise compromised link targets to about:blank and unwrap",
+      "status": "done"
+    },
+    {
+      "id": "10.5",
+      "title": "Leave unrelated hyperlinks intact",
+      "status": "done"
+    },
+    {
+      "id": "10.6",
+      "title": "Hyperlink redaction tests",
+      "status": "done"
+    },
+    {
+      "id": "10.7",
+      "title": "NOT COVERED: comments/tracked changes/footnotes/metadata/custom XML",
+      "status": "pending"
+    },
+    {
+      "id": "10.8",
+      "title": "Confirm substring (not boundary) matching is right for URL targets",
+      "status": "pending"
     }
   ]
 }
