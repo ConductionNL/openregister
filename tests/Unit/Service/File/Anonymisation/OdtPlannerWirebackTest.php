@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -46,7 +46,7 @@ use ReflectionProperty;
  * @category Test
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md

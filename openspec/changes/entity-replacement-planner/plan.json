@@ -234,12 +234,12 @@
     {
       "id": "8.5",
       "title": "composer check:strict and hydra gates clean",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.6",
       "title": "Performance spot-check at ~1000 candidates",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "9.1",

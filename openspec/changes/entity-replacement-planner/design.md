@@ -143,7 +143,26 @@ PDF therefore consumes the planner for: the ordered needle set (the existing def
 - **Output bytes change** for any document that was previously partially anonymised, plus wherever residue coverage now applies. This is more-correct output, not a regression, but it will show up as diffs in existing fixtures and each one needs review rather than blind re-baselining.
 - **Over-redaction moves, it does not vanish.** Residue coverage (Decision 3) deliberately redacts text that no single entity claimed. Combined with word boundaries reducing false positives, net utility should improve, but a document with many overlapping detections will contain adjacent placeholder pairs.
 - **Boundary policy is a judgement call per type.** The table in Decision 4 is a default, not a truth. `DATE` is the least certain — a bare year is both a plausible date entity and a plausible ordinary number. It is placed under word-bounded so `1980` does not match inside `11980`.
-- **Performance** is O(needles × text) enumeration plus O(n log n) DP. Cheaper than the status quo, which runs one full-document `str_ireplace` per needle, but the DP allocates per candidate; a document with pathologically many detections (thousands) should be spot-checked rather than assumed fine.
+- **Performance is WORSE than the status quo. Measured 2026-08-03; this corrects an earlier claim in this document that it would be cheaper.**
+
+  | entities | occurrences | legacy `str_ireplace` | plan + apply | ratio |
+  |---|---|---|---|---|
+  | 100 | 5 | 4.6 ms | 60.9 ms | 13.3× |
+  | 250 | 4 | 22.6 ms | 235.3 ms | 10.4× |
+  | 500 | 2 | 45.7 ms | 242.0 ms | 5.3× |
+  | 1000 | 1 | 89.8 ms | 266.5 ms | 3.0× |
+
+  Synthetic 159 KB document, PHP 8.3, single run per row. Only the two columns above and the ratio are measured; everything else below is explicitly marked as measured or not.
+
+  MEASURED: the planner's time is nearly flat in needle count (235→266 ms from 250 to 1000 needles) while the legacy idiom scales roughly linearly (22.6→89.8 ms). A whole-string case-fold fast path — skipping the per-codepoint fold and offset map when folding preserves codepoint count — cut peak memory 22 MB from 28 MB, and changed wall time by under 1%.
+
+  NOT MEASURED, and therefore not asserted: *why* it is slower. The fast-path result rules the per-codepoint fold out as the dominant cost, but nothing here was profiled, so the remaining cost is unattributed. A plausible hypothesis is one full-text `mb_strpos` scan per needle, but it is untested. Do not act on it without profiling first.
+
+  NOT MEASURED: whether the ratio ever crosses in the planner's favour, what entity counts real documents carry, and what share of total anonymise request time this represents.
+
+  **This is user-facing latency, not background work.** `POST /api/files/{fileId}/anonymize` (`appinfo/routes.php:594`) runs the whole anonymisation inside the request — there is no job queue and no background job for it. An earlier version of this note called it a background operation; that was wrong.
+
+  **Accepted for now, as a judgement rather than a demonstration.** The added cost is sub-second at the top of the range tested, and it buys correctness on four defects the previous code had. But the honest position is that the acceptability is unproven: it needs the added latency measured as a fraction of a real anonymise request on a real document, which has not been done. Flagged as an open question rather than closed.
 - **Numeric needles remain a footgun.** PHP coerces purely-numeric array keys to `int` (`:485-488`); every comparator, map lookup and report path must keep casting. Carried forward from the existing code, not introduced here, but the planner adds new places to get it wrong.
 - **`uksort` becomes redundant but is kept.** Keeping a defensive sort whose guarantee now comes from elsewhere risks a future reader deleting the wrong one. Mitigated by the spec requirement and by comments pointing at the planner.
 
@@ -183,4 +202,5 @@ Still open:
 
 - **Does DocuDesk's grondslagen-summary distinguish `unmatched` from `partial`?** It now has to, at minimum to avoid treating a `partial`-only result as unpublishable — that document is fully redacted. Cross-app, and a blocker for the operator-facing half of this being useful.
 - **Does the residue-coverage rule need a length floor?** A residue of one or two letters is redacted today if it contains a letter. `[PERSOON: 1][PERSOON: 2]` where the second placeholder covers a two-character fragment may be worse for the reader than leaving the fragment, which is not identifying on its own. No evidence either way yet.
+- **What fraction of a real anonymise request is the planner's added latency?** Measured 3–13× slower than the code it replaced on synthetic input (see Risks), on an endpoint that runs synchronously inside the request. Whether that is material depends on total request time on a real document, which has not been measured. If it turns out to matter, profile FIRST — the cause of the slowdown is currently unattributed.
 - **Do unseparated numeric identifiers occur often enough to need a fallback?** Delimited-token rejects `BSN123456789`, reporting it rather than redacting it. If real documents (form exports, filenames pulled into text) turn out to concatenate identifiers to labels routinely, a narrow relaxation — allow a directly-adjacent *letter* run that is not itself digit-adjacent — would recover those matches without reopening the numeric-substring hole. Not built now, because the reporting makes the miss visible and there is no evidence yet on frequency.

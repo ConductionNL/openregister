@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\File\Anonymisation;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
  * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
@@ -95,7 +95,7 @@ class ReplacementPlanner
         }
 
         $chars      = mb_str_split($text);
-        $folded     = $this->foldWithMap(chars: $chars);
+        $folded     = $this->foldWithMap(text: $text, chars: $chars);
         $candidates = $this->enumerate(
             chars: $chars,
             foldedText: $folded['text'],
@@ -146,12 +146,27 @@ class ReplacementPlanner
      * more than one). `mb_strtolower` on the whole string would silently shift
      * every offset after such a character.
      *
+     * @param string             $text  The original text.
      * @param array<int, string> $chars The original text as a codepoint array.
      *
-     * @return array{text: string, map: array<int, int>}
+     * @return array{text: string, map: array<int, int>|null} A null map means identity.
      */
-    private function foldWithMap(array $chars): array
+    private function foldWithMap(string $text, array $chars): array
     {
+        // Fast path. Folding the whole string is one mbstring call; if that did
+        // not change the codepoint count then every codepoint folded 1:1 and the
+        // map is the identity, so it need not be materialised at all. The
+        // per-codepoint loop below is the most expensive thing the planner does
+        // on a long document — it runs once per character — and for Dutch text
+        // it is almost always avoidable.
+        $whole = mb_strtolower($text);
+        if (mb_strlen($whole) === count($chars)) {
+            return [
+                'text' => $whole,
+                'map'  => null,
+            ];
+        }
+
         $foldedText = '';
         $map        = [];
 
@@ -183,7 +198,7 @@ class ReplacementPlanner
      *
      * @param array<int, string>    $chars          The original text as codepoints.
      * @param string                $foldedText     The case-folded haystack.
-     * @param array<int, int>       $foldedMap      Folded offset => original offset.
+     * @param array<int, int>|null  $foldedMap      Folded offset => original offset; null = identity.
      * @param array<string, string> $substitutions  Map of needle => placeholder.
      * @param array<string, string> $entityTypes    Map of needle => entity type.
      * @param string|null           $fallbackPolicy Policy for needles with no type.
@@ -193,14 +208,17 @@ class ReplacementPlanner
     private function enumerate(
         array $chars,
         string $foldedText,
-        array $foldedMap,
+        ?array $foldedMap,
         array $substitutions,
         array $entityTypes,
         ?string $fallbackPolicy=null
     ): array {
         $candidates  = [];
         $originalLen = count($chars);
-        $foldedLen   = count($foldedMap);
+        $foldedLen   = $originalLen;
+        if ($foldedMap !== null) {
+            $foldedLen = count($foldedMap);
+        }
 
         foreach ($substitutions as $rawNeedle => $placeholder) {
             $needle = (string) $rawNeedle;
@@ -229,12 +247,15 @@ class ReplacementPlanner
                     break;
                 }
 
-                $start = $foldedMap[$position];
                 $after = ($position + $needleLen);
-                if ($after < $foldedLen) {
-                    $end = $foldedMap[$after];
-                } else {
-                    $end = $originalLen;
+                $start = $position;
+                $end   = min($after, $originalLen);
+                if ($foldedMap !== null) {
+                    $start = $foldedMap[$position];
+                    $end   = $originalLen;
+                    if ($after < $foldedLen) {
+                        $end = $foldedMap[$after];
+                    }
                 }
 
                 $allowed = $this->boundaryPolicy->allowsUnderPolicy(
