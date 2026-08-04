@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 	<div class="deck-tab">
 		<!-- Toolbar -->
 		<div v-if="!loading && !deckUnavailable" class="deck-tab__toolbar">
-			<NcButton type="primary" @click="openCreateDialog">
+			<NcButton variant="primary" @click="openCreateDialog">
 				<template #icon>
 					<TableLargePlus :size="20" />
 				</template>
@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						<span v-if="card.dueDate" class="deck-tab__date">{{ formatDate(card.dueDate) }}</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Remove Deck card')"
 					@click="unlinkCard(card)">
 					<template #icon>
@@ -80,9 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'

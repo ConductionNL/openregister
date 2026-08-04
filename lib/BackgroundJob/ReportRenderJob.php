@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -47,6 +48,42 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Daily scheduled-report renderer.
+ *
+ * RBAC / multi-tenancy posture — written down deliberately, not implied
+ * (openregister#2282):
+ *
+ * This is a system job. It runs from cron with NO user session, so there is no
+ * principal for RBAC to evaluate and no organisation for multi-tenancy to scope
+ * to. An RBAC-applying read from here does not "fail safe" — it returns nothing,
+ * which is exactly the silent-zero this job shipped with. The job therefore reads
+ * with `_rbac`/`_multitenancy` explicitly DISABLED on every hop:
+ *
+ *   - `loadReportsRegister()` — `RegisterMapper::find(..., _rbac: false, _multitenancy: false)`
+ *   - `loadDashboards()`      — `SchemaMapper::findMultiple(..., _rbac: false, _multitenancy: false)`
+ *                               and the reserved `_rbac`/`_multitenancy` query
+ *                               filters on the object read.
+ *
+ * Access control is NOT abandoned, it is enforced at DELIVERY instead of at read.
+ * `writeToFiles()` resolves the target home from `$dashboard->getOwner()` — the
+ * dashboard object's own owner — refuses to deliver at all when that owner is
+ * null (rather than falling back to `admin`), and confines the path to a
+ * traversal-checked relative folder under that owner's home. A rendered report
+ * can therefore only ever land in the Files tree of the user the dashboard
+ * already belongs to. Widening the READ does not widen who receives the OUTPUT.
+ *
+ * This deliberately does NOT add `_rbac`/`_multitenancy` parameters to
+ * `MagicMapper::findAll()`. The central mapper already exposes the opt-out as
+ * first-class reserved query params (`MagicSearchHandler::getReservedParams()`,
+ * consumed at `buildFilteredQuery()`), and `SchemaDeletionService` already reads
+ * this way for the same system-level reason. Using the existing idiom leaves the
+ * mapper's RBAC contract untouched.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Injecting SchemaMapper to
+ * resolve the reports register's schemas takes this class from 12 to 13 coupled
+ * types, one over the threshold. Measured, not assumed: phpmd exits 0 on the
+ * pre-fix file and 2 on this one, with CouplingBetweenObjects as the only
+ * finding. The dependency is required — without it the job cannot name a schema,
+ * and `MagicMapper::findAll()` returns [] without one, which is openregister#2282.
  */
 class ReportRenderJob extends TimedJob
 {
@@ -80,12 +117,20 @@ class ReportRenderJob extends TimedJob
     private const REPORTS_REGISTER_SLUG = 'reports';
 
     /**
+     * Maximum dashboards read per schema in one pass.
+     *
+     * @var int
+     */
+    private const DASHBOARD_SCAN_LIMIT = 200;
+
+    /**
      * Constructor.
      *
      * @param ITimeFactory        $time           Time factory.
      * @param IAppConfig          $appConfig      App-config reader.
      * @param ReportRenderService $renderService  Render composer.
      * @param RegisterMapper      $registerMapper Register lookup.
+     * @param SchemaMapper        $schemaMapper   Schema lookup for the register's schemas.
      * @param MagicMapper         $objectMapper   Object loader.
      * @param IRootFolder         $rootFolder     Files root.
      * @param LoggerInterface     $logger         Logger.
@@ -95,6 +140,7 @@ class ReportRenderJob extends TimedJob
         private readonly IAppConfig $appConfig,
         private readonly ReportRenderService $renderService,
         private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectMapper,
         private readonly IRootFolder $rootFolder,
         private readonly LoggerInterface $logger
@@ -359,30 +405,91 @@ class ReportRenderJob extends TimedJob
     /**
      * Load every dashboard object in the reports register.
      *
+     * The dashboard schema is the only one in the reports register; we walk
+     * by-register so a future "report" schema (Phase 3 template variants) is
+     * also covered.
+     *
+     * openregister#2282 — this method used to call
+     * `MagicMapper::findAll(filters: ['register' => …], _rbac: false, _multitenancy: false)`
+     * and returned `[]` on EVERY run, by two independent routes:
+     *
+     *   1. `MagicMapper::findAll()` has no `$_rbac` and no `$_multitenancy`
+     *      parameter (`MagicMapper::find()` does, which is where the call shape
+     *      was copied from). On PHP 8 an unknown named argument raises `\Error`,
+     *      the `catch (\Throwable)` below swallowed it, and the job logged a
+     *      warning nobody read.
+     *   2. Even with the bogus named arguments removed, `findAll()` opens with a
+     *      `$register === null || $schema === null` guard and early-returns `[]`.
+     *      The register id was passed inside `filters`, not as `register:`, so
+     *      the guard fired regardless.
+     *
+     * The fix resolves the register's schemas and reads each register+schema
+     * table directly. `_rbac`/`_multitenancy` are passed as the reserved query
+     * filters the search handler already understands
+     * (`MagicSearchHandler::getReservedParams()`), which is the same shape
+     * `SchemaDeletionService::auditObjectsBeforeDeletion()` uses for the same
+     * system-level reason — so no change to `MagicMapper`'s RBAC contract is
+     * required. See the class docblock for the posture and why.
+     *
      * @param Register $register Reports register.
      *
      * @return ObjectEntity[]
+     *
+     * @psalm-return list<ObjectEntity>
      */
     private function loadDashboards(Register $register): array
     {
-        // The dashboard schema is the only one in the reports register;
-        // we walk by-register so a future "report" schema (Phase 3
-        // template variants) is also covered.
-        try {
-            return $this->objectMapper->findAll(
-                limit: 200,
-                offset: 0,
-                filters: ['register' => $register->getId()],
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (\Throwable $e) {
+        $schemas = $this->schemaMapper->findMultiple(
+            ids: $register->getSchemas(),
+            _rbac: false,
+            _multitenancy: false
+        );
+
+        if (empty($schemas) === true) {
             $this->logger->warning(
-                message: '[ReportRenderJob] Failed to enumerate dashboards',
-                context: ['error' => $e->getMessage()]
+                message: '[ReportRenderJob] Reports register has no resolvable schemas',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'registerId' => $register->getId(),
+                    'schemaRefs' => $register->getSchemas(),
+                ]
             );
             return [];
         }
+
+        $dashboards = [];
+        foreach ($schemas as $schema) {
+            try {
+                $found = $this->objectMapper->findAllInRegisterSchemaTable(
+                    register: $register,
+                    schema: $schema,
+                    limit: self::DASHBOARD_SCAN_LIMIT,
+                    offset: 0,
+                    filters: [
+                        // Reserved query params — see the class docblock.
+                        '_rbac'         => false,
+                        '_multitenancy' => false,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[ReportRenderJob] Failed to enumerate dashboards for schema',
+                    context: [
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }//end try
+
+            foreach ($found as $entity) {
+                $dashboards[] = $entity;
+            }
+        }//end foreach
+
+        return $dashboards;
 
     }//end loadDashboards()
 

@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.17-unstable.18</version>
+    <version>0.2.17-unstable.24</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -79,7 +79,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
@@ -95,7 +94,6 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
-			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
@@ -124,6 +122,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
@@ -163,6 +162,10 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
+		     the per-register uniqueness fix is preventive only, so pre-existing
+		     shared rows still need splitting. Reports only unless applied. -->
+		<command>OCA\OpenRegister\Command\DedupCollidedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>

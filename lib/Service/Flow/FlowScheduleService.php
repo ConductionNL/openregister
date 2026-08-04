@@ -8,12 +8,20 @@
  * for, so this is driven by a worker ({@see FlowScheduleWorker}) that ticks
  * periodically and asks this service which scheduled flows are now due.
  *
- * A scheduled flow is an OpenRegister flow (in the flow store) whose `trigger`
- * is `schedule` and which carries a `cron` expression. "Due" is decided per
- * flow: the last time it fired is remembered (in app config, keyed by the flow's
- * uuid — so the flow object itself is never rewritten), and a flow is due when a
- * cron occurrence has passed since then. A flow seen for the first time has no
- * last-fire, so it fires once on the next tick and then follows its cron.
+ * A scheduled flow is any flow whose `trigger` is `schedule` and which carries a
+ * `cron` expression. Which flows exist is not this service's business: it asks
+ * the resolver registry, the same way the event triggers do. It used to read one
+ * hard-coded store instead — the `flow_register`/`flow_schema` pair — so a flow
+ * owned by a leaf app (hermiq's agentflows) was invisible to the scheduler and
+ * could never fire, no matter how correct its cron was. An event-triggered flow
+ * in that same store fired fine, which made the gap look like a flow-authoring
+ * problem rather than a missing enumeration.
+ *
+ * "Due" is decided per flow: the last time it fired is remembered (in app
+ * config, keyed by the flow's id — so the flow object itself is never
+ * rewritten), and a flow is due when a cron occurrence has passed since then. A
+ * flow seen for the first time has no last-fire, so it fires once on the next
+ * tick and then follows its cron.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,8 +45,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use Cron\CronExpression;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -60,26 +66,15 @@ class FlowScheduleService
     private const LAST_FIRE_KEY = 'flow_sched_last_';
 
     /**
-     * Config keys (and defaults) naming the register and schema flows live in.
-     */
-    private const REGISTER_KEY = 'flow_register';
-
-    private const REGISTER_DEFAULT = 'flows';
-
-    private const SCHEMA_KEY = 'flow_schema';
-
-    private const SCHEMA_DEFAULT = 'flow';
-
-    /**
      * Constructor.
      *
-     * @param ObjectService   $objectService Lists the scheduled flows.
-     * @param FlowRunService  $runs          Queues a run for a due flow.
-     * @param IAppConfig      $appConfig     Names the store; remembers last-fire.
-     * @param LoggerInterface $logger        The logger.
+     * @param FlowLocator     $resolvers Lists the scheduled flows every app owns.
+     * @param FlowRunService  $runs      Queues a run for a due flow.
+     * @param IAppConfig      $appConfig Remembers last-fire.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
-        private readonly ObjectService $objectService,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runs,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
@@ -99,33 +94,62 @@ class FlowScheduleService
     public function fireDueFlows(DateTimeInterface $now): array
     {
         try {
-            $flows = $this->objectService->findAll(
-                config: ['filters' => ['register' => $this->flowRegister(), 'schema' => $this->flowSchema()]],
-                _rbac: false,
-                _multitenancy: false
-            );
+            $candidates = $this->resolvers->scheduledFlows();
         } catch (Throwable $e) {
-            // No flow store yet — nothing scheduled.
+            // No resolver could be asked — nothing scheduled.
             return [];
         }
 
         $fired = [];
-        foreach ($flows as $flow) {
-            if (($flow instanceof ObjectEntity) === false) {
-                continue;
-            }
-
-            $cron = $this->scheduleOf(flow: $flow);
+        foreach ($candidates as $candidate) {
+            $cron = $this->scheduleOf(candidate: $candidate);
             if ($cron === null) {
                 continue;
             }
 
-            $uuid = (string) $flow->getUuid();
+            // The registry guarantees a non-empty id — a candidate without one
+            // is dropped there, so every id here is one a resolver can load.
+            $uuid = $candidate['id'];
             if ($this->isDue(cron: $cron, uuid: $uuid, now: $now) === false) {
                 continue;
             }
 
-            $this->fire(uuid: $uuid, now: $now, owner: $flow->getOwner());
+            // SINGLETON: never overlap a flow with itself.
+            //
+            // A scheduled flow can be slower than its own interval — a pipeline
+            // poll on a five-minute cron easily is — and without this guard
+            // tick N+1 starts while tick N is still going. Two runs of one flow
+            // then race on whatever that flow is bookkeeping, which is exactly
+            // the failure openregister#2212 documented at the object layer.
+            //
+            // This is the property that makes the shell orchestrator being
+            // replaced safe today: `hydra-supervisor.sh` holds an exclusive
+            // flock, so exactly one supervisor exists and its check-then-write
+            // slot bookkeeping never races because nothing runs beside it. A
+            // scheduled flow gets the same guarantee here, and with it most
+            // flow state needs no locking at all.
+            //
+            // The last-fire marker is deliberately NOT advanced when we skip:
+            // the flow stays due, so it starts on the first tick after the
+            // previous run finishes rather than waiting a whole extra interval.
+            if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
+                $this->logger->info(
+                    message: '[FlowSchedule] Skipping due flow — previous run has not finished',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'flow' => $uuid,
+                    ]
+                );
+                continue;
+            }
+
+            $owner = $candidate['owner'] ?? null;
+            if ($owner !== null) {
+                $owner = (string) $owner;
+            }
+
+            $this->fire(uuid: $uuid, now: $now, owner: $owner);
             $fired[] = $uuid;
         }//end foreach
 
@@ -134,25 +158,31 @@ class FlowScheduleService
     }//end fireDueFlows()
 
     /**
-     * The cron expression of a flow that is an enabled schedule, or null.
+     * The cron expression of a candidate that is an enabled schedule, or null.
      *
-     * @param ObjectEntity $flow The flow object.
+     * Every gate a scheduled flow has to pass is here, in the scheduler, and
+     * NOT in the app that contributed the candidate. A source is trusted to say
+     * which flows it owns; it is not trusted to decide which of them may run.
+     * That matters most for `enabled`: a leaf app that got its own filtering
+     * wrong would otherwise be able to run a flow an admin had switched off.
      *
-     * @return string|null The cron expression, or null when the flow is not a
-     *                     valid enabled schedule.
+     * @param array $candidate The candidate flow reported by a source, shaped
+     *                         `{id, enabled, trigger, cron, owner}`.
+     *
+     * @return string|null The cron expression, or null when the candidate is not
+     *                     a valid enabled schedule.
      */
-    private function scheduleOf(ObjectEntity $flow): ?string
+    private function scheduleOf(array $candidate): ?string
     {
-        $data = $flow->getObject();
-        if (($data['enabled'] ?? false) !== true) {
+        if (($candidate['enabled'] ?? false) !== true) {
             return null;
         }
 
-        if ((string) ($data['trigger'] ?? '') !== 'schedule') {
+        if ((string) ($candidate['trigger'] ?? '') !== 'schedule') {
             return null;
         }
 
-        $cron = trim((string) ($data['cron'] ?? ''));
+        $cron = trim((string) ($candidate['cron'] ?? ''));
         if ($cron === '' || CronExpression::isValidExpression($cron) === false) {
             return null;
         }
@@ -197,8 +227,9 @@ class FlowScheduleService
     /**
      * Queue a run for a due flow and record that it fired.
      *
-     * @param string            $uuid The flow uuid.
-     * @param DateTimeInterface $now  The moment it fired.
+     * @param string            $uuid  The flow uuid.
+     * @param DateTimeInterface $now   The moment it fired.
+     * @param string|null       $owner The user the run is attributed to, if known.
      *
      * @return void
      */
@@ -225,26 +256,4 @@ class FlowScheduleService
         $this->appConfig->setValueString(self::APP_ID, self::LAST_FIRE_KEY.$uuid, $now->format(DATE_ATOM));
 
     }//end fire()
-
-    /**
-     * The register flows are stored in.
-     *
-     * @return string The register slug.
-     */
-    private function flowRegister(): string
-    {
-        return $this->appConfig->getValueString(self::APP_ID, self::REGISTER_KEY, self::REGISTER_DEFAULT);
-
-    }//end flowRegister()
-
-    /**
-     * The schema flows are stored under.
-     *
-     * @return string The schema slug.
-     */
-    private function flowSchema(): string
-    {
-        return $this->appConfig->getValueString(self::APP_ID, self::SCHEMA_KEY, self::SCHEMA_DEFAULT);
-
-    }//end flowSchema()
 }//end class

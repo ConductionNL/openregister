@@ -32,7 +32,23 @@ class FlowMcpToolProviderTest extends TestCase
         $this->runner = $this->createMock(FlowRunService::class);
         $this->mapper = $this->createMock(FlowRunMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
-        $this->provider = new FlowMcpToolProvider($this->runner, $this->mapper, $this->userSession);
+        // runFlow() now resolves the flow WITH RBAC before queueing, and fails
+        // CLOSED without these collaborators — an unguarded run is what that
+        // guard exists to prevent. Supply them so these tests exercise the
+        // queueing behaviour they are actually about.
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('find')->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+
+        $appConfig = $this->createMock(\OCP\IAppConfig::class);
+        $appConfig->method('getValueString')->willReturnArgument(2);
+
+        $this->provider = new FlowMcpToolProvider(
+            $this->runner,
+            $this->mapper,
+            $this->userSession,
+            $objectService,
+            $appConfig
+        );
     }
 
     /**

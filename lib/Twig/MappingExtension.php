@@ -71,6 +71,17 @@ class MappingExtension extends AbstractExtension
         return [
             new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
             new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
+            // Ported from OpenConnector's copy so mappings authored there keep
+            // evaluating once that copy is retired. `json_decode` is the name
+            // those templates use; `jsonDecode` is OpenRegister's own spelling.
+            // BOTH are registered rather than renaming either — a mapping is
+            // authored data, and renaming a function it calls breaks it
+            // silently at evaluation time.
+            new TwigFunction(name: 'json_decode', callable: [MappingRuntime::class, 'json_decode']),
+            new TwigFunction(name: 'jsonDecode', callable: [MappingRuntime::class, 'jsonDecode']),
+            new TwigFunction(name: 'createSlug', callable: [MappingRuntime::class, 'createSlug']),
+            new TwigFunction(name: 'b64enc', callable: [MappingRuntime::class, 'b64enc']),
+            new TwigFunction(name: 'b64dec', callable: [MappingRuntime::class, 'b64dec']),
         ];
     }//end getFunctions()
 }//end class

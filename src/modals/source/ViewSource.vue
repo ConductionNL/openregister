@@ -4,172 +4,170 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 </script>
 
 <template>
-	<Fragment>
-		<NcDialog v-if="navigationStore.modal === 'viewSource'"
-			:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
-			size="large"
-			:can-close="false">
-			<div class="formContainer viewSourceDialog">
-				<!-- Source Details -->
-				<div class="sourceDetailsGrid">
-					<div class="sourceMainInfo">
-						<h2>{{ sourceStore.sourceItem?.title }}</h2>
-						<p v-if="sourceStore.sourceItem?.description" class="sourceDescription">
-							{{ sourceStore.sourceItem.description }}
-						</p>
-					</div>
-
-					<div class="sourceProperties">
-						<div class="propertyItem">
-							<strong>{{ t('openregister', 'Type') }}:</strong>
-							<span>{{ sourceStore.sourceItem?.type || 'Unknown' }}</span>
-						</div>
-						<div v-if="sourceStore.sourceItem?.databaseUrl" class="propertyItem">
-							<strong>{{ t('openregister', 'Database URL') }}:</strong>
-							<span class="urlValue">{{ sourceStore.sourceItem.databaseUrl }}</span>
-						</div>
-						<div v-if="sourceStore.sourceItem?.created" class="propertyItem">
-							<strong>{{ t('openregister', 'Created') }}:</strong>
-							<span>{{ new Date(sourceStore.sourceItem.created).toLocaleString() }}</span>
-						</div>
-						<div v-if="sourceStore.sourceItem?.updated" class="propertyItem">
-							<strong>{{ t('openregister', 'Updated') }}:</strong>
-							<span>{{ new Date(sourceStore.sourceItem.updated).toLocaleString() }}</span>
-						</div>
-					</div>
+	<NcDialog v-if="navigationStore.modal === 'viewSource'"
+		:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
+		size="large"
+		:can-close="false">
+		<div class="formContainer viewSourceDialog">
+			<!-- Source Details -->
+			<div class="sourceDetailsGrid">
+				<div class="sourceMainInfo">
+					<h2>{{ sourceStore.sourceItem?.title }}</h2>
+					<p v-if="sourceStore.sourceItem?.description" class="sourceDescription">
+						{{ sourceStore.sourceItem.description }}
+					</p>
 				</div>
 
-				<!-- Tabs for additional information -->
-				<div class="tabContainer">
-					<div class="tabHeaders">
-						<button
-							v-for="(tab, index) in tabs"
-							:key="tab"
-							class="tabHeader"
-							:class="{ active: activeTab === index }"
-							@click="activeTab = index">
-							{{ tab }}
-						</button>
+				<div class="sourceProperties">
+					<div class="propertyItem">
+						<strong>{{ t('openregister', 'Type') }}:</strong>
+						<span>{{ sourceStore.sourceItem?.type || 'Unknown' }}</span>
 					</div>
-
-					<div class="tabContent">
-						<!-- Registers Tab -->
-						<div v-if="activeTab === 0" class="tabPanel">
-							<div v-if="filterRegisters.length > 0" class="registersGrid">
-								<div v-for="register in filterRegisters"
-									:key="register.id"
-									class="registerCard">
-									<div class="registerHeader">
-										<h3>{{ register.title }}</h3>
-										<NcActions>
-											<NcActionButton close-after-click
-												@click="viewRegister(register)">
-												<template #icon>
-													<Eye :size="20" />
-												</template>
-												View
-											</NcActionButton>
-											<NcActionButton close-after-click
-												@click="editRegister(register)">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
-										</NcActions>
-									</div>
-									<p v-if="register.description" class="registerDescription">
-										{{ register.description }}
-									</p>
-								</div>
-							</div>
-							<div v-else class="emptyTabContent">
-								<NcEmptyContent
-									:name="t('openregister', 'No registers found')"
-									:description="t('openregister', 'This source has no associated registers.')">
-									<template #icon>
-										<DatabaseOutline :size="64" />
-									</template>
-								</NcEmptyContent>
-							</div>
-						</div>
-
-						<!-- Logs Tab -->
-						<div v-if="activeTab === 1" class="tabPanel">
-							<div class="emptyTabContent">
-								<NcEmptyContent
-									:name="t('openregister', 'No logs found')"
-									:description="t('openregister', 'No logs are available for this source.')">
-									<template #icon>
-										<PostOutline :size="64" />
-									</template>
-								</NcEmptyContent>
-							</div>
-						</div>
+					<div v-if="sourceStore.sourceItem?.databaseUrl" class="propertyItem">
+						<strong>{{ t('openregister', 'Database URL') }}:</strong>
+						<span class="urlValue">{{ sourceStore.sourceItem.databaseUrl }}</span>
+					</div>
+					<div v-if="sourceStore.sourceItem?.created" class="propertyItem">
+						<strong>{{ t('openregister', 'Created') }}:</strong>
+						<span>{{ new Date(sourceStore.sourceItem.created).toLocaleString() }}</span>
+					</div>
+					<div v-if="sourceStore.sourceItem?.updated" class="propertyItem">
+						<strong>{{ t('openregister', 'Updated') }}:</strong>
+						<span>{{ new Date(sourceStore.sourceItem.updated).toLocaleString() }}</span>
 					</div>
 				</div>
 			</div>
 
-			<template #actions>
-				<NcActionButton close-after-click @click="editSource">
-					<template #icon>
-						<Pencil :size="20" />
-					</template>
-					Edit Source
-				</NcActionButton>
-				<NcActionButton close-after-click @click="deleteSource">
-					<template #icon>
-						<TrashCanOutline :size="20" />
-					</template>
-					Delete Source
-				</NcActionButton>
-				<NcButton type="primary" @click="closeModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Close
-				</NcButton>
-			</template>
-		</NcDialog>
-
-		<CnFormDialog
-			v-if="showEditRegisterDialog"
-			ref="editRegisterDialog"
-			:schema="registerSchema"
-			:item="editingRegister"
-			:dialog-title="t('openregister', 'Edit Register')"
-			@confirm="onSaveRegister"
-			@close="showEditRegisterDialog = false">
-			<template #form="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
-						:error="!!errors.title"
-						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
-						:error="!!errors.slug"
-						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
-					<NcSelect
-						:input-label="t('openregister', 'Schemas')"
-						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:close-on-select="false"
-						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+			<!-- Tabs for additional information -->
+			<div class="tabContainer">
+				<div class="tabHeaders">
+					<button
+						v-for="(tab, index) in tabs"
+						:key="tab"
+						class="tabHeader"
+						:class="{ active: activeTab === index }"
+						@click="activeTab = index">
+						{{ tab }}
+					</button>
 				</div>
-			</template>
-		</CnFormDialog>
-	</Fragment>
+
+				<div class="tabContent">
+					<!-- Registers Tab -->
+					<div v-if="activeTab === 0" class="tabPanel">
+						<div v-if="filterRegisters.length > 0" class="registersGrid">
+							<div v-for="register in filterRegisters"
+								:key="register.id"
+								class="registerCard">
+								<div class="registerHeader">
+									<h3>{{ register.title }}</h3>
+									<NcActions>
+										<NcActionButton close-after-click
+											@click="viewRegister(register)">
+											<template #icon>
+												<Eye :size="20" />
+											</template>
+											View
+										</NcActionButton>
+										<NcActionButton close-after-click
+											@click="editRegister(register)">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+									</NcActions>
+								</div>
+								<p v-if="register.description" class="registerDescription">
+									{{ register.description }}
+								</p>
+							</div>
+						</div>
+						<div v-else class="emptyTabContent">
+							<NcEmptyContent
+								:name="t('openregister', 'No registers found')"
+								:description="t('openregister', 'This source has no associated registers.')">
+								<template #icon>
+									<DatabaseOutline :size="64" />
+								</template>
+							</NcEmptyContent>
+						</div>
+					</div>
+
+					<!-- Logs Tab -->
+					<div v-if="activeTab === 1" class="tabPanel">
+						<div class="emptyTabContent">
+							<NcEmptyContent
+								:name="t('openregister', 'No logs found')"
+								:description="t('openregister', 'No logs are available for this source.')">
+								<template #icon>
+									<PostOutline :size="64" />
+								</template>
+							</NcEmptyContent>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<template #actions>
+			<NcActionButton close-after-click @click="editSource">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				Edit Source
+			</NcActionButton>
+			<NcActionButton close-after-click @click="deleteSource">
+				<template #icon>
+					<TrashCanOutline :size="20" />
+				</template>
+				Delete Source
+			</NcActionButton>
+			<NcButton variant="primary" @click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				Close
+			</NcButton>
+		</template>
+	</NcDialog>
+
+	<CnFormDialog
+		v-if="showEditRegisterDialog"
+		ref="editRegisterDialog"
+		:schema="registerSchema"
+		:item="editingRegister"
+		:dialog-title="t('openregister', 'Edit Register')"
+		@confirm="onSaveRegister"
+		@close="showEditRegisterDialog = false">
+		<template #form="{ formData, errors, updateField }">
+			<div class="formContainer">
+				<NcTextField
+					:label="t('openregister', 'Title') + ' *'"
+					:model-value="formData.title || ''"
+					:error="!!errors.title"
+					:helper-text="errors.title"
+					@update:modelValue="v => updateField('title', v)" />
+				<NcTextField
+					:label="t('openregister', 'Slug') + ' *'"
+					:model-value="formData.slug || ''"
+					:error="!!errors.slug"
+					:helper-text="errors.slug"
+					@update:modelValue="v => updateField('slug', v)" />
+				<NcTextArea
+					:label="t('openregister', 'Description')"
+					:model-value="formData.description || ''"
+					@update:modelValue="v => updateField('description', v)" />
+				<NcSelect
+					:input-label="t('openregister', 'Schemas')"
+					:options="schemaSelectOptions"
+					:model-value="getSchemaSelectValue(formData.schemas)"
+					:multiple="true"
+					:close-on-select="false"
+					:loading="schemasLoading"
+					@update:modelValue="vals => updateField('schemas', vals)" />
+			</div>
+		</template>
+	</CnFormDialog>
 </template>
 
 <script>

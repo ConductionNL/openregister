@@ -50,6 +50,28 @@ class FlowNodeRegistry
     private array $nodes = [];
 
     /**
+     * Node ids that were corrected, mapped old => new.
+     *
+     * A node id is a reference the SYSTEM writes into a flow definition, unlike
+     * a Twig function name which a person types into a template — so unlike
+     * those, an id can be corrected and the stored data migrated. A migration
+     * rewrites existing rows; this alias covers the tail the migration cannot
+     * reach: a flow exported before the rename and imported after it.
+     *
+     * Resolving through here is LOGGED, so the size of that tail is observable
+     * rather than assumed to be zero. The alias is removed one release after the
+     * rename.
+     *
+     * @var array<string, string>
+     */
+    private const RENAMED = [
+        // Renamed because it never looped: it splits items into fixed-size
+        // batches. Sitting next to the real `openregister.iterate`, the old name
+        // was a trap that re-armed for every new reader.
+        'openregister.loop' => 'openregister.batch',
+    ];
+
+    /**
      * Whether contribution has already been collected this request.
      *
      * @var boolean
@@ -140,9 +162,14 @@ class FlowNodeRegistry
     /**
      * The palette an editor renders, as plain data.
      *
+     * Each entry additionally carries `configKeys` when the node declares its
+     * config vocabulary ({@see IFlowNodeConfigKeys}), which makes this endpoint
+     * the fleet's single machine-readable source of truth for what a step may
+     * be configured with — for the editor, and for any repository's flow lint.
+     *
      * @param int $scope The scope to build the palette for.
      *
-     * @return array<int, array<string, string>> One entry per available node.
+     * @return array<int, array<string, mixed>> One entry per available node.
      *
      * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
      */
@@ -151,12 +178,30 @@ class FlowNodeRegistry
         $palette = [];
         foreach ($this->all(scope: $scope) as $id => $node) {
             try {
-                $palette[] = [
+                $entry = [
                     'id'          => $id,
                     'displayName' => $node->getDisplayName(),
                     'description' => $node->getDescription(),
                     'icon'        => $node->getIcon(),
                 ];
+
+                // The node's config vocabulary, when it declares one. This is
+                // what stops a second, hand-maintained table of accepted keys
+                // from existing somewhere else and drifting: hydra's
+                // `scripts/test-flow-definitions.sh` keeps exactly such a table
+                // today, and a table maintained in another repository is only
+                // ever correct until the next node ships a key.
+                //
+                // ABSENT rather than empty when the node declares nothing, so a
+                // consumer can tell "reads no config" (`[]`, which
+                // openregister.switch really means) from "did not say", which
+                // is every node predating IFlowNodeConfigKeys and must not be
+                // read as a licence to reject its keys.
+                if (($node instanceof IFlowNodeConfigKeys) === true) {
+                    $entry['configKeys'] = array_values($node->configKeys());
+                }
+
+                $palette[] = $entry;
             } catch (\Throwable $e) {
                 // One node whose metadata throws (a missing icon, a broken
                 // translation) must not blank the whole palette — the author
@@ -166,7 +211,7 @@ class FlowNodeRegistry
                     context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $id]
                 );
             }//end try
-        }
+        }//end foreach
 
         return $palette;
 
@@ -190,6 +235,21 @@ class FlowNodeRegistry
     public function get(string $type): IFlowNode
     {
         $this->load();
+
+        if (isset($this->nodes[$type]) === false && isset(self::RENAMED[$type]) === true) {
+            $this->logger->info(
+                message: sprintf(
+                    '[FlowNodeRegistry] Flow node "%s" was renamed to "%s"; resolving via the '
+                    .'compatibility alias. A flow definition still references the old id.',
+                    $type,
+                    self::RENAMED[$type]
+                ),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            $type = self::RENAMED[$type];
+        }
+
         if (isset($this->nodes[$type]) === false) {
             throw new UnexpectedValueException(
                 sprintf('No app provides the flow node type "%s". Is the app that owns it installed and enabled?', $type)

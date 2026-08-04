@@ -713,6 +713,54 @@ string, or anything else that could reach beyond equality on named properties.
 Composite equality is the whole widening; an expression language here would
 make the delete guard of REQ-OWN-012 unauditable.
 
+A match pair MAY name object METADATA as well as a schema property. Metadata
+does not live in the object's JSON document but in the magic table's
+underscore-prefixed columns, so the node SHALL address such a pair to the
+`@self` filter bag rather than the property bag. Routing SHALL follow this
+order:
+
+1. A name carrying an explicit `@self.` prefix SHALL always address metadata.
+   An unknown metadata field behind that prefix SHALL be refused.
+2. A name the schema declares as a property SHALL address that property, so a
+   schema that genuinely declares `name` or `owner` is unaffected.
+3. A name that is a matchable metadata field SHALL address metadata. The
+   matchable set is `uuid`, `slug`, `uri`, `version`, `owner`, `organisation`,
+   `application`, `name`, `created`, `updated`.
+4. A name that is neither SHALL be refused, naming the offending key, whenever
+   the schema declares any properties at all. Such a match could only ever
+   produce `WHERE 1 = 0`, and a guard that silently matches nothing is not a
+   guard. Where the schema declares no properties the node cannot distinguish
+   "declares nothing" from "declaration unavailable" and SHALL NOT refuse.
+
+`uuid` is the case that matters: `ObjectReadNode` puts it on every item it
+emits expressly so a following write or delete can name the row.
+
+#### Scenario: A match on uuid resolves the object a read emitted
+
+- **GIVEN** an `object-read` step whose items each carry `uuid`
+- **AND** a following `object-write` step with `operation: delete` matching on
+  `property: "uuid"`, `value: "{{uuid}}"`
+- **WHEN** the flow runs
+- **THEN** the lookup SHALL filter on `@self.uuid`
+- **AND** the delete SHALL remove exactly that object
+- **AND** it SHALL NOT silently match nothing while the run reports completed
+
+#### Scenario: A schema property shadows a metadata field of the same name
+
+- **GIVEN** a schema that declares a property `name`
+- **AND** a match naming `name`
+- **WHEN** the step executes
+- **THEN** the match SHALL address the schema property, not `@self.name`
+- **AND** an author needing the metadata field SHALL express it as `@self.name`
+
+#### Scenario: A match that could never resolve is refused
+
+- **GIVEN** a schema declaring properties, none of them `nonsense`
+- **AND** a match naming `nonsense`
+- **WHEN** the step executes
+- **THEN** the item SHALL fail with an error naming `nonsense`
+- **AND** the step SHALL NOT run a query that can only return zero rows
+
 #### Scenario: Two pairs narrow to one object
 
 - **GIVEN** two objects sharing `sourceId: "s1"` but differing on `tenant`

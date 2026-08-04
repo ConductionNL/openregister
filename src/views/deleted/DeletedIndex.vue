@@ -88,9 +88,9 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr>
 							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="allSelected"
+									:model-value="allSelected"
 									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
+									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th>{{ t('openregister', 'Title') }}</th>
 							<th class="tableColumnConstrained">
@@ -115,8 +115,8 @@ import formatBytes from '../../services/formatBytes.js'
 							@click="handleRowClick(item.id, $event)">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="selectedItems.includes(item.id)"
-									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
+									:model-value="selectedItems.includes(item.id)"
+									@update:modelValue="(checked) => toggleItemSelection(item.id, checked)" />
 							</td>
 							<td class="tableColumnTitle">
 								<div class="titleContent">
@@ -189,6 +189,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'DeletedIndex',
@@ -298,25 +299,31 @@ export default {
 		this.updateCounts()
 
 		// Listen for filter changes from sidebar
-		this.$root.$on('deleted-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('deleted-bulk-restore', this.bulkRestore)
-		this.$root.$on('deleted-bulk-delete', this.bulkDelete)
-		this.$root.$on('deleted-export-filtered', this.exportFiltered)
+		eventBus.on('deleted-filters-changed', this.handleFiltersChanged)
+		eventBus.on('deleted-bulk-restore', this.bulkRestore)
+		eventBus.on('deleted-bulk-delete', this.bulkDelete)
+		// Pre-existing typo, surfaced by the move off `$root.$on`: the method is
+		// `exportFilteredItems`. `this.exportFiltered` is undefined, so this
+		// channel had been subscribed to nothing since it was written. (The
+		// target is itself a documented stub, so no behaviour changes — but the
+		// wiring now says what it means instead of silently pointing at
+		// nothing.)
+		eventBus.on('deleted-export-filtered', this.exportFilteredItems)
 
 		// Listen for deletion events from modals
-		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
-		this.$root.$on('deleted-objects-restored', this.handleObjectsRestored)
+		eventBus.on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
+		eventBus.on('deleted-objects-restored', this.handleObjectsRestored)
 	},
 	/**
 	 * @spec exclude list-view lifecycle; tears down sidebar/modal event listeners on destroy
 	 */
-	beforeDestroy() {
-		this.$root.$off('deleted-filters-changed')
-		this.$root.$off('deleted-bulk-restore')
-		this.$root.$off('deleted-bulk-delete')
-		this.$root.$off('deleted-export-filtered')
-		this.$root.$off('deleted-objects-permanently-deleted')
-		this.$root.$off('deleted-objects-restored')
+	beforeUnmount() {
+		eventBus.off('deleted-filters-changed')
+		eventBus.off('deleted-bulk-restore')
+		eventBus.off('deleted-bulk-delete')
+		eventBus.off('deleted-export-filtered')
+		eventBus.off('deleted-objects-permanently-deleted')
+		eventBus.off('deleted-objects-restored')
 	},
 	methods: {
 		/**
@@ -628,8 +635,8 @@ export default {
 		 * @return {void}
 		 */
 		updateCounts() {
-			this.$root.$emit('deleted-selection-count', this.selectedItems.length)
-			this.$root.$emit('deleted-filtered-count', this.filteredItems.length)
+			eventBus.emit('deleted-selection-count', this.selectedItems.length)
+			eventBus.emit('deleted-filtered-count', this.filteredItems.length)
 		},
 		/**
 		 * Handle row click for selection

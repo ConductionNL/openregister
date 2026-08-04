@@ -107,7 +107,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<div class="analysis-controls">
 				<NcButton
 					v-if="!explorationData && !loading"
-					type="primary"
+					variant="primary"
 					:disabled="!schemaStore.schemaItem"
 					@click="startAnalysis">
 					<template #icon>
@@ -118,7 +118,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 				<NcButton
 					v-else-if="!loading"
-					type="secondary"
+					variant="secondary"
 					@click="startAnalysis">
 					<template #icon>
 						<Refresh :size="20" />
@@ -195,8 +195,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 							<div class="property-actions">
 								<NcCheckboxRadioSwitch
-									:checked="isPropertySelected(suggestion.property_name)"
-									@update:checked="togglePropertySelection(suggestion.property_name)" />
+									:model-value="isPropertySelected(suggestion.property_name)"
+									@update:modelValue="togglePropertySelection(suggestion.property_name)" />
 							</div>
 						</div>
 
@@ -474,13 +474,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					</NcNoteCard>
 
 					<div class="summary-actions">
-						<NcButton type="secondary" @click="clearSelection">
+						<NcButton variant="secondary" @click="clearSelection">
 							{{ t('openregister', 'Clear Selection') }}
 						</NcButton>
-						<NcButton type="secondary" @click="selectAll">
+						<NcButton variant="secondary" @click="selectAll">
 							{{ t('openregister', 'Select All') }}
 						</NcButton>
-						<NcButton type="primary" :disabled="loading || selectedProperties.length === 0" @click="updateSchema">
+						<NcButton variant="primary" :disabled="loading || selectedProperties.length === 0" @click="updateSchema">
 							<template #icon>
 								<Check :size="20" />
 							</template>
@@ -493,7 +493,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<div v-if="!explorationData && !loading" class="modal-footer">
 					<NcButton
 						:disabled="analysisStarted"
-						type="primary"
+						variant="primary"
 						@click="startAnalysis">
 						<template #icon>
 							<NcLoadingIcon v-if="analysisStarted" :size="16" />
@@ -505,7 +505,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 				<!-- Close Button (show when results are available) -->
 				<div v-else-if="explorationData && explorationData.suggestions" class="modal-footer">
-					<NcButton type="secondary" @click="closeDialog">
+					<NcButton variant="secondary" @click="closeDialog">
 						{{ t('openregister', 'Close') }}
 					</NcButton>
 				</div>

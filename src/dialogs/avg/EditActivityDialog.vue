@@ -6,12 +6,12 @@
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
-				:value.sync="form.naam"
+				v-model="form.naam"
 				:label="t('openregister', 'Name *')"
 				required />
 
 			<NcTextField
-				:value.sync="form.code"
+				v-model="form.code"
 				:label="t('openregister', 'Code (short readable key, e.g. v-2026-001)')" />
 
 			<label class="avgField">
@@ -36,7 +36,7 @@
 				required />
 
 			<NcTextField
-				:value.sync="form.bewaartermijn"
+				v-model="form.bewaartermijn"
 				:label="t('openregister', 'Retention period (ISO-8601 duration, e.g. P10Y, P30D)')" />
 
 			<NcSelect
@@ -71,10 +71,10 @@
 			</NcNoteCard>
 
 			<div class="avgEditActions">
-				<NcButton type="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" native-type="submit" :disabled="saving">
+				<NcButton variant="primary" type="submit" :disabled="saving">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>

@@ -332,4 +332,92 @@ class MappingRuntimeTest extends TestCase
 
         $this->runtime->executeMapping('http://local/mapping', []);
     }
+
+    /**
+     * createSlug's exact output is load-bearing, not cosmetic.
+     *
+     * Harvest flows persist the slug as an object identifier, so a change to
+     * this transformation orphans every object written under the old rule. It
+     * was ported byte-for-byte from OpenConnector for that reason; these cases
+     * pin the behaviour that port preserved.
+     *
+     * @dataProvider slugProvider
+     *
+     * @param string $input    The text to slugify.
+     * @param string $expected The expected slug.
+     *
+     * @return void
+     */
+    public function testCreateSlugIsStable(string $input, string $expected): void
+    {
+        $this->assertSame($expected, $this->runtime->createSlug($input));
+    }
+
+    /**
+     * Slug cases, each a rule the transformation applies in order.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function slugProvider(): array
+    {
+        return [
+            'lowercases'                 => ['Hello World', 'hello-world'],
+            'spaces to hyphens'          => ['a b c', 'a-b-c'],
+            'underscores to hyphens'     => ['a_b_c', 'a-b-c'],
+            'strips punctuation'         => ['Hello, World!', 'hello-world'],
+            'collapses repeat hyphens'   => ['a---b', 'a-b'],
+            'trims leading and trailing' => ['-abc-', 'abc'],
+            'keeps digits'               => ['Repo 2026', 'repo-2026'],
+            'strips non-ascii'           => ['Ruben van der Linde', 'ruben-van-der-linde'],
+            'empty stays empty'          => ['', ''],
+            'punctuation only'           => ['!!!', ''],
+        ];
+    }
+
+    /**
+     * json_decode returns an associative array, under the snake_case name
+     * OpenConnector's stored templates call.
+     *
+     * @return void
+     */
+    public function testJsonDecodeReturnsAnAssociativeArray(): void
+    {
+        $this->assertSame(['a' => 1, 'b' => ['c' => 2]], $this->runtime->json_decode('{"a":1,"b":{"c":2}}'));
+    }
+
+    /**
+     * Malformed JSON yields an empty array rather than a fatal.
+     *
+     * A mapping template is authored data; a typo in it must not take the whole
+     * run down with an uncatchable error.
+     *
+     * @return void
+     */
+    public function testJsonDecodeOnMalformedInputIsEmpty(): void
+    {
+        $this->assertSame([], $this->runtime->json_decode('{not json'));
+    }
+
+    /**
+     * Both spellings decode identically — that is the whole point of keeping two.
+     *
+     * @return void
+     */
+    public function testBothJsonDecodeSpellingsAgree(): void
+    {
+        $json = '{"x":[1,2,3]}';
+        $this->assertSame($this->runtime->json_decode($json), $this->runtime->jsonDecode($json));
+    }
+
+    /**
+     * base64 round-trips.
+     *
+     * @return void
+     */
+    public function testBase64RoundTrips(): void
+    {
+        $this->assertSame('aGk=', $this->runtime->b64enc('hi'));
+        $this->assertSame('hi', $this->runtime->b64dec('aGk='));
+        $this->assertSame('some text', $this->runtime->b64dec($this->runtime->b64enc('some text')));
+    }
 }

@@ -76,8 +76,17 @@ class ObjectMetricsListenerTest extends TestCase
         );
         $qb->method('values')->willReturnCallback(
             function (array $values) use ($qb): IQueryBuilder {
-                // MetricsService passes a list containing one row map.
-                $this->insertedValues = $values[0];
+                // MetricsService passes a FLAT column => parameter map, which is
+                // what IQueryBuilder::values() actually accepts.
+                //
+                // 🔴 This previously read `$values[0]`, matching a nested
+                // `[[ … ]]` shape the service used to pass. That shape is invalid:
+                // the real Doctrine builder rejects it with "Only strings,
+                // Literals and Parameters are allowed", so every insert failed in
+                // production while this mock happily accepted it and the suite
+                // stayed green. Assert the shape the DB actually takes, or the
+                // mock certifies a call that can never succeed.
+                $this->insertedValues = $values;
                 return $qb;
             }
         );

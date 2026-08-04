@@ -106,5 +106,7 @@ bom-npm.cdx.json
 tests/e2e/.auth/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
+# The CI subset config writes here, and `test-results/` above does not match it.
+tests/e2e/test-results-ci/
 tests/e2e/.mdm-seed.json
 .hydra

@@ -9,7 +9,7 @@
 		<!-- Clear App Store Cache action in the version card header -->
 		<template #actions>
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="settingsStore.clearingAppStoreCache"
 				@click="settingsStore.clearAppStoreCache('all')">
 				<template #icon>
@@ -39,6 +39,8 @@
 		<MultitenancyConfiguration />
 
 		<!-- Retention Configuration Section -->
+		<FlowConfiguration />
+
 		<RetentionConfiguration />
 
 		<!-- Push Notifications Status Section -->
@@ -74,6 +76,7 @@ import RbacConfiguration from './sections/RbacConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import FlowConfiguration from './sections/FlowConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import N8nConfiguration from './sections/N8nConfiguration.vue'
@@ -100,6 +103,7 @@ export default {
 		PermissionMatrix,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
+		FlowConfiguration,
 		RetentionConfiguration,
 		PushNotificationsConfiguration,
 		N8nConfiguration,

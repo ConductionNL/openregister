@@ -49,17 +49,36 @@ class FlowStop extends RuntimeException
     /**
      * Constructor.
      *
-     * @param string  $reason  Why the run stopped, for the run log.
-     * @param boolean $isError Whether this is a failure (`failed`) rather than
-     *                         a clean stop (`stopped`).
+     * @param string      $reason  Why the run stopped, for the run log.
+     * @param boolean     $isError Whether this is a failure (`failed`) rather
+     *                             than a clean stop (`stopped`).
+     * @param string|null $checkId The oversight check that vetoed the hop, when
+     *                             the stop came from a gate rather than from a
+     *                             Stop step. Structured rather than folded into
+     *                             the reason so "which gate closed" stays a
+     *                             query instead of a substring search.
      */
     public function __construct(
         string $reason='stopped',
-        private readonly bool $isError=false
+        private readonly bool $isError=false,
+        private readonly ?string $checkId=null
     ) {
         parent::__construct(message: $reason);
 
     }//end __construct()
+
+    /**
+     * The oversight check that vetoed the hop, when a gate raised this stop.
+     *
+     * @return string|null The check id, or null for an author-requested stop.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    public function checkId(): ?string
+    {
+        return $this->checkId;
+
+    }//end checkId()
 
     /**
      * Whether the run should end as `failed` rather than `stopped`.

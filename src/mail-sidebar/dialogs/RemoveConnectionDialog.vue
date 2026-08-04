@@ -24,7 +24,7 @@
 			</NcButton>
 			<NcButton
 				:disabled="removing"
-				type="error"
+				variant="error"
 				@click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />
@@ -45,9 +45,7 @@
  * @spec openspec/specs/integration-email/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'

@@ -14,14 +14,14 @@
 				<h4>Cache Type:</h4>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="all"
 						type="radio">
 						Clear All Cache (Recommended)
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="object"
 						type="radio">
@@ -30,14 +30,14 @@
 				</div>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="schema"
 						type="radio">
 						Schema Cache Only
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="facet"
 						type="radio">
@@ -46,7 +46,7 @@
 				</div>
 				<div class="radio-group">
 					<NcCheckboxRadioSwitch
-						:checked.sync="localCacheType"
+						v-model="localCacheType"
 						name="cache_type"
 						value="distributed"
 						type="radio">
@@ -66,7 +66,7 @@
 				Cancel
 			</NcButton>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="clearing"
 				@click="confirmClear">
 				<template #icon>

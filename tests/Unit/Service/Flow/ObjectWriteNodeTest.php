@@ -66,6 +66,13 @@ class ObjectWriteNodeTest extends TestCase
         $this->schema->setSlug('example-cache-entry');
 
         $this->objects = $this->createMock(ObjectService::class);
+        // `runAs()` scopes the acting user around a read. The double must RUN
+        // the callable, or every lookup silently returns null and the node
+        // reports "matched nothing" for reasons that have nothing to do with
+        // the test.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
 
         $registers = $this->createMock(RegisterMapper::class);
         $registers->method('find')->willReturn($this->register);
@@ -890,6 +897,95 @@ class ObjectWriteNodeTest extends TestCase
     }//end testASkippedDeleteIsDistinguishableFromAPerformedOne()
 
 
+    /**
+     * `config.output` on a delete used to be read by nothing.
+     *
+     * `outputJson()` is what honours the key, and it was only ever called on the
+     * non-delete path — `executeDelete()` was never handed the config. So a
+     * delete was the one operation that could not carry its incoming record
+     * forward: everything the item was holding (the issue number, the repo, the
+     * run id) was dropped the moment something was removed.
+     *
+     * @return void
+     */
+    public function testADeleteHonoursTheOutputKeyAndKeepsTheIncomingRecord(): void
+    {
+        $this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
+        $this->objects->method('deleteObject')->willReturn(true);
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(['output' => 'removed']),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertSame(489, $json['issue'], 'the incoming record survives the delete');
+        $this->assertSame('r1', $json['retiredId']);
+        $this->assertSame('u-gone', $json['removed']['uuid'], 'the delete record lands under the output key');
+        $this->assertTrue($json['removed']['deleted']);
+
+    }//end testADeleteHonoursTheOutputKeyAndKeepsTheIncomingRecord()
+
+
+    /**
+     * POSITIVE CONTROL — with no `output`, the shape is exactly what it was.
+     *
+     * The fix must not change any flow that does not ask for one.
+     *
+     * @return void
+     */
+    public function testADeleteWithoutAnOutputKeyIsUnchanged(): void
+    {
+        $this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
+        $this->objects->method('deleteObject')->willReturn(true);
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertSame('u-gone', $json['uuid']);
+        $this->assertTrue($json['deleted']);
+        $this->assertArrayNotHasKey('issue', $json, 'unchanged: without output, the delete record IS the item');
+        $this->assertArrayNotHasKey('removed', $json);
+
+    }//end testADeleteWithoutAnOutputKeyIsUnchanged()
+
+
+    /**
+     * A SKIPPED delete gets the output key too.
+     *
+     * An output key that exists only on the branch that removed something makes
+     * `{{removed.deleted}}` resolve on some items and not others — a downstream
+     * null with no visible cause.
+     *
+     * @return void
+     */
+    public function testASkippedDeleteAlsoCarriesTheOutputKey(): void
+    {
+        $this->tableOf([]);
+        $this->objects->expects($this->never())->method('deleteObject');
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(['onNoMatch' => 'skip', 'output' => 'removed']),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertFalse($json['deleted'], 'the top-level flag stays where it was');
+        $this->assertSame('r1', $json['retiredId']);
+        $this->assertFalse($json['removed']['deleted']);
+
+    }//end testASkippedDeleteAlsoCarriesTheOutputKey()
+
+
     public function testAnAmbiguousDeleteMatchFailsRatherThanChoosing(): void
     {
         $this->tableOf(
@@ -1056,4 +1152,67 @@ class ObjectWriteNodeTest extends TestCase
         $this->assertSame(1000, $seenDefault, 'the shipped default cap is 1000 writes per step execution');
 
     }//end testTheInstanceDefaultAppliesWhenNoCapIsConfigured()
+
+
+    /**
+     * With `output` set, the item's record SURVIVES and the write lands beside it.
+     *
+     * Replacing the record is fine for a write that ends a branch and wrong for
+     * one in the middle of a chain — a per-issue lock is exactly the second
+     * shape, because the run still needs the repo and the issue to do the work
+     * the lock protects. Measured while building hydra's sequencer: after the
+     * lock write, `{{repo}}` rendered empty and the next call went to
+     * `/repos//issues`.
+     *
+     * @return void
+     */
+    public function testAnOutputKeyPreservesTheIncomingRecord(): void
+    {
+        $this->objects->method('saveObject')->willReturnCallback(
+            function (mixed $object, ?array $extend=[], mixed $register=null, mixed $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?IUser $currentUser=null): ObjectEntity {
+                return $this->entity('uuid-1', $object);
+            }
+        );
+
+        $out = $this->node->execute(
+            $this->items([['repo' => 'ConductionNL/hydra', 'issue' => 410]]),
+            $this->config(['output' => 'lock', 'fields' => ['title' => '{{repo}}']]),
+            $this->registerContext
+        );
+
+        // What the run was carrying is still there.
+        $this->assertSame('ConductionNL/hydra', $out[0]['json']['repo']);
+        $this->assertSame(410, $out[0]['json']['issue']);
+
+        // And the written object is beside it, under the named key.
+        $this->assertSame('uuid-1', $out[0]['json']['lock']['uuid']);
+        $this->assertSame('ConductionNL/hydra', $out[0]['json']['lock']['title']);
+    }
+
+    /**
+     * WITHOUT `output`, the written object still replaces the record.
+     *
+     * The historical behaviour stays the default: changing it silently would
+     * rewrite what every existing flow sees downstream of a write.
+     *
+     * @return void
+     */
+    public function testWithoutAnOutputKeyTheWrittenObjectStillReplacesTheRecord(): void
+    {
+        $this->objects->method('saveObject')->willReturnCallback(
+            function (mixed $object, ?array $extend=[], mixed $register=null, mixed $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?IUser $currentUser=null): ObjectEntity {
+                return $this->entity('uuid-1', $object);
+            }
+        );
+
+        $out = $this->node->execute(
+            $this->items([['repo' => 'ConductionNL/hydra']]),
+            $this->config(['fields' => ['title' => 'literal']]),
+            $this->registerContext
+        );
+
+        $this->assertArrayNotHasKey('repo', $out[0]['json']);
+        $this->assertSame('uuid-1', $out[0]['json']['uuid']);
+    }
+
 }//end class

@@ -21,10 +21,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
 				:label="t('openregister', 'Title *')"
-				:value.sync="sourceItem.title" />
+				v-model="sourceItem.title" />
 			<NcTextArea :disabled="loading"
 				:label="t('openregister', 'Description')"
-				:value.sync="sourceItem.description" />
+				v-model="sourceItem.description" />
 			<NcSelect v-bind="typeOptions"
 				v-model="typeOptions.value"
 				:input-label="t('openregister', 'Type')"
@@ -33,7 +33,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<template v-if="!isDatabaseType">
 				<NcTextField :disabled="loading"
 					:label="t('openregister', 'Database URL')"
-					:value.sync="sourceItem.databaseUrl" />
+					v-model="sourceItem.databaseUrl" />
 			</template>
 
 			<template v-if="isDatabaseType">
@@ -44,27 +44,27 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				<template v-if="driverOptions.value?.id === 'pdo_sqlite'">
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'Database file path *')"
-						:value.sync="connection.path" />
+						v-model="connection.path" />
 				</template>
 				<template v-else>
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'Host *')"
-						:value.sync="connection.host" />
+						v-model="connection.host" />
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'Port')"
-						:value.sync="connection.port" />
+						v-model="connection.port" />
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'Database name *')"
-						:value.sync="connection.dbname" />
+						v-model="connection.dbname" />
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'User')"
-						:value.sync="connection.user" />
+						v-model="connection.user" />
 					<NcTextField :disabled="loading"
 						:label="t('openregister', 'Credential (UUID from the credential store)')"
-						:value.sync="connection.credential" />
+						v-model="connection.credential" />
 				</template>
 				<NcCheckboxRadioSwitch
-					:checked.sync="connection.writable"
+					v-model="connection.writable"
 					type="switch">
 					{{ t('openregister', 'Allow writes (create, update and delete push through to the external database)') }}
 				</NcCheckboxRadioSwitch>
@@ -104,7 +104,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !sourceItem.title"
-				type="primary"
+				variant="primary"
 				@click="editSource()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

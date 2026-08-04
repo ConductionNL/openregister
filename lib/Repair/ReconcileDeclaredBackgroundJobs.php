@@ -1,19 +1,19 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Repair step: register declared background jobs that Nextcloud never added.
  *
  * @category Repair
  * @package  OCA\OpenRegister\Repair
  *
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://github.com/ConductionNL/openregister
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 

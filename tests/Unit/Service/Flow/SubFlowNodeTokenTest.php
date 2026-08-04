@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
@@ -28,9 +28,9 @@ class SubFlowNodeTokenTest extends TestCase
     /**
      * Resolves flows.
      *
-     * @var FlowResolverRegistry
+     * @var FlowLocator
      */
-    private FlowResolverRegistry $resolvers;
+    private FlowLocator $resolvers;
 
     /**
      * Queues and executes sub-runs.
@@ -56,7 +56,7 @@ class SubFlowNodeTokenTest extends TestCase
         $l = $this->createMock(IL10N::class);
         $l->method('t')->willReturnArgument(0);
 
-        $this->resolvers = $this->createMock(FlowResolverRegistry::class);
+        $this->resolvers = $this->createMock(FlowLocator::class);
         $this->runs      = $this->createMock(FlowRunService::class);
 
         $this->node = new SubFlowNode(

@@ -94,6 +94,31 @@
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
+                <!--
+                  PHP EXTENSION classes. Whether psalm can see these depends on
+                  which extensions are ENABLED wherever it happens to run: CI
+                  installs zip and gd but not imagick, and a bare php image has
+                  none of them. Suppressed here rather than recorded in the
+                  baseline, because a baseline entry for one of these is only
+                  correct in the environment that generated it — psalm sets
+                  findUnusedBaselineEntry, so the entry then FAILS the build in
+                  any environment where the extension IS present. An absent
+                  extension is a property of the analysis host, not app debt.
+                -->
+                <referencedClass name="ZipArchive"/>
+                <referencedClass name="Imagick"/>
+                <referencedClass name="ImagickPixel"/>
+                <!--
+                  OCP\ContextChat and OCP\SystemTag ship with OPTIONAL Nextcloud
+                  components, lazy-resolved behind class_exists guards, so they
+                  are absent during analysis for the same reason OCA\Bookmarks is.
+                -->
+                <referencedClass name="OCP\ContextChat\IContentManager"/>
+                <referencedClass name="OCP\ContextChat\IContentProvider"/>
+                <referencedClass name="OCP\ContextChat\ContentItem"/>
+                <referencedClass name="OCP\ContextChat\Events\ContentProviderRegisterEvent"/>
+                <referencedClass name="OCP\SystemTag\TagAssignedEvent"/>
+                <referencedClass name="OCP\SystemTag\TagUnassignedEvent"/>
             </errorLevel>
         </UndefinedClass>
         <UndefinedMagicMethod errorLevel="suppress"/>

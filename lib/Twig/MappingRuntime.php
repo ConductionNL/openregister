@@ -46,9 +46,15 @@ use Twig\Extension\RuntimeExtensionInterface;
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
+ * A Twig runtime's public methods ARE the vocabulary mapping templates may call,
+ * so their count is the size of that vocabulary rather than a design choice.
+ * Splitting it would mean two runtimes and a rule about which functions live
+ * where — a distinction template authors would have to know and could not see.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
@@ -65,6 +71,64 @@ class MappingRuntime implements RuntimeExtensionInterface
         private readonly MappingMapper $mappingMapper,
     ) {
     }//end __construct()
+
+    /**
+     * Decode a JSON string, under the name OpenConnector's templates call.
+     *
+     * The snake_case name is deliberate and cannot be corrected: it is the
+     * identifier stored mapping templates already contain. `jsonDecode` below is
+     * the same function under OpenRegister's own spelling — both exist because a
+     * mapping is authored data, so renaming what it calls breaks it at
+     * evaluation with nothing at author time to warn you.
+     *
+     * @param string $input The JSON to decode.
+     *
+     * @return array The decoded structure.
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+     */
+    public function json_decode(string $input): array
+    {
+        return (array) json_decode(json: $input, associative: true);
+
+    }//end json_decode()
+
+    /**
+     * URL-friendly slug from arbitrary text.
+     *
+     * Ported verbatim from OpenConnector's runtime when mapping consolidated
+     * into OpenRegister. Byte-for-byte behaviour matters here: slugs authored by
+     * existing mappings are persisted as object identifiers, so any change to
+     * the transformation silently orphans previously-written objects.
+     *
+     * @param string $text The text to slugify.
+     *
+     * @return string The slug.
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+     */
+    public function createSlug(string $text): string
+    {
+        // Convert to lowercase.
+        $slug = strtolower($text);
+
+        // Replace spaces and underscores with hyphens.
+        $slug = str_replace([' ', '_'], '-', $slug);
+
+        // Remove all characters that are not a-z, 0-9, or hyphen.
+        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+
+        // Replace multiple consecutive hyphens with single hyphen.
+        $slug = preg_replace('/-+/', '-', $slug);
+
+        // Trim hyphens from start and end.
+        $slug = trim($slug, '-');
+
+        return $slug;
+
+    }//end createSlug()
 
     /**
      * Encodes a string to base64.

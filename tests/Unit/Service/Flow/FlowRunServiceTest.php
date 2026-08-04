@@ -25,6 +25,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Marking;
 
@@ -156,11 +157,18 @@ class FlowRunServiceTest extends TestCase
         $registry = new FlowNodeRegistry($dispatcher, $this->createMock(LoggerInterface::class));
         $engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 
+        // No OrganisationService in the container — the cron/unit case, where a
+        // queued run is recorded with no organisation rather than a guessed one.
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willThrowException(new \RuntimeException('not available'));
+
         $this->service = new FlowRunService(
             $this->mapper,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $engine,
             $registry,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $container
         );
     }
 

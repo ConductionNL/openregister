@@ -313,4 +313,89 @@ class CredentialBrokerServiceTest extends TestCase
         $this->expectException(CredentialAccessDeniedException::class);
         $service->request('cred-1', 'openconnector', 'GET', '/anything');
     }
+
+    /**
+     * A commit COMPARISON is not traversal, and it is the path the safety rail needs.
+     *
+     * GitHub's diff endpoint is `/repos/{o}/{r}/compare/{base}...{head}`. The
+     * guard used to reject any `..` SUBSTRING, so every commit comparison was
+     * denied — which made `hydra-flows-first-port` task 2.5's mandatory rail
+     * ("diff the produced tree against the base before moving the ref")
+     * impossible to build over the brokered path.
+     */
+    public function testACommitComparisonIsNotTraversal(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'github', 'allowedApps' => ['hermiq']],
+            $this->githubProvider(),
+            'SECRET123'
+        );
+
+        $result = $service->request(
+            'cred-1',
+            'hermiq',
+            'GET',
+            '/repos/Conduction/openregister/compare/ba3ed4f4...4f75bc84'
+        );
+
+        $this->assertSame(200, $result['status']);
+    }
+
+    /**
+     * Real traversal is still denied — a segment that IS `..`.
+     */
+    public function testTraversalSegmentIsStillDenied(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'github', 'allowedApps' => ['hermiq']],
+            $this->githubProvider(),
+            'SECRET123'
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/../../etc/passwd');
+    }
+
+    /**
+     * And still denied when the traversal segment arrives percent-encoded.
+     *
+     * The guard decodes ONCE before checking, so `%2e%2e` is caught. Pinned
+     * separately because a segment-based check would be trivially bypassable
+     * if it ran before the decode.
+     */
+    public function testEncodedTraversalSegmentIsStillDenied(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'github', 'allowedApps' => ['hermiq']],
+            $this->githubProvider(),
+            'SECRET123'
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/%2e%2e/%2e%2e/etc/passwd');
+    }
+
+    /**
+     * A segment that merely CONTAINS dots is a literal name and is allowed.
+     */
+    public function testASegmentContainingDotsIsAllowed(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'github', 'allowedApps' => ['hermiq']],
+            $this->githubProvider(),
+            'SECRET123'
+        );
+
+        $result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/some..name');
+
+        $this->assertSame(200, $result['status']);
+    }
 }//end class

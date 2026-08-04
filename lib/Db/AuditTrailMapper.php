@@ -49,9 +49,7 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail update(Entity $entity)
  * @method AuditTrail insertOrUpdate(Entity $entity)
  * @method AuditTrail delete(Entity $entity)
- * @method AuditTrail find(int|string $id)
  * @method AuditTrail findEntity(IQueryBuilder $query)
- * @method AuditTrail[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<AuditTrail> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<AuditTrail>
@@ -231,7 +229,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -366,7 +364,11 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old            The old state of the object
      * @param ObjectEntity|null $new            The new state of the object
-     * @param string|null       $action         The action to create the audit trail for
+     * @param string|null       $action         The action to record. NULL (the default) infers it from which
+     *                                          entities are present: no `new` is a delete, no `old` is a create,
+     *                                          otherwise an update. A NAMED action is used verbatim — the
+     *                                          inference used to overwrite an explicit 'update' because it was
+     *                                          indistinguishable from the old default (#2217).
      * @param array|null        $cascadeContext Optional referential-integrity cascade context. When
      *                                          non-null, the context is folded into the `changed`
      *                                          column of the initial INSERT (previously this required
@@ -383,7 +385,7 @@ class AuditTrailMapper extends QBMapper
     public function createAuditTrail(
         ?ObjectEntity $old=null,
         ?ObjectEntity $new=null,
-        ?string $action='update',
+        ?string $action=null,
         ?array $cascadeContext=null
     ): AuditTrail {
         $auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
@@ -401,7 +403,11 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old            The old state of the object
      * @param ObjectEntity|null $new            The new state of the object
-     * @param string|null       $action         The action to create the audit trail for
+     * @param string|null       $action         The action to record. NULL (the default) infers it from which
+     *                                          entities are present: no `new` is a delete, no `old` is a create,
+     *                                          otherwise an update. A NAMED action is used verbatim — the
+     *                                          inference used to overwrite an explicit 'update' because it was
+     *                                          indistinguishable from the old default (#2217).
      * @param array|null        $cascadeContext Optional referential-integrity cascade context to fold
      *                                          into the `changed` column (keys: triggerObject,
      *                                          triggerSchema, action_type, property).
@@ -416,17 +422,36 @@ class AuditTrailMapper extends QBMapper
     public function buildAuditTrail(
         ?ObjectEntity $old=null,
         ?ObjectEntity $new=null,
-        ?string $action='update',
+        ?string $action=null,
         ?array $cascadeContext=null
     ): AuditTrail {
+        // Infer the action from which entities are present — but ONLY when the
+        // caller did not name one.
+        //
+        // These two rules used to fire on `$action === 'update'`, which is both
+        // the default AND a legitimate explicit value, so a caller who KNEW the
+        // write was an update could not say so: `old: null, action: 'update'`
+        // was rewritten to `create` before it reached the row. That is not
+        // hypothetical — it is why MagicMapper taking its UPDATE branch on a
+        // service-labelled create still produced a `create` entry (#2217), and
+        // it is the reason a fix passing an explicit action would have looked
+        // applied while changing nothing.
+        //
+        // The inference is unchanged for every caller that omits `action`; only
+        // an explicitly-named one now survives.
+        $inferring = ($action === null);
+        if ($inferring === true) {
+            $action = 'update';
+        }
+
         // Determine the action based on the presence of old and new objects.
         $objectEntity = $new;
-        if ($new === null && $action === 'update') {
+        if ($inferring === true && $new === null) {
             $action       = 'delete';
             $objectEntity = $old;
         }
 
-        if ($old === null && $action === 'update') {
+        if ($inferring === true && $old === null && $new !== null) {
             $action       = 'create';
             $objectEntity = $new;
         }
@@ -542,11 +567,85 @@ class AuditTrailMapper extends QBMapper
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
 
-        // Set default expiration date (30 days from now).
-        $auditTrail->setExpires(new DateTime('+30 days'));
+        // Expiry follows the RETENTION OF THE OBJECT the row describes, not a
+        // flat window (or#2265). The unconditional `+30 days` that stood here
+        // destroyed the evidence of a retention decision long before the
+        // decision expired: on the procest case register 311 of 330
+        // soft-deleted cases had lost their delete audit row, and all 258,240
+        // rows carrying an expiry carried exactly a 30-day one.
+        //
+        // `null` means retain indefinitely — clearLogs() has always filtered on
+        // `expires IS NOT NULL` — and is the resolver's outcome for an object
+        // with no retention policy, under legal hold, or nominated `bewaren` /
+        // `nog_niet_bepaald`. The 30-day constant survives inside the resolver
+        // as a FLOOR rather than a ceiling. See AuditRetentionResolver.
+        //
+        // The resolved source token is stamped into `retentionPeriod` so a
+        // future purge is explainable from the row itself. Both fields are set
+        // BEFORE the row is sealed: `expires` is part of the canonical JSON the
+        // hash covers, so writing it after sealing would invalidate the hash.
+        $resolvedRetention = $this->resolveAuditExpiry(
+            objectEntity: $objectEntity,
+            createdAt: ($auditTrail->getCreated() ?? new DateTime())
+        );
+        $auditTrail->setExpires($resolvedRetention['expires']);
+        $auditTrail->setRetentionPeriod($resolvedRetention['source']);
 
         return $auditTrail;
     }//end buildAuditTrail()
+
+    /**
+     * Resolve the audit row's expiry from the object's retention policy.
+     *
+     * Delegates to {@see AuditRetentionResolver}, resolved lazily through the
+     * container for the same reason the sibling AVG and hash-chain lookups are:
+     * this runs inside the audit write path and must degrade rather than break
+     * it. Fail-safe direction matters here — when the resolver is unavailable
+     * the row is retained INDEFINITELY rather than given a short life, because
+     * the failure mode being fixed is evidence disappearing, not disk filling.
+     *
+     * @param ObjectEntity $objectEntity The object the audit row describes.
+     * @param \DateTime    $createdAt    The audit row's creation instant.
+     *
+     * @return array{expires: \DateTime|null, source: string|null}
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTime::createFromInterface is the standard immutable-to-mutable bridge
+     */
+    private function resolveAuditExpiry(ObjectEntity $objectEntity, \DateTime $createdAt): array
+    {
+        try {
+            $resolver = $this->container->get(\OCA\OpenRegister\Service\AuditRetentionResolver::class);
+
+            $resolved = $resolver->resolve(object: $objectEntity, createdAt: $createdAt);
+
+            // The resolver works in DateTimeImmutable; the entity's `expires`
+            // setter is typed to the mutable DateTime that QBMapper binds.
+            $expires = $resolved['expires'];
+            if ($expires !== null) {
+                $expires = DateTime::createFromInterface($expires);
+            }
+
+            return [
+                'expires' => $expires,
+                'source'  => $resolved['source'],
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[AuditTrailMapper] Retention resolution failed; retaining the audit row '
+                    .'indefinitely: '.$e->getMessage(),
+                context: [
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
+            );
+
+            return [
+                'expires' => null,
+                'source'  => 'resolver-unavailable:indefinite',
+            ];
+        }//end try
+
+    }//end resolveAuditExpiry()
 
     /**
      * Create audit trail rows for many object changes with batched inserts.
@@ -1556,14 +1655,31 @@ class AuditTrailMapper extends QBMapper
     }//end getMostActiveObjects()
 
     /**
-     * Clear expired logs from the database
+     * Purge expired audit rows, leaving a verifiable chain tombstone.
      *
-     * This method deletes all audit trail logs that have expired
-     * (i.e., their 'expires' date is earlier than the current date and time)
-     * and have the 'expires' column set. This helps maintain database performance
-     * by removing old log entries that are no longer needed.
+     * Rows whose `expires` has passed have their PAYLOAD destroyed — the
+     * `changed` diff and the actor/session/network identifiers — and are
+     * stamped with `purged_at`. The row itself survives.
      *
-     * @return bool True if any logs were deleted, false otherwise
+     * It is an UPDATE, not a DELETE, and that is the whole point. The table
+     * carries a SHA-256 `hash`/`previous_hash` chain that
+     * {@see \OCA\OpenRegister\Service\AuditHashService::verifyChain()} walks in
+     * id order, each row's hash covering the previous row's hash. Physically
+     * removing a row mid-chain therefore breaks verification at the row AFTER
+     * it — which is exactly what tampering looks like. Under the old hard
+     * delete a lawful retention purge and an attack were indistinguishable
+     * (or#2265). Keeping id, `created`, `hash` and `previous_hash` preserves
+     * the link, and the `purged_at` stamp lets verification report a DECLARED
+     * tombstone instead of a break.
+     *
+     * `expires IS NULL` still means "never purge" and is now the resolver's
+     * outcome for objects with no retention policy, under legal hold, or
+     * nominated `bewaren` — see {@see \OCA\OpenRegister\Service\AuditRetentionResolver}.
+     *
+     * Already-tombstoned rows are excluded so repeated sweeps are idempotent
+     * and do not keep rewriting the same rows every hour.
+     *
+     * @return bool True if any rows were tombstoned, false otherwise
      *
      * @throws \Exception Database operation exceptions
      *
@@ -1576,15 +1692,28 @@ class AuditTrailMapper extends QBMapper
             // Get the query builder for database operations.
             $qb = $this->db->getQueryBuilder();
 
-            // Build the delete query to remove expired audit trail logs that have the 'expires' column set.
-            $qb->delete('openregister_audit_trails')
+            // Tombstone rather than delete: destroy the payload, keep the row
+            // and its chain links. `changed` holds the actual before/after
+            // data; user/session/request/ip are the personal identifiers a
+            // retention purge is meant to remove. Everything retained here is
+            // structural: which register/schema/object was acted on, when, and
+            // the hash pair that proves the row was not substituted.
+            $qb->update('openregister_audit_trails')
+                ->set('purged_at', $qb->createFunction('NOW()'))
+                ->set('changed', $qb->createNamedParameter(null))
+                ->set('user', $qb->createNamedParameter(null))
+                ->set('user_name', $qb->createNamedParameter(null))
+                ->set('session', $qb->createNamedParameter(null))
+                ->set('request', $qb->createNamedParameter(null))
+                ->set('ip_address', $qb->createNamedParameter(null))
                 ->where($qb->expr()->isNotNull('expires'))
-                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')))
+                ->andWhere($qb->expr()->isNull('purged_at'));
 
             // Execute the query and get the number of affected rows.
             $result = $qb->executeStatement();
 
-            // Return true if any rows were affected (i.e., any logs were deleted).
+            // Return true if any rows were affected (i.e., any logs were tombstoned).
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes.

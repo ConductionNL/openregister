@@ -39,9 +39,11 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Navigate to an OR app subpath and wait for NC header + app content. */
+/** Navigate to an OR app route (hash form) and wait for NC header + app content. */
 async function gotoApp(page: Page, subpath: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister${subpath}`, { waitUntil: 'domcontentloaded' })
+	// HASH form — the router runs in hash mode (src/main.js); path-form
+	// deep-links render the dashboard instead of the target page.
+	await page.goto(`/index.php/apps/openregister/#${subpath}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	// Give Vue a moment to mount and hydrate the component tree.
@@ -364,8 +366,8 @@ test.describe('files-sidebar-tabs — applyfilters-writes-filter-state-to-the-ur
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#applyfilters-writes-filter-state-to-the-url
 	test('applyFilters writes register to the URL query on /deleted', async ({ page }) => {
-		// Start from clean /deleted.
-		await page.goto('/index.php/apps/openregister/deleted', { waitUntil: 'domcontentloaded' })
+		// Start from clean /deleted (hash form — router runs in hash mode).
+		await page.goto('/index.php/apps/openregister/#/deleted', { waitUntil: 'domcontentloaded' })
 		await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 		await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 		await page.waitForTimeout(800) // let Vue mount the sidebar

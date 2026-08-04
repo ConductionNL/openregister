@@ -127,6 +127,14 @@ class DedupeConfigurationsCommand extends Command
             );
         }
 
+        // The number of rows this run would delete, as opposed to the number of
+        // APPS they belong to. It was never assigned: under PHP 8 an undefined
+        // variable reads as null, so `=== 0` was always false and the
+        // "no duplicates" branch could never fire — a clean run reported
+        // "0 app(s), row(s) would be deleted" instead of saying there was
+        // nothing to do.
+        $dupeRows = count($deleteIds);
+
         if ($dupeRows === 0) {
             $output->writeln('<info>No duplicate configuration rows found.</info>');
             return 0;

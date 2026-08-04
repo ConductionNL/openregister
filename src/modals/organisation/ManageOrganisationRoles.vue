@@ -30,7 +30,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<div v-for="role in selectedRoles" :key="role.id" class="role-chip">
 						<AccountGroup :size="16" />
 						<span class="role-name">{{ role.name }}</span>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="t('openregister', 'Remove group')"
 							@click="removeRole(role)">
 							<template #icon>
@@ -52,7 +52,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:filterable="true"
 					label-outside
 					:input-label="t('openregister', 'Nextcloud Groups')"
-					@input="addRole">
+					@update:modelValue="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">
 							<AccountGroup :size="20" />
@@ -75,7 +75,7 @@ import { translate as t } from '@nextcloud/l10n'
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !hasChanges"
-				type="primary"
+				variant="primary"
 				@click="saveRoles()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

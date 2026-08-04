@@ -61,15 +61,25 @@ class PdfExtractorTest extends TestCase
     }
 
     /**
-     * A real PDF (vendored as a smalot/pdfparser peer-dependency sample,
-     * ddn/sapp's examples/testdoc.pdf) must yield its known body text.
+     * A real PDF must yield its known body text.
+     *
+     * The fixture is committed here rather than read from
+     * `vendor/ddn/sapp/examples/testdoc.pdf`. That path only ever resolved
+     * because composer happened to install ddn/sapp from source: the package
+     * marks `/examples export-ignore` in its .gitattributes, so any
+     * distribution archive omits the directory entirely. Switching the package
+     * to its GitHub dist (to get Codeberg off the CI critical path) made the
+     * omission visible as a single failing assertion.
+     *
+     * A test must not depend on a dependency's examples directory — the
+     * dependency has explicitly declared it not part of what it ships.
      *
      * @return void
      */
     public function testExtractReturnsTextForRealPdf(): void
     {
-        $fixturePath = dirname(__DIR__, 4).'/vendor/ddn/sapp/examples/testdoc.pdf';
-        $this->assertFileExists($fixturePath, 'Expected vendored PDF sample to exist for this test');
+        $fixturePath = dirname(__DIR__, 3).'/fixtures/pdf/testdoc.pdf';
+        $this->assertFileExists($fixturePath, 'Expected the committed PDF fixture to exist for this test');
 
         $bytes = (string) file_get_contents($fixturePath);
 

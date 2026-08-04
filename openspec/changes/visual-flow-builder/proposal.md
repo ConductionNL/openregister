@@ -1,6 +1,31 @@
 ---
 kind: code
+status: superseded
+superseded-by: flow-engine-unification
 ---
+
+> **SUPERSEDED (2026-08-03) by `flow-engine-unification`.** Do not continue this
+> change and do not merge its outstanding branch work.
+>
+> This change builds a visual builder on top of `x-openregister-flows` as a flat
+> `{ name, trigger, actions[] }` list executed by `FlowActionService`. That
+> dialect and that service are being **removed**: there is one flow engine
+> (`FlowEngine`, node/edge, registry-driven), one flow store
+> (`oc_openregister_flows`), and `x-openregister-flows` is redefined to declare
+> flows of the engine type.
+>
+> Two concrete consequences:
+>
+> - Its Phase 1 artefacts (`CnFlowCanvas`, `CnFlowCanvasModal`) exist only on the
+>   unmerged `codeberg/feat/vue-3` branch despite being ticked `[x]` here. They
+>   must NOT be merged to `beta`; `CnFlowDetail` / `CnFlowEditModal` replace them.
+> - This directory is deliberately **kept rather than deleted**. Five surviving
+>   files still carry `@spec` anchors into `specs/flow-builder/spec.md` and
+>   `specs/integration-flow/spec.md` (`FlowController`, `EventCatalogService`,
+>   `EventCatalogListener`, `RegisterObjectEntity`,
+>   `FlowEngineRegistrationListener`) — the event/node catalog and the Nextcloud
+>   Flow entity registration are genuinely still in force. Removing the directory
+>   would break `spec-anchor-existence` on all five.
 
 ## Why
 
