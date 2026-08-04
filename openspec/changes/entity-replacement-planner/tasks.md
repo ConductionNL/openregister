@@ -39,7 +39,7 @@
 - [x] 5.2 Sanitised office container (`:897-978`): replace the whole-XML `str_ireplace` at `:918` with a segment adapter over the sanitised XML's **text nodes**. This also removes the current risk of a needle matching inside XML markup rather than document content.
 - [x] 5.3 docx (`:979-1203`): replace the recursive `$replaceInElements` closure (`:1027-1060`) with a two-phase walk — first collect PhpWord elements exposing `getText()`/`setText()` into a `SegmentMap` in document order (body, headers, footers, table cells, list items, nested elements), then `scatter()` the plan back via `setText()`. Preserve the existing traversal coverage exactly; the only change is collect-then-write instead of write-in-place.
 - [x] 5.4 Verify the PhpWord segment order is true document order, since both DP determinism and residue attribution are defined on concatenation offsets.
-- [ ] 5.5 Keep the `uksort` at `:489-495` as a defensive ordering for direct map consumers; add a comment stating the overlap guarantee now comes from the planner so a future reader does not delete the wrong one.
+- [ ] 5.5 Keep the `uksort` at `:489-495` as a defensive ordering for direct map consumers; add a comment stating the overlap guarantee now comes from the planner so a future reader does not delete the wrong one. **[N/A ON THIS BRANCH]** — targets `development`'s shape; see the commit for why.
 - [x] 5.6 Fixture tests: an entity split across two `<w:r>` runs is redacted and the placeholder lands in the first run; entities in headers, footers, table cells and list items are all redacted; all text not covered by an accepted range is byte-identical to the input; document structure is unchanged.
 
 ## 6. Residual reporting on every format
@@ -52,12 +52,12 @@
 
 ## 7. PDF path reconciliation
 
-- [ ] 7.1 In `lib/Service/File/Pdf/PdfTextReplacer.php::validateOutput` (`:320`), replace the case-sensitive comparison (`:411-418`) with the shared case folding and boundary policy so a differing-case residual is reported.
-- [ ] 7.2 Merge SAPP's `rejected_substitutions` stat (`:276`) into the residual list so a rejected substitution can never be reported as a clean redaction.
-- [ ] 7.3 Keep `replaceInPdf`'s defensive `uksort` (`:177-184`) and SAPP delegation unchanged; update its comment to reference the planner as the upstream source of the ordering guarantee.
-- [ ] 7.4 Correct the stale comment at `lib/Service/File/Pdf/PdfTextReplacer.php:362` which states "Fail CLOSED in strict mode" for a path that only logs and falls back. Do NOT implement the behaviour it describes. Also correct `validateOutput`'s `@param bool $strict` docblock (`:301-305`), which still documents residual text as failing closed with `REASON_VALIDATION_FAILED`. Both make a reader believe blocking exists where it does not.
-- [ ] 7.5 Assert non-blocking explicitly: a test that a PDF with residuals — including one detected only by the new case-folded comparison — still produces and persists its output and returns `success: true` with `complete: false`.
-- [ ] 7.6 Tests: a residual differing only in case is now reported; a SAPP-rejected substitution appears in the residual list; all existing PDF tests still pass unchanged.
+- [ ] 7.1 In `lib/Service/File/Pdf/PdfTextReplacer.php::validateOutput` (`:320`), replace the case-sensitive comparison (`:411-418`) with the shared case folding and boundary policy so a differing-case residual is reported. **[N/A ON THIS BRANCH]** — targets `development`'s shape; see the commit for why.
+- [x] 7.2 Merge SAPP's `rejected_substitutions` stat (`:276`) into the residual list so a rejected substitution can never be reported as a clean redaction.
+- [ ] 7.3 Keep `replaceInPdf`'s defensive `uksort` (`:177-184`) and SAPP delegation unchanged; update its comment to reference the planner as the upstream source of the ordering guarantee. **[N/A ON THIS BRANCH]** — targets `development`'s shape; see the commit for why.
+- [ ] 7.4 Correct the stale comment at `lib/Service/File/Pdf/PdfTextReplacer.php:362` which states "Fail CLOSED in strict mode" for a path that only logs and falls back. Do NOT implement the behaviour it describes. Also correct `validateOutput`'s `@param bool $strict` docblock (`:301-305`), which still documents residual text as failing closed with `REASON_VALIDATION_FAILED`. Both make a reader believe blocking exists where it does not. **[N/A ON THIS BRANCH]** — targets `development`'s shape; see the commit for why.
+- [x] 7.5 Assert non-blocking explicitly: a test that a PDF with residuals — including one detected only by the new case-folded comparison — still produces and persists its output and returns `success: true` with `complete: false`.
+- [x] 7.6 Tests: a residual differing only in case is now reported; a SAPP-rejected substitution appears in the residual list; all existing PDF tests still pass unchanged.
 
 ## 8. Traceability, docs and quality gates
 

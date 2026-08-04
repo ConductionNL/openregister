@@ -149,7 +149,7 @@
     {
       "id": "5.5",
       "title": "Retain defensive uksort with a comment pointing at the planner",
-      "status": "pending"
+      "status": "not-applicable"
     },
     {
       "id": "5.6",
@@ -184,32 +184,32 @@
     {
       "id": "7.1",
       "title": "validateOutput uses shared case folding and boundary policy",
-      "status": "pending"
+      "status": "not-applicable"
     },
     {
       "id": "7.2",
       "title": "Merge SAPP rejected_substitutions into the residual list",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "7.3",
       "title": "Keep SAPP delegation and defensive uksort; update comments",
-      "status": "pending"
+      "status": "not-applicable"
     },
     {
       "id": "7.4",
       "title": "Correct stale fail-closed comment and docblock (do not implement)",
-      "status": "pending"
+      "status": "not-applicable"
     },
     {
       "id": "7.5",
       "title": "Assert non-blocking: residuals never withhold output",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "7.6",
       "title": "PDF reconciliation tests; existing PDF tests unchanged",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.1",

@@ -241,7 +241,7 @@ class PdfTextReplacer
 
             // Can't re-extract to audit — report no detectable residuals.
             return [];
-        }
+        }//end try
 
         $residual = [];
         foreach (array_keys($substitutions) as $needle) {
@@ -252,8 +252,28 @@ class PdfTextReplacer
             // Case-insensitive, multibyte-safe substring check via
             // `mb_stripos` — Conduction entities can include non-ASCII
             // characters (e.g. Dutch surnames with diacritics).
+            //
+            // Substring semantics MATCH the apply step on this path: SAPP does
+            // the matching and SAPP matches substrings, so the verification
+            // agrees with it. The word-boundary policy the office/text paths
+            // now use is deliberately NOT applied here — it would make the
+            // gate stricter than the replacer it audits and invent residuals
+            // for text no substitution ever claimed.
             if (mb_stripos($extracted, (string) $needle) !== false) {
                 $residual[] = (string) $needle;
+            }
+        }
+
+        // Fold in the substitutions SAPP itself reports it could not apply.
+        // Re-extraction alone cannot be trusted to surface these: an encoding
+        // miss or a subset-font fallback can leave the value present in bytes
+        // that smalot renders differently, so the needle is absent from
+        // `$extracted` while still being in the document. Counting them in the
+        // diagnostic (below) but omitting them from the returned list reported
+        // a rejected substitution as a clean redaction.
+        foreach ($this->rejectedNeedles(replaceStats: $replaceStats) as $needle) {
+            if (in_array($needle, $residual, true) === false) {
+                $residual[] = $needle;
             }
         }
 
@@ -287,6 +307,59 @@ class PdfTextReplacer
         // the authenticated anonymise response for the review UI.
         return $residual;
     }//end validateOutput()
+
+    /**
+     * Needles SAPP reported as rejected, normalised to strings.
+     *
+     * The stat's element shape is SAPP's, not ours, and has changed across
+     * versions — it may carry plain needle strings or per-rejection records.
+     * Both are handled rather than assumed, because guessing wrong here fails
+     * SILENTLY: the needle simply never reaches the residual list and the
+     * document is reported clean.
+     *
+     * @param array<string, mixed> $replaceStats Stats returned by SAPP's replace API.
+     *
+     * @return array<int, string>
+     */
+    private function rejectedNeedles(array $replaceStats): array
+    {
+        $rejected = ($replaceStats['rejected_substitutions'] ?? []);
+        if (is_array($rejected) === false) {
+            return [];
+        }
+
+        $needles = [];
+        foreach ($rejected as $key => $entry) {
+            // The KEY TYPE disambiguates the shape, and must be checked first.
+            // A string key means the map is keyed by needle and the value is a
+            // reason (`['Jan Jansen' => 'font_encoding_miss']`); an int key
+            // means the needle is in the value. Testing the value first
+            // returned the reason string as though it were the needle.
+            if (is_string($key) === true) {
+                $needles[] = $key;
+                continue;
+            }
+
+            if (is_string($entry) === true) {
+                $needles[] = $entry;
+                continue;
+            }
+
+            if (is_array($entry) === false) {
+                continue;
+            }
+
+            foreach (['needle', 'search', 'text', 'from'] as $candidate) {
+                if (isset($entry[$candidate]) === true && is_string($entry[$candidate]) === true) {
+                    $needles[] = $entry[$candidate];
+                    break;
+                }
+            }
+        }//end foreach
+
+        return $needles;
+
+    }//end rejectedNeedles()
 
     /**
      * Collapse adjacent duplicate placeholders in a freshly-substituted text.
