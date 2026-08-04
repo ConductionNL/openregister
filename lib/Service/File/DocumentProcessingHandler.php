@@ -135,6 +135,21 @@ class DocumentProcessingHandler
     private array $lastResidualEntities = [];
 
     /**
+     * Split-matched entities from the most recent anonymise run.
+     *
+     * Kept SEPARATE from `$lastResidualEntities` deliberately. A `partial`
+     * finding means the entity's text IS fully absent from the output — it just
+     * took more than one range to remove, because entities overlapped. Folding
+     * these into the residual list would inflate `residual_count`, whose
+     * existing meaning ("needles that may still be present") consumers already
+     * rely on. Both kinds make the result incomplete; only `unmatched` counts as
+     * residual.
+     *
+     * @var array<int, array<string, string>>
+     */
+    private array $lastPartialEntities = [];
+
+    /**
      * ODF `text:` XML namespace URI, used to locate paragraph containers
      * (`text:p`, `text:h`) and text nodes when redacting ODT parts in place.
      */
@@ -210,6 +225,24 @@ class DocumentProcessingHandler
     {
         return $this->lastResidualEntities;
     }//end getLastResidualEntities()
+
+    /**
+     * Split-matched entities from the most recent anonymise run.
+     *
+     * Non-empty means the output is fully redacted but reads as more than one
+     * placeholder where a reader expects one value, usually because recognition
+     * produced overlapping or mis-typed entities. Callers MUST treat this as
+     * informational: unlike a residual, nothing is left in the document.
+     *
+     * @return array<int, array<string, string>>
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    public function getLastPartialEntities(): array
+    {
+        return $this->lastPartialEntities;
+
+    }//end getLastPartialEntities()
 
     /**
      * Per-entity placeholder map from the most recent anonymizeDocument() call.
@@ -337,6 +370,7 @@ class DocumentProcessingHandler
         // Reset residuals + placeholder map from a prior call on this
         // (potentially reused) handler.
         $this->lastResidualEntities = [];
+        $this->lastPartialEntities  = [];
         $this->lastPlaceholderMap   = [];
         $this->entityTypesByNeedle  = [];
         $this->plannedMatched       = [];
@@ -386,6 +420,11 @@ class DocumentProcessingHandler
         }
 
         $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
+
+        // Every pass has run; turn the accumulated plan outcome into the
+        // reportable surface. Merges with anything a format's own verification
+        // gate already found.
+        $this->finaliseResidualReport(replacements: $replacements);
 
         // Flip the source's EntityRelation rows to `anonymized = 1` so the
         // anonymised state is queryable downstream. Skip-aware (rows where
@@ -499,7 +538,7 @@ class DocumentProcessingHandler
             fallbackPolicy: $fallbackPolicy
         );
 
-        $this->recordPlanOutcome(plan: $plan);
+        $this->recordPlanOutcome(plan: $plan, replacements: $replacements);
 
         return $this->planApplier->applyToString(text: $text, plan: $plan);
 
@@ -548,7 +587,7 @@ class DocumentProcessingHandler
             entityTypes: $this->entityTypesByNeedle
         );
 
-        $this->recordPlanOutcome(plan: $plan);
+        $this->recordPlanOutcome(plan: $plan, replacements: $replacements);
 
         $updated = $map->scatter(plan: $plan);
         foreach ($group as $index => $element) {
@@ -560,16 +599,165 @@ class DocumentProcessingHandler
     }//end applyToRunGroup()
 
     /**
+     * Turn the accumulated plan outcome into the reportable residual surface.
+     *
+     * Called ONCE per anonymise run, after every pass has been applied. A needle
+     * absent from one pass is routinely present in another — an EML's subject
+     * versus its body, an ODT's `content.xml` versus its `styles.xml` — so
+     * anything computed per pass would flag almost every needle as missing.
+     *
+     * Two kinds, per the settled reporting decision:
+     *
+     * - `unmatched` — the planner found no legal occurrence anywhere. The text
+     *   MAY still be in the output. Merged into `$lastResidualEntities`, so
+     *   `residual_count` keeps the meaning consumers already rely on.
+     * - `partial` — split-matched. The text IS gone; recorded separately.
+     *
+     * MERGES rather than overwrites, because a format may already have produced
+     * residuals by re-reading what it wrote (the ODT validation gate). That
+     * gate is strictly stronger evidence than a plan and must not be discarded.
+     *
+     * @param array<string, string> $replacements The substitution map for this run.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    private function finaliseResidualReport(array $replacements): void
+    {
+        if (empty($replacements) === true) {
+            return;
+        }
+
+        $unmatched = [];
+        foreach (array_keys($replacements) as $rawNeedle) {
+            $needle = (string) $rawNeedle;
+            if (trim($needle) === '') {
+                continue;
+            }
+
+            if (isset($this->plannedMatched[$needle]) === false) {
+                $unmatched[] = $needle;
+            }
+        }
+
+        $this->lastResidualEntities = $this->mergeEntityRecords(
+            existing: $this->lastResidualEntities,
+            records: $this->buildEntityRecords(needles: $unmatched, replacements: $replacements)
+        );
+
+        $this->lastPartialEntities = $this->mergeEntityRecords(
+            existing: $this->lastPartialEntities,
+            records: $this->buildEntityRecords(
+                needles: array_keys($this->plannedPartial),
+                replacements: $replacements
+            )
+        );
+
+        if (empty($this->lastResidualEntities) === false || empty($this->lastPartialEntities) === false) {
+            // PII-free (ADR-005): counts only, never the entity text. The text
+            // travels solely in the authenticated anonymise response.
+            $this->logger->warning(
+                message: '[DocumentProcessingHandler] Anonymisation completed with findings; output written best-effort.',
+                context: [
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
+                    'residualCount' => count($this->lastResidualEntities),
+                    'partialCount'  => count($this->lastPartialEntities),
+                ]
+            );
+        }
+
+    }//end finaliseResidualReport()
+
+    /**
+     * Build `{text, type, id}` records from needles, recovering type and id from
+     * the emitted placeholder.
+     *
+     * @param array<int, string>    $needles      The needles to describe.
+     * @param array<string, string> $replacements The substitution map.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function buildEntityRecords(array $needles, array $replacements): array
+    {
+        $records = [];
+        foreach ($needles as $needle) {
+            $needle      = (string) $needle;
+            $placeholder = (string) ($replacements[$needle] ?? '');
+            $type        = 'UNKNOWN';
+            $id          = '';
+            if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $matches) === 1) {
+                $type = trim($matches[1]);
+                $id   = trim($matches[2]);
+            }
+
+            $records[] = [
+                'text' => $needle,
+                'type' => $type,
+                'id'   => $id,
+            ];
+        }
+
+        return $records;
+
+    }//end buildEntityRecords()
+
+    /**
+     * Union two record lists, de-duplicating on the entity text.
+     *
+     * @param array<int, array<string, string>> $existing Records already recorded.
+     * @param array<int, array<string, string>> $records  Records to add.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function mergeEntityRecords(array $existing, array $records): array
+    {
+        $byText = [];
+        foreach ($existing as $record) {
+            $byText[($record['text'] ?? '')] = $record;
+        }
+
+        foreach ($records as $record) {
+            $key = ($record['text'] ?? '');
+            if (isset($byText[$key]) === false) {
+                $byText[$key] = $record;
+            }
+        }
+
+        return array_values($byText);
+
+    }//end mergeEntityRecords()
+
+    /**
      * Record which needles a plan accounted for, merging across passes.
      *
-     * @param ReplacementPlan $plan The plan just applied.
+     * "Accounted for" is taken from the PLAN's own classification — every needle
+     * it did NOT report unmatched — rather than from which needles won a range.
+     * Those differ for a *subsumed* needle: a PERSON wholly inside an accepted
+     * EMAIL range gets no range of its own, yet its text is removed. Deriving
+     * this from `getRanges()` reported that needle as residual and told the
+     * operator PII remained on the commonest containment case.
+     *
+     * @param ReplacementPlan       $plan         The plan just applied.
+     * @param array<string, string> $replacements The map that plan was built from.
      *
      * @return void
      */
-    private function recordPlanOutcome(ReplacementPlan $plan): void
+    private function recordPlanOutcome(ReplacementPlan $plan, array $replacements): void
     {
-        foreach ($plan->getRanges() as $range) {
-            $this->plannedMatched[$range->needle] = true;
+        $unmatched = [];
+        foreach ($plan->getUnmatchedNeedles() as $needle) {
+            $unmatched[(string) $needle] = true;
+        }
+
+        foreach (array_keys($replacements) as $rawNeedle) {
+            $needle = (string) $rawNeedle;
+            if (trim($needle) === '' || isset($unmatched[$needle]) === true) {
+                continue;
+            }
+
+            $this->plannedMatched[$needle] = true;
         }
 
         foreach ($plan->getPartialNeedles() as $needle) {
@@ -746,6 +934,7 @@ class DocumentProcessingHandler
 
         // Reset per-run state (mirrors anonymizeDocument).
         $this->lastResidualEntities = [];
+        $this->lastPartialEntities  = [];
         $this->lastPlaceholderMap   = [];
 
         $fileId = 0;
@@ -814,6 +1003,10 @@ class DocumentProcessingHandler
                 );
             }
         }
+
+        // Every EML pass (headers, body, each attachment) has run, so the
+        // accumulated plan outcome is now complete for this message.
+        $this->finaliseResidualReport(replacements: $replacements);
 
         return $anonymised;
     }//end anonymizeEmlStructured()
@@ -1888,7 +2081,7 @@ class DocumentProcessingHandler
             entityTypes: $this->entityTypesByNeedle
         );
 
-        $this->recordPlanOutcome(plan: $plan);
+        $this->recordPlanOutcome(plan: $plan, replacements: $replacements);
 
         if (empty($plan->getRanges()) === true) {
             return;

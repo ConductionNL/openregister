@@ -44,11 +44,11 @@
 
 ## 6. Residual reporting on every format
 
-- [ ] 6.1 Add a verification pass that re-checks the produced text for every needle using the SAME case folding and boundary policy as matching (tasks 2.2 and 2.4).
-- [ ] 6.2 Populate `lastResidualEntities` (`:1393`) from the plan's unmatched needles plus the verification pass, for the plain-text, office-container and docx branches. Reuse the existing `{text, type, id}` record construction and placeholder-parsing regex (`:1379-1394`) rather than duplicating it — extract it to a private helper (ADR-011).
-- [ ] 6.3 Report findings in TWO kinds — `unmatched` (text may remain) and `partial` (split-matched, text gone). Both set `complete: false`; `residual_count` counts ONLY `unmatched`, preserving its meaning for existing consumers. Ensure nothing reads `complete: false` as "PII remains".
-- [ ] 6.4 Confirm the anonymise response surface reports `complete: false` with a matching `residual_count` for a non-PDF file with residuals, per the contract at `openspec/specs/pdf-anonymisation/spec.md:165-188`. Logs stay PII-free (ADR-005); residual text is carried only in the authenticated response.
-- [ ] 6.5 Tests: a docx with an unreachable occurrence reports an `unmatched` record and `complete: false`; a cleanly redacted plain-text file reports an empty list and `complete: true`; a split-matched document reports a `partial` finding with `complete: false` and `residual_count: 0`. The first two are currently impossible to fail because those paths never populate the list.
+- [x] 6.1 Add a verification pass that re-checks the produced text for every needle using the SAME case folding and boundary policy as matching (tasks 2.2 and 2.4).
+- [x] 6.2 Populate `lastResidualEntities` (`:1393`) from the plan's unmatched needles plus the verification pass, for the plain-text, office-container and docx branches. Reuse the existing `{text, type, id}` record construction and placeholder-parsing regex (`:1379-1394`) rather than duplicating it — extract it to a private helper (ADR-011).
+- [x] 6.3 Report findings in TWO kinds — `unmatched` (text may remain) and `partial` (split-matched, text gone). Both set `complete: false`; `residual_count` counts ONLY `unmatched`, preserving its meaning for existing consumers. Ensure nothing reads `complete: false` as "PII remains".
+- [x] 6.4 Confirm the anonymise response surface reports `complete: false` with a matching `residual_count` for a non-PDF file with residuals, per the contract at `openspec/specs/pdf-anonymisation/spec.md:165-188`. Logs stay PII-free (ADR-005); residual text is carried only in the authenticated response.
+- [x] 6.5 Tests: a docx with an unreachable occurrence reports an `unmatched` record and `complete: false`; a cleanly redacted plain-text file reports an empty list and `complete: true`; a split-matched document reports a `partial` finding with `complete: false` and `residual_count: 0`. The first two are currently impossible to fail because those paths never populate the list.
 
 ## 7. PDF path reconciliation
 
@@ -61,8 +61,8 @@
 
 ## 8. Traceability, docs and quality gates
 
-- [ ] 8.1 Add `@spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md` annotations to every new class and to each modified method in `DocumentProcessingHandler` and `PdfTextReplacer` (ADR-003 / gate-16 spec-coverage).
-- [ ] 8.2 SPDX + `@license`/`@copyright` PHPDoc headers on every new file (gate-1, gate-28 — value must agree with `composer.json`).
+- [x] 8.1 Add `@spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md` annotations to every new class and to each modified method in `DocumentProcessingHandler` and `PdfTextReplacer` (ADR-003 / gate-16 spec-coverage).
+- [x] 8.2 SPDX + `@license`/`@copyright` PHPDoc headers on every new file (gate-1, gate-28 — value must agree with `composer.json`).
 - [ ] 8.3 Document the boundary-policy table and the residual-report semantics in the anonymisation section of the project docs, including that non-PDF formats can now legitimately return `complete: false`.
 - [ ] 8.4 Review existing anonymisation fixtures under `tests/Unit/Service/File/` for intentional expected-output drift (over-redaction removed, residue now covered). Each diff needs review, not blind re-baselining.
 - [ ] 8.5 Run `composer check:strict` and `./scripts/run-hydra-gates.sh --scope-to-diff` and clear every finding.

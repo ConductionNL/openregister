@@ -577,7 +577,15 @@ class FileTextController extends Controller
             // this authenticated response for the review UI (deliberate,
             // product-owner-approved deviation from the no-PII-in-responses rule).
             $residualEntities = $this->fileService->getLastResidualEntities();
-            $isComplete       = (count($residualEntities) === 0);
+            $partialEntities  = $this->fileService->getLastPartialEntities();
+
+            // BOTH finding kinds make the result incomplete, so `complete: false`
+            // means "a human should review this" — NOT "PII remains in the
+            // output". A partial finding is fully redacted; it just took more
+            // than one placeholder because entities overlapped. Consumers must
+            // read the kind to decide publishability. `residual_count` keeps
+            // counting ONLY residuals, so its existing meaning is unchanged.
+            $isComplete = (count($residualEntities) === 0 && count($partialEntities) === 0);
 
             // Mark entity relations as anonymized.
             $this->entityRelationMapper->markAsAnonymized(
@@ -597,6 +605,7 @@ class FileTextController extends Controller
                     'complete'           => $isComplete,
                     // PII-free: count only, never the residual text.
                     'residual_count'     => count($residualEntities),
+                    'partial_count'      => count($partialEntities),
                 ]
             );
 
@@ -604,15 +613,18 @@ class FileTextController extends Controller
                 data: [
                     'success'            => true,
                     'complete'           => $isComplete,
-                    'message'            => ($isComplete === true
-                        ? 'File anonymized successfully'
-                        : 'File anonymized, but some entities could not be fully removed — review the output and refine the entities (manual entities, skip unselected occurrences).'),
+                    'message'            => $this->describeAnonymiseOutcome(
+                        residualCount: count($residualEntities),
+                        partialCount: count($partialEntities)
+                    ),
                     'original_file_id'   => $fileId,
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
                     'entities_replaced'  => count($entities),
                     'residual_count'     => count($residualEntities),
                     'residual_entities'  => $residualEntities,
+                    'partial_count'      => count($partialEntities),
+                    'partial_entities'   => $partialEntities,
                 ]
             );
         } catch (\Exception $e) {
@@ -636,6 +648,34 @@ class FileTextController extends Controller
             );
         }//end try
     }//end anonymizeFile()
+
+    /**
+     * Human-readable outcome for an anonymise run.
+     *
+     * Three distinct states, because they need three different operator
+     * responses. Collapsing them into "complete / not complete" told an operator
+     * that a fully-redacted document with overlapping entities was unsafe.
+     *
+     * @param integer $residualCount Entities that may still be present in the output.
+     * @param integer $partialCount  Entities removed, but across more than one range.
+     *
+     * @return string
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    private function describeAnonymiseOutcome(int $residualCount, int $partialCount): string
+    {
+        if ($residualCount > 0) {
+            return 'File anonymized, but some entities may remain — review the output and refine the entities.';
+        }
+
+        if ($partialCount > 0) {
+            return 'File anonymized; no entity text remains, but overlapping entities needed multiple placeholders.';
+        }
+
+        return 'File anonymized successfully';
+
+    }//end describeAnonymiseOutcome()
 
     /**
      * Add an operator-supplied manual entity to a file.

@@ -241,7 +241,7 @@ class PdfTextReplacer
 
             // Can't re-extract to audit — report no detectable residuals.
             return [];
-        }
+        }//end try
 
         $residual = [];
         foreach (array_keys($substitutions) as $needle) {

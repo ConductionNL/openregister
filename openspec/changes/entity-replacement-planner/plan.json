@@ -159,27 +159,27 @@
     {
       "id": "6.1",
       "title": "Verification pass using the same folding and boundary policy",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "6.2",
       "title": "Populate lastResidualEntities on text, office-container and docx",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "6.3",
       "title": "Two finding kinds (unmatched/partial); residual_count counts unmatched only",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "6.4",
       "title": "Confirm complete:false + residual_count on non-PDF paths",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "6.5",
       "title": "Residual reporting tests for docx and plain text",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "7.1",
@@ -214,12 +214,12 @@
     {
       "id": "8.1",
       "title": "@spec annotations on new classes and modified methods",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.2",
       "title": "SPDX and license PHPDoc headers on new files",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.3",

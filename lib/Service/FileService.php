@@ -1824,6 +1824,22 @@ class FileService
     }//end getLastResidualEntities()
 
     /**
+     * Split-matched entities from the most recent anonymise run.
+     *
+     * Distinct from residuals: a partial finding means the entity's text IS
+     * absent from the output, but removing it took more than one range because
+     * entities overlapped. Informational — it must NOT be read as "PII remains".
+     *
+     * @return array<int, array<string, string>>
+     *
+     * @spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md
+     */
+    public function getLastPartialEntities(): array
+    {
+        return $this->documentProcessingHandler->getLastPartialEntities();
+    }//end getLastPartialEntities()
+
+    /**
      * Per-entity placeholder map from the most recent anonymizeDocument() call.
      *
      * Maps the internal global entity id (stringified) to the exact placeholder
