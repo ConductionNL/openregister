@@ -90,4 +90,34 @@ jobs:
       # mis-parse it. Path is relative to `server/`, which the step cd's into.
       playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
+      # Run the Hydra mechanical quality gates against this PR's diff.
+      #
+      # This tier has never executed in this repository. `enable-hydra-gates`
+      # defaults to false, so `quality / Hydra Gates` has been SKIPPED on every
+      # run here — and a skipped job is neither a pass nor a failure in the
+      # Quality Report rollup, so its absence has been indistinguishable from
+      # its success. That is the whole reason for turning it on rather than
+      # assuming the gates were already covering this repo.
+      #
+      # No count is written here on purpose: the number of gates depends on the
+      # pin below and the number that actually run depends on this repo's diff
+      # and toolchain. The package prints both (`COVERAGE: N of M`) in the job
+      # log; a digit in prose has nothing to reconcile against and goes stale
+      # silently. See https://github.com/ConductionNL/.github/tree/main/hydra-gates
+      #
+      # Pinned to a tag, not `main`, so a change to the gate package cannot
+      # alter this repository's verdict without a commit here to move the pin.
+      # v1.0.1 deliberately matches the pin openbuild already runs, so this
+      # repo's first result is directly comparable with the only live-verified
+      # reference the fleet has. (v1.1.0 exists; moving to it is a separate,
+      # measurable change.)
+      enable-hydra-gates: true
+      hydra-gates-ref: v1.0.1
+      # `enable-axe` is deliberately NOT set. It is the input that produces
+      # `tests/axe/report.json`, which gate-33 consumes; without it gate-33
+      # reports SKIPPED, as it has done in every repo in the fleet. Measured
+      # against a vanilla Nextcloud with no app installed, core's own pages
+      # already carry serious/critical axe violations, so switching it on in
+      # the same change as the gates themselves would confuse "this repo has an
+      # accessibility defect" with "Nextcloud core does". Separate change.
       enable-sbom: true
