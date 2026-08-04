@@ -3397,17 +3397,22 @@ class MagicMapper extends AbstractObjectMapper
      * @param Schema   $schema       The schema for validation and table selection
      * @param string   $tableName    The table name to save to
      * @param bool     $failIfExists Insert-only: refuse instead of updating when the identifier is taken
+     * @param int|null $insertedId   Out-param: the generated `_id` when this call INSERTED, null when it
+     *                               updated or lost an insert race. Lets the caller learn the generated key
+     *                               without selecting the row back, which is what made every create emit a
+     *                               "dirty table read".
      *
      * @throws Exception If save operation fails
      *
-     * @return string The UUID of the saved object
+     * @return string The UUID of the saved object — the identity callers actually use
      */
     private function saveObjectToRegisterSchemaTable(
         array $objectData,
         Register $register,
         Schema $schema,
         string $tableName,
-        bool $failIfExists=false
+        bool $failIfExists=false,
+        ?int &$insertedId=null
     ): string {
         // Prepare object data for table storage with register+schema context.
         $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
@@ -3447,7 +3452,10 @@ class MagicMapper extends AbstractObjectMapper
                 // matches the pattern already used in
                 // NotificationDedupeStateMapper and NotificationDispatchLogMapper.
                 try {
-                    $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                    $insertedId = $this->insertObjectInRegisterSchemaTable(
+                        data: $preparedData,
+                        tableName: $tableName
+                    );
                 } catch (DbException $e) {
                     if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
                         throw $e;
@@ -4221,7 +4229,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return void
      */
-    private function insertObjectInRegisterSchemaTable(array $data, string $tableName): void
+    private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int
     {
         $qb = $this->db->getQueryBuilder();
         $qb->insert($tableName);
@@ -4237,6 +4245,22 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         $qb->executeStatement();
+
+        // Read the generated key from the INSERT itself rather than by selecting
+        // the row back. This used to return void, which is the only reason a
+        // re-read was needed at all: `_id` is the sole database-generated column
+        // on these tables, so throwing it away here forced a SELECT against a
+        // table written milliseconds earlier — Nextcloud's "dirty table reads"
+        // condition, ~5.9 MB of serialised backtrace per object.
+        //
+        // On PostgreSQL this resolves to lastval(), which is session-scoped
+        // rather than table-scoped. That is exact here for two reasons that must
+        // both hold: these tables carry exactly ONE sequence (`_id` — verified
+        // against information_schema, no other column has a default), and this
+        // call is the very next statement on the same connection. If a second
+        // serial column is ever added to the magic-table shape, this must change
+        // to an explicit RETURNING/sequence read.
+        return (int) $this->db->lastInsertId($tableName);
     }//end insertObjectInRegisterSchemaTable()
 
     /**
@@ -6759,13 +6783,15 @@ class MagicMapper extends AbstractObjectMapper
         // Convert entity to array for table storage.
         $objectArray = $entity->jsonSerialize();
 
-        // Save to table.
-        $uuid = $this->saveObjectToRegisterSchemaTable(
+        // Save to table, learning the generated `_id` from the INSERT itself.
+        $insertedId = null;
+        $uuid       = $this->saveObjectToRegisterSchemaTable(
             objectData: $objectArray,
             register: $register,
             schema: $schema,
             tableName: $tableName,
-            failIfExists: $failIfExists
+            failIfExists: $failIfExists,
+            insertedId: $insertedId
         );
 
         // Update entity UUID if it was generated.
@@ -6773,83 +6799,51 @@ class MagicMapper extends AbstractObjectMapper
             $entity->setUuid($uuid);
         }
 
-        // The insert path DOES need a read back, unlike the update path: `_id`
-        // is the table's one database-generated column (nextval) and
-        // insertObjectInRegisterSchemaTable() returns void, so this read is
-        // genuinely how the id arrives. Dropping it would hand callers entities
-        // with a null id — a real regression, not a saved query.
+        // No read-back. The INSERT reported its own generated key, which is the
+        // only thing the old re-read could tell us that we did not already hold:
+        // `_id` is this table's sole database-generated column, and `_created` /
+        // `_updated` have no column default, so PHP wrote them and they are
+        // already on this entity.
         //
-        // So the read stays and the DIRTY READ goes instead. Nextcloud flags a
-        // SELECT against a recently-written table only when no transaction is
-        // active — `if ($this->isTransactionActive())` is the first branch of
-        // the check in lib/private/DB/Connection.php, because a transacted read
-        // goes to the primary and cannot see a stale replica. Reading our own
-        // write inside a transaction is both what we mean and what silences the
-        // ~5.9 MB backtrace this used to log on every insert.
-        $this->db->beginTransaction();
+        // `_id` is also not the identity callers use — saveObjectToRegisterSchemaTable()
+        // returns the UUID, which PHP generates above. So this is the entity's
+        // internal key catching up, not the object becoming addressable.
+        if ($insertedId !== null) {
+            $entity->setId($insertedId);
 
-        try {
-            $insertedEntity = $this->findInRegisterSchemaTable(
-                identifier: $uuid,
-                register: $register,
-                schema: $schema,
-                // System re-read of the just-inserted row: bypass access-control
-                // filtering so the writer always gets its freshly-written entity
-                // back (the org/owner context is still being established here).
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // The filtered read could not see the row. That has two very
-            // different causes and they must not share an outcome.
-            //
-            // The row IS there, and only the hydrating read could not reach it
-            // (scoping, an org/owner context still being established). Degraded
-            // but honest: the write landed, so return the in-memory entity with
-            // the id the row actually has.
-            //
-            // The row is NOT there. The write did not land, and returning the
-            // in-memory entity says it did — with a null id, to a caller that
-            // has no way to tell. That is the shape of a lost write reported as
-            // a success, which is exactly what #2212 turned out to be. It now
-            // throws.
-            $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-            if ($row === null) {
-                $this->logger->error(
-                    message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'uuid'      => $uuid,
-                        'tableName' => $tableName,
-                    ]
-                );
+            // NOTE: Event dispatching is handled by the public insert/update/delete methods.
+            // Do NOT dispatch ObjectCreatedEvent here.
+            return $entity;
+        }
 
-                throw new Exception(
-                    sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
-                );
-            }
-
-            $this->logger->warning(
-                message: '[MagicMapper] Could not re-fetch the inserted entity through the filtered read; '
-                    .'the row exists, so the raw id is used',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+        // $insertedId is null only when the INSERT lost a uuid race and was
+        // applied as an update instead. Rare, and the only path that still costs
+        // a read — a raw row fetch, not the hydrating one. Keeping the lost-write
+        // check here matters: the alternative is returning an entity with a null
+        // id to a caller with no way to tell a write landed, which is exactly
+        // what #2212 turned out to be.
+        $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
+        if ($row === null) {
+            $this->logger->error(
+                message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'uuid'      => $uuid,
+                    'tableName' => $tableName,
+                ]
             );
 
-            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
-            $insertedEntity = $entity;
-        } finally {
-            // Committed on EVERY path, including the lost-write throw above.
-            // Leaving a transaction open would hold the connection's write locks
-            // for the rest of the request and hand the next caller an implicit,
-            // unbounded transaction — a far worse fault than the log noise this
-            // block exists to remove.
-            $this->db->commit();
-        }//end try
+            throw new Exception(
+                sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
+            );
+        }
+
+        $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
 
         // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
-        return $insertedEntity;
+        return $entity;
     }//end insertObjectEntity()
 
     /**
@@ -8797,7 +8791,9 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        if ($this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false) {
+        if ($this->suppressLifecycleEvents() === false
+            && $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false
+        ) {
             $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
         }
 
@@ -8954,10 +8950,60 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $updatedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity));
+        if ($this->suppressLifecycleEvents() === false) {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity)
+            );
+        }
 
         return $updatedEntity;
     }//end update()
+
+    /**
+     * Whether object lifecycle events should be withheld for this write.
+     *
+     * Eight apps in the fleet subscribe to ObjectCreatedEvent/ObjectUpdatedEvent
+     * — docudesk, softwarecatalog, opencatalogi, openbuild, hermiq,
+     * zaakafhandelapp, hrmq and more. Every one of them wakes for every object
+     * written. During a configuration import that is a fan-out over baseline
+     * content: measured on this instance mid-repair, 155 "DocuDesk: Processing
+     * event", 116 compliance-subscriber calls and 116 queued extraction jobs,
+     * for SEED data — a document-extraction pass over content that shipped with
+     * the app, and a compliance score for a module nobody has configured yet.
+     *
+     * Seeding is not a user action, and there is no user intent for a listener
+     * to react to. SystemOperationContext already marks exactly that condition
+     * and is already trusted for RBAC decisions in RenderObject and
+     * PermissionHandler; nothing had yet used it for events.
+     *
+     * Gating the DISPATCH rather than each listener is deliberate: it is one
+     * change here instead of eight across apps we do not all own, and it cannot
+     * be half-adopted — a listener that never learns of the event cannot forget
+     * to check.
+     *
+     * This is scoped to writes made INSIDE SystemOperationContext::run(). A
+     * normal save is unaffected.
+     *
+     * @return bool True when the caller is a system operation and events are withheld.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is an explicit
+     *   ambient-context marker; a static read is the whole point of it.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function suppressLifecycleEvents(): bool
+    {
+        if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === false) {
+            return false;
+        }
+
+        $this->logger->debug(
+            message: '[MagicMapper] System operation in progress; withholding object lifecycle event',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return true;
+    }//end suppressLifecycleEvents()
 
     /**
      * Delete an object entity with event dispatching.

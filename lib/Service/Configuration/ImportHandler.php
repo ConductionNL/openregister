@@ -53,6 +53,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
@@ -4420,6 +4421,57 @@ class ImportHandler
             return;
         }
 
+        // Seeding runs as a SYSTEM operation, which withholds object lifecycle
+        // events (see MagicMapper::suppressLifecycleEvents()).
+        //
+        // Eight apps subscribe to those events, so without this every seeded
+        // object woke all of them: measured mid-repair on this instance, 155
+        // "DocuDesk: Processing event", 116 compliance-subscriber calls and 116
+        // queued text-extraction jobs — document extraction and compliance
+        // scoring over content that shipped WITH the app, before anyone had
+        // configured anything. Seeding is not a user action; there is no intent
+        // for a listener to react to.
+        //
+        // Scoped to seeding alone. Schemas, registers and mappings are imported
+        // outside this call and are unaffected, as is every ordinary save.
+        SystemOperationContext::run(
+            function () use ($configData, $owner, $appId, $configuration, &$result): void {
+                $this->importSeedDataObjects(
+                    configData: $configData,
+                    owner: $owner,
+                    appId: $appId,
+                    configuration: $configuration,
+                    result: $result
+                );
+            }
+        );
+    }//end importSeedData()
+
+    /**
+     * Import the seed-data objects themselves.
+     *
+     * Split out of {@see importSeedData()} so the whole pass runs inside one
+     * SystemOperationContext without indenting several hundred lines.
+     *
+     * @param array         $configData    The configuration payload.
+     * @param string|null   $owner         The owner to attribute seeded objects to.
+     * @param string|null   $appId         The owning app id.
+     * @param Configuration $configuration The configuration entity.
+     * @param array         $result        Accumulated import result, by reference.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function importSeedDataObjects(
+        array $configData,
+        ?string $owner,
+        ?string $appId,
+        Configuration $configuration,
+        array &$result
+    ): void {
+        $seedData = $configData['x-openregister']['seedData'] ?? null;
+
         // Tasks + notes both require a logged-in actor (CalDAV calendar
         // lookup, comment authorship). Capture this once at the top of
         // the import — at occ install time there's no user session, so
@@ -4877,7 +4929,7 @@ class ImportHandler
                 'related_tasks' => $result['relatedTasks'] ?? 0,
             ]
         );
-    }//end importSeedData()
+    }//end importSeedDataObjects()
 
     /**
      * Create related Nextcloud items (files, notes, tasks) for a freshly
