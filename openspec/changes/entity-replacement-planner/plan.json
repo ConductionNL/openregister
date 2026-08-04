@@ -14,117 +14,117 @@
     {
       "id": "1.1",
       "title": "ReplacementRange value object (codepoint offsets, isResidue flag)",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.2",
       "title": "ReplacementPlan value object (accepted ranges, unmatched, partial)",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.3",
       "title": "ReplacementPlanner::plan enumerates candidates on immutable text",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.4",
       "title": "Candidate total order for deterministic tie-breaking",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.5",
       "title": "Maximum-coverage selection via weighted interval scheduling DP",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.6",
       "title": "Record needles with zero accepted ranges as unmatched",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "1.7",
       "title": "Planner core unit tests incl. determinism and numeric needles",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.1",
       "title": "BoundaryPolicy: three classes by numeric embeddability; unknown->bounded",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.2",
       "title": "Unicode-aware word-boundary test",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.3",
       "title": "Apply boundary policy during candidate enumeration",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.3b",
       "title": "Delimited-token rule for DATE, SSN, PHONE, IP_ADDRESS",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.4",
       "title": "mb-aware case folding with folded-to-original offset mapping",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.5",
       "title": "Boundary and case-folding unit tests",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "2.5b",
       "title": "Delimited-token tests incl. 192.168.1.1 inside 192.168.1.10",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "3.1",
       "title": "Compute uncovered residue of rejected candidates",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "3.2",
       "title": "Drop whitespace/punctuation-only residue; cover the rest",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "3.3",
       "title": "Report split-matched needles as partial; partial sets complete:false",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "3.4",
       "title": "Residue coverage unit tests (Vries-Bakker case)",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "4.1",
       "title": "PlanApplier::applyToString builds output in a single pass",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "4.2",
       "title": "SegmentMap with flatten() and scatter()",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "4.3",
       "title": "scatter() writes placeholder to start segment, clears the rest",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "4.4",
       "title": "SegmentMap unit tests incl. multi-segment and multibyte spans",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "4.5",
       "title": "Test that emitted placeholders are never rescanned",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "5.1",
