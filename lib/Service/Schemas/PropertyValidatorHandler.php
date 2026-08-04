@@ -168,9 +168,32 @@ class PropertyValidatorHandler
             return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
         }
 
-        // Type is required.
+        // Type is required at the TOP level, and optional below it.
+        //
+        // JSON Schema treats a schema with no `type` as "any type", and that is
+        // a real thing authors need. procest's CMMN sentry declares
+        // `ifPart: {field, operator, value}` where `value` is compared with
+        // loose equality against bool/string/int, must be an ARRAY for the
+        // in/notIn operators, and numeric for gt/lt. No single type is honest
+        // there, so requiring one forced a lie — and refusing the omission
+        // failed the whole schema import instead.
+        //
+        // It stays required at the top level because those properties become
+        // COLUMNS: mapColumnTypeToSQL() takes a `string $type` and is handed
+        // $column['type'] directly, so a typeless top-level property is a
+        // TypeError during table creation rather than a permissive read. Nested
+        // properties are stored inside a JSON column and derive nothing.
+        //
+        // Depth is the discriminator: validateProperties() builds '/name' for a
+        // top-level property and appends for every level under it.
+        $isTopLevel = (substr_count($path, '/') <= 1);
         if (isset($property['type']) === false) {
-            throw new Exception("Property at '$path' must have a 'type' field");
+            if ($isTopLevel === true) {
+                throw new Exception("Property at '$path' must have a 'type' field");
+            }
+
+            // Untyped nested schema: nothing further here is type-dependent.
+            return true;
         }
 
         // Validate type. Union types arrive as arrays — render them as JSON in
