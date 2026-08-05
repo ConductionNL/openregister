@@ -193,6 +193,8 @@ class FederationController extends Controller
      * @param string $id         The object id or uuid.
      *
      * @return JSONResponse The object or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -277,6 +279,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse The updated object, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -319,6 +323,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse Success, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]

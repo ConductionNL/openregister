@@ -191,6 +191,8 @@ class FlowController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     public function state(string $flowId): JSONResponse
     {
