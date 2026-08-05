@@ -1,9 +1,6 @@
 <?php
 
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
