@@ -501,9 +501,17 @@ class FederationController extends Controller
     /**
      * Set the register/schema context on ObjectService for a share.
      *
+     * `setRegister()` / `setSchema()` resolve a slug or uuid through the
+     * mappers, so a share naming a register or schema that has since been
+     * deleted throws rather than returning null. The only caller wraps this in
+     * its own try/catch; declaring it here so that is a documented contract
+     * rather than an accident of where the call happens to sit.
+     *
      * @param FederatedShare $share The share being served.
      *
      * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the share names a register or schema that no longer exists.
      */
     private function setServeContext(FederatedShare $share): void
     {
