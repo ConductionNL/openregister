@@ -125,6 +125,10 @@ class FlowNodeConfigDialectTest extends TestCase
                         ],
                         'default' => 'skip-code-drop',
                     ],
+                    // The last node of the fixture ends it. Without this the
+                    // document is also a dead end, and a suite about config
+                    // DIALECT would be counting a connectivity warning too.
+                    'exit'   => true,
                 ],
             ],
             'edges' => [['id' => 'onwards', 'from' => 'derive', 'to' => 'code-contradiction']],
@@ -194,6 +198,7 @@ class FlowNodeConfigDialectTest extends TestCase
                     'id'     => 'derive',
                     'type'   => 'openregister.set-fields',
                     'config' => ['fields' => ['x' => 1]],
+                    'exit'   => true,
                 ],
             ],
             'edges' => [],
@@ -233,6 +238,11 @@ class FlowNodeConfigDialectTest extends TestCase
                         ],
                         'default' => 'skip-code-drop',
                     ],
+                    // This is the POSITIVE CONTROL, and it asserts the report is
+                    // EXACTLY empty — so the fixture has to be a complete
+                    // document, ending deliberately, not merely one with the
+                    // right config.
+                    'exit'   => true,
                 ],
             ],
             'edges' => [['id' => 'onwards', 'from' => 'derive', 'to' => 'code-contradiction']],
@@ -286,6 +296,7 @@ class FlowNodeConfigDialectTest extends TestCase
                         'id'     => 'call',
                         'type'   => 'openconnector.source-call',
                         'config' => ['method' => 'GET'],
+                        'exit'   => true,
                     ],
                 ],
                 'edges' => [],

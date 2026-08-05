@@ -193,7 +193,12 @@ class FlowNodeConfigVocabularyTest extends TestCase
             // default id on the left would discard the caller's own id and
             // every "names the offending step" assertion would look for a step
             // that no longer exists by that name.
-            'nodes' => [($edge + ['id' => 'a'])],
+            // `exit` so a one-node fixture is a COMPLETE document, not a dead
+            // end. This suite is about a node's config vocabulary; without the
+            // flag every fixture would also collect a connectivity warning and
+            // each "exactly one finding" assertion would be counting two
+            // unrelated things.
+            'nodes' => [($edge + ['id' => 'a', 'exit' => true])],
             'edges' => [],
         ];
 
