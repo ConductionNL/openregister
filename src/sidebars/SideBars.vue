@@ -7,6 +7,20 @@
 	<EntitiesSideBar v-else-if="$route.path.startsWith('/entities')" />
 	<AuditTrailSideBar v-else-if="$route.path.startsWith('/audit-trails')" />
 	<SearchTrailSideBar v-else-if="$route.path.startsWith('/search-trails')" />
+	<!--
+		The flow canvas's controls — step palette, Save, Run, run history.
+
+		These are declared on the manifest page as `sidebarComponent:
+		FlowDetailSidebar`, and CnAppRoot does resolve that key. It could never
+		render here, though: CnAppRoot only falls back to it as the DEFAULT
+		content of its #sidebar slot, and this app fills that slot itself, so
+		consumer content wins by Vue's ordinary slot mechanic. The manifest key
+		was live config that rendered nothing.
+
+		The symptom was a flow page with no way to save, run, or add a step —
+		while its own empty state said "Add a step from the sidebar".
+	-->
+	<FlowDetailSidebar v-else-if="/^\/flows\/.+/.test($route.path)" />
 </template>
 
 <script>
@@ -18,6 +32,7 @@ import DeletedSideBar from './deleted/DeletedSideBar.vue'
 import EntitiesSideBar from './entities/EntitiesSideBar.vue'
 import AuditTrailSideBar from './logs/AuditTrailSideBar.vue'
 import SearchTrailSideBar from './logs/SearchTrailSideBar.vue'
+import FlowDetailSidebar from '../views/flows/FlowDetailSidebar.vue'
 
 export default {
 	name: 'SideBars',
@@ -30,6 +45,7 @@ export default {
 		EntitiesSideBar,
 		AuditTrailSideBar,
 		SearchTrailSideBar,
+		FlowDetailSidebar,
 	},
 }
 </script>
