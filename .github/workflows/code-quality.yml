@@ -107,23 +107,26 @@ jobs:
       #
       # Pinned to a tag, not `main`, so a change to the gate package cannot
       # alter this repository's verdict without a commit here to move the pin.
-      # v1.0.1 deliberately matches the pin openbuild already runs, so this
-      # repo's first result is directly comparable with the only live-verified
-      # reference the fleet has. (v1.1.0 exists; moving to it is a separate,
-      # measurable change.)
+      # v1.0.1 deliberately matched the pin openbuild ran, so this repo's first
+      # result was directly comparable with the only live-verified reference
+      # the fleet had at the time.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.0.1
-      # Set explicitly, because the shared workflow's default flipped to `true`
-      # and this repo cannot honestly satisfy it yet. Every gate PASSES here;
-      # what does not run is gate-33, whose producer (`enable-axe`) is
-      # deliberately off for the reason recorded immediately below, and gate-4.
-      # Inheriting the new default would block this repo on a deferral it made
-      # on purpose, and the usual response to that is to switch the control off
-      # everywhere — which costs more than it saves.
-      #
-      # Remove this line in the same change that turns `enable-axe` on, so the
-      # coverage requirement arrives with the coverage.
-      hydra-gates-require-full-coverage: false
+      # PIN MOVED v1.0.1 -> v1.3.0. `hydra-gates-require-full-coverage`
+      # (default ON) fails a run when a gate whose subject matter EXISTS did
+      # not report; its contract is that a not-applicable gate must DECLARE
+      # itself. v1.0.1 contains ZERO `_skip` calls — no na/structural/wiring
+      # vocabulary at all — so such a gate emits NOTHING and is counted as
+      # "DID NOT RUN". v1.3.0 ships 36 such declarations. Measured on doriath
+      # (PR #160): gates 4/24/33 went from unexplained "DID NOT RUN" to
+      # explicit NOT APPLICABLE, and Hydra Gates went failure -> success.
+      hydra-gates-ref: v1.3.0
+      # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
+      # the comment it replaced instructed: the coverage requirement arrives
+      # with the coverage. Under v1.3.0 gate-4 and gate-33 DECLARE themselves
+      # not applicable rather than silently emitting nothing, so the default
+      # (ON) is satisfiable without turning `enable-axe` on. Keeping the escape
+      # hatch would hold this repo on the silent-green path the declarations
+      # exist to close.
       # `enable-axe` is deliberately NOT set. It is the input that produces
       # `tests/axe/report.json`, which gate-33 consumes; without it gate-33
       # reports SKIPPED, as it has done in every repo in the fleet. Measured
