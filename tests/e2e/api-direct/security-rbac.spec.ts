@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Security and RBAC e2e tests — covers:
  *   - auth-system (Basic auth, session auth, unauthenticated rejection)

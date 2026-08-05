@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Kanban + calendar view-presentation e2e tests — REST contract for the
  * "Tables that scale" feature (kanban/calendar object views shipped in

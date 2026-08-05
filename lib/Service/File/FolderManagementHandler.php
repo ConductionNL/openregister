@@ -59,7 +59,7 @@ use Symfony\Component\Uid\Uuid;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
