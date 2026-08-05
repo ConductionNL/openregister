@@ -4604,6 +4604,14 @@ class ObjectService
      * @return void
      *
      * @spec exclude Context-reset setter nulling the current register/schema/object fields; no business rule.
+     *
+     * @orphaned-write-capability exclude Live, called only from a sibling repo.
+     *   openconnector's EndpointService calls it from six sites (lines 1480,
+     *   2741, 2750, 3227, 3229 and 3684) before each fresh lookup. CI checks
+     *   out this repo alone, so the caller index cannot see them and the method
+     *   reads as dead. This is the exact case hydra#106 recorded against this
+     *   very method: acting on that verdict would have broken endpoint
+     *   rendering.
      */
     public function clearCurrents(): void
     {
