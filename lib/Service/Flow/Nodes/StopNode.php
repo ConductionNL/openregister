@@ -37,7 +37,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class StopNode implements IFlowNode, IFlowNodeConfigKeys
+class StopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTerminalNode
 {
     /**
      * Constructor.
