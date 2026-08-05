@@ -103,7 +103,13 @@ class FederatedConfigController extends Controller
     /**
      * Package a selection of a type's configuration into a portable bundle.
      *
-     * @return JSONResponse The bundle, or a 4xx.
+     * Gated on `canPublish`, exactly like `publish()`. A bundle IS the payload
+     * `publish()` pushes out — the same `serialise()` call, the same bytes,
+     * minus the GitHub round-trip. Gating one and not the other made the
+     * publish gate decorative: anyone refused by `canPublish` could call
+     * `bundle` and receive the identical export to do what they liked with.
+     *
+     * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -114,6 +120,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function bundle(): JSONResponse
     {
+        if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
+        }
+
         $type = trim((string) $this->request->getParam('type', ''));
         if ($type === '') {
             return new JSONResponse(['error' => 'A bundle needs a type.'], Http::STATUS_BAD_REQUEST);

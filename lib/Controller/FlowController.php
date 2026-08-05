@@ -174,15 +174,32 @@ class FlowController extends Controller
      * shape of the data — a flow's state is arbitrary and "looks like a slot
      * table" is not a contract.
      *
+     * The flow is resolved through `FlowService` FIRST, and the state is only
+     * read once that resolution succeeds. This method used to hand the
+     * client-supplied `{flowId}` straight to `FlowStateMapper`, which applies no
+     * organisation scoping at all — so any authenticated user could read any
+     * other organisation's flow state by uuid. It was also the one method in
+     * this class that broke the invariant stated at the top of the file ("every
+     * CRUD method goes through FlowService, never FlowMapper"). A flow the
+     * caller may not see now 404s exactly like a flow that does not exist,
+     * which is the same non-oracle refusal `FlowService::find()` gives
+     * everywhere else.
+     *
      * @param string $flowId The flow's uuid.
      *
-     * @return JSONResponse `{ flowId, state, updated }`, plus `{ key, results, total }` with `?list=`.
+     * @return JSONResponse `{ flowId, state, updated }`, plus `{ key, results, total }` with `?list=`, or 404.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function state(string $flowId): JSONResponse
     {
+        try {
+            $this->flows->find(uuid: $flowId);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
         $stored  = $this->flowState->findByFlow(flowId: $flowId);
         $state   = [];
         $updated = null;
