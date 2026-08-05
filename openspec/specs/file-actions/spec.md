@@ -694,41 +694,54 @@ with a clear `NotPermittedException` rather than an opaque storage error.
 - **WHEN** `UpdateFileHandler` updates its content
 - **THEN** `File::putContent()` MUST be called with the new content
 
+### Requirement: Object and register folder provisioning
 
-### Requirement: Object register folder management
+`FileService` MUST expose the folder-provisioning entry points that the file
+pipeline and the object save path depend on, because files are always stored
+under a folder belonging to a `Register` or an `ObjectEntity`. Each entry point
+is a facade over `FolderManagementHandler`.
 
-Every register, schema and object owns a backing Nextcloud folder, and that
-folder is provisioned on demand rather than assumed to exist. Callers reach
-files through the entity, so an entity without a folder is not a degraded
-state to be reported — it is one to be repaired before the first file arrives.
+- `FileService::createEntityFolder(Register|ObjectEntity $entity)` MUST be the
+  unified entry point: a `Register` MUST be dispatched to
+  `createRegisterFolderById()` and an `ObjectEntity` to `createObjectFolderById()`,
+  both with the current user resolved by `FileService::getCurrentUser()`. It MUST
+  re-throw `FolderAccessDeniedException` unchanged so the controller can map it to
+  HTTP 403 with a structured body (see the `self-folder-access-control` spec), and
+  it MUST log and return `null` for any other exception rather than propagating it.
+- `FileService::createFolder(string $folderPath)` MUST be an idempotent
+  get-or-create for a folder at `$folderPath`: the path MUST be trimmed of leading
+  and trailing `/`, the OpenRegister root folder MUST be created when absent —
+  creating the `openregister` group when that too is absent — and an existing
+  folder at the path MUST be returned as-is rather than replaced.
+- `FileService::createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null)`
+  MUST provision the object's folder beneath its register/schema folders and
+  return the folder ID **without** writing that ID back onto the entity, so a
+  caller can set the folder ID and persist the object in a single save.
 
-- `RegisterService::createFromArray()` MUST provision the register's folder
-  after the mapper has created the row, and MUST persist the resulting folder
-  id back onto the register.
-- `RegisterService::updateFromArray()` MUST ensure the folder exists on every
-  update. A register whose `folder` is null, empty, or a legacy string PATH
-  (rather than a numeric node id) MUST be healed by creating the folder and
-  storing its id, so documents written before folder ids were stored keep
-  working without a migration.
-- `FileService::createEntityFolder()` MUST nest an object's folder under its
-  register's folder, so the hierarchy on disk mirrors the data model.
-- Folder creation MUST be idempotent: creating a folder that already exists
-  MUST return the existing node rather than fail or duplicate it.
-- Failure to create a folder MUST be logged and MUST NOT abort the create or
-  update. The entity is still valid; only its file surface is unavailable, and
-  the next write repairs it.
+#### Scenario: Register and object dispatch to their own provisioning paths
+- **GIVEN** a `Register` and an `ObjectEntity`
+- **WHEN** `createEntityFolder()` is called with each in turn
+- **THEN** the `Register` MUST be routed to `createRegisterFolderById()` and the `ObjectEntity` to `createObjectFolderById()`
 
-#### Scenario: Creating a register provisions its folder
-- **GIVEN** a register created from array data
-- **WHEN** `createFromArray()` returns
-- **THEN** the register MUST carry the numeric node id of a folder that exists
+#### Scenario: A folder access denial is not swallowed
+- **GIVEN** `createObjectFolderById()` throws `FolderAccessDeniedException`
+- **WHEN** `createEntityFolder()` handles it
+- **THEN** the exception MUST propagate unchanged
+- **AND** the method MUST NOT return `null`
 
-#### Scenario: A legacy string folder path is healed on update
-- **GIVEN** a stored register whose `folder` is a string path, not a node id
-- **WHEN** `updateFromArray()` runs
-- **THEN** a folder MUST be created and its numeric id stored on the register
+#### Scenario: Any other provisioning failure degrades to null
+- **GIVEN** the underlying provisioning throws a generic `Exception`
+- **WHEN** `createEntityFolder()` handles it
+- **THEN** the failure MUST be logged and `null` MUST be returned
 
-#### Scenario: Folder creation failure does not abort the write
-- **GIVEN** a register whose folder cannot be created
-- **WHEN** `createFromArray()` runs
-- **THEN** the register MUST still be returned, and the failure MUST be logged
+#### Scenario: Creating an existing folder returns the existing node
+- **GIVEN** a folder already exists at `$folderPath`
+- **WHEN** `createFolder($folderPath)` is called
+- **THEN** the existing folder node MUST be returned and MUST NOT be replaced
+
+#### Scenario: Folder ID is returned without mutating the entity
+- **GIVEN** an `ObjectEntity` with no folder yet
+- **WHEN** `createObjectFolderWithoutUpdate()` provisions its folder
+- **THEN** the new folder ID MUST be returned
+- **AND** the entity's own folder property MUST NOT have been written
+
