@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Workflow\Definition;
 use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
@@ -102,14 +101,55 @@ class FlowEngine
      *                                              engine stays unit-testable without a
      *                                              container; absent, nothing objects,
      *                                              exactly as an empty registry does.
+     * @param FlowTokenRouter|null       $router    Decides which exit a token takes.
+     * @param FlowItemPlacement|null     $placement Decides which items sit on which place.
+     *
+     *                                              Both are added LAST, and defaulted:
+     *                                              three unit tests construct the engine
+     *                                              positionally and one passes the
+     *                                              oversight registry third, so slotting a
+     *                                              parameter in ahead of it would silently
+     *                                              rebind that argument — a test that
+     *                                              still passes while checking nothing.
+     *                                              Neither holds state, so a locally-made
+     *                                              one is indistinguishable from an
+     *                                              injected one.
      */
     public function __construct(
         private readonly FlowDefinitionBuilder $builder,
         private readonly LoggerInterface $logger,
-        private readonly ?FlowOversightRegistry $oversight=null
+        private readonly ?FlowOversightRegistry $oversight=null,
+        private readonly ?FlowTokenRouter $router=null,
+        private readonly ?FlowItemPlacement $placement=null
     ) {
 
     }//end __construct()
+
+    /**
+     * The token router, made on demand when none was injected.
+     *
+     * @return FlowTokenRouter The router.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function router(): FlowTokenRouter
+    {
+        return ($this->router ?? new FlowTokenRouter());
+
+    }//end router()
+
+    /**
+     * The item placement, made on demand when none was injected.
+     *
+     * @return FlowItemPlacement The placement.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    private function placement(): FlowItemPlacement
+    {
+        return ($this->placement ?? new FlowItemPlacement());
+
+    }//end placement()
 
     /**
      * Ask the oversight checks whether the next hop may run.
@@ -261,7 +301,7 @@ class FlowEngine
 
         // Per-place item buffers. Items belong to the PLACES a token sits on,
         // not to the run globally ({@see self::seedPlaceItems()}).
-        $placeItems = $this->seedPlaceItems(
+        $placeItems = $this->placement()->seedPlaceItems(
             workflow: $workflow,
             subject: $subject,
             definition: $definition,
@@ -323,7 +363,7 @@ class FlowEngine
             }
 
             $name = $transition->getName();
-            $step = $this->stepFor(flow: $flow, transitionName: $name);
+            $step = $this->router()->stepFor(flow: $flow, transitionName: $name);
 
             // A step reads the items on its input place(s). For a join — several
             // incoming edges converging on one node — that is the concatenation
@@ -331,7 +371,7 @@ class FlowEngine
             // exactly what a Merge node then refines. The Petri net already
             // holds the join until every input place is marked, so wait-for-both
             // is the default and needs no code here.
-            $itemsIn = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $itemsIn = $this->placement()->itemsForTransition(transition: $transition, placeItems: $placeItems);
             $items   = $itemsIn;
 
             // The step's catalogue id, carried onto every log entry so the run
@@ -360,15 +400,15 @@ class FlowEngine
                     'durationMs' => 0,
                 ];
 
-                $taken      = $this->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
-                $placeItems = $this->advanceItems(
+                $taken      = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
+                $placeItems = $this->placement()->advanceItems(
                     transition: $transition,
                     placeItems: $placeItems,
                     items: $items,
                     taken: $taken
                 );
                 $workflow->apply(subject: $subject, transitionName: $name);
-                $this->keepOnlyTakenExits(
+                $this->router()->keepOnlyTakenExits(
                     workflow: $workflow,
                     subject: $subject,
                     transition: $transition,
@@ -472,11 +512,11 @@ class FlowEngine
 
             // Which single exit this firing takes. A token is unique and
             // exclusive, so a branching node hands it to exactly one successor.
-            $taken = $this->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
+            $taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
 
             // Move the items in lock-step with the token: onto the output
             // places, off the consumed inputs ({@see self::advanceItems()}).
-            $placeItems = $this->advanceItems(
+            $placeItems = $this->placement()->advanceItems(
                 transition: $transition,
                 placeItems: $placeItems,
                 items: $items,
@@ -491,7 +531,7 @@ class FlowEngine
             // Symfony's workflow deposits a token on EVERY output place, which
             // is right for a parallel split and wrong for a choice. Withdraw
             // the ones the taken exit did not claim, or every branch runs.
-            $this->keepOnlyTakenExits(
+            $this->router()->keepOnlyTakenExits(
                 workflow: $workflow,
                 subject: $subject,
                 transition: $transition,
@@ -525,37 +565,6 @@ class FlowEngine
         return $flow;
 
     }//end withStartNode()
-
-    /**
-     * Find the step configuration attached to a transition.
-     *
-     * A transition IS a node: `FlowDefinitionBuilder` names each transition
-     * after the action node it lowered, so the lookup is a node lookup by id.
-     * It used to search `edges[]`, because an edge was the transition and the
-     * step rode on it — see `or-flow-action-nodes` for why that inverted.
-     *
-     * @param array  $flow           The flow document.
-     * @param string $transitionName The transition name, which is a node id.
-     *
-     * @return array The step config, or an empty array when no node matches.
-     *
-     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-     */
-    private function stepFor(array $flow, string $transitionName): array
-    {
-        foreach (($flow['nodes'] ?? []) as $node) {
-            if (is_array($node) === false) {
-                continue;
-            }
-
-            if (trim((string) ($node['id'] ?? '')) === $transitionName) {
-                return $node;
-            }
-        }
-
-        return [];
-
-    }//end stepFor()
 
     /**
      * Decide what a failed step does, per its `onError` policy.
@@ -673,7 +682,7 @@ class FlowEngine
         $fallback = null;
 
         foreach ($enabled as $transition) {
-            $condition = $this->conditionReaching(flow: $flow, nodeId: $transition->getName());
+            $condition = $this->router()->conditionReaching(flow: $flow, nodeId: $transition->getName());
 
             if ($condition === null || $condition === []) {
                 // Remember the first default edge; keep looking for a match.
@@ -681,7 +690,7 @@ class FlowEngine
                 continue;
             }
 
-            $items = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $items = $this->placement()->itemsForTransition(transition: $transition, placeItems: $placeItems);
             $data  = FlowExpression::dataFor(
                 item: ($items[0] ?? []),
                 itemCount: count($items),
@@ -696,415 +705,4 @@ class FlowEngine
         return $fallback;
 
     }//end selectTransition()
-
-    /**
-     * The condition guarding the path into a node, or null when it is a default.
-     *
-     * ## Conditions live on the NODE, as named exits
-     *
-     * A node declares its branches, and each branch is an EXIT POINT:
-     *
-     * ```
-     * { "id": "route", "type": "openregister.route", "exits": [
-     *     { "id": "high", "condition": { ">":  [ {"var": "json.n"}, 10 ] } },
-     *     { "id": "low",  "condition": { "<=": [ {"var": "json.n"}, 10 ] } },
-     *     { "id": "else" }
-     * ] }
-     * ```
-     *
-     * and an edge says which exit it leaves from
-     * (`{ from: 'route', fromExit: 'high', to: 'hi' }`).
-     *
-     * This is what lets a node have more than one exit point and lets an editor
-     * draw one port per branch: the branches are a property of the node and
-     * exist BEFORE any edge is drawn, so there is something to drag from. It
-     * replaces the previous `edges[].condition`, which could not be rendered as
-     * a port for exactly that reason — the branch did not exist until the line
-     * did.
-     *
-     * An exit with no condition is the default/else: eligible, but beaten by a
-     * conditioned sibling that matches (the ordering rules in
-     * {@see self::selectTransition()} are unchanged).
-     *
-     * @param array<string, mixed> $flow   The flow document.
-     * @param string               $nodeId The candidate node.
-     *
-     * @return array|null The guard, or null when the path is unconditional.
-     *
-     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-     */
-
-    /**
-     * The single output place a fired node hands its token to.
-     *
-     * A token is unique and exclusive: a node may declare several exits, but
-     * exactly ONE of them is taken per firing. Exits are tried in declaration
-     * order — the first whose condition holds wins — and the exit that declares
-     * no condition is the else, taken when nothing matched.
-     *
-     * The else is not optional. `FlowDefinitionBuilder` refuses a branching node
-     * without one, because a token with nowhere to go does not error: the run
-     * simply stops, having reported no failure, which is indistinguishable from
-     * a flow that finished.
-     *
-     * Returns every output place unchanged for a node that does not branch,
-     * which is also how a genuine parallel split keeps working: it has no
-     * conditioned exits, so there is nothing to choose between.
-     *
-     * @param array<string, mixed> $flow       The flow document.
-     * @param object               $transition The fired transition (a node).
-     * @param array<int, mixed>    $items      What the step produced.
-     * @param array<string, mixed> $context    Run-level metadata.
-     *
-     * @return array<string> The output places that receive the token.
-     *
-     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-     */
-    private function takenExits(array $flow, object $transition, array $items, array $context): array
-    {
-        $all  = array_map(static fn ($t): string => (string) $t, $transition->getTos());
-        $node = $this->stepFor(flow: $flow, transitionName: $transition->getName());
-        if (empty($node['exits'] ?? []) === true) {
-            return $all;
-        }
-
-        $data     = FlowExpression::dataFor(
-            item: ($items[0] ?? []),
-            itemCount: count($items),
-            context: $context
-        );
-        $fallback = null;
-
-        foreach ($node['exits'] as $exit) {
-            if (is_array($exit) === false) {
-                continue;
-            }
-
-            $targets = $this->placesForExit(
-                flow: $flow,
-                nodeId: $transition->getName(),
-                exitId: (string) ($exit['id'] ?? ''),
-                candidates: $all
-            );
-            if (empty($targets) === true) {
-                continue;
-            }
-
-            $condition = ($exit['condition'] ?? null);
-            if (is_array($condition) === false || $condition === []) {
-                $fallback = ($fallback ?? $targets);
-                continue;
-            }
-
-            if (FlowExpression::isTrue(logic: $condition, data: $data) === true) {
-                return $targets;
-            }
-        }//end foreach
-
-        // Nothing matched. The else takes it; a branching node is required to
-        // have one, so reaching null here means the document got past the
-        // builder's guard and the token would vanish — return nothing rather
-        // than silently broadcasting to every branch.
-        return ($fallback ?? []);
-
-    }//end takenExits()
-
-    /**
-     * The output places reached through one named exit.
-     *
-     * @param array<string, mixed> $flow       The flow document.
-     * @param string               $nodeId     The firing node.
-     * @param string               $exitId     The exit.
-     * @param array<string>        $candidates The transition's output places.
-     *
-     * @return array<string> The matching places.
-     */
-    private function placesForExit(array $flow, string $nodeId, string $exitId, array $candidates): array
-    {
-        $places = [];
-        foreach (($flow['edges'] ?? []) as $edge) {
-            if (is_array($edge) === false || (string) ($edge['from'] ?? '') !== $nodeId) {
-                continue;
-            }
-
-            if (trim((string) ($edge['fromExit'] ?? '')) !== $exitId) {
-                continue;
-            }
-
-            $to = ($edge['to'] ?? null);
-            if (is_array($to) === false) {
-                $to = [$to];
-            }
-
-            foreach ($to as $target) {
-                $target = (string) $target;
-                if (in_array($target, $candidates, true) === true) {
-                    $places[] = $target;
-                }
-            }
-        }//end foreach
-
-        return array_values(array_unique($places));
-
-    }//end placesForExit()
-
-    /**
-     * The condition guarding the path into a node, or null when it is a default.
-     *
-     * Used to pick between several ENABLED transitions. Exit selection itself
-     * happens in {@see self::takenExits()}, at the moment a node fires; this is
-     * the read from the other side, for a node deciding whether it is the one
-     * that should run.
-     *
-     * @param array<string, mixed> $flow   The flow document.
-     * @param string               $nodeId The candidate node.
-     *
-     * @return array|null The guard, or null when the path is unconditional.
-     *
-     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-     */
-    private function conditionReaching(array $flow, string $nodeId): ?array
-    {
-        foreach (($flow['edges'] ?? []) as $edge) {
-            if (is_array($edge) === false) {
-                continue;
-            }
-
-            $to = ($edge['to'] ?? null);
-            if (is_array($to) === false) {
-                $to = [$to];
-            }
-
-            $targets = array_map(static fn ($t): string => (string) $t, $to);
-            if (in_array($nodeId, $targets, true) === false) {
-                continue;
-            }
-
-            $exitId = trim((string) ($edge['fromExit'] ?? ''));
-            if ($exitId === '') {
-                // An unbranched edge is unconditional: the node it leaves has
-                // one way out, so there is nothing to choose between.
-                return null;
-            }
-
-            $source = $this->stepFor(flow: $flow, transitionName: (string) ($edge['from'] ?? ''));
-            foreach (($source['exits'] ?? []) as $exit) {
-                if (is_array($exit) === false || (string) ($exit['id'] ?? '') !== $exitId) {
-                    continue;
-                }
-
-                $condition = ($exit['condition'] ?? null);
-
-                // An exit that exists but declares no condition is the default
-                // branch — reported as unconditional so it becomes the fallback
-                // rather than being treated as a failed match.
-                if (is_array($condition) === true && $condition !== []) {
-                    return $condition;
-                }
-
-                return null;
-            }
-
-            // The edge names an exit the node does not declare. Treated as
-            // unconditional rather than silently unreachable: a branch that can
-            // never be taken is a flow that stops for no visible reason.
-            return null;
-        }//end foreach
-
-        return null;
-
-    }//end conditionReaching()
-
-    /**
-     * Gather the items a transition reads: every input place's items, in the
-     * froms' declared order.
-     *
-     * For a normal step this is just its one input place. For a join it is the
-     * concatenation of every incoming branch's items — which is what a Merge
-     * node receives and then combines.
-     *
-     * @param object               $transition The transition.
-     * @param array<string, array> $placeItems Items per place.
-     *
-     * @return array<int, mixed> The gathered input items.
-     *
-     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
-     */
-    private function itemsForTransition(object $transition, array $placeItems): array
-    {
-        $items = [];
-        foreach ($transition->getFroms() as $from) {
-            foreach (($placeItems[(string) $from] ?? []) as $item) {
-                $items[] = $item;
-            }
-        }
-
-        return $items;
-
-    }//end itemsForTransition()
-
-    /**
-     * Seed the per-place item buffers from the current marking.
-     *
-     * Items belong to the PLACES a token sits on, not to the run globally: a
-     * parallel split hands each branch the items from the split point, and a
-     * join reads the items every incoming branch left on it. A single shared
-     * list cannot express either — the second branch to run would overwrite
-     * the first.
-     *
-     * Seeded from the CURRENT marking, which is what makes resume work: a fresh
-     * run's marking is the initial place, a resumed run's is wherever it
-     * suspended, and either way the stored items land on the place that holds
-     * the token.
-     *
-     * @param Workflow   $workflow   The workflow.
-     * @param object     $subject    The subject holding the marking.
-     * @param Definition $definition The definition (for the initial-place fallback).
-     * @param array      $items      The seed items.
-     *
-     * @return array<string, array> Items keyed by place.
-     *
-     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
-     */
-    private function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array
-    {
-        $placeItems = [];
-        foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
-            $placeItems[(string) $place] = $items;
-        }
-
-        if ($placeItems === []) {
-            foreach ($definition->getInitialPlaces() as $place) {
-                $placeItems[(string) $place] = $items;
-            }
-        }
-
-        return $placeItems;
-
-    }//end seedPlaceItems()
-
-    /**
-     * Move a fired transition's items: onto its output places, off its inputs.
-     *
-     * Per-item routing (n8n's If/Switch) lives here. An item that names an output
-     * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
-     * place with that name; an item that names none is broadcast to every output,
-     * which is the ordinary behaviour and what a parallel split relies on. So a
-     * step whose items carry no output tag distributes exactly as before — this
-     * is additive, not a change to any existing flow. The tag is stripped as the
-     * item lands, so it never lingers to misroute a later step.
-     *
-     * Clearing the consumed inputs matters for a loop that re-enters the
-     * transition — it must read fresh items, not a stale copy left behind.
-     *
-     * @param object               $transition The fired transition.
-     * @param array<string, array> $placeItems The current per-place buffers.
-     * @param array                $items      What the step produced.
-     * @param array<string>        $taken      The output places the exit claimed.
-     *
-     * @return array<string, array> The updated buffers.
-     *
-     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-     */
-    private function advanceItems(object $transition, array $placeItems, array $items, array $taken): array
-    {
-        foreach ($transition->getTos() as $to) {
-            // Only the taken exit receives items. Seeding a branch the token
-            // never reaches would leave stale items for a later firing to pick
-            // up as if they were fresh.
-            if (in_array((string) $to, $taken, true) === false) {
-                unset($placeItems[(string) $to]);
-                continue;
-            }
-
-            $placeItems[(string) $to] = $this->itemsForOutput(items: $items, output: (string) $to);
-        }
-
-        foreach ($transition->getFroms() as $from) {
-            unset($placeItems[(string) $from]);
-        }
-
-        return $placeItems;
-
-    }//end advanceItems()
-
-    /**
-     * Withdraw the tokens the taken exit did not claim.
-     *
-     * `Workflow::apply()` marks EVERY output place, which is correct for a
-     * parallel split and wrong for a choice — and the difference is invisible
-     * until the losing branch runs anyway, one iteration later, with no error.
-     * That is what a token being "unique and exclusive" rules out.
-     *
-     * A node with no conditioned exits takes every output, so a genuine split
-     * passes through here untouched.
-     *
-     * @param object        $workflow   The workflow.
-     * @param object        $subject    The marking-carrying subject.
-     * @param object        $transition The fired transition.
-     * @param array<string> $taken      The output places the exit claimed.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-     */
-    private function keepOnlyTakenExits(object $workflow, object $subject, object $transition, array $taken): void
-    {
-        $tos = array_map(static fn ($t): string => (string) $t, $transition->getTos());
-        if (count($taken) === count($tos)) {
-            return;
-        }
-
-        $marking = $workflow->getMarking(subject: $subject);
-        foreach ($tos as $place) {
-            if (in_array($place, $taken, true) === false && $marking->has($place) === true) {
-                $marking->unmark($place);
-            }
-        }
-
-        $workflow->getMarkingStore()->setMarking(subject: $subject, marking: $marking);
-
-    }//end keepOnlyTakenExits()
-
-    /**
-     * The items that belong on one output place: those routed to it, plus the
-     * unrouted ones that go everywhere. The output tag is dropped on the way.
-     *
-     * @param array<int, array> $items  The produced items.
-     * @param string            $output The output place's name.
-     *
-     * @return array<int, array> The items for that output, tag removed.
-     *
-     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-     */
-    private function itemsForOutput(array $items, string $output): array
-    {
-        // A routing step tags an item with the NODE it is routing to, and a
-        // node's input place is named after the node — so the tag and the place
-        // name are normally the same string. The one exception is a declared
-        // join, whose input places are `<node>#<edge>` so it can require a token
-        // on each. Comparing the raw place name there would match nothing and
-        // silently drop every routed item into an empty branch, which is the
-        // failure mode this engine exists to refuse rather than produce.
-        $target = $output;
-        $split  = strpos($output, '#');
-        if ($split !== false) {
-            $target = substr($output, 0, $split);
-        }
-
-        $out = [];
-        foreach ($items as $item) {
-            $tag = FlowItems::outputOf(member: (array) $item);
-            if ($tag !== null && $tag !== $target) {
-                // Routed elsewhere: not this output's item.
-                continue;
-            }
-
-            unset($item[FlowItems::OUTPUT]);
-            $out[] = $item;
-        }
-
-        return $out;
-
-    }//end itemsForOutput()
 }//end class

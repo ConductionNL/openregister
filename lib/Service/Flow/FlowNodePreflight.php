@@ -312,19 +312,57 @@ class FlowNodePreflight
      */
     public function inspect(array $flow): array
     {
-        $blocking = [];
+        $blocking = $this->preInversionFindings(flow: $flow);
         $warnings = [];
 
-        // A pre-inversion document is refused here as well as by the builder.
-        //
-        // Walking nodes made this a hole rather than closing one: an un-migrated
-        // flow carries its steps on EDGES, so the loop below finds no typed
-        // nodes, produces no findings, and the report says "valid" — about the
-        // one document shape the engine will certainly refuse. Measured on the
-        // live Hydra sequencer, which validated clean while being unrunnable.
-        //
-        // The author reading "the flow engine accepts this graph" in the editor
-        // is exactly who needs to be told otherwise.
+        if ($blocking !== []) {
+            // Return early. Every later finding would be about a document in a
+            // shape nothing will read, and burying the one actionable message
+            // under them helps nobody.
+            return ['blocking' => $blocking, 'warnings' => $warnings];
+        }
+
+        // NODES, not edges. A node is the action that runs (or-flow-action-nodes),
+        // so a preflight still walking `edges[]` would inspect a list where
+        // nothing carries a `type` any more: every loop body skipped, zero
+        // findings, and a report that says "valid" about a document it never
+        // looked at. A validator that cannot fail is worse than none, because it
+        // is believed.
+        foreach (($flow['nodes'] ?? []) as $index => $entry) {
+            $findings = $this->nodeFindings(entry: $entry, index: $index);
+            $blocking = array_merge($blocking, $findings['blocking']);
+            $warnings = array_merge($warnings, $findings['warnings']);
+        }//end foreach
+
+        return [
+            'blocking' => $blocking,
+            'warnings' => $warnings,
+        ];
+
+    }//end inspect()
+
+    /**
+     * Refuse a document whose steps still sit on edges.
+     *
+     * Walking nodes made this a hole rather than closing one: an un-migrated
+     * flow carries its steps on EDGES, so the node loop finds no typed nodes,
+     * produces no findings, and the report says "valid" — about the one
+     * document shape the engine will certainly refuse. Measured on the live
+     * Hydra sequencer, which validated clean while being unrunnable.
+     *
+     * The author reading "the flow engine accepts this graph" in the editor is
+     * exactly who needs to be told otherwise.
+     *
+     * @param array $flow The flow document.
+     *
+     * @return array<int, array<string, string>> Blocking findings, empty when the shape is current.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function preInversionFindings(array $flow): array
+    {
+        $blocking = [];
+
         foreach (($flow['edges'] ?? []) as $index => $edge) {
             if (is_array($edge) === false) {
                 continue;
@@ -342,90 +380,96 @@ class FlowNodePreflight
                 'reason' => self::REASON_PRE_INVERSION_SHAPE,
                 'detail' => 'the step is on an edge; a node is the action that runs',
             ];
-        }
+        }//end foreach
 
-        if ($blocking !== []) {
-            // Return early. Every later finding would be about a document in a
-            // shape nothing will read, and burying the one actionable message
-            // under them helps nobody.
+        return $blocking;
+
+    }//end preInversionFindings()
+
+    /**
+     * Inspect one node entry.
+     *
+     * @param mixed      $entry The raw node entry from the document.
+     * @param int|string $index Its position, used when it carries no id or name.
+     *
+     * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function nodeFindings(mixed $entry, int | string $index): array
+    {
+        $blocking = [];
+        $warnings = [];
+
+        if (is_array($entry) === false) {
             return ['blocking' => $blocking, 'warnings' => $warnings];
         }
 
-        // NODES, not edges. A node is the action that runs (or-flow-action-nodes),
-        // so a preflight still walking `edges[]` would inspect a list where
-        // nothing carries a `type` any more: every loop body skipped, zero
-        // findings, and a report that says "valid" about a document it never
-        // looked at. A validator that cannot fail is worse than none, because it
-        // is believed.
-        foreach (($flow['nodes'] ?? []) as $index => $edge) {
-            if (is_array($edge) === false) {
-                continue;
-            }
+        $edge = $entry;
+        $type = trim((string) ($edge['type'] ?? ''));
+        if ($type === '') {
+            return ['blocking' => $blocking, 'warnings' => $warnings];
+        }
 
-            $type = trim((string) ($edge['type'] ?? ''));
-            if ($type === '') {
-                continue;
-            }
-
-            $stepId = (string) ($edge['id'] ?? $edge['name'] ?? $index);
-            $node   = $this->resolve(type: $type);
-            if ($node !== null) {
-                // The type resolving is only half the question. A node reads the
-                // config keys IT implements, and silently ignores the rest — so
-                // an edge written in another node's dialect resolves fine, runs,
-                // and returns its input untouched while reporting COMPLETED.
-                //
-                // Measured across the ten hydra flows: four are inert this way.
-                // `hydra-analyze-verdicts` declares `routes[].when`/`routes[].to`
-                // where RouterNode reads `rules[].output`, and `config.fields`
-                // where SetFieldsNode reads `set`/`compute`. The flow cannot run
-                // at all, and `scripts/test-flow-definitions.sh` passes on it —
-                // that script checks graph STRUCTURE and is blind to dialect.
-                //
-                // Every node already implements `validateConfig()`; the contract
-                // is on IFlowNode. It was simply never called at save time.
-                // SetFieldsNode's own docblock says the check exists so a
-                // malformed expression is "caught HERE, when the flow is saved,
-                // rather than evaluating to null on every item at 03:00" — which
-                // is exactly what it did NOT do, because nothing called it.
-                $rejection = $this->configRejection(node: $node, edge: $edge);
-                if ($rejection !== null) {
-                    $blocking[] = [
-                        'type'   => $type,
-                        'app'    => $this->ownerOf(type: $type),
-                        'step'   => $stepId,
-                        'reason' => self::REASON_CONFIG_REJECTED,
-                        'detail' => $rejection,
-                    ];
-                }//end if
-
-                // ...and the half a required-key check cannot reach. A node
-                // only sees the keys it looks for; the ones it does not look
-                // for are invisible to it BY CONSTRUCTION, however careful its
-                // validateConfig() is. Only the node's declared vocabulary
-                // ({@see IFlowNodeConfigKeys}) can expose those.
-                $dialect  = $this->dialectFindings(node: $node, edge: $edge, type: $type, stepId: $stepId);
-                $blocking = array_merge($blocking, $dialect['blocking']);
-                $warnings = array_merge($warnings, $dialect['warnings']);
-
-                continue;
+        $stepId = (string) ($edge['id'] ?? $edge['name'] ?? $index);
+        $node   = $this->resolve(type: $type);
+        if ($node !== null) {
+            // The type resolving is only half the question. A node reads the
+            // config keys IT implements, and silently ignores the rest — so
+            // an edge written in another node's dialect resolves fine, runs,
+            // and returns its input untouched while reporting COMPLETED.
+            //
+            // Measured across the ten hydra flows: four are inert this way.
+            // `hydra-analyze-verdicts` declares `routes[].when`/`routes[].to`
+            // where RouterNode reads `rules[].output`, and `config.fields`
+            // where SetFieldsNode reads `set`/`compute`. The flow cannot run
+            // at all, and `scripts/test-flow-definitions.sh` passes on it —
+            // that script checks graph STRUCTURE and is blind to dialect.
+            //
+            // Every node already implements `validateConfig()`; the contract
+            // is on IFlowNode. It was simply never called at save time.
+            // SetFieldsNode's own docblock says the check exists so a
+            // malformed expression is "caught HERE, when the flow is saved,
+            // rather than evaluating to null on every item at 03:00" — which
+            // is exactly what it did NOT do, because nothing called it.
+            $rejection = $this->configRejection(node: $node, edge: $edge);
+            if ($rejection !== null) {
+                $blocking[] = [
+                    'type'   => $type,
+                    'app'    => $this->ownerOf(type: $type),
+                    'step'   => $stepId,
+                    'reason' => self::REASON_CONFIG_REJECTED,
+                    'detail' => $rejection,
+                ];
             }//end if
 
-            $finding = $this->classify(type: $type, edge: $stepId);
-            if ($finding['reason'] === self::REASON_OWNER_NOT_ENABLED) {
-                $warnings[] = $finding;
-                continue;
-            }
+            // ...and the half a required-key check cannot reach. A node
+            // only sees the keys it looks for; the ones it does not look
+            // for are invisible to it BY CONSTRUCTION, however careful its
+            // validateConfig() is. Only the node's declared vocabulary
+            // ({@see IFlowNodeConfigKeys}) can expose those.
+            $dialect  = $this->dialectFindings(node: $node, edge: $edge, type: $type, stepId: $stepId);
+            $blocking = array_merge($blocking, $dialect['blocking']);
+            $warnings = array_merge($warnings, $dialect['warnings']);
 
-            $blocking[] = $finding;
-        }//end foreach
+            return ['blocking' => $blocking, 'warnings' => $warnings];
+        }//end if
+
+        $finding = $this->classify(type: $type, edge: $stepId);
+        if ($finding['reason'] === self::REASON_OWNER_NOT_ENABLED) {
+            $warnings[] = $finding;
+
+            return ['blocking' => $blocking, 'warnings' => $warnings];
+        }
+
+        $blocking[] = $finding;
 
         return [
             'blocking' => $blocking,
             'warnings' => $warnings,
         ];
 
-    }//end inspect()
+    }//end nodeFindings()
 
     /**
      * Refuse a document the instance cannot run, and log the rest.
