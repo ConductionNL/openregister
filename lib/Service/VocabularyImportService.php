@@ -31,7 +31,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Idempotent SKOS JSON-LD / CSV importer for the vocabulary register.
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class VocabularyImportService
 {
@@ -96,7 +96,7 @@ class VocabularyImportService
      *
      * @throws InvalidArgumentException When the document has no ConceptScheme node.
      *
-     * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-002
+     * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
      */
     public function importJsonLd(array $jsonLd): array
     {
@@ -148,7 +148,7 @@ class VocabularyImportService
      *
      * @throws InvalidArgumentException When the file is missing/empty or scheme uri is absent.
      *
-     * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-002
+     * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
      */
     public function importCsvValueList(string $csvPath, array $schemeMeta): array
     {
