@@ -61,8 +61,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
@@ -212,8 +210,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Database migration requires checking many column/index conditions
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Database migration requires checking many column/index conditions
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

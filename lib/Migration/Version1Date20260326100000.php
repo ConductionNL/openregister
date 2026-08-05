@@ -30,8 +30,6 @@ use OCP\Migration\SimpleMigrationStep;
  * to openregister_registers, openregister_schemas, and openregister_organisations tables.
  *
  * These columns store lean JSON arrays of string IDs for linked Nextcloud entities.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260326100000 extends SimpleMigrationStep
 {

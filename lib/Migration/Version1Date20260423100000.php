@@ -36,8 +36,6 @@ use OCP\Migration\SimpleMigrationStep;
  * identifiers (`object_uuid`, `user`) already carry the useful information;
  * `user_name` and `session` are display-only legacy columns, and `object`
  * is a legacy FK-ish integer column.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260423100000 extends SimpleMigrationStep
 {

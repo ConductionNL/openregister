@@ -70,7 +70,6 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      *
      * @return null|ISchemaWrapper Modified schema or null
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Database migration requires checking many index conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many index definitions
      *

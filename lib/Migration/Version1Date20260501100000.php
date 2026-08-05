@@ -57,8 +57,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create notification history table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260501100000 extends SimpleMigrationStep
 {

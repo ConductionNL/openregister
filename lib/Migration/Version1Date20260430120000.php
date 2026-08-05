@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Migration class creating the openregister_translations sidecar table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260430120000 extends SimpleMigrationStep
 {

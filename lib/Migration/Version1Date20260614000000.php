@@ -65,8 +65,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_processing_log table.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 class Version1Date20260614000000 extends SimpleMigrationStep

@@ -56,8 +56,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 openproject-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525240000 extends SimpleMigrationStep
 {
@@ -144,59 +142,36 @@ class Version1Date20260525240000 extends SimpleMigrationStep
      */
     private function extendOpenProjectLinksTable(ISchemaWrapper $schema, IOutput $output): bool
     {
-        $table   = $schema->getTable('openregister_openproject_links');
+        $table = $schema->getTable('openregister_openproject_links');
+
+        // [column name, type, options, index name or null]. Driven from a spec
+        // list so the method carries one branch per concern rather than one per
+        // column (eight independent ifs put NPath complexity at 256).
+        $newColumns = [
+            ['schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null], 'idx_op_schema'],
+            ['type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+            ['status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+            ['priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+            ['assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
+            ['project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
+            ['url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null], null],
+            ['cached_at', Types::DATETIME, ['notnull' => false, 'default' => null], null],
+        ];
+
         $changed = false;
 
-        if ($table->hasColumn('schema_id') === false) {
-            $table->addColumn(
-                'schema_id',
-                Types::BIGINT,
-                ['notnull' => false, 'unsigned' => true, 'default' => null]
-            );
-            $table->addIndex(['schema_id'], 'idx_op_schema');
-            $output->info('Added schema_id column to openregister_openproject_links');
-            $changed = true;
-        }
+        foreach ($newColumns as [$columnName, $columnType, $columnOptions, $indexName]) {
+            if ($table->hasColumn($columnName) === true) {
+                continue;
+            }
 
-        if ($table->hasColumn('type') === false) {
-            $table->addColumn('type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-            $output->info('Added type column to openregister_openproject_links');
-            $changed = true;
-        }
+            $table->addColumn($columnName, $columnType, $columnOptions);
 
-        if ($table->hasColumn('status') === false) {
-            $table->addColumn('status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-            $output->info('Added status column to openregister_openproject_links');
-            $changed = true;
-        }
+            if ($indexName !== null) {
+                $table->addIndex([$columnName], $indexName);
+            }
 
-        if ($table->hasColumn('priority') === false) {
-            $table->addColumn('priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-            $output->info('Added priority column to openregister_openproject_links');
-            $changed = true;
-        }
-
-        if ($table->hasColumn('assignee') === false) {
-            $table->addColumn('assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-            $output->info('Added assignee column to openregister_openproject_links');
-            $changed = true;
-        }
-
-        if ($table->hasColumn('project') === false) {
-            $table->addColumn('project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-            $output->info('Added project column to openregister_openproject_links');
-            $changed = true;
-        }
-
-        if ($table->hasColumn('url') === false) {
-            $table->addColumn('url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
-            $output->info('Added url column to openregister_openproject_links');
-            $changed = true;
-        }
-
-        if ($table->hasColumn('cached_at') === false) {
-            $table->addColumn('cached_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
-            $output->info('Added cached_at column to openregister_openproject_links');
+            $output->info('Added '.$columnName.' column to openregister_openproject_links');
             $changed = true;
         }
 

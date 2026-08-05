@@ -49,7 +49,6 @@ class Version1Date20251128120000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
@@ -425,8 +424,6 @@ class Version1Date20251128120000 extends SimpleMigrationStep
      * @param array   $options       Options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
