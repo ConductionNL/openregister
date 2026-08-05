@@ -261,6 +261,39 @@ class FlowNodeRegistry
     }//end get()
 
     /**
+     * Whether a node TYPE ends a path deliberately.
+     *
+     * Resolved through the registry rather than against a hardcoded list, so a
+     * terminal step contributed by another app — openconnector, hermiq, or one
+     * not written yet — needs no OpenRegister change to be recognised. A
+     * hardcoded list would silently report every contributed terminal node as a
+     * dead end, and the warning would train authors to ignore it.
+     *
+     * An unknown type is NOT terminal. It is already reported by its own
+     * preflight finding, and guessing "probably terminal" here would suppress
+     * the dead-end warning for exactly the documents most likely to have one.
+     *
+     * @param string $type The node type id.
+     *
+     * @return bool True when the type is registered and marks itself terminal.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    public function isTerminal(string $type): bool
+    {
+        if (trim($type) === '') {
+            return false;
+        }
+
+        try {
+            return ($this->get(type: $type) instanceof IFlowTerminalNode);
+        } catch (UnexpectedValueException) {
+            return false;
+        }
+
+    }//end isTerminal()
+
+    /**
      * Collect contributions once per request.
      *
      * @return void

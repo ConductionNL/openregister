@@ -175,6 +175,17 @@ class FlowNodePreflight
     public const REASON_PRE_INVERSION_SHAPE = 'flow-pre-inversion-shape';
 
     /**
+     * A node that is not terminal, and has nowhere to send its token.
+     *
+     * A WARNING, never blocking. A half-wired flow is the normal state of one
+     * being authored, and refusing to SAVE it would make the editor unusable —
+     * the author would have to build the graph in an order that is never
+     * disconnected, which no editor can require. The refusal belongs at RUN
+     * time, where the cost of a silent stop is actually paid.
+     */
+    public const REASON_DEAD_END = 'node-dead-end';
+
+    /**
      * The key the engine reads from the EDGE and never from `config`.
      */
     private const EDGE_LEVEL_ONERROR = 'onError';
@@ -333,6 +344,11 @@ class FlowNodePreflight
             $blocking = array_merge($blocking, $findings['blocking']);
             $warnings = array_merge($warnings, $findings['warnings']);
         }//end foreach
+
+        // The graph-SHAPE question lives in its own collaborator: this class
+        // answers questions about each node's type and config, which is a
+        // different subject over the same document.
+        $warnings = array_merge($warnings, (new FlowConnectivity($this->registry))->deadEnds(flow: $flow));
 
         return [
             'blocking' => $blocking,
