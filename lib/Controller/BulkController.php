@@ -48,6 +48,9 @@ use Exception;
  * @psalm-suppress UnusedClass
  *
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class BulkController extends Controller
 {
@@ -310,6 +313,84 @@ class BulkController extends Controller
     }//end delete()
 
     /**
+     * Write a resolved batch through whichever path the caller asked for.
+     *
+     * `stream` is opt-in and defaults to the existing behaviour, because neither
+     * path is universally better and the caller is the one who knows the payload.
+     *
+     * The default uses MagicMapper's ultraFastBulkSave: fastest writes, but it
+     * never consults the reference-validation cache, so rows that reference each
+     * other cost N×M database round-trips resolving them.
+     *
+     * Streaming puts each row through saveObject(), which engages that cache —
+     * repeated targets resolve from memory — and consumes the payload lazily. It
+     * also isolates failures per row rather than failing the whole call, which is
+     * why its `success` reflects the failed count instead of being a constant: a
+     * caller reading only the HTTP status would otherwise take a partial import
+     * for a complete one.
+     *
+     * Defaulting streaming on would silently slow down flat payloads, and
+     * choosing automatically would need a threshold nobody has measured — so it
+     * is a decision the caller makes rather than one inferred here.
+     *
+     * @param array    $objects  Rows to write.
+     * @param int      $register Resolved register id.
+     * @param int|null $schema   Resolved schema id, or null for a mixed-schema batch.
+     * @param bool     $stream   Whether to use the row-at-a-time path.
+     *
+     * @return JSONResponse The batch outcome.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function writeBatch(
+        array $objects,
+        int $register,
+        int | null $schema,
+        bool $stream
+    ): JSONResponse {
+        if ($stream === true) {
+            $status = $this->objectService->saveObjectsStreaming(
+                objects: $objects,
+                register: $register,
+                schema: $schema
+            );
+
+            return new JSONResponse(
+                data: [
+                    'success'         => ($status->getFailedCount() === 0),
+                    'message'         => 'Bulk save operation completed (streaming)',
+                    'saved_count'     => ($status->getCreatedCount() + $status->getUpdatedCount()),
+                    'saved_objects'   => $status->toArray(),
+                    'requested_count' => count($objects),
+                ]
+            );
+        }
+
+        $savedObjects = $this->objectService->saveObjects(
+            objects: $objects,
+            register: $register,
+            schema: $schema,
+            _rbac: true,
+            _multitenancy: true,
+            validation: true,
+            events: false
+        );
+
+        $savedCount = (($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0));
+
+        return new JSONResponse(
+            data: [
+                'success'         => true,
+                'message'         => 'Bulk save operation completed successfully',
+                'saved_count'     => $savedCount,
+                'saved_objects'   => $savedObjects,
+                'requested_count' => count($objects),
+            ]
+        );
+
+    }//end writeBatch()
+
+    /**
      * Perform bulk save operations on objects
      *
      * @param string $register The register identifier
@@ -319,12 +400,6 @@ class BulkController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with bulk save operation results
-     *
-     * @psalm-return JSONResponse<200|400|404|500,
-     *     array{error?: string, success?: true,
-     *     message?: 'Bulk save operation completed successfully',
-     *     saved_count?: mixed, saved_objects?: array<string, mixed>,
-     *     requested_count?: int<0, max>}, array<never, never>>
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -387,65 +462,12 @@ class BulkController extends Controller
                 $schemaToUse = null;
             }
 
-            // `stream` selects the row-at-a-time path. It is opt-in and defaults
-            // to the existing behaviour, because neither path is universally
-            // better and the caller is the one who knows the payload.
-            //
-            // The default uses ultraFastBulkSave: fastest writes, but it never
-            // consults the reference-validation cache, so rows that reference
-            // each other cost N×M database round-trips resolving them.
-            //
-            // Streaming puts each row through saveObject(), which engages that
-            // cache — repeated targets resolve from memory — and consumes the
-            // payload lazily. It also isolates failures per row rather than
-            // failing the whole call.
-            //
-            // Defaulting it on would silently slow down flat payloads, and
-            // choosing automatically would need a threshold nobody has measured,
-            // so it is a decision the caller makes rather than one inferred here.
-            $useStreaming = filter_var(
-                ($data['stream'] ?? false),
-                FILTER_VALIDATE_BOOLEAN
-            );
-
-            if ($useStreaming === true) {
-                $status = $this->objectService->saveObjectsStreaming(
-                    objects: $objects,
-                    register: $resolved['register'],
-                    schema: $schemaToUse
-                );
-
-                return new JSONResponse(
-                    data: [
-                        'success'         => ($status->getFailedCount() === 0),
-                        'message'         => 'Bulk save operation completed (streaming)',
-                        'saved_count'     => ($status->getCreatedCount() + $status->getUpdatedCount()),
-                        'saved_objects'   => $status->toArray(),
-                        'requested_count' => count($objects),
-                    ]
-                );
-            }
-
-            $savedObjects = $this->objectService->saveObjects(
+            // See writeBatch() for why `stream` is opt-in.
+            return $this->writeBatch(
                 objects: $objects,
                 register: $resolved['register'],
                 schema: $schemaToUse,
-                _rbac: true,
-                _multitenancy: true,
-                validation: true,
-                events: false
-            );
-
-            $savedCount = ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0);
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => 'Bulk save operation completed successfully',
-                    'saved_count'     => $savedCount,
-                    'saved_objects'   => $savedObjects,
-                    'requested_count' => count($objects),
-                ]
+                stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN)
             );
         } catch (UniqueConstraintViolationException $e) {
             // WF3 (wave-11): a client-supplied UUID collided with an existing row at a
