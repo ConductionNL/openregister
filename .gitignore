@@ -28,6 +28,11 @@
 quality-baseline.json
 /phpmetrics/
 /phpmetrics-deps/
+# PHPMD's incremental result cache. Generated output, and a correctness hazard if
+# committed: `composer quality:phpmd-score` passes --cache, so a stale cache checked
+# into the tree makes PHPMD replay a verdict for code that has since changed. That is
+# a gate reporting a result it never computed.
+.phpmd.result-cache.php
 
 # PHPCS/Psalm output files (not config files)
 phpcs-*.json

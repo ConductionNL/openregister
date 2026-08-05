@@ -229,6 +229,11 @@ class ContentProvider implements IContentProvider
                     offset: $offset
                 );
 
+                // Counted once per page, not re-counted by the loop condition.
+                // $batch is replaced wholesale on every iteration and never
+                // mutated below, so this is the same value the condition read.
+                $batchSize = count($batch);
+
                 foreach ($batch as $object) {
                     if ($this->submissionListener->submitIfEligible(object: $object, schema: $schema) === true) {
                         $submitted++;
@@ -236,7 +241,7 @@ class ContentProvider implements IContentProvider
                 }
 
                 $offset += self::BATCH_SIZE;
-            } while (count($batch) === self::BATCH_SIZE);
+            } while ($batchSize === self::BATCH_SIZE);
         }//end foreach
 
         return $submitted;

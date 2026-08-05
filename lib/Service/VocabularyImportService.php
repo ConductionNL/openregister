@@ -566,6 +566,11 @@ class VocabularyImportService
                 ]
             );
 
+            // Counted once per page, not re-counted by the loop condition.
+            // $results is replaced wholesale on every iteration and never
+            // mutated below, so this is the same value the condition read.
+            $pageSize = count($results);
+
             foreach ($results as $entity) {
                 $data = ($entity->getObject() ?? []);
                 $uri  = ($data['uri'] ?? null);
@@ -587,7 +592,7 @@ class VocabularyImportService
             }
 
             $offset += $limit;
-        } while (count($results) === $limit);
+        } while ($pageSize === $limit);
 
         return $count;
     }//end deprecateMissing()
