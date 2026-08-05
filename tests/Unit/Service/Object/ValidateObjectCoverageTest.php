@@ -93,7 +93,8 @@ class ValidateObjectCoverageTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $this->urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
     }
 

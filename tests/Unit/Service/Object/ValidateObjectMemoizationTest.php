@@ -58,7 +58,8 @@ class ValidateObjectMemoizationTest extends TestCase
             $objectMapper,
             $this->schemaMapper,
             $urlGenerator,
-            $logger
+            $logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
     }//end setUp()
 

@@ -255,15 +255,11 @@ class AuditTrailMapperBulkTest extends TestCase
             )
             ->willReturn($result);
 
-        $sealedIds = null;
-        $this->hashService->expects($this->once())
-            ->method('sealRows')
-            ->willReturnCallback(
-                function (array $ids) use (&$sealedIds): int {
-                    $sealedIds = $ids;
-                    return count($ids);
-                }
-            );
+        // The write path inserts and stops. Sealing belongs to AuditSealJob:
+        // with one sealer, unsealed rows are a contiguous tail rather than
+        // holes, so a later row can never chain across a gap and end up sharing
+        // a predecessor with it.
+        $this->hashService->expects($this->never())->method('sealRows');
 
         $inserted = $this->mapper->insertAuditTrails(entries: [$rowA, $rowB]);
 
@@ -276,12 +272,10 @@ class AuditTrailMapperBulkTest extends TestCase
         $this->assertContains($rowA->getUuid(), $capturedParams);
         $this->assertContains($rowB->getUuid(), $capturedParams);
 
-        // Ids attached by uuid and both rows sealed in ONE batched pass
-        // (ascending-order chain contiguity is sealRows' own contract,
-        // pinned by AuditHashSealRowsTest).
+        // Ids are still attached by uuid — deferring the seal must not cost the
+        // caller the ids it inserted.
         $this->assertSame(11, $inserted[0]->getId());
         $this->assertSame(12, $inserted[1]->getId());
-        $this->assertEqualsCanonicalizing([11, 12], $sealedIds);
     }//end testInsertAuditTrailsIssuesOneMultiRowInsertAndSealsInIdOrder()
 
     public function testInsertAuditTrailsSurvivesSealFailure(): void
