@@ -3,8 +3,16 @@
 declare(strict_types=1);
 
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: EUPL-1.2
+ * SettingsController Unit Test
+ *
+ * @category Tests
+ * @package  OCA\OpenRegister\Tests\Unit\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
