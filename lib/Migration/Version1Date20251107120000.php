@@ -42,8 +42,6 @@ class Version1Date20251107120000 extends SimpleMigrationStep
      * @phpstan-return ISchemaWrapper|null
      * @psalm-return   ISchemaWrapper|null
      * @return         ISchemaWrapper|null The modified schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

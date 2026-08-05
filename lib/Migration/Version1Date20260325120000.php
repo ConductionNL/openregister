@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  * - download_count (INT) - Cached download count for audit
  *
  * @package OCA\OpenRegister\Migration
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260325120000 extends SimpleMigrationStep
 {
@@ -52,7 +50,6 @@ class Version1Date20260325120000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null The updated schema or null if no changes
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */

@@ -53,8 +53,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_migration_packs table.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class Version1Date20260714100000 extends SimpleMigrationStep

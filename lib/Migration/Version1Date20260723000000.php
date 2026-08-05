@@ -52,8 +52,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Widen slug-uniqueness to (organisation, application, slug) for registers and schemas.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/data-import-export/spec.md
  */
 class Version1Date20260723000000 extends SimpleMigrationStep

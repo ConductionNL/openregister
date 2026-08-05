@@ -42,8 +42,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add the (register, schema, created) composite index to openregister_audit_trails.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class Version1Date20260707000000 extends SimpleMigrationStep

@@ -44,8 +44,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the schema changelog and run tables.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/schema-migration/spec.md
  */
 class Version1Date20260614120000 extends SimpleMigrationStep

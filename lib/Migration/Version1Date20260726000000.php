@@ -56,8 +56,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Drops `schemas_org_app_slug_unique` on `openregister_schemas`; adds no replacement index.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
  */
 class Version1Date20260726000000 extends SimpleMigrationStep
@@ -94,16 +92,17 @@ class Version1Date20260726000000 extends SimpleMigrationStep
 
         $table = $schema->getTable('openregister_schemas');
 
-        if ($table->hasIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX) === true) {
-            $table->dropIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX);
-            $output->info(
-                'Dropped '.self::SCHEMAS_SLUG_UNIQUE_INDEX.' on openregister_schemas: '.
-                'schema slug uniqueness is now enforced per-register at the service layer '.
-                '(openspec/changes/per-register-schema-slug-uniqueness), not by a DB index.'
-            );
-        } else {
+        if ($table->hasIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX) === false) {
             $output->info(self::SCHEMAS_SLUG_UNIQUE_INDEX.' already absent on openregister_schemas; nothing to do.');
+            return $schema;
         }
+
+        $table->dropIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX);
+        $output->info(
+            'Dropped '.self::SCHEMAS_SLUG_UNIQUE_INDEX.' on openregister_schemas: '.
+            'schema slug uniqueness is now enforced per-register at the service layer '.
+            '(openspec/changes/per-register-schema-slug-uniqueness), not by a DB index.'
+        );
 
         return $schema;
     }//end changeSchema()

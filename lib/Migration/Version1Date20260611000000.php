@@ -56,8 +56,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the openregister_anonymisation_log table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260611000000 extends SimpleMigrationStep
 {

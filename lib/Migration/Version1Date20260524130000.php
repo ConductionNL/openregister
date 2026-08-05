@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Schema\Table;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
@@ -55,8 +56,6 @@ class Version1Date20260524130000 extends SimpleMigrationStep
      * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null The updated schema or null if no changes
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -72,116 +71,69 @@ class Version1Date20260524130000 extends SimpleMigrationStep
 
         $table = $schema->createTable(tableName: 'openregister_form_links');
 
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'unsigned'      => true,
-            ]
-        );
-        $table->addColumn(
-            'object_uuid',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 36,
-            ]
-        );
-        $table->addColumn(
-            'register_id',
-            Types::BIGINT,
-            [
-                'notnull'  => true,
-                'unsigned' => true,
-            ]
-        );
-        $table->addColumn(
-            'schema_id',
-            Types::BIGINT,
-            [
-                'notnull'  => false,
-                'unsigned' => true,
-                'default'  => null,
-            ]
-        );
-        $table->addColumn(
-            'form_id',
-            Types::BIGINT,
-            [
-                'notnull'  => true,
-                'unsigned' => true,
-            ]
-        );
-        $table->addColumn(
-            'form_hash',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-                'default' => null,
-            ]
-        );
-        // Submission id is nullable — a row with submission_id NULL is a
-        // form-level link; a row with a submission_id is a per-submission
-        // link. Composite unique below allows both shapes for the same
-        // (object, form) pair.
-        $table->addColumn(
-            'submission_id',
-            Types::BIGINT,
-            [
-                'notnull'  => false,
-                'unsigned' => true,
-                'default'  => null,
-            ]
-        );
-        $table->addColumn(
-            'title',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 255,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'status',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 32,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'expires_at',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'linked_by',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'linked_at',
-            Types::DATETIME,
-            [
-                'notnull' => true,
-            ]
-        );
+        $this->addColumns(table: $table);
+        $this->addIndexes(table: $table);
 
+        $output->info(message: 'Created openregister_form_links table');
+
+        return $schema;
+
+    }//end changeSchema()
+
+    /**
+     * Declare every column of `openregister_form_links`.
+     *
+     * The columns are driven from a spec list rather than written out as one
+     * `addColumn()` call per column: the literal form ran to 105 lines and
+     * tripped PHPMD's ExcessiveMethodLength. The order and the arguments are
+     * unchanged.
+     *
+     * Note `submission_id` is nullable — a row with submission_id NULL is a
+     * form-level link; a row with a submission_id is a per-submission link.
+     * The composite unique index in addIndexes() allows both shapes for the
+     * same (object, form) pair.
+     *
+     * @param Table $table The table being created
+     *
+     * @return void
+     */
+    private function addColumns(Table $table): void
+    {
+        $columns = [
+            ['id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]],
+            ['object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]],
+            ['register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]],
+            ['schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]],
+            ['form_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]],
+            ['form_hash', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]],
+            ['submission_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]],
+            ['title', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]],
+            ['status', Types::STRING, ['notnull' => false, 'length' => 32, 'default' => null]],
+            ['expires_at', Types::DATETIME, ['notnull' => false, 'default' => null]],
+            ['linked_by', Types::STRING, ['notnull' => true, 'length' => 64]],
+            ['linked_at', Types::DATETIME, ['notnull' => true]],
+        ];
+
+        foreach ($columns as [$columnName, $columnType, $columnOptions]) {
+            $table->addColumn($columnName, $columnType, $columnOptions);
+        }
+
+    }//end addColumns()
+
+    /**
+     * Declare the primary key and every index of `openregister_form_links`.
+     *
+     * @param Table $table The table being created
+     *
+     * @return void
+     */
+    private function addIndexes(Table $table): void
+    {
         $table->setPrimaryKey(['id']);
         $table->addIndex(['object_uuid'], 'or_form_links_object_idx');
         $table->addIndex(['form_id'], 'or_form_links_form_idx');
         $table->addIndex(['register_id'], 'or_form_links_register_idx');
+
         // Composite unique key: (object, form, submission). Allows one
         // form-level link (submission_id NULL) plus N per-submission
         // links for the same form attached to the same object.
@@ -190,9 +142,5 @@ class Version1Date20260524130000 extends SimpleMigrationStep
             'or_form_links_unique_idx'
         );
 
-        $output->info(message: 'Created openregister_form_links table');
-
-        return $schema;
-
-    }//end changeSchema()
+    }//end addIndexes()
 }//end class
