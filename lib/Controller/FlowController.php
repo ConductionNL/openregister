@@ -388,6 +388,12 @@ class FlowController extends Controller
      *
      * @NoAdminRequired
      *
+     * @no-admin-idor-exempt No caller-supplied id to confuse: a create takes no
+     * uuid. `FlowService::flowToSave()` stamps `owner` from the session and
+     * `organisation` from the active one, and neither is in
+     * `applyEditableFields()`'s allowlist — so a payload cannot claim another
+     * user's identity. The allowlist IS the boundary here.
+     *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
     #[NoAdminRequired]
@@ -448,6 +454,13 @@ class FlowController extends Controller
      * @return JSONResponse The stored flow, or 404.
      *
      * @NoAdminRequired
+     *
+     * @no-admin-idor-exempt Guarded downstream: `FlowService::flowToSave()`
+     * resolves the uuid through `find()`, so an update to a flow the caller
+     * cannot see is refused with the same "no such flow" as one that does not
+     * exist — the id is never trusted to select the row. `owner` and
+     * `organisation` are outside `applyEditableFields()`'s allowlist, so an
+     * update cannot reassign ownership either.
      *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */

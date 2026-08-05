@@ -345,7 +345,10 @@ class FlowNodePreflight
             $warnings = array_merge($warnings, $findings['warnings']);
         }//end foreach
 
-        $warnings = array_merge($warnings, $this->deadEndFindings(flow: $flow));
+        // The graph-SHAPE question lives in its own collaborator: this class
+        // answers questions about each node's type and config, which is a
+        // different subject over the same document.
+        $warnings = array_merge($warnings, (new FlowConnectivity($this->registry))->deadEnds(flow: $flow));
 
         return [
             'blocking' => $blocking,
@@ -353,98 +356,6 @@ class FlowNodePreflight
         ];
 
     }//end inspect()
-
-    /**
-     * Report every node that is not terminal and has no outgoing edge.
-     *
-     * Under the pre-inversion reading a sink PLACE was an ordinary end of a
-     * path — the step had already run on the edge that arrived. After
-     * `or-flow-action-nodes` the node IS the step, so a sink node runs and then
-     * has nowhere to send its token: the engine finds no enabled transition,
-     * stops, and reports the run COMPLETED. Nothing is logged, because from the
-     * engine's point of view nothing went wrong.
-     *
-     * A node escapes this two ways, OR-ed and never AND-ed ({@see IFlowTerminalNode}):
-     * its TYPE is registered terminal, or the node itself says `exit: true`.
-     *
-     * @param array $flow The flow document.
-     *
-     * @return array<int, array<string, string>> One warning per dead end.
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    private function deadEndFindings(array $flow): array
-    {
-        $nodes = ($flow['nodes'] ?? []);
-        if (is_array($nodes) === false || $nodes === []) {
-            return [];
-        }
-
-        // Every node id that some edge leaves from. `from` is the only key that
-        // matters: a node with an outgoing edge has somewhere to go, however
-        // many arrive.
-        $hasOutgoing = [];
-        foreach (($flow['edges'] ?? []) as $edge) {
-            if (is_array($edge) === false) {
-                continue;
-            }
-
-            $from = trim((string) ($edge['from'] ?? ''));
-            if ($from !== '') {
-                $hasOutgoing[$from] = true;
-            }
-        }//end foreach
-
-        $warnings = [];
-        foreach ($nodes as $node) {
-            if (is_array($node) === false) {
-                continue;
-            }
-
-            $id = trim((string) ($node['id'] ?? ''));
-            if ($id === '' || isset($hasOutgoing[$id]) === true) {
-                continue;
-            }
-
-            if (($node['exit'] ?? false) === true) {
-                continue;
-            }
-
-            $type = trim((string) ($node['type'] ?? ''));
-
-            // A node with no type is not this check's business. It is already
-            // refused — loudly, by name — in `FlowDefinitionBuilder`, which
-            // will not build a document containing one, so it can never run
-            // and stop quietly. Reporting it a second time under a different
-            // reason would put two findings on one node for one defect, and
-            // warnings that duplicate each other are the ones authors learn to
-            // scroll past. It is also why the rest of this preflight skips a
-            // typeless node rather than classifying it.
-            if ($type === '') {
-                continue;
-            }
-
-            if ($this->registry->isTerminal(type: $type) === true) {
-                continue;
-            }
-
-            $warnings[] = [
-                'type'   => $type,
-                'app'    => $this->ownerOf(type: $type),
-                'step'   => $id,
-                'reason' => self::REASON_DEAD_END,
-                'detail' => sprintf(
-                    'Node "%s" has no outgoing edge and does not end the flow, so its token would '
-                    .'arrive, run, and stop with the run reported as completed. Connect it, give it '
-                    .'a terminal step type, or mark it "exit": true if stopping there is deliberate.',
-                    $id
-                ),
-            ];
-        }//end foreach
-
-        return $warnings;
-
-    }//end deadEndFindings()
 
     /**
      * Refuse a document whose steps still sit on edges.
