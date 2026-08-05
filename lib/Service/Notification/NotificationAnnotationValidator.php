@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use DateInterval;
+use DateTimeZone;
+
 /**
  * Validates the shape of the `x-openregister-notifications` annotation.
  *
@@ -809,7 +812,7 @@ final class NotificationAnnotationValidator
             $timezoneValid = false;
             if (is_string($timezone) === true && $timezone !== '') {
                 try {
-                    new \DateTimeZone($timezone);
+                    new DateTimeZone($timezone);
                     $timezoneValid = true;
                 } catch (\Throwable $e) {
                     $timezoneValid = false;
@@ -1083,7 +1086,7 @@ final class NotificationAnnotationValidator
             }
 
             try {
-                new \DateInterval($duration);
+                new DateInterval($duration);
             } catch (\Exception $e) {
                 return [
                     [

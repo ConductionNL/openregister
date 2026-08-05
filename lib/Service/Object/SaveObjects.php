@@ -628,11 +628,18 @@ class SaveObjects
         // controls a defence-in-depth schema check that authors opt in to
         // when they want bulk-import payloads to be schema-validated.
         $effectiveValidation = $_validation;
-        // Resolve default register/schema entities once for the loop. These
-        // are used when an individual object does not carry an explicit
-        // register/schema in `@self`.
-        $defaultRegister = $this->resolveSafeguardRegister(register: $register);
-        $defaultSchema   = $this->resolveSafeguardSchema(schema: $schema);
+        // Resolve default register/schema entities once for the loop. The
+        // schema entity is used below when an individual object does not carry
+        // an explicit schema in `@self`.
+        //
+        // The register call is kept as a statement rather than an assignment:
+        // per-row code re-reads the register through loadRegisterWithCache(),
+        // so the only thing this call contributes is warming that shared static
+        // cache. Binding the result to a variable nobody read is what PHPMD's
+        // UnusedLocalVariable was reporting; dropping the call entirely would
+        // move a mapper lookup to a later point, so it stays.
+        $this->resolveSafeguardRegister(register: $register);
+        $defaultSchema = $this->resolveSafeguardSchema(schema: $schema);
 
         $passed = [];
         foreach ($objects as $index => $object) {

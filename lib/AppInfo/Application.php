@@ -306,6 +306,42 @@ use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
+use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
+use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
+use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
+use OCA\OpenRegister\Controller\AnalyticsSeriesController;
+use OCA\OpenRegister\Controller\CaseTokenController;
+use OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent;
+use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
+use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
+use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
+use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
+use OCA\OpenRegister\Service\Schema\SchemaDiffService;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
+use OCA\OpenRegister\Service\WebPush\HexIconService;
 
 /**
  * Class Application
@@ -509,7 +545,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
             function () {
-                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+                return new NullNcOfficeConverter();
             }
         );
 
@@ -524,7 +560,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner();
+                return new UnsignedPadesSigner();
             }
         );
 
@@ -535,7 +571,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry(
+                return new EvidenceSourceRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -551,13 +587,13 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider();
+                return new NullIdentityVerifyProvider();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry(
+                return new IdentityVerifyRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     default: $container->get(\OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class)
                 );
@@ -566,13 +602,13 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider();
+                return new NullRegulatorEscalateProvider();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry(
+                return new RegulatorEscalateRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     default: $container->get(\OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class)
                 );
@@ -585,10 +621,10 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\WebPush\HexIconService::class,
             function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
-                return new \OCA\OpenRegister\Service\WebPush\HexIconService(
-                    $c->get(\OCP\App\IAppManager::class),
-                    $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
-                    $c->get(\Psr\Log\LoggerInterface::class)
+                return new HexIconService(
+                    appManager: $c->get(\OCP\App\IAppManager::class),
+                    appData: $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
+                    logger: $c->get(\Psr\Log\LoggerInterface::class)
                 );
             }
         );
@@ -599,7 +635,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
             function ($c) {
-                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry = new SourceFetcherRegistry();
                 $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
                 return $registry;
             }
@@ -612,9 +648,9 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
             function () {
-                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
-                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
-                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                return new SchemaImportService(
+                    detector: new DialectDetector(),
+                    merge: new ThreeWayMerge()
                 );
             }
         );
@@ -1163,7 +1199,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\TimeProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                return new IntegrationTimeProvider(
                     appConfig: $container->get('OCP\IAppConfig')
                 );
             }
@@ -1454,7 +1490,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory(
+                return new DbalConnectionFactory(
                     credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -1464,7 +1500,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\SqlTypeMapper(
+                return new SqlTypeMapper(
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -1473,7 +1509,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService(
+                return new DatabaseIntrospectionService(
                     connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
                     typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
                     registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
@@ -1916,7 +1952,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\CaseTokenService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\CaseTokenService(
+                return new CaseTokenService(
                     mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
                     secureRandom: $container->get('OCP\Security\ISecureRandom'),
                     userSession: $container->get('OCP\IUserSession'),
@@ -1930,7 +1966,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Controller\CaseTokenController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                return new CaseTokenController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
@@ -1945,7 +1981,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                return new AnalyticsSeriesService(
                     mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
@@ -1959,7 +1995,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                return new AnalyticsSeriesController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
@@ -2320,19 +2356,19 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+                return new SchemaDiffService();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+                return new SchemaMigrationPlanner();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                return new SchemaVersioningService(
                     diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
                     changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
@@ -2345,7 +2381,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                return new SchemaRevalidationService(
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
                     runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -2358,7 +2394,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                return new SchemaMigrationService(
                     planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
                     runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
@@ -2767,7 +2803,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\ManifestLoader::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\ManifestLoader(
+                return new ManifestLoader(
                     appManager: $container->get('OCP\App\IAppManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2777,7 +2813,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor(
+                return new HealthCheckExecutor(
                     db: $container->get('OCP\IDBConnection'),
                     tempManager: $container->get('OCP\ITempManager'),
                     appManager: $container->get('OCP\App\IAppManager'),
@@ -2791,7 +2827,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource(
+                return new ObjectMetricSource(
                     objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -2803,7 +2839,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource(
+                return new TableMetricSource(
                     db: $container->get('OCP\IDBConnection'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2813,7 +2849,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource(
+                return new AppConfigMetricSource(
                     appConfig: $container->get('OCP\IAppConfig')
                 );
             }
@@ -2822,7 +2858,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource(
+                return new ProviderMetricSource(
                     container: $container,
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2832,14 +2868,14 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer();
+                return new PrometheusRenderer();
             }
         );
 
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\MetricsEngine::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\MetricsEngine(
+                return new MetricsEngine(
                     objectSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
                     tableSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
                     appConfigSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
@@ -2876,7 +2912,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'AppHost\\Controller\\GenericHealthController',
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                return new GenericHealthController(
                     appName: self::APP_ID,
                     request: $container->get('OCP\IRequest'),
                     manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -2888,7 +2924,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'AppHost\\Controller\\GenericMetricsController',
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                return new GenericMetricsController(
                     appName: self::APP_ID,
                     request: $container->get('OCP\IRequest'),
                     manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -3513,7 +3549,7 @@ class Application extends App implements IBootstrap
     ): void {
         try {
             $dispatcher = $container->get(\OCP\EventDispatcher\IEventDispatcher::class);
-            $event      = new \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent();
+            $event      = new RegisterMcpToolProvidersEvent();
             $dispatcher->dispatchTyped($event);
 
             $seen = [];

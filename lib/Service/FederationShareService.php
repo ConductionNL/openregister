@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCP\Security\ISecureRandom;
@@ -84,12 +85,12 @@ class FederationShareService
     {
         $scope = (string) ($params['scope'] ?? 'schema');
         if (in_array($scope, self::SCOPES, true) === false) {
-            throw new \InvalidArgumentException('Invalid share scope: '.$scope);
+            throw new InvalidArgumentException('Invalid share scope: '.$scope);
         }
 
         $permissions = (string) ($params['permissions'] ?? 'read');
         if (in_array($permissions, self::PERMISSIONS, true) === false) {
-            throw new \InvalidArgumentException('Invalid permissions: '.$permissions);
+            throw new InvalidArgumentException('Invalid permissions: '.$permissions);
         }
 
         $organisation = $this->activeOrganisationUuid();

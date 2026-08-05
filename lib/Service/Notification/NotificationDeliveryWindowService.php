@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use InvalidArgumentException;
 use OCP\IConfig;
 use OCP\IDateTimeZone;
 use Psr\Log\LoggerInterface;
@@ -143,30 +144,30 @@ class NotificationDeliveryWindowService
         $start = $window['start'] ?? null;
         $end   = $window['end'] ?? null;
         if ($this->isValidTimeOfDay(value: $start) === false) {
-            throw new \InvalidArgumentException('"start" must be an "HH:MM" time string.');
+            throw new InvalidArgumentException('"start" must be an "HH:MM" time string.');
         }
 
         if ($this->isValidTimeOfDay(value: $end) === false) {
-            throw new \InvalidArgumentException('"end" must be an "HH:MM" time string.');
+            throw new InvalidArgumentException('"end" must be an "HH:MM" time string.');
         }
 
         $timezone = $window['timezone'] ?? null;
         if ($timezone !== null) {
             if (is_string($timezone) === false || $timezone === '' || $this->isValidTimezone(value: $timezone) === false) {
-                throw new \InvalidArgumentException('"timezone" must be a valid IANA timezone name.');
+                throw new InvalidArgumentException('"timezone" must be a valid IANA timezone name.');
             }
         }
 
         $days = null;
         if (isset($window['days']) === true) {
             if (is_array($window['days']) === false) {
-                throw new \InvalidArgumentException('"days" must be an array of integers 0-6.');
+                throw new InvalidArgumentException('"days" must be an array of integers 0-6.');
             }
 
             $days = [];
             foreach ($window['days'] as $day) {
                 if (is_int($day) === false || $day < 0 || $day > 6) {
-                    throw new \InvalidArgumentException('"days" entries must be integers 0-6.');
+                    throw new InvalidArgumentException('"days" entries must be integers 0-6.');
                 }
 
                 $days[] = $day;

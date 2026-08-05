@@ -36,6 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schema;
 
+use DateTime;
+use RuntimeException;
+
 /**
  * Pure transform engine for declarative migration plans.
  */
@@ -298,7 +301,7 @@ class SchemaMigrationPlanner
                 if (is_scalar($value) === true) {
                     return (string) $value;
                 }
-                throw new \RuntimeException('Cannot cast non-scalar value to string.');
+                throw new RuntimeException('Cannot cast non-scalar value to string.');
 
             case 'integer':
                 if (is_bool($value) === true) {
@@ -308,7 +311,7 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (int) $value;
                 }
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe(value: $value)));
+                throw new RuntimeException(sprintf('Cannot cast "%s" to integer.', $this->describe(value: $value)));
 
             case 'number':
                 if (is_bool($value) === true) {
@@ -318,7 +321,7 @@ class SchemaMigrationPlanner
                 if (is_numeric($value) === true) {
                     return (float) $value;
                 }
-                throw new \RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe(value: $value)));
+                throw new RuntimeException(sprintf('Cannot cast "%s" to number.', $this->describe(value: $value)));
 
             case 'boolean':
                 return $this->castBoolean(value: $value);
@@ -327,7 +330,7 @@ class SchemaMigrationPlanner
                 return $this->castDate(value: $value, format: $format);
 
             default:
-                throw new \RuntimeException(sprintf('Unsupported cast target type "%s".', $toType));
+                throw new RuntimeException(sprintf('Unsupported cast target type "%s".', $toType));
         }//end switch
 
     }//end castValue()
@@ -362,7 +365,7 @@ class SchemaMigrationPlanner
             }
         }
 
-        throw new \RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe(value: $value)));
+        throw new RuntimeException(sprintf('Cannot cast "%s" to boolean.', $this->describe(value: $value)));
 
     }//end castBoolean()
 
@@ -379,7 +382,7 @@ class SchemaMigrationPlanner
     private function castDate($value, ?string $format): string
     {
         if (is_string($value) === false && is_numeric($value) === false) {
-            throw new \RuntimeException('Cannot cast non-string value to date.');
+            throw new RuntimeException('Cannot cast non-string value to date.');
         }
 
         $stringValue = (string) $value;
@@ -387,7 +390,7 @@ class SchemaMigrationPlanner
         if ($format !== null && $format !== '') {
             $dt = \DateTime::createFromFormat($format, $stringValue);
             if ($dt === false) {
-                throw new \RuntimeException(sprintf('Value "%s" does not match date format "%s".', $stringValue, $format));
+                throw new RuntimeException(sprintf('Value "%s" does not match date format "%s".', $stringValue, $format));
             }
 
             return $dt->format(\DateTime::ATOM);
@@ -395,10 +398,10 @@ class SchemaMigrationPlanner
 
         $timestamp = strtotime($stringValue);
         if ($timestamp === false) {
-            throw new \RuntimeException(sprintf('Value "%s" is not a parseable date.', $stringValue));
+            throw new RuntimeException(sprintf('Value "%s" is not a parseable date.', $stringValue));
         }
 
-        return (new \DateTime('@'.$timestamp))->format(\DateTime::ATOM);
+        return (new DateTime('@'.$timestamp))->format(\DateTime::ATOM);
 
     }//end castDate()
 

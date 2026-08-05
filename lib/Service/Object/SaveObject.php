@@ -5646,7 +5646,7 @@ class SaveObject
         $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
         if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf(
                     'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
                     (string) $schema->getSlug(),
