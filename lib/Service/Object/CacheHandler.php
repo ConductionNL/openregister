@@ -1278,8 +1278,8 @@ class CacheHandler
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->info(
-            message: '[CacheHandler] 📋 ALL OBJECT NAMES RETRIEVED',
+        $this->logger->debug(
+            message: '[CacheHandler] All object names retrieved',
             context: [
                 'file'                => __FILE__,
                 'line'                => __LINE__,
@@ -1350,8 +1350,8 @@ class CacheHandler
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->info(
-                message: '[CacheHandler] 🔥 NAME CACHE WARMED UP',
+            $this->logger->debug(
+                message: '[CacheHandler] Name cache warmed up',
                 context: [
                     'file'                     => __FILE__,
                     'line'                     => __LINE__,

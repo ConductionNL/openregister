@@ -56,8 +56,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 time-tracker-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525220000 extends SimpleMigrationStep
 {

@@ -55,8 +55,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add sync-pipeline columns to openregister_sources.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
 class Version1Date20260614100000 extends SimpleMigrationStep
@@ -84,76 +82,37 @@ class Version1Date20260614100000 extends SimpleMigrationStep
             return null;
         }
 
-        $table   = $schema->getTable('openregister_sources');
+        $table = $schema->getTable('openregister_sources');
+
+        // Sync-pipeline columns, in declaration order. Driven from a spec list
+        // so this method carries one branch per concern rather than one per
+        // column (fourteen independent ifs put NPath complexity at 131072 and
+        // cyclomatic complexity at 18).
+        $newColumns = [
+            ['sync_enabled', Types::BOOLEAN, ['notnull' => true, 'default' => false]],
+            ['sync_schedule', Types::STRING, ['notnull' => false, 'length' => 64]],
+            ['sync_interval', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+            ['last_sync_date', Types::DATETIME, ['notnull' => false]],
+            ['last_sync_status', Types::STRING, ['notnull' => false, 'length' => 16]],
+            ['last_sync_token', Types::STRING, ['notnull' => false, 'length' => 255]],
+            ['auth_type', Types::STRING, ['notnull' => false, 'length' => 32]],
+            ['auth_config', Types::TEXT, ['notnull' => false]],
+            ['mapping_id', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+            ['target_register', Types::STRING, ['notnull' => false, 'length' => 255]],
+            ['target_schema', Types::STRING, ['notnull' => false, 'length' => 255]],
+            ['conflict_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
+            ['delete_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
+            ['batch_size', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+        ];
+
         $changed = false;
 
-        if ($table->hasColumn('sync_enabled') === false) {
-            $table->addColumn('sync_enabled', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-            $changed = true;
-        }
+        foreach ($newColumns as [$columnName, $columnType, $columnOptions]) {
+            if ($table->hasColumn($columnName) === true) {
+                continue;
+            }
 
-        if ($table->hasColumn('sync_schedule') === false) {
-            $table->addColumn('sync_schedule', Types::STRING, ['notnull' => false, 'length' => 64]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('sync_interval') === false) {
-            $table->addColumn('sync_interval', Types::INTEGER, ['notnull' => false, 'unsigned' => true]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('last_sync_date') === false) {
-            $table->addColumn('last_sync_date', Types::DATETIME, ['notnull' => false]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('last_sync_status') === false) {
-            $table->addColumn('last_sync_status', Types::STRING, ['notnull' => false, 'length' => 16]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('last_sync_token') === false) {
-            $table->addColumn('last_sync_token', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('auth_type') === false) {
-            $table->addColumn('auth_type', Types::STRING, ['notnull' => false, 'length' => 32]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('auth_config') === false) {
-            $table->addColumn('auth_config', Types::TEXT, ['notnull' => false]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('mapping_id') === false) {
-            $table->addColumn('mapping_id', Types::INTEGER, ['notnull' => false, 'unsigned' => true]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('target_register') === false) {
-            $table->addColumn('target_register', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('target_schema') === false) {
-            $table->addColumn('target_schema', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('conflict_strategy') === false) {
-            $table->addColumn('conflict_strategy', Types::STRING, ['notnull' => false, 'length' => 16]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('delete_strategy') === false) {
-            $table->addColumn('delete_strategy', Types::STRING, ['notnull' => false, 'length' => 16]);
-            $changed = true;
-        }
-
-        if ($table->hasColumn('batch_size') === false) {
-            $table->addColumn('batch_size', Types::INTEGER, ['notnull' => false, 'unsigned' => true]);
+            $table->addColumn($columnName, $columnType, $columnOptions);
             $changed = true;
         }
 

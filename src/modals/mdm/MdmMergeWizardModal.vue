@@ -146,16 +146,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
-		/**
 		 * Confirm is disabled until the preview has loaded successfully and
 		 * a reason has been chosen.
 		 *

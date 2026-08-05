@@ -164,16 +164,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
-		/**
 		 * Resolve the linked source records defensively from the object
 		 * payload: an explicit `sources` array, or the first array-valued
 		 * field whose entries look like source records.

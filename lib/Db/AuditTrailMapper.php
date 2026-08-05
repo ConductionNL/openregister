@@ -119,23 +119,29 @@ class AuditTrailMapper extends QBMapper
      */
     private function insertHashChained(AuditTrail $auditTrail): AuditTrail
     {
-        $auditTrail = $this->insert(entity: $auditTrail);
-
-        // Seal the persisted row into the hash chain. AuditHashService computes
-        // the hash over the row using the SAME row->entity->canonical path as
-        // verifyChain(), so the stored hash re-verifies exactly. Fail-soft: a
-        // hashing/DB hiccup logs and leaves the row unhashed rather than losing
-        // the audit record.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRow(id: (int) $auditTrail->getId());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] hash-chain seal failed for id '.$auditTrail->getId().': '.$e->getMessage()
-            );
-        }
-
-        return $auditTrail;
+        // Sealing is DELIBERATELY not done here. It is left to AuditSealJob.
+        //
+        // Inline sealing was not merely slow (~15 ms of lock acquisition and
+        // hashing on every audited write); it was the direct cause of chain
+        // corruption. Sealing takes an exclusive lock, so under concurrency some
+        // rows sealed and some fell through the fail-soft path unsealed. A row
+        // sealed AFTER a gap chained onto the newest SEALED row, skipping the
+        // gap — so when the sweep later filled that gap, the gap and the row
+        // after it shared one predecessor. That is a fan-out, indistinguishable
+        // from tampering to verifyChain(). Observed live on this very path: rows
+        // 455956 and 455957 both chained onto 455955.
+        //
+        // With no inline sealing there is exactly one sealer, and unsealed rows
+        // are therefore always a contiguous TAIL rather than holes punched
+        // through the middle. The sweep walks that tail in id order, chaining
+        // each row onto the row genuinely before it, so the fan-out is not
+        // handled — it is made unreachable.
+        //
+        // Cost of the delay: a row is unvouched-for until the next sweep (five
+        // minutes). verifyChain() skips unsealed rows and carries the last
+        // sealed hash forward, so a tail of them is a smaller claim, never a
+        // false alarm.
+        return $this->insert(entity: $auditTrail);
     }//end insertHashChained()
 
     /**
@@ -807,17 +813,10 @@ class AuditTrailMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Seal the persisted rows into the hash chain in one batched pass.
-        // Fail-soft, matching insertHashChained(): the audit rows are already
-        // inserted; a sealing hiccup logs and leaves them unhashed.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRows(ids: $ids);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] batched hash-chain seal failed for '.count($ids).' rows: '.$e->getMessage()
-            );
-        }
+        // Sealing is left to AuditSealJob, exactly as on the single-row path.
+        // See insertHashChained() for why: one sealer means unsealed rows form a
+        // contiguous tail, which is the property that makes a fan-out
+        // impossible rather than merely unlikely.
     }//end insertAuditTrailChunk()
 
     /**
@@ -1500,6 +1499,89 @@ class AuditTrailMapper extends QBMapper
             ];
         }//end try
     }//end getDetailedStatistics()
+
+    /**
+     * Get lifetime audit trail counts grouped by action
+     *
+     * Unlike getDetailedStatistics(), which windows the per-action counts to
+     * the last N hours, this returns lifetime counts so the audit-trail page
+     * statistics line up with the (unwindowed) audit-trail list beside them.
+     * Keys are singular to match the audit-trail REST surface; the windowed
+     * dashboard surface uses plural keys.
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return int[] Total plus a lifetime count per action. The total counts
+     *               every row, including rows whose action is outside the four
+     *               known ones.
+     *
+     * @psalm-return array{total: int, create: int, update: int,
+     *     delete: int, read: int}
+     */
+    public function getActionCounts(?int $registerId=null, ?int $schemaId=null): array
+    {
+        $counts = [
+            'create' => 0,
+            'update' => 0,
+            'delete' => 0,
+            'read'   => 0,
+        ];
+
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                'action',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->groupBy('action');
+
+            // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+            if ($registerId !== null) {
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
+            }
+
+            // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+            if ($schemaId !== null) {
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
+            }
+
+            $result  = $qb->executeQuery();
+            $results = $result->fetchAll();
+            $result->closeCursor();
+
+            $total = 0;
+            foreach ($results as $row) {
+                $count  = (int) $row['count'];
+                $total += $count;
+
+                $action = (string) ($row['action'] ?? '');
+                if (array_key_exists($action, $counts) === true) {
+                    $counts[$action] = $count;
+                }
+            }
+
+            return ['total' => $total] + $counts;
+        } catch (\Exception $e) {
+            // Zeros are indistinguishable from an empty system in the UI, so the
+            // failure has to be traceable in the log.
+            $this->logger->error(
+                'Failed to count audit trails by action: '.$e->getMessage(),
+                [
+                    'exception'  => $e,
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                ]
+            );
+
+            return ['total' => 0] + $counts;
+        }//end try
+    }//end getActionCounts()
 
     /**
      * Get action distribution data with percentages

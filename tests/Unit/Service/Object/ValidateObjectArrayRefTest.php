@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -56,7 +57,8 @@ class ValidateObjectArrayRefTest extends TestCase
             $this->createMock(MagicMapper::class),
             $this->createMock(SchemaMapper::class),
             $urlGenerator,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IUserManager::class)
         );
     }//end setUp()
 

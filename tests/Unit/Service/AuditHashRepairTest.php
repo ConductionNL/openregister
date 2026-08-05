@@ -37,6 +37,7 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
@@ -85,7 +86,8 @@ class AuditHashRepairTest extends TestCase
         $this->service         = new AuditHashService(
             $this->db,
             $this->lockingProvider,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IAppConfig::class)
         );
 
     }//end setUp()

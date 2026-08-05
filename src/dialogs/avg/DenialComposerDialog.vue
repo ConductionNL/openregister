@@ -54,7 +54,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import {
 	NcDialog,
 	NcSelect,
@@ -99,12 +98,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: exposes the translate helper to the template; no standalone behavioural contract.
-		 */
-		t() {
-			return t
-		},
 		/**
 		 * @spec exclude Presentation glue: maps the active pack's denial-grounds enum to NcSelect options; resolution owned by the store helper.
 		 */

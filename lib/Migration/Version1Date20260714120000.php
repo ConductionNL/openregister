@@ -41,8 +41,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Drop the orphaned openregister_realtime_events table (and its indexes).
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/realtime-updates/spec.md
  */
 class Version1Date20260714120000 extends SimpleMigrationStep

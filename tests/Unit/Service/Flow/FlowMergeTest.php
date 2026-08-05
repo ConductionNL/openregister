@@ -81,22 +81,26 @@ class FlowMergeTest extends TestCase
      */
     public function testAJoinReadsTheItemsFromEveryBranch(): void
     {
+        // The split node has NO conditioned exits, so it takes every output —
+        // that is what keeps a genuine parallel split parallel now that a
+        // branching node takes exactly one exit. The merge declares
+        // `join: true` so it waits for both branches rather than firing on
+        // whichever arrives first.
         $flow = [
-            'id' => 'split-join',
-            'nodes' => [['id' => 's'], ['id' => 'a'], ['id' => 'b'], ['id' => 'm']],
-            'edges' => [
-                // Split: s fans out to a and b.
-                ['id' => 'split', 'from' => 's', 'to' => ['a', 'b'], 'type' => 'passthrough'],
-                // Each branch stamps a different marker.
-                ['id' => 'ea', 'from' => 'a', 'to' => 'a2', 'type' => 'stamp:branch=A'],
-                ['id' => 'eb', 'from' => 'b', 'to' => 'b2', 'type' => 'stamp:branch=B'],
-                // Join: a2 and b2 converge on the merge.
-                ['id' => 'join', 'from' => ['a2', 'b2'], 'to' => 'm', 'type' => 'merge'],
+            'id'    => 'split-join',
+            'nodes' => [
+                ['id' => 'split', 'type' => 'passthrough'],
+                ['id' => 'ea', 'type' => 'stamp:branch=A'],
+                ['id' => 'eb', 'type' => 'stamp:branch=B'],
+                ['id' => 'merge', 'type' => 'merge', 'join' => true],
             ],
-            'nodes2' => [],
+            'edges' => [
+                ['id' => 'split-a', 'from' => 'split', 'to' => 'ea'],
+                ['id' => 'split-b', 'from' => 'split', 'to' => 'eb'],
+                ['id' => 'a-merge', 'from' => 'ea', 'to' => 'merge'],
+                ['id' => 'b-merge', 'from' => 'eb', 'to' => 'merge'],
+            ],
         ];
-        // a2 and b2 must be declared nodes.
-        $flow['nodes'] = [['id' => 's'], ['id' => 'a'], ['id' => 'b'], ['id' => 'a2'], ['id' => 'b2'], ['id' => 'm']];
 
         $d = new BranchDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['n' => 1])], $d);
@@ -114,15 +118,17 @@ class FlowMergeTest extends TestCase
     public function testParallelBranchesDoNotSeeEachOther(): void
     {
         $flow = [
-            'id' => 'parallel',
-            'nodes' => [['id' => 's'], ['id' => 'a'], ['id' => 'b']],
+            'id'    => 'parallel',
+            'nodes' => [
+                ['id' => 'split', 'type' => 'passthrough'],
+                ['id' => 'ea', 'type' => 'stamp:x=fromA'],
+                ['id' => 'eb', 'type' => 'stamp:x=fromB'],
+            ],
             'edges' => [
-                ['id' => 'split', 'from' => 's', 'to' => ['a', 'b'], 'type' => 'passthrough'],
-                ['id' => 'ea', 'from' => 'a', 'to' => 'aEnd', 'type' => 'stamp:x=fromA'],
-                ['id' => 'eb', 'from' => 'b', 'to' => 'bEnd', 'type' => 'stamp:x=fromB'],
+                ['id' => 'split-a', 'from' => 'split', 'to' => 'ea'],
+                ['id' => 'split-b', 'from' => 'split', 'to' => 'eb'],
             ],
         ];
-        $flow['nodes'] = [['id' => 's'], ['id' => 'a'], ['id' => 'b'], ['id' => 'aEnd'], ['id' => 'bEnd']];
 
         $d = new BranchDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['seed' => true])], $d);

@@ -46,7 +46,6 @@ class Version1Date20251106000000 extends SimpleMigrationStep
      *
      * @return null|ISchemaWrapper The modified schema.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.StaticAccess)          Type::getType is standard Doctrine DBAL pattern
      * @SuppressWarnings(PHPMD.NPathComplexity)       Database migration requires checking many columns
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)

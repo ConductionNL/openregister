@@ -48,8 +48,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 poll-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525130000 extends SimpleMigrationStep
 {

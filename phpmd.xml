@@ -9,9 +9,24 @@
         This is a custom ruleset for OpenRegister Nextcloud.
     </description>
 
-    <!-- Exclude database migration files: they are one-time DDL scripts with no business logic,
-         and analysing all 136+ of them accounts for ~100s of the total phpmd runtime. -->
-    <exclude-pattern>*/Migration/*</exclude-pattern>
+    <!-- NOTE: this ruleset deliberately carries NO top-level <exclude-pattern>.
+
+         It used to carry <exclude-pattern>*/Migration/*</exclude-pattern> here as a
+         runtime optimisation. A top-level exclude-pattern is applied by PDepend at
+         FILE-COLLECTION time, so it does not drop the directory from one rule - it
+         drops it from EVERY rule in this ruleset. Measured on phpmd 2.15.0 /
+         PHP 8.4.22, that single line was silently swallowing 11 real non-
+         UnusedFormalParameter findings in lib/Migration (3 NPathComplexity,
+         3 ElseExpression, 2 StaticAccess, 2 ExcessiveMethodLength,
+         1 CyclomaticComplexity). See ConductionNL/.github#155 and
+         ConductionNL/openregister#2338.
+
+         UnusedFormalParameter - the one rule that genuinely cannot apply to
+         migrations, because OCP\Migration\IMigrationStep mandates the signature -
+         now lives alone in phpmd-unusedparams.xml with its own top-level
+         exclude-pattern, so the exclusion is scoped to that rule and nothing else.
+         Both rulesets are run as separate legs by `composer phpmd`; adding a rule
+         here is enough, but a rule that must skip a path needs its own leg. -->
 
     <!-- Clean Code Rules -->
     <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
@@ -99,7 +114,11 @@
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateField"/>
     <rule ref="rulesets/unusedcode.xml/UnusedLocalVariable"/>
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateMethod"/>
-    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter">
-        <exclude-pattern>*Migration*</exclude-pattern>
-    </rule>
+    <!-- UnusedFormalParameter is NOT declared here. It lives alone in
+         phpmd-unusedparams.xml, which carries a top-level (therefore effective)
+         <exclude-pattern>*/Migration/*</exclude-pattern>. The nested
+         <exclude-pattern> that used to sit inside this rule was INERT: PHPMD 2.15
+         parses exclude-patterns only as direct children of <ruleset> and silently
+         discards nested ones. `composer phpmd` runs both rulesets as separate legs
+         and returns the worst exit code. -->
 </ruleset>

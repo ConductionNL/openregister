@@ -35,6 +35,7 @@ use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 class Version1Date20260706100000Test extends TestCase
 {
@@ -50,8 +51,30 @@ class Version1Date20260706100000Test extends TestCase
         $this->config     = $this->createMock(IConfig::class);
         $this->config->method('getSystemValueString')->with('dbtableprefix', 'oc_')->willReturn('oc_');
 
-        $this->migration = new Version1Date20260706100000($this->connection, $this->config);
+        $this->migration = new Version1Date20260706100000(
+            $this->connection,
+            $this->config,
+            $this->makeUnavailableContainer()
+        );
     }//end setUp()
+
+    /**
+     * A container whose get() always fails.
+     *
+     * resolveConfiguredDimension() resolves SettingsService and
+     * EmbeddingGeneratorHandler lazily and degrades to the data-driven fallback
+     * when that resolution fails. These unit tests run without a booted server,
+     * which is exactly that case, and they pin the fallback behaviour.
+     */
+    private function makeUnavailableContainer(): ContainerInterface&MockObject
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willThrowException(
+            new \RuntimeException('no container in unit tests')
+        );
+
+        return $container;
+    }//end makeUnavailableContainer()
 
     /**
      * Build a schema wrapper that reports openregister_vectors present/absent.
@@ -107,7 +130,7 @@ class Version1Date20260706100000Test extends TestCase
         $config     = $this->createMock(IConfig::class);
         $config->method('getSystemValueString')->with('dbtableprefix', 'oc_')->willReturn('');
 
-        $migration = new Version1Date20260706100000($connection, $config);
+        $migration = new Version1Date20260706100000($connection, $config, $this->makeUnavailableContainer());
 
         $output = $this->createMock(IOutput::class);
         $schema = $this->makeSchema(true);
