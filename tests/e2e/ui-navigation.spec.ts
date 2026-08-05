@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * UI navigation and view e2e tests (browser-based) — covers:
  *   - frontend-app-bootstrap (full navigation, multiple routes)

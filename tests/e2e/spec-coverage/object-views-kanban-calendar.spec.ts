@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * GENUINE behavioural UI e2e for the kanban + calendar object-view
  * presentations ("Tables that scale", PRs #2063/#2098). Seeds a register + a

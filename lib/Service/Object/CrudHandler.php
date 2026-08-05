@@ -220,7 +220,7 @@ class CrudHandler
      */
     public function create(array $data, bool $_rbac=true, bool $_multitenancy=true)
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[CrudHandler] Creating object',
             context: [
                 'file'          => __FILE__,
@@ -233,7 +233,7 @@ class CrudHandler
 
         try {
             // TODO: Implement proper save logic (placeholder).
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[CrudHandler] Object creation not implemented (TODO)',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'data_keys' => array_keys($data)]
             );
@@ -276,7 +276,7 @@ class CrudHandler
         bool $_rbac=true,
         bool $_multitenancy=true
     ) {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[CrudHandler] Updating object',
             context: [
                 'file'          => __FILE__,
@@ -290,7 +290,7 @@ class CrudHandler
 
         try {
             // TODO: Implement proper save logic (placeholder).
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[CrudHandler] Object update not implemented (TODO)',
                 context: [
                     'file'      => __FILE__,
@@ -337,7 +337,7 @@ class CrudHandler
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[CrudHandler] Patching object',
             context: [
                 'file'          => __FILE__,
@@ -369,7 +369,7 @@ class CrudHandler
                 _multitenancy: $_multitenancy
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[CrudHandler] Object patched',
                 context: [
                     'file'      => __FILE__,
@@ -412,7 +412,7 @@ class CrudHandler
      */
     public function delete(string $objectId, bool $_rbac=true, bool $_multitenancy=true): bool
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[CrudHandler] Deleting object',
             context: [
                 'file'          => __FILE__,
@@ -430,7 +430,7 @@ class CrudHandler
             // _rbac: $_rbac,
             // _multitenancy: $multi.
             // );.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[CrudHandler] Object deleted',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
             );

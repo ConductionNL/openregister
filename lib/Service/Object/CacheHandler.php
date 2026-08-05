@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
@@ -1278,8 +1278,8 @@ class CacheHandler
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->info(
-            message: '[CacheHandler] 📋 ALL OBJECT NAMES RETRIEVED',
+        $this->logger->debug(
+            message: '[CacheHandler] All object names retrieved',
             context: [
                 'file'                => __FILE__,
                 'line'                => __LINE__,
@@ -1350,8 +1350,8 @@ class CacheHandler
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->info(
-                message: '[CacheHandler] 🔥 NAME CACHE WARMED UP',
+            $this->logger->debug(
+                message: '[CacheHandler] Name cache warmed up',
                 context: [
                     'file'                     => __FILE__,
                     'line'                     => __LINE__,

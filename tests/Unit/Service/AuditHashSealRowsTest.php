@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
@@ -56,7 +57,12 @@ class AuditHashSealRowsTest extends TestCase
         $this->db              = $this->createMock(IDBConnection::class);
         $this->lockingProvider = $this->createMock(ILockingProvider::class);
         $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->service         = new AuditHashService($this->db, $this->lockingProvider, $this->logger);
+        $this->service         = new AuditHashService(
+            $this->db,
+            $this->lockingProvider,
+            $this->logger,
+            $this->createMock(IAppConfig::class)
+        );
     }//end setUp()
 
     /**

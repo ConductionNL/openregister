@@ -362,7 +362,7 @@ class SaveObjects
                 $opType  = 'mixed-schema';
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 $opLabel,
                 [
                     'totalObjects' => count($objects),
@@ -876,6 +876,8 @@ class SaveObjects
         $result['statistics']['invalid']++;
         $result['statistics']['errors']++;
 
+        // Info: a safeguard REFUSED to write a row. A refusal is exactly the
+        // kind of thing someone comes to the log to find.
         $this->logger->info(
             message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
             context: ['file' => __FILE__, 'line' => __LINE__, 'reason' => $reason]
@@ -1278,7 +1280,7 @@ class SaveObjects
             $selfKeys = array_keys($object['@self']);
         }
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] DEBUG - Single schema object structure",
                 [
                     'available_keys'      => array_keys($object),
@@ -1296,7 +1298,7 @@ class SaveObjects
         $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);
         $selfData['relations'] = $relations;
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Relations scanned in preparation (single schema)",
                 [
                     'uuid'             => $selfData['uuid'] ?? 'unknown',
@@ -1638,6 +1640,18 @@ class SaveObjects
             return;
         }
 
+        // A system operation withholds lifecycle events, exactly as the
+        // single-object path does in MagicMapper::suppressLifecycleEvents().
+        //
+        // This bulk path is the reason the first attempt at that gate did not
+        // work: gating MagicMapper's insert()/update() alone left the BULK
+        // dispatchers untouched, and a configuration import reaches objects
+        // through here too — so the fan-out carried on firing and the "fix"
+        // looked applied while eight apps kept waking per object.
+        if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+            return;
+        }
+
         // Created objects → ObjectCreatedEvent.
         foreach ($createdEntities as $entity) {
             try {
@@ -1761,7 +1775,7 @@ class SaveObjects
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
     ): mixed {
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
                 [
                     'objects_to_process' => count($transformedObjects),
@@ -1882,7 +1896,7 @@ class SaveObjects
      */
     private function classifyDatabaseComputedResults(array $bulkResult, array &$result): array
     {
-        $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
+        $this->logger->debug("[SaveObjects] Processing complete objects with database-computed classification");
 
         $sideEffects = [
             'created' => [],
@@ -1958,7 +1972,7 @@ class SaveObjects
             }//end switch
         }//end foreach
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Database-computed classification completed",
                 [
                     'total_processed'       => count($bulkResult),
@@ -1988,7 +2002,7 @@ class SaveObjects
      */
     private function classifyLegacyResults(array $bulkResult, array $transformedObjects, array &$result): void
     {
-        $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
+        $this->logger->debug("[SaveObjects] Processing UUID array (legacy mode)");
 
         // Fallback: Use traditional object reconstruction.
         $savedObjects = $this->reconstructSavedObjects(
@@ -2003,7 +2017,7 @@ class SaveObjects
             $result['statistics']['saved']++;
         }
 
-        $this->logger->info("[SaveObjects] Using fallback object reconstruction");
+        $this->logger->debug("[SaveObjects] Using fallback object reconstruction");
     }//end classifyLegacyResults()
 
     /**
@@ -2340,7 +2354,7 @@ class SaveObjects
             $selfData = $this->hydrateObjectMetadataFields(selfData: $selfData);
 
             // DEBUG: Log mixed schema object structure.
-            $this->logger->info(
+            $this->logger->debug(
                     "[SaveObjects] DEBUG - Mixed schema object structure",
                     [
                         'available_keys'      => array_keys($object),
@@ -2355,7 +2369,7 @@ class SaveObjects
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
             if (isset($selfData['relations']) === true && empty($selfData['relations']) === false) {
-                $this->logger->info(
+                $this->logger->debug(
                         "[SaveObjects] Relations already set from preparation",
                         [
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
@@ -2367,7 +2381,7 @@ class SaveObjects
                 $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
                 $selfData['relations'] = $relations;
 
-                $this->logger->info(
+                $this->logger->debug(
                         "[SaveObjects] Relations scanned in transformation",
                         [
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
@@ -2538,7 +2552,7 @@ class SaveObjects
     {
         if (isset($object['object']) === true && is_array($object['object']) === true) {
             // NEW STRUCTURE: object property contains business data.
-            $this->logger->info("[SaveObjects] Using object property for business data (mixed)");
+            $this->logger->debug("[SaveObjects] Using object property for business data (mixed)");
             return $object['object'];
         }
 
@@ -2566,7 +2580,7 @@ class SaveObjects
         }
 
         // CRITICAL DEBUG: Log what we're removing and what remains.
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Metadata removal applied (mixed)",
                 [
                     'removed_fields'       => array_intersect($metadataFields, array_keys($object)),

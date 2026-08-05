@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
@@ -116,6 +117,43 @@ class AuditHashService
     private const SWEEP_BATCH_SIZE = 500;
 
     /**
+     * Most rows one sweep will re-chain in a single pass.
+     *
+     * The sweep cannot seal a gap in place. If a row was left unsealed and LATER
+     * rows were then sealed inline, those later rows chained onto the newest
+     * SEALED row — skipping the gap. Filling the gap afterwards gives it that
+     * same predecessor, so two rows share one parent: a fan-out, which is
+     * exactly the corruption this whole subsystem exists to detect. Observed
+     * live: rows 455956 and 455957 both chained onto 455955.
+     *
+     * So the sweep re-chains from the oldest gap FORWARD, rewriting the tail.
+     * That is only acceptable while the tail is small, hence this bound. A gap
+     * with more rows after it than this is a backlog rather than a hiccup, and
+     * belongs to the deliberate operator repair, not to a five-minute cron.
+     *
+     * @var integer
+     */
+    private const MAX_SWEEP_RECHAIN = 5000;
+
+    /**
+     * App-config key recording when the seal lock was last acquired.
+     *
+     * @var string
+     */
+    private const SEAL_LOCK_SINCE_KEY = 'audit_seal_lock_since';
+
+    /**
+     * Age past which a held seal lock is treated as abandoned, in seconds.
+     *
+     * A genuine pass is bounded by MAX_SWEEP_RECHAIN rows and finishes in
+     * seconds, so fifteen minutes is far beyond anything legitimate while still
+     * leaving a wide margin on a loaded instance.
+     *
+     * @var integer
+     */
+    private const STALE_SEAL_LOCK_SECONDS = 900;
+
+    /**
      * Whether THIS service instance currently holds the seal lock.
      *
      * The seal lock is not re-entrant: acquiring it twice without releasing
@@ -137,11 +175,13 @@ class AuditHashService
      * @param IDBConnection    $db              The database connection
      * @param ILockingProvider $lockingProvider Advisory lock provider serializing seal passes
      * @param LoggerInterface  $logger          Logger for fail-soft lock warnings
+     * @param IAppConfig       $appConfig       Records when the seal lock was taken, to detect an abandoned one
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly ILockingProvider $lockingProvider,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IAppConfig $appConfig
     ) {
     }//end __construct()
 
@@ -409,24 +449,129 @@ class AuditHashService
             return 0;
         }
 
+        $fromId = $this->getEarliestUnsealedId();
+        if ($fromId === null) {
+            return 0;
+        }
+
+        // Re-chaining the tail is bounded, because this runs on a five-minute
+        // cron and must not turn into a 300k-row rewrite. A gap older than the
+        // window is a backlog, not a hiccup, and belongs to the operator repair.
+        $tail = $this->countRowsFrom(fromId: $fromId);
+        if ($tail > self::MAX_SWEEP_RECHAIN) {
+            $this->logger->warning(
+                message: sprintf(
+                    '[AuditHashService] Oldest unsealed audit row is id %d, with %d row(s) after it — '
+                    .'beyond the %d the sweep may rewrite in one pass. Sealing it in place would fan the '
+                    .'chain out, so the sweep is standing down. Run occ openregister:rechain-audit-trail.',
+                    $fromId,
+                    $tail,
+                    self::MAX_SWEEP_RECHAIN
+                ),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+            );
+
+            return 0;
+        }
+
+        if ($this->acquireSealLock() === false) {
+            $this->logger->warning(
+                message: '[AuditHashService] Seal sweep skipped: seal lock unavailable.',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+            );
+
+            return 0;
+        }
+
+        try {
+            $previousHash = $this->getHashBefore(id: $fromId);
+            if ($previousHash === null) {
+                $previousHash = $this->getGenesisHash();
+            }
+
+            $sealed  = 0;
+            $afterId = ($fromId - 1);
+
+            while (true) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('*')
+                    ->from('openregister_audit_trails')
+                    ->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+                    ->orderBy('id', 'ASC')
+                    ->setMaxResults($limit);
+
+                $result = $qb->executeQuery();
+                $rows   = $result->fetchAll();
+                $result->closeCursor();
+
+                if ($rows === []) {
+                    break;
+                }
+
+                $window       = $this->rechainWindow(rows: $rows, previousHash: $previousHash);
+                $previousHash = $window['previousHash'];
+                $sealed      += $window['rechained'];
+                $afterId      = $window['lastId'];
+            }//end while
+
+            return $sealed;
+        } finally {
+            $this->releaseSealLock();
+        }//end try
+
+    }//end sealUnsealed()
+
+    /**
+     * The id of the oldest row still missing a hash.
+     *
+     * @return int|null The id, or null when every row is sealed.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function getEarliestUnsealedId(): ?int
+    {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_audit_trails')
             ->where($qb->expr()->isNull('hash'))
             ->orderBy('id', 'ASC')
-            ->setMaxResults($limit);
+            ->setMaxResults(1);
 
         $result = $qb->executeQuery();
-        $ids    = array_column($result->fetchAll(), 'id');
+        $id     = $result->fetchOne();
         $result->closeCursor();
 
-        if ($ids === []) {
-            return 0;
+        if ($id === false || $id === null) {
+            return null;
         }
 
-        return $this->sealRows(ids: $ids);
+        return (int) $id;
 
-    }//end sealUnsealed()
+    }//end getEarliestUnsealedId()
+
+    /**
+     * How many rows sit at or after the given id.
+     *
+     * @param int $fromId The inclusive lower bound.
+     *
+     * @return int The row count.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function countRowsFrom(int $fromId): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('id', 'tail'))
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->gte('id', $qb->createNamedParameter($fromId, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $count  = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) $count;
+
+    }//end countRowsFrom()
 
     /**
      * Count rows still awaiting a seal.
@@ -832,6 +977,7 @@ class AuditHashService
             try {
                 $this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
                 $this->holdsSealLock = true;
+                $this->appConfig->setValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, time());
 
                 return true;
             } catch (LockedException) {
@@ -843,8 +989,68 @@ class AuditHashService
             }
         }
 
-        return false;
+        return $this->breakStaleSealLock();
     }//end acquireSealLock()
+
+    /**
+     * Release a seal lock whose holder died, and take it.
+     *
+     * ILockingProvider has no owner and no liveness check: a process killed
+     * inside its critical section never reaches `releaseSealLock()`, and
+     * DBLockingProvider only reaps expired rows from a separate cleanup job. The
+     * lock therefore survives its holder for the remainder of its TTL — measured
+     * here at 46 minutes after an interrupted upgrade.
+     *
+     * That is worse than an outage, because it is a SILENT one. Every sweep in
+     * that window returns 0, which is also the value meaning "nothing to seal",
+     * so a dead sweeper and an idle one are indistinguishable from the outside
+     * while the backlog grows.
+     *
+     * Hence our own timestamp. A live holder refreshes it on each acquisition,
+     * so a timestamp older than STALE_SEAL_LOCK_SECONDS means no living process
+     * is inside the section — a real seal pass is bounded by
+     * MAX_SWEEP_RECHAIN rows and cannot run that long. Breaking the lock is then
+     * safe, and is announced at warning level because "something took a lock and
+     * died" is worth seeing even when recovered from.
+     *
+     * @return bool True when the stale lock was broken and acquired.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function breakStaleSealLock(): bool
+    {
+        $since = $this->appConfig->getValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, 0);
+        if ($since === 0 || (time() - $since) < self::STALE_SEAL_LOCK_SECONDS) {
+            return false;
+        }
+
+        $this->logger->warning(
+            message: sprintf(
+                '[AuditHashService] Seal lock has been held for %d seconds, longer than any real seal pass '
+                .'can run. Treating it as abandoned by a process that died inside its critical section, '
+                .'and breaking it so sealing resumes.',
+                (time() - $since)
+            ),
+            context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+        );
+
+        try {
+            $this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+            $this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                message: '[AuditHashService] Could not break the stale seal lock: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+            );
+
+            return false;
+        }
+
+        $this->holdsSealLock = true;
+        $this->appConfig->setValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, time());
+
+        return true;
+    }//end breakStaleSealLock()
 
     /**
      * Release the exclusive seal lock acquired by {@see acquireSealLock()}.
@@ -861,6 +1067,7 @@ class AuditHashService
         // subsequent seal in this process would refuse instantly — turning a
         // performance guard into a silent stop-sealing switch.
         $this->holdsSealLock = false;
+        $this->appConfig->setValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, 0);
 
         $this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
     }//end releaseSealLock()

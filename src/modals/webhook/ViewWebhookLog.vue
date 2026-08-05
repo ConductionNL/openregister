@@ -144,7 +144,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
  * @module Modals/Webhook
  * @author Conduction
  * @copyright 2024 Conduction
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
 export default {

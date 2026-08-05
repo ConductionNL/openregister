@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * DSAR case-management surface (dsar-case-ui) — behavioural e2e for the
  * Cases tab added to the AVG view (src/views/avg/AvgIndex.vue): the case

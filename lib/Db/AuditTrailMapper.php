@@ -120,23 +120,29 @@ class AuditTrailMapper extends QBMapper
      */
     private function insertHashChained(AuditTrail $auditTrail): AuditTrail
     {
-        $auditTrail = $this->insert(entity: $auditTrail);
-
-        // Seal the persisted row into the hash chain. AuditHashService computes
-        // the hash over the row using the SAME row->entity->canonical path as
-        // verifyChain(), so the stored hash re-verifies exactly. Fail-soft: a
-        // hashing/DB hiccup logs and leaves the row unhashed rather than losing
-        // the audit record.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRow(id: (int) $auditTrail->getId());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] hash-chain seal failed for id '.$auditTrail->getId().': '.$e->getMessage()
-            );
-        }
-
-        return $auditTrail;
+        // Sealing is DELIBERATELY not done here. It is left to AuditSealJob.
+        //
+        // Inline sealing was not merely slow (~15 ms of lock acquisition and
+        // hashing on every audited write); it was the direct cause of chain
+        // corruption. Sealing takes an exclusive lock, so under concurrency some
+        // rows sealed and some fell through the fail-soft path unsealed. A row
+        // sealed AFTER a gap chained onto the newest SEALED row, skipping the
+        // gap — so when the sweep later filled that gap, the gap and the row
+        // after it shared one predecessor. That is a fan-out, indistinguishable
+        // from tampering to verifyChain(). Observed live on this very path: rows
+        // 455956 and 455957 both chained onto 455955.
+        //
+        // With no inline sealing there is exactly one sealer, and unsealed rows
+        // are therefore always a contiguous TAIL rather than holes punched
+        // through the middle. The sweep walks that tail in id order, chaining
+        // each row onto the row genuinely before it, so the fan-out is not
+        // handled — it is made unreachable.
+        //
+        // Cost of the delay: a row is unvouched-for until the next sweep (five
+        // minutes). verifyChain() skips unsealed rows and carries the last
+        // sealed hash forward, so a tail of them is a smaller claim, never a
+        // false alarm.
+        return $this->insert(entity: $auditTrail);
     }//end insertHashChained()
 
     /**
@@ -808,17 +814,10 @@ class AuditTrailMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Seal the persisted rows into the hash chain in one batched pass.
-        // Fail-soft, matching insertHashChained(): the audit rows are already
-        // inserted; a sealing hiccup logs and leaves them unhashed.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRows(ids: $ids);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] batched hash-chain seal failed for '.count($ids).' rows: '.$e->getMessage()
-            );
-        }
+        // Sealing is left to AuditSealJob, exactly as on the single-row path.
+        // See insertHashChained() for why: one sealer means unsealed rows form a
+        // contiguous tail, which is the property that makes a fan-out
+        // impossible rather than merely unlikely.
     }//end insertAuditTrailChunk()
 
     /**

@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Integration mount-check fixture — Phase K / K3 regression guard for
  * the Phase-A "bespoke UI is dead code" wiring bug (ADR-019).
