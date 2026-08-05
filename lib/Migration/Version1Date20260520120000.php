@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add `source_language` to `openregister_translations`.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
  */
 class Version1Date20260520120000 extends SimpleMigrationStep

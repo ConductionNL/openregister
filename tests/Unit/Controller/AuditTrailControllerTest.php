@@ -489,6 +489,46 @@ class AuditTrailControllerTest extends TestCase
         );
     }
 
+    public function testStatisticsSuccess(): void
+    {
+        $counts = [
+            'total'  => 7,
+            'create' => 4,
+            'update' => 2,
+            'delete' => 1,
+            'read'   => 0,
+        ];
+        $this->auditTrailMapper->expects($this->once())
+            ->method('getActionCounts')
+            ->with(null, null)
+            ->willReturn($counts);
+
+        $result = $this->controller->statistics();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertEquals($counts, $result->getData());
+    }
+
+    public function testStatisticsPassesRegisterAndSchemaScope(): void
+    {
+        $this->auditTrailMapper->expects($this->once())
+            ->method('getActionCounts')
+            ->with(3, 5)
+            ->willReturn(
+                [
+                    'total'  => 0,
+                    'create' => 0,
+                    'update' => 0,
+                    'delete' => 0,
+                    'read'   => 0,
+                ]
+            );
+
+        $result = $this->controller->statistics(3, 5);
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
     public function testClearAllSuccess(): void
     {
         $this->auditTrailMapper->method('clearAllLogs')->willReturn(true);
@@ -590,6 +630,37 @@ class AuditTrailControllerTest extends TestCase
 
         $this->assertEquals(403, $result->getStatus());
         $this->assertStringContainsString('admin-only', $result->getData()['error']);
+    }
+
+    public function testStatisticsReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->statistics();
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testStatisticsReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->statistics();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testStatisticsDoesNotInvokeMapperWhenForbidden(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->auditTrailMapper->expects($this->never())->method('getActionCounts');
+
+        $controller->statistics();
     }
 
     public function testShowReturns401WhenAnonymous(): void

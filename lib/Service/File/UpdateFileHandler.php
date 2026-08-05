@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -146,7 +146,7 @@ class UpdateFileHandler
             $entity = $this->fileMapper->setLabelsForFile(fileId: $fileId, labels: $labels);
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: "[UpdateFileHandler] OR-side metadata updated for file $fileId",
             context: [
                 'file'               => __FILE__,
@@ -207,7 +207,7 @@ class UpdateFileHandler
     ): File {
         // Debug logging - original file path.
         $originalFilePath = $filePath;
-        $this->logger->info(
+        $this->logger->debug(
             message: "[UpdateFileHandler] updateFile: Original file path received: '$originalFilePath'",
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -218,7 +218,7 @@ class UpdateFileHandler
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: File ID provided: $filePath",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -230,7 +230,7 @@ class UpdateFileHandler
                     $fileName = $file->getName();
                     $fileId   = $file->getId();
                     $msg      = "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)";
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: $msg,
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -253,7 +253,7 @@ class UpdateFileHandler
                     $file     = $nodes[0];
                     $fileName = $file->getName();
                     $fid      = $file->getId();
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[UpdateFileHandler] updateFile: Found file by ID in user folder: $fileName (ID: $fid)",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -274,12 +274,12 @@ class UpdateFileHandler
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: After cleaning: '$filePath'",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             if ($fileName !== $filePath) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Extracted filename from path: '$fileName' (from '$filePath')",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -294,11 +294,11 @@ class UpdateFileHandler
                     $objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
 
                     if ($objectFolder !== null) {
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Object folder path: ".$objectFolder->getPath(),
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Object folder ID: ".$objectFolder->getId(),
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
@@ -308,7 +308,7 @@ class UpdateFileHandler
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
                             $fileList    = implode(', ', $fileNames);
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: "[UpdateFileHandler] updateFile: Files in object folder: $fileList",
                                 context: [
                                     'file' => __FILE__,
@@ -326,7 +326,7 @@ class UpdateFileHandler
                         try {
                             $file = $objectFolder->get($fileName);
                             $msg  = "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")";
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: "[UpdateFileHandler] ".$msg,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
@@ -340,7 +340,7 @@ class UpdateFileHandler
                             try {
                                 $file = $objectFolder->get($filePath);
                                 $msg  = "updateFile: Found file using full path in object folder: ".$file->getName();
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[UpdateFileHandler] ".$msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -370,7 +370,7 @@ class UpdateFileHandler
             }//end if
 
             if ($object === null) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -379,7 +379,7 @@ class UpdateFileHandler
             // If object wasn't provided or file wasn't found in object folder, try user folder.
             $userFolder = null;
             if ($file === null) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -389,7 +389,7 @@ class UpdateFileHandler
                     $fileId     = $file->getId();
                     $msg        = "[UpdateFileHandler] updateFile: Found file in user folder";
                     $msg       .= " at path: $filePath (ID: $fileId)";
-                    $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->debug(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(
                         message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.",
@@ -399,7 +399,7 @@ class UpdateFileHandler
                     // Try to find the file by ID if the path starts with a number.
                     if (preg_match('/^(\d+)\//', $filePath, $matches) === 1) {
                         $fileId = (int) $matches[1];
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Attempting to find file by ID: $fileId",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
@@ -411,7 +411,7 @@ class UpdateFileHandler
                                 $fileName = $file->getName();
                                 $path     = $file->getPath();
                                 $msg      = "updateFile: Found file by ID $fileId: $fileName at path: $path";
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[UpdateFileHandler] ".$msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -493,7 +493,7 @@ class UpdateFileHandler
                 }
 
                 $file->putContent(data: $content);
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Successfully updated file content: ".$file->getName(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -524,7 +524,7 @@ class UpdateFileHandler
             $allTags = array_unique(array_merge($objectTags, $tags));
 
             $this->fileService->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: Successfully updated file tags: ".$file->getName(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );

@@ -50,8 +50,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add `delivery_mode`/`recipients` columns to `openregister_scheduled_reports`.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class Version1Date20260714000000 extends SimpleMigrationStep

@@ -184,11 +184,11 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Starting file extraction',
             context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
         );
@@ -209,7 +209,7 @@ class TextExtractionService
         );
         if ($forceReExtract === false && $isUpToDate === true) {
             // File is up-to-date and all chunks are still valid.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] File already processed and up-to-date',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
             );
@@ -246,7 +246,7 @@ class TextExtractionService
             $entityEnabled = $fileSettings['entityRecognitionEnabled'] ?? false;
 
             if ($entityEnabled === false) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[TextExtractionService] Entity recognition disabled, skipping',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
                 );
@@ -262,7 +262,7 @@ class TextExtractionService
                 ]
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] Entity extraction complete',
                 context: [
                     'file'              => __FILE__,
@@ -276,6 +276,8 @@ class TextExtractionService
             // Compute and persist risk level based on detected entities.
             try {
                 $riskLevel = $this->riskLevelService->updateRiskLevel(fileId: $fileId);
+                // Info: a risk level changing is a compliance-relevant state
+                // change on the document, not a step in extracting it.
                 $this->logger->info(
                     '[TextExtractionService] Risk level updated',
                     ['fileId' => $fileId, 'riskLevel' => $riskLevel]
@@ -298,7 +300,7 @@ class TextExtractionService
             );
         }//end try
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] File extraction complete',
             context: [
                 'file'       => __FILE__,
@@ -327,11 +329,11 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Starting object extraction',
             context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $objectId]
         );
@@ -341,6 +343,10 @@ class TextExtractionService
         try {
             $object = $this->objectEntityMapper->find($objectId);
         } catch (DoesNotExistException $e) {
+            // Info, deliberately: this explains why queued work did NOT happen
+            // — the object was deleted between queueing and extraction. Silence
+            // there looks like the job never ran. TextExtractionServiceDeepTest
+            // asserts the level, so the intent is recorded rather than assumed.
             $this->logger->info(
                 message: '[TextExtractionService] Object no longer exists, skipping extraction',
                 context: [
@@ -363,7 +369,7 @@ class TextExtractionService
         );
         if ($forceReExtract === false && $isUpToDate === true) {
             // Object is up-to-date and all chunks are still valid.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] Object already processed and up-to-date',
                 context: [
                     'file'     => __FILE__,
@@ -443,7 +449,7 @@ class TextExtractionService
                 ]
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] Entity extraction complete',
                 context: [
                     'file'              => __FILE__,
@@ -465,7 +471,7 @@ class TextExtractionService
             );
         }//end try
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Object extraction completed',
             context: [
                 'file'       => __FILE__,
@@ -992,7 +998,7 @@ class TextExtractionService
 
             if (isset($extractedText) === false) {
                 // Unsupported file type.
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[TextExtractionService] Unsupported file type',
                     context: [
                         'file'     => __FILE__,
@@ -1033,11 +1039,11 @@ class TextExtractionService
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Discovering untracked files',
             context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
         );
@@ -1077,7 +1083,7 @@ class TextExtractionService
                 }//end try
             }//end foreach
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] Discovery complete',
                 context: [
                     'file'       => __FILE__,
@@ -1118,11 +1124,11 @@ class TextExtractionService
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractPendingFiles(int $limit=100): array
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Extracting files without chunks',
             context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
         );
@@ -1130,7 +1136,7 @@ class TextExtractionService
         // Get files without chunks.
         $untrackedFiles = $this->fileMapper->findUntrackedFiles($limit);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[TextExtractionService] Found files without chunks',
                 context: [
                     'file'  => __FILE__,
@@ -1172,7 +1178,7 @@ class TextExtractionService
             }//end try
         }//end foreach
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Extraction complete',
             context: [
                 'file'         => __FILE__,
@@ -1199,11 +1205,11 @@ class TextExtractionService
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function retryFailedExtractions(int $limit=50): array
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Retrying extractions',
             context: ['file' => __FILE__, 'line' => __LINE__, 'limit' => $limit]
         );
@@ -1251,7 +1257,7 @@ class TextExtractionService
      *     totalEntities: int
      * }
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getStats(): array
     {
@@ -1481,7 +1487,7 @@ class TextExtractionService
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
@@ -1539,7 +1545,7 @@ class TextExtractionService
 
         $chunkingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[TextExtractionService] Document chunked successfully',
             context: [
                 'file'             => __FILE__,

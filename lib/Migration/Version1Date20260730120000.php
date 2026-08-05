@@ -58,8 +58,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds `or_flowrun_org_status_idx` on `openregister_flow_runs`.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
  */
 class Version1Date20260730120000 extends SimpleMigrationStep

@@ -130,12 +130,6 @@ export default {
 
 	computed: {
 		/**
-		 * @spec exclude Presentation glue: exposes the translate helper to the template; no standalone behavioural contract.
-		 */
-		t() {
-			return t
-		},
-		/**
 		 * @spec exclude Presentation glue: edit-vs-create dialog title string; no standalone behavioural contract.
 		 */
 		dialogTitle() {

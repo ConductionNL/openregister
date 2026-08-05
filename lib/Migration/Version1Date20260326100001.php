@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * These entity-specific link tables are replaced by the generic linked entity metadata columns
  * (_mail, _contacts, _deck) on magic tables and entity tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260326100001 extends SimpleMigrationStep
 {

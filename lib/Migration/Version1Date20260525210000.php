@@ -54,8 +54,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 cospend-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525210000 extends SimpleMigrationStep
 {

@@ -266,6 +266,8 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Flow/FlowEngine.php" method="run"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowEngine.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowExpression.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowItemPlacement.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowTokenRouter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Flow/FlowExpression.php" method="registerOperators"/>
   <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/Flow/FlowExpression.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Flow/FlowItems.php"/>

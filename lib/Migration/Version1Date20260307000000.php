@@ -29,7 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
  * @package OCA\OpenRegister\Migration
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260307000000 extends SimpleMigrationStep
 {

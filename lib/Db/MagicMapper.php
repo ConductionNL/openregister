@@ -780,7 +780,7 @@ class MagicMapper extends AbstractObjectMapper
         $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $savedUuids = [];
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Saving objects to register+schema table',
             context: [
                 'file'        => __FILE__,
@@ -805,7 +805,7 @@ class MagicMapper extends AbstractObjectMapper
                 }
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Successfully saved objects to register+schema table',
                 context: [
                     'file'       => __FILE__,
@@ -854,7 +854,7 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled !== true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Register+schema table does not exist, should use generic storage',
                     context: [
                         'file'       => __FILE__,
@@ -867,7 +867,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Create the table since magic mapping is enabled.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                 context: [
                     'file'       => __FILE__,
@@ -946,7 +946,7 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled !== true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
                     context: [
                         'file'       => __FILE__,
@@ -959,7 +959,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // Create the table since magic mapping is enabled.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                 context: [
                     'file'       => __FILE__,
@@ -1046,7 +1046,7 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled !== true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Register+schema table does not exist for facets, returning empty',
                     context: [
                         'file'       => __FILE__,
@@ -1060,7 +1060,7 @@ class MagicMapper extends AbstractObjectMapper
 
             $msg  = '[MagicMapper] Register+schema table does not exist';
             $msg .= ' but magic mapping enabled, creating table for facets';
-            $this->logger->info(
+            $this->logger->debug(
                 message: $msg,
                 context: [
                     'file'       => __FILE__,
@@ -1182,7 +1182,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function searchAcrossMultipleTables(array $query, array $registerSchemaPairs): array
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Starting cross-table search',
             context: [
                 'file'      => __FILE__,
@@ -1308,7 +1308,7 @@ class MagicMapper extends AbstractObjectMapper
 
                 $msg  = '[MagicMapper] Register+schema table does not exist';
                 $msg .= ' but magic mapping enabled, creating table for cross-search';
-                $this->logger->info(
+                $this->logger->debug(
                     message: $msg,
                     context: [
                         'file'       => __FILE__,
@@ -1457,7 +1457,7 @@ class MagicMapper extends AbstractObjectMapper
             }
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Union search completed',
             context: ['file' => __FILE__, 'line' => __LINE__, 'resultCount' => count($results)]
         );
@@ -1826,7 +1826,7 @@ class MagicMapper extends AbstractObjectMapper
                     schema: $schema
                 );
 
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Table search completed',
                     context: [
                         'file'        => __FILE__,
@@ -1860,7 +1860,7 @@ class MagicMapper extends AbstractObjectMapper
             }//end try
         }//end foreach
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Sequential search completed',
             context: ['file' => __FILE__, 'line' => __LINE__, 'totalResults' => count($allResults)]
         );
@@ -2039,6 +2039,9 @@ class MagicMapper extends AbstractObjectMapper
         $schemaId   = $schema->getId();
         $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
+        // Info, not debug: creating a table is a schema change. It happens once
+        // per register+schema, not per operation, and it is the sort of thing
+        // you want in the record when explaining what a system did.
         $this->logger->info(
             message: '[MagicMapper] Creating new register+schema table',
             context: [
@@ -2071,7 +2074,7 @@ class MagicMapper extends AbstractObjectMapper
         self::$tableExistsCache[$cacheKey]    = time();
         self::$regSchemaTableCache[$cacheKey] = $tableName;
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Successfully created register+schema table',
             context: [
                 'file'        => __FILE__,
@@ -3227,7 +3230,7 @@ class MagicMapper extends AbstractObjectMapper
                             "CREATE INDEX IF NOT EXISTS {$nameTrgmIx} ON {$fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
                         );
                     } catch (Exception $e) {
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: '[MagicMapper] Skipped baseline _name trgm index',
                             context: [
                                 'file'      => __FILE__,
@@ -3394,17 +3397,22 @@ class MagicMapper extends AbstractObjectMapper
      * @param Schema   $schema       The schema for validation and table selection
      * @param string   $tableName    The table name to save to
      * @param bool     $failIfExists Insert-only: refuse instead of updating when the identifier is taken
+     * @param int|null $insertedId   Out-param: the generated `_id` when this call INSERTED, null when it
+     *                               updated or lost an insert race. Lets the caller learn the generated key
+     *                               without selecting the row back, which is what made every create emit a
+     *                               "dirty table read".
      *
      * @throws Exception If save operation fails
      *
-     * @return string The UUID of the saved object
+     * @return string The UUID of the saved object — the identity callers actually use
      */
     private function saveObjectToRegisterSchemaTable(
         array $objectData,
         Register $register,
         Schema $schema,
         string $tableName,
-        bool $failIfExists=false
+        bool $failIfExists=false,
+        ?int &$insertedId=null
     ): string {
         // Prepare object data for table storage with register+schema context.
         $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
@@ -3444,7 +3452,10 @@ class MagicMapper extends AbstractObjectMapper
                 // matches the pattern already used in
                 // NotificationDedupeStateMapper and NotificationDispatchLogMapper.
                 try {
-                    $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                    $insertedId = $this->insertObjectInRegisterSchemaTable(
+                        data: $preparedData,
+                        tableName: $tableName
+                    );
                 } catch (DbException $e) {
                     if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
                         throw $e;
@@ -4216,9 +4227,9 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @throws Exception If insert fails
      *
-     * @return void
+     * @return int The generated `_id` of the inserted row.
      */
-    private function insertObjectInRegisterSchemaTable(array $data, string $tableName): void
+    private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int
     {
         $qb = $this->db->getQueryBuilder();
         $qb->insert($tableName);
@@ -4234,6 +4245,22 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         $qb->executeStatement();
+
+        // Read the generated key from the INSERT itself rather than by selecting
+        // the row back. This used to return void, which is the only reason a
+        // re-read was needed at all: `_id` is the sole database-generated column
+        // on these tables, so throwing it away here forced a SELECT against a
+        // table written milliseconds earlier — Nextcloud's "dirty table reads"
+        // condition, ~5.9 MB of serialised backtrace per object.
+        //
+        // On PostgreSQL this resolves to lastval(), which is session-scoped
+        // rather than table-scoped. That is exact here for two reasons that must
+        // both hold: these tables carry exactly ONE sequence (`_id` — verified
+        // against information_schema, no other column has a default), and this
+        // call is the very next statement on the same connection. If a second
+        // serial column is ever added to the magic-table shape, this must change
+        // to an explicit RETURNING/sequence read.
+        return (int) $this->db->lastInsertId($tableName);
     }//end insertObjectInRegisterSchemaTable()
 
     /**
@@ -4416,6 +4443,7 @@ class MagicMapper extends AbstractObjectMapper
             isPostgres: $isPostgres
         );
 
+        // Info: a DDL change to a live table is worth a permanent record.
         $this->logger->info(
             message: '[MagicMapper] Successfully updated table structure',
             context: [
@@ -4457,7 +4485,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return array Missing column definitions keyed by property name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findMissingColumns(array $currentColumns, array $requiredColumns): array
     {
@@ -4615,7 +4643,7 @@ class MagicMapper extends AbstractObjectMapper
             try {
                 $this->db->executeStatement($sql);
                 $columnsRetyped[] = $columnName;
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)',
                     context: [
                         'file'       => __FILE__,
@@ -4709,7 +4737,7 @@ class MagicMapper extends AbstractObjectMapper
             try {
                 $this->db->executeStatement($sql);
                 $columnsRetyped[] = $columnName;
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation',
                     context: [
                         'file'       => __FILE__,
@@ -4781,7 +4809,7 @@ class MagicMapper extends AbstractObjectMapper
             $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
             if (isset($currentColumns[$columnName]) === false) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Adding new column to schema table',
                     context: [
                         'file'         => __FILE__,
@@ -4812,7 +4840,7 @@ class MagicMapper extends AbstractObjectMapper
                 if ($wantNotNull === true && $hasDefault === true) {
                     $sql .= ' NOT NULL';
                 } else if ($wantNotNull === true) {
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: '[MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows)',
                         context: [
                             'file'       => __FILE__,
@@ -4870,7 +4898,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // If schema says nullable but table says NOT NULL, make column nullable.
             if ($schemaIsNullable === true && $tableIsNullable === false) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Making column nullable (no longer required)',
                     context: [
                         'file'       => __FILE__,
@@ -4943,7 +4971,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // If schema says NOT NULL but table says nullable, add NOT NULL constraint.
             if ($schemaIsNullable === false && $tableIsNullable === true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Making column NOT NULL (now required)',
                     context: [
                         'file'       => __FILE__,
@@ -5031,7 +5059,7 @@ class MagicMapper extends AbstractObjectMapper
             $snakeVersion = $this->sanitizeColumnName(name: $colName);
             if ($snakeVersion !== $colName && isset($snakeCaseColumns[$snakeVersion]) === true) {
                 // This is a camelCase duplicate - drop it.
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Dropping duplicate camelCase column (snake_case version exists)',
                     context: [
                         'file'         => __FILE__,
@@ -5104,7 +5132,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             // This is an obsolete column - make it nullable.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Making obsolete column nullable',
                 context: [
                     'file'       => __FILE__,
@@ -5221,7 +5249,7 @@ class MagicMapper extends AbstractObjectMapper
                 }
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Dropped register+schema table',
                 context: [
                     'file'      => __FILE__,
@@ -5334,7 +5362,7 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled === true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
                     context: [
                         'file'       => __FILE__,
@@ -5691,6 +5719,37 @@ class MagicMapper extends AbstractObjectMapper
                 _register: $register,
                 _schema: $schema
             );
+
+            // The converter is declared `?ObjectEntity` and does return null
+            // for a row it cannot hydrate. Every other call site
+            // checks (see the DoesNotExistException at the union-search path and
+            // the warning in the statistics path); this one did not, and the
+            // first thing it did with the result was dereference it — inside a
+            // DEBUG LOG.
+            //
+            // So an unconvertible row did not degrade the search, it killed the
+            // request with "Call to a member function getUuid() on null", from a
+            // line whose only job was to say what had been found. Live effect:
+            // 11 Shillinq RetentionRule objects failed to rematerialise on every
+            // repair, because a DocuDesk enrichment listener reached this lookup
+            // and one row would not hydrate.
+            //
+            // Skip the row and keep searching. A row we cannot read is not a
+            // reason to stop looking in the remaining tables — and if nothing
+            // matches, the DoesNotExistException below is the honest answer.
+            if ($object === null) {
+                $this->logger->warning(
+                    message: '[MagicMapper] findAcrossAllMagicTables: row matched but could not be hydrated; skipping it',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'identifier' => $identifier,
+                        'registerId' => $registerId,
+                        'schemaId'   => $schemaId,
+                    ]
+                );
+                continue;
+            }
 
             $this->logger->debug(
                 message: '[MagicMapper] findAcrossAllMagicTables: Found object',
@@ -6755,13 +6814,15 @@ class MagicMapper extends AbstractObjectMapper
         // Convert entity to array for table storage.
         $objectArray = $entity->jsonSerialize();
 
-        // Save to table.
-        $uuid = $this->saveObjectToRegisterSchemaTable(
+        // Save to table, learning the generated `_id` from the INSERT itself.
+        $insertedId = null;
+        $uuid       = $this->saveObjectToRegisterSchemaTable(
             objectData: $objectArray,
             register: $register,
             schema: $schema,
             tableName: $tableName,
-            failIfExists: $failIfExists
+            failIfExists: $failIfExists,
+            insertedId: $insertedId
         );
 
         // Update entity UUID if it was generated.
@@ -6769,63 +6830,51 @@ class MagicMapper extends AbstractObjectMapper
             $entity->setUuid($uuid);
         }
 
-        // CRITICAL FIX: Re-fetch the inserted object from database to get complete metadata.
-        // This ensures the returned entity has all database-generated fields (ID, timestamps, etc.).
-        try {
-            $insertedEntity = $this->findInRegisterSchemaTable(
-                identifier: $uuid,
-                register: $register,
-                schema: $schema,
-                // System re-read of the just-inserted row: bypass access-control
-                // filtering so the writer always gets its freshly-written entity
-                // back (the org/owner context is still being established here).
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // The filtered read could not see the row. That has two very
-            // different causes and they must not share an outcome.
-            //
-            // The row IS there, and only the hydrating read could not reach it
-            // (scoping, an org/owner context still being established). Degraded
-            // but honest: the write landed, so return the in-memory entity with
-            // the id the row actually has.
-            //
-            // The row is NOT there. The write did not land, and returning the
-            // in-memory entity says it did — with a null id, to a caller that
-            // has no way to tell. That is the shape of a lost write reported as
-            // a success, which is exactly what #2212 turned out to be. It now
-            // throws.
-            $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-            if ($row === null) {
-                $this->logger->error(
-                    message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'uuid'      => $uuid,
-                        'tableName' => $tableName,
-                    ]
-                );
+        // No read-back. The INSERT reported its own generated key, which is the
+        // only thing the old re-read could tell us that we did not already hold:
+        // `_id` is this table's sole database-generated column, and `_created` /
+        // `_updated` have no column default, so PHP wrote them and they are
+        // already on this entity.
+        //
+        // `_id` is also not the identity callers use — saveObjectToRegisterSchemaTable()
+        // returns the UUID, which PHP generates above. So this is the entity's
+        // internal key catching up, not the object becoming addressable.
+        if ($insertedId !== null) {
+            $entity->setId($insertedId);
 
-                throw new Exception(
-                    sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
-                );
-            }
+            // NOTE: Event dispatching is handled by the public insert/update/delete methods.
+            // Do NOT dispatch ObjectCreatedEvent here.
+            return $entity;
+        }
 
-            $this->logger->warning(
-                message: '[MagicMapper] Could not re-fetch the inserted entity through the filtered read; '
-                    .'the row exists, so the raw id is used',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+        // $insertedId is null only when the INSERT lost a uuid race and was
+        // applied as an update instead. Rare, and the only path that still costs
+        // a read — a raw row fetch, not the hydrating one. Keeping the lost-write
+        // check here matters: the alternative is returning an entity with a null
+        // id to a caller with no way to tell a write landed, which is exactly
+        // what #2212 turned out to be.
+        $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
+        if ($row === null) {
+            $this->logger->error(
+                message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'uuid'      => $uuid,
+                    'tableName' => $tableName,
+                ]
             );
 
-            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
-            $insertedEntity = $entity;
-        }//end try
+            throw new Exception(
+                sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
+            );
+        }
+
+        $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
 
         // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
-        return $insertedEntity;
+        return $entity;
     }//end insertObjectEntity()
 
     /**
@@ -6916,32 +6965,24 @@ class MagicMapper extends AbstractObjectMapper
             tableName: $tableName
         );
 
-        // CRITICAL FIX: Re-fetch the updated object from database to get fresh metadata.
-        // This ensures the returned entity has correct updated timestamps, ID, etc.
-        // Include deleted objects in re-fetch — the update may have soft-deleted the entity.
-        try {
-            $updatedEntity = $this->findInRegisterSchemaTable(
-                identifier: $uuid,
-                register: $register,
-                schema: $schema,
-                // System re-read of the just-updated row: bypass access-control
-                // filtering so the writer always gets its fresh entity back.
-                _rbac: false,
-                _multitenancy: false,
-                includeDeleted: true
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: return input entity if re-fetch fails.
-            $this->logger->warning(
-                message: '[MagicMapper] Failed to re-fetch updated entity, returning input entity',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $updatedEntity = $entity;
-        }
-
-        // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
-        // Do NOT dispatch ObjectUpdatedEvent here.
-        return $updatedEntity;
+        // The re-read that used to sit here is gone, and nothing is lost with it.
+        //
+        // It was justified as fetching "correct updated timestamps, ID, etc.",
+        // but the table has exactly ONE database-generated column, `_id`
+        // (nextval), and on update that id is already known — we looked the row
+        // up by uuid to write it. `_created` and `_updated` carry NO column
+        // default (verified against the live schema: 59,292 of 59,292 rows have
+        // both set), so PHP writes them and they are already on this entity.
+        // The read therefore returned the values we had just sent.
+        //
+        // That the input entity is an acceptable result was already settled: the
+        // catch this replaces returned exactly that whenever the re-fetch failed.
+        //
+        // It was not free. A SELECT against a table written moments earlier, in
+        // no transaction, is precisely Nextcloud's "dirty table reads" condition
+        // (lib/private/DB/Connection.php), which logs a synthetic exception —
+        // ~5.9 MB of serialised backtrace per occurrence. On every object update.
+        return $entity;
     }//end updateObjectEntity()
 
     /**
@@ -7007,7 +7048,7 @@ class MagicMapper extends AbstractObjectMapper
                 ->where($qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuid)));
             $qb->executeStatement();
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Hard deleted object from register+schema table',
                 context: [
                     'file'      => __FILE__,
@@ -7028,7 +7069,7 @@ class MagicMapper extends AbstractObjectMapper
             // Update entity in table with deleted field set.
             $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Soft deleted object in register+schema table',
                 context: [
                     'file'      => __FILE__,
@@ -7117,7 +7158,7 @@ class MagicMapper extends AbstractObjectMapper
             $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
             $this->eventDispatcher->dispatchTyped($updatingEvent);
             if ($updatingEvent->isPropagationStopped() === true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MagicMapper] Batched soft delete skipped by hook',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
                 );
@@ -7165,11 +7206,15 @@ class MagicMapper extends AbstractObjectMapper
             }//end try
         }//end foreach
 
-        $result = [];
+        $result   = [];
+        $suppress = $this->suppressLifecycleEvents();
         foreach ($completed as $item) {
-            $this->eventDispatcher->dispatchTyped(
-                new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
-            );
+            if ($suppress === false) {
+                $this->eventDispatcher->dispatchTyped(
+                    new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
+                );
+            }
+
             $result[] = $item['entity'];
         }
 
@@ -7296,6 +7341,7 @@ class MagicMapper extends AbstractObjectMapper
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
 
+        // Info: bulk destruction. Never routine, always worth explaining later.
         $this->logger->info(
             message: '[MagicMapper] Deleting all objects from magic table for schema',
             context: [
@@ -7345,7 +7391,7 @@ class MagicMapper extends AbstractObjectMapper
 
             $deletedCount = $qb->executeStatement();
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Hard deleted objects from magic table',
                 context: [
                     'file'         => __FILE__,
@@ -7395,7 +7441,7 @@ class MagicMapper extends AbstractObjectMapper
 
             $deletedCount = $qb->executeStatement();
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] Soft deleted objects in magic table',
                 context: [
                     'file'         => __FILE__,
@@ -7493,7 +7539,7 @@ class MagicMapper extends AbstractObjectMapper
         // Update entity in table with locked field set.
         $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Locked object in register+schema table',
             context: [
                 'file'     => __FILE__,
@@ -7531,7 +7577,7 @@ class MagicMapper extends AbstractObjectMapper
         // Update entity in table with locked field cleared.
         $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Unlocked object in register+schema table',
             context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $entity->getUuid()]
         );
@@ -7561,7 +7607,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName): array
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
             context: [
                 'file'         => __FILE__,
@@ -8047,7 +8093,7 @@ class MagicMapper extends AbstractObjectMapper
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[MagicMapper] findByRelationBatchInSchema completed',
                 context: [
                     'file'          => __FILE__,
@@ -8780,7 +8826,9 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        if ($this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false) {
+        if ($this->suppressLifecycleEvents() === false
+            && $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false
+        ) {
             $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
         }
 
@@ -8937,10 +8985,60 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $updatedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity));
+        if ($this->suppressLifecycleEvents() === false) {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity)
+            );
+        }
 
         return $updatedEntity;
     }//end update()
+
+    /**
+     * Whether object lifecycle events should be withheld for this write.
+     *
+     * Eight apps in the fleet subscribe to ObjectCreatedEvent/ObjectUpdatedEvent
+     * — docudesk, softwarecatalog, opencatalogi, openbuild, hermiq,
+     * zaakafhandelapp, hrmq and more. Every one of them wakes for every object
+     * written. During a configuration import that is a fan-out over baseline
+     * content: measured on this instance mid-repair, 155 "DocuDesk: Processing
+     * event", 116 compliance-subscriber calls and 116 queued extraction jobs,
+     * for SEED data — a document-extraction pass over content that shipped with
+     * the app, and a compliance score for a module nobody has configured yet.
+     *
+     * Seeding is not a user action, and there is no user intent for a listener
+     * to react to. SystemOperationContext already marks exactly that condition
+     * and is already trusted for RBAC decisions in RenderObject and
+     * PermissionHandler; nothing had yet used it for events.
+     *
+     * Gating the DISPATCH rather than each listener is deliberate: it is one
+     * change here instead of eight across apps we do not all own, and it cannot
+     * be half-adopted — a listener that never learns of the event cannot forget
+     * to check.
+     *
+     * This is scoped to writes made INSIDE SystemOperationContext::run(). A
+     * normal save is unaffected.
+     *
+     * @return bool True when the caller is a system operation and events are withheld.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is an explicit
+     *   ambient-context marker; a static read is the whole point of it.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function suppressLifecycleEvents(): bool
+    {
+        if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === false) {
+            return false;
+        }
+
+        $this->logger->debug(
+            message: '[MagicMapper] System operation in progress; withholding object lifecycle event',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return true;
+    }//end suppressLifecycleEvents()
 
     /**
      * Delete an object entity with event dispatching.
@@ -9080,7 +9178,7 @@ class MagicMapper extends AbstractObjectMapper
 
         $entity->setDeleted(null);
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] Restored soft-deleted object in register+schema table',
             context: [
                 'file'      => __FILE__,
@@ -9117,7 +9215,7 @@ class MagicMapper extends AbstractObjectMapper
         ?Register $register=null,
         ?Schema $schema=null
     ): array {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[MagicMapper] ultraFastBulkSave called',
             context: [
                 'file'        => __FILE__,

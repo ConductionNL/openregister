@@ -694,3 +694,41 @@ with a clear `NotPermittedException` rather than an opaque storage error.
 - **WHEN** `UpdateFileHandler` updates its content
 - **THEN** `File::putContent()` MUST be called with the new content
 
+
+### Requirement: Object register folder management
+
+Every register, schema and object owns a backing Nextcloud folder, and that
+folder is provisioned on demand rather than assumed to exist. Callers reach
+files through the entity, so an entity without a folder is not a degraded
+state to be reported — it is one to be repaired before the first file arrives.
+
+- `RegisterService::createFromArray()` MUST provision the register's folder
+  after the mapper has created the row, and MUST persist the resulting folder
+  id back onto the register.
+- `RegisterService::updateFromArray()` MUST ensure the folder exists on every
+  update. A register whose `folder` is null, empty, or a legacy string PATH
+  (rather than a numeric node id) MUST be healed by creating the folder and
+  storing its id, so documents written before folder ids were stored keep
+  working without a migration.
+- `FileService::createEntityFolder()` MUST nest an object's folder under its
+  register's folder, so the hierarchy on disk mirrors the data model.
+- Folder creation MUST be idempotent: creating a folder that already exists
+  MUST return the existing node rather than fail or duplicate it.
+- Failure to create a folder MUST be logged and MUST NOT abort the create or
+  update. The entity is still valid; only its file surface is unavailable, and
+  the next write repairs it.
+
+#### Scenario: Creating a register provisions its folder
+- **GIVEN** a register created from array data
+- **WHEN** `createFromArray()` returns
+- **THEN** the register MUST carry the numeric node id of a folder that exists
+
+#### Scenario: A legacy string folder path is healed on update
+- **GIVEN** a stored register whose `folder` is a string path, not a node id
+- **WHEN** `updateFromArray()` runs
+- **THEN** a folder MUST be created and its numeric id stored on the register
+
+#### Scenario: Folder creation failure does not abort the write
+- **GIVEN** a register whose folder cannot be created
+- **WHEN** `createFromArray()` runs
+- **THEN** the register MUST still be returned, and the failure MUST be logged

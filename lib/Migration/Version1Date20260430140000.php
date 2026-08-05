@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds a nullable `type` column + index on `openregister_registers`.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260430140000 extends SimpleMigrationStep
 {

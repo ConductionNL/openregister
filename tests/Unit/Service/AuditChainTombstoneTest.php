@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
@@ -63,12 +64,19 @@ class AuditChainTombstoneTest extends TestCase
         $this->service = new AuditHashService(
             $this->db,
             $this->createMock(ILockingProvider::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(\OCP\IAppConfig::class)
         );
     }//end setUp()
 
     /**
      * Wire the mocked connection so `verifyChain()` reads exactly these rows.
+     *
+     * verifyChain() walks in WINDOWS rather than issuing one unbounded query —
+     * libpq buffers a whole result set client-side, which on the real trail is
+     * large enough to get the process OS-killed. So the mock has to serve one
+     * populated window and then an empty one, which is how the walk terminates.
+     * Serving rows forever would hang the test rather than fail it.
      *
      * @param array<int, array<string, mixed>> $rows Rows in id order.
      */
@@ -76,24 +84,29 @@ class AuditChainTombstoneTest extends TestCase
     {
         $result = $this->createMock(IResult::class);
 
-        $cursor = 0;
-        $result->method('fetch')->willReturnCallback(
-            static function () use (&$cursor, $rows) {
-                if ($cursor >= count($rows)) {
-                    return false;
+        $served = false;
+        $result->method('fetchAll')->willReturnCallback(
+            static function () use (&$served, $rows): array {
+                if ($served === true) {
+                    return [];
                 }
 
-                $row = $rows[$cursor];
-                $cursor++;
-                return $row;
+                $served = true;
+                return $rows;
             }
         );
 
+        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr->method('gt')->willReturn('gt');
+        $expr->method('lte')->willReturn('lte');
+
         $qb = $this->createMock(IQueryBuilder::class);
-        foreach (['select', 'from', 'orderBy', 'andWhere'] as $fluent) {
+        foreach (['select', 'from', 'orderBy', 'andWhere', 'where', 'setMaxResults'] as $fluent) {
             $qb->method($fluent)->willReturnSelf();
         }
 
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('createNamedParameter')->willReturn(':p');
         $qb->method('executeQuery')->willReturn($result);
         $this->db->method('getQueryBuilder')->willReturn($qb);
     }//end wireRows()

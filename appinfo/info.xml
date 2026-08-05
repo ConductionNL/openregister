@@ -123,6 +123,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
@@ -162,6 +163,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
 		     the per-register uniqueness fix is preventive only, so pre-existing
 		     shared rows still need splitting. Reports only unless applied. -->

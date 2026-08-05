@@ -61,16 +61,27 @@ class FlowNodePreflightRegressionTest extends TestCase
     {
         return [
             'name'  => 'hydra-file-findings',
+            // The real hydra-file-findings flow, in the action-node shape: the
+            // three STEPS are the nodes, and the places they met at are the
+            // edges between them. Their names carry over onto the lines.
             'nodes' => [
-                ['id' => 'in', 'name' => 'A completed review stage'],
-                ['id' => 'exploded', 'name' => 'One item per finding'],
-                ['id' => 'actionable', 'name' => 'Open WARNING / SUGGESTION only'],
-                ['id' => 'filed', 'name' => 'Issue filed'],
+                ['id' => 'explode-findings', 'type' => 'openregister.explode'],
+                ['id' => 'actionable-only', 'type' => 'openregister.filter'],
+                ['id' => 'file-issue', 'type' => 'openconnector.source-call'],
             ],
             'edges' => [
-                ['id' => 'explode-findings', 'from' => 'in', 'to' => 'exploded', 'type' => 'openregister.explode'],
-                ['id' => 'actionable-only', 'from' => 'exploded', 'to' => 'actionable', 'type' => 'openregister.filter'],
-                ['id' => 'file-issue', 'from' => 'actionable', 'to' => 'filed', 'type' => 'openconnector.source-call'],
+                [
+                    'id'    => 'exploded',
+                    'from'  => 'explode-findings',
+                    'to'    => 'actionable-only',
+                    'title' => 'One item per finding',
+                ],
+                [
+                    'id'    => 'actionable',
+                    'from'  => 'actionable-only',
+                    'to'    => 'file-issue',
+                    'title' => 'Open WARNING / SUGGESTION only',
+                ],
             ],
         ];
     }

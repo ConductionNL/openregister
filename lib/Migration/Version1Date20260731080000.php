@@ -56,8 +56,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the `openregister_flow_state` table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260731080000 extends SimpleMigrationStep
 {
