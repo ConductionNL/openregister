@@ -330,6 +330,7 @@ class SaveObjects
         // requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
         $objects = $this->applyBulkSafeguards(
             objects: $objects,
+            register: $register,
             schema: $schema,
             _rbac: $_rbac,
             _validation: $_validation,
@@ -576,6 +577,7 @@ class SaveObjects
      * pipeline.
      *
      * @param array<int, array<string, mixed>> $objects     Raw input objects.
+     * @param Register|string|int|null         $register    Default register context.
      * @param Schema|string|int|null           $schema      Default schema context (null = mixed-schema).
      * @param bool                             $_rbac       Caller-requested RBAC flag (admin may set false).
      * @param bool                             $_validation Caller-requested validation flag.
@@ -589,6 +591,7 @@ class SaveObjects
      */
     private function applyBulkSafeguards(
         array $objects,
+        Register|string|int|null $register,
         Schema|string|int|null $schema,
         bool $_rbac,
         bool $_validation,
@@ -625,21 +628,17 @@ class SaveObjects
         // controls a defence-in-depth schema check that authors opt in to
         // when they want bulk-import payloads to be schema-validated.
         $effectiveValidation = $_validation;
-        // Resolve the default schema entity once for the loop. It is used below
-        // when an individual object does not carry an explicit schema in `@self`.
+        // Resolve default register/schema entities once for the loop. The
+        // schema entity is used below when an individual object does not carry
+        // an explicit schema in `@self`.
         //
-        // This method takes no register argument, deliberately. It used to
-        // resolve one into a `$defaultRegister` that nothing in this loop ever
-        // read; re-shaping that into a bare cache-warming statement only traded
-        // PHPMD's UnusedLocalVariable for psalm's UnusedReturnValue, and leaving
-        // the parameter in place after dropping the call would have traded it
-        // again for UnusedFormalParameter. The warm-up earned nothing in any of
-        // those shapes: per-row code resolves each row's own register id through
-        // loadRegisterWithCache(), so a row using the bulk register warms the
-        // identical entry on first touch, a row naming a different register never
-        // reads the warmed entry at all, and an empty payload paid for a mapper
-        // lookup nobody needed. The removed call also swallowed every Throwable,
-        // so dropping it cannot surface a new exception here.
+        // The register call is kept as a statement rather than an assignment:
+        // per-row code re-reads the register through loadRegisterWithCache(),
+        // so the only thing this call contributes is warming that shared static
+        // cache. Binding the result to a variable nobody read is what PHPMD's
+        // UnusedLocalVariable was reporting; dropping the call entirely would
+        // move a mapper lookup to a later point, so it stays.
+        $this->resolveSafeguardRegister(register: $register);
         $defaultSchema = $this->resolveSafeguardSchema(schema: $schema);
 
         $passed = [];
@@ -774,6 +773,30 @@ class SaveObjects
 
         return $object;
     }//end stripSelfInjectionFields()
+
+    /**
+     * Resolve the register entity to use as the per-row default.
+     *
+     * @param Register|string|int|null $register The bulk-call register argument.
+     *
+     * @return Register|null Resolved entity, or null if no default register was given.
+     */
+    private function resolveSafeguardRegister(Register|string|int|null $register): ?Register
+    {
+        if ($register === null) {
+            return null;
+        }
+
+        if ($register instanceof Register === true) {
+            return $register;
+        }
+
+        try {
+            return $this->loadRegisterWithCache(registerId: $register);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveSafeguardRegister()
 
     /**
      * Resolve the schema entity to use as the per-row default.
