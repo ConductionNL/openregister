@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Tests\Unit\Controller
  * @category Testing
  * @author  OpenRegister Development Team
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  * @link    https://github.com/ConductionNL/openregister
  */

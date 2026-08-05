@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Settings
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  *
  * NOTE: getCachedObjectStats() uses `static` local variables with 30s TTL.

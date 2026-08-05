@@ -1387,7 +1387,7 @@ class ConfigurationSettingsHandler
                 'name'        => ($appInfo['name'] ?? null) ?? 'OpenRegister',
                 'description' => ($appInfo['description'] ?? null) ?? '',
                 'author'      => ($appInfo['author'] ?? null) ?? 'Conduction',
-                'licence'     => ($appInfo['licence'] ?? null) ?? 'AGPL',
+                'licence'     => ($appInfo['licence'] ?? null) ?? 'EUPL-1.2',
                 'timestamp'   => time(),
                 'date'        => date('Y-m-d H:i:s'),
             ];
