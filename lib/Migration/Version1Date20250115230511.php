@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration to add locked, owner, authorization and folder columns to openregister_objects table
  * and folder column to openregister_registers table.
  * These columns are used to track object locking, ownership, access permissions and folder location
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250115230511 extends SimpleMigrationStep
 {
@@ -48,8 +46,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -63,8 +59,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -154,8 +148,6 @@ class Version1Date20250115230511 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

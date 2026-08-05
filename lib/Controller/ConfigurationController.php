@@ -277,7 +277,7 @@ class ConfigurationController extends Controller
                 );
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Enriching configuration details',
                 context: [
                     'file'   => __FILE__,
@@ -377,7 +377,7 @@ class ConfigurationController extends Controller
 
             $created = $this->configurationMapper->insert($configuration);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationController] Created configuration: {$created->getTitle()} (ID: {$created->getId()})",
                 context: [
                     'file' => __FILE__,
@@ -433,7 +433,7 @@ class ConfigurationController extends Controller
 
             $updated = $this->configurationMapper->update($configuration);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationController] Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -527,7 +527,7 @@ class ConfigurationController extends Controller
             $configuration = $this->configurationMapper->find($id);
             $this->configurationMapper->delete($configuration);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationController] Deleted configuration: {$configuration->getTitle()} (ID: {$id})",
                 context: [
                     'file' => __FILE__,
@@ -663,7 +663,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function import(int $id): JSONResponse
     {
@@ -684,7 +684,7 @@ class ConfigurationController extends Controller
             // Mark notifications as processed.
             $this->notificationService->markConfigurationUpdated($configuration);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationController] Imported configuration {$configuration->getTitle()}",
                 context: [
                     'file'      => __FILE__,
@@ -729,7 +729,7 @@ class ConfigurationController extends Controller
      *
      * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function export(int $id): JSONResponse
     {
@@ -786,7 +786,7 @@ class ConfigurationController extends Controller
      *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
      *     page?: int, per_page?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function discover(): JSONResponse
     {
@@ -803,7 +803,7 @@ class ConfigurationController extends Controller
             $search = $data['_search'] ?? '';
             $page   = (int) ($data['page'] ?? 1);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Discovering configurations',
                 context: [
                     'file'    => __FILE__,
@@ -824,7 +824,7 @@ class ConfigurationController extends Controller
 
             // Call appropriate service.
             // Default to GitLab search.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] About to call GitLab search service',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -832,18 +832,18 @@ class ConfigurationController extends Controller
                 search: $search,
                 page: $page
             );
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] GitLab search completed',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
             );
 
             if ($source === 'github') {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[ConfigurationController] About to call GitHub search service',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 $results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[ConfigurationController] GitHub search completed',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
                 );
@@ -877,7 +877,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with branches list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -897,7 +897,7 @@ class ConfigurationController extends Controller
                 return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Fetching GitHub branches',
                 context: [
                     'file'  => __FILE__,
@@ -952,7 +952,7 @@ class ConfigurationController extends Controller
                 $perPage = (int) $data['per_page'];
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Fetching GitHub repositories',
                 context: [
                     'file'     => __FILE__,
@@ -1010,7 +1010,7 @@ class ConfigurationController extends Controller
                 return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Fetching GitHub configurations',
                 context: [
                     'file'   => __FILE__,
@@ -1045,7 +1045,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with branches list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -1069,7 +1069,7 @@ class ConfigurationController extends Controller
             $projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Fetching GitLab branches',
                 context: [
                     'file'       => __FILE__,
@@ -1129,7 +1129,7 @@ class ConfigurationController extends Controller
             $projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationController] Fetching GitLab configurations',
                 context: [
                     'file'       => __FILE__,
@@ -1322,7 +1322,7 @@ class ConfigurationController extends Controller
             $syncInterval = (int) ($params['syncInterval'] ?? 24);
 
             // Log import start.
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationController] Importing configuration from {$sourceType}",
                 context: ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]
             );
@@ -1418,7 +1418,7 @@ class ConfigurationController extends Controller
 
             $configId = $configuration->getId();
             $msg      = "[ConfigurationController] Created configuration entity with ID {$configId} for app {$appId}";
-            $this->logger->info(
+            $this->logger->debug(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -1444,7 +1444,7 @@ class ConfigurationController extends Controller
 
             $configTitle = $configuration->getTitle();
             $msg         = "[ConfigurationController] Successfully imported configuration {$configTitle} from {$sourceType}";
-            $this->logger->info(
+            $this->logger->debug(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -1501,7 +1501,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromGitHub(): JSONResponse
     {
@@ -1529,7 +1529,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromGitLab(): JSONResponse
     {
@@ -1557,7 +1557,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromUrl(): JSONResponse
     {
@@ -1589,7 +1589,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with publish result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -1746,7 +1746,7 @@ class ConfigurationController extends Controller
      */
     private function logPublishingAttempt(int $id, array $params): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[ConfigurationController] Publishing configuration to GitHub',
             context: [
                 'file'             => __FILE__,
@@ -1889,7 +1889,7 @@ class ConfigurationController extends Controller
      */
     private function logPublishingSuccess(object $configuration, array $params, array $result): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
             context: [
                 'file'     => __FILE__,

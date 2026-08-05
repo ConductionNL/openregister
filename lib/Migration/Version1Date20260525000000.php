@@ -49,8 +49,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 deck-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525000000 extends SimpleMigrationStep
 {

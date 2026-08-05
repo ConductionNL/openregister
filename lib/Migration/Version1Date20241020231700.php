@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Migration step for creating audit trails table
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241020231700 extends SimpleMigrationStep
 {
@@ -46,8 +44,6 @@ class Version1Date20241020231700 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -61,8 +57,6 @@ class Version1Date20241020231700 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -112,8 +106,6 @@ class Version1Date20241020231700 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

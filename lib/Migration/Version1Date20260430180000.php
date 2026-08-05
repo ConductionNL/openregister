@@ -41,8 +41,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds disambiguating columns to entity_relations.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260430180000 extends SimpleMigrationStep
 {

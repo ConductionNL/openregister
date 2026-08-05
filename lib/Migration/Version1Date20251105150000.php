@@ -52,7 +52,6 @@ class Version1Date20251105150000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null Updated schema
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.NPathComplexity)       Database migration requires checking many columns
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

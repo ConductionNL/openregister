@@ -5342,7 +5342,10 @@ class SaveObject
             );
         }
 
-        $this->logger->info(
+        // Debug: "an object was updated" is the single most routine event this
+        // application has. At info it is not a signal, it IS the noise floor.
+        // A FAILED update is what warrants attention, and that path logs already.
+        $this->logger->debug(
             message: '[SaveObject] Object updated successfully',
             context: [
                 'file' => __FILE__,

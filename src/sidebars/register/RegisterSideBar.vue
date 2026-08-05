@@ -257,9 +257,15 @@ export default {
 		 * @return {object|undefined} The active register record
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from register store
-			const registerId = registerStore.getRegisterItem?.id
-			return dashboardStore.registers.find(r => r.id === registerId)
+			// Find the register in the dashboard store using the ID from the register
+			// store, falling back to the route param on a deep link / page refresh.
+			// Mirrors RegisterDetail.register — the whole sidebar is v-if'd on this.
+			const registerId = registerStore.getRegisterItem?.id || this.$route.params.id
+			if (!registerId) {
+				return undefined
+			}
+			// Route params are strings, the API returns numeric ids — compare as strings.
+			return dashboardStore.registers.find(r => String(r.id) === String(registerId))
 		},
 		activeTab: {
 			/**

@@ -19,6 +19,7 @@ import { useEndpointStore } from './modules/endpoints.ts'
 import { useAvgStore } from './modules/avg.js'
 import { useReportsStore } from './modules/reports.js'
 import { useQualityStore } from './modules/quality.js'
+import { useWebhookStore } from './modules/webhook.js'
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)
@@ -38,6 +39,7 @@ const endpointStore = useEndpointStore(pinia)
 const avgStore = useAvgStore(pinia)
 const reportsStore = useReportsStore(pinia)
 const qualityStore = useQualityStore(pinia)
+const webhookStore = useWebhookStore(pinia)
 
 export {
 	// generic
@@ -59,4 +61,5 @@ export {
 	avgStore,
 	reportsStore,
 	qualityStore,
+	webhookStore,
 }

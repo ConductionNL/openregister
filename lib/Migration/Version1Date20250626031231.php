@@ -40,8 +40,6 @@ class Version1Date20250626031231 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

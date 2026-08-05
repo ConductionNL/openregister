@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `oc_openregister_verwerkingsactiviteiten` per AVG Art 30 §1.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260430160000 extends SimpleMigrationStep
 {

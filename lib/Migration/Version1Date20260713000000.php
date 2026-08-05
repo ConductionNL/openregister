@@ -62,8 +62,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_scheduled_reports table.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class Version1Date20260713000000 extends SimpleMigrationStep

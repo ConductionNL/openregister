@@ -49,8 +49,6 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * Extend the contact-links table with phone / org / avatar_url / metadata
  * + the (object_uuid, contact_uid) unique composite index.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260524100000 extends SimpleMigrationStep
 {
@@ -87,75 +85,66 @@ class Version1Date20260524100000 extends SimpleMigrationStep
             return $schema;
         }
 
-        $changed = false;
-        $table   = $schema->getTable(self::TABLE);
+        $table = $schema->getTable(self::TABLE);
 
-        if ($table->hasColumn(name: 'schema_id') === false) {
-            $table->addColumn(
-                name: 'schema_id',
-                typeName: Types::BIGINT,
-                options: [
+        // Tier-2 columns, in the order they must be appended. Driving them from
+        // a table keeps this method at one branch per concern instead of one
+        // branch per column (which pushed NPath complexity to 256).
+        $newColumns = [
+            'schema_id'  => [
+                'type'    => Types::BIGINT,
+                'options' => [
                     'notnull'  => false,
                     'default'  => null,
                     'unsigned' => true,
-                ]
-            );
-            $output->info(message: 'Added schema_id column to '.self::TABLE);
-            $changed = true;
-        }
-
-        if ($table->hasColumn(name: 'phone') === false) {
-            $table->addColumn(
-                name: 'phone',
-                typeName: Types::STRING,
-                options: [
+                ],
+            ],
+            'phone'      => [
+                'type'    => Types::STRING,
+                'options' => [
                     'notnull' => false,
                     'length'  => 64,
                     'default' => null,
-                ]
-            );
-            $output->info(message: 'Added phone column to '.self::TABLE);
-            $changed = true;
-        }
-
-        if ($table->hasColumn(name: 'org') === false) {
-            $table->addColumn(
-                name: 'org',
-                typeName: Types::STRING,
-                options: [
+                ],
+            ],
+            'org'        => [
+                'type'    => Types::STRING,
+                'options' => [
                     'notnull' => false,
                     'length'  => 255,
                     'default' => null,
-                ]
-            );
-            $output->info(message: 'Added org column to '.self::TABLE);
-            $changed = true;
-        }
-
-        if ($table->hasColumn(name: 'avatar_url') === false) {
-            $table->addColumn(
-                name: 'avatar_url',
-                typeName: Types::STRING,
-                options: [
+                ],
+            ],
+            'avatar_url' => [
+                'type'    => Types::STRING,
+                'options' => [
                     'notnull' => false,
                     'length'  => 512,
                     'default' => null,
-                ]
-            );
-            $output->info(message: 'Added avatar_url column to '.self::TABLE);
-            $changed = true;
-        }
-
-        if ($table->hasColumn(name: 'metadata') === false) {
-            $table->addColumn(
-                name: 'metadata',
-                typeName: Types::TEXT,
-                options: [
+                ],
+            ],
+            'metadata'   => [
+                'type'    => Types::TEXT,
+                'options' => [
                     'notnull' => false,
                     'default' => null,
-                ]
+                ],
+            ],
+        ];
+
+        $changed = false;
+
+        foreach ($newColumns as $columnName => $spec) {
+            if ($table->hasColumn(name: $columnName) === true) {
+                continue;
+            }
+
+            $table->addColumn(
+                name: $columnName,
+                typeName: $spec['type'],
+                options: $spec['options']
             );
-            $output->info(message: 'Added metadata column to '.self::TABLE);
+            $output->info(message: 'Added '.$columnName.' column to '.self::TABLE);
             $changed = true;
         }
 

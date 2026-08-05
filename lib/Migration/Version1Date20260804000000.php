@@ -95,8 +95,6 @@ class Version1Date20260804000000 extends SimpleMigrationStep
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void

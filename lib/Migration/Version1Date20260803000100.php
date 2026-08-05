@@ -51,8 +51,6 @@ class Version1Date20260803000100 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null The updated schema, or null when nothing changed.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper

@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration step for adding max_depth column to schemas table
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241227153853 extends SimpleMigrationStep
 {
@@ -48,8 +46,6 @@ class Version1Date20241227153853 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -63,8 +59,6 @@ class Version1Date20241227153853 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -92,8 +86,6 @@ class Version1Date20241227153853 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

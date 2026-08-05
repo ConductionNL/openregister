@@ -20,13 +20,12 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
-use Psr\Log\LoggerInterface;
 
 /**
  * Class PropertyValidatorHandler
@@ -115,6 +114,20 @@ class PropertyValidatorHandler
         'color-hsla',
         // Semantic versioning format.
         'semver',
+        // Dutch burgerservicenummer, checked with the 11-proef.
+        //
+        // BsnFormat has existed and been REGISTERED with the value validator all
+        // along (ValidateObject::registerCustomFormat), so OpenRegister could
+        // already checksum a BSN — it simply refused to accept a schema that
+        // said so, because this allowlist never got the entry. procest declares
+        // `format: bsn` on a burgerservicenummer, and that one missing word
+        // failed its schema import, then schema creation, then its "Load default
+        // ZGW API mapping configurations" repair step. A built and wired feature
+        // was unreachable because two lists disagreed.
+        'bsn',
+        // Nextcloud user id, checked against the user backend — the referenced
+        // user must exist. See UserFormat.
+        'user',
     ];
 
     /**
@@ -132,7 +145,7 @@ class PropertyValidatorHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -141,9 +154,32 @@ class PropertyValidatorHandler
             return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
         }
 
-        // Type is required.
+        // Type is required at the TOP level, and optional below it.
+        //
+        // JSON Schema treats a schema with no `type` as "any type", and that is
+        // a real thing authors need. procest's CMMN sentry declares
+        // `ifPart: {field, operator, value}` where `value` is compared with
+        // loose equality against bool/string/int, must be an ARRAY for the
+        // in/notIn operators, and numeric for gt/lt. No single type is honest
+        // there, so requiring one forced a lie — and refusing the omission
+        // failed the whole schema import instead.
+        //
+        // It stays required at the top level because those properties become
+        // COLUMNS: mapColumnTypeToSQL() takes a `string $type` and is handed
+        // $column['type'] directly, so a typeless top-level property is a
+        // TypeError during table creation rather than a permissive read. Nested
+        // properties are stored inside a JSON column and derive nothing.
+        //
+        // Depth is the discriminator: validateProperties() builds '/name' for a
+        // top-level property and appends for every level under it.
+        $isTopLevel = (substr_count($path, '/') <= 1);
         if (isset($property['type']) === false) {
-            throw new Exception("Property at '$path' must have a 'type' field");
+            if ($isTopLevel === true) {
+                throw new Exception("Property at '$path' must have a 'type' field");
+            }
+
+            // Untyped nested schema: nothing further here is type-dependent.
+            return true;
         }
 
         // Validate type. Union types arrive as arrays — render them as JSON in
@@ -160,7 +196,10 @@ class PropertyValidatorHandler
             );
         }
 
-        // Validate string format if present.
+        // Validate string format if present. An unrecognised format is still
+        // rejected: a format this allowlist accepts is one ValidateObject can
+        // actually enforce, so the two lists must agree. See `bsn` and `user`
+        // in $validStringFormats for what that costs when they drift apart.
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
                 $formatLabel = $property['format'];
@@ -284,7 +323,7 @@ class PropertyValidatorHandler
      *
      * @return true True if all properties are valid
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-13
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     public function validateProperties(array $properties, string $path=''): bool
     {

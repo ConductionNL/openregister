@@ -48,8 +48,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 bookmark-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525140000 extends SimpleMigrationStep
 {

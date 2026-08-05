@@ -55,8 +55,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Tier-2 email-links table — create-or-extend.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260525100000 extends SimpleMigrationStep
 {

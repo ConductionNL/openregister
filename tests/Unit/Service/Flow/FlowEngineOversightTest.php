@@ -33,11 +33,11 @@ class FlowEngineOversightTest extends TestCase
     {
         return [
             'id'    => 'gated',
-            'nodes' => [['id' => 'start'], ['id' => 'middle'], ['id' => 'end']],
-            'edges' => [
-                ['id' => 'first', 'from' => 'start', 'to' => 'middle', 'type' => 'openregister.set-fields'],
-                ['id' => 'second', 'from' => 'middle', 'to' => 'end', 'type' => 'openregister.set-fields'],
+            'nodes' => [
+                ['id' => 'first', 'type' => 'openregister.set-fields'],
+                ['id' => 'second', 'type' => 'openregister.set-fields'],
             ],
+            'edges' => [['id' => 'first-second', 'from' => 'first', 'to' => 'second']],
         ];
     }//end linearFlow()
 

@@ -30,8 +30,6 @@ use OCP\Migration\SimpleMigrationStep;
  * by a given configuration, enabling mapping import from JSON config files.
  *
  * @package OCA\OpenRegister\Migration
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260308000000 extends SimpleMigrationStep
 {
