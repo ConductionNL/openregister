@@ -27,8 +27,37 @@ on:
     branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it is the only carrier of the push-only jobs: "Coverage Baseline
+# Check" (`github.event_name == 'push'`), "SBOM" and "Features Extract". And
+# those two branches always have an open PR whose `head_ref` IS the branch
+# name: the standing "Release: merge development into beta" (#1711 here).
+# `github.head_ref` on that PR run and `github.ref_name` on the push run both
+# render the identical group `quality-development`, and `cancel-in-progress`
+# then killed whichever started first — always the push run, by a few seconds.
+#
+# Measured on this repo: push runs 31038051904 (cancelled 27s in) and
+# 30906672684 (cancelled 61s in). That duration is the discriminator: the
+# shared workflow's `timeout-minutes: 45` cancellation lands at 45m16s–45m28s,
+# so these are concurrency kills, not timeouts.
+#
+# On the surviving PR run "Coverage Baseline Check" reports `skipped`, which is
+# CORRECT for a pull_request event and renders exactly like a pass. So the gate
+# appears on both runs and executes on neither — a dead gate of the
+# permanently-pending shape.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
+#
+# Proven in openconnector#1158: its first-ever completed `development` push run
+# (31048998594) executed Coverage Baseline Check, SBOM and Features Extract.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
+  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
@@ -136,7 +165,7 @@ jobs:
       # reproducible and a later gate change cannot move this repo's verdict
       # without a commit here.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.4.0
+      hydra-gates-ref: v1.5.0
       # PIN MOVED v1.3.0 -> v1.4.0 (fleet consumer-ref sweep, 2026-08-05).
       # A pinned ref is a silent expiry date on every upstream fix: this repo
       # cannot receive a gate-package fix until this line moves. v1.4.0 is the
