@@ -136,7 +136,16 @@ jobs:
       # reproducible and a later gate change cannot move this repo's verdict
       # without a commit here.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.3.0
+      hydra-gates-ref: v1.4.0
+      # PIN MOVED v1.3.0 -> v1.4.0 (fleet consumer-ref sweep, 2026-08-05).
+      # A pinned ref is a silent expiry date on every upstream fix: this repo
+      # cannot receive a gate-package fix until this line moves. v1.4.0 is the
+      # latest tag and the FIRST one carrying `hydra-gates/scripts/axe-run.cjs`
+      # (verified absent at v1.3.0), so it is also the first that has #168's
+      # axe DOM scoping and #165's gate-46 fix.
+      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
+      # reports serious/critical violations on core's OWN routes that DOM
+      # scoping does not remove. Enabling axe is a separate decision.
       # `hydra-gates-require-full-coverage: false` USED TO BE SET HERE, and it
       # is removed in the same commit that moves the pin, because the pin was
       # the actual problem and the override was treating the symptom.
