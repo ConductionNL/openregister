@@ -141,18 +141,38 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 			})
 			.toBeGreaterThan(0)
 
-		// 2. A STEP CAN BE ADDED. `set-fields` has no side effects, so the
-		//    spec never reaches out of the instance.
-		await clickThemed(palette.getByText('Edit fields', { exact: false }).first())
+		// 2. A STEP CAN BE ADDED.
+		//
+		// `Stop` rather than something like `Edit fields`, and the reason is a
+		// real rule rather than convenience: FlowRunService refuses to queue a
+		// flow containing a node with no outgoing edge that does not end the
+		// flow, because such a run "would stop there and still be reported as
+		// completed". A lone `Edit fields` is exactly that shape, so it saves
+		// and is then correctly refused a run.
+		//
+		// `Stop` is a terminal step type, so a single one is a complete,
+		// runnable flow — and it has no side effects, so the spec never reaches
+		// out of the instance.
+		await clickThemed(palette.getByText('Stop', { exact: false }).first())
 		await expect(
-			page.locator('main').getByText('Edit fields', { exact: false }).first(),
+			page.locator('main').getByText('Stop', { exact: false }).first(),
 			'the step did not reach the canvas',
 		).toBeVisible()
 
 		// 3. SAVE PERSISTS. The route advancing off `new` is the observable
 		//    proof the server accepted it and returned a uuid.
 		await clickThemed(actions.getByText('Save', { exact: true }))
-		await page.waitForURL(/#\/flows\/(?!new)[0-9a-f-]{8,}/, { timeout: 20_000 })
+
+		// Poll the URL rather than `waitForURL`. This app uses a HASH router, and
+		// a hash-only change fires no navigation event — so `waitForURL`, which
+		// defaults to `waitUntil: 'load'`, waits for a load that never comes and
+		// times out on a save that in fact succeeded.
+		await expect
+			.poll(() => page.url(), {
+				message: 'Save did not move the route off `new`, so the flow was not persisted',
+				timeout: 20_000,
+			})
+			.toMatch(/#\/flows\/(?!new)[0-9a-f-]{8,}/)
 
 		const uuid = page.url().split('/').pop() ?? ''
 		expect(uuid, 'saved flow has no uuid in the route').toMatch(/^[0-9a-f-]{8,}$/)
