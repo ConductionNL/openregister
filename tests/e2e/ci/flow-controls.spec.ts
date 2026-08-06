@@ -62,7 +62,9 @@
  * quickly enough gets silence — no error, no toast, no log line, because
  * nothing renders `store.error` and a 400 JSONResponse is not an exception.
  * The same race also wipes a just-added step off the canvas when `open('new')`
- * lands a moment later. Both belong to `@conduction/nextcloud-vue`.
+ * lands a moment later. Both belong to `@conduction/nextcloud-vue`, and are
+ * reported as ConductionNL/nextcloud-vue#607 — this spec does not paper over
+ * them, it is what makes them detectable.
  *
  * AND THE GREEN RUNS WERE WORSE THAN THE RED ONES
  * -----------------------------------------------
