@@ -129,76 +129,36 @@ jobs:
       # assuming the gates were already covering this repo.
       #
       # No count is written here on purpose: the number of gates depends on the
-      # pin below and the number that actually run depends on this repo's diff
-      # and toolchain. The package prints both (`COVERAGE: N of M`) in the job
-      # log; a digit in prose has nothing to reconcile against and goes stale
-      # silently. See https://github.com/ConductionNL/.github/tree/main/hydra-gates
-      #
-      # Pinned to a tag, not `main`, so a change to the gate package cannot
-      # alter this repository's verdict without a commit here to move the pin.
-      # v1.0.1 deliberately matches the pin openbuild already runs, so this
-      # repo's first result is directly comparable with the only live-verified
-      # reference the fleet has. (v1.1.0 exists; moving to it is a separate,
-      # measurable change.)
-      #
-      # v1.0.1 -> v1.3.0 (ConductionNL/.github#159). Two defects, one bump.
-      #
-      # 1. STALE. v1.0.1 is `f4d9756` (2026-08-03) and predates three gate
-      #    fixes, so every Hydra Gates run this repo has ever made executed a
-      #    script in which 16 gates reported PASS when their helper never ran
-      #    (#147), gate-33 had no axe report to read and never said so (#148),
-      #    and gates 6 and 7 reported PASS on an EMPTY scope (#149). A gate
-      #    that reports PASS without running emits a tick identical to a real
-      #    one, which is why nothing in this repo's history shows it.
-      #
-      # 2. RED. quality.yml is referenced `@main` while this package is
-      #    PINNED, so the two can desync — and on 2026-08-05 they did. #164
-      #    flipped `hydra-gates-require-full-coverage` to default TRUE, but
-      #    the accounting that makes that flag survivable (NOT APPLICABLE, as
-      #    distinct from a structural or a wiring gap) ships in the PACKAGE.
-      #    So every pin older than `f7eaf2a` fails the coverage assertion for
-      #    gates it has no subject matter for. That desync — not this repo —
-      #    is what the `hydra-gates-require-full-coverage: false` below was
-      #    added to work around, and moving the pin removes the need for it.
-      #
-      # v1.3.0 is `f7eaf2a` = .github@main, tagged so the ref stays
-      # reproducible and a later gate change cannot move this repo's verdict
-      # without a commit here.
+      # gate package version in use and the number that actually run depends on
+      # this repo's diff and toolchain. The package prints both
+      # (`COVERAGE: N of M`) in the job log; a digit in prose has nothing to
+      # reconcile against and goes stale silently.
+      # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       enable-hydra-gates: true
-      hydra-gates-ref: v1.4.0
-      # PIN MOVED v1.3.0 -> v1.4.0 (fleet consumer-ref sweep, 2026-08-05).
-      # A pinned ref is a silent expiry date on every upstream fix: this repo
-      # cannot receive a gate-package fix until this line moves. v1.4.0 is the
-      # latest tag and the FIRST one carrying `hydra-gates/scripts/axe-run.cjs`
-      # (verified absent at v1.3.0), so it is also the first that has #168's
-      # axe DOM scoping and #165's gate-46 fix.
-      # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
-      # reports serious/critical violations on core's OWN routes that DOM
-      # scoping does not remove. Enabling axe is a separate decision.
-      # `hydra-gates-require-full-coverage: false` USED TO BE SET HERE, and it
-      # is removed in the same commit that moves the pin, because the pin was
-      # the actual problem and the override was treating the symptom.
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
       #
-      # It was added when the shared workflow's default flipped to `true`, on
-      # the reasoning that this repo "cannot honestly satisfy it yet" — gate-33
-      # (producer `enable-axe` deliberately off) and gate-4 (correctly
-      # diff-scoped out per ADR-020) did not report. But neither is a coverage
-      # gap. They are NOT APPLICABLE, and saying so out loud is precisely the
-      # vocabulary v1.0.1 did not have: that pin contains ZERO `_skip` calls,
-      # v1.3.0 has 36. With no way to declare not-applicable, every such gate
-      # became "DID NOT RUN" and failed the job — so the override was
-      # switching off a control to work around a stale pin.
-      #
-      # Measured on this branch at v1.3.0, diff-scoped against
-      # origin/development and run WITH --require-full-coverage — i.e. exactly
-      # the condition this line existed to avoid:
-      #
-      #   exit 0 — ALL 59 APPLICABLE GATES PASSED, and all 59 of them ran.
-      #   NOT APPLICABLE: 4 6 7 33 — each naming itself and its reason.
-      #
-      # The requirement is satisfied, so the control goes back on. A
-      # switched-off control is worth less than a loud one, and this one no
-      # longer has anything to be loud about.
+      # `hydra-gates-require-full-coverage: false` USED TO BE SET HERE and is
+      # deliberately NOT set now. It was added when the shared workflow's
+      # default flipped to `true`, on the reasoning that this repo "cannot
+      # honestly satisfy it yet" — gate-33 (producer `enable-axe` deliberately
+      # off) and gate-4 (correctly diff-scoped out per ADR-020) did not report.
+      # Neither is a coverage gap: they are NOT APPLICABLE, and a current gate
+      # package says so out loud instead of counting them as "DID NOT RUN".
+      # Measured diff-scoped against origin/development WITH
+      # --require-full-coverage — exactly the condition the override existed to
+      # avoid — the run exits 0 with all applicable gates passing and 4/6/7/33
+      # each naming itself NOT APPLICABLE and why. A switched-off control is
+      # worth less than a loud one, so do not re-add the override without a
+      # measurement showing it is needed.
       # `enable-axe` is deliberately NOT set. It is the input that produces
       # `tests/axe/report.json`, which gate-33 consumes; without it gate-33
       # reports SKIPPED, as it has done in every repo in the fleet. Measured
