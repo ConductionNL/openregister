@@ -105,6 +105,29 @@ async function deleteFlow(page: import('@playwright/test').Page, uuid: string): 
 test('flow controls render, and a flow can be built, saved and run', async ({ page }) => {
 	let createdUuid: string | null = null
 
+	// Every call this page makes to the flow API, with its status. A save that
+	// does not persist otherwise surfaces only as "the route did not change",
+	// which says nothing about whether the request was refused, and with what.
+	const flowCalls: string[] = []
+	page.on('response', (response) => {
+		const url = response.url()
+		if (url.includes('/api/flows') || url.includes('/api/flow/')) {
+			flowCalls.push(
+				`${response.request().method()} ${url.replace(/^.*\/api\//, 'api/')} -> ${response.status()}`,
+			)
+		}
+	})
+
+	/** The store's own error text, when it rendered one. */
+	const sidebarError = async (): Promise<string> => {
+		const node = page.locator('.cn-flow-sidebar__error')
+		if (await node.count() === 0) {
+			return '(the sidebar showed no error)'
+		}
+
+		return ((await node.first().textContent()) ?? '').trim()
+	}
+
 	try {
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
 
@@ -141,6 +164,26 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 			})
 			.toBeGreaterThan(0)
 
+		// Wait for the STORE to hold the flow, not just for the panel to be on
+		// screen. `load()` resolves the catalogues and the flow independently,
+		// so the palette can be populated and clickable while `open('new')` has
+		// not yet stamped the default name — and a node added in that window is
+		// saved against a flow whose `name` is still empty, which the API
+		// rightly refuses:
+		//
+		//   POST api/flows -> 400   {"error":"A flow needs a name."}
+		//
+		// The sidebar renders no error for that, so without this wait the spec
+		// fails much later, at "the route did not move", saying nothing about
+		// why. The Name field carrying a value is the observable proof that the
+		// flow being edited has actually loaded.
+		await expect
+			.poll(async () => await sidebar.locator('input[type=text]').first().inputValue(), {
+				message: 'the flow never loaded into the sidebar — its Name stayed empty',
+				timeout: 15_000,
+			})
+			.not.toBe('')
+
 		// 2. A STEP CAN BE ADDED.
 		//
 		// `Stop` rather than something like `Edit fields`, and the reason is a
@@ -167,12 +210,22 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		// a hash-only change fires no navigation event — so `waitForURL`, which
 		// defaults to `waitUntil: 'load'`, waits for a load that never comes and
 		// times out on a save that in fact succeeded.
-		await expect
-			.poll(() => page.url(), {
-				message: 'Save did not move the route off `new`, so the flow was not persisted',
-				timeout: 20_000,
-			})
-			.toMatch(/#\/flows\/(?!new)[0-9a-f-]{8,}/)
+		try {
+			await expect
+				.poll(() => page.url(), { timeout: 20_000 })
+				.toMatch(/#\/flows\/(?!new)[0-9a-f-]{8,}/)
+		} catch {
+			// Re-thrown with what the page actually did, because "the route did
+			// not change" is a symptom shared by a refused request, a request
+			// never sent, and a save that succeeded while the router did not
+			// follow. These three lines tell those apart.
+			throw new Error(
+				'Save did not move the route off `new`, so the flow was not persisted.\n'
+				+ `  flow API calls: ${flowCalls.join(' | ') || '(none were made)'}\n`
+				+ `  sidebar error : ${await sidebarError()}\n`
+				+ `  url           : ${page.url()}`,
+			)
+		}
 
 		const uuid = page.url().split('/').pop() ?? ''
 		expect(uuid, 'saved flow has no uuid in the route').toMatch(/^[0-9a-f-]{8,}$/)
