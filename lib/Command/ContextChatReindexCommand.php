@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+ * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * `occ openregister:contextchat:reindex` — batched Context Chat backfill.
  *
- * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+ * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
  */
 class ContextChatReindexCommand extends Command
 {
@@ -82,7 +82,7 @@ class ContextChatReindexCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     public function __construct(
         private readonly ContainerInterface $container,
@@ -116,7 +116,7 @@ class ContextChatReindexCommand extends Command
      *
      * @return int Symfony command exit code.
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

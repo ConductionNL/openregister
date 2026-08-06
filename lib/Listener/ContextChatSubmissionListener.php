@@ -209,8 +209,8 @@ class ContextChatSubmissionListener implements IEventListener
      *
      * @return bool True when content was actually submitted.
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-schemas-must-have-their-objects-submitted-to-context-chat
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-published-objects-must-be-submitted-to-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
      */
     public function submitIfEligible(ObjectEntity $object, ?Schema $schema=null): bool
     {
@@ -241,7 +241,7 @@ class ContextChatSubmissionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-object-deletion-must-remove-submitted-content-from-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
      */
     public function remove(ObjectEntity $object, ?Schema $schema=null): void
     {
@@ -295,7 +295,7 @@ class ContextChatSubmissionListener implements IEventListener
      *
      * @return string[]|null The audience (non-empty list of user ids), or null when not publicly readable.
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-published-objects-must-be-submitted-to-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
      */
     private function resolvePublicReadAudience(ObjectEntity $object, Schema $schema): ?array
     {
@@ -373,7 +373,7 @@ class ContextChatSubmissionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-schemas-must-have-their-objects-submitted-to-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
      */
     private function submitContentItem(ObjectEntity $object, Schema $schema, array $audience): void
     {
@@ -416,7 +416,7 @@ class ContextChatSubmissionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-object-deletion-must-remove-submitted-content-from-context-chat
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
      */
     private function removeContentItem(ObjectEntity $object): void
     {
