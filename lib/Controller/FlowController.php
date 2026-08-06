@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -506,7 +507,7 @@ class FlowController extends Controller
      *
      * @param string $id The flow uuid.
      *
-     * @return JSONResponse The queued run, 201, or 404.
+     * @return JSONResponse The queued run 201, 404, or 409 when unrunnable.
      *
      * @NoAdminRequired
      *
@@ -526,7 +527,31 @@ class FlowController extends Controller
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-        }
+        } catch (FlowDeadEnd $e) {
+            // A REFUSAL, not a fault. `FlowRunService::queue()` declines to run
+            // a flow whose token cannot leave one of its nodes, and that is a
+            // verdict about the caller's document — the caller can fix it by
+            // wiring the node or ending it deliberately.
+            //
+            // Uncaught, it left the dispatcher to turn it into a bare 500 with
+            // an HTML body, so the one thing the author needed — WHICH node
+            // dead-ends — never reached them, and a routine authoring mistake
+            // was indistinguishable from the server falling over. Measured
+            // against the flow editor: pressing "Run now" on a single-step flow
+            // produced exactly that 500, and the UI showed nothing at all.
+            //
+            // 409 rather than 400: the document was understood and stored
+            // perfectly well: it is the flow's current STATE that conflicts
+            // with running it, which is also why the refusal is recorded on the
+            // flow itself (`status: error`) before this point.
+            return new JSONResponse(
+                [
+                    'error' => $e->getMessage(),
+                    'nodes' => $e->getNodeIds(),
+                ],
+                Http::STATUS_CONFLICT
+            );
+        }//end try
 
         return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
 

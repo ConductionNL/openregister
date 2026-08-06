@@ -43,8 +43,21 @@ export default defineConfig({
 	// without hiding a real failure — a broken assertion fails twice.
 	retries: process.env.CI ? 1 : 0,
 	workers: 1,
-	reporter: [['list']],
-	outputDir: path.resolve(__dirname, '../test-results-ci'),
+	reporter: [
+		['list'],
+		// The shared workflow uploads `tests/e2e/playwright-report/` as the
+		// `playwright-report` artifact. With `list` as the only reporter that
+		// directory was never created, so the artifact was empty on every run.
+		['html', { open: 'never', outputFolder: path.resolve(__dirname, '../playwright-report') }],
+	],
+	// ⚠️ MUST stay `tests/e2e/test-results`. This was `../test-results-ci`, and
+	// the shared workflow's "Upload Playwright traces" step globs exactly
+	// `tests/e2e/test-results/` — so Playwright wrote trace.zip, the failure
+	// screenshot and error-context.md on every red run, and the upload matched
+	// nothing and said so quietly (`if-no-files-found: ignore`). Six flaky and
+	// two hard-failing runs of flow-controls.spec.ts were diagnosed from job
+	// logs alone because the traces that existed on the runner were discarded.
+	outputDir: path.resolve(__dirname, '../test-results'),
 
 	use: {
 		baseURL: resolveBaseUrl(),
@@ -55,7 +68,13 @@ export default defineConfig({
 				}`,
 			).toString('base64')}`,
 		},
-		trace: 'on-first-retry',
+		// `retain-on-failure`, not `on-first-retry`. With `retries: 1` a FLAKE is
+		// exactly the case where attempt 1 fails and attempt 2 passes — and
+		// `on-first-retry` traces the RETRY, so the only attempt it ever
+		// captured was the one that worked. flow-controls.spec.ts failed its
+		// first attempt on 6 of 8 runs and every trace on disk was of a green
+		// run. This keeps the trace of whichever attempt actually failed.
+		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
 

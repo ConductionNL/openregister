@@ -105,8 +105,10 @@ bom-npm.cdx.json
 # Playwright e2e artefacts (ADR-030 / journeydoc)
 tests/e2e/.auth/
 tests/e2e/playwright-report/
+# Both the root and the CI subset config write here. The CI config used to
+# write to `test-results-ci/` instead, which the shared workflow's trace upload
+# does not glob — so red runs uploaded no traces at all. Keep them in step.
 tests/e2e/test-results/
-# The CI subset config writes here, and `test-results/` above does not match it.
 tests/e2e/test-results-ci/
 tests/e2e/.mdm-seed.json
 .hydra
