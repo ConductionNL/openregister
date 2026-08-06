@@ -131,6 +131,13 @@ class FlowRunService
      *
      * @return FlowRun The queued run.
      *
+     * @throws FlowDeadEnd When a node has no outgoing edge and does not end the
+     *                     flow, so the run is refused rather than started. Declared
+     *                     because it is part of this method's contract: every
+     *                     dispatch path arrives here, and a caller that cannot see
+     *                     the refusal in the signature will not handle it — which
+     *                     is how it reached HTTP as a bare 500.
+     *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
     public function queue(
