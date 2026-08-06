@@ -165,7 +165,21 @@ jobs:
       # reproducible and a later gate change cannot move this repo's verdict
       # without a commit here.
       enable-hydra-gates: true
-      hydra-gates-ref: v1.5.0
+      # v1.5.0 -> v1.5.2. v1.5.1 fixed the empty-diff abort on mainline pushes;
+      # v1.5.2 fixes gate-28 counting an empty SCOPE as a structural gap.
+      #
+      # gate-28 treated itself as applicable whenever lib/ exists and
+      # composer.json declares a license, whether or not the diff contained a
+      # single PHP file. With require-full-coverage now on by default, that
+      # failed every PR touching only a workflow, a lockfile, a spec or an
+      # info.xml — measured here on #2365, whose diff is exactly that. The gate
+      # was right that it compared nothing and wrong about why: nothing was in
+      # scope, which is ADR-020 diff-scoping working, and NOT APPLICABLE is the
+      # classification that exists to say so.
+      #
+      # The fix had been sitting on .github main untagged. A consumer pins a
+      # tag, so an untagged fix reaches nobody — v1.5.2 was cut for that.
+      hydra-gates-ref: v1.5.2
       # PIN MOVED v1.3.0 -> v1.4.0 (fleet consumer-ref sweep, 2026-08-05).
       # A pinned ref is a silent expiry date on every upstream fix: this repo
       # cannot receive a gate-package fix until this line moves. v1.4.0 is the
