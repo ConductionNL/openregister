@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -45,16 +46,46 @@ class ContextChatReindexCommand extends Command
     /**
      * Wire collaborators.
      *
-     * @param ContentProvider $contentProvider Shared batch-submission path.
-     * @param RegisterMapper  $registerMapper  Register lookup mapper, for the `--register` option.
-     * @param SchemaMapper    $schemaMapper    Schema lookup mapper, for the `--schema` option.
+     * ⚠️ `ContentProvider` is resolved LAZILY, from the container, inside
+     * {@see self::execute()} — it is deliberately NOT a constructor parameter,
+     * and this is not a style choice.
+     *
+     * `OCP\ContextChat\IContentProvider` is core Nextcloud API, but only from
+     * **NC 33**: it is absent from `stable31` and `stable32`, both of which
+     * this app's `info.xml` claims to support (`min-version="28"`). Because
+     * {@see ContentProvider} declares `implements IContentProvider`, merely
+     * LOADING that class on an older server is fatal — a class header is
+     * resolved eagerly and no guard inside the class can prevent it.
+     *
+     * A constructor typehint is enough to trigger exactly that. Every command
+     * listed in `appinfo/info.xml` is resolved by
+     * `Console\Application::loadCommandsFromInfoXml()`, which reflects each
+     * constructor to build it — so with `ContentProvider` in the signature,
+     * EVERY `occ` invocation on NC 28-32 threw before running anything:
+     *
+     *     Error: Interface "OCP\ContextChat\IContentProvider" not found
+     *       at .../openregister/lib/ContextChat/ContentProvider.php:50
+     *       ReflectionClass::__construct  <- SimpleContainer::resolve
+     *       <- loadCommandsFromInfoXml <- console.php
+     *
+     * Observed in CI on NC 31.0.14.1 during `occ app:enable`. It is logged at
+     * `level 3` and the enable still reports success, which is why it survived:
+     * the failure is loud in the log and invisible in the exit code.
+     *
+     * `ContentProvider::class` below is compile-time — the compiler turns it
+     * into a plain string and never autoloads — so naming the class here is
+     * safe; only `get()`ing it is not, and that now happens at execute() time.
+     *
+     * @param ContainerInterface $container      Container, for the lazy ContentProvider resolve.
+     * @param RegisterMapper     $registerMapper Register lookup mapper, for the `--register` option.
+     * @param SchemaMapper       $schemaMapper   Schema lookup mapper, for the `--schema` option.
      *
      * @return void
      *
      * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
      */
     public function __construct(
-        private readonly ContentProvider $contentProvider,
+        private readonly ContainerInterface $container,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper
     ) {
@@ -89,6 +120,18 @@ class ContextChatReindexCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        // See the constructor: OCP\ContextChat is NC 33+. On an older server
+        // this command cannot run, and saying so is far better than the fatal
+        // that loading ContentProvider would produce. `interface_exists()`
+        // asks the autoloader without dying when the answer is no.
+        if (interface_exists('OCP\\ContextChat\\IContentProvider') === false) {
+            $output->writeln(
+                '<comment>Context Chat is not available on this Nextcloud version '
+                .'(OCP\\ContextChat was introduced in Nextcloud 33). Nothing to reindex.</comment>'
+            );
+            return Command::SUCCESS;
+        }
+
         $registerId  = null;
         $registerRef = $input->getOption('register');
         if ($registerRef !== null) {
@@ -114,7 +157,11 @@ class ContextChatReindexCommand extends Command
         $output->writeln('<info>Reindexing OpenRegister objects into Context Chat…</info>');
 
         try {
-            $submitted = $this->contentProvider->reindex(registerId: $registerId, schemaId: $schemaId);
+            // Resolved here, not in the constructor — this is the first point
+            // at which loading ContentProvider is safe. See the constructor.
+            $contentProvider = $this->container->get(ContentProvider::class);
+
+            $submitted = $contentProvider->reindex(registerId: $registerId, schemaId: $schemaId);
         } catch (Throwable $e) {
             $output->writeln('<error>Reindex failed: '.$e->getMessage().'</error>');
             return Command::FAILURE;

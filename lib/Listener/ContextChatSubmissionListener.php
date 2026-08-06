@@ -63,6 +63,7 @@ use OCP\ContextChat\IContentManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -86,24 +87,76 @@ class ContextChatSubmissionListener implements IEventListener
     /**
      * Wire collaborators.
      *
-     * @param IContentManager   $contentManager    Core Context Chat content manager (always resolvable via DI).
-     * @param SchemaMapper      $schemaMapper      Schema lookup mapper.
-     * @param PermissionHandler $permissionHandler RBAC evaluator, used for the publication predicate + audience.
-     * @param IUserManager      $userManager       User manager, for the broadcast-audience fallback.
-     * @param LoggerInterface   $logger            PSR logger.
+     * ⚠️ `IContentManager` is resolved LAZILY, in {@see self::contentManager()}.
+     * The docblock this replaces claimed it is "always resolvable via DI"; it
+     * is not, and the difference is instance-wide.
+     *
+     * `OCP\ContextChat` is core API only from **Nextcloud 33**. It is absent
+     * from `stable31` and `stable32`, and this app's `info.xml` declares
+     * `min-version="28"`. A constructor typehint on a class that does not
+     * exist is fatal the moment the container resolves this listener —
+     * `SimpleContainer::resolve()` calls `new ReflectionClass()` on each
+     * parameter type, which is the load.
+     *
+     * That matters far more here than it would in a command, because this
+     * listener is registered for ObjectCreatedEvent, ObjectUpdatedEvent and
+     * ObjectDeletedEvent — it is resolved on EVERY object write. On NC 28-32
+     * the old signature made every create, update and delete throw
+     * `ReflectionException: Class "OCP\ContextChat\IContentManager" does not
+     * exist`, from a feature the instance is not even using.
+     *
+     * Reproduced under a probe that maps OCP\ContextChat\* to nothing, exactly
+     * as those servers do; see the fleet note in ContextChatReindexCommand.
+     *
+     * @param ContainerInterface $container         Container, for the lazy IContentManager resolve.
+     * @param SchemaMapper       $schemaMapper      Schema lookup mapper.
+     * @param PermissionHandler  $permissionHandler RBAC evaluator, used for the publication predicate + audience.
+     * @param IUserManager       $userManager       User manager, for the broadcast-audience fallback.
+     * @param LoggerInterface    $logger            PSR logger.
      *
      * @return void
      *
      * @spec openspec/specs/context-chat-provider/spec.md
      */
     public function __construct(
-        private readonly IContentManager $contentManager,
+        private readonly ContainerInterface $container,
         private readonly SchemaMapper $schemaMapper,
         private readonly PermissionHandler $permissionHandler,
         private readonly IUserManager $userManager,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Resolve core's Context Chat content manager, or null when unavailable.
+     *
+     * Returns null on Nextcloud below 33, where `OCP\ContextChat` does not
+     * exist. Callers skip submission in that case — the alternative is a fatal
+     * on an object write, which is not a trade this feature gets to make.
+     *
+     * `interface_exists()` asks the autoloader and answers false rather than
+     * dying; the interface name is a plain string here so nothing is resolved
+     * at compile time.
+     *
+     * @return IContentManager|null The content manager, or null when Context Chat is unavailable.
+     *
+     * @spec openspec/specs/context-chat-provider/spec.md
+     */
+    private function contentManager(): ?IContentManager
+    {
+        if (interface_exists('OCP\\ContextChat\\IContentManager') === false) {
+            return null;
+        }
+
+        try {
+            return $this->container->get(IContentManager::class);
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                '[ContextChatSubmissionListener] Context Chat unavailable: '.$e->getMessage()
+            );
+            return null;
+        }
+    }//end contentManager()
 
     /**
      * Route an inbound object lifecycle event to submit or remove.
@@ -331,6 +384,15 @@ class ContextChatSubmissionListener implements IEventListener
 
         $lastModified = ($object->getUpdated() ?? $object->getCreated() ?? new \DateTime());
 
+        // Resolve BEFORE touching ContentItem or ContentProvider below: both
+        // are unloadable on NC < 33 (ContentItem is OCP\ContextChat\*, and
+        // reading ContentProvider::PROVIDER_ID loads a class whose header
+        // implements the missing IContentProvider).
+        $contentManager = $this->contentManager();
+        if ($contentManager === null) {
+            return;
+        }
+
         $item = new ContentItem(
             itemId: $uuid,
             providerId: ContentProvider::PROVIDER_ID,
@@ -341,7 +403,7 @@ class ContextChatSubmissionListener implements IEventListener
             users: $audience
         );
 
-        $this->contentManager->submitContent(
+        $contentManager->submitContent(
             ContentProvider::APP_ID,
             [$item]
         );
@@ -363,7 +425,14 @@ class ContextChatSubmissionListener implements IEventListener
             return;
         }
 
-        $this->contentManager->deleteContent(
+        // Same reason as submitContentItem(): ContentProvider's constants are
+        // read below, and loading that class is fatal on NC < 33.
+        $contentManager = $this->contentManager();
+        if ($contentManager === null) {
+            return;
+        }
+
+        $contentManager->deleteContent(
             ContentProvider::APP_ID,
             ContentProvider::PROVIDER_ID,
             [$uuid]
