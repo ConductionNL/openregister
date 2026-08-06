@@ -38,6 +38,60 @@
  *
  * Hermetic: creates its own flow through the UI and deletes it afterwards, so
  * it leaves the instance as it found it (the CI floor's contract).
+ *
+ * WHY IT WAS FLAKY, AND WHAT THAT UNCOVERED
+ * -----------------------------------------
+ * It failed on the FIRST attempt of 6 of the 8 CI runs that executed it (75%),
+ * always at the same place — `waitForURL` after Save — and always at 23.9-24.6s,
+ * i.e. ~4s of real work plus a 20s timeout expiring in full. Passing attempts
+ * took 4.5-7.3s. A wait that always expires in FULL is not a slow round-trip;
+ * it is a thing that was never going to happen.
+ *
+ * It never happened because the SAVE WAS REJECTED. `useFlowStore`'s initial
+ * state is `emptyFlow()`, whose `name` is `''`; only `open('new')` gives the
+ * flow a name, and `open()` runs at the tail of `load()`, behind
+ * `await GET /api/flows` — a flow LIST that starting a blank flow does not
+ * need. The sidebar is fully rendered and its buttons enabled well before that,
+ * because `nodeCatalog` was already populated by the flows INDEX page's own
+ * `load()`. So there is a window in which the editor invites a Save of a flow
+ * with no name, `FlowController::create()` answers 400 "A flow needs a name.",
+ * `store.save()` swallows it into `return null`, and `onSave()` therefore never
+ * calls `$router.replace`.
+ *
+ * That window is a REAL DEFECT, not a test artefact: a user who clicks Save
+ * quickly enough gets silence — no error, no toast, no log line, because
+ * nothing renders `store.error` and a 400 JSONResponse is not an exception.
+ * The same race also wipes a just-added step off the canvas when `open('new')`
+ * lands a moment later. Both belong to `@conduction/nextcloud-vue`, and are
+ * reported as ConductionNL/nextcloud-vue#607 — this spec does not paper over
+ * them, it is what makes them detectable.
+ *
+ * AND THE GREEN RUNS WERE WORSE THAN THE RED ONES
+ * -----------------------------------------------
+ * Instrumenting what Save actually POSTs, over 14 local runs, split three ways:
+ *
+ *   POST /api/flows 400, name=""    -> red   (the race above)
+ *   POST /api/flows 201, nodes=1    -> red   at step 4: POST .../run 500
+ *   POST /api/flows 201, nodes=0    -> GREEN
+ *
+ * The spec passed ONLY when the flow it saved had no steps in it. A one-node
+ * `set-fields` flow cannot run at all: since #2354 a path must end deliberately,
+ * and `FlowRunService::queue()` refuses a node with no outgoing edge that is not
+ * terminal. So every run that genuinely persisted the step failed step 4, and
+ * every green run was green because the race had thrown the step away first.
+ * The 20s poll dressed that up as "Run now did not produce a run".
+ *
+ * That is the failure mode this file's own header warns about — every layer
+ * green while nothing is tested — so the fixture now builds the smallest flow
+ * the app calls VALID (one terminal node) instead of one it is obliged to
+ * refuse. See step 2.
+ *
+ * So this spec now waits for the state a save actually REQUIRES rather than for
+ * a wall clock, and asserts the create and run RESPONSES rather than inferring
+ * success from a route and a poll. The three 15-20s budgets it used to sit out
+ * are gone, not widened: with the round-trips asserted directly, what remains
+ * are 5s router and read-back assertions. If any of these defects returns, this
+ * spec fails in about a second, quoting the server's own reason.
  */
 import { test, expect } from '@playwright/test'
 import * as path from 'path'
@@ -64,14 +118,21 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
  *
  * Dispatching the event directly drives the Vue `@click` handler, which is the
  * behaviour under test. It does trade away Playwright's actionability checks —
- * so the assertions that the control is VISIBLE stay, above, and are what
- * would catch a control that is missing or covered.
+ * so the assertions that the control is VISIBLE and ENABLED stay, here, and are
+ * what would catch a control that is missing, covered or inert.
+ *
+ * `toBeEnabled()` is not decoration. A dispatched event reaches a Vue handler
+ * whether or not the control is disabled, so without it this helper would
+ * happily "click" a button the UI is refusing to offer and report the resulting
+ * silence as a timeout somewhere else. Both flow actions really are gated —
+ * Save on `store.saving`, Run now on `store.running || !store.flow.id`.
  *
  * @param locator The themed control to click.
  * @return {Promise<void>}
  */
 async function clickThemed(locator: import('@playwright/test').Locator): Promise<void> {
 	await expect(locator).toBeVisible()
+	await expect(locator).toBeEnabled()
 	await locator.dispatchEvent('click')
 }
 
@@ -105,28 +166,19 @@ async function deleteFlow(page: import('@playwright/test').Page, uuid: string): 
 test('flow controls render, and a flow can be built, saved and run', async ({ page }) => {
 	let createdUuid: string | null = null
 
-	// Every call this page makes to the flow API, with its status. A save that
-	// does not persist otherwise surfaces only as "the route did not change",
-	// which says nothing about whether the request was refused, and with what.
-	const flowCalls: string[] = []
-	page.on('response', (response) => {
-		const url = response.url()
-		if (url.includes('/api/flows') || url.includes('/api/flow/')) {
-			flowCalls.push(
-				`${response.request().method()} ${url.replace(/^.*\/api\//, 'api/')} -> ${response.status()}`,
-			)
+	// EVERY request the flow store makes is wrapped in a `catch` that logs
+	// `cn-flow: could not …` and returns an empty result or null. Nothing
+	// renders `store.error`, so a rejected save, a rejected run and a catalogue
+	// that failed to load are all INVISIBLE — to the user, and to a test that
+	// only watches the DOM. Collected here so a swallowed failure fails this
+	// test by name, at the moment it happens, instead of surfacing seconds
+	// later as a timeout that names something unrelated.
+	const storeErrors: string[] = []
+	page.on('console', (message) => {
+		if (message.type() === 'error' && message.text().includes('cn-flow:')) {
+			storeErrors.push(message.text())
 		}
 	})
-
-	/** The store's own error text, when it rendered one. */
-	const sidebarError = async (): Promise<string> => {
-		const node = page.locator('.cn-flow-sidebar__error')
-		if (await node.count() === 0) {
-			return '(the sidebar showed no error)'
-		}
-
-		return ((await node.first().textContent()) ?? '').trim()
-	}
 
 	try {
 		await page.goto(FLOWS_ROUTE, { waitUntil: 'domcontentloaded' })
@@ -152,8 +204,11 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 
 		const actions = page.locator('.cn-flow-sidebar__actions')
 		await expect(actions).toBeVisible()
-		await expect(actions.getByText('Save', { exact: true })).toBeVisible()
-		await expect(actions.getByText('Run now', { exact: true })).toBeVisible()
+
+		const saveButton = actions.getByRole('button', { name: 'Save', exact: true })
+		const runButton = actions.getByRole('button', { name: 'Run now', exact: true })
+		await expect(saveButton).toBeVisible()
+		await expect(runButton).toBeVisible()
 
 		// The palette is populated from /api/flow/node-catalog. An empty one
 		// renders the same container, so assert it has entries.
@@ -164,78 +219,116 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 			})
 			.toBeGreaterThan(0)
 
-		// Wait for the STORE to hold the flow, not just for the panel to be on
-		// screen. `load()` resolves the catalogues and the flow independently,
-		// so the palette can be populated and clickable while `open('new')` has
-		// not yet stamped the default name — and a node added in that window is
-		// saved against a flow whose `name` is still empty, which the API
-		// rightly refuses:
+		// ── THE EDITOR IS INTERACTIVE BEFORE IT IS INITIALISED ──────────────
+		// This wait is the whole reason this spec used to fail 6 runs in 8.
 		//
-		//   POST api/flows -> 400   {"error":"A flow needs a name."}
+		// `useFlowStore`'s INITIAL state is `emptyFlow()`, whose `name` is `''`.
+		// Only `open('new')` replaces it with a named flow, and `open()` runs at
+		// the TAIL of `load()` — after `await GET /api/flows`, a flow LIST the
+		// editor does not need in order to start a blank flow.
 		//
-		// The sidebar renders no error for that, so without this wait the spec
-		// fails much later, at "the route did not move", saying nothing about
-		// why. The Name field carrying a value is the observable proof that the
-		// flow being edited has actually loaded.
-		await expect
-			.poll(async () => await sidebar.locator('input[type=text]').first().inputValue(), {
-				message: 'the flow never loaded into the sidebar — its Name stayed empty',
-				timeout: 15_000,
-			})
-			.not.toBe('')
+		// The sidebar, meanwhile, is already rendered and its buttons already
+		// enabled, because `nodeCatalog` was populated by the INDEX page's own
+		// `load()` before this route was ever reached. So the controls invite a
+		// Save during a window in which the flow still has no name — and
+		// `FlowController::create()` answers 400 "A flow needs a name.", which
+		// `store.save()` swallows into `return null`, which makes
+		// `FlowDetailSidebar.onSave()` skip `$router.replace` entirely. Nothing
+		// is logged server-side (a 400 JSONResponse is not an exception) and
+		// nothing is shown client-side. The only symptom was this spec's
+		// `waitForURL` sitting out its full 20s.
+		//
+		// So wait for the state the save actually requires, and say so. Asserted
+		// as "not blank" rather than against the literal default name, which
+		// belongs to @conduction/nextcloud-vue and is not this repo's contract.
+		await expect(
+			sidebar.getByLabel('Name', { exact: true }),
+			'the editor never initialised — the flow store is still holding its '
+			+ 'blank initial state, whose name is empty, and a flow with no name '
+			+ 'is rejected by the server',
+		).not.toHaveValue('')
 
 		// 2. A STEP CAN BE ADDED.
 		//
-		// `Stop` rather than something like `Edit fields`, and the reason is a
-		// real rule rather than convenience: FlowRunService refuses to queue a
-		// flow containing a node with no outgoing edge that does not end the
-		// flow, because such a run "would stop there and still be reported as
-		// completed". A lone `Edit fields` is exactly that shape, so it saves
-		// and is then correctly refused a run.
+		// `stop`, and the choice is load-bearing. This used to add `set-fields`,
+		// which made the saved flow UNRUNNABLE: since #2354 a path must end
+		// deliberately, and `FlowRunService::queue()` refuses any node that has
+		// no outgoing edge and is not terminal — which `set-fields` is not.
+		// Only `StopNode` implements IFlowTerminalNode, so a lone `set-fields`
+		// node is a dead end by construction and step 4 below could never pass
+		// on it. Measured: every run of this spec that actually persisted the
+		// step failed, and the only runs that went green were the ones where
+		// the initialisation race above had silently WIPED the step, saving an
+		// empty flow that trivially has no dead end. The spec was green exactly
+		// when it had tested nothing.
 		//
-		// `Stop` is a terminal step type, so a single one is a complete,
-		// runnable flow — and it has no side effects, so the spec never reaches
-		// out of the instance.
-		await clickThemed(palette.getByText('Stop', { exact: false }).first())
+		// A single terminal node is the smallest flow this app calls valid, so
+		// it is what the spec builds. `stop` has no side effects either, so this
+		// still never reaches out of the instance. Drawing an edge from
+		// `set-fields` to `stop` would cover more, but drag-to-connect on the
+		// canvas is exactly the interaction this file already documents as
+		// unreliable, and a fixture that flakes is how this started.
+		await clickThemed(palette.getByText('Stop', { exact: true }).first())
 		await expect(
 			page.locator('main').getByText('Stop', { exact: false }).first(),
 			'the step did not reach the canvas',
 		).toBeVisible()
 
-		// 3. SAVE PERSISTS. The route advancing off `new` is the observable
-		//    proof the server accepted it and returned a uuid.
-		await clickThemed(actions.getByText('Save', { exact: true }))
+		// 3. SAVE PERSISTS.
+		//
+		// Asserted on the CREATE RESPONSE, not on the route. The route advancing
+		// is a consequence of a successful save, so waiting on it made every
+		// server-side rejection look like a navigation that was merely slow —
+		// and burn 20 seconds before reporting the wrong thing. The response
+		// carries the verdict and the reason, so a rejected save now fails here,
+		// immediately, quoting the server.
+		const created = page.waitForResponse(
+			(response) =>
+				response.request().method() === 'POST'
+				&& new URL(response.url()).pathname.endsWith('/apps/openregister/api/flows'),
+			{ timeout: 10_000 },
+		)
 
-		// Poll the URL rather than `waitForURL`. This app uses a HASH router, and
-		// a hash-only change fires no navigation event — so `waitForURL`, which
-		// defaults to `waitUntil: 'load'`, waits for a load that never comes and
-		// times out on a save that in fact succeeded.
-		try {
-			await expect
-				.poll(() => page.url(), { timeout: 20_000 })
-				.toMatch(/#\/flows\/(?!new)[0-9a-f-]{8,}/)
-		} catch {
-			// Re-thrown with what the page actually did, because "the route did
-			// not change" is a symptom shared by a refused request, a request
-			// never sent, and a save that succeeded while the router did not
-			// follow. These three lines tell those apart.
-			throw new Error(
-				'Save did not move the route off `new`, so the flow was not persisted.\n'
-				+ `  flow API calls: ${flowCalls.join(' | ') || '(none were made)'}\n`
-				+ `  sidebar error : ${await sidebarError()}\n`
-				+ `  url           : ${page.url()}`,
-			)
-		}
+		await clickThemed(saveButton)
 
-		const uuid = page.url().split('/').pop() ?? ''
-		expect(uuid, 'saved flow has no uuid in the route').toMatch(/^[0-9a-f-]{8,}$/)
+		const createResponse = await created
+		expect(
+			createResponse.status(),
+			`the flow was not created — the server answered ${createResponse.status()}: `
+			+ `${(await createResponse.text()).slice(0, 200)}`,
+		).toBe(201)
+
+		const uuid = String((await createResponse.json())?.id ?? '')
+		expect(uuid, 'the created flow came back without a uuid').toMatch(/^[0-9a-f-]{8,}$/)
 		createdUuid = uuid
+
+		// The route still has to catch up, or a reload lands back on `new`. With
+		// the create already asserted above this is a pure router assertion with
+		// no round-trip left in it, so it needs a fraction of the old budget.
+		await page.waitForURL(new RegExp(`#/flows/${uuid}$`), { timeout: 5_000 })
 
 		// 4. RUN NOW CREATES A RUN. Asserted against the API rather than the
 		//    rendered status, because the status a run is DISPLAYED with
 		//    depends on whether the worker has reached it yet.
-		await clickThemed(actions.getByText('Run now', { exact: true }))
+		const queued = page.waitForResponse(
+			(response) =>
+				response.request().method() === 'POST'
+				&& response.url().includes(`/api/flows/${uuid}/run`),
+			{ timeout: 10_000 },
+		)
 
+		await clickThemed(runButton)
+
+		const runResponse = await queued
+		expect(
+			runResponse.status(),
+			`Run now was refused — the server answered ${runResponse.status()}: `
+			+ `${(await runResponse.text()).slice(0, 200)}`,
+		).toBe(201)
+
+		// And the run is ATTRIBUTED to this flow — a separate claim from "a run
+		// was created", and the one a client actually depends on to show
+		// history. The row exists by now, so this is a read-back, not a wait.
 		await expect
 			.poll(
 				async () =>
@@ -251,11 +344,19 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 						return (body?.results ?? []).length
 					}, uuid),
 				{
-					message: 'Run now did not produce a run for this flow',
-					timeout: 20_000,
+					message: 'the run was accepted but is not listed against this flow',
+					timeout: 5_000,
 				},
 			)
 			.toBeGreaterThan(0)
+
+		// Backstop for every OTHER request the store swallows — the two
+		// catalogues and the run history. None of them has a visible failure
+		// state, so without this they fail silently and degrade the page.
+		expect(
+			storeErrors,
+			'the flow store swallowed a request failure into an empty state',
+		).toEqual([])
 	} finally {
 		if (createdUuid !== null) {
 			await deleteFlow(page, createdUuid)

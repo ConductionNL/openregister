@@ -133,7 +133,7 @@ class ContentProvider implements IContentProvider
      *
      * @return string The resolved, absolute URL.
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-must-resolve-through-the-existing-deep-link-registry
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     public function getItemUrl(string $id): string
     {
@@ -194,7 +194,7 @@ class ContentProvider implements IContentProvider
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     public function triggerInitialImport(): void
     {
@@ -211,7 +211,7 @@ class ContentProvider implements IContentProvider
      *
      * @return int Number of objects actually submitted (published, opted-in objects).
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     public function reindex(?int $registerId, ?int $schemaId): int
     {
@@ -229,6 +229,11 @@ class ContentProvider implements IContentProvider
                     offset: $offset
                 );
 
+                // Counted once per page, not re-counted by the loop condition.
+                // $batch is replaced wholesale on every iteration and never
+                // mutated below, so this is the same value the condition read.
+                $batchSize = count($batch);
+
                 foreach ($batch as $object) {
                     if ($this->submissionListener->submitIfEligible(object: $object, schema: $schema) === true) {
                         $submitted++;
@@ -236,7 +241,7 @@ class ContentProvider implements IContentProvider
                 }
 
                 $offset += self::BATCH_SIZE;
-            } while (count($batch) === self::BATCH_SIZE);
+            } while ($batchSize === self::BATCH_SIZE);
         }//end foreach
 
         return $submitted;
@@ -251,7 +256,7 @@ class ContentProvider implements IContentProvider
      *
      * @return array<int, array{0: Register, 1: Schema}> List of (register, schema) pairs.
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-initial-import-must-walk-opted-in-schemas-in-batches-and-must-be-re-runnable-via-occ
+     * @spec openspec/specs/context-chat-provider/spec.md#requirement-getitemurl-and-initial-import-reuse-existing-openregister-infrastructure
      */
     private function resolveOptedInPairs(?int $registerId, ?int $schemaId): array
     {

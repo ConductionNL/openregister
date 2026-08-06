@@ -301,7 +301,10 @@ class GeoFeatureCollectionBuilder
 
             $outer = abs($this->ringArea(ring: ($rings[0] ?? [])));
             $holes = 0.0;
-            for ($i = 1; $i < count($rings); $i++) {
+            // Hoisted: $rings is not modified in the body, so re-counting it on
+            // every iteration was pure overhead.
+            $ringCount = count($rings);
+            for ($i = 1; $i < $ringCount; $i++) {
                 $holes += abs($this->ringArea(ring: $rings[$i]));
             }
 
