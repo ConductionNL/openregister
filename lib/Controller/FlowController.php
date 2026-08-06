@@ -63,6 +63,17 @@ use OCP\WorkflowEngine\IManager;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
+ * Coupling is 13 for the same reason: this class IS the flow API surface, so it
+ * names the two catalogues, the preflight, the registry, the state mapper, the
+ * service and the entity, plus the framework's own request/response/attribute
+ * types. Twelve of the thirteen are already required to serve the routes; the
+ * thirteenth is `FlowDeadEnd`, and refusing it would mean the run endpoint goes
+ * back to letting that refusal escape as an HTML 500. Splitting the class to
+ * lower the number would put two controllers behind one `/api/flows` prefix,
+ * which costs more than it buys.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller
