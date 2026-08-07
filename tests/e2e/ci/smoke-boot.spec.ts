@@ -104,9 +104,5 @@ for (const route of ROUTES) {
 			killers,
 			`boot-killer console error(s) on ${route.name}`,
 		).toEqual([])
-
-		// TEMPORARY SENTINEL — deliberate failure to prove this suite can go
-		// red. Removed in the next commit on this branch.
-		expect(1, 'SENTINEL: proving the e2e suite can fail').toBe(2)
 	})
 }
