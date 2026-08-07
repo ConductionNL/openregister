@@ -1,8 +1,9 @@
 <?php
 
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: EUPL-1.2
+ * OpenRegister Migration Version002003000Date20251013000000
+ *
+ * This file contains the migration step for the OpenRegister application.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration

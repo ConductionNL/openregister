@@ -287,7 +287,12 @@ class FlowNodePreflightTest extends TestCase
         $report    = $preflight->inspect(
             flow: [
                 'name'  => 'migrated',
-                'nodes' => [['id' => 'scope', 'type' => 'openregister.route']],
+                // `exit` so the one-node fixture is a COMPLETE document. This
+                // asserts an EXACTLY empty report, and a lone node with no
+                // outgoing edge is a dead end however correct its step is —
+                // the connectivity warning would be right, and would make this
+                // positive control fail for a reason it is not about.
+                'nodes' => [['id' => 'scope', 'type' => 'openregister.route', 'exit' => true]],
                 'edges' => [],
             ]
         );

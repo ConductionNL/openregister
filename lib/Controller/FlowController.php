@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -61,6 +62,17 @@ use OCP\WorkflowEngine\IManager;
  * make the routes file the only place the API's shape is visible.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
+ * Coupling is 13 for the same reason: this class IS the flow API surface, so it
+ * names the two catalogues, the preflight, the registry, the state mapper, the
+ * service and the entity, plus the framework's own request/response/attribute
+ * types. Twelve of the thirteen are already required to serve the routes; the
+ * thirteenth is `FlowDeadEnd`, and refusing it would mean the run endpoint goes
+ * back to letting that refusal escape as an HTML 500. Splitting the class to
+ * lower the number would put two controllers behind one `/api/flows` prefix,
+ * which costs more than it buys.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
@@ -388,6 +400,12 @@ class FlowController extends Controller
      *
      * @NoAdminRequired
      *
+     * @no-admin-idor-exempt No caller-supplied id to confuse: a create takes no
+     * uuid. `FlowService::flowToSave()` stamps `owner` from the session and
+     * `organisation` from the active one, and neither is in
+     * `applyEditableFields()`'s allowlist — so a payload cannot claim another
+     * user's identity. The allowlist IS the boundary here.
+     *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
     #[NoAdminRequired]
@@ -401,9 +419,44 @@ class FlowController extends Controller
 
         $flow = $this->flows->save(data: $data);
 
-        return new JSONResponse($flow->jsonSerialize(), Http::STATUS_CREATED);
+        return new JSONResponse($this->savedBody(flow: $flow), Http::STATUS_CREATED);
 
     }//end create()
+
+    /**
+     * The stored flow, plus any warning the author should see about it.
+     *
+     * The save SUCCEEDS and then warns. A half-wired graph is the normal state
+     * of one being authored, so refusing to store it would force the author to
+     * build the graph in an order that is never disconnected — which no editor
+     * can require. The refusal happens at RUN time instead, where the cost of a
+     * silent stop is actually paid ({@see FlowDeadEnd}).
+     *
+     * `warnings` is added ALONGSIDE the flow's own fields rather than wrapping
+     * them, so a client that ignores it keeps working unchanged.
+     *
+     * @param Flow $flow The stored flow.
+     *
+     * @return array The response body.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    private function savedBody(Flow $flow): array
+    {
+        $body = $flow->jsonSerialize();
+
+        $report = $this->preflight->inspect(
+            flow: [
+                'nodes' => ($flow->getNodes() ?? []),
+                'edges' => ($flow->getEdges() ?? []),
+            ]
+        );
+
+        $body['warnings'] = $report['warnings'];
+
+        return $body;
+
+    }//end savedBody()
 
     /**
      * Update a flow.
@@ -413,6 +466,13 @@ class FlowController extends Controller
      * @return JSONResponse The stored flow, or 404.
      *
      * @NoAdminRequired
+     *
+     * @no-admin-idor-exempt Guarded downstream: `FlowService::flowToSave()`
+     * resolves the uuid through `find()`, so an update to a flow the caller
+     * cannot see is refused with the same "no such flow" as one that does not
+     * exist — the id is never trusted to select the row. `owner` and
+     * `organisation` are outside `applyEditableFields()`'s allowlist, so an
+     * update cannot reassign ownership either.
      *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
@@ -425,7 +485,7 @@ class FlowController extends Controller
             return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
         }
 
-        return new JSONResponse($flow->jsonSerialize());
+        return new JSONResponse($this->savedBody(flow: $flow));
 
     }//end update()
 
@@ -458,7 +518,7 @@ class FlowController extends Controller
      *
      * @param string $id The flow uuid.
      *
-     * @return JSONResponse The queued run, 201, or 404.
+     * @return JSONResponse The queued run 201, 404, or 409 when unrunnable.
      *
      * @NoAdminRequired
      *
@@ -478,7 +538,31 @@ class FlowController extends Controller
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-        }
+        } catch (FlowDeadEnd $e) {
+            // A REFUSAL, not a fault. `FlowRunService::queue()` declines to run
+            // a flow whose token cannot leave one of its nodes, and that is a
+            // verdict about the caller's document — the caller can fix it by
+            // wiring the node or ending it deliberately.
+            //
+            // Uncaught, it left the dispatcher to turn it into a bare 500 with
+            // an HTML body, so the one thing the author needed — WHICH node
+            // dead-ends — never reached them, and a routine authoring mistake
+            // was indistinguishable from the server falling over. Measured
+            // against the flow editor: pressing "Run now" on a single-step flow
+            // produced exactly that 500, and the UI showed nothing at all.
+            //
+            // 409 rather than 400: the document was understood and stored
+            // perfectly well: it is the flow's current STATE that conflicts
+            // with running it, which is also why the refusal is recorded on the
+            // flow itself (`status: error`) before this point.
+            return new JSONResponse(
+                [
+                    'error' => $e->getMessage(),
+                    'nodes' => $e->getNodeIds(),
+                ],
+                Http::STATUS_CONFLICT
+            );
+        }//end try
 
         return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
 
