@@ -91,7 +91,7 @@ class ContextChatSubmissionListener implements IEventListener
      * The docblock this replaces claimed it is "always resolvable via DI"; it
      * is not, and the difference is instance-wide.
      *
-     * `OCP\ContextChat` is core API only from **Nextcloud 33**. It is absent
+     * `OCP\ContextChat` is core API only from **Nextcloud 32**. It is absent
      * from `stable31` and `stable32`, and this app's `info.xml` declares
      * `min-version="28"`. A constructor typehint on a class that does not
      * exist is fatal the moment the container resolves this listener —
@@ -130,7 +130,7 @@ class ContextChatSubmissionListener implements IEventListener
     /**
      * Resolve core's Context Chat content manager, or null when unavailable.
      *
-     * Returns null on Nextcloud below 33, where `OCP\ContextChat` does not
+     * Returns null on Nextcloud below 32, where `OCP\ContextChat` does not
      * exist. Callers skip submission in that case — the alternative is a fatal
      * on an object write, which is not a trade this feature gets to make.
      *
@@ -385,7 +385,7 @@ class ContextChatSubmissionListener implements IEventListener
         $lastModified = ($object->getUpdated() ?? $object->getCreated() ?? new \DateTime());
 
         // Resolve BEFORE touching ContentItem or ContentProvider below: both
-        // are unloadable on NC < 33 (ContentItem is OCP\ContextChat\*, and
+        // are unloadable on NC < 32 (ContentItem is OCP\ContextChat\*, and
         // reading ContentProvider::PROVIDER_ID loads a class whose header
         // implements the missing IContentProvider).
         $contentManager = $this->contentManager();
@@ -426,7 +426,7 @@ class ContextChatSubmissionListener implements IEventListener
         }
 
         // Same reason as submitContentItem(): ContentProvider's constants are
-        // read below, and loading that class is fatal on NC < 33.
+        // read below, and loading that class is fatal on NC < 32.
         $contentManager = $this->contentManager();
         if ($contentManager === null) {
             return;

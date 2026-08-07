@@ -66,16 +66,35 @@ Vrij en open source onder de EUPL-licentie.
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <!-- 32, not 28. lib/ContextChat/ContentProvider.php implements
-             OCP\ContextChat\IContentProvider, and that interface does not
-             exist in core before Nextcloud 32. On 31 and below, loading the
-             class logs "Interface OCP\ContextChat\IContentProvider not
-             found"; the registration listener cannot prevent it, because the
-             failure happens when PHP reads the class header, not when the
-             provider is registered. CI has run against nextcloud:32-apache
-             for a while and the dev stack is on 34, so nothing was testing
-             28-31 either. -->
-        <nextcloud min-version="32" max-version="34"/>
+        <!-- 28 again, reverting #2378's bump to 32.
+
+             #2378's premise was correct when it was written and is no longer:
+             "the registration listener cannot prevent it, because the failure
+             happens when PHP reads the class header". That WAS true, and #2372
+             is what changed it — it removed every EAGER reference to
+             ContentProvider, so the class is now only loaded from inside
+             `interface_exists('OCP\ContextChat\IContentManager')` guards. On a
+             server without OCP\ContextChat the class header is never read, the
+             feature is simply inert, and nothing logs.
+
+             Empirically: procest's e2e installs openregister at `development`
+             and runs stable31. Its run at 2026-08-06T14:04Z — six minutes AFTER
+             #2372 merged at 13:58Z — passed. openregister demonstrably boots,
+             enables and serves on Nextcloud 31 with that fix in place.
+
+             The bump is not free. `min-version` is enforced at INSTALL time, so
+             32 makes `occ app:enable openregister` refuse on 31, and eight fleet
+             repos install openregister as an additional-app while testing
+             stable31: procest, shillinq, portaliq, openbuild, decidesk, doriath,
+             hermiq and larpingapp. Each fails its seed with "OpenRegister is not
+             installed or enabled" and then a 404 from
+             /api/configurations/import — observed on procest#758.
+
+             28-31 remain untested by this repo's own CI, exactly as #2378
+             observed. That is a coverage gap, and it is a separate thing from
+             declaring the versions unsupported: the eight repos above ARE the
+             coverage, and they were green on 31 until the floor moved. -->
+        <nextcloud min-version="28" max-version="34"/>
     </dependencies>
 
 	<repair-steps>
