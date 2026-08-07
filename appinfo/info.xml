@@ -75,7 +75,7 @@ Vrij en open source onder de EUPL-licentie.
              provider is registered. CI has run against nextcloud:32-apache
              for a while and the dev stack is on 34, so nothing was testing
              28-31 either. -->
-        <nextcloud min-version="32" max-version="34"/>
+        <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
 	<repair-steps>
