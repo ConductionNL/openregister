@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * OpenRegister Webhook
+ *
+ * This file contains the entity class for webhook subscriptions
+ * in the OpenRegister application.
+ *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
