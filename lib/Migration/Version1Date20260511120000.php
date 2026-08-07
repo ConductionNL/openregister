@@ -44,8 +44,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the notification dispatch log table for idempotency-key dedup.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260511120000 extends SimpleMigrationStep
 {

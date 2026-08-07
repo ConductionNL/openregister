@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
+ * @spec openspec/specs/saas-multi-tenant/spec.md
  */
 
 declare(strict_types=1);
@@ -50,8 +50,6 @@ class Version1Date20260511100000 extends SimpleMigrationStep
      * @param array<array-key, mixed> $options       Migration options
      *
      * @return null|ISchemaWrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

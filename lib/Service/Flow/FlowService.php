@@ -385,6 +385,7 @@ class FlowService
      * @return FlowRun The queued run.
      *
      * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+     * @throws FlowDeadEnd          When a node's token has nowhere to go, so the run is refused.
      *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */

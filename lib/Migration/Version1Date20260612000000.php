@@ -50,8 +50,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the openregister_notification_dedupe table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260612000000 extends SimpleMigrationStep
 {

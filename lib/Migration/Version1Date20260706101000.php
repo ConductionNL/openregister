@@ -81,8 +81,6 @@ class Version1Date20260706101000 extends SimpleMigrationStep
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void

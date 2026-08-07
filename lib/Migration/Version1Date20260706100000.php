@@ -56,6 +56,7 @@ use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
+use Psr\Container\ContainerInterface;
 
 /**
  * Creates the `openregister_vec_ann` pgvector sidecar table and its HNSW index on PostgreSQL.
@@ -83,12 +84,17 @@ class Version1Date20260706100000 extends SimpleMigrationStep
     /**
      * Constructor.
      *
-     * @param IDBConnection $connection Database connection
-     * @param IConfig       $config     Nextcloud config
+     * @param IDBConnection      $connection Database connection
+     * @param IConfig            $config     Nextcloud config
+     * @param ContainerInterface $container  App container, used to resolve the
+     *                                       embedding services lazily so a DI
+     *                                       failure during upgrade degrades
+     *                                       instead of aborting
      */
     public function __construct(
         private readonly IDBConnection $connection,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly ContainerInterface $container
     ) {
     }//end __construct()
 
@@ -100,8 +106,6 @@ class Version1Date20260706100000 extends SimpleMigrationStep
      * @param array   $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/hybrid-document-search/tasks.md#1.1
      */
@@ -199,8 +203,8 @@ class Version1Date20260706100000 extends SimpleMigrationStep
         // 1. Currently-configured embedding model (SettingsService), resolved
         // lazily so a DI failure during upgrade degrades instead of aborting.
         try {
-            $settingsService = \OCP\Server::get(SettingsService::class);
-            $generator       = \OCP\Server::get(EmbeddingGeneratorHandler::class);
+            $settingsService = $this->container->get(SettingsService::class);
+            $generator       = $this->container->get(EmbeddingGeneratorHandler::class);
 
             if ($settingsService instanceof SettingsService
                 && $generator instanceof EmbeddingGeneratorHandler

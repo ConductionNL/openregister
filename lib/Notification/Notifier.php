@@ -23,11 +23,11 @@
 
 namespace OCA\OpenRegister\Notification;
 
-use InvalidArgumentException;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
+use OCP\Notification\UnknownNotificationException;
 
 /**
  * Class Notifier
@@ -87,7 +87,11 @@ class Notifier implements INotifier
      * @param string        $languageCode The language code
      *
      * @return INotification The prepared notification
-     * @throws InvalidArgumentException If the notification is not from this app
+     * @throws UnknownNotificationException If the notification is not from this app
+     *
+     * Declining a notification that is not ours is routine — every notifier is
+     * offered every notification. Nextcloud deprecated InvalidArgumentException
+     * here and logs a warning per throw, so the routine case was filling the log.
      *
      * @spec openspec/specs/notificatie-engine/spec.md
      */
@@ -95,7 +99,7 @@ class Notifier implements INotifier
     {
         if ($notification->getApp() !== 'openregister') {
             // Not our notification.
-            throw new InvalidArgumentException('Unknown app');
+            throw new UnknownNotificationException('Unknown app');
         }
 
         $l = $this->factory->get('openregister', $languageCode);
@@ -117,7 +121,7 @@ class Notifier implements INotifier
                 // Unknown subject. Object-lifecycle subjects
                 // (object_created / object_updated / object_transitioned)
                 // are rendered by AnnotationNotifier, not here.
-                throw new InvalidArgumentException('Unknown subject');
+                throw new UnknownNotificationException('Unknown subject');
         }//end switch
     }//end prepare()
 

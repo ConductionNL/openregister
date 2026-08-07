@@ -11,7 +11,7 @@ import { defineStore } from 'pinia'
  * @package
  * @author Conduction Development Team
  * @copyright 2024
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
 export const useViewsStore = defineStore('views', {

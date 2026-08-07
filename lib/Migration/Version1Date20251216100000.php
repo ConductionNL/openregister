@@ -41,7 +41,6 @@ class Version1Date20251216100000 extends SimpleMigrationStep
      *
      * @return null|ISchemaWrapper
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */

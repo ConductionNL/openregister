@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Visual-regression baseline for the mdm-survivorship-override change
  * (ADR-045 follow-on #E, hydra gate-26). Covers the one new surface:

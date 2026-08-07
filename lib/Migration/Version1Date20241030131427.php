@@ -17,12 +17,6 @@
 
 declare(strict_types=1);
 
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
-
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
@@ -35,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration step for adding hard_validation and archive columns to schemas table
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241030131427 extends SimpleMigrationStep
 {
@@ -48,8 +40,6 @@ class Version1Date20241030131427 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -63,8 +53,6 @@ class Version1Date20241030131427 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -138,8 +126,6 @@ class Version1Date20241030131427 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

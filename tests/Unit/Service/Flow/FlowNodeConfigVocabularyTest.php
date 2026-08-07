@@ -183,10 +183,23 @@ class FlowNodeConfigVocabularyTest extends TestCase
      */
     private function flowWith(array $edge, string $name='test-flow'): array
     {
+        // The step is the NODE now (or-flow-action-nodes), so what these tests
+        // call an "edge" is a node. The parameter name is kept because every
+        // caller passes a step-shaped array and the subject of the tests —
+        // which config keys a node actually reads — is unchanged.
         return [
             'name'  => $name,
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [(['from' => 'a', 'to' => 'b'] + $edge)],
+            // `$edge` FIRST: `+` keeps the left operand's keys, so putting the
+            // default id on the left would discard the caller's own id and
+            // every "names the offending step" assertion would look for a step
+            // that no longer exists by that name.
+            // `exit` so a one-node fixture is a COMPLETE document, not a dead
+            // end. This suite is about a node's config vocabulary; without the
+            // flag every fixture would also collect a connectivity warning and
+            // each "exactly one finding" assertion would be counting two
+            // unrelated things.
+            'nodes' => [($edge + ['id' => 'a', 'exit' => true])],
+            'edges' => [],
         ];
 
     }//end flowWith()
@@ -215,12 +228,12 @@ class FlowNodeConfigVocabularyTest extends TestCase
 
         $report = $this->preflight()->inspect(flow: $flow);
 
-        $this->assertCount(1, $report['blocking'], 'One edge, one finding.');
+        $this->assertCount(1, $report['blocking'], 'One step, one finding.');
         $this->assertSame(
             FlowNodePreflight::REASON_CONFIG_UNKNOWN_KEY,
             $report['blocking'][0]['reason']
         );
-        $this->assertSame('give-up', $report['blocking'][0]['edge']);
+        $this->assertSame('give-up', $report['blocking'][0]['step']);
         $this->assertStringContainsString('status', $report['blocking'][0]['detail']);
         $this->assertStringContainsString('reason', $report['blocking'][0]['detail']);
         // The message must say what the node DOES read, or the author is left

@@ -64,6 +64,14 @@ parameters:
         - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
         - '#on an unknown class OCP\\ContextChat\\#'
         - '#has invalid type OCP\\ContextChat\\#'
+        # The RETURN-type variant, which the line above does not cover: phpstan
+        # words a parameter/property as "has invalid type" and a return as "has
+        # invalid return type". Needed since ContextChatSubmissionListener
+        # resolves IContentManager lazily and returns `?IContentManager` from a
+        # private accessor. The OCA\Bookmarks block above — the same
+        # optional-peer-resolved-behind-a-guard shape — already carries its own
+        # `has invalid return type` entry for exactly this reason.
+        - '#has invalid return type OCP\\ContextChat\\#'
         - '#implements unknown interface OCP\\ContextChat\\#'
         - '#unknown class OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
         - '#OCP\\SystemTag\\Tag(Assigned|Unassigned)Event not found#'

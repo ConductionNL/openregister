@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds nullable `tool_id`, `params_digest`, `result_summary` columns to the
  * `openregister_audit_trails` table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260712130000 extends SimpleMigrationStep
 {

@@ -47,7 +47,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
-  <violation rule="PHPMD\Rule\Design\CountInLoopExpression" file="lib/ContextChat/ContentProvider.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/ContextChat/ContentProvider.php" method="resolveOptedInPairs"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Controller/AggregationController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/AggregationController.php" method="grouped"/>
@@ -251,21 +250,13 @@
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/File/Pdf/PdfTextReplacer.php"/>
   <violation rule="PHPMD\Rule\ExcessivePublicCount" file="lib/Service/FileService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FileService.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Flow/FlowActionService.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Flow/FlowActionService.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Flow/FlowActionService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Flow/FlowActionService.php" method="run"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Flow/FlowActionService.php" method="run"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Flow/FlowActionService.php" method="runNamedFlow"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/Flow/FlowActionService.php" method="runNamedFlow"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Flow/FlowActionService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Flow/FlowActionService.php" method="runAction"/>
-  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/Flow/FlowActionService.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Flow/FlowEngine.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Flow/FlowEngine.php" method="run"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Flow/FlowEngine.php" method="run"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowEngine.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowExpression.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowItemPlacement.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Flow/FlowTokenRouter.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/Flow/FlowExpression.php" method="registerOperators"/>
   <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/Flow/FlowExpression.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Flow/FlowItems.php"/>
@@ -290,7 +281,6 @@
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Gdpr/Policy/DsarPolicyPackResolver.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Geo/GeoFeatureCollectionBuilder.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Geo/GeoFeatureCollectionBuilder.php"/>
-  <violation rule="PHPMD\Rule\Design\CountInLoopExpression" file="lib/Service/Geo/GeoFeatureCollectionBuilder.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Geo/GeoFeatureCollectionBuilder.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Geo/GeoJsonGeometryValidator.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Geo/PdokGeocoder.php"/>
@@ -485,7 +475,6 @@
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="importJsonLd"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="importCsvValueList"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/VocabularyImportService.php" method="importCsvValueList"/>
-  <violation rule="PHPMD\Rule\Design\CountInLoopExpression" file="lib/Service/VocabularyImportService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="extractLangMap"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/VocabularyImportService.php" method="extractLangMap"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/VocabularyImportService.php" method="extractIdRefs"/>

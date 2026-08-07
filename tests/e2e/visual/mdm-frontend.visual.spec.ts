@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Visual-regression baselines for the mdm-frontend change (ADR-045 #3,
  * hydra gate-26). Each of the four new "Data quality" views —

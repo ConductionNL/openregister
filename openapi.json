@@ -5,7 +5,7 @@
         "version": "0.0.1",
         "description": "Open Register",
         "license": {
-            "name": "agpl"
+            "name": "EUPL-1.2"
         }
     },
     "components": {

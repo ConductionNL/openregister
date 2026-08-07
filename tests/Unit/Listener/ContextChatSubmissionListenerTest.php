@@ -33,6 +33,7 @@ use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,8 +60,19 @@ class ContextChatSubmissionListenerTest extends TestCase
         $this->contentManager    = $this->createMock(IContentManager::class);
         $this->userManager       = $this->createMock(IUserManager::class);
 
+        // The listener no longer takes IContentManager directly — it resolves
+        // it from the container at call time, because a constructor typehint on
+        // an `OCP\ContextChat` type is fatal on NC 28-32, where that namespace
+        // does not exist, and this listener is resolved on EVERY object write.
+        // The container stands in so every behavioural assertion below is
+        // unchanged: they still observe the same mock.
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturnCallback(
+            fn (string $id) => $id === IContentManager::class ? $this->contentManager : null
+        );
+
         $this->listener = new ContextChatSubmissionListener(
-            $this->contentManager,
+            $container,
             $this->schemaMapper,
             $this->permissionHandler,
             $this->userManager,

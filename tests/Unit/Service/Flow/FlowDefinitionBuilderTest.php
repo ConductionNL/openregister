@@ -1,7 +1,11 @@
 <?php
 
 /**
- * Unit tests for FlowDefinitionBuilder — the flow document -> Petri net translator.
+ * Unit tests for FlowDefinitionBuilder — the flow document -> Petri net lowering.
+ *
+ * A node is an ACTION carrying `type`/`config`; an edge is SEQUENCE. The Petri
+ * net is what the engine executes, not what an author writes
+ * (or-flow-action-nodes).
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -12,6 +16,10 @@ namespace Unit\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Workflow\Definition;
+use Symfony\Component\Workflow\Marking;
+use Symfony\Component\Workflow\MarkingStore\MethodMarkingStore;
+use Symfony\Component\Workflow\Workflow;
 
 class FlowDefinitionBuilderTest extends TestCase
 {
@@ -22,173 +30,272 @@ class FlowDefinitionBuilderTest extends TestCase
         $this->builder = new FlowDefinitionBuilder();
     }
 
-    public function testNodesBecomePlacesAndEdgesBecomeTransitions(): void
+    /**
+     * A node carrying a step type, for brevity in the fixtures below.
+     */
+    private function node(string $id, array $extra=[]): array
+    {
+        return array_merge(['id' => $id, 'type' => 'openregister.set-fields'], $extra);
+    }
+
+    /**
+     * The transition lowered from a given node.
+     */
+    private function transitionFor(Definition $definition, string $nodeId)
+    {
+        foreach ($definition->getTransitions() as $transition) {
+            if ($transition->getName() === $nodeId) {
+                return $transition;
+            }
+        }
+
+        $this->fail(sprintf('No transition was lowered for node "%s".', $nodeId));
+    }
+
+    public function testEachNodeBecomesOneTransitionCarryingItsOwnStep(): void
     {
         $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
+            'nodes' => [$this->node('a'), $this->node('b')],
             'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
         ]);
 
-        // Definition::getPlaces() is keyed by place name, not a list.
-        $this->assertSame(['a', 'b'], array_keys($definition->getPlaces()));
-        $this->assertCount(1, $definition->getTransitions());
-        $this->assertSame('go', $definition->getTransitions()[0]->getName());
+        // Two actions, two transitions — named for the nodes, not the edge.
+        $this->assertCount(2, $definition->getTransitions());
+        $this->assertSame(['a'], $this->transitionFor($definition, 'a')->getFroms());
+        $this->assertSame(['b'], $this->transitionFor($definition, 'a')->getTos());
     }
 
-    public function testAnEdgeMayUseSourceTargetAsWellAsFromTo(): void
+    public function testAPlaceIsNamedAfterItsNodeSoRoutingAndMarkingsStayReadable(): void
     {
-        // The canvas emits {source, target}; stored documents use {from, to}.
-        // Accepting both keeps CnGraphCanvas's payload directly runnable.
+        // Load-bearing, not cosmetic: FlowEngine matches an item's per-item
+        // routing tag against the output PLACE name, and a routing step tags
+        // items with the node it routes to. A prefixed place name matches
+        // nothing and silently drops every routed item.
         $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'go', 'source' => 'a', 'target' => 'b']],
+            'nodes' => [$this->node('a'), $this->node('b')],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
         ]);
 
-        $this->assertSame(['a'], $definition->getTransitions()[0]->getFroms());
-        $this->assertSame(['b'], $definition->getTransitions()[0]->getTos());
+        $this->assertContains('a', array_keys($definition->getPlaces()));
+        $this->assertContains('b', array_keys($definition->getPlaces()));
     }
 
-    public function testAnEdgeToSeveralNodesIsAParallelSplit(): void
+    public function testANodeWithSeveralOutgoingEdgesIsAParallelSplit(): void
     {
         $definition = $this->builder->build([
-            'nodes' => [['id' => 'start'], ['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'fork', 'from' => 'start', 'to' => ['a', 'b']]],
-        ]);
-
-        $this->assertSame(['a', 'b'], $definition->getTransitions()[0]->getTos());
-    }
-
-    public function testAnEdgeFromSeveralNodesIsASynchronisingJoin(): void
-    {
-        $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'done']],
-            'edges' => [['id' => 'join', 'from' => ['a', 'b'], 'to' => 'done']],
-        ]);
-
-        $this->assertSame(['a', 'b'], $definition->getTransitions()[0]->getFroms());
-    }
-
-    public function testInitialPlacesAreInferredAsTheGraphSources(): void
-    {
-        $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
+            'nodes' => [$this->node('start'), $this->node('a'), $this->node('b')],
             'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'c'],
+                ['id' => 'l', 'from' => 'start', 'to' => 'a'],
+                ['id' => 'r', 'from' => 'start', 'to' => 'b'],
             ],
         ]);
 
-        // Only 'a' is pointed at by nothing.
+        $this->assertSame(['a', 'b'], $this->transitionFor($definition, 'start')->getTos());
+    }
+
+    public function testAnEdgeFanningOutToSeveralNodesIsAlsoASplit(): void
+    {
+        $definition = $this->builder->build([
+            'nodes' => [$this->node('start'), $this->node('a'), $this->node('b')],
+            'edges' => [['id' => 'both', 'from' => 'start', 'to' => ['a', 'b']]],
+        ]);
+
+        $this->assertSame(['a', 'b'], $this->transitionFor($definition, 'start')->getTos());
+    }
+
+    /**
+     * THE regression that matters most.
+     *
+     * Converging edges default to a MERGE — the node runs when any one
+     * predecessor finishes. Lowering them to a join instead would require all of
+     * them, and the live Hydra sequencer (whose exit is reached from several
+     * mutually exclusive paths) would deadlock on every run while still
+     * producing a perfectly valid definition. Silent, and only visible in
+     * production.
+     */
+    public function testConvergingEdgesAreAMergeSoTheNodeFiresAfterOnePredecessor(): void
+    {
+        $flow = [
+            'nodes' => [$this->node('x'), $this->node('y'), $this->node('done')],
+            'edges' => [
+                ['id' => 'xd', 'from' => 'x', 'to' => 'done'],
+                ['id' => 'yd', 'from' => 'y', 'to' => 'done'],
+            ],
+        ];
+
+        $definition = $this->builder->build($flow);
+
+        // One shared input place, so either predecessor enables it.
+        $this->assertSame(['done'], $this->transitionFor($definition, 'done')->getFroms());
+
+        // And prove it against the real engine, not just the shape.
+        $workflow = new Workflow($definition, new MethodMarkingStore(false, 'marking'));
+        $subject  = new class {
+            public array $marking = ['x' => 1];
+        };
+
+        $this->assertTrue(
+            $workflow->can($subject, 'x'),
+            'The flow should be able to start at x.'
+        );
+
+        $workflow->apply($subject, 'x');
+        $this->assertTrue(
+            $workflow->can($subject, 'done'),
+            'A merge must fire after ONE predecessor; requiring both would deadlock the flow.'
+        );
+    }
+
+    public function testADeclaredJoinWaitsForEveryIncomingEdge(): void
+    {
+        $definition = $this->builder->build([
+            'nodes' => [$this->node('x'), $this->node('y'), $this->node('done', ['join' => true])],
+            'edges' => [
+                ['id' => 'xd', 'from' => 'x', 'to' => 'done'],
+                ['id' => 'yd', 'from' => 'y', 'to' => 'done'],
+            ],
+        ]);
+
+        // One input place per incoming edge — that is what makes it synchronise.
+        $this->assertSame(['done#xd', 'done#yd'], $this->transitionFor($definition, 'done')->getFroms());
+
+        $workflow = new Workflow($definition, new MethodMarkingStore(false, 'marking'));
+        $subject  = new class {
+            public array $marking = ['x' => 1, 'y' => 1];
+        };
+
+        $workflow->apply($subject, 'x');
+        $this->assertFalse(
+            $workflow->can($subject, 'done'),
+            'A join must NOT fire on one token.'
+        );
+
+        $workflow->apply($subject, 'y');
+        $this->assertTrue(
+            $workflow->can($subject, 'done'),
+            'A join must fire once every input holds a token.'
+        );
+    }
+
+    public function testASinkNodeGetsATerminalPlaceSoItCanStillFire(): void
+    {
+        $definition = $this->builder->build([
+            'nodes' => [$this->node('a'), $this->node('b')],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
+        ]);
+
+        $this->assertSame(['end:b'], $this->transitionFor($definition, 'b')->getTos());
+    }
+
+    public function testInitialPlacesAreInferredAsTheFlowSources(): void
+    {
+        $definition = $this->builder->build([
+            'nodes' => [$this->node('a'), $this->node('b'), $this->node('c')],
+            'edges' => [
+                ['id' => 'ab', 'from' => 'a', 'to' => 'b'],
+                ['id' => 'bc', 'from' => 'b', 'to' => 'c'],
+            ],
+        ]);
+
         $this->assertSame(['a'], $definition->getInitialPlaces());
     }
 
-    public function testAnExplicitInitialOverridesInference(): void
+    public function testAnExplicitInitialNamesANodeAndOverridesInference(): void
     {
         $definition = $this->builder->build([
-            'nodes'   => [['id' => 'a'], ['id' => 'b']],
-            'edges'   => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
+            'nodes'   => [$this->node('a'), $this->node('b')],
+            'edges'   => [['id' => 'ab', 'from' => 'a', 'to' => 'b']],
             'initial' => 'b',
         ]);
 
         $this->assertSame(['b'], $definition->getInitialPlaces());
     }
 
-    public function testAFullyCyclicGraphStartsOnItsFirstNodeRatherThanRefusingToBuild(): void
+    public function testAFullyCyclicFlowStartsOnItsFirstNodeRatherThanRefusingToBuild(): void
     {
-        // Every node is targeted, so there is no source. A loop is a legitimate
-        // thing to draw; declaration order is the only signal we have.
         $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
+            'nodes' => [$this->node('a'), $this->node('b')],
             'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'a'],
+                ['id' => 'ab', 'from' => 'a', 'to' => 'b'],
+                ['id' => 'ba', 'from' => 'b', 'to' => 'a'],
             ],
         ]);
 
         $this->assertSame(['a'], $definition->getInitialPlaces());
     }
 
+    // ---------------------------------------------------------------------
+    // Refusals. Each names the offending element; each has a positive control
+    // proving the same document builds once corrected.
+    // ---------------------------------------------------------------------
+
+    public function testAnEdgeCarryingAStepIsRefusedAsPreInversionRatherThanReinterpreted(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/"scope".*pre-inversion|pre-inversion.*"scope"/s');
+
+        $this->builder->build([
+            'nodes' => [['id' => 'a'], ['id' => 'b']],
+            'edges' => [['id' => 'scope', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.set-fields']],
+        ]);
+    }
+
+    public function testTheSameFlowBuildsOnceTheStepMovesOntoTheNode(): void
+    {
+        // Positive control for the refusal above: the shape is the only
+        // difference, so a green refusal test cannot be a false alarm.
+        $definition = $this->builder->build([
+            'nodes' => [$this->node('a'), $this->node('b')],
+            'edges' => [['id' => 'scope', 'from' => 'a', 'to' => 'b']],
+        ]);
+
+        $this->assertCount(2, $definition->getTransitions());
+    }
+
+    public function testANodeWithoutAStepTypeIsRefusedByName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/gap/');
+
+        $this->builder->build([
+            'nodes' => [$this->node('a'), ['id' => 'gap']],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'gap']],
+        ]);
+    }
+
     public function testAnEdgeToAnUnknownNodeIsRejectedByNameRatherThanFailingLater(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow edge "ghost" references unknown node "nowhere".');
+        $this->expectExceptionMessageMatches('/ghost.*nowhere|nowhere.*ghost/s');
 
         $this->builder->build([
-            'nodes' => [['id' => 'a']],
+            'nodes' => [$this->node('a')],
             'edges' => [['id' => 'ghost', 'from' => 'a', 'to' => 'nowhere']],
         ]);
     }
 
     public function testADuplicateNodeIdIsRejected(): void
     {
-        // Two nodes collapsing into one place would run, but would not be the
-        // graph the user drew.
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow declares node id "a" more than once.');
+        $this->expectExceptionMessageMatches('/more than once/');
 
         $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'a']],
+            'nodes' => [$this->node('a'), $this->node('a')],
             'edges' => [],
         ]);
-    }
-
-    public function testANodeCarryingStepConfigIsRejected(): void
-    {
-        // The step is the EDGE. A `type` on a node is never read, so accepting
-        // this yields a graph where every transition is a pass-through and the
-        // run reports COMPLETED having done nothing — silently. Three graphs in
-        // the fleet were authored this way and none of them failed anywhere
-        // (or#2226).
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow node "a" carries "type"/"config", which the engine never reads');
-
-        $this->builder->build([
-            'nodes' => [['id' => 'a', 'type' => 'openregister.stop'], ['id' => 'b']],
-            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
-        ]);
-    }
-
-    public function testANodeCarryingOnlyConfigIsAlsoRejected(): void
-    {
-        // `config` without `type` is the same authoring mistake half-made, and
-        // it is just as invisible at run time.
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow node "a" carries "type"/"config"');
-
-        $this->builder->build([
-            'nodes' => [['id' => 'a', 'config' => ['error' => false]], ['id' => 'b']],
-            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
-        ]);
-    }
-
-    public function testANodeMayCarryPresentationalKeys(): void
-    {
-        // The rejection is about EXECUTABLE config only. A canvas legitimately
-        // stores position, label and styling on a node, and refusing those
-        // would make every drawn graph unbuildable.
-        $definition = $this->builder->build([
-            'nodes' => [
-                ['id' => 'a', 'position' => ['x' => 0, 'y' => 0], 'label' => 'Start', 'colour' => '#21468B'],
-                ['id' => 'b', 'position' => ['x' => 100, 'y' => 0]],
-            ],
-            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.stop']],
-        ]);
-
-        $this->assertNotNull($definition);
     }
 
     public function testANodeWithoutAnIdIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow node at index 1 has no id.');
 
-        $this->builder->build(['nodes' => [['id' => 'a'], ['label' => 'oops']], 'edges' => []]);
+        $this->builder->build(['nodes' => [['type' => 'openregister.set-fields']], 'edges' => []]);
     }
 
     public function testAFlowWithoutNodesIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow declares no nodes; nothing to run.');
+        $this->expectExceptionMessageMatches('/no nodes/');
 
         $this->builder->build(['nodes' => [], 'edges' => []]);
     }
@@ -196,23 +303,33 @@ class FlowDefinitionBuilderTest extends TestCase
     public function testAnEdgeMissingAnEndpointIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Flow edge at index 0 must declare both "from" and "to".');
 
-        $this->builder->build(['nodes' => [['id' => 'a']], 'edges' => [['id' => 'half', 'from' => 'a']]]);
+        $this->builder->build([
+            'nodes' => [$this->node('a'), $this->node('b')],
+            'edges' => [['id' => 'half', 'from' => 'a']],
+        ]);
     }
 
-    public function testEdgesSharingANameAreNotMerged(): void
+    public function testAnInitialNamingAnUnknownNodeIsRejected(): void
     {
-        // Two "approve" edges from different nodes are two transitions, as drawn.
-        // Merging them would invent a join the user never asked for.
-        $definition = $this->builder->build([
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'done']],
-            'edges' => [
-                ['id' => 'e1', 'name' => 'approve', 'from' => 'a', 'to' => 'done'],
-                ['id' => 'e2', 'name' => 'approve', 'from' => 'b', 'to' => 'done'],
-            ],
-        ]);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/nowhere/');
 
-        $this->assertCount(2, $definition->getTransitions());
+        $this->builder->build([
+            'nodes'   => [$this->node('a')],
+            'edges'   => [],
+            'initial' => 'nowhere',
+        ]);
+    }
+
+    public function testASingleNodeFlowIsRunnable(): void
+    {
+        // The smallest legitimate flow: one action, no edges. It must still be
+        // a source and still have somewhere to put its token.
+        $definition = $this->builder->build(['nodes' => [$this->node('only')], 'edges' => []]);
+
+        $this->assertSame(['only'], $definition->getInitialPlaces());
+        $this->assertSame(['only'], $this->transitionFor($definition, 'only')->getFroms());
+        $this->assertSame(['end:only'], $this->transitionFor($definition, 'only')->getTos());
     }
 }

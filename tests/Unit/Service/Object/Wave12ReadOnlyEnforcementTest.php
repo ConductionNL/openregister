@@ -57,7 +57,8 @@ class Wave12ReadOnlyEnforcementTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $this->urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
     }//end setUp()
 

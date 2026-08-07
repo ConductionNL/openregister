@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  */
 
@@ -74,7 +74,8 @@ class ValidateObjectTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $this->urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
     }
 
@@ -3076,7 +3077,8 @@ class ValidateObjectTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
 
         $refSchema = $this->createSchema([]);
@@ -3108,7 +3110,8 @@ class ValidateObjectTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
 
         $uri = Uri::create('http://localhost/index.php/apps/openregister/api/files/schema/42');
@@ -3642,7 +3645,8 @@ class ValidateObjectTest extends TestCase
             $this->objectMapper,
             $this->schemaMapper,
             $this->urlGenerator,
-            $this->logger
+            $this->logger,
+            $this->createMock(\OCP\IUserManager::class)
         );
 
         $uri = Uri::create('http://localhost/index.php/apps/openregister/api/schemas/1');

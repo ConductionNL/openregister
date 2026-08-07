@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
  * The column stores an array of UUID-shaped strings referencing legal-basis
  * objects in the consuming app's register (e.g. DocuDesk's `base` schema).
  * OpenRegister stores the array verbatim; no UUID validation is performed.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260603000000 extends SimpleMigrationStep
 {

@@ -100,15 +100,24 @@ class FlowEngineTest extends TestCase
         );
     }//end runFlow()
 
+    /**
+     * A node is the ACTION and an edge is SEQUENCE (or-flow-action-nodes).
+     *
+     * These fixtures used to be the inverse — nodes were bare places and the
+     * step rode on the edge — so converting them is the graph dual: the two
+     * STEPS (`first`, `second`) become the two nodes, and the place they met at
+     * becomes the edge between them. The step count and order are unchanged,
+     * which is why every assertion below still reads the same.
+     */
     private function linearFlow(): array
     {
         return [
             'id'    => 'linear',
-            'nodes' => [['id' => 'start'], ['id' => 'middle'], ['id' => 'end']],
-            'edges' => [
-                ['id' => 'first', 'from' => 'start', 'to' => 'middle'],
-                ['id' => 'second', 'from' => 'middle', 'to' => 'end'],
+            'nodes' => [
+                ['id' => 'first', 'type' => 'test.step'],
+                ['id' => 'second', 'type' => 'test.step'],
             ],
+            'edges' => [['id' => 'first-second', 'from' => 'first', 'to' => 'second']],
         ];
     }//end linearFlow()
 
@@ -239,18 +248,20 @@ class FlowEngineTest extends TestCase
                 [
                     'id'    => 'parallel',
                     'nodes' => [
-                        ['id' => 'start'],
-                        ['id' => 'a_pending'],
-                        ['id' => 'b_pending'],
-                        ['id' => 'a_done'],
-                        ['id' => 'b_done'],
-                        ['id' => 'done'],
+                        ['id' => 'fork', 'type' => 'test.step'],
+                        ['id' => 'do_a', 'type' => 'test.step'],
+                        ['id' => 'do_b', 'type' => 'test.step'],
+                        // `join: true` is what makes this a SYNCHRONISING join.
+                        // Converging edges alone are a merge — the node fires
+                        // after whichever predecessor arrives first — because
+                        // that is the behaviour real flows depend on.
+                        ['id' => 'join', 'type' => 'test.step', 'join' => true],
                     ],
                     'edges' => [
-                        ['id' => 'fork', 'from' => 'start', 'to' => ['a_pending', 'b_pending']],
-                        ['id' => 'do_a', 'from' => 'a_pending', 'to' => 'a_done'],
-                        ['id' => 'do_b', 'from' => 'b_pending', 'to' => 'b_done'],
-                        ['id' => 'join', 'from' => ['a_done', 'b_done'], 'to' => 'done'],
+                        ['id' => 'fork-a', 'from' => 'fork', 'to' => 'do_a'],
+                        ['id' => 'fork-b', 'from' => 'fork', 'to' => 'do_b'],
+                        ['id' => 'a-join', 'from' => 'do_a', 'to' => 'join'],
+                        ['id' => 'b-join', 'from' => 'do_b', 'to' => 'join'],
                     ],
                 ],
                 $dispatcher
@@ -266,29 +277,42 @@ class FlowEngineTest extends TestCase
 
     public function testAJoinNeverFiresWhenOnlyOneBranchCanArrive(): void
     {
-        // 'b' has no inbound edge and is not a source of the taken path, so the
-        // join can never be enabled. The run stops where the graph stops rather
-        // than firing a half-satisfied join.
+        // The run starts at 'a', so 'b' never fires and the join's second input
+        // never receives a token. The run stops where the flow stops rather than
+        // firing a half-satisfied join.
         $dispatcher = new RecordingDispatcher();
         $result     = $this->runFlow(
                 [
                     'id'      => 'starved-join',
-                    'nodes'   => [['id' => 'a'], ['id' => 'b'], ['id' => 'done']],
-                    'edges'   => [['id' => 'join', 'from' => ['a', 'b'], 'to' => 'done']],
+                    'nodes'   => [
+                        ['id' => 'a', 'type' => 'test.step'],
+                        ['id' => 'b', 'type' => 'test.step'],
+                        ['id' => 'done', 'type' => 'test.step', 'join' => true],
+                    ],
+                    'edges'   => [
+                        ['id' => 'a-done', 'from' => 'a', 'to' => 'done'],
+                        ['id' => 'b-done', 'from' => 'b', 'to' => 'done'],
+                    ],
                     'initial' => 'a',
                 ],
                 $dispatcher
                 );
 
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
-        $this->assertSame([], $dispatcher->dispatched);
+
+        // 'a' IS an action now and does run — under the previous model it was a
+        // bare place, which is why this used to assert that nothing dispatched
+        // at all. What the test is really about is the JOIN, and that must not
+        // fire on one token.
+        $this->assertSame(['a'], $dispatcher->dispatched);
+        $this->assertNotContains('done', $dispatcher->dispatched, 'A starved join must never fire.');
     }//end testAJoinNeverFiresWhenOnlyOneBranchCanArrive()
 
     public function testOnErrorStopHaltsTheRunAndRecordsTheFailure(): void
     {
         $dispatcher = new RecordingDispatcher(failOn: 'first');
         $flow       = $this->linearFlow();
-        $flow['edges'][0]['onError'] = FlowEngine::ON_ERROR_STOP;
+        $flow['nodes'][0]['onError'] =FlowEngine::ON_ERROR_STOP;
 
         $result = $this->runFlow($flow, $dispatcher);
 
@@ -302,7 +326,7 @@ class FlowEngineTest extends TestCase
     {
         $dispatcher = new RecordingDispatcher(failOn: 'first');
         $flow       = $this->linearFlow();
-        $flow['edges'][0]['onError'] = FlowEngine::ON_ERROR_CONTINUE;
+        $flow['nodes'][0]['onError'] =FlowEngine::ON_ERROR_CONTINUE;
 
         $result = $this->runFlow($flow, $dispatcher);
 
@@ -315,7 +339,7 @@ class FlowEngineTest extends TestCase
     {
         $dispatcher = new RecordingDispatcher(failOn: 'first');
         $flow       = $this->linearFlow();
-        $flow['edges'][0]['onError'] = FlowEngine::ON_ERROR_DEAD_LETTER;
+        $flow['nodes'][0]['onError'] =FlowEngine::ON_ERROR_DEAD_LETTER;
 
         $result = $this->runFlow($flow, $dispatcher);
 
@@ -327,7 +351,7 @@ class FlowEngineTest extends TestCase
         // A typo in `onError` must not silently mean "continue".
         $dispatcher = new RecordingDispatcher(failOn: 'first');
         $flow       = $this->linearFlow();
-        $flow['edges'][0]['onError'] = 'carry-on-regardless';
+        $flow['nodes'][0]['onError'] ='carry-on-regardless';
 
         $result = $this->runFlow($flow, $dispatcher);
 
@@ -358,7 +382,10 @@ class FlowEngineTest extends TestCase
         $result = $this->runFlow(
                 [
                     'id'    => 'loop',
-                    'nodes' => [['id' => 'a'], ['id' => 'b']],
+                    'nodes' => [
+                        ['id' => 'a', 'type' => 'test.step'],
+                        ['id' => 'b', 'type' => 'test.step'],
+                    ],
                     'edges' => [
                         ['id' => 'there', 'from' => 'a', 'to' => 'b'],
                         ['id' => 'back', 'from' => 'b', 'to' => 'a'],
@@ -470,13 +497,20 @@ class FlowEngineTest extends TestCase
             }//end dispatch()
         };
 
+        // The router tags each item with the NODE it should go to, and a node's
+        // input place is named after the node — which is exactly why the
+        // lowering must not prefix place names. Prefix them and every tagged
+        // item matches nothing and vanishes into an empty branch, silently.
         $flow = [
             'id'    => 'route',
-            'nodes' => [['id' => 'start'], ['id' => 'high'], ['id' => 'low'], ['id' => 'hEnd'], ['id' => 'lEnd']],
+            'nodes' => [
+                ['id' => 'route', 'type' => 'test.route'],
+                ['id' => 'high', 'type' => 'test.step'],
+                ['id' => 'low', 'type' => 'test.step'],
+            ],
             'edges' => [
-                ['id' => 'route', 'from' => 'start', 'to' => ['high', 'low']],
-                ['id' => 'doHigh', 'from' => 'high', 'to' => 'hEnd'],
-                ['id' => 'doLow', 'from' => 'low', 'to' => 'lEnd'],
+                ['id' => 'route-high', 'from' => 'route', 'to' => 'high'],
+                ['id' => 'route-low', 'from' => 'route', 'to' => 'low'],
             ],
         ];
 
@@ -497,10 +531,10 @@ class FlowEngineTest extends TestCase
 
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
         // High branch saw only n=7; low branch saw n=1 and n=3.
-        $this->assertSame([7], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doHigh']));
-        $this->assertSame([1, 3], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doLow']));
+        $this->assertSame([7], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['high']));
+        $this->assertSame([1, 3], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['low']));
         // The routing tag does not linger on the items the branch step sees.
-        $this->assertArrayNotHasKey('output', $router->seenItems['doHigh'][0]);
+        $this->assertArrayNotHasKey('output', $router->seenItems['high'][0]);
     }//end testPerItemRoutingSendsEachItemDownItsTaggedBranch()
 
     public function testAnUntaggedSplitStillBroadcastsToEveryBranch(): void
@@ -511,11 +545,14 @@ class FlowEngineTest extends TestCase
         $result     = $this->runFlow(
                 [
                     'id'    => 'fork',
-                    'nodes' => [['id' => 'start'], ['id' => 'a'], ['id' => 'b'], ['id' => 'aEnd'], ['id' => 'bEnd']],
+                    'nodes' => [
+                        ['id' => 'fork', 'type' => 'test.step'],
+                        ['id' => 'doA', 'type' => 'test.step'],
+                        ['id' => 'doB', 'type' => 'test.step'],
+                    ],
                     'edges' => [
-                        ['id' => 'fork', 'from' => 'start', 'to' => ['a', 'b']],
-                        ['id' => 'doA', 'from' => 'a', 'to' => 'aEnd'],
-                        ['id' => 'doB', 'from' => 'b', 'to' => 'bEnd'],
+                        ['id' => 'fork-a', 'from' => 'fork', 'to' => 'doA'],
+                        ['id' => 'fork-b', 'from' => 'fork', 'to' => 'doB'],
                     ],
                 ],
                 $dispatcher
@@ -529,8 +566,9 @@ class FlowEngineTest extends TestCase
 
     public function testRunFromHereStartsAtTheChosenNodeAndSkipsWhatIsBefore(): void
     {
-        // A three-step line start -> middle -> end. Starting at 'middle' must
-        // run only the 'second' step (middle -> end); 'first' never runs.
+        // A two-action line first -> second. Starting at 'second' must run only
+        // that action; 'first' never runs. `startAt` names a NODE, which under
+        // the previous model happened to be a place.
         $dispatcher = new RecordingDispatcher();
         $seed       = [FlowItems::item(json: ['from' => 'run-from-here'])];
 
@@ -541,7 +579,7 @@ class FlowEngineTest extends TestCase
             $dispatcher,
             [],
             $seed,
-            'middle'
+            'second'
         );
 
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -582,11 +620,11 @@ class FlowEngineTest extends TestCase
         $this->assertSame(['first', 'second'], $dispatcher->dispatched);
     }//end testAnEmptyStartAtIsIgnoredAndTheFlowRunsFromItsStart()
 
-    public function testAStepCarriesItsOwnEdgeConfigToTheDispatcher(): void
+    public function testAStepCarriesItsOwnNodeConfigToTheDispatcher(): void
     {
         $flow = $this->linearFlow();
-        $flow['edges'][0]['type']      = 'email';
-        $flow['edges'][0]['configRef'] = 'abc-123';
+        $flow['nodes'][0]['type']      = 'email';
+        $flow['nodes'][0]['configRef'] = 'abc-123';
 
         $seen       = null;
         $dispatcher = new class($seen) implements FlowStepDispatcher {
@@ -608,5 +646,5 @@ class FlowEngineTest extends TestCase
 
         $this->assertSame('email', $dispatcher->steps[0]['type']);
         $this->assertSame('abc-123', $dispatcher->steps[0]['configRef']);
-    }//end testAStepCarriesItsOwnEdgeConfigToTheDispatcher()
+    }//end testAStepCarriesItsOwnNodeConfigToTheDispatcher()
 }//end class

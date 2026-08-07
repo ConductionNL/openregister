@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister\Event
  * @author    Conduction b.v. <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/OpenRegister
  */
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Organisation;
  * @category Event
  * @package  OCA\OpenRegister\Event
  * @author   Conduction b.v. <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version  1.0.0
  * @link     https://github.com/ConductionNL/OpenRegister
  */

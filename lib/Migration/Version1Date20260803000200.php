@@ -121,8 +121,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
