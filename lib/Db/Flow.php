@@ -128,6 +128,20 @@ class Flow extends Entity implements JsonSerializable
     public const TRIGGER_SCHEDULE = 'schedule';
 
     /**
+     * The flow is runnable as far as anything has judged.
+     *
+     * Only ever written when a run is ACCEPTED. It is not a default: a flow
+     * nothing has judged has a null status, because claiming `ok` for an
+     * unexamined flow is the false green this field exists to remove.
+     */
+    public const STATUS_OK = 'ok';
+
+    /**
+     * The flow was refused, and {@see $statusMessage} says why.
+     */
+    public const STATUS_ERROR = 'error';
+
+    /**
      * Public identifier, used everywhere outside the database.
      *
      * @var string|null
@@ -288,6 +302,55 @@ class Flow extends Entity implements JsonSerializable
     protected ?DateTime $updated = null;
 
     /**
+     * The flow's own verdict: `ok`, `error`, or null for no verdict yet.
+     *
+     * Deliberately not defaulted to `ok`. A flow gains a status when something
+     * has judged it; claiming `ok` for a flow nothing has looked at would be
+     * the same false green this field exists to remove.
+     *
+     * @var string|null
+     */
+    protected ?string $status = null;
+
+    /**
+     * Why {@see $status} is what it is, naming the offending nodes.
+     *
+     * @var string|null
+     */
+    protected ?string $statusMessage = null;
+
+    /**
+     * UUID of the most recent run to reach a terminal state.
+     *
+     * @var string|null
+     */
+    protected ?string $lastRunUuid = null;
+
+    /**
+     * That run's terminal status.
+     *
+     * @var string|null
+     */
+    protected ?string $lastRunStatus = null;
+
+    /**
+     * That run's closing message, when it had one.
+     *
+     * @var string|null
+     */
+    protected ?string $lastRunMessage = null;
+
+    /**
+     * When that run reached its terminal state.
+     *
+     * Null means the flow has never run. It never means "ran at an unknown
+     * time" — no backfill invented a value for rows that predate the column.
+     *
+     * @var DateTime|null
+     */
+    protected ?DateTime $lastRunAt = null;
+
+    /**
      * Constructor: declare field types so the mapper hydrates them correctly.
      */
     public function __construct()
@@ -313,6 +376,12 @@ class Flow extends Entity implements JsonSerializable
         $this->addType(fieldName: 'notes', type: 'string');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'status', type: 'string');
+        $this->addType(fieldName: 'statusMessage', type: 'string');
+        $this->addType(fieldName: 'lastRunUuid', type: 'string');
+        $this->addType(fieldName: 'lastRunStatus', type: 'string');
+        $this->addType(fieldName: 'lastRunMessage', type: 'string');
+        $this->addType(fieldName: 'lastRunAt', type: 'datetime');
 
     }//end __construct()
 
@@ -465,6 +534,14 @@ class Flow extends Entity implements JsonSerializable
             $updated = $this->updated->format('c');
         }
 
+        // Null stays null rather than becoming an empty string: the API
+        // distinguishes "never run" from "ran and said nothing", and an empty
+        // string would collapse the two for every consumer.
+        $lastRunAt = null;
+        if ($this->lastRunAt !== null) {
+            $lastRunAt = $this->lastRunAt->format('c');
+        }
+
         return [
             'id'               => $this->uuid,
             'uuid'             => $this->uuid,
@@ -488,6 +565,12 @@ class Flow extends Entity implements JsonSerializable
             'notes'            => $this->notes,
             'created'          => $created,
             'updated'          => $updated,
+            'status'           => $this->status,
+            'statusMessage'    => $this->statusMessage,
+            'lastRunUuid'      => $this->lastRunUuid,
+            'lastRunStatus'    => $this->lastRunStatus,
+            'lastRunMessage'   => $this->lastRunMessage,
+            'lastRunAt'        => $lastRunAt,
         ];
 
     }//end jsonSerialize()
