@@ -66,11 +66,21 @@ Vrij en open source onder de EUPL-licentie.
     </documentation>
 
     <dependencies>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="34"/>
+        <!--
+            Nextcloud minimum is 32 so this app can require PHP 8.3, which is the
+            fleet-wide standard. OpenRegister is the foundation the other Conduction
+            apps build on, so its minimum sets the floor for all of them: an app may
+            not advertise a Nextcloud minimum lower than the minimum of any app it
+            depends on, or the App Store offers a version range in which the
+            dependency refuses to install. See openconnector issues 1172 and 1173.
+            The development branch of this app already declares a Nextcloud
+            minimum of 32.
+        -->
+        <nextcloud min-version="32" max-version="34"/>
     </dependencies>
 
 	<repair-steps>
