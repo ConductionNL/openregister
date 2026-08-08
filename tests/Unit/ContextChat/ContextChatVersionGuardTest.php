@@ -28,7 +28,7 @@ use ReflectionClass;
  *
  * WHY THIS EXISTS.
  *
- * `OCP\ContextChat` is core Nextcloud API only from **NC 33**. It is absent
+ * `OCP\ContextChat` is core Nextcloud API only from **NC 32**. It is absent
  * from `stable31` and `stable32`, and `appinfo/info.xml` declares
  * `min-version="28"`. Naming one of those types in a constructor is therefore
  * fatal on a supported server — `SimpleContainer::resolve()` calls
@@ -150,7 +150,7 @@ class ContextChatVersionGuardTest extends TestCase
                 actual: $offenders,
                 message: sprintf(
                     '%s::__construct($%s) is typed to %s, which requires OCP\\ContextChat to '
-                    .'load. That namespace is NC 33+ and this app supports NC 28+, so the '
+                    .'load. That namespace is NC 32+ and this app supports NC 28+, so the '
                     .'container resolving this class would fatal on stable31/stable32 — '
                     .'SimpleContainer::resolve() does `new ReflectionClass()` on each parameter '
                     .'type, and that call is the load. Resolve it lazily inside the method body '
@@ -190,7 +190,7 @@ class ContextChatVersionGuardTest extends TestCase
      *
      * Both submitContentItem() and removeContentItem() touch
      * `ContentProvider::` constants, and loading that class is fatal below
-     * NC 33 — so each needs its own guard, not just the shared resolver.
+     * NC 32 — so each needs its own guard, not just the shared resolver.
      *
      * @return void
      */

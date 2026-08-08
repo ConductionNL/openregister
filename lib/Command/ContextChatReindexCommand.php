@@ -51,7 +51,7 @@ class ContextChatReindexCommand extends Command
      * and this is not a style choice.
      *
      * `OCP\ContextChat\IContentProvider` is core Nextcloud API, but only from
-     * **NC 33**: it is absent from `stable31` and `stable32`, both of which
+     * **NC 32**: it is absent from `stable31`, which
      * this app's `info.xml` claims to support (`min-version="28"`). Because
      * {@see ContentProvider} declares `implements IContentProvider`, merely
      * LOADING that class on an older server is fatal — a class header is
@@ -120,14 +120,14 @@ class ContextChatReindexCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // See the constructor: OCP\ContextChat is NC 33+. On an older server
+        // See the constructor: OCP\ContextChat is NC 32+. On an older server
         // this command cannot run, and saying so is far better than the fatal
         // that loading ContentProvider would produce. `interface_exists()`
         // asks the autoloader without dying when the answer is no.
         if (interface_exists('OCP\\ContextChat\\IContentProvider') === false) {
             $output->writeln(
                 '<comment>Context Chat is not available on this Nextcloud version '
-                .'(OCP\\ContextChat was introduced in Nextcloud 33). Nothing to reindex.</comment>'
+                .'(OCP\\ContextChat was introduced in Nextcloud 32). Nothing to reindex.</comment>'
             );
             return Command::SUCCESS;
         }
