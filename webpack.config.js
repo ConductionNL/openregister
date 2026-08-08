@@ -270,11 +270,35 @@ webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs')
 
 // The base config sets `output.clean: true`, which wipes js/ on every build.
-// The Web Push Service Worker + opt-in client (openregister-push-client.js /
-// openregister-push-sw.js) are hand-written static assets served as-is — NOT
-// webpack entries — so keep them through the clean, otherwise the build deletes
-// them and the toggle reports "browser does not support web push".
-webpackConfig.output.clean = { keep: (asset) => asset.includes('openregister-push-') }
+// Some assets under js/ are hand-written static files served as-is — NOT
+// webpack entries — so they must survive the clean, otherwise the build
+// deletes them and they come back as a spurious deletion in the next diff.
+//
+// Keep this list in sync with `git ls-files js/`. Anything TRACKED in js/ that
+// no entry in `webpackConfig.entry` emits belongs here. Today that is:
+//
+//   openregister-push-client.js  \  Web Push opt-in client + Service Worker.
+//   openregister-push-sw.js      /  Without these the toggle reports
+//                                   "browser does not support web push".
+//
+//   openregister-flow-operator.js   Registers the "Run an OpenRegister flow"
+//                                   operation with the workflowengine admin
+//                                   UI. Loaded by
+//                                   FlowEngineRegistrationListener.php:86 via
+//                                   \OCP\Util::addScript(). Losing it 404s
+//                                   that script and the operator silently
+//                                   stops appearing in Flow settings.
+//
+// This predicate previously matched only `openregister-push-`, so every build
+// deleted the flow-operator script. It was picked up as a deletion and shipped
+// in a PR at least once (#2381) before being caught.
+const KEPT_STATIC_ASSETS = [
+	'openregister-push-',
+	'openregister-flow-operator',
+]
+webpackConfig.output.clean = {
+	keep: (asset) => KEPT_STATIC_ASSETS.some((name) => asset.includes(name)),
+}
 
 // Code-splitting (frontend-code-splitting-and-fetch-efficiency): dynamically
 // imported view chunks are fetched at runtime relative to output.publicPath.
