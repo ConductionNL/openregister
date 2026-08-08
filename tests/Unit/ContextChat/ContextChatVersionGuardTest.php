@@ -28,11 +28,18 @@ use ReflectionClass;
  *
  * WHY THIS EXISTS.
  *
- * `OCP\ContextChat` is core Nextcloud API only from **NC 32**. It is absent
- * from `stable31` and `stable32`, and `appinfo/info.xml` declares
- * `min-version="28"`. Naming one of those types in a constructor is therefore
- * fatal on a supported server — `SimpleContainer::resolve()` calls
- * `new ReflectionClass()` on every parameter type, and that call is the load.
+ * `OCP\ContextChat` is core Nextcloud API only from **NC 32**, and even on a
+ * server at or above that floor it is absent whenever the ContextChat feature
+ * itself is not present — it is not guaranteed by the Nextcloud version alone.
+ * Naming one of those types in a constructor is therefore fatal on a supported
+ * server — `SimpleContainer::resolve()` calls `new ReflectionClass()` on every
+ * parameter type, and that call is the load.
+ *
+ * NOTE ON THE FLOOR. `appinfo/info.xml` declared `min-version="28"` when this
+ * test was written; it now declares **32**. That does NOT retire this guard.
+ * The guard is about the namespace being resolvable at all, which is a
+ * property of the installed feature rather than of the server version, so the
+ * eager-constructor shape stays fatal at any floor.
  *
  * Two classes had it, and the consequences differed only in blast radius:
  *
@@ -150,8 +157,9 @@ class ContextChatVersionGuardTest extends TestCase
                 actual: $offenders,
                 message: sprintf(
                     '%s::__construct($%s) is typed to %s, which requires OCP\\ContextChat to '
-                    .'load. That namespace is NC 32+ and this app supports NC 28+, so the '
-                    .'container resolving this class would fatal on stable31/stable32 — '
+                    .'load. That namespace is not guaranteed to be resolvable on a supported '
+                    .'server — it is absent unless the ContextChat feature is installed — so '
+                    .'the container resolving this class would fatal — '
                     .'SimpleContainer::resolve() does `new ReflectionClass()` on each parameter '
                     .'type, and that call is the load. Resolve it lazily inside the method body '
                     .'instead, behind an interface_exists() guard.',
