@@ -193,6 +193,8 @@ class FederationController extends Controller
      * @param string $id         The object id or uuid.
      *
      * @return JSONResponse The object or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -201,6 +203,10 @@ class FederationController extends Controller
         $share = $this->resolveAcceptedShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid, unaccepted or revoked share'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         try {
@@ -273,6 +279,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse The updated object, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -281,6 +289,10 @@ class FederationController extends Controller
         $share = $this->resolveWritableShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         $data = (array) $this->request->getParams();
@@ -311,6 +323,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse Success, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -319,6 +333,10 @@ class FederationController extends Controller
         $share = $this->resolveWritableShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         try {
@@ -353,6 +371,45 @@ class FederationController extends Controller
 
         return $share;
     }//end resolveWritableShare()
+
+    /**
+     * Whether a share's scope actually covers the single object being addressed.
+     *
+     * An OBJECT-scope share grants exactly one object — the one the sharer
+     * picked — and that is what the collection endpoint serves, because
+     * `buildScopeConfig()` pins `filters['uuid']` to the share's `objectUri`.
+     * The single-object endpoints took `{id}` straight from the URL and never
+     * compared it to the grant, so the item path was strictly wider than the
+     * list path that guards it: a token for one object read (and, on a
+     * read-write share, overwrote or deleted) ANY object in the same
+     * register/schema. `applyShareVisibility()` does not close that, because it
+     * deliberately skips the confidentiality filter for object scope — so the
+     * widened reach also reached objects the register/schema scopes may never
+     * serve.
+     *
+     * Non-object scopes are unchanged: their breadth IS the grant, and
+     * `applyShareVisibility()` remains the guard there.
+     *
+     * @param FederatedShare $share The share being served.
+     * @param string         $id    The object id/uuid taken from the URL.
+     *
+     * @return boolean Whether the share covers this object.
+     */
+    private function scopeCoversObject(FederatedShare $share, string $id): bool
+    {
+        if ($share->getScope() !== 'object') {
+            return true;
+        }
+
+        $granted = (string) $share->getObjectUri();
+        if ($granted === '') {
+            // An object-scope share that names no object grants nothing. Failing
+            // closed here is the only safe reading of a malformed grant.
+            return false;
+        }
+
+        return ($this->uuidFromUri(uri: $granted) === $id);
+    }//end scopeCoversObject()
 
     /**
      * Describe a share (scope, register/schema, permissions) so the receiving
@@ -444,9 +501,17 @@ class FederationController extends Controller
     /**
      * Set the register/schema context on ObjectService for a share.
      *
+     * `setRegister()` / `setSchema()` resolve a slug or uuid through the
+     * mappers, so a share naming a register or schema that has since been
+     * deleted throws rather than returning null. The only caller wraps this in
+     * its own try/catch; declaring it here so that is a documented contract
+     * rather than an accident of where the call happens to sit.
+     *
      * @param FederatedShare $share The share being served.
      *
      * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the share names a register or schema that no longer exists.
      */
     private function setServeContext(FederatedShare $share): void
     {

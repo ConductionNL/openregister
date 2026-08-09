@@ -242,6 +242,85 @@ class FlowControllerTest extends TestCase
     }//end testStateCanServeOneKeyAsAList()
 
     /**
+     * THE SECURITY PROPERTY for `state()`.
+     *
+     * `GET /api/flow/{flowId}/state` is `@NoAdminRequired`, and it used to hand
+     * the client-supplied uuid straight to `FlowStateMapper::findByFlow()`,
+     * which applies no organisation scoping whatsoever. Any authenticated user
+     * could therefore read any other organisation's flow state — arbitrary data
+     * written by flow nodes (slot holders, external ids, run bookkeeping) — by
+     * naming its uuid. It was also the only method in the class that broke the
+     * invariant its own file header states.
+     *
+     * Two assertions, because either alone is satisfiable without the fix:
+     * the mapper must not be consulted at all, AND the caller must get a 404
+     * rather than an empty-but-200 body that reads like "this flow has no
+     * state".
+     *
+     * @return void
+     */
+    public function testStateRefusesAFlowTheCallerMayNotSee(): void
+    {
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->expects($this->never())->method('findByFlow');
+
+        $this->flows->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('No such flow'));
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper,
+            $this->preflight,
+            $this->flows
+        );
+
+        $response = $controller->state(flowId: 'someone-elses-flow');
+
+        $this->assertSame(404, $response->getStatus());
+        $this->assertSame(['error' => 'No such flow'], $response->getData());
+
+    }//end testStateRefusesAFlowTheCallerMayNotSee()
+
+    /**
+     * The positive control for the test above: a flow the caller CAN see still
+     * serves its state. A refusal test that cannot be shown to pass on the
+     * allowed path is only evidence about the refusal.
+     *
+     * @return void
+     */
+    public function testStateStillServesAFlowTheCallerCanSee(): void
+    {
+        $state = new \OCA\OpenRegister\Db\FlowState();
+        $state->setFlowId('flow-1');
+        $state->setState(['slots' => ['1' => ['holder' => 'issue-7']]]);
+
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->expects($this->once())->method('findByFlow')->willReturn($state);
+
+        $this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
+        $this->request->method('getParam')->willReturn('');
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper,
+            $this->preflight,
+            $this->flows
+        );
+
+        $response = $controller->state(flowId: 'flow-1');
+
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame(['1' => ['holder' => 'issue-7']], $response->getData()['state']['slots']);
+
+    }//end testStateStillServesAFlowTheCallerCanSee()
+
+    /**
      * Without `?list=`, the payload is unchanged — no `results`, no `total`.
      *
      * @return void
