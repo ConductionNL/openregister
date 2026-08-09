@@ -109,12 +109,14 @@
                     "user",
                     "group"
                   ],
-                  "description": "Whether `id` names a Nextcloud user or a Nextcloud group."
+                  "description": "Whether `id` names a Nextcloud user or a Nextcloud group.",
+                  "title": "Principal type"
                 },
                 "id": {
                   "type": "string",
                   "maxLength": 255,
-                  "description": "The Nextcloud user id or group id."
+                  "description": "The Nextcloud user id or group id.",
+                  "title": "User or group"
                 },
                 "permission": {
                   "type": "string",
@@ -123,7 +125,8 @@
                     "run"
                   ],
                   "default": "read",
-                  "description": "What the share grants. `run` implies `read`. Enforced in TWO places by necessity: RBAC grants visibility of the object, and the trigger endpoint enforces the verb — `run` is not an object RBAC action (those are create/read/update/delete), so a read-only recipient who can see the flow must still be refused at the trigger."
+                  "description": "What the share grants. `run` implies `read`. Enforced in TWO places by necessity: RBAC grants visibility of the object, and the trigger endpoint enforces the verb — `run` is not an object RBAC action (those are create/read/update/delete), so a read-only recipient who can see the flow must still be refused at the trigger.",
+                  "title": "Permission granted"
                 }
               }
             },
