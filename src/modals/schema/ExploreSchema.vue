@@ -137,6 +137,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<label class="filter-label">{{ t('openregister', 'Filter Properties') }}</label>
 						<NcTextField
 							v-model="propertyFilter"
+							:aria-label="t('openregister', 'Search property names...')"
 							:placeholder="t('openregister', 'Search property names...')" />
 					</div>
 
@@ -170,7 +171,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<!-- Property Header -->
 						<div class="property-header">
 							<div class="property-info">
-								<h4>{{ suggestion.property_name }}</h4>
+								<h4 :id="`explore-property-${index}`">{{ suggestion.property_name }}</h4>
 								<div class="property-meta">
 									<span class="confidence-badge" :class="'confidence-' + suggestion.confidence">
 										{{ suggestion.confidence.toUpperCase() }}
@@ -196,6 +197,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 							<div class="property-actions">
 								<NcCheckboxRadioSwitch
 									:model-value="isPropertySelected(suggestion.property_name)"
+									:aria-labelledby="`explore-property-${index}`"
 									@update:modelValue="togglePropertySelection(suggestion.property_name)" />
 							</div>
 						</div>

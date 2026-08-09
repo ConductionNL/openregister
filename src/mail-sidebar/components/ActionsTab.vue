@@ -27,6 +27,7 @@
 							v-model="searchTerms[schema.id]"
 							type="text"
 							class="or-action-input"
+							:aria-label="t('openregister', 'Search {name}...', { name: schema.title })"
 							:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
 							@input="debounceSearch(schema)"
 							@focus="showResults(schema)">

@@ -45,6 +45,7 @@
 		<form class="register-languages-editor__add" @submit.prevent="addCurrent">
 			<input v-model="draft"
 				type="text"
+				:aria-label="addPlaceholder"
 				:placeholder="addPlaceholder"
 				:disabled="disabled"
 				maxlength="35"

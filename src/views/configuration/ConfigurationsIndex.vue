@@ -116,6 +116,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 										<NcCheckboxRadioSwitch
 											:model-value="allSelected"
 											:indeterminate="someSelected"
+											:aria-label="t('openregister', 'Select All')"
 											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th scope="col">
@@ -149,9 +150,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:model-value="selectedConfigurations.includes(configuration.id)"
+											:aria-labelledby="`configuration-row-title-${configuration.id}`"
 											@update:modelValue="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
 									</td>
-									<td class="tableColumnTitle">
+									<td :id="`configuration-row-title-${configuration.id}`" class="tableColumnTitle">
 										<div class="titleContent">
 											<strong>{{ configuration.title }}</strong>
 											<span v-if="configuration.description" class="textDescription textEllipsis">{{ configuration.description }}</span>

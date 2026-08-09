@@ -90,6 +90,7 @@ import formatBytes from '../../services/formatBytes.js'
 								<NcCheckboxRadioSwitch
 									:model-value="allSelected"
 									:indeterminate="someSelected"
+									:aria-label="t('openregister', 'Select All')"
 									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th scope="col">
@@ -124,9 +125,10 @@ import formatBytes from '../../services/formatBytes.js'
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:model-value="selectedItems.includes(item.id)"
+									:aria-labelledby="`deleted-row-title-${item.id}`"
 									@update:modelValue="(checked) => toggleItemSelection(item.id, checked)" />
 							</td>
-							<td class="tableColumnTitle">
+							<td :id="`deleted-row-title-${item.id}`" class="tableColumnTitle">
 								<div class="titleContent">
 									<strong>{{ getItemTitle(item) }}</strong>
 									<span v-if="getItemDescription(item)" class="textDescription textEllipsis">{{ getItemDescription(item) }}</span>

@@ -16,8 +16,11 @@
 				:options="engineOptions" />
 		</div>
 		<div class="form-group">
-			<label>Workflow ID</label>
-			<input v-model="form.workflowId" type="text" class="input-field">
+			<label for="hook-form-workflow-id">Workflow ID</label>
+			<input id="hook-form-workflow-id"
+				v-model="form.workflowId"
+				type="text"
+				class="input-field">
 		</div>
 		<div class="form-group">
 			<label>Mode</label>
@@ -27,12 +30,18 @@
 				:options="['sync', 'async']" />
 		</div>
 		<div class="form-group">
-			<label>Order</label>
-			<input v-model.number="form.order" type="number" class="input-field">
+			<label for="hook-form-order">Order</label>
+			<input id="hook-form-order"
+				v-model.number="form.order"
+				type="number"
+				class="input-field">
 		</div>
 		<div class="form-group">
-			<label>Timeout (seconds)</label>
-			<input v-model.number="form.timeout" type="number" class="input-field">
+			<label for="hook-form-timeout">Timeout (seconds)</label>
+			<input id="hook-form-timeout"
+				v-model.number="form.timeout"
+				type="number"
+				class="input-field">
 		</div>
 		<div class="form-group">
 			<label>On Failure</label>

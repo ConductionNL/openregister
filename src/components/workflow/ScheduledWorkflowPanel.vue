@@ -52,20 +52,32 @@
 		</NcButton>
 		<div v-if="showForm" class="create-form">
 			<div class="form-group">
-				<label>Name</label>
-				<input v-model="form.name" type="text" class="input-field">
+				<label for="scheduled-workflow-name">Name</label>
+				<input id="scheduled-workflow-name"
+					v-model="form.name"
+					type="text"
+					class="input-field">
 			</div>
 			<div class="form-group">
-				<label>Engine</label>
-				<input v-model="form.engine" type="text" class="input-field">
+				<label for="scheduled-workflow-engine">Engine</label>
+				<input id="scheduled-workflow-engine"
+					v-model="form.engine"
+					type="text"
+					class="input-field">
 			</div>
 			<div class="form-group">
-				<label>Workflow ID</label>
-				<input v-model="form.workflowId" type="text" class="input-field">
+				<label for="scheduled-workflow-id">Workflow ID</label>
+				<input id="scheduled-workflow-id"
+					v-model="form.workflowId"
+					type="text"
+					class="input-field">
 			</div>
 			<div class="form-group">
-				<label>Interval (seconds)</label>
-				<input v-model.number="form.interval" type="number" class="input-field">
+				<label for="scheduled-workflow-interval">Interval (seconds)</label>
+				<input id="scheduled-workflow-interval"
+					v-model.number="form.interval"
+					type="number"
+					class="input-field">
 			</div>
 			<NcButton variant="primary" @click="createSchedule">
 				Save

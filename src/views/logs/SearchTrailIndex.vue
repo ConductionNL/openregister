@@ -85,6 +85,7 @@ import formatBytes from '../../services/formatBytes.js'
 								<NcCheckboxRadioSwitch
 									:model-value="allSelected"
 									:indeterminate="someSelected"
+									:aria-label="t('openregister', 'Select All')"
 									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th scope="col" class="searchTermColumn">
@@ -121,9 +122,10 @@ import formatBytes from '../../services/formatBytes.js'
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:model-value="selectedSearchTrails.includes(searchTrail.id)"
+									:aria-labelledby="`search-trail-row-term-${searchTrail.id}`"
 									@update:modelValue="(checked) => toggleSearchTrailSelection(searchTrail.id, checked)" />
 							</td>
-							<td class="searchTermColumn">
+							<td :id="`search-trail-row-term-${searchTrail.id}`" class="searchTermColumn">
 								<span class="searchTermText">{{ searchTrail.searchTerm || '-' }}</span>
 								<span v-if="searchTrail.totalResults > 0" class="searchResultsBadge">
 									{{ searchTrail.totalResults }} {{ t('openregister', 'results') }}

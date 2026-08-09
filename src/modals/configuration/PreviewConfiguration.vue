@@ -57,8 +57,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:model-value="isRegisterSelected(change.slug)"
+								:aria-labelledby="`preview-register-title-${index}`"
 								@update:modelValue="(checked) => toggleRegisterSelection(change.slug, checked)" />
-							<div class="changeTitle">
+							<div :id="`preview-register-title-${index}`" class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
 									{{ change.action }}
@@ -108,8 +109,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:model-value="isSchemaSelected(change.slug)"
+								:aria-labelledby="`preview-schema-title-${index}`"
 								@update:modelValue="(checked) => toggleSchemaSelection(change.slug, checked)" />
-							<div class="changeTitle">
+							<div :id="`preview-schema-title-${index}`" class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
 									{{ change.action }}
@@ -159,8 +161,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
 								:model-value="isObjectSelected(change)"
+								:aria-labelledby="`preview-object-title-${index}`"
 								@update:modelValue="(checked) => toggleObjectSelection(change, checked)" />
-							<div class="changeTitle">
+							<div :id="`preview-object-title-${index}`" class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
 									{{ change.action }}

@@ -6,16 +6,16 @@
 					<th scope="col">
 						Group
 					</th>
-					<th scope="col">
+					<th :id="`${uid}-col-create`" scope="col">
 						Create
 					</th>
-					<th scope="col">
+					<th :id="`${uid}-col-read`" scope="col">
 						Read
 					</th>
-					<th scope="col">
+					<th :id="`${uid}-col-update`" scope="col">
 						Update
 					</th>
-					<th scope="col">
+					<th :id="`${uid}-col-delete`" scope="col">
 						Delete
 					</th>
 				</tr>
@@ -23,112 +23,128 @@
 			<tbody>
 				<!-- Public group at top -->
 				<tr class="public-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-public`" class="group-name">
 						<span class="group-badge public">public</span>
 						<small>Unauthenticated users</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('public', 'create')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-create`"
 							@update:modelValue="updatePermission('public', 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('public', 'read')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-read`"
 							@update:modelValue="updatePermission('public', 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('public', 'update')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-update`"
 							@update:modelValue="updatePermission('public', 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('public', 'delete')"
+							:aria-labelledby="`${uid}-row-public ${uid}-col-delete`"
 							@update:modelValue="updatePermission('public', 'delete', $event)" />
 					</td>
 				</tr>
 
 				<!-- Authenticated users group -->
 				<tr class="user-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-authenticated`" class="group-name">
 						<span class="group-badge user">authenticated</span>
 						<small>Authenticated users</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('authenticated', 'create')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-create`"
 							@update:modelValue="updatePermission('authenticated', 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('authenticated', 'read')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-read`"
 							@update:modelValue="updatePermission('authenticated', 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('authenticated', 'update')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-update`"
 							@update:modelValue="updatePermission('authenticated', 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission('authenticated', 'delete')"
+							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-delete`"
 							@update:modelValue="updatePermission('authenticated', 'delete', $event)" />
 					</td>
 				</tr>
 
 				<!-- Regular user groups -->
 				<tr v-for="group in sortedGroups" :key="group.id" class="group-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-${group.id}`" class="group-name">
 						<span class="group-badge">{{ group.name }}</span>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission(group.id, 'create')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-create`"
 							@update:modelValue="updatePermission(group.id, 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission(group.id, 'read')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-read`"
 							@update:modelValue="updatePermission(group.id, 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission(group.id, 'update')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-update`"
 							@update:modelValue="updatePermission(group.id, 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="hasPermission(group.id, 'delete')"
+							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-delete`"
 							@update:modelValue="updatePermission(group.id, 'delete', $event)" />
 					</td>
 				</tr>
 
 				<!-- Admin group at bottom (disabled) -->
 				<tr class="admin-row">
-					<td class="group-name">
+					<td :id="`${uid}-row-admin`" class="group-name">
 						<span class="group-badge admin">admin</span>
 						<small>Always has full access</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="true"
-							:disabled="true" />
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-create`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="true"
-							:disabled="true" />
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-read`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="true"
-							:disabled="true" />
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-update`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
 							:model-value="true"
-							:disabled="true" />
+							:disabled="true"
+							:aria-labelledby="`${uid}-row-admin ${uid}-col-delete`" />
 					</td>
 				</tr>
 			</tbody>
@@ -147,6 +163,13 @@
 
 <script>
 import { NcCheckboxRadioSwitch, NcNoteCard } from '@nextcloud/vue'
+
+/**
+ * Per-instance id seed. RbacTable is rendered up to seven times on a single
+ * page (EditOrganisation), so the ids that wire each permission checkbox to its
+ * row and column header via aria-labelledby must not collide between instances.
+ */
+let rbacTableUid = 0
 
 export default {
 	name: 'RbacTable',
@@ -183,6 +206,11 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+	},
+	data() {
+		return {
+			uid: `rbac-${++rbacTableUid}`,
+		}
 	},
 	computed: {
 		/**

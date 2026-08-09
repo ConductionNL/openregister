@@ -103,7 +103,7 @@
 			<div class="retention-table">
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Soft Delete After Inactivity</strong>
+						<label for="retention-object-archive"><strong>Soft Delete After Inactivity</strong></label>
 						<p class="retention-description">
 							Time since last CRUD action before object is soft-deleted
 						</p>
@@ -111,6 +111,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-object-archive"
 								v-model.number="retentionOptions.objectArchiveRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -126,7 +127,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Permanent Delete After Soft Delete</strong>
+						<label for="retention-object-delete"><strong>Permanent Delete After Soft Delete</strong></label>
 						<p class="retention-description">
 							Time from soft-delete to permanent deletion
 						</p>
@@ -134,6 +135,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-object-delete"
 								v-model.number="retentionOptions.objectDeleteRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -149,7 +151,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Search Trail Retention</strong>
+						<label for="retention-search-trail"><strong>Search Trail Retention</strong></label>
 						<p class="retention-description">
 							Retention period for search query audit trails and analytics
 						</p>
@@ -157,6 +159,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-search-trail"
 								v-model.number="retentionOptions.searchTrailRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -172,7 +175,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Create Action Logs</strong>
+						<label for="retention-create-log"><strong>Create Action Logs</strong></label>
 						<p class="retention-description">
 							Retention period for object creation audit logs
 						</p>
@@ -180,6 +183,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-create-log"
 								v-model.number="retentionOptions.createLogRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -195,7 +199,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Read Action Logs</strong>
+						<label for="retention-read-log"><strong>Read Action Logs</strong></label>
 						<p class="retention-description">
 							Retention period for object access/view audit logs
 						</p>
@@ -203,6 +207,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-read-log"
 								v-model.number="retentionOptions.readLogRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -218,7 +223,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Update Action Logs</strong>
+						<label for="retention-update-log"><strong>Update Action Logs</strong></label>
 						<p class="retention-description">
 							Retention period for object modification audit logs
 						</p>
@@ -226,6 +231,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-update-log"
 								v-model.number="retentionOptions.updateLogRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -241,7 +247,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Delete Action Logs</strong>
+						<label for="retention-delete-log"><strong>Delete Action Logs</strong></label>
 						<p class="retention-description">
 							Retention period for object deletion audit logs
 						</p>
@@ -249,6 +255,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-delete-log"
 								v-model.number="retentionOptions.deleteLogRetention"
 								type="number"
 								:disabled="loading || saving"
@@ -264,7 +271,7 @@
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<strong>Webhook Logs</strong>
+						<label for="retention-webhook-log"><strong>Webhook Logs</strong></label>
 						<p class="retention-description">
 							Retention period for webhook delivery logs and retry attempts
 						</p>
@@ -272,6 +279,7 @@
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
+								id="retention-webhook-log"
 								v-model.number="retentionOptions.webhookLogRetention"
 								type="number"
 								:disabled="loading || saving"
