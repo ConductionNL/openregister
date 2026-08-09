@@ -87,12 +87,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{types: [{id, name, topic}]}`.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function types(): JSONResponse
     {
@@ -103,17 +101,25 @@ class FederatedConfigController extends Controller
     /**
      * Package a selection of a type's configuration into a portable bundle.
      *
-     * @return JSONResponse The bundle, or a 4xx.
+     * Gated on `canPublish`, exactly like `publish()`. A bundle IS the payload
+     * `publish()` pushes out — the same `serialise()` call, the same bytes,
+     * minus the GitHub round-trip. Gating one and not the other made the
+     * publish gate decorative: anyone refused by `canPublish` could call
+     * `bundle` and receive the identical export to do what they liked with.
      *
-     * @NoAdminRequired
+     * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function bundle(): JSONResponse
     {
+        if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
+        }
+
         $type = trim((string) $this->request->getParam('type', ''));
         if ($type === '') {
             return new JSONResponse(['error' => 'A bundle needs a type.'], Http::STATUS_BAD_REQUEST);
@@ -142,7 +148,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function install(): JSONResponse
     {
@@ -197,7 +202,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function publish(): JSONResponse
     {
@@ -255,12 +259,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
      *
-     * @NoAdminRequired
+     * @auth admin-only Returns the instance's federation trust configuration — the source
+     *       allowlist and the trusted publisher keys. The body rejects non-admins, and #2342
+     *       removed the #[NoAdminRequired] that used to contradict it; this states the posture so
+     *       "admin-only by Nextcloud default" stays distinguishable from a forgotten attribute.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function trust(): JSONResponse
     {
@@ -281,12 +288,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse The updated trust configuration, or a 4xx.
      *
-     * @NoAdminRequired
+     * @auth admin-only Writes the federation trust configuration: it can append a public key to the
+     *       trusted-keys list, which decides whose published configuration this instance will
+     *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
+     *       to contradict it; this states the posture rather than leaving it to a default.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function setTrust(): JSONResponse
     {

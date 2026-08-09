@@ -58,7 +58,7 @@ class MappingEngine
      *
      * @return array{data: array<string, mixed>, errors: list<array{row: int, source: string, target: ?string, transform: ?string, message: string}>}
      *
-     * @spec openspec/specs/migration-mapping-packs/spec.md#mapping-engine
+     * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
      */
     public function mapRow(array $pack, array $sourceRow, int $rowNumber): array
     {

@@ -118,13 +118,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											:indeterminate="someSelected"
 											@update:modelValue="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Source') }}</th>
-									<th>{{ t('openregister', 'Local Version') }}</th>
-									<th>{{ t('openregister', 'Remote Version') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Updated') }}</th>
-									<th class="tableColumnActions">
+									<th scope="col">
+										{{ t('openregister', 'Title') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Source') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Local Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Remote Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Status') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Updated') }}
+									</th>
+									<th scope="col" class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>

@@ -229,4 +229,10 @@ export default {
 	height: 64px;
 	fill: currentColor;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.register-objects-tab__link {
+		transition: none;
+	}
+}
 </style>

@@ -95,15 +95,20 @@
 					<div class="cardGrid">
 						<div v-for="entity in paginatedEntities"
 							:key="entity.id"
-							class="card"
-							@click="viewEntity(entity)">
+							class="card">
 							<div class="cardHeader">
 								<h2>
 									<AccountOutline :size="20" />
-									{{ entity.value }}
+									<!-- The activator is a real <button>; its ::after overlay makes the
+										whole card clickable with the mouse without turning the card into
+										a role="button" (which would hide the heading, the stats table and
+										the actions menu from assistive technology). -->
+									<button type="button" class="cardActivator" @click="viewEntity(entity)">
+										{{ entity.value }}
+									</button>
 									<span class="badge badge-type">{{ entity.type }}</span>
 								</h2>
-								<NcActions :primary="true" menu-name="Actions">
+								<NcActions class="cardActions" :primary="true" menu-name="Actions">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
@@ -122,15 +127,21 @@
 							<table class="statisticsTable entityStats">
 								<tbody>
 									<tr>
-										<td><strong>{{ t('openregister', 'Category') }}</strong></td>
+										<th scope="row">
+											<strong>{{ t('openregister', 'Category') }}</strong>
+										</th>
 										<td><span class="badge badge-category">{{ entity.category }}</span></td>
 									</tr>
 									<tr>
-										<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
+										<th scope="row">
+											<strong>{{ t('openregister', 'Detected At') }}</strong>
+										</th>
 										<td>{{ formatDate(entity.detectedAt) }}</td>
 									</tr>
 									<tr>
-										<td><strong>{{ t('openregister', 'Relations') }}</strong></td>
+										<th scope="row">
+											<strong>{{ t('openregister', 'Relations') }}</strong>
+										</th>
 										<td>{{ entity.relationCount || 0 }}</td>
 									</tr>
 								</tbody>
@@ -152,12 +163,22 @@
 											:aria-label="t('openregister', 'Select all entities')"
 											@update:modelValue="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Value') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Category') }}</th>
-									<th>{{ t('openregister', 'Detected At') }}</th>
-									<th>{{ t('openregister', 'Relations') }}</th>
-									<th class="tableColumnActions">
+									<th scope="col">
+										{{ t('openregister', 'Value') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Type') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Category') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Detected At') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Relations') }}
+									</th>
+									<th scope="col" class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>
@@ -614,6 +635,7 @@ export default {
 }
 
 .card {
+	position: relative;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
@@ -624,6 +646,38 @@ export default {
 
 .card:hover {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Real button that carries the card's action. The ::after overlay restores
+   whole-card mouse clickability while keyboard users get a genuine button. */
+.cardActivator {
+	appearance: none;
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.cardActivator::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+.cardActivator:focus-visible::after {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
+	border-radius: var(--border-radius-large);
+}
+
+/* Keep the actions menu above the activator overlay so it stays clickable. */
+.cardActions {
+	position: relative;
+	z-index: 1;
 }
 
 .cardHeader {
@@ -658,11 +712,15 @@ export default {
 	border-bottom: none;
 }
 
-.entityStats td {
+.entityStats td,
+.entityStats th {
 	padding: 12px 16px;
+	text-align: left;
+	font-weight: normal;
 }
 
-.entityStats td:first-child {
+.entityStats td:first-child,
+.entityStats th:first-child {
 	width: 40%;
 	color: var(--color-text-maxcontrast);
 }
@@ -717,5 +775,11 @@ export default {
 
 .tableColumnActions {
 	width: 50px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card {
+		transition: none;
+	}
 }
 </style>

@@ -1779,4 +1779,11 @@ export default {
 	color: var(--color-text-lighter);
 	line-height: 1.3;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.analysis-status .analysis-summary .stat-box,
+	.property-card {
+		transition: none;
+	}
+}
 </style>

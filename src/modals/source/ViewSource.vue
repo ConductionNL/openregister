@@ -472,4 +472,10 @@ export default {
 	align-items: center;
 	min-height: 200px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.tabHeader {
+		transition: none;
+	}
+}
 </style>

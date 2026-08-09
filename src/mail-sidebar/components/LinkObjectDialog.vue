@@ -32,16 +32,22 @@
 						{{ t('openregister', 'Try searching by UUID or with different keywords') }}
 					</p>
 				</div>
-				<ul v-else class="or-mail-link-dialog__results">
+				<ul v-else
+					class="or-mail-link-dialog__results"
+					role="listbox"
+					:aria-label="t('openregister', 'Search Results')">
 					<li
 						v-for="result in searchResults"
 						:key="result.id || result.uuid"
 						class="or-mail-link-dialog__result"
 						:class="{ 'or-mail-link-dialog__result--linked': isAlreadyLinked(result) }"
+						role="option"
 						tabindex="0"
+						:aria-selected="selectedResult === result"
 						:aria-label="resultAriaLabel(result)"
 						@click="selectResult(result)"
-						@keydown.enter="selectResult(result)">
+						@keydown.enter="selectResult(result)"
+						@keydown.space.prevent="selectResult(result)">
 						<span class="or-mail-link-dialog__result-title">
 							{{ result.title || result.uuid }}
 						</span>

@@ -27,13 +27,13 @@
 							<table class="stats-table">
 								<thead>
 									<tr>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Issue
 										</th>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Count
 										</th>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Size
 										</th>
 									</tr>
@@ -128,13 +128,13 @@
 							<table class="stats-table">
 								<thead>
 									<tr>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Resource
 										</th>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Count
 										</th>
-										<th class="stats-table-header">
+										<th scope="col" class="stats-table-header">
 											Size
 										</th>
 									</tr>
