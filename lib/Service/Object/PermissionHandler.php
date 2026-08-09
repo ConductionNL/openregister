@@ -944,19 +944,6 @@ class PermissionHandler
      * requests within a single PHP process) can call this to invalidate the
      * memoised verdicts without instantiating a new handler.
      *
-     * NO IN-REPO CALLER, DELIBERATELY LEFT THAT WAY (gate-57, 2026-08-09).
-     * Searched for a path that mutates schema/register authorization and then
-     * re-reads a verdict in the same request: `SchemasController::update()` is
-     * the only authorization writer with a permission check nearby, and its
-     * check is `checkSchemaManagePermission()`, which deliberately does NOT go
-     * through this class — so nothing memoised here can go stale in it. The
-     * documented consumer is a long-running process, and in this fleet those
-     * live in the leaf apps that consume OpenRegister, not here. Wiring a call
-     * with no measured staleness or memory problem would be a guess; a
-     * suppression annotation would make the gate blind. Both invalidation
-     * semantics are covered by PermissionHandlerCacheTest and
-     * PermissionHandlerInheritFromPublicTest.
-     *
      * @return void
      *
      * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
