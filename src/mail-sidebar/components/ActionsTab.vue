@@ -33,7 +33,7 @@
 						<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0"
 							class="or-action-results"
 							role="listbox"
-							:aria-label="t('openregister', 'Search results for {name}', { name: schema.title })">
+							:aria-label="t('openregister', 'Search Results')">
 							<li
 								v-for="obj in searchResults[schema.id]"
 								:key="obj.id"

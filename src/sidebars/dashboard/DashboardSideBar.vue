@@ -58,7 +58,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						<thead>
 							<tr>
 								<th scope="col">
-									{{ t('openregister', 'Item') }}
+									{{ t('openregister', 'Name') }}
 								</th>
 								<th scope="col">
 									{{ t('openregister', 'Count') }}
@@ -144,7 +144,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						<thead>
 							<tr>
 								<th scope="col">
-									{{ t('openregister', 'Item') }}
+									{{ t('openregister', 'Name') }}
 								</th>
 								<th scope="col">
 									{{ t('openregister', 'Count') }}

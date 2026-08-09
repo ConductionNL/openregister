@@ -489,7 +489,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 																</template>
 															</NcButton>
 															<NcButton :disabled="labelsLoading"
-																:aria-label="t('openregister', 'Cancel editing labels')"
+																:aria-label="t('openregister', 'Cancel')"
 																@click="cancelFileLabels()">
 																<template #icon>
 																	<Cancel :size="20" />

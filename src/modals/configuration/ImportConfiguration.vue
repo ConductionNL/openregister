@@ -219,11 +219,14 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							Upload a configuration JSON file from your computer.
 						</p>
 
+						<!-- Only a button while the zone is empty: once a file is picked the
+							click handler is inert and the body contains a real "Clear" button,
+							which role="button" would hide (children-presentational). The zone is
+							then named by its visible text in both states, so no aria-label. -->
 						<div class="fileUploadZone"
 							:class="{ 'dragover': isDragging }"
-							role="button"
-							tabindex="0"
-							:aria-label="t('openregister', 'Browse for a configuration file to upload')"
+							:role="selectedUploadFile ? null : 'button'"
+							:tabindex="selectedUploadFile ? null : 0"
 							@click="!selectedUploadFile && $refs.fileInput.click()"
 							@keydown.enter="!selectedUploadFile && $refs.fileInput.click()"
 							@keydown.space.prevent="!selectedUploadFile && $refs.fileInput.click()"

@@ -110,7 +110,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 											class="expandButton"
 											:class="{ expanded: expandedErrors[sheetKey] }"
 											:aria-expanded="!!expandedErrors[sheetKey]"
-											:aria-label="t('openregister', 'Show error details for {sheet}', { sheet: sheetKey })"
+											:aria-label="t('openregister', 'Error Details')"
 											@click="toggleErrorDetails(sheetKey)">
 											<ChevronDown :size="16" />
 										</button>

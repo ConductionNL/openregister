@@ -394,7 +394,7 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 									:label="t('openregister', 'To (e.g. -1 year or 2025-12-31)')" />
 								<NcButton :disabled="loading"
 									variant="tertiary-no-background"
-									:aria-label="t('openregister', 'Remove this range')"
+									:aria-label="t('openregister', 'Remove')"
 									@click="removeCustomRange(index)">
 									<template #icon>
 										<Cancel :size="20" />

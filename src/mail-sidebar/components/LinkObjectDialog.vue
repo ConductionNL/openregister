@@ -35,7 +35,7 @@
 				<ul v-else
 					class="or-mail-link-dialog__results"
 					role="listbox"
-					:aria-label="t('openregister', 'Search results')">
+					:aria-label="t('openregister', 'Search Results')">
 					<li
 						v-for="result in searchResults"
 						:key="result.id || result.uuid"
