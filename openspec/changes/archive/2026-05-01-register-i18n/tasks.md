@@ -17,8 +17,26 @@
 - [x] **Content-Language vs UI language MUST be clearly distinguished.** Phase 2: `LanguageMiddleware` adds `Content-Language` header (object content language) + `X-Content-Language-Fallback`.
 - [x] **Import and export MUST preserve translations.** Phase 3: `ExportService::exportToCsv` emits `field_lang` columns for each translatable property × register language (fallback `[nl, en]` when register has no `languages` config). `ImportService::importFromCsv::transformCsvRowToObject` calls `TranslationCsvCodec::unflattenFromCsv` before the per-key processing loop, so flat `field_lang` columns become nested `{lang: value}` JSON. **Verified live** by 4 export tests + 2 codec round-trip tests in `RegisterI18nPhase3IntegrationTest`.
 - [x] **GraphQL API MUST support language negotiation.** Phase 3: `GraphQLResolver::filterProperties` now applies `TranslationHandler::resolveTranslationsForRender` after the property-level RBAC pass. GraphQL responses honour the same `LanguageService` chain that REST honours, so a query made with `Accept-Language: en` collapses language-keyed values to their EN variant. Verified by `testGraphQLResolverApplyTranslationsToFilterPropertiesOutput`.
-- [x] **The UI MUST provide a language-aware object editor with translation status.** Phase 4a: Pinia store `src/store/modules/translations.js` wraps `GET /object/{uuid}`, `POST /{property}/{language}/status`, `POST /bulk-translate`, and `GET /search`. Vue components `TranslationFieldEditor` (per-language inputs/textarea with status chip), `TranslationStatusChip` (NL Design System status badge), `TranslationCompletenessBadge` (per-language ratio pills consuming `@self.translationCompleteness`), and `BulkTranslateDialog` (modal calling the bulk-translate endpoint).
-- [x] **RTL language support MUST be handled in the UI.** Phase 4a: `RTL_LANGUAGES` set + `isRtlLanguage()` BCP 47 helper in the translations store; `TranslationFieldEditor.dirFor()` applies `dir="rtl"` per input/textarea for Arabic, Hebrew, Persian, Urdu, Kurdish, etc.
+- [ ] **The UI MUST provide a language-aware object editor with translation status.** Phase 4a: Pinia store `src/store/modules/translations.js` wraps `GET /object/{uuid}`, `POST /{property}/{language}/status`, `POST /bulk-translate`, and `GET /search`. Vue components `TranslationFieldEditor` (per-language inputs/textarea with status chip), `TranslationStatusChip` (NL Design System status badge), `TranslationCompletenessBadge` (per-language ratio pills consuming `@self.translationCompleteness`), and `BulkTranslateDialog` (modal calling the bulk-translate endpoint).
+  <!-- UNTICKED 2026-08-09. The store and the four components exist and are unit-tested. NOTHING MOUNTS
+       THEM: TranslationFieldEditor, TranslationCompletenessBadge and BulkTranslateDialog each have zero
+       imports outside their own .spec.js, and TranslationStatusChip is reachable only through
+       TranslationFieldEditor, which is itself unmounted. So no object edit form shows language tabs, no
+       badge, and no side-by-side mode — none of the five scenarios under this requirement can be
+       performed by a user.
+       This box is different from an ordinary over-claim: the task text IS the requirement, so ticking it
+       asserted the requirement was MET. Building the components was necessary but is not the requirement.
+       Compare the "Admin UI MUST provide register language management" box below, written in the same
+       phase by the same hand — it names the mount point explicitly ("Wired into the RegisterSideBar edit
+       form"), and that one really is live. The absence of any such clause here is the tell.
+       The components are deliberately NOT deleted: they are the only implementation of an un-excluded
+       MUST, and removing them would make the spec less true rather than more. What is missing is a host.
+       See openspec/specs/register-i18n/spec.md, which now carries the same note. -->
+- [ ] **RTL language support MUST be handled in the UI.** Phase 4a: `RTL_LANGUAGES` set + `isRtlLanguage()` BCP 47 helper in the translations store; `TranslationFieldEditor.dirFor()` applies `dir="rtl"` per input/textarea for Arabic, Hebrew, Persian, Urdu, Kurdish, etc.
+  <!-- UNTICKED 2026-08-09. `dirFor()` is real and unit-tested, but it lives on TranslationFieldEditor,
+       which nothing mounts — so no RTL text is rendered anywhere in the UI. The store-level helpers
+       (RTL_LANGUAGES, isRtlLanguage) are live and reusable; the UI half is not. -->
+
 - [x] **Admin UI MUST provide register language management.** Phase 4b: `RegisterLanguagesEditor.vue` — ordered list editor with BCP 47 validation, duplicate rejection, up/down reorder, remove, and a "default" badge on the first language. Wired into the `RegisterSideBar` edit form via `formData.languages`. `TRegister` type + `Register` entity gained an optional `languages?: string[]` field so the form round-trips cleanly through `registerStore.saveRegister`.
 
 ## Architecture (decisions taken across all phases)
