@@ -1170,4 +1170,10 @@ export default {
 	gap: 0.5rem;
 	justify-content: flex-end;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.success-rate-fill {
+		transition: none;
+	}
+}
 </style>

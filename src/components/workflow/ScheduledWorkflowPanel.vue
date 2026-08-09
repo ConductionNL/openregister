@@ -4,13 +4,27 @@
 		<table v-if="schedules.length" class="schedule-table">
 			<thead>
 				<tr>
-					<th>Name</th>
-					<th>Engine</th>
-					<th>Workflow</th>
-					<th>Interval</th>
-					<th>Enabled</th>
-					<th>Last Run</th>
-					<th>Last Status</th>
+					<th scope="col">
+						Name
+					</th>
+					<th scope="col">
+						Engine
+					</th>
+					<th scope="col">
+						Workflow
+					</th>
+					<th scope="col">
+						Interval
+					</th>
+					<th scope="col">
+						Enabled
+					</th>
+					<th scope="col">
+						Last Run
+					</th>
+					<th scope="col">
+						Last Status
+					</th>
 				</tr>
 			</thead>
 			<tbody>

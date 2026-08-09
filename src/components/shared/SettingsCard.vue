@@ -156,4 +156,20 @@ export default {
 	transform: translateY(-5px);
 	opacity: 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.collapsible-section h4.collapsible-header,
+	.collapsible-section h4.collapsible-header .chevron-icon,
+	.slide-fade-enter-active,
+	.slide-fade-leave-active {
+		transition: none;
+	}
+
+	/* The slide-fade transform is the motion itself — with reduced motion the
+	   section must appear and disappear in place. */
+	.slide-fade-enter-from,
+	.slide-fade-leave-to {
+		transform: none;
+	}
+}
 </style>

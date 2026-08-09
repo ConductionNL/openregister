@@ -92,17 +92,25 @@ import formatBytes from '../../services/formatBytes.js'
 									:indeterminate="someSelected"
 									@update:modelValue="toggleSelectAll" />
 							</th>
-							<th>{{ t('openregister', 'Title') }}</th>
-							<th class="tableColumnConstrained">
+							<th scope="col">
+								{{ t('openregister', 'Title') }}
+							</th>
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Register') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Schema') }}
 							</th>
-							<th>{{ t('openregister', 'Deleted Date') }}</th>
-							<th>{{ t('openregister', 'Deleted By') }}</th>
-							<th>{{ t('openregister', 'Purge Date') }}</th>
-							<th class="tableColumnActions">
+							<th scope="col">
+								{{ t('openregister', 'Deleted Date') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Deleted By') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Purge Date') }}
+							</th>
+							<th scope="col" class="tableColumnActions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>

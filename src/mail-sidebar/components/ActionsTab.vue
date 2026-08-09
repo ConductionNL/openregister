@@ -30,12 +30,20 @@
 							:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
 							@input="debounceSearch(schema)"
 							@focus="showResults(schema)">
-						<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0" class="or-action-results">
+						<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0"
+							class="or-action-results"
+							role="listbox"
+							:aria-label="t('openregister', 'Search results for {name}', { name: schema.title })">
 							<li
 								v-for="obj in searchResults[schema.id]"
 								:key="obj.id"
 								class="or-action-result"
-								@click="linkObject(schema, obj)">
+								role="option"
+								tabindex="0"
+								:aria-selected="false"
+								@click="linkObject(schema, obj)"
+								@keydown.enter="linkObject(schema, obj)"
+								@keydown.space.prevent="linkObject(schema, obj)">
 								<span class="or-action-result-name">{{ objectName(obj) }}</span>
 							</li>
 						</ul>
@@ -112,11 +120,13 @@ export default {
 		 * A schema block is busy while it is creating a new record or
 		 * connecting an existing one — used to swap the search UI for a
 		 * spinner so the user sees the work happening.
+		 * @param schema
 		 */
 		isBusy(schema) {
 			return !!this.creating[schema.id] || !!this.linking[schema.id]
 		},
 		/**
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectName(obj) {
@@ -167,6 +177,7 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadInitialResults(schema) {
@@ -189,12 +200,14 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		showResults(schema) {
 			this.visibleResults[schema.id] = true
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		debounceSearch(schema) {
@@ -206,6 +219,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async searchObjects(schema) {
@@ -261,6 +275,7 @@ export default {
 		 * Schemas opt into create-from-email by declaring a field template in
 		 * `configuration.mailObjectTemplate` (e.g. pipelinq lead, shillinq invoice).
 		 *
+		 * @param schema
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		hasCreateTemplate(schema) {
@@ -283,6 +298,7 @@ export default {
 		/**
 		 * Build the placeholder map available to mailObjectTemplate values.
 		 *
+		 * @param envelope
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		buildPlaceholders(envelope) {
@@ -311,6 +327,8 @@ export default {
 		 * Substitute {{placeholder}} tokens in string template values; pass
 		 * non-string values (numbers, booleans) through untouched.
 		 *
+		 * @param template
+		 * @param placeholders
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		applyTemplate(template, placeholders) {
@@ -330,6 +348,7 @@ export default {
 		 * Open the create-object dialog, prefilled from the schema's
 		 * mailObjectTemplate applied to the current email.
 		 *
+		 * @param schema
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async openCreate(schema) {
@@ -364,6 +383,7 @@ export default {
 		 * Create the object from the (possibly edited) dialog data, then
 		 * connect the email to it.
 		 *
+		 * @param data
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async submitCreate(data) {
@@ -390,6 +410,8 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
 		 */
 		async linkObject(schema, obj) {

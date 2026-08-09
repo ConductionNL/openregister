@@ -176,16 +176,16 @@
 						<table class="performance-table">
 							<thead>
 								<tr>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Metric
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Current
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Target
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Status
 									</th>
 								</tr>

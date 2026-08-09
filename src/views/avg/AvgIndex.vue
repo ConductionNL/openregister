@@ -65,12 +65,24 @@
 					<table v-else class="avgTable">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Naam') }}</th>
-								<th>{{ t('openregister', 'Code') }}</th>
-								<th>{{ t('openregister', 'Rechtsgrond') }}</th>
-								<th>{{ t('openregister', 'Bewaartermijn') }}</th>
-								<th>{{ t('openregister', 'Status') }}</th>
-								<th>{{ t('openregister', 'Actions') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Naam') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Code') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Rechtsgrond') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Bewaartermijn') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Status') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Actions') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -138,14 +150,30 @@
 					<table v-else class="avgTable">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Activity') }}</th>
-								<th>{{ t('openregister', 'Rechtsgrond') }}</th>
-								<th>{{ t('openregister', 'Bewaartermijn') }}</th>
-								<th>{{ t('openregister', 'Total events') }}</th>
-								<th>{{ t('openregister', 'Create') }}</th>
-								<th>{{ t('openregister', 'Update') }}</th>
-								<th>{{ t('openregister', 'Delete') }}</th>
-								<th>{{ t('openregister', 'Read') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Activity') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Rechtsgrond') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Bewaartermijn') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Total events') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Create') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Update') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Delete') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Read') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -293,11 +321,21 @@
 					<table v-else class="avgTable">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Schema') }}</th>
-								<th>{{ t('openregister', 'Register') }}</th>
-								<th>{{ t('openregister', 'PII rows') }}</th>
-								<th>{{ t('openregister', 'Schema annotation') }}</th>
-								<th>{{ t('openregister', 'Register annotation') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Schema') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Register') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'PII rows') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Schema annotation') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Register annotation') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -381,13 +419,27 @@
 						<table v-else class="avgTable">
 							<thead>
 								<tr>
-									<th>{{ t('openregister', 'Subject') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Handler') }}</th>
-									<th>{{ t('openregister', 'Deadline') }}</th>
-									<th>{{ t('openregister', 'Escalation') }}</th>
-									<th>{{ t('openregister', 'Actions') }}</th>
+									<th scope="col">
+										{{ t('openregister', 'Subject') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Type') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Status') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Handler') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Deadline') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Escalation') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Actions') }}
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -559,8 +611,12 @@
 							<table v-else class="avgTable">
 								<thead>
 									<tr>
-										<th>{{ t('openregister', 'Source') }}</th>
-										<th>{{ t('openregister', 'Status') }}</th>
+										<th scope="col">
+											{{ t('openregister', 'Source') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Status') }}
+										</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -589,8 +645,12 @@
 							<table v-else class="avgTable">
 								<thead>
 									<tr>
-										<th>{{ t('openregister', 'Field') }}</th>
-										<th>{{ t('openregister', 'Ground') }}</th>
+										<th scope="col">
+											{{ t('openregister', 'Field') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Ground') }}
+										</th>
 									</tr>
 								</thead>
 								<tbody>

@@ -35,11 +35,21 @@
 				<table class="duplicatesTable">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Object A') }}</th>
-							<th>{{ t('openregister', 'Object B') }}</th>
-							<th>{{ t('openregister', 'Score') }}</th>
-							<th>{{ t('openregister', 'Matched on') }}</th>
-							<th>{{ t('openregister', 'Actions') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Object A') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Object B') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Score') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Matched on') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>

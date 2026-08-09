@@ -55,50 +55,73 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 				</div>
 				<div v-else-if="systemTotals" class="statsContainer">
 					<table class="statisticsTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Item') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Count') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
+							</tr>
+						</thead>
 						<tbody>
 							<tr>
-								<td>{{ t('openregister', 'Registers') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Registers') }}
+								</th>
 								<td>{{ filteredRegisters.length }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Schemas') }}
+								</th>
 								<td>{{ totalSchemas }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Objects') }}
+								</th>
 								<td>{{ systemTotals.stats?.objects?.total || 0 }}</td>
 								<td>{{ formatBytes(systemTotals.stats?.objects?.size || 0) }}</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Invalid') }}
-								</td>
+								</th>
 								<td>{{ systemTotals.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Deleted') }}
-								</td>
+								</th>
 								<td>{{ systemTotals.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Locked') }}
-								</td>
+								</th>
 								<td>{{ systemTotals.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Logs') }}
+								</th>
 								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
 								<td>{{ formatBytes(systemTotals.stats?.logs?.size || 0) }}</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Files') }}
+								</th>
 								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
 							</tr>
@@ -118,40 +141,59 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 				</div>
 				<div v-else-if="orphanedItems" class="statsContainer">
 					<table class="statisticsTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Item') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Count') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
+							</tr>
+						</thead>
 						<tbody>
 							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Objects') }}
+								</th>
 								<td>{{ orphanedItems.stats?.objects?.total || 0 }}</td>
 								<td>{{ formatBytes(orphanedItems.stats?.objects?.size || 0) }}</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Invalid') }}
-								</td>
+								</th>
 								<td>{{ orphanedItems.stats?.objects?.invalid || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Deleted') }}
-								</td>
+								</th>
 								<td>{{ orphanedItems.stats?.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr class="subRow">
-								<td class="indented">
+								<th scope="row" class="indented">
 									{{ t('openregister', 'Locked') }}
-								</td>
+								</th>
 								<td>{{ orphanedItems.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Logs') }}
+								</th>
 								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
 								<td>{{ formatBytes(orphanedItems.stats?.logs?.size || 0) }}</td>
 							</tr>
 							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
+								<th scope="row">
+									{{ t('openregister', 'Files') }}
+								</th>
 								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
 								<td>{{ formatBytes(orphanedItems.stats?.files?.size || 0) }}</td>
 							</tr>
@@ -470,9 +512,11 @@ export default {
 	border-collapse: collapse;
 	font-size: 0.9em;
 
-	td {
+	td,
+	th {
 		padding: 4px 8px;
 		border-bottom: 1px solid var(--color-border);
+		text-align: left;
 
 		&:nth-child(2),
 		&:nth-child(3) {
@@ -480,7 +524,13 @@ export default {
 		}
 	}
 
-	.subRow td {
+	/* Row headers are labels, not emphasis — keep the original visual weight. */
+	tbody th {
+		font-weight: normal;
+	}
+
+	.subRow td,
+	.subRow th {
 		color: var(--color-text-maxcontrast);
 	}
 
@@ -488,7 +538,8 @@ export default {
 		padding-left: 24px;
 	}
 
-	tr:last-child td {
+	tr:last-child td,
+	tr:last-child th {
 		border-bottom: none;
 	}
 }
