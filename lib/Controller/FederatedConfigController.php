@@ -255,12 +255,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
      *
-     * @NoAdminRequired
+     * @auth admin-only Returns the instance's federation trust configuration — the source
+     *       allowlist and the trusted publisher keys. The body already rejected non-admins and the
+     *       summary above already said "admin only"; the #[NoAdminRequired] that used to sit here
+     *       declared the opposite of all three.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function trust(): JSONResponse
     {
@@ -281,12 +284,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse The updated trust configuration, or a 4xx.
      *
-     * @NoAdminRequired
+     * @auth admin-only Writes the federation trust configuration: it can append a public key to the
+     *       trusted-keys list, which decides whose published configuration this instance will
+     *       accept. The body already rejected non-admins and the summary above already said
+     *       "admin only"; the #[NoAdminRequired] that used to sit here declared the opposite.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function setTrust(): JSONResponse
     {
