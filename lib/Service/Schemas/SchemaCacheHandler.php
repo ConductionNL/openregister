@@ -33,6 +33,7 @@ use RuntimeException;
 use DateTime;
 use DateInterval;
 use OCP\IDBConnection;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -266,15 +267,31 @@ class SchemaCacheHandler
         }
 
         // Clear from database cache.
-        $sql = 'DELETE FROM '.self::CACHE_TABLE.' WHERE schema_id = ?';
+        //
+        // Built through the query builder, not raw SQL. The raw statement this
+        // replaces read `DELETE FROM openregister_schema_cache ...` — an
+        // UNPREFIXED table name. Nextcloud rewrites `*PREFIX*` and nothing
+        // else, so that statement addressed a table called
+        // `openregister_schema_cache` while the installer creates
+        // `oc_openregister_schema_cache`. It could therefore never have
+        // matched a row, even once the table existed. The query builder
+        // prefixes for us and parameterises `schema_id` as the integer it is,
+        // instead of binding it as a string.
         try {
-            $this->db->executeQuery($sql, [(string) $schemaId]);
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete(self::CACHE_TABLE)
+                ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+            $qb->executeStatement();
             $this->logger->debug(
                 message: '[SchemaCacheHandler] Cleared schema cache',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
             );
         } catch (Exception $e) {
-            $this->logger->error(
+            // `warning`, not `error`: this is the same cause as the catch in
+            // invalidateForSchemaChange() and the two used to disagree about
+            // severity for an identical failure. Neither fails the caller, so
+            // neither is an error; both are a degraded cache.
+            $this->logger->warning(
                 message: '[SchemaCacheHandler] Failed to clear schema cache',
                 context: [
                     'file'     => __FILE__,
@@ -283,7 +300,7 @@ class SchemaCacheHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-        }
+        }//end try
     }//end clearSchemaCache()
 
     /**
@@ -416,10 +433,23 @@ class SchemaCacheHandler
                 ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
             $deletedEntries = $qb->executeStatement();
         } catch (Exception $e) {
-            // If the cache table doesn't exist yet, just log a debug message and continue.
-            // This allows the app to work even if the migration hasn't been run yet.
-            $this->logger->debug(
-                message: '[SchemaCacheHandler] Schema cache table does not exist yet, skipping database cache invalidation',
+            // The cache is an optimisation, so a database failure here must not
+            // fail the schema change that triggered it — but it is NOT expected
+            // and is not logged as though it were.
+            //
+            // This block used to say the table "doesn't exist yet" and that the
+            // tolerance let the app work "even if the migration hasn't been run
+            // yet". No migration created this table, so there was nothing for
+            // that state to be transitional to: the condition was permanent,
+            // the message was wrong, and at default log level `debug` emitted
+            // nothing at all. The only trace was 33 `relation ... does not
+            // exist` errors per run in the Postgres server log. The table is
+            // now created by Version1Date20260809000000, so reaching this
+            // branch means something real went wrong; `warning` matches the
+            // sibling path in clearSchemaCache(), which logged the identical
+            // cause at `error`.
+            $this->logger->warning(
+                message: '[SchemaCacheHandler] Failed to invalidate the database schema cache; continuing on the memory cache only',
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,
@@ -427,7 +457,7 @@ class SchemaCacheHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-        }
+        }//end try
 
         // Remove from memory cache (always safe to do).
         $cacheKeys = [

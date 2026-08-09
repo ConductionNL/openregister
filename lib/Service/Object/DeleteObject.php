@@ -43,8 +43,6 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
