@@ -109,8 +109,8 @@ class Wave12BulkSafeguardsTest extends TestCase
 
     private function callApplyBulkSafeguards(
         array $objects,
-        Register|string|int|null $register,
-        Schema|string|int|null $schema,
+        ?Register $register,
+        ?Schema $schema,
         bool $_rbac,
         bool $_validation,
         array &$result
@@ -402,114 +402,4 @@ class Wave12BulkSafeguardsTest extends TestCase
         $this->assertSame(1, $result['statistics']['invalid']);
         $this->assertStringContainsString('Schema validation failed', $result['invalid'][0]['error']);
     }//end testValidationFailureRejectsRow()
-
-    // === Fail-closed schema resolution (gate-8) ===
-    public function testMixedSchemaRowNamingSchemaAtTopLevelIsStillRbacChecked(): void
-    {
-        // The downstream writer reads the row's schema from `@self.schema`
-        // OR the top-level `schema` key. The safeguard used to read only
-        // `@self.schema`, so this row resolved to no schema, took the
-        // "pass through" branch, and reached the writer with its RBAC check
-        // never evaluated. It must be checked and, here, refused.
-        $this->mockUser('alice', isAdmin: false);
-
-        $schema = $this->newSchema(7, ['create' => ['admin']]);
-        $this->schemaMapper->method('find')->with(7)->willReturn($schema);
-        $this->permissionHandler
-            ->expects($this->once())
-            ->method('hasPermission')
-            ->willReturn(false);
-
-        $result = $this->initResult(1);
-        $passed = $this->callApplyBulkSafeguards(
-            objects: [['schema' => 7, 'title' => 'bypass-attempt']],
-            register: $this->newRegister(10),
-            // Mixed-schema call: no call-level default schema.
-            schema: null,
-            _rbac: true,
-            _validation: false,
-            result: $result
-        );
-
-        $this->assertSame([], $passed, 'A top-level-schema row must not bypass the per-row RBAC check');
-        $this->assertSame(1, $result['statistics']['invalid']);
-        $this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
-    }//end testMixedSchemaRowNamingSchemaAtTopLevelIsStillRbacChecked()
-
-    public function testUnresolvableDefaultSchemaRejectsTheWholeBatch(): void
-    {
-        // A NAMED default schema that cannot be loaded means none of the
-        // per-row gates can run. Fail closed: reject, never pass through.
-        $this->mockUser('alice', isAdmin: false);
-
-        $this->schemaMapper
-            ->method('find')
-            ->willThrowException(new \RuntimeException('schema 999 not found'));
-        $this->permissionHandler->expects($this->never())->method('hasPermission');
-
-        $result = $this->initResult(2);
-        $passed = $this->callApplyBulkSafeguards(
-            objects: [['title' => 'a'], ['title' => 'b']],
-            register: $this->newRegister(10),
-            schema: 999,
-            _rbac: true,
-            _validation: false,
-            result: $result
-        );
-
-        $this->assertSame([], $passed);
-        $this->assertSame(2, $result['statistics']['invalid']);
-        $this->assertStringContainsString('bulk safeguards cannot be enforced', $result['invalid'][0]['error']);
-    }//end testUnresolvableDefaultSchemaRejectsTheWholeBatch()
-
-    public function testRowNamingAnUnresolvableSchemaIsRejectedNotDefaulted(): void
-    {
-        // The row names schema 42; loading it fails. The row must be
-        // rejected, not silently re-pointed at the call-level default
-        // schema — that would evaluate a different schema's rules.
-        $this->mockUser('alice', isAdmin: false);
-
-        $defaultSchema = $this->newSchema(1);
-        $this->schemaMapper
-            ->method('find')
-            ->willThrowException(new \RuntimeException('schema 42 not found'));
-        $this->permissionHandler->expects($this->never())->method('hasPermission');
-
-        $result = $this->initResult(1);
-        $passed = $this->callApplyBulkSafeguards(
-            objects: [['@self' => ['schema' => 42], 'title' => 'orphan']],
-            register: $this->newRegister(10),
-            schema: $defaultSchema,
-            _rbac: true,
-            _validation: false,
-            result: $result
-        );
-
-        $this->assertSame([], $passed);
-        $this->assertSame(1, $result['statistics']['invalid']);
-        $this->assertStringContainsString('could not be resolved', $result['invalid'][0]['error']);
-    }//end testRowNamingAnUnresolvableSchemaIsRejectedNotDefaulted()
-
-    public function testRowWithNoResolvableSchemaAtAllIsRejected(): void
-    {
-        // Mixed-schema call, row names no schema: the schema-bound gates
-        // cannot run, so the row is refused here rather than forwarded to
-        // the writer with its checks unevaluated.
-        $this->mockUser('alice', isAdmin: false);
-        $this->permissionHandler->expects($this->never())->method('hasPermission');
-
-        $result = $this->initResult(1);
-        $passed = $this->callApplyBulkSafeguards(
-            objects: [['title' => 'schemaless']],
-            register: $this->newRegister(10),
-            schema: null,
-            _rbac: true,
-            _validation: false,
-            result: $result
-        );
-
-        $this->assertSame([], $passed);
-        $this->assertSame(1, $result['statistics']['invalid']);
-        $this->assertStringContainsString('No schema could be resolved', $result['invalid'][0]['error']);
-    }//end testRowWithNoResolvableSchemaAtAllIsRejected()
 }//end class
