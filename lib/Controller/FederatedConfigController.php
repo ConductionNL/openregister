@@ -87,12 +87,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{types: [{id, name, topic}]}`.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function types(): JSONResponse
     {
@@ -111,12 +109,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function bundle(): JSONResponse
     {
@@ -152,7 +148,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function install(): JSONResponse
     {
@@ -207,7 +202,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function publish(): JSONResponse
     {
@@ -265,12 +259,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function trust(): JSONResponse
     {
@@ -291,12 +283,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse The updated trust configuration, or a 4xx.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function setTrust(): JSONResponse
     {
