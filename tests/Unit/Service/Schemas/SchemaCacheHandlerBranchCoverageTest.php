@@ -139,8 +139,10 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase
             'schema_2_schema_object' => 'other',
         ]);
 
-        $this->db->method('executeQuery')
-            ->willReturn($this->createMock(\OCP\DB\IResult::class));
+        // clearSchemaCache() deletes through the query builder now. It used to
+        // issue raw SQL naming the table UNPREFIXED, which Nextcloud never
+        // rewrites, so it could not have matched a row under any configuration.
+        $this->db->method('getQueryBuilder')->willReturn($this->createMockQueryBuilder());
 
         $this->handler->clearSchemaCache(1);
 
@@ -152,7 +154,7 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase
 
     public function testClearSchemaCacheDbException(): void
     {
-        $this->db->method('executeQuery')
+        $this->db->method('getQueryBuilder')
             ->willThrowException(new \Exception('DB error'));
 
         $this->handler->clearSchemaCache(1);
