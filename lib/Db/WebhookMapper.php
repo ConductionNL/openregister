@@ -293,7 +293,7 @@ class WebhookMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     public function findEnabledForInterceptionScan(): array
     {

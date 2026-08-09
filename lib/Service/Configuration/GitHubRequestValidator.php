@@ -198,7 +198,7 @@ class GitHubRequestValidator
      *
      * @return JSONResponse|null Null on success/absence, 400 with structured error_code on failure.
      *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-20b
+     * @spec openspec/specs/github-issue-proxy/spec.md#issues-list-endpoint
      */
     public function validateLabels(?array $labels): ?JSONResponse
     {
