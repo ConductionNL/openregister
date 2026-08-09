@@ -137,6 +137,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															ref="propertyValueInput"
 															:model-value="String(formData[key] !== undefined ? formData[key] : value || '')"
 															:type="getPropertyInputType(key)"
+															:aria-label="getPropertyDisplayName(key)"
 															:placeholder="getPropertyDisplayName(key)"
 															:min="getPropertyMinimum(key)"
 															:max="getPropertyMaximum(key)"
@@ -398,6 +399,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													<NcCheckboxRadioSwitch
 														:model-value="allFilesSelected"
 														:indeterminate="someFilesSelected"
+														:aria-label="t('openregister', 'Select All')"
 														@update:modelValue="toggleSelectAllFiles" />
 												</th>
 												<th scope="col" class="tableColumnExpanded">
@@ -446,9 +448,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<td class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
 														:model-value="selectedAttachments.includes(attachment.id)"
+														:aria-labelledby="`attachment-row-title-${attachment.id}`"
 														@update:modelValue="(checked) => toggleFileSelection(attachment.id, checked)" />
 												</td>
-												<td class="tableColumnExpanded table-row-title">
+												<td :id="`attachment-row-title-${attachment.id}`" class="tableColumnExpanded table-row-title">
 													<!-- Show warning icon if file is not shared -->
 													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
 														title="Not shared"

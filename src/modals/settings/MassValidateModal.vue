@@ -249,12 +249,13 @@
 					</div>
 
 					<div class="form-row">
-						<label class="form-label">
+						<label class="form-label" for="mass-validate-max-objects">
 							<strong>Max Objects (0 = all)</strong>
 							<p class="form-description">Maximum number of objects to process. Set to 0 to process all objects.</p>
 						</label>
 						<div class="form-input">
 							<input
+								id="mass-validate-max-objects"
 								v-model.number="localConfig.maxObjects"
 								type="number"
 								:disabled="massValidating"
@@ -265,12 +266,13 @@
 					</div>
 
 					<div class="form-row">
-						<label class="form-label">
+						<label class="form-label" for="mass-validate-batch-size">
 							<strong>Batch Size</strong>
 							<p class="form-description">Number of objects to process in each batch (1-5000).</p>
 						</label>
 						<div class="form-input">
 							<input
+								id="mass-validate-batch-size"
 								v-model.number="localConfig.batchSize"
 								type="number"
 								:disabled="massValidating"

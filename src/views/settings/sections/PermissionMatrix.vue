@@ -43,7 +43,7 @@ import { translate as t } from '@nextcloud/l10n'
 								class="action-column">
 								{{ t('openregister', action) }}
 							</th>
-							<th scope="col" class="action-column">
+							<th id="permission-matrix-col-public" scope="col" class="action-column">
 								{{ t('openregister', 'Public') }}
 							</th>
 						</tr>
@@ -52,7 +52,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<template v-for="register in registers" :key="'reg-' + register.id">
 							<!-- Register Row -->
 							<tr class="register-row">
-								<td class="name-cell">
+								<td :id="`permission-matrix-register-${register.id}`" class="name-cell">
 									<button
 										class="expand-toggle"
 										@click="toggleRegister(register.id)">
@@ -77,6 +77,7 @@ import { translate as t } from '@nextcloud/l10n'
 									<NcCheckboxRadioSwitch
 										:model-value="isPublicAccess(register.authorization)"
 										type="switch"
+										:aria-labelledby="`permission-matrix-register-${register.id} permission-matrix-col-public`"
 										@update:modelValue="togglePublicAccess(register, $event)" />
 								</td>
 							</tr>
@@ -86,7 +87,7 @@ import { translate as t } from '@nextcloud/l10n'
 								<tr v-for="schema in getRegisterSchemas(register)"
 									:key="'schema-' + schema.id"
 									class="schema-row">
-									<td class="name-cell schema-indent">
+									<td :id="`permission-matrix-schema-${register.id}-${schema.id}`" class="name-cell schema-indent">
 										&#8627; {{ schema.title || schema.name || 'Schema #' + schema.id }}
 										<span v-if="!schema.authorization || Object.keys(schema.authorization).length === 0"
 											class="inherited-badge"
@@ -107,6 +108,7 @@ import { translate as t } from '@nextcloud/l10n'
 										<NcCheckboxRadioSwitch
 											:model-value="isPublicAccess(getEffectiveAuth(schema, register))"
 											type="switch"
+											:aria-labelledby="`permission-matrix-schema-${register.id}-${schema.id} permission-matrix-col-public`"
 											@update:modelValue="toggleSchemaPublicAccess(schema, register, $event)" />
 									</td>
 								</tr>
