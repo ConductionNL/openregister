@@ -32,6 +32,13 @@
 - [x] Create src/mail-sidebar/components/SuggestedObjectsList.vue for sender-based discovery results
 - [x] Create src/mail-sidebar/components/ObjectCard.vue with title, schema, register, deep link, and unlink button
 - [x] Create src/mail-sidebar/components/LinkObjectDialog.vue modal with search input and results list
+  <!-- SUPERSEDED: the component was created, so this box was honestly ticked — but "create" was
+       the whole task, and nothing ever imported it. The modal was never mounted, and REQ-001 later
+       replaced the inline "Link to Object" button with the Connect tab (ActionsTab.vue). The file
+       has been removed. A task that says "create a component" and not "render it from X" can be
+       completed in full while the capability stays unreachable; that is how this survived spec,
+       unit tests and an archive review. -->
+
 
 ## Frontend - Composables and API
 
