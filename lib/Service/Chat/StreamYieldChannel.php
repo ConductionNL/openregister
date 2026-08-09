@@ -202,4 +202,5 @@ class StreamYieldChannel
      * frame emitted right after the SSE headers, plus the wall-clock
      * interleave in `forwardWithHeartbeat()`.
      */
+
 }//end class

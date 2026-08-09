@@ -338,9 +338,8 @@ class ChatStreamController extends Controller
             );
             // There is deliberately no `onHeartbeat` registration: the channel
             // has no heartbeat pub/sub, because no producer moment exists that
-            // `forwardWithHeartbeat()` below does not already cover. See the
+            // `forwardWithHeartbeat()` above does not already cover. See the
             // note at the foot of StreamYieldChannel.
-
             $result = $this->chatService->processMessage(
                 conversationId: $conversation->getId(),
                 userId: $userId,

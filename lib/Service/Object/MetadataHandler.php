@@ -80,4 +80,5 @@ class MetadataHandler
      * $schema)` — schema-aware, so it reads the schema's configured slug
      * source rather than slugifying an arbitrary string.
      */
+
 }//end class

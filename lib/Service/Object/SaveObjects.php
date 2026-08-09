@@ -674,7 +674,8 @@ class SaveObjects
             } catch (\Throwable $e) {
                 $this->recordSafeguardRejection(
                     object: $sanitised,
-                    reason: 'The schema this row names could not be resolved, so its permission and validation gates could not be evaluated: '.$e->getMessage(),
+                    reason: 'The schema this row names could not be resolved, so its permission and '
+                        .'validation gates could not be evaluated: '.$e->getMessage(),
                     result: $result
                 );
                 continue;
