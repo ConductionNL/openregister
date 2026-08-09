@@ -19,12 +19,18 @@
 		</NcButton>
 		<div v-if="showCreateForm" class="create-form">
 			<div class="form-group">
-				<label>Name</label>
-				<input v-model="newChain.name" type="text" class="input-field">
+				<label for="approval-chain-name">Name</label>
+				<input id="approval-chain-name"
+					v-model="newChain.name"
+					type="text"
+					class="input-field">
 			</div>
 			<div class="form-group">
-				<label>Status Field</label>
-				<input v-model="newChain.statusField" type="text" class="input-field">
+				<label for="approval-chain-status-field">Status Field</label>
+				<input id="approval-chain-status-field"
+					v-model="newChain.statusField"
+					type="text"
+					class="input-field">
 			</div>
 			<NcButton variant="primary" @click="createChain">
 				Save Chain

@@ -250,6 +250,26 @@ Case handlers need quick, scannable access to case context while reading emails.
 
 ### Requirement: Link and unlink actions from the sidebar
 
+> **SUPERSEDED by REQ-001 (Three-tab sidebar layout), below.** The heading and
+> its scenarios are kept so existing `@spec` anchors continue to resolve, but the
+> modal-dialog design described here is NOT what ships.
+>
+> REQ-001 states that the Link tab "replaces the inline 'Link to Object' button".
+> That replacement happened in the code — the live affordance is the **Connect**
+> tab (`ActionsTab.vue`), which searches per schema and links on selection — but
+> this requirement was never marked superseded, so both designs read as current.
+> The modal it describes (`LinkObjectDialog.vue`) existed, was specced, unit-
+> tested and documented, and **was never mounted by anything**: it had zero
+> imports in the entire repository. It has now been removed.
+>
+> The one capability the modal had that the Connect tab does not is search
+> across *all* registers and schemas at once (`GET /api/objects?_search=`)
+> rather than within one configured schema at a time
+> (`GET /api/objects/{register}/{schema}?_search=`). That difference is a
+> property of the superseded design, not a feature that was lost in use — no
+> user could reach it. If cross-register linking is wanted, it belongs in the
+> Connect tab as a new requirement, not in a resurrected modal.
+
 The system SHALL provide UI actions in the sidebar to link and unlink objects from the current email. Linking opens a search dialog where the user can find objects by title, UUID, or schema. Unlinking removes the association after confirmation.
 
 #### Rationale

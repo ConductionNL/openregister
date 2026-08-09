@@ -126,6 +126,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<NcTextField
 										v-if="mergedData[property] === 'custom'"
 										v-model="customValues[property]"
+										:aria-label="'Enter custom value for ' + property"
 										:placeholder="'Enter custom value for ' + property"
 										class="custom-input" />
 								</template>

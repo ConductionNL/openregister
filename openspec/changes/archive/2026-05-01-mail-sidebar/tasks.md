@@ -34,6 +34,12 @@
 - [x] Create src/mail-sidebar/components/SuggestedObjectsList.vue for sender-based discovery results
 - [x] Create src/mail-sidebar/components/ObjectCard.vue with title, schema, register, deep link, and unlink button
 - [x] Create src/mail-sidebar/components/LinkObjectDialog.vue modal with search input and results list
+  <!-- SUPERSEDED: the component was created, so this box was honestly ticked — but "create" was
+       the whole task, and nothing ever imported it. The modal was never mounted, and REQ-001 later
+       replaced the inline "Link to Object" button with the Connect tab (ActionsTab.vue). The file
+       has been removed. See openspec/specs/mail-sidebar/spec.md, "Link and unlink actions from the
+       sidebar", which is now marked superseded. -->
+
 
 ## Frontend - Composables and API
 
