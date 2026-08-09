@@ -27,7 +27,10 @@ use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\TestCase;
 
@@ -66,6 +69,20 @@ class FlowControllerTest extends TestCase
     private $flows;
 
     /**
+     * The mocked user session, used to resolve the caller.
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * The mocked group manager, used to answer "is the caller an admin".
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
      * The controller under test.
      *
      * @var FlowController
@@ -87,6 +104,16 @@ class FlowControllerTest extends TestCase
 
         $this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
 
+        // Default to an ADMIN caller so the pre-existing tests keep exercising
+        // the palette they were written against; the escalation tests below
+        // override this with a non-admin.
+        $this->userSession  = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $adminUser          = $this->createMock(IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($adminUser);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new FlowController(
             'openregister',
             $this->request,
@@ -94,7 +121,9 @@ class FlowControllerTest extends TestCase
             $this->nodes,
             $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
-            $this->flows
+            $this->flows,
+            $this->userSession,
+            $this->groupManager
         );
 
     }//end setUp()
@@ -138,7 +167,13 @@ class FlowControllerTest extends TestCase
     }//end testNodeCatalogSurfacesAppContributedLeaves()
 
     /**
-     * Admin scope is the default, so a builder never has to ask for it.
+     * An ADMIN caller gets the admin palette without asking for it.
+     *
+     * The name says "defaults" because that is what it means for an
+     * administrator. It is no longer a property of the request: the scope is
+     * derived from the caller, and this test's caller is an admin because
+     * setUp() makes one. The non-admin half is covered at the bottom of this
+     * class.
      *
      * @return void
      */
@@ -224,7 +259,9 @@ class FlowControllerTest extends TestCase
             $this->nodes,
             $mapper,
             $this->preflight,
-            $this->flows
+            $this->flows,
+            $this->userSession,
+            $this->groupManager
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -274,7 +311,9 @@ class FlowControllerTest extends TestCase
             $this->nodes,
             $mapper,
             $this->preflight,
-            $this->flows
+            $this->flows,
+            $this->userSession,
+            $this->groupManager
         );
 
         $response = $controller->state(flowId: 'someone-elses-flow');
@@ -310,7 +349,9 @@ class FlowControllerTest extends TestCase
             $this->nodes,
             $mapper,
             $this->preflight,
-            $this->flows
+            $this->flows,
+            $this->userSession,
+            $this->groupManager
         );
 
         $response = $controller->state(flowId: 'flow-1');
@@ -339,7 +380,9 @@ class FlowControllerTest extends TestCase
             $this->nodes,
             $mapper,
             $this->preflight,
-            $this->flows
+            $this->flows,
+            $this->userSession,
+            $this->groupManager
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -441,4 +484,117 @@ class FlowControllerTest extends TestCase
         $this->assertFalse($response->getData()['valid']);
 
     }//end testValidateRejectsANonFlowBody()
+
+    /**
+     * A non-administrator must never receive the admin palette.
+     *
+     * This is the regression test for the actual defect. The scope used to come
+     * from `?scope=`, which is the caller's to set, so it could never have been
+     * a privilege check — and because it DEFAULTED to SCOPE_ADMIN, the failure
+     * mode was the dangerous one: a non-administrator who simply did not send
+     * the parameter got the admin palette. Omitting it is the normal case.
+     *
+     * @return void
+     */
+    public function testANonAdminNeverReceivesTheAdminPaletteWhenNoScopeIsSent(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $plainUser    = $this->createMock(IUser::class);
+        $plainUser->method('getUID')->willReturn('jan');
+        $userSession->method('getUser')->willReturn($plainUser);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        // No scope parameter — the normal case, and the one that used to leak.
+        $this->request->method('getParam')->willReturn(null);
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $userSession,
+            $groupManager
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testANonAdminNeverReceivesTheAdminPaletteWhenNoScopeIsSent()
+
+    /**
+     * A non-administrator cannot escalate by ASKING for the admin scope.
+     *
+     * @return void
+     */
+    public function testANonAdminCannotRequestTheAdminScope(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $plainUser    = $this->createMock(IUser::class);
+        $plainUser->method('getUID')->willReturn('jan');
+        $userSession->method('getUser')->willReturn($plainUser);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $this->request->method('getParam')->willReturn('admin');
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $userSession,
+            $groupManager
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testANonAdminCannotRequestTheAdminScope()
+
+    /**
+     * An unresolvable session fails CLOSED, onto the reduced palette.
+     *
+     * @return void
+     */
+    public function testAnUnresolvableSessionGetsTheUserPalette(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $userSession->method('getUser')->willReturn(null);
+        $groupManager->expects($this->never())->method('isAdmin');
+
+        $this->request->method('getParam')->willReturn(null);
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $userSession,
+            $groupManager
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testAnUnresolvableSessionGetsTheUserPalette()
 }//end class
