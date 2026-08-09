@@ -76,11 +76,16 @@ class SchemaCacheHandlerDeepTest extends TestCase
 
     public function testClearSchemaCacheWithDbException(): void
     {
-        $this->db->method('executeQuery')
+        // clearSchemaCache() deletes through the query builder now; the raw SQL
+        // it replaces named the table UNPREFIXED and could never have matched.
+        // The failure is logged at `warning`, not `error`: the sibling catch in
+        // invalidateForSchemaChange() has the identical cause, neither fails the
+        // caller, so neither is an error — both are a degraded cache.
+        $this->db->method('getQueryBuilder')
             ->willThrowException(new Exception('db error'));
 
         $this->logger->expects($this->atLeastOnce())
-            ->method('error');
+            ->method('warning');
 
         // Should not throw
         $this->handler->clearSchemaCache(1);
@@ -144,8 +149,11 @@ class SchemaCacheHandlerDeepTest extends TestCase
         $qb->method('createNamedParameter')->willReturnArgument(0);
         $qb->method('executeStatement')->willThrowException(new Exception('table not exist'));
 
+        // The table is created by Version1Date20260809000000, so this branch no
+        // longer means "the migration has not run"; it means a real database
+        // failure, and is logged as a warning rather than swallowed at debug.
         $this->logger->expects($this->atLeastOnce())
-            ->method('debug');
+            ->method('warning');
 
         // Should not throw
         $this->handler->invalidateForSchemaChange(42, 'delete');
