@@ -22,10 +22,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					:taggable="true"
 					:multiple="true"
 					:selectable="(option) => isSelectable(option)" />
-				<NcCheckboxRadioSwitch :disabled="loading"
+				<NcCheckboxRadioSwitch v-model="share"
+					:disabled="loading"
 					:label="t('openregister', 'Auto share')"
-					type="switch"
-					v-model="share">
+					type="switch">
 					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -153,13 +153,13 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					<thead>
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
-							<th>
+							<th scope="col">
 								{{ t('openregister', 'File name') }}
 							</th>
-							<th>
+							<th scope="col">
 								{{ t('openregister', 'Size') }}
 							</th>
-							<th>
+							<th scope="col">
 								{{ t('openregister', 'Labels') }}
 							</th>
 						</tr>

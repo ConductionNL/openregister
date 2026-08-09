@@ -7,11 +7,21 @@
 		<table v-else-if="executions.length" class="execution-table">
 			<thead>
 				<tr>
-					<th>Timestamp</th>
-					<th>Hook</th>
-					<th>Object</th>
-					<th>Status</th>
-					<th>Duration</th>
+					<th scope="col">
+						Timestamp
+					</th>
+					<th scope="col">
+						Hook
+					</th>
+					<th scope="col">
+						Object
+					</th>
+					<th scope="col">
+						Status
+					</th>
+					<th scope="col">
+						Duration
+					</th>
 				</tr>
 			</thead>
 			<tbody>

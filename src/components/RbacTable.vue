@@ -3,11 +3,21 @@
 		<table class="rbac-table">
 			<thead>
 				<tr>
-					<th>Group</th>
-					<th>Create</th>
-					<th>Read</th>
-					<th>Update</th>
-					<th>Delete</th>
+					<th scope="col">
+						Group
+					</th>
+					<th scope="col">
+						Create
+					</th>
+					<th scope="col">
+						Read
+					</th>
+					<th scope="col">
+						Update
+					</th>
+					<th scope="col">
+						Delete
+					</th>
 				</tr>
 			</thead>
 			<tbody>

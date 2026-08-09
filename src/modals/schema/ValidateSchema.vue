@@ -79,12 +79,24 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<table class="validation-table">
 						<thead>
 							<tr>
-								<th>Status</th>
-								<th>ID</th>
-								<th>Name</th>
-								<th>UUID</th>
-								<th>Errors</th>
-								<th>Actions</th>
+								<th scope="col">
+									Status
+								</th>
+								<th scope="col">
+									ID
+								</th>
+								<th scope="col">
+									Name
+								</th>
+								<th scope="col">
+									UUID
+								</th>
+								<th scope="col">
+									Errors
+								</th>
+								<th scope="col">
+									Actions
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -322,6 +334,7 @@ export default {
 
 		/**
 		 * @param object
+		 * @param _object
 		 * @spec exclude UI navigation stub — placeholder for viewing an object's details.
 		 */
 		viewObjectDetails(_object) {

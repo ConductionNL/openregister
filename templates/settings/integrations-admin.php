@@ -53,15 +53,15 @@ $authBadgeClass = static function (string $authStatus): string {
         <table class="grid">
             <thead>
                 <tr>
-                    <th><?php p($l->t('ID')); ?></th>
-                    <th><?php p($l->t('Label')); ?></th>
-                    <th><?php p($l->t('Group')); ?></th>
-                    <th><?php p($l->t('Storage')); ?></th>
-                    <th><?php p($l->t('Required app')); ?></th>
-                    <th><?php p($l->t('Status')); ?></th>
-                    <th><?php p($l->t('Auth')); ?></th>
-                    <th><?php p($l->t('OpenConnector source')); ?></th>
-                    <th><?php p($l->t('Actions')); ?></th>
+                    <th scope="col"><?php p($l->t('ID')); ?></th>
+                    <th scope="col"><?php p($l->t('Label')); ?></th>
+                    <th scope="col"><?php p($l->t('Group')); ?></th>
+                    <th scope="col"><?php p($l->t('Storage')); ?></th>
+                    <th scope="col"><?php p($l->t('Required app')); ?></th>
+                    <th scope="col"><?php p($l->t('Status')); ?></th>
+                    <th scope="col"><?php p($l->t('Auth')); ?></th>
+                    <th scope="col"><?php p($l->t('OpenConnector source')); ?></th>
+                    <th scope="col"><?php p($l->t('Actions')); ?></th>
                 </tr>
             </thead>
             <tbody>

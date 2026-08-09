@@ -50,7 +50,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					:key="obj['@self'].id"
 					class="object-item table-row-selectable"
 					:class="{ 'table-row-selected': selectedTargetObject?.['@self']?.id === obj['@self'].id }"
-					@click="selectTargetObject(obj)">
+					role="button"
+					tabindex="0"
+					:aria-pressed="selectedTargetObject?.['@self']?.id === obj['@self'].id"
+					@click="selectTargetObject(obj)"
+					@keydown.enter="selectTargetObject(obj)"
+					@keydown.space.prevent="selectTargetObject(obj)">
 					<div class="object-info">
 						<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj['@self']?.id }}</strong>
 						<p class="object-id">
@@ -80,10 +85,18 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<table class="merge-table">
 					<thead>
 						<tr>
-							<th>Property</th>
-							<th>Source</th>
-							<th>Target</th>
-							<th>Result Value</th>
+							<th scope="col">
+								Property
+							</th>
+							<th scope="col">
+								Source
+							</th>
+							<th scope="col">
+								Target
+							</th>
+							<th scope="col">
+								Result Value
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -157,9 +170,15 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<table class="file-table">
 						<thead>
 							<tr>
-								<th>Filename</th>
-								<th>Size</th>
-								<th>Type</th>
+								<th scope="col">
+									Filename
+								</th>
+								<th scope="col">
+									Size
+								</th>
+								<th scope="col">
+									Type
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -214,8 +233,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<table class="relation-table">
 						<thead>
 							<tr>
-								<th>Related Object</th>
-								<th>Relation Type</th>
+								<th scope="col">
+									Related Object
+								</th>
+								<th scope="col">
+									Relation Type
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -272,9 +295,15 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<table class="relation-table">
 						<thead>
 							<tr>
-								<th>Referencing Object</th>
-								<th>Type</th>
-								<th>Register / Schema</th>
+								<th scope="col">
+									Referencing Object
+								</th>
+								<th scope="col">
+									Type
+								</th>
+								<th scope="col">
+									Register / Schema
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -351,9 +380,15 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<table class="report-table">
 						<thead>
 							<tr>
-								<th>Property</th>
-								<th>Old Value</th>
-								<th>New Value</th>
+								<th scope="col">
+									Property
+								</th>
+								<th scope="col">
+									Old Value
+								</th>
+								<th scope="col">
+									New Value
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -1280,5 +1315,11 @@ export default {
 
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.object-item {
+		transition: none;
+	}
 }
 </style>

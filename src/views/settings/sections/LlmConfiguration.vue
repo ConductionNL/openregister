@@ -1262,4 +1262,12 @@ export default {
 		grid-template-columns: repeat(2, 1fr);
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.stat-card,
+	.collapsible-section summary,
+	.stat-tile {
+		transition: none;
+	}
+}
 </style>

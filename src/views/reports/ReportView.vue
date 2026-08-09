@@ -12,7 +12,10 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ dashboard?.titel || t('openregister', 'Dashboard') }}
 					</h1>
-					<NcButton variant="tertiary" :disabled="loading" @click="refresh">
+					<NcButton variant="tertiary"
+						:disabled="loading"
+						:aria-label="t('openregister', 'Refresh dashboard')"
+						@click="refresh">
 						<template #icon>
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<Refresh v-else :size="20" />

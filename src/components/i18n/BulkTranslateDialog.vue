@@ -1,6 +1,10 @@
 <template>
 	<div v-if="open" class="bulk-translate-dialog__backdrop" @click.self="$emit('close')">
-		<div class="bulk-translate-dialog" role="dialog" aria-labelledby="bulk-translate-dialog-title">
+		<div class="bulk-translate-dialog"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="bulk-translate-dialog-title"
+			@keydown.escape="$emit('close')">
 			<header class="bulk-translate-dialog__header">
 				<h3 id="bulk-translate-dialog-title">
 					Bulk translate

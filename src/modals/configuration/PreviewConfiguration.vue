@@ -644,4 +644,10 @@ export default {
 	color: var(--color-text-lighter);
 	font-style: italic;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.changeItem {
+		transition: none;
+	}
+}
 </style>

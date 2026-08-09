@@ -479,4 +479,10 @@ export default {
 	height: 64px;
 	fill: currentColor;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.extraction-tab__chevron {
+		transition: none;
+	}
+}
 </style>

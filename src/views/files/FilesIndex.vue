@@ -65,34 +65,34 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th class="column-filename sortable" @click="toggleSort('fileName')">
+							<th scope="col" class="column-filename sortable" @click="toggleSort('fileName')">
 								{{ t('openregister', 'File Name') }}
 								<span v-if="sortField === 'fileName'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-mimetype">
+							<th scope="col" class="column-mimetype">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th class="column-size sortable" @click="toggleSort('fileSize')">
+							<th scope="col" class="column-size sortable" @click="toggleSort('fileSize')">
 								{{ t('openregister', 'Size') }}
 								<span v-if="sortField === 'fileSize'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-chunks sortable" @click="toggleSort('chunkCount')">
+							<th scope="col" class="column-chunks sortable" @click="toggleSort('chunkCount')">
 								{{ t('openregister', 'Chunks') }}
 								<span v-if="sortField === 'chunkCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-entities sortable" @click="toggleSort('entityCount')">
+							<th scope="col" class="column-entities sortable" @click="toggleSort('entityCount')">
 								{{ t('openregister', 'Entities') }}
 								<span v-if="sortField === 'entityCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-risk sortable" @click="toggleSort('riskLevel')">
+							<th scope="col" class="column-risk sortable" @click="toggleSort('riskLevel')">
 								{{ t('openregister', 'Risk Level') }}
 								<span v-if="sortField === 'riskLevel'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-extracted sortable" @click="toggleSort('extractedAt')">
+							<th scope="col" class="column-extracted sortable" @click="toggleSort('extractedAt')">
 								{{ t('openregister', 'Extracted At') }}
 								<span v-if="sortField === 'extractedAt'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
 							</th>
-							<th class="column-actions">
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
