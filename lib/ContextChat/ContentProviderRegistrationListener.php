@@ -22,7 +22,7 @@
  *
  * @template-implements IEventListener<ContentProviderRegisterEvent>
  *
- * @spec openspec/specs/context-chat-provider/spec.md#requirement-openregister-must-register-a-context-chat-content-provider-only-when-the-platform-is-available
+ * @spec openspec/specs/context-chat-provider/spec.md#openregister-registers-a-context-chat-content-provider-only-when-the-platform-is-available
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\EventDispatcher\IEventListener;
  * `IContentManager::isContextChatAvailable()` so a standalone instance
  * without the `context_chat` app installed is entirely unaffected.
  *
- * @spec openspec/specs/context-chat-provider/spec.md#requirement-openregister-must-register-a-context-chat-content-provider-only-when-the-platform-is-available
+ * @spec openspec/specs/context-chat-provider/spec.md#openregister-registers-a-context-chat-content-provider-only-when-the-platform-is-available
  */
 class ContentProviderRegistrationListener implements IEventListener
 {
@@ -50,7 +50,7 @@ class ContentProviderRegistrationListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-openregister-must-register-a-context-chat-content-provider-only-when-the-platform-is-available
+     * @spec openspec/specs/context-chat-provider/spec.md#openregister-registers-a-context-chat-content-provider-only-when-the-platform-is-available
      */
     public function __construct(
         private readonly IContentManager $contentManager
@@ -66,7 +66,7 @@ class ContentProviderRegistrationListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/specs/context-chat-provider/spec.md#requirement-openregister-must-register-a-context-chat-content-provider-only-when-the-platform-is-available
+     * @spec openspec/specs/context-chat-provider/spec.md#openregister-registers-a-context-chat-content-provider-only-when-the-platform-is-available
      */
     public function handle(Event $event): void
     {
