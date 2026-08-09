@@ -336,13 +336,10 @@ class ChatStreamController extends Controller
                     payload: $payload
                 )
             );
-            $channel->onHeartbeat(
-                fn () => $this->forwardWithHeartbeat(
-                    eventType: 'heartbeat',
-                    payload: ['ts' => gmdate('c')]
-                )
-            );
-
+            // There is deliberately no `onHeartbeat` registration: the channel
+            // has no heartbeat pub/sub, because no producer moment exists that
+            // `forwardWithHeartbeat()` above does not already cover. See the
+            // note at the foot of StreamYieldChannel.
             $result = $this->chatService->processMessage(
                 conversationId: $conversation->getId(),
                 userId: $userId,

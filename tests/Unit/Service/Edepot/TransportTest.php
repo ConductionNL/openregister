@@ -160,6 +160,76 @@ class TransportTest extends TestCase
     }
 
     /**
+     * An endpoint is configured but no authentication type is. The SIP
+     * package must NOT be sent: an empty auth type used to produce an empty
+     * header set and an unauthenticated POST of the archival records.
+     */
+    public function testRestApiTransportRefusesWhenAuthenticationTypeIsUnset(): void
+    {
+        $transport = new RestApiTransport($this->httpClient, $this->logger);
+        $result = $transport->send('/tmp/test.zip', [
+            'endpointUrl' => 'https://edepot.example.com/api/ingest',
+        ]);
+
+        $this->assertFalse($result->isSuccess());
+        $this->assertStringContainsString('authenticationType', $result->getErrorMessage());
+    }
+
+    /**
+     * api_key selected, credential blank → refuse rather than send an empty
+     * `X-API-Key` header.
+     */
+    public function testRestApiTransportRefusesApiKeyAuthWithoutAKey(): void
+    {
+        $transport = new RestApiTransport($this->httpClient, $this->logger);
+        $result = $transport->send('/tmp/test.zip', [
+            'endpointUrl'        => 'https://edepot.example.com/api/ingest',
+            'authenticationType' => 'api_key',
+            'apiKey'             => '',
+        ]);
+
+        $this->assertFalse($result->isSuccess());
+        $this->assertStringContainsString('apiKey', $result->getErrorMessage());
+    }
+
+    /**
+     * oauth2 selected, bearer token blank → refuse rather than send
+     * `Authorization: Bearer `.
+     */
+    public function testRestApiTransportRefusesOauth2AuthWithoutABearerToken(): void
+    {
+        $transport = new RestApiTransport($this->httpClient, $this->logger);
+        $result = $transport->send('/tmp/test.zip', [
+            'endpointUrl'        => 'https://edepot.example.com/api/ingest',
+            'authenticationType' => 'oauth2',
+            'bearerToken'        => '',
+        ]);
+
+        $this->assertFalse($result->isSuccess());
+        $this->assertStringContainsString('bearerToken', $result->getErrorMessage());
+    }
+
+    /**
+     * A fully configured transport passes validation — the refusal above is
+     * about MISSING credentials, not about every REST transfer. The send
+     * still fails, on the missing SIP file, which proves validateConfig()
+     * was cleared.
+     */
+    public function testRestApiTransportAcceptsAConfiguredApiKey(): void
+    {
+        $transport = new RestApiTransport($this->httpClient, $this->logger);
+
+        $result = $transport->send('/nonexistent/file.zip', [
+            'endpointUrl'        => 'https://edepot.example.com/api/ingest',
+            'authenticationType' => 'api_key',
+            'apiKey'             => 'a-real-key',
+        ]);
+
+        $this->assertFalse($result->isSuccess());
+        $this->assertStringContainsString('SIP file not found', $result->getErrorMessage());
+    }
+
+    /**
      * Test OpenConnectorTransport returns name.
      */
     public function testOpenConnectorTransportName(): void
