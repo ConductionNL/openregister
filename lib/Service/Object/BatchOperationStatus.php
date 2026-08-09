@@ -171,6 +171,18 @@ class BatchOperationStatus
     /**
      * Append an unchanged-row outcome (input matched stored data).
      *
+     * NO PRODUCER YET, DELIBERATELY LEFT THAT WAY (gate-57, 2026-08-09). The
+     * only producer of a `BatchOperationStatus` is
+     * `SaveObject::saveObjectsStreaming()`, which records every non-create as
+     * an update and says so in its own comment — distinguishing "unchanged"
+     * there needs a signal `saveObject()` does not currently return. The bulk
+     * path DOES classify unchanged rows, but it reports through plain result
+     * arrays (`SaveObjects::buildChunkResults()`), not through this object, so
+     * there is nothing to reuse. Deleting only this recorder would leave a
+     * bucket that `getUnchanged()` / `getUnchangedCount()` / `toArray()` still
+     * publish and nothing can ever fill; deleting the whole bucket would drop
+     * `unchanged` / `unchangedCount` from a published payload shape.
+     *
      * @param string $uuid UUID of the unchanged row.
      *
      * @return void

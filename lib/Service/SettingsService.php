@@ -1945,17 +1945,17 @@ class SettingsService
         $this->config->setAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug), $payload);
     }//end setDeckDefault()
 
-    /**
-     * Clear the persisted Deck default for a schema. No-op when none stored.
+    /*
+     * `clearDeckDefault()` was removed. Its docblock claimed it was
+     * "exercised only by uninstall paths"; there is no such path — no repair
+     * step, no occ command, no route and no UI ever called it, and Nextcloud
+     * drops the whole `openregister` appconfig namespace on uninstall anyway,
+     * so the case it named was already covered by the platform.
      *
-     * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-     *
-     * @return void
-     *
-     * @spec exclude — defensive cleanup helper exercised only by uninstall paths; behaviour proxied to IConfig.
+     * The gap it left behind is real and is NOT closed here: `deckLinks#
+     * setDefault` refuses boardId/stackId of 0, so once a sticky Deck default
+     * is set for a schema there is no API or UI to unset it. Closing that
+     * needs a new route plus an authorization decision on a schema-scoped
+     * setting, which is a different change from this one.
      */
-    public function clearDeckDefault(string $schemaSlug): void
-    {
-        $this->config->deleteAppValue($this->appName, $this->buildDeckDefaultKey(schemaSlug: $schemaSlug));
-    }//end clearDeckDefault()
 }//end class

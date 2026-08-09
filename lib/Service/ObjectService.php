@@ -69,7 +69,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
-use OCA\OpenRegister\Service\Object\ExportHandler;
 use OCA\OpenRegister\Service\Object\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\CrudHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;

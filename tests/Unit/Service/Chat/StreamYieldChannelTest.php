@@ -70,20 +70,6 @@ class StreamYieldChannelTest extends TestCase
         $this->assertSame([$payload], $captured);
     }//end testSingleToolResultCallbackReceivesPayload()
 
-    public function testSingleHeartbeatCallbackFires(): void
-    {
-        $channel = new StreamYieldChannel();
-        $count   = 0;
-        $channel->onHeartbeat(static function () use (&$count): void {
-            $count++;
-        });
-
-        $channel->emitHeartbeat();
-        $channel->emitHeartbeat();
-
-        $this->assertSame(2, $count);
-    }//end testSingleHeartbeatCallbackFires()
-
     public function testTwoTokenCallbacksFireInRegistrationOrder(): void
     {
         $channel = new StreamYieldChannel();
@@ -149,7 +135,6 @@ class StreamYieldChannelTest extends TestCase
         $channel->emitToken(delta: 'x');
         $channel->emitToolCall(payload: []);
         $channel->emitToolResult(payload: []);
-        $channel->emitHeartbeat();
 
         $this->assertTrue(true);
     }//end testNoCallbackRegisteredEmitIsNoop()
