@@ -65,19 +65,19 @@
 				<table v-else class="templatesTable">
 					<thead>
 						<tr>
-							<th class="column-name">
+							<th scope="col" class="column-name">
 								{{ t('openregister', 'Name') }}
 							</th>
-							<th class="column-type">
+							<th scope="col" class="column-type">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th class="column-description">
+							<th scope="col" class="column-description">
 								{{ t('openregister', 'Description') }}
 							</th>
-							<th class="column-updated">
+							<th scope="col" class="column-updated">
 								{{ t('openregister', 'Updated At') }}
 							</th>
-							<th class="column-actions">
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>

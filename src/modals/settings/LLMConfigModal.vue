@@ -99,6 +99,7 @@
 						id="openai-org"
 						v-model="openaiConfig.organizationId"
 						type="text"
+						autocomplete="off"
 						:placeholder="t('openregister', 'org-...')"
 						class="input-field">
 				</div>

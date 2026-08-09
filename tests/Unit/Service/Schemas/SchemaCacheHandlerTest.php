@@ -394,9 +394,11 @@ class SchemaCacheHandlerTest extends TestCase
             'schema_31_schema_object' => 'other',
         ]);
 
-        $this->db->method('executeQuery')->willReturn(
-            $this->createMock(IResult::class)
-        );
+        // clearSchemaCache() now deletes through the query builder. It used to
+        // issue raw SQL naming the table UNPREFIXED, which Nextcloud never
+        // rewrites, so the statement could not have matched a row even once
+        // the table existed.
+        $this->db->method('getQueryBuilder')->willReturn($this->createMockQueryBuilder(false, 1));
 
         $this->handler->clearSchemaCache(30);
 
@@ -408,11 +410,14 @@ class SchemaCacheHandlerTest extends TestCase
 
     public function testClearSchemaCacheHandlesDatabaseError(): void
     {
-        $this->db->method('executeQuery')
+        $this->db->method('getQueryBuilder')
             ->willThrowException(new Exception('DB error'));
 
+        // `warning`, not `error`: invalidateForSchemaChange() catches the same
+        // cause and the two used to disagree about severity. Neither fails the
+        // caller, so neither is an error — both are a degraded cache.
         $this->logger->expects($this->atLeastOnce())
-            ->method('error')
+            ->method('warning')
             ->with($this->stringContains('Failed to clear schema cache'));
 
         $this->handler->clearSchemaCache(99);
@@ -421,9 +426,7 @@ class SchemaCacheHandlerTest extends TestCase
 
     public function testClearSchemaCacheLogsSuccess(): void
     {
-        $this->db->method('executeQuery')->willReturn(
-            $this->createMock(IResult::class)
-        );
+        $this->db->method('getQueryBuilder')->willReturn($this->createMockQueryBuilder(false, 1));
 
         $this->logger->expects($this->once())
             ->method('debug')
@@ -473,9 +476,15 @@ class SchemaCacheHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
+        // The message no longer claims the table "does not exist yet". No
+        // migration ever created it, so that state was permanent rather than
+        // transitional, and `debug` meant nothing was emitted at default log
+        // level — the only trace was in the Postgres server log. The table is
+        // created by Version1Date20260809000000, so reaching this branch now
+        // means a real database failure and is logged as a warning.
         $this->logger->expects($this->atLeastOnce())
-            ->method('debug')
-            ->with($this->stringContains('does not exist yet'));
+            ->method('warning')
+            ->with($this->stringContains('Failed to invalidate the database schema cache'));
 
         $this->handler->invalidateForSchemaChange(50);
         $this->assertTrue(true);

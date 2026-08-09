@@ -99,7 +99,15 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 		</div>
 
 		<!-- Description -->
-		<div class="registerDescription-container" @click="item.description ? descriptionExpanded = !descriptionExpanded : null">
+		<!-- Only a disclosure control when there is actually a description to expand;
+			with no description the click is a no-op, so it must not be a tab stop. -->
+		<div class="registerDescription-container"
+			:role="item.description ? 'button' : null"
+			:tabindex="item.description ? 0 : null"
+			:aria-expanded="item.description ? String(descriptionExpanded) : null"
+			@click="item.description ? descriptionExpanded = !descriptionExpanded : null"
+			@keydown.enter="item.description ? descriptionExpanded = !descriptionExpanded : null"
+			@keydown.space.prevent="item.description ? descriptionExpanded = !descriptionExpanded : null">
 			<div class="registerDescription"
 				:class="{ 'registerDescription--expanded': descriptionExpanded, 'registerDescription--empty': !item.description }">
 				{{ item.description || t('openregister', 'No description found') }}
@@ -112,9 +120,15 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 				<table class="statisticsTable registerSchemas">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Schema Name') }}</th>
-							<th>{{ t('openregister', 'Objects') }}</th>
-							<th>{{ t('openregister', 'Configuration') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Schema Name') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Objects') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Configuration') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -240,8 +254,12 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 				<table class="statisticsTable registerSchemas">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Name') }}</th>
-							<th>{{ t('openregister', 'Type') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Name') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Type') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -1223,5 +1241,11 @@ export default {
 	color: var(--color-warning-dark);
 	font-size: 0.8em;
 	margin-left: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.registerDescription-container {
+		transition: none;
+	}
 }
 </style>

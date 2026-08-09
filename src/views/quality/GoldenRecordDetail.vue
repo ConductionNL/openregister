@@ -41,10 +41,18 @@
 			<table v-else class="provenanceTable" data-testid="provenance-table">
 				<thead>
 					<tr>
-						<th>{{ t('openregister', 'Attribute') }}</th>
-						<th>{{ t('openregister', 'Winning source') }}</th>
-						<th>{{ t('openregister', 'Confidence') }}</th>
-						<th>{{ t('openregister', 'Timestamp') }}</th>
+						<th scope="col">
+							{{ t('openregister', 'Attribute') }}
+						</th>
+						<th scope="col">
+							{{ t('openregister', 'Winning source') }}
+						</th>
+						<th scope="col">
+							{{ t('openregister', 'Confidence') }}
+						</th>
+						<th scope="col">
+							{{ t('openregister', 'Timestamp') }}
+						</th>
 					</tr>
 				</thead>
 				<tbody>

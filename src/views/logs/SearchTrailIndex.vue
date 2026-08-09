@@ -87,28 +87,28 @@ import formatBytes from '../../services/formatBytes.js'
 									:indeterminate="someSelected"
 									@update:modelValue="toggleSelectAll" />
 							</th>
-							<th class="searchTermColumn">
+							<th scope="col" class="searchTermColumn">
 								{{ t('openregister', 'Search Term') }}
 							</th>
-							<th class="timestampColumn">
+							<th scope="col" class="timestampColumn">
 								{{ t('openregister', 'Timestamp') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Register') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Schema') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'User') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Results') }}
 							</th>
-							<th class="tableColumnConstrained">
+							<th scope="col" class="tableColumnConstrained">
 								{{ t('openregister', 'Execution Time') }}
 							</th>
-							<th class="tableColumnActions">
+							<th scope="col" class="tableColumnActions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>
@@ -715,5 +715,11 @@ export default {
 	0% { transform: scale(1); }
 	50% { transform: scale(1.2); }
 	100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:deep(.copySuccessIcon) {
+		animation: none;
+	}
 }
 </style>

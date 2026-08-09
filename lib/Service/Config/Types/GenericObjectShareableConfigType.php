@@ -113,6 +113,15 @@ class GenericObjectShareableConfigType implements IShareableConfigType
      * that, the whole set of the register/schema is shared. Each object is
      * reduced to its portable fields.
      *
+     * RBAC and multitenancy are LEFT ON. Both were previously disabled here,
+     * and both call sites of `serialise()` — `FederatedConfigService::bundle()`
+     * and `::publish()` — are reached from an ordinary authenticated HTTP
+     * request (`POST /api/federated-config/bundle`, `#[NoAdminRequired]`).
+     * That made this method a read of every organisation's objects in the
+     * register/schema, returned verbatim to any signed-in user. `_rbac: false`
+     * is an ENGINE escape hatch for paths that run with no session; a request
+     * reaches this one, so it must be scoped like any other read.
+     *
      * @param array $selection `{ids?: [...]}`.
      *
      * @return array `{type, version, register, schema, objects: [...]}`.
@@ -127,8 +136,8 @@ class GenericObjectShareableConfigType implements IShareableConfigType
         try {
             $found = $this->objectService->findAll(
                 config: ['filters' => ['register' => $this->register, 'schema' => $this->schema]],
-                _rbac: false,
-                _multitenancy: false
+                _rbac: true,
+                _multitenancy: true
             );
         } catch (Throwable $e) {
             $found = [];

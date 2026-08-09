@@ -114,4 +114,10 @@ export default {
 	margin-top: 4px;
 	display: block;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.organisationOption {
+		transition: none;
+	}
+}
 </style>

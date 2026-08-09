@@ -26,10 +26,18 @@
 					<table class="webhookHealthTable">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Webhook') }}</th>
-								<th>{{ t('openregister', 'Delivered') }}</th>
-								<th>{{ t('openregister', 'Failed') }}</th>
-								<th>{{ t('openregister', 'Pending retries') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Webhook') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Delivered') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Failed') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Pending retries') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -55,11 +63,21 @@
 					<table v-else class="recentFailuresTable">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Webhook') }}</th>
-								<th>{{ t('openregister', 'Event') }}</th>
-								<th>{{ t('openregister', 'Status code') }}</th>
-								<th>{{ t('openregister', 'Error') }}</th>
-								<th>{{ t('openregister', 'Created') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Webhook') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Event') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Status code') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Error') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Created') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>

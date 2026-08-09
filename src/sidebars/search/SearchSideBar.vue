@@ -2445,4 +2445,13 @@ export default {
 	flex-direction: column;
 	gap: 8px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.viewRow,
+	.chip-remove,
+	.editViewTab,
+	.columnGroupHeader {
+		transition: none;
+	}
+}
 </style>

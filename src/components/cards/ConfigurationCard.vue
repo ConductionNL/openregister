@@ -966,4 +966,11 @@ export default {
 	background-color: var(--color-error);
 	color: white;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.configurationCard,
+	.metaLink {
+		transition: none;
+	}
+}
 </style>

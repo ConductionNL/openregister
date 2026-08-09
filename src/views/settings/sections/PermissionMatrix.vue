@@ -34,13 +34,16 @@ import { translate as t } from '@nextcloud/l10n'
 				<table class="matrix-table">
 					<thead>
 						<tr>
-							<th class="name-column">
+							<th scope="col" class="name-column">
 								{{ t('openregister', 'Register / Schema') }}
 							</th>
-							<th v-for="action in actions" :key="action" class="action-column">
+							<th v-for="action in actions"
+								:key="action"
+								scope="col"
+								class="action-column">
 								{{ t('openregister', action) }}
 							</th>
-							<th class="action-column">
+							<th scope="col" class="action-column">
 								{{ t('openregister', 'Public') }}
 							</th>
 						</tr>
