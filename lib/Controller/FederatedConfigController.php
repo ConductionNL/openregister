@@ -259,6 +259,11 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
      *
+     * @auth admin-only Returns the instance's federation trust configuration — the source
+     *       allowlist and the trusted publisher keys. The body rejects non-admins, and #2342
+     *       removed the #[NoAdminRequired] that used to contradict it; this states the posture so
+     *       "admin-only by Nextcloud default" stays distinguishable from a forgotten attribute.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
@@ -282,6 +287,11 @@ class FederatedConfigController extends Controller
      * trusted-keys list.
      *
      * @return JSONResponse The updated trust configuration, or a 4xx.
+     *
+     * @auth admin-only Writes the federation trust configuration: it can append a public key to the
+     *       trusted-keys list, which decides whose published configuration this instance will
+     *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
+     *       to contradict it; this states the posture rather than leaving it to a default.
      *
      * @NoCSRFRequired
      *
