@@ -54,6 +54,31 @@ class GenericActionAuthService
     protected const CONFIG_KEY = 'actions';
 
     /**
+     * Matrix value meaning "any signed-in user", as an explicit, revocable grant.
+     *
+     * WHY THIS EXISTS
+     * ---------------
+     * The matrix was fail-closed with no way to say "open". Every value denied
+     * non-admins — an unknown action, an empty list and `['admin']` alike — so
+     * the only thing an action could be was admin-only. That made the matrix
+     * unusable for any behaviour that is currently open: adding the action at
+     * all would lock out everyone who can do it today, which is why an
+     * already-open operation never got an entry and therefore never became
+     * configurable.
+     *
+     * With this, "open" is a value the matrix can hold. An admin sees the
+     * action listed, sees that everyone may do it, and can narrow it to real
+     * groups — instead of the action being invisible because naming it would
+     * have broken the instance.
+     *
+     * It is NOT a default. An action with no entry still denies: absence keeps
+     * meaning no.
+     *
+     * @var string
+     */
+    public const EVERYONE = '@authenticated';
+
+    /**
      * Constructor.
      *
      * @param string        $appId        The calling (leaf) app id.
@@ -70,9 +95,9 @@ class GenericActionAuthService
     /**
      * Require that the user may perform the named action.
      *
-     * Admin users always pass. Non-admins pass only when any of their groups
-     * intersects the matrix entry. Fail-closed: an unknown action or an
-     * admin-only entry denies non-admins.
+     * Admin users always pass. Non-admins pass when the entry grants
+     * {@see EVERYONE}, or when any of their groups intersects it. Fail-closed
+     * otherwise: an unknown action or an admin-only entry denies non-admins.
      *
      * @param IUser  $user   The authenticated user.
      * @param string $action Dot-separated action name (e.g. "item.publish").
@@ -90,6 +115,13 @@ class GenericActionAuthService
         }
 
         $allowedGroups = $this->getAllowedGroups(action: $action);
+
+        // An explicit "everyone" grant. The user is already authenticated by
+        // the time a controller calls this, so there is nothing further to
+        // check — but the action stays in the matrix, visible and revocable.
+        if (in_array(self::EVERYONE, $allowedGroups, true) === true) {
+            return;
+        }
 
         if (count($allowedGroups) === 0 || $allowedGroups === ['admin']) {
             throw new OCSForbiddenException("Action '{$action}' requires admin rights");

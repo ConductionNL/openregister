@@ -104,6 +104,9 @@ class FlowControllerTest extends TestCase
 
         $this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
 
+        $this->actionAuth = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
+        $this->actionAuth->method('can')->willReturn(true);
+
         // Default to an ADMIN caller so the pre-existing tests keep exercising
         // the palette they were written against; the escalation tests below
         // override this with a non-admin.
@@ -123,7 +126,12 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            // An action-auth that ALLOWS by default, so the pre-existing tests
+            // keep asserting what they were written to assert. The rights
+            // themselves are covered in ActionAuthEveryoneTest, and the refusal
+            // path below overrides this.
+            $this->actionAuth
         );
 
     }//end setUp()
@@ -261,7 +269,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->actionAuth
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -313,7 +322,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->actionAuth
         );
 
         $response = $controller->state(flowId: 'someone-elses-flow');
@@ -351,7 +361,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->actionAuth
         );
 
         $response = $controller->state(flowId: 'flow-1');
@@ -382,7 +393,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->actionAuth
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -521,7 +533,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $userSession,
-            $groupManager
+            $groupManager,
+            $this->actionAuth
         );
 
         $controller->nodeCatalog();
@@ -557,7 +570,8 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $userSession,
-            $groupManager
+            $groupManager,
+            $this->actionAuth
         );
 
         $controller->nodeCatalog();
@@ -591,10 +605,60 @@ class FlowControllerTest extends TestCase
             $this->preflight,
             $this->flows,
             $userSession,
-            $groupManager
+            $groupManager,
+            $this->actionAuth
         );
 
         $controller->nodeCatalog();
 
     }//end testAnUnresolvableSessionGetsTheUserPalette()
+
+    /**
+     * A caller without the right is refused with 403, not 500.
+     *
+     * The four flow rights are seeded open, so this path only fires once an
+     * admin has narrowed them — which makes it exactly the one nobody
+     * exercises by accident. It returns a RESPONSE rather than letting an OCS
+     * exception escape a plain Controller, because that surfaces as a 500, and
+     * a right that reads as a server fault is one nobody can act on.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+     */
+    public function testAWriteIsRefusedWhenTheRightIsNotHeld(): void
+    {
+        $denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
+        $denying->method('can')->willReturn(false);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $this->userSession,
+            $this->groupManager,
+            $denying
+        );
+
+        // The flow service must never be reached: a refusal that still wrote
+        // would be a right in name only.
+        $this->flows->expects($this->never())->method('save');
+        $this->flows->expects($this->never())->method('run');
+
+        $responses = [
+            $controller->create(),
+            $controller->update('x'),
+            $controller->destroy('x'),
+            $controller->run('x'),
+        ];
+
+        foreach ($responses as $response) {
+            $this->assertSame(403, $response->getStatus());
+        }
+
+    }//end testAWriteIsRefusedWhenTheRightIsNotHeld()
 }//end class

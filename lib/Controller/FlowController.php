@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -83,15 +84,16 @@ class FlowController extends Controller
     /**
      * Constructor.
      *
-     * @param string              $appName      App id.
-     * @param IRequest            $request      HTTP request.
-     * @param EventCatalogService $eventCatalog The flow trigger catalog.
-     * @param FlowNodeRegistry    $nodes        The registered flow-step types.
-     * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
-     * @param FlowNodePreflight   $preflight    Resolves a document's step types.
-     * @param FlowService         $flows        Reads, writes and runs flow definitions.
-     * @param IUserSession        $userSession  Resolves the calling user.
-     * @param IGroupManager       $groupManager Answers whether that user is an administrator.
+     * @param string                        $appName      App id.
+     * @param IRequest                      $request      HTTP request.
+     * @param EventCatalogService           $eventCatalog The flow trigger catalog.
+     * @param FlowNodeRegistry              $nodes        The registered flow-step types.
+     * @param FlowStateMapper               $flowState    Reads state a flow keeps between runs.
+     * @param FlowNodePreflight             $preflight    Resolves a document's step types.
+     * @param FlowService                   $flows        Reads, writes and runs flow definitions.
+     * @param IUserSession                  $userSession  Resolves the calling user.
+     * @param IGroupManager                 $groupManager Answers whether that user is an administrator.
+     * @param OpenRegisterActionAuthService $actionAuth   The flow action-rights matrix.
      */
     public function __construct(
         string $appName,
@@ -103,9 +105,48 @@ class FlowController extends Controller
         private readonly FlowService $flows,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
+        private readonly OpenRegisterActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Refuse unless the caller holds the named right.
+     *
+     * Returns a RESPONSE rather than throwing, because every method here
+     * answers in JSON and an OCS exception escaping a plain `Controller`
+     * surfaces as a 500 — a right that reads as a server fault is one nobody
+     * can act on.
+     *
+     * These four rights are seeded `@authenticated`, which is exactly the
+     * access that existed before them: the flow endpoints were
+     * `@NoAdminRequired` and scoped only by organisation. So this changes
+     * nothing on an untouched instance, and gives an admin something to
+     * tighten.
+     *
+     * @param string $action The action name.
+     *
+     * @return JSONResponse|null A 403 when refused, null when allowed.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+     */
+    private function denyUnless(string $action): ?JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        if ($this->actionAuth->can(user: $user, action: $action) === true) {
+            return null;
+        }
+
+        return new JSONResponse(
+            ['error' => sprintf('You do not have the "%s" right.', $action)],
+            Http::STATUS_FORBIDDEN
+        );
+
+    }//end denyUnless()
 
     /**
      * Whether the calling user is a Nextcloud administrator.
@@ -498,6 +539,11 @@ class FlowController extends Controller
     #[NoAdminRequired]
     public function create(): JSONResponse
     {
+        $denied = $this->denyUnless(action: 'flow.create');
+        if ($denied !== null) {
+            return $denied;
+        }
+
         $data = $this->flowPayload();
 
         if (trim((string) ($data['name'] ?? '')) === '') {
@@ -566,6 +612,11 @@ class FlowController extends Controller
     #[NoAdminRequired]
     public function update(string $id): JSONResponse
     {
+        $denied = $this->denyUnless(action: 'flow.update');
+        if ($denied !== null) {
+            return $denied;
+        }
+
         try {
             $flow = $this->flows->save(data: $this->flowPayload(), uuid: $id);
         } catch (DoesNotExistException $e) {
@@ -590,6 +641,11 @@ class FlowController extends Controller
     #[NoAdminRequired]
     public function destroy(string $id): JSONResponse
     {
+        $denied = $this->denyUnless(action: 'flow.delete');
+        if ($denied !== null) {
+            return $denied;
+        }
+
         try {
             $this->flows->delete(uuid: $id);
         } catch (DoesNotExistException $e) {
@@ -614,6 +670,11 @@ class FlowController extends Controller
     #[NoAdminRequired]
     public function run(string $id): JSONResponse
     {
+        $denied = $this->denyUnless(action: 'flow.run');
+        if ($denied !== null) {
+            return $denied;
+        }
+
         $subject = $this->request->getParam('subject', []);
         $context = $this->request->getParam('context', []);
 
