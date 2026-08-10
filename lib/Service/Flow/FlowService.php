@@ -61,14 +61,16 @@ class FlowService
     /**
      * Constructor.
      *
-     * @param FlowMapper         $mapper      Reads and writes flow definitions.
-     * @param FlowRunService     $runner      Queues and executes runs.
-     * @param IUserSession       $userSession Identifies the acting user.
-     * @param LoggerInterface    $logger      Records refusals and failures.
-     * @param ContainerInterface $container   Resolves OrganisationService lazily.
+     * @param FlowMapper         $mapper       Reads and writes flow definitions.
+     * @param FlowTriggerIndex   $triggerIndex Keeps the trigger index derived from the nodes.
+     * @param FlowRunService     $runner       Queues and executes runs.
+     * @param IUserSession       $userSession  Identifies the acting user.
+     * @param LoggerInterface    $logger       Records refusals and failures.
+     * @param ContainerInterface $container    Resolves OrganisationService lazily.
      */
     public function __construct(
         private readonly FlowMapper $mapper,
+        private readonly FlowTriggerIndex $triggerIndex,
         private readonly FlowRunService $runner,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
@@ -212,10 +214,18 @@ class FlowService
         $flow->setUpdated(new DateTime());
 
         if ($isCreate === true) {
-            return $this->mapper->insert($flow);
+            $stored = $this->mapper->insert($flow);
+        } else {
+            $stored = $this->mapper->update($flow);
         }
 
-        return $this->mapper->update($flow);
+        // Re-derive the trigger index from the nodes that were just saved.
+        // AFTER the write, so the index can never name a subscription the
+        // stored document does not declare — and never raising, so a failure
+        // to index cannot cost an author their work.
+        $this->triggerIndex->reindex(flow: $stored);
+
+        return $stored;
 
     }//end save()
 
@@ -366,6 +376,11 @@ class FlowService
     public function delete(string $uuid): void
     {
         $this->mapper->delete($this->find(uuid: $uuid));
+
+        // Drop the flow's trigger rows too. An orphaned row is read on every
+        // matching object event and names a flow that can no longer be loaded,
+        // so it costs a failed lookup per event, forever.
+        $this->triggerIndex->forget(flowUuid: $uuid);
 
     }//end delete()
 

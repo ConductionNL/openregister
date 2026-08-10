@@ -182,14 +182,64 @@ the flow does NOT fire today and the cutover would START it. Both are behaviour
 changes an operator has to be told about, and a single "not equivalent" hides
 which one happened.
 
-**Measured on the development instance, 2026-08-10: the cutover is BLOCKED.**
-All 16 flows carry ZERO trigger nodes — every flow is authored purely on the
-columns — so switching the resolver today would stop all of them. A backfill
-must come first, and 4 of the 5 object-triggered flows CANNOT be backfilled:
-they are scoped to any register and any schema, which `openregister.trigger-object`
-deliberately refuses to express. Widening the node to accept a wildcard would
-contradict the scenario above; leaving those flows on the columns would mean two
-matching paths. That choice is a product decision, not an implementation detail.
+**Measured on the development instance, 2026-08-10.** All 16 flows carry ZERO
+trigger nodes — every flow is authored purely on the columns. Switching the
+resolver to nodes ALONE would therefore have stopped all 16, and 4 of the 5
+object-triggered flows cannot be represented as nodes at all: they are scoped to
+any register and any schema, which `openregister.trigger-object` deliberately
+refuses to express.
+
+**The cutover ships as nodes-first WITH a column fallback.** A flow that has any
+row in the derived index is matched by its NODES alone; a flow with no rows keeps
+matching through its columns. This is what makes the change safe to ship without
+re-authoring anything: the backfill converted 0 flows on the development instance
+and the resolver's output was byte-identical before and after.
+
+The fallback is the DEPRECATION SURFACE, not a permanent second path. Of the 16,
+12 convert by simply being re-authored with a trigger node (8 `manual`,
+3 `schedule`, 1 scoped `object.created`); only the 4 unscoped object triggers are
+genuinely blocked, and each needs one trigger node per register/schema pair.
+Widening the node to accept a wildcard would contradict the scenario above.
+
+#### Scenario: An unconverted flow keeps firing through its columns
+
+- **GIVEN** a flow with no rows in the derived trigger index
+- **WHEN** an object event fires that its trigger columns match
+- **THEN** the flow MUST still be started
+- **AND** this MUST hold when the index is UNREADABLE — during the upgrade that
+  creates it, every flow falls back, because answering "no flow was interested"
+  there would silence the whole engine and look exactly like a quiet afternoon
+- @e2e exclude engine-internal resolution — covered by `FlowLocatorTriggerCutoverTest`
+
+#### Scenario: A converted flow does NOT fire from its stale columns
+
+- **GIVEN** a flow that HAS rows in the index, whose trigger column still names
+  an event its nodes no longer declare
+- **WHEN** that event fires
+- **THEN** the flow MUST NOT be started
+- **AND** the reason is that deleting a trigger node has to actually unsubscribe
+  the flow — consulting the columns for a converted flow would let a removed node
+  keep firing through a column nobody edits
+- @e2e exclude engine-internal resolution — covered by `FlowLocatorTriggerCutoverTest`
+
+#### Scenario: A flow matched by both sources is started once
+
+- **GIVEN** a flow matched by both its index rows and its trigger columns
+- **WHEN** the event fires
+- **THEN** it MUST be started exactly once
+- @e2e exclude engine-internal resolution — covered by `FlowLocatorTriggerCutoverTest`
+
+#### Scenario: The backfill distinguishes "not yet re-authored" from "cannot be expressed"
+
+- **GIVEN** flows whose columns name `manual`, `schedule` and an unscoped
+  `object.updated`
+- **WHEN** the backfill reports what it could not convert
+- **THEN** the manual and schedule flows MUST be reported as merely awaiting
+  re-authoring, and only the unscoped OBJECT trigger as blocked
+- **AND** the reason is that `register` and `schema` are meaningless for a manual
+  or schedule trigger, so reporting them as "unscoped" would name 15 flows as
+  blocked when 11 of them convert by adding one node
+- @e2e exclude engine-internal reporting — covered by the backfill's own output
 
 #### Scenario: An unscoped column trigger is never reported as reproducible by a node
 

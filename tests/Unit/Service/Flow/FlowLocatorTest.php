@@ -11,6 +11,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,7 +58,16 @@ class FlowLocatorTest extends TestCase
 
     private function locator(FlowMapper $mapper): FlowLocator
     {
-        return new FlowLocator($mapper, $this->createMock(ObjectService::class), new \Psr\Log\NullLogger());
+        // An EMPTY trigger index, deliberately: these tests are about the
+        // column path, and a flow absent from the index is exactly the flow
+        // whose columns still decide. The cutover's own behaviour — nodes
+        // first, fallback second — is asserted in FlowLocatorTriggerCutoverTest.
+        return new FlowLocator(
+            $mapper,
+            $this->createMock(FlowTriggerMapper::class),
+            $this->createMock(ObjectService::class),
+            new \Psr\Log\NullLogger()
+        );
     }//end locator()
 
     public function testResolveFlowReturnsTheDocument(): void

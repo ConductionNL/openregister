@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -62,12 +63,14 @@ class FlowLocator
     /**
      * Constructor.
      *
-     * @param FlowMapper      $mapper        Reads flow definitions.
-     * @param ObjectService   $objectService Loads the object a run is about.
-     * @param LoggerInterface $logger        Records refusals and failures.
+     * @param FlowMapper        $mapper        Reads flow definitions.
+     * @param FlowTriggerMapper $triggerMapper The node-derived trigger index.
+     * @param ObjectService     $objectService Loads the object a run is about.
+     * @param LoggerInterface   $logger        Records refusals and failures.
      */
     public function __construct(
         private readonly FlowMapper $mapper,
+        private readonly FlowTriggerMapper $triggerMapper,
         private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger
     ) {
@@ -183,6 +186,33 @@ class FlowLocator
      */
     public function flowsForTrigger(string $event, string $register, string $schema): array
     {
+        // NODES FIRST. A flow that has any row in the derived index has been
+        // converted, and its NODES decide entirely — including deciding that it
+        // does not want this event. Falling back for such a flow would let a
+        // deleted trigger node keep firing through the column it no longer
+        // reflects, which is the opposite of what removing the node meant.
+        $indexed   = [];
+        $converted = [];
+        try {
+            $indexed   = $this->triggerMapper->flowUuidsFor(
+                event: $event,
+                register: $register,
+                schema: $schema
+            );
+            $converted = array_flip($this->triggerMapper->representedFlowUuids());
+        } catch (Throwable $e) {
+            // The index is unreadable — during the upgrade that creates it, or
+            // if it is dropped. Every flow then falls back to its columns,
+            // which is exactly the pre-cutover behaviour. Degrading to "no
+            // flow was interested" here would silently stop the whole engine.
+            $this->logger->warning(
+                message: '[FlowLocator] Trigger index unreadable for "'.$event.'": '.$e->getMessage()
+                    .'. Falling back to the flow trigger columns for every flow.',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $converted = [];
+        }
+
         try {
             $candidates = $this->mapper->findByTrigger(
                 trigger: $event,
@@ -197,18 +227,53 @@ class FlowLocator
             return [];
         }
 
-        $ids = [];
+        // The column match is kept ONLY for flows the index does not represent.
+        // A converted flow's columns are stale by construction — they hold one
+        // trigger where its nodes may hold several — so consulting them for a
+        // converted flow would resurrect a subscription its author removed.
+        $matched = [];
         foreach ($candidates as $flow) {
+            $uuid = (string) $flow->getUuid();
+            if (isset($converted[$uuid]) === true) {
+                continue;
+            }
+
+            $matched[$uuid] = $flow;
+        }
+
+        // The index answers in UUIDs; the dispatch check needs the row. These
+        // are the flows whose NODES want this event.
+        foreach ($indexed as $uuid) {
+            if (isset($matched[$uuid]) === true) {
+                continue;
+            }
+
+            try {
+                $matched[$uuid] = $this->mapper->findByUuid(uuid: $uuid);
+            } catch (Throwable $e) {
+                // An index row for a flow that no longer exists. Report it
+                // rather than skip silently: it means a delete did not reach
+                // the index, and the row will keep being read on every event.
+                $this->logger->warning(
+                    message: '[FlowLocator] Trigger index names flow "'.$uuid.'" which could not be loaded: '
+                        .$e->getMessage().'. Its index rows are stale.',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
+                );
+            }
+        }//end foreach
+
+        $ids = [];
+        foreach ($matched as $uuid => $flow) {
             if ($flow->canDispatch() === false) {
                 $this->logger->warning(
-                    message: '[FlowLocator] Flow "'.$flow->getUuid().'" matched trigger "'.$event
+                    message: '[FlowLocator] Flow "'.$uuid.'" matched trigger "'.$event
                         .'" but was not dispatched: it has no owner, so there is no identity to run it as.',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $uuid]
                 );
                 continue;
             }
 
-            $ids[] = (string) $flow->getUuid();
+            $ids[] = (string) $uuid;
         }//end foreach
 
         return $ids;
