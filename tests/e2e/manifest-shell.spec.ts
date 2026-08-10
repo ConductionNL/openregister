@@ -118,11 +118,25 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		// than an exact count so adding a KPI card is not a false regression.
 		expect(await page.locator('.kpi-card').count()).toBeGreaterThanOrEqual(4)
 
-		// A list widget renders either its data table or its empty-state placeholder
-		// (the dashboard always paints the widget body for popular-terms /
-		// objects-by-register / objects-by-schema, regardless of data presence).
+		// A list widget renders either its data table or its empty-state
+		// placeholder — never an unpainted body.
+		//
+		// ⚠️ This asserted `.list-widget-content .stats-table, .list-widget-content
+		// .widget-empty`, and NEITHER half could ever match: `.list-widget-content`
+		// appears nowhere in src/, and `.stats-table` only in
+		// views/settings/sections/StatisticsOverview.vue, which is not the
+		// dashboard. A populated widget renders `CnDataTable`, an empty one
+		// `div.widget-empty` (DashboardIndex.vue, `#widget-objects-by-register`).
+		// The selector went unnoticed because CI never executed this file.
+		//
+		// Scoped to the "Objects by Register" widget by its own title so this
+		// asserts THAT widget's body, not "some table exists on the page".
+		const widget = page.locator('.dashboard-widget, .widget, section, article')
+			.filter({ hasText: /Objects by Register/i })
+			.last()
+		await expect(widget).toBeVisible({ timeout: 15_000 })
 		await expect(
-			page.locator('.list-widget-content .stats-table, .list-widget-content .widget-empty').first(),
+			widget.locator('table tbody tr, .widget-empty').first(),
 		).toBeVisible({ timeout: 15_000 })
 	})
 
