@@ -144,8 +144,58 @@ class FlowConnectivity
             return [];
         }
 
+        $rolesPresent = $this->rolesPresent(nodes: $nodes);
+        $findings     = [];
+
+        if ($rolesPresent['trigger'] === false) {
+            $findings[] = [
+                'type'   => '',
+                'app'    => '',
+                'step'   => '',
+                'reason' => FlowNodePreflight::REASON_NO_TRIGGER,
+                'detail' => 'This flow has no trigger node, so nothing can ever start it. '
+                    .'Add a trigger — an object change, a schedule, or someone running it by hand.',
+            ];
+        }
+
+        if ($rolesPresent['end'] === false) {
+            $findings[] = [
+                'type'   => '',
+                'app'    => '',
+                'step'   => '',
+                'reason' => FlowNodePreflight::REASON_NO_END,
+                'detail' => 'This flow has no end node, so no path finishes deliberately. '
+                    .'Add an End node — it may end in success or in error, but the flow must say where it stops.',
+            ];
+        }
+
+        return $findings;
+
+    }//end entryAndExit()
+
+    /**
+     * Which of the two ROLES the document actually contains.
+     *
+     * Extracted from `entryAndExit()`, which sat exactly on the configured
+     * thresholds (Cyclomatic 10 of 10, NPath 204 of 200). The split is along a
+     * real seam rather than an arbitrary one: this method answers "what is in
+     * the document", and its caller answers "what should the author be told".
+     *
+     * `exit: true` is deliberately NOT consulted. That flag marks a node as
+     * ending this PATH, which is what the dead-end check honours; it does not
+     * make the FLOW's exit deliberate. It is a per-instance escape for migrated
+     * documents, not a node that says "the flow finishes here", so a flow whose
+     * only exit is a flag still has no end node and is told so.
+     *
+     * @param array<int|string, mixed> $nodes The document's nodes.
+     *
+     * @return array{trigger: bool, end: bool} Which roles are present.
+     */
+    private function rolesPresent(array $nodes): array
+    {
         $hasTrigger = false;
         $hasEnd     = false;
+
         foreach ($nodes as $node) {
             if (is_array($node) === false) {
                 continue;
@@ -163,42 +213,14 @@ class FlowConnectivity
             if ($this->registry->isEnd(type: $type) === true) {
                 $hasEnd = true;
             }
-
-            // `exit: true` marks a node as ending this PATH, which is what the
-            // dead-end check honours. It does NOT make the flow's exit
-            // deliberate in the sense this check is about: the flag is a
-            // per-instance escape for migrated documents, not a node that says
-            // "the flow finishes here". A flow whose only exit is a flag still
-            // has no end node, and is told so.
         }//end foreach
 
-        $findings = [];
+        return [
+            'trigger' => $hasTrigger,
+            'end'     => $hasEnd,
+        ];
 
-        if ($hasTrigger === false) {
-            $findings[] = [
-                'type'   => '',
-                'app'    => '',
-                'step'   => '',
-                'reason' => FlowNodePreflight::REASON_NO_TRIGGER,
-                'detail' => 'This flow has no trigger node, so nothing can ever start it. '
-                    .'Add a trigger — an object change, a schedule, or someone running it by hand.',
-            ];
-        }
-
-        if ($hasEnd === false) {
-            $findings[] = [
-                'type'   => '',
-                'app'    => '',
-                'step'   => '',
-                'reason' => FlowNodePreflight::REASON_NO_END,
-                'detail' => 'This flow has no end node, so no path finishes deliberately. '
-                    .'Add an End node — it may end in success or in error, but the flow must say where it stops.',
-            ];
-        }
-
-        return $findings;
-
-    }//end entryAndExit()
+    }//end rolesPresent()
 
     /**
      * Every node id that some edge leaves from.

@@ -262,7 +262,28 @@ class FlowLocator
             }
         }//end foreach
 
+        return $this->dispatchableUuids(matched: $matched, event: $event);
+
+    }//end flowsForTrigger()
+
+    /**
+     * The uuids of the matched flows that can actually be dispatched.
+     *
+     * Extracted from `flowsForTrigger()`, which sat exactly on the configured
+     * Cyclomatic Complexity threshold (10 of 10). Behaviour is unchanged: the
+     * ownerless flow is still skipped and still says out loud why, which is the
+     * point — a flow that matched and then vanished without a word is the
+     * silent-engine failure the cutover work exists to prevent.
+     *
+     * @param array<string, Flow> $matched The flows that matched, by uuid.
+     * @param string              $event   The trigger being resolved, for the log line.
+     *
+     * @return array<int, string> The dispatchable flow uuids.
+     */
+    private function dispatchableUuids(array $matched, string $event): array
+    {
         $ids = [];
+
         foreach ($matched as $uuid => $flow) {
             if ($flow->canDispatch() === false) {
                 $this->logger->warning(
@@ -278,7 +299,7 @@ class FlowLocator
 
         return $ids;
 
-    }//end flowsForTrigger()
+    }//end dispatchableUuids()
 
     /**
      * The flows that run on a cron schedule.
