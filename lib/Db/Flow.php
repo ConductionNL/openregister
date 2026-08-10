@@ -68,6 +68,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setNodes(?array $nodes)
  * @method array|null getEdges()
  * @method void setEdges(?array $edges)
+ * @method array|null getAnnotations()
+ * @method void setAnnotations(?array $annotations)
  * @method array|null getLimits()
  * @method void setLimits(?array $limits)
  * @method integer|null getRetentionDays()
@@ -230,6 +232,26 @@ class Flow extends Entity implements JsonSerializable
     protected ?array $edges = null;
 
     /**
+     * Free-placed notes pinned to the canvas — the document's third element.
+     *
+     * Each entry is `{id, x, y, text}`: a note belonging to no node and no
+     * edge, positioned by the author. The engine ignores them entirely.
+     *
+     * NOT called `notes`, and the collision is the reason. `$notes` below is a
+     * STRING — the flow's own prose — so an array under that name would either
+     * overwrite it or be coerced into one. A note about the whole flow and a
+     * note pinned at a point on the canvas are different things.
+     *
+     * They are also deliberately not nodes. A node is lowered to a transition
+     * and becomes something the run moves through, so a comment arriving as a
+     * node would be built, marked and waited on — a comment able to deadlock a
+     * flow.
+     *
+     * @var array|null
+     */
+    protected ?array $annotations = null;
+
+    /**
      * Execution bounds (`maxNodes`, `maxIterations`).
      *
      * @var array|null
@@ -367,6 +389,7 @@ class Flow extends Entity implements JsonSerializable
         $this->addType(fieldName: 'executionMode', type: 'string');
         $this->addType(fieldName: 'nodes', type: 'json');
         $this->addType(fieldName: 'edges', type: 'json');
+        $this->addType(fieldName: 'annotations', type: 'json');
         $this->addType(fieldName: 'limits', type: 'json');
         $this->addType(fieldName: 'retentionDays', type: 'integer');
         $this->addType(fieldName: 'auditEnabled', type: 'boolean');
@@ -556,6 +579,7 @@ class Flow extends Entity implements JsonSerializable
             'executionMode'    => ($this->executionMode ?? self::MODE_ASYNC),
             'nodes'            => ($this->nodes ?? []),
             'edges'            => ($this->edges ?? []),
+            'annotations'      => ($this->annotations ?? []),
             'limits'           => ($this->limits ?? []),
             'retentionDays'    => $this->retentionDays,
             'auditEnabled'     => $this->auditEnabled,
