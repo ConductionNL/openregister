@@ -291,7 +291,7 @@ class FlowLogicTest extends TestCase
     }
 }
 
-class SwitchAndStopNodeTest extends TestCase
+class SwitchAndEndNodeTest extends TestCase
 {
     private function l10n(): IL10N
     {

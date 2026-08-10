@@ -51,6 +51,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\EachPromise;
 use GuzzleHttp\Promise\PromiseInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -104,6 +105,14 @@ class FlowConcurrency
      *         result per input item, in INPUT order.
      *
      * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-that-calls-out-per-item-must-be-able-to-do-so-concurrently
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) `GuzzleHttp\Promise\Create` is a
+     * third-party STATIC FACTORY with no instance API — `rejectionFor()` and
+     * `promiseFor()` are the library's only supported way to lift a value or a
+     * throwable into a promise. Satisfying the rule would mean injecting a
+     * wrapper whose entire body is the same two static calls, which moves the
+     * static access one file sideways and buys nothing. The two calls are
+     * two lines apart in one generator, both visible above.
      */
     public function map(array $items, callable $work, ?int $limit=null): array
     {
@@ -149,7 +158,7 @@ class FlowConcurrency
                 'rejected'    => static function ($reason, $index) use (&$results): void {
                     $error = $reason;
                     if (($reason instanceof Throwable) === false) {
-                        $error = new \RuntimeException((string) $reason);
+                        $error = new RuntimeException((string) $reason);
                     }
 
                     $results[$index] = ['ok' => false, 'value' => null, 'error' => $error];

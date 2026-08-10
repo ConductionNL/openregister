@@ -254,7 +254,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		// which made the saved flow UNRUNNABLE: since #2354 a path must end
 		// deliberately, and `FlowRunService::queue()` refuses any node that has
 		// no outgoing edge and is not terminal — which `set-fields` is not.
-		// Only `StopNode` implements IFlowTerminalNode, so a lone `set-fields`
+		// Only `EndNode` implements `IFlowEndNode`, so a lone `set-fields`
 		// node is a dead end by construction and step 4 below could never pass
 		// on it. Measured: every run of this spec that actually persisted the
 		// step failed, and the only runs that went green were the ones where
@@ -268,9 +268,15 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		// `set-fields` to `stop` would cover more, but drag-to-connect on the
 		// canvas is exactly the interaction this file already documents as
 		// unreliable, and a fixture that flakes is how this started.
-		await clickThemed(palette.getByText('Stop', { exact: true }).first())
+		//
+		// THE LABEL IS 'End', NOT 'Stop'. The vocabulary moved twice in quick
+		// succession — terminal -> stop (4eac3a3), then stop -> end (7ba3c21) —
+		// and this locator was left on the middle spelling. That is the whole
+		// reason the job went red: `EndNode::getLabel()` returns `t('End')`, and
+		// the palette has carried no entry called "Stop" since that commit.
+		await clickThemed(palette.getByText('End', { exact: true }).first())
 		await expect(
-			page.locator('main').getByText('Stop', { exact: false }).first(),
+			page.locator('main').getByText('End', { exact: false }).first(),
 			'the step did not reach the canvas',
 		).toBeVisible()
 

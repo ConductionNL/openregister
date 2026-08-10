@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
  */
 
 declare(strict_types=1);
