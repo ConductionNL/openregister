@@ -27,9 +27,14 @@ const NOISE = [
 	// Benign OR bootstrap network-abort race (page still renders fully).
 	'[AppInit]', 'Failed to fetch', 'Failed to load data',
 	// Anonymous browser mirror of a failed request (no URL → can't attribute).
-	// Genuine OR 5xx are still caught by URL in the response tracker below;
+	// Genuine OR 4xx/5xx are still caught BY URL in the response tracker below;
 	// named OR JS errors are NOT matched here and still fail.
 	'Failed to load resource: the server responded with a status of 5',
+	'Failed to load resource: the server responded with a status of 404',
+	// OR probes the OPTIONAL hermiq app's chat health on every page. hermiq is
+	// a separate ExApp and is absent on a stock CI instance, so this 404s on
+	// every route. Filtered BY URL, not by status: any other 404 still fails.
+	'/apps/hermiq/',
 ]
 function isNoise(t: string): boolean { return NOISE.some((n) => t.includes(n)) }
 
@@ -40,8 +45,13 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 		const t = m.text()
 		if (!isNoise(t)) errors.console.push(t.slice(0, 160))
 	})
+	// >= 400, not >= 500. The console mirror of a failed request carries NO
+	// url, so suppressing the anonymous 404 line above would have blinded the
+	// test to real 404s. Tracking by URL here is strictly STRONGER than what
+	// this file did before: a genuine 404 now fails the test and NAMES the
+	// endpoint, instead of surfacing as an unattributable console string.
 	page.on('response', (r) => {
-		if (r.status() < 500) return
+		if (r.status() < 400) return
 		const u = r.url()
 		if (!isNoise(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})
@@ -89,13 +99,36 @@ async function expectButton(page: Page, name: RegExp): Promise<void> {
 test.describe('admin-settings-pages — real UI render + actions', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Organisations: heading + Create Organisation + switch + list', async ({ page }) => {
+	test('Organisations: heading + Create Organisation + active organisation + list', async ({ page }) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/organisation')
 		await expectHeading(page, /^Organisations$/)
 		await expectButton(page, /Create Organisation/i)
-		await expectButton(page, /Switch Organisation/i)
-		await expectListSurface(page)
+		// NOT "Switch Organisation": that button is `v-if="userStats.total > 1"`
+		// (OrganisationsIndex.vue), so on a stock instance with exactly one
+		// organisation it correctly does not exist. Asserting it made this test
+		// pass only on a dev container that happened to have several.
+		//
+		// The active-organisation banner is the data-independent equivalent and
+		// is a stronger ITEM assertion: it names the organisation currently in
+		// effect, so it fails if the banner renders an empty or placeholder
+		// value — which an assertion on the banner element alone would not.
+		const activeBanner = page.locator('text=/Active Organisation:/i').first()
+		await expect(activeBanner).toBeVisible({ timeout: 12_000 })
+		const activeName = (await activeBanner.locator('xpath=..').innerText())
+			.replace(/.*Active Organisation:\s*/is, '').trim()
+		expect(activeName, 'active organisation banner names no organisation').not.toBe('')
+
+		// NOT expectListSurface(): this page renders a CARD GRID
+		// (`div.card` / `.cardHeader`, OrganisationsIndex.vue), and the shared
+		// helper only knows about tables, lists and empty-content — so it found
+		// nothing here. Asserting the card that carries the ACTIVE
+		// organisation's name is both correct for this page and a stronger item
+		// assertion than "a surface rendered": it ties the list back to the
+		// banner, so a grid of empty cards fails.
+		await expect(
+			page.locator('.card').filter({ hasText: activeName }).first(),
+		).toBeVisible({ timeout: 15_000 })
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
 	})
