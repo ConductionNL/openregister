@@ -196,3 +196,39 @@ nothing to do.
 - **AND** it MUST NOT load flow documents to inspect their nodes
 - @e2e exclude a performance invariant measured by a query-count assertion in the
   trigger tests, not through a browser
+
+### Requirement: The engine preserves graph annotations and never executes them
+
+A flow document MAY carry `annotations[]` — free-placed notes an author pins to
+the canvas, each with its own position and text, belonging to no node and no
+edge. They are the third element of the document, alongside `nodes[]` and
+`edges[]`.
+
+The engine MUST ignore them when building a definition and MUST preserve them
+across a save. `FlowDefinitionBuilder` reads `nodes` and `edges` by key and
+does not enumerate the document, so ignoring is already the behaviour;
+preserving is the part that needs a store that keeps them.
+
+They MUST NOT be called `notes` at the document root. `Flow` already has a
+`notes` column of type STRING — the flow's own prose — and an array under the
+same name would either overwrite it or be silently coerced. A note about the
+whole flow and a note pinned at a point on the canvas are different things and
+must not share a name.
+
+An annotation MUST NOT be expressible as a node. A node is lowered to a
+transition and becomes something the run moves through; an annotation that
+arrived as a node would be built, marked, and waited on, which is how a comment
+would come to deadlock a flow.
+
+#### Scenario: Annotations survive a round-trip through the editor
+- **GIVEN** a flow carrying two annotations
+- **WHEN** it is loaded, edited and saved
+- **THEN** both annotations MUST come back with their text and positions intact
+- @e2e exclude a persistence invariant — covered by the flow store's tests
+
+#### Scenario: An annotation contributes nothing to the definition
+- **GIVEN** a flow with one node and one annotation
+- **WHEN** the definition is built
+- **THEN** it MUST contain exactly the places and transitions the node implies
+- **AND** the annotation MUST contribute no place, no transition and no marking
+- @e2e exclude engine-internal lowering — covered by FlowDefinitionBuilder tests
