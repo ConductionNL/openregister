@@ -17,7 +17,10 @@ import { generateUrl } from '@nextcloud/router'
 			<span :class="['status-badge', `status-${step.status}`]">{{ t('openregister', step.status) }}</span>
 			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
 			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
-				<input v-model="comments[step.id]" type="text" :placeholder="t('openregister', 'Comment...')">
+				<input v-model="comments[step.id]"
+					type="text"
+					:aria-label="t('openregister', 'Comment...')"
+					:placeholder="t('openregister', 'Comment...')">
 				<NcButton variant="success" @click="approve(step)">
 					{{ t('openregister', 'Approve') }}
 				</NcButton>

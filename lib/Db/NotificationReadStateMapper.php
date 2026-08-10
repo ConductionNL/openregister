@@ -3,12 +3,21 @@
 /**
  * NotificationReadStateMapper.
  *
- * DB-backed implementation of the read/unread tracking contract first
- * defined by the in-memory `NotificationReadState` primitive. Same
- * semantics:
+ * The SINGLE read/unread tracking seam. It superseded an in-memory
+ * `Service\Notification\NotificationReadState` primitive that carried the
+ * same four-method contract but could not survive a request — that class was
+ * removed once this mapper existed, so there is exactly one implementation to
+ * wire when the read-state API surface lands. Semantics:
  *   - markRead(userId, notificationId) is idempotent
  *   - markUnread reverses it
  *   - isRead is per-(userId, notificationId)
+ *
+ * NOT YET REACHED BY ANY CALLER. `openspec/specs/notificatie-engine/spec.md`
+ * asks for `GET /api/notifications/unread-count`, a per-notification
+ * mark-read and a mark-all-read; none of those endpoints exist yet, and the
+ * same spec records the gap ("Not implemented -- read/unread tracking").
+ * This mapper plus its table and entity are the persistence half, waiting on
+ * the API half.
  *
  * Backed by the `oc_openregister_notification_readstate` table created
  * by `Version1Date20260502190000`. The unique index on
@@ -45,7 +54,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
- * DB-backed read-state mapper. Mirrors NotificationReadState's contract.
+ * DB-backed read-state mapper — the only read-state implementation.
  */
 class NotificationReadStateMapper extends QBMapper
 {

@@ -85,7 +85,11 @@ class WorkflowEngineController extends Controller
     /**
      * List all registered engines.
      *
-     * @NoAdminRequired
+     * @auth admin-only Engine metadata serialises baseUrl, authType and healthStatus of an
+     *       instance-wide integration. The body already rejected non-admins; @NoAdminRequired said
+     *       the opposite, so the declared posture contradicted the enforced one. Declaring it here
+     *       makes middleware reject the request before the controller runs, which is the same
+     *       outcome one layer earlier.
      *
      * @return JSONResponse
      *
@@ -112,7 +116,9 @@ class WorkflowEngineController extends Controller
      *
      * @param int $id Engine ID
      *
-     * @NoAdminRequired
+     * @auth admin-only Same as index(): engine metadata exposes baseUrl and healthStatus of an
+     *       instance-wide integration, and the body already rejected non-admins while the removed
+     *       attribute declared the opposite.
      *
      * @return JSONResponse
      *
@@ -145,6 +151,11 @@ class WorkflowEngineController extends Controller
      * @param array|null  $authConfig     Auth configuration
      * @param bool        $enabled        Whether enabled
      * @param int         $defaultTimeout Default timeout
+     *
+     * @auth admin-only Registers an outbound integration target: baseUrl plus authType/authConfig
+     *       credentials that every later workflow execution will use. WorkflowEngine has no owner
+     *       column, so there is no per-object guard to write; a non-admin creating one would be
+     *       choosing where this instance sends data.
      *
      * @return JSONResponse
      *
@@ -206,6 +217,10 @@ class WorkflowEngineController extends Controller
      *
      * @param int $id Engine ID
      *
+     * @auth admin-only Can re-point baseUrl and replace the stored credentials of an instance-wide
+     *       integration, which redirects every subsequent execution. WorkflowEngine has no owner
+     *       column, so no per-object guard is expressible. The body enforces this too.
+     *
      * @return JSONResponse
      *
      * @spec openspec/specs/workflow-engine-abstraction/spec.md
@@ -233,6 +248,10 @@ class WorkflowEngineController extends Controller
      *
      * @param int $id Engine ID
      *
+     * @auth admin-only Removes an instance-wide integration by id, breaking every workflow bound to
+     *       it. WorkflowEngine has no owner column, so a per-object guard has nothing to compare the
+     *       caller against. The body enforces this too.
+     *
      * @return JSONResponse
      *
      * @spec openspec/specs/workflow-engine-abstraction/spec.md
@@ -259,6 +278,10 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
+     * @auth admin-only Makes this instance issue an outbound request to a stored baseUrl on demand
+     *       and reports whether it answered. That is a probe primitive, so it stays with the
+     *       administrator who configured the target rather than any authenticated user.
+     *
      * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
      * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
@@ -278,6 +301,10 @@ class WorkflowEngineController extends Controller
     /**
      * List auto-discovered engine types from installed ExApps.
      *
+     * @auth admin-only Enumerates which ExApps are installed on this instance. That inventory is
+     *       administrative information and is only consumed by the engine admin UI, so it is gated
+     *       with the rest of that surface rather than exposed to every authenticated user.
+     *
      * @return JSONResponse
      *
      * @spec openspec/specs/workflow-engine-abstraction/spec.md
@@ -295,6 +322,11 @@ class WorkflowEngineController extends Controller
      * No database writes occur. The response includes dryRun: true.
      *
      * @param int $id Engine ID
+     *
+     * @auth admin-only "Dry run" describes this app's database, not the far side: the request is
+     *       really executed against the configured engine with caller-supplied sampleData, a
+     *       caller-supplied workflowId and a caller-supplied timeout. Under #[NoAdminRequired] any
+     *       authenticated user could drive outbound requests through a stored, credentialed target.
      *
      * @return JSONResponse
      *

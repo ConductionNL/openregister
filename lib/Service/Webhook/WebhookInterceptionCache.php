@@ -129,7 +129,7 @@ class WebhookInterceptionCache
      *
      * @return bool|null True/false when cached, null on cache miss.
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     public function get(string $eventType): ?bool
     {
@@ -155,7 +155,7 @@ class WebhookInterceptionCache
      *
      * @return void
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     public function set(string $eventType, bool $hasWebhooks): void
     {
@@ -172,7 +172,7 @@ class WebhookInterceptionCache
      *
      * @return void
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     public function invalidate(): void
     {

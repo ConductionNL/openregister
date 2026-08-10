@@ -18,7 +18,6 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use Exception;
 
 /**
  * Handles metadata operations for ObjectService.
@@ -71,76 +70,15 @@ class MetadataHandler
         return $current;
     }//end getValueFromPath()
 
-    /**
-     * Generate a slug from a given value.
+    /*
+     * SLUG GENERATION DOES NOT LIVE HERE.
      *
-     * METADATA ENHANCEMENT: Simplified slug generation for ObjectService metadata hydration.
-     *
-     * @param string $value The value to convert to a slug.
-     *
-     * @return null|string
-     *
-     * @psalm-param string $value
-     *
-     * @phpstan-param string $value
-     *
-     * @psalm-return   string|null
-     * @phpstan-return string|null
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * `generateSlugFromValue()` + `createSlugHelper()` were removed: they had
+     * no callers, and were a byte-identical copy of the same pair on
+     * `DataManipulationHandler` (also removed). Object slugs are produced by
+     * `SaveObject\MetadataHydrationHandler::generateSlug(array $data, Schema
+     * $schema)` — schema-aware, so it reads the schema's configured slug
+     * source rather than slugifying an arbitrary string.
      */
-    public function generateSlugFromValue(string $value): string|null
-    {
-        try {
-            if (empty($value) === true) {
-                return null;
-            }
 
-            // Generate the base slug.
-            $slug = $this->createSlugHelper(text: $value);
-
-            // Add timestamp for uniqueness.
-            $timestamp  = time();
-            $uniqueSlug = $slug.'-'.$timestamp;
-
-            return $uniqueSlug;
-        } catch (Exception $e) {
-            return null;
-        }
-    }//end generateSlugFromValue()
-
-    /**
-     * Creates a URL-friendly slug from a string.
-     *
-     * @param string $text The text to convert to a slug.
-     *
-     * @psalm-param string $text
-     *
-     * @phpstan-param string $text
-     *
-     * @return string
-     *
-     * @psalm-return   string
-     * @phpstan-return string
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function createSlugHelper(string $text): string
-    {
-        // Convert to lowercase.
-        $text = strtolower($text);
-
-        // Replace non-alphanumeric characters with hyphens.
-        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
-
-        // Remove leading and trailing hyphens.
-        $text = trim($text, '-');
-
-        // Ensure the slug is not empty.
-        if (empty($text) === true) {
-            $text = 'object';
-        }
-
-        return $text;
-    }//end createSlugHelper()
 }//end class

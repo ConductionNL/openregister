@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
+ * @spec openspec/specs/saas-multi-tenant/spec.md#tenantkeyservice-must-be-di-registered-as-a-server-side-internal-api
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ class TenantKeyService
      *
      * @throws RuntimeException When key decryption fails
      *
-     * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
+     * @spec openspec/specs/saas-multi-tenant/spec.md#per-tenant-active-hmac-key-must-be-a-single-most-recent-row
      */
     public function getCurrentTenantKey(string $tenantId): string
     {
@@ -140,7 +140,7 @@ class TenantKeyService
      *
      * @throws RuntimeException When key encryption fails
      *
-     * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
+     * @spec openspec/specs/saas-multi-tenant/spec.md#new-active-keys-must-be-stored-encrypted-with-status-active
      */
     public function rotateTenantKey(string $tenantId): array
     {

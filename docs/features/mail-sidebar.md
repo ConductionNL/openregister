@@ -17,11 +17,15 @@ The mail sidebar integrates OpenRegister with the Nextcloud Mail app by injectin
 ### Frontend
 
 - **mail-sidebar.js** — Webpack entry point that mounts Vue sidebar into Mail app DOM.
-- **MailSidebar.vue** — Root component with collapsible panel, error/loading states, link/unlink actions.
+- **MailSidebar.vue** — Root component hosting three `NcAppSidebarTab` children: Connections, Connect, Entities.
+- **ObjectsTab.vue** — "Connections" tab; the objects linked to the current email.
+- **ActionsTab.vue** — "Connect" tab; per-schema search-and-link plus create-from-email. This is the
+  search-and-link affordance REQ-001 specifies, and it replaced the old inline "Link to Object"
+  button and its modal.
+- **EntitiesTab.vue** — "Entities" tab; the extracted-entity view.
 - **LinkedObjectsList.vue** — Displays explicitly linked objects for current email.
 - **SuggestedObjectsList.vue** — Displays sender-based discovery results.
 - **ObjectCard.vue** — Card component with title, schema, register, deep link, unlink button.
-- **LinkObjectDialog.vue** — Modal dialog for searching and linking objects.
 - **useMailObserver.js** — Composable observing Mail app URL changes (hash-based routing).
 - **useEmailLinks.js** — Composable for API state management with caching and abort control.
 - **emailLinks.js** — Axios API wrapper for all email link endpoints.

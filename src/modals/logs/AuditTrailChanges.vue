@@ -36,10 +36,18 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					<table class="changes-table">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Field') }}</th>
-								<th>{{ t('openregister', 'Old Value') }}</th>
-								<th>{{ t('openregister', 'New Value') }}</th>
-								<th>{{ t('openregister', 'Change Type') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Field') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Old Value') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'New Value') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Change Type') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>

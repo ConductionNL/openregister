@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-chat-proxy-deprecation/design.md#the-proxy-short-circuit-is-an-exception-not-an-inline-return
+ * @spec openspec/changes/or-chat-proxy-deprecation/design.md#the-short-circuit-is-an-exception-not-an-inline-return
  */
 
 declare(strict_types=1);

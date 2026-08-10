@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStep;
@@ -130,6 +131,13 @@ class FlowRunService
      *
      * @return FlowRun The queued run.
      *
+     * @throws FlowDeadEnd When a node has no outgoing edge and does not end the
+     *                     flow, so the run is refused rather than started. Declared
+     *                     because it is part of this method's contract: every
+     *                     dispatch path arrives here, and a caller that cannot see
+     *                     the refusal in the signature will not handle it — which
+     *                     is how it reached HTTP as a bare 500.
+     *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
     public function queue(
@@ -139,6 +147,13 @@ class FlowRunService
         array $context=[],
         ?string $user=null
     ): FlowRun {
+        // Every dispatch path arrives here — manual, trigger, schedule, MCP,
+        // the workflow-engine operation and a sub-flow call — so this is the
+        // one place a refusal covers all of them. Guarding `FlowService::run()`
+        // instead would leave cron-fired flows unguarded, and those are most of
+        // them.
+        $this->refuseDeadEnd(flowId: $flowId);
+
         $run = new FlowRun();
         $run->setUuid($this->newUuid());
         $run->setFlowId($flowId);
@@ -160,6 +175,88 @@ class FlowRunService
         return $this->mapper->insert($run);
 
     }//end queue()
+
+    /**
+     * Refuse to queue a flow that has a node its token cannot leave.
+     *
+     * Writes the verdict onto the FLOW before throwing, so a refused flow is
+     * distinguishable from one nobody has triggered without reading run
+     * history — there is no run to read, which is the point. A run that IS
+     * accepted clears the verdict back to `ok`, so a fixed flow stops
+     * reporting an error it no longer has.
+     *
+     * Resolved lazily through the container for the same reason
+     * `activeOrganisation()` is: this service is constructed on paths that do
+     * not need either collaborator, and several tests build it by hand.
+     *
+     * @param string $flowId The flow uuid.
+     *
+     * @return void
+     *
+     * @throws FlowDeadEnd When a non-terminal node has no outgoing edge.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    private function refuseDeadEnd(string $flowId): void
+    {
+        try {
+            $mapper    = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
+            $preflight = $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodePreflight');
+            $flow      = $mapper->findByUuid($flowId);
+        } catch (Throwable $e) {
+            // A flow we cannot load is not a flow we can judge — `findByUuid()`
+            // throws rather than returning null. Queueing proceeds and the
+            // existing not-found handling downstream reports it; inventing a
+            // dead-end refusal here would blame the document for a lookup
+            // failure.
+            return;
+        }
+
+        $findings = $preflight->inspect(
+            flow: [
+                'nodes' => ($flow->getNodes() ?? []),
+                'edges' => ($flow->getEdges() ?? []),
+            ]
+        );
+
+        $deadEnds = [];
+        foreach ($findings['warnings'] as $warning) {
+            if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
+                $deadEnds[] = (string) ($warning['step'] ?? '');
+            }
+        }
+
+        if ($deadEnds === []) {
+            // Accepted. Clear a stale refusal so a repaired flow stops
+            // reporting the error it no longer has.
+            if ($flow->getStatus() === Flow::STATUS_ERROR) {
+                $flow->setStatus(Flow::STATUS_OK);
+                $flow->setStatusMessage(null);
+                $mapper->update($flow);
+            }
+
+            return;
+        }
+
+        $refusal = new FlowDeadEnd(nodeIds: $deadEnds);
+
+        $flow->setStatus(Flow::STATUS_ERROR);
+        $flow->setStatusMessage($refusal->getMessage());
+        $mapper->update($flow);
+
+        $this->logger->warning(
+            message: '[FlowRunService] Refused to queue a flow with a dead end',
+            context: [
+                'file'  => __FILE__,
+                'line'  => __LINE__,
+                'flow'  => $flowId,
+                'nodes' => $deadEnds,
+            ]
+        );
+
+        throw $refusal;
+
+    }//end refuseDeadEnd()
 
     /**
      * Whether a flow already has a run that has not finished.
@@ -538,9 +635,70 @@ class FlowRunService
 
         $run->setResumeAt($resumeAt);
 
-        return $this->mapper->update($run);
+        $persisted = $this->mapper->update($run);
+
+        $this->recordLastRun(run: $persisted, status: $status);
+
+        return $persisted;
 
     }//end persistResult()
+
+    /**
+     * Copy a finished run's outcome onto its flow.
+     *
+     * On a TERMINAL state only. A queued or running run has no outcome yet, and
+     * a suspended one is mid-flight — writing any of those would make the flow
+     * list answer "how did it last go?" with "it hasn't finished", which is a
+     * different question. A suspended run that later completes writes here on
+     * that completion, so nothing is lost by waiting.
+     *
+     * Failure to write is logged and swallowed: this is a reporting
+     * convenience, and losing it must never turn a completed run into a failed
+     * one.
+     *
+     * @param FlowRun $run    The run that just reached a terminal state.
+     * @param string  $status That terminal status.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    private function recordLastRun(FlowRun $run, string $status): void
+    {
+        $terminal = [
+            FlowRun::STATUS_COMPLETED,
+            FlowRun::STATUS_STOPPED,
+            FlowRun::STATUS_FAILED,
+            FlowRun::STATUS_DEAD_LETTER,
+        ];
+
+        if (in_array($status, $terminal, true) === false) {
+            return;
+        }
+
+        $flowId = trim((string) $run->getFlowId());
+        if ($flowId === '') {
+            return;
+        }
+
+        try {
+            $mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
+            $flow   = $mapper->findByUuid($flowId);
+
+            $flow->setLastRunUuid($run->getUuid());
+            $flow->setLastRunStatus($status);
+            $flow->setLastRunMessage($run->getError());
+            $flow->setLastRunAt(new DateTime());
+
+            $mapper->update($flow);
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                message: '[FlowRunService] Could not record the last run on its flow: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId]
+            );
+        }//end try
+
+    }//end recordLastRun()
 
     /**
      * A v4 UUID for a new run.

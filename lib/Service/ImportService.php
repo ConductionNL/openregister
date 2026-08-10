@@ -212,7 +212,7 @@ class ImportService
      *     errors: list<array{uuid: string, error: string}>
      * }
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import
+     * @spec openspec/specs/data-import-export/spec.md#import-must-support-rollback-on-critical-failure (rolls back an import
      *       unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting
      *       per-object outcomes)
      */
@@ -2357,7 +2357,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/data-import-export/tasks.md#task-error-csv
+     * @spec openspec/specs/data-import-export/spec.md#import-must-provide-detailed-error-reporting-with-downloadable-error-files
      */
     public function serializeErrorsToCsv(array $summary): string
     {

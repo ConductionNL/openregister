@@ -596,4 +596,11 @@ export default {
 		}
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.agent-selector .agent-grid .agent-card,
+	.agent-selector .agent-grid .agent-card .agent-capabilities .capability-section .capability-list .capability-more {
+		transition: none;
+	}
+}
 </style>

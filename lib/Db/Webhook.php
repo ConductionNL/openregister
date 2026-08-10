@@ -1,8 +1,10 @@
 <?php
 
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: EUPL-1.2
+ * OpenRegister Webhook
+ *
+ * This file contains the entity class for webhook subscriptions
+ * in the OpenRegister application.
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.

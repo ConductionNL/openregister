@@ -84,7 +84,6 @@ use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
 use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
 use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
 use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;

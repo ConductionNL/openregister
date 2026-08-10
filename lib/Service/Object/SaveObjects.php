@@ -628,18 +628,27 @@ class SaveObjects
         // controls a defence-in-depth schema check that authors opt in to
         // when they want bulk-import payloads to be schema-validated.
         $effectiveValidation = $_validation;
-        // Resolve default register/schema entities once for the loop. The
-        // schema entity is used below when an individual object does not carry
-        // an explicit schema in `@self`.
+        // Resolve the default schema entity once for the loop. It is used when
+        // an individual object does not carry an explicit schema in `@self`.
         //
-        // The register call is kept as a statement rather than an assignment:
-        // per-row code re-reads the register through loadRegisterWithCache(),
-        // so the only thing this call contributes is warming that shared static
-        // cache. Binding the result to a variable nobody read is what PHPMD's
-        // UnusedLocalVariable was reporting; dropping the call entirely would
-        // move a mapper lookup to a later point, so it stays.
-        $this->resolveSafeguardRegister(register: $register);
-        $defaultSchema = $this->resolveSafeguardSchema(schema: $schema);
+        // "The caller named no schema" (mixed-schema bulk) and "the caller
+        // named a schema and it could not be loaded" are kept APART. Both used
+        // to arrive at the loop as a bare null, and the loop's `$rowSchema ===
+        // null` branch lets a row through UNCHECKED — so a transient failure
+        // inside `loadSchemaWithCache()` silently skipped the RBAC gate for
+        // every row of the batch while the write itself still went ahead (the
+        // fast path re-resolves `$schema` downstream). That is the fail-open
+        // shape CWE-863 describes: the caller read "could not resolve" as
+        // "nothing to check".
+        $defaultSchema           = null;
+        $defaultSchemaUnresolved = false;
+        if ($schema !== null && $schema !== 0 && $schema !== '0') {
+            try {
+                $defaultSchema = $this->loadSafeguardSchema(schema: $schema);
+            } catch (\Throwable $e) {
+                $defaultSchemaUnresolved = true;
+            }
+        }
 
         $passed = [];
         foreach ($objects as $index => $object) {
@@ -660,10 +669,25 @@ class SaveObjects
                 defaultSchema: $defaultSchema
             );
 
-            // No schema → can't enforce schema-bound rules. Allow through; the
-            // downstream prep will record an "invalid" with the proper error
-            // shape. This preserves wave-11 behaviour for malformed payloads.
+            // No schema → can't enforce schema-bound rules.
+            //
+            // A row that names no schema at all in a mixed-schema batch is a
+            // malformed payload: allow it through so the downstream prep
+            // records an "invalid" with the proper error shape (wave-11
+            // behaviour). But a row with no schema BECAUSE the schema the
+            // caller named could not be loaded is a different thing entirely —
+            // the RBAC gate below is the check, and skipping it is a decision
+            // to write without one. Refuse instead.
             if ($rowSchema === null) {
+                if ($effectiveRbac === true && $defaultSchemaUnresolved === true) {
+                    $this->recordSafeguardRejection(
+                        object: $sanitised,
+                        reason: 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.',
+                        result: $result
+                    );
+                    continue;
+                }
+
                 $passed[] = $sanitised;
                 continue;
             }
@@ -775,52 +799,34 @@ class SaveObjects
     }//end stripSelfInjectionFields()
 
     /**
-     * Resolve the register entity to use as the per-row default.
+     * Load the schema entity to use as the per-row default.
      *
-     * @param Register|string|int|null $register The bulk-call register argument.
+     * Deliberately does NOT catch. Its predecessor turned every failure into a
+     * null, and the caller's null branch meant "no schema-bound rules to
+     * enforce, let the row through" — so a load failure and a mixed-schema
+     * batch were indistinguishable, and the first one silently disabled the
+     * per-row RBAC check. The caller now catches and REFUSES those rows, which
+     * it can only do if the failure reaches it.
      *
-     * @return Register|null Resolved entity, or null if no default register was given.
+     * `resolveSafeguardRegister()` used to sit beside this one with the same
+     * catch-and-null shape. It is gone rather than fixed: its result was
+     * assigned to `$defaultRegister` and never read, so it enforced nothing
+     * either way.
+     *
+     * @param Schema|string|int $schema The bulk-call schema argument.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \Throwable When the schema cannot be loaded.
      */
-    private function resolveSafeguardRegister(Register|string|int|null $register): ?Register
+    private function loadSafeguardSchema(Schema|string|int $schema): Schema
     {
-        if ($register === null) {
-            return null;
-        }
-
-        if ($register instanceof Register === true) {
-            return $register;
-        }
-
-        try {
-            return $this->loadRegisterWithCache(registerId: $register);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end resolveSafeguardRegister()
-
-    /**
-     * Resolve the schema entity to use as the per-row default.
-     *
-     * @param Schema|string|int|null $schema The bulk-call schema argument (null = mixed-schema).
-     *
-     * @return Schema|null Resolved entity, or null for mixed-schema operations.
-     */
-    private function resolveSafeguardSchema(Schema|string|int|null $schema): ?Schema
-    {
-        if ($schema === null || $schema === 0 || $schema === '0') {
-            return null;
-        }
-
         if ($schema instanceof Schema === true) {
             return $schema;
         }
 
-        try {
-            return $this->loadSchemaWithCache(schemaId: $schema);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end resolveSafeguardSchema()
+        return $this->loadSchemaWithCache(schemaId: $schema);
+    }//end loadSafeguardSchema()
 
     /**
      * Determine which schema applies to a single bulk row.

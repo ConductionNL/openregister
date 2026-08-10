@@ -93,7 +93,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'UUID:') }}</strong>
 							<span class="uuid">{{ organisationStore.organisationItem.uuid }}</span>
-							<NcButton class="copy-button" @click="copyToClipboard(organisationStore.organisationItem.uuid)">
+							<NcButton class="copy-button"
+								:aria-label="t('openregister', 'Copy to clipboard')"
+								@click="copyToClipboard(organisationStore.organisationItem.uuid)">
 								<template #icon>
 									<ContentCopy :size="16" />
 								</template>

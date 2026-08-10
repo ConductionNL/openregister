@@ -762,30 +762,144 @@ class EdepotTransferService
     /**
      * Get the transport configuration from app settings.
      *
+     * Each credential-bearing key has its own `read*()` below that states
+     * its fail mode, rather than being folded into the array literal with a
+     * bare empty default. An empty default is not neutral here: the REST
+     * transport used to answer an unset `edepot_auth_type` by sending NO
+     * authentication headers, so an unconfigured instance shipped its
+     * archival SIP packages — the records themselves — unauthenticated, and
+     * nothing said so. `''` now means NOT CONFIGURED, both transports refuse
+     * to send in that state, and the missing value is logged. This method
+     * still RETURNS the empty values: the settings screen has to render the
+     * unconfigured form.
+     *
      * @return array<string,mixed> The transport configuration.
      *
      * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getTransportConfig(): array
     {
+        $transport   = $this->appConfig->getValueString('openregister', 'edepot_transport', 'rest_api');
+        $authType    = $this->readAuthType();
+        $apiKey      = $this->readApiKey(authType: $authType);
+        $bearerToken = $this->readBearerToken(authType: $authType);
+        $sftpKeyPath = $this->readSftpKeyPath();
+
         return [
             'endpointUrl'        => $this->appConfig->getValueString('openregister', 'edepot_endpoint_url', ''),
-            'authenticationType' => $this->appConfig->getValueString('openregister', 'edepot_auth_type', ''),
-            'apiKey'             => $this->appConfig->getValueString('openregister', 'edepot_api_key', ''),
-            'bearerToken'        => $this->appConfig->getValueString('openregister', 'edepot_bearer_token', ''),
+            'authenticationType' => $authType,
+            'apiKey'             => $apiKey,
+            'bearerToken'        => $bearerToken,
             'targetArchive'      => $this->appConfig->getValueString('openregister', 'edepot_target_archive', ''),
             'sipProfile'         => $this->appConfig->getValueString('openregister', 'edepot_sip_profile', 'default'),
-            'transport'          => $this->appConfig->getValueString('openregister', 'edepot_transport', 'rest_api'),
+            'transport'          => $transport,
             'host'               => $this->appConfig->getValueString('openregister', 'edepot_sftp_host', ''),
             'port'               => $this->appConfig->getValueString('openregister', 'edepot_sftp_port', '22'),
             'username'           => $this->appConfig->getValueString('openregister', 'edepot_sftp_username', ''),
             'password'           => $this->appConfig->getValueString('openregister', 'edepot_sftp_password', ''),
-            'keyPath'            => $this->appConfig->getValueString('openregister', 'edepot_sftp_key_path', ''),
+            'keyPath'            => $sftpKeyPath,
             'remotePath'         => $this->appConfig->getValueString('openregister', 'edepot_sftp_remote_path', '/'),
             'sourceId'           => $this->appConfig->getValueString('openregister', 'edepot_openconnector_source_id', ''),
             'baseUrl'            => $this->appConfig->getValueString('openregister', 'edepot_openconnector_base_url', ''),
         ];
     }//end getTransportConfig()
+
+    /**
+     * Read `edepot_auth_type`, stating its fail mode.
+     *
+     * `''` means NOT CONFIGURED — never "configured for no authentication".
+     * `RestApiTransport::validateConfig()` refuses to send in that state.
+     *
+     * @return string The configured authentication type, or '' when unset.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+     */
+    private function readAuthType(): string
+    {
+        $authType = $this->appConfig->getValueString('openregister', 'edepot_auth_type', '');
+        if ($authType === '') {
+            $this->logger->warning(
+                message: '[EdepotTransferService] edepot_auth_type is not configured; the REST transport refuses to send a SIP package without one',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        return $authType;
+    }//end readAuthType()
+
+    /**
+     * Read `edepot_api_key`, stating its fail mode.
+     *
+     * Only warns when `api_key` is the SELECTED authentication type — an
+     * oauth2 or certificate instance is expected to leave this empty.
+     *
+     * @param string $authType The configured authentication type.
+     *
+     * @return string The configured API key, or '' when unset.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+     */
+    private function readApiKey(string $authType): string
+    {
+        $apiKey = $this->appConfig->getValueString('openregister', 'edepot_api_key', '');
+        if ($apiKey === '' && $authType === Transport\RestApiTransport::AUTH_API_KEY) {
+            $this->logger->warning(
+                message: '[EdepotTransferService] edepot_auth_type is api_key but edepot_api_key is empty; transfers are refused',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        return $apiKey;
+    }//end readApiKey()
+
+    /**
+     * Read `edepot_bearer_token`, stating its fail mode.
+     *
+     * Only warns when `oauth2` is the SELECTED authentication type.
+     *
+     * @param string $authType The configured authentication type.
+     *
+     * @return string The configured bearer token, or '' when unset.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+     */
+    private function readBearerToken(string $authType): string
+    {
+        $bearerToken = $this->appConfig->getValueString('openregister', 'edepot_bearer_token', '');
+        if ($bearerToken === '' && $authType === Transport\RestApiTransport::AUTH_OAUTH2) {
+            $this->logger->warning(
+                message: '[EdepotTransferService] edepot_auth_type is oauth2 but edepot_bearer_token is empty; transfers are refused',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        return $bearerToken;
+    }//end readBearerToken()
+
+    /**
+     * Read `edepot_sftp_key_path`, stating its fail mode.
+     *
+     * SFTP accepts either a key path or a password, so this only warns when
+     * BOTH are unset — the state in which
+     * `SftpTransport::validateConfig()` refuses to connect.
+     *
+     * @return string The configured private-key path, or '' when unset.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+     */
+    private function readSftpKeyPath(): string
+    {
+        $sftpKeyPath = $this->appConfig->getValueString('openregister', 'edepot_sftp_key_path', '');
+        $hasPassword = ($this->appConfig->getValueString('openregister', 'edepot_sftp_password', '') !== '');
+        if ($sftpKeyPath === '' && $hasPassword === false) {
+            $this->logger->warning(
+                message: '[EdepotTransferService] neither edepot_sftp_key_path nor edepot_sftp_password is configured; SFTP transfers are refused',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        return $sftpKeyPath;
+    }//end readSftpKeyPath()
 
     /**
      * Get available SIP profile names.

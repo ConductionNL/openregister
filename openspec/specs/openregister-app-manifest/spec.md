@@ -245,18 +245,136 @@ proposal is superseded by the shell-swap shipping the full shell at once).
 
 ### Requirement: REQ-OR-MAN-009 Backend `/api/manifest` endpoint is deferred @e2e exclude API-contract assertion (endpoint returns 404, loader falls back to bundled manifest) — covered by Newman
 
-OpenRegister SHALL NOT implement `GET /index.php/apps/openregister/api/
-manifest`. `useAppManifest`'s silent fallback on 404 makes absence
-non-regressive; the manifest ships statically inside the bundle. A follow-up
-change driven by a real admin-customisation use case (App Builder reorders
-menu / hides pages / overrides locale per tenant) SHALL add the endpoint
-when needed.
+**SUPERSEDED by REQ-OR-MAN-012.** The original deferral below no longer
+describes the shipped code: the endpoint exists, is routed, and is exercised.
+This heading is retained so existing references resolve; the normative statement
+is REQ-OR-MAN-012.
 
-#### Scenario: Endpoint returns 404 today
+The deferral read: OpenRegister SHALL NOT implement `GET
+/index.php/apps/openregister/api/manifest`; `useAppManifest`'s silent fallback on
+404 makes absence non-regressive, and a follow-up change driven by a real
+admin-customisation use case SHALL add the endpoint when needed. That follow-up
+landed — the driving use case was per-user `runtime.user` context for host apps.
 
-- **WHEN** a request hits `/index.php/apps/openregister/api/manifest`
+#### Scenario: The bundled-manifest fallback still holds for unknown apps
+
+- **WHEN** a request hits `/index.php/apps/openregister/api/manifest/{appId}`
+  for an app that ships no bundled manifest
 - **THEN** the response is HTTP 404 and the loader silently keeps the
   bundled manifest
+
+---
+
+### Requirement: REQ-OR-MAN-012 Backend manifest endpoint serves a host app's bundled manifest @e2e exclude API-contract assertion (public endpoint, appId validation, 404/500 mapping, ETag/304) — covered by Newman
+
+OpenRegister SHALL route `GET /index.php/apps/openregister/api/manifest/{appId}`
+to `ManifestController::index()`. The endpoint SHALL be a public page with no
+CSRF requirement and no admin requirement, so an unauthenticated client can load
+a manifest and receive `runtime.user = null` — nc-vue filters public pages on
+that null signal. `appId` SHALL be validated against `^[a-z0-9_-]+$` (case
+insensitive) before any path resolution, and SHALL yield HTTP 400 otherwise. The
+controller SHALL load the named app's bundled `manifest.json` through the
+Nextcloud app manager, return HTTP 404 when it is absent or unreadable, and
+return HTTP 500 with a generic body — logging the detail server-side — when
+enrichment throws. On success it SHALL return the enriched manifest with an
+`ETag` over the final per-user payload and `Cache-Control: private, no-cache`, so
+a matching `If-None-Match` becomes a 304 while enrichment still runs on every
+request.
+
+#### Scenario: Malformed app id is rejected before path resolution
+
+- **WHEN** `GET /api/manifest/../../etc` is requested
+- **THEN** the response MUST be HTTP 400 with an `Invalid app ID.` body
+- **AND** no manifest path MUST be resolved
+
+#### Scenario: Unknown app yields 404
+
+- **WHEN** the named app ships no readable bundled manifest
+- **THEN** the response MUST be HTTP 404
+
+#### Scenario: Warm reload revalidates rather than re-transfers
+
+- **GIVEN** a previous response carried an `ETag`
+- **WHEN** the same user re-requests with a matching `If-None-Match`
+- **THEN** the response MUST be HTTP 304
+- **AND** the `Cache-Control` header MUST be `private, no-cache`
+
+#### Scenario: Enrichment failure does not leak internals
+
+- **GIVEN** enrichment throws
+- **WHEN** the controller handles it
+- **THEN** the response MUST be HTTP 500 with a generic `Internal server error.`
+  body and the detail MUST be logged server-side only
+
+---
+
+### Requirement: REQ-OR-MAN-013 Manifest enrichment injects an allowlisted `runtime.user` block @e2e exclude backend enrichment pipeline (schema-slug validation, anonymous/no-profile shapes, field allowlist, calculation overlay) — covered by PHPUnit
+
+`ManifestService::getEnrichedManifest()` SHALL return the manifest unchanged when
+it declares no `currentUserSchema`. When it does, the slug SHALL be validated as
+a string of at most 128 characters matching `^[A-Za-z0-9_\-]{1,128}$` BEFORE any
+lookup uses it, and a failing slug SHALL fail closed to `runtime.user = null`
+with a warning — a compromised manifest MUST NOT be able to steer profile or
+calculation lookup at an arbitrary schema. An anonymous request SHALL yield
+`runtime.user = null`. An authenticated user with no profile object for that
+schema SHALL yield `runtime.user = { id, roles: ["learner"] }`.
+
+Profile lookup SHALL run through `ObjectService::findAll()` with RBAC and
+multi-tenancy left ON, narrowed by `(schema, ncUserId)`; the narrowing filter is
+NOT a substitute for the tenant scope, because the same Nextcloud UID may exist
+in more than one tenant.
+
+When a profile is found, `runtime.user` SHALL be built from an ALLOWLIST rather
+than from the raw profile payload: the fields named by the schema's
+`x-openregister-manifest-user-fields` configuration plus the non-materialised
+fields named in the schema's `x-openregister-calculations` map, with `id` always
+set to the Nextcloud user ID. Fields outside that allowlist MUST NOT be
+surfaced. Non-materialised calculations SHALL be evaluated at read time against
+the profile data plus an injected `@self` block (`id`, `uuid`, `register`,
+`schema`, `owner`, `created`, `updated`) and overlaid onto the block;
+materialised calculations MUST NOT be re-evaluated, since their values are
+already stored. A calculation that raises an evaluation error SHALL be logged
+and skipped, and MUST NOT fail the request.
+
+#### Scenario: No currentUserSchema leaves the manifest untouched
+
+- **GIVEN** a manifest with no `currentUserSchema` key
+- **WHEN** it is enriched
+- **THEN** the returned manifest MUST be identical to the input
+
+#### Scenario: Invalid schema slug fails closed
+
+- **GIVEN** a manifest whose `currentUserSchema` is not a string, is longer than
+  128 characters, or contains characters outside `[A-Za-z0-9_-]`
+- **WHEN** it is enriched
+- **THEN** `runtime.user` MUST be `null` and a warning MUST be logged
+- **AND** no schema or profile lookup MUST be performed
+
+#### Scenario: Anonymous request yields a null user
+
+- **GIVEN** no user in the session
+- **WHEN** a manifest declaring `currentUserSchema` is enriched
+- **THEN** `runtime.user` MUST be `null`
+
+#### Scenario: Authenticated user without a profile gets the minimal fallback
+
+- **GIVEN** an authenticated user with no profile object for the declared schema
+- **WHEN** the manifest is enriched
+- **THEN** `runtime.user` MUST be `{ id: <uid>, roles: ["learner"] }`
+
+#### Scenario: Fields outside the allowlist are not surfaced
+
+- **GIVEN** a profile object carrying a field that is named neither by
+  `x-openregister-manifest-user-fields` nor by the calculation map
+- **WHEN** the manifest is enriched
+- **THEN** that field MUST NOT appear in `runtime.user`
+
+#### Scenario: A failing calculation is skipped, not fatal
+
+- **GIVEN** one non-materialised calculation whose expression raises
+- **WHEN** the manifest is enriched
+- **THEN** the failure MUST be logged and the remaining calculations MUST still
+  be applied
 
 ---
 

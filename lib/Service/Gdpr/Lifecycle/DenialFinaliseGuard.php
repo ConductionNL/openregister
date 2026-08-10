@@ -11,11 +11,15 @@
  *
  * Contract:
  *   - refuse `finaliseDenial` when the case's `regulatorReference` is empty;
- *   - permit `finaliseDenial` only when a `regulatorReference` is present;
+ *   - refuse `finaliseDenial` when the caller is not identified — finalising a
+ *     denial is a reportable regulatory act and MUST be attributable to a uid;
+ *   - permit `finaliseDenial` only when both an identified caller and a
+ *     `regulatorReference` are present;
  *   - never gate `draftDenial` (drafting a `denialGround` stays possible without
  *     a regulator reference);
- *   - fail closed — anything other than a confirmed-present reference on the
- *     `finaliseDenial` action denies the transition.
+ *   - fail closed — anything other than an identified caller plus a
+ *     confirmed-present reference on the `finaliseDenial` action denies the
+ *     transition.
  *
  * The guard is read-only (it never mutates the object); the head's declarative
  * lifecycle performs the state change once the guard allows it.
@@ -67,18 +71,17 @@ final class DenialFinaliseGuard implements LifecycleGuardInterface
      *
      * Only `finaliseDenial` is gated. Any other action (including
      * `draftDenial`) is allowed by this guard — it exists solely to enforce the
-     * mandatory-regulator-reference precondition at finalise time. The check
-     * fails closed: it allows finalise ONLY when it can positively confirm a
-     * non-empty `regulatorReference`; every other outcome denies.
+     * finalise-time preconditions. The check fails closed: it allows finalise
+     * ONLY when it can positively confirm an identified caller AND a non-empty
+     * `regulatorReference`; every other outcome denies.
      *
      * @param array<string, mixed> $object The loaded case payload at its current state.
      * @param string               $action The transition action being applied.
-     * @param string               $userId The uid of the caller.
+     * @param string               $userId The uid of the caller ('' when no session user).
      *
      * @return GuardResult Allow or deny + optional deny message.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId is part of the interface contract.
-     * @SuppressWarnings(PHPMD.StaticAccess)          GuardResult::allow()/deny() are the sanctioned value-object factories.
+     * @SuppressWarnings(PHPMD.StaticAccess) GuardResult::allow()/deny() are the sanctioned value-object factories.
      *
      * @spec openspec/changes/dsar-case-engine/specs/dsar-denial-guard/spec.md
      */
@@ -89,6 +92,19 @@ final class DenialFinaliseGuard implements LifecycleGuardInterface
         // must remain possible without a regulatorReference.
         if ($action !== self::ACTION_FINALISE_DENIAL) {
             return GuardResult::allow();
+        }
+
+        // Fail closed on an UNIDENTIFIED caller. LifecycleValidationListener
+        // resolves the uid as `$this->userSession->getUser()?->getUID() ?? ''`,
+        // so the empty string IS the "no session user" signal — it is not a
+        // uid this guard may treat as a handler. Finalising a denial is the
+        // act that moves a data-subject request into the `refused` final state
+        // and is reportable to the regulator; it must be attributable to a
+        // person, so an unattributable attempt is denied rather than allowed.
+        if (trim($userId) === '') {
+            return GuardResult::deny(
+                message: 'A denial can only be finalised by an identified user.'
+            );
         }
 
         // Fail closed: only a value that is present, a string, and non-empty
