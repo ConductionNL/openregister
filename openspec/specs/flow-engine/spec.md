@@ -105,3 +105,94 @@ A null `lastRunAt` MUST mean "has never run". The migration adding these columns
 - **WHEN** the flow is read
 - **THEN** `status` MUST be `error` with a message naming the nodes
 - **AND** `lastRunAt` MUST be null, and the two MUST be distinguishable without reading run history
+
+### Requirement: A TRIGGER is a node, and a flow may carry several
+
+What starts a flow is a node on the graph, not a property of the flow row. The
+engine MUST offer three trigger node types — `openregister.trigger-object`,
+`openregister.trigger-schedule`, `openregister.trigger-manual` — registered
+through the same `RegisterFlowNodesEvent` as every other node, so the palette
+offers them and the preflight checks their config.
+
+A trigger is an ENTRY POINT, not work. `execute()` MUST pass its items through
+unchanged: by the time a run exists the trigger has already fired. It MUST NOT
+re-check its own subject — the resolver decided this flow wanted this event
+before the run was queued, and a second copy of that rule is one that can
+drift, dropping legitimate runs or admitting rejected ones.
+
+A flow MAY carry several trigger nodes, and each is an independent entry point.
+This is the capability the flow row could not express: `trigger`,
+`triggerRegister`, `triggerSchema` and `cron` are four columns holding exactly
+one trigger between them, so "on a schedule AND when an object changes" had no
+representation and was worked around by duplicating the flow.
+
+#### Scenario: An object trigger names exactly one event, register and schema
+- **GIVEN** a node of type `openregister.trigger-object`
+- **WHEN** its config is validated
+- **THEN** `event`, `register` and `schema` MUST each be present and non-empty
+- **AND** `event` MUST be one of `object.created`, `object.updated`, `object.deleted`
+- @e2e exclude engine-internal config validation — covered by the node's unit tests
+
+#### Scenario: A trigger with no subject is refused rather than defaulted
+- **GIVEN** an object trigger whose `schema` is missing
+- **WHEN** its config is validated
+- **THEN** it MUST throw, naming the missing key
+- **AND** it MUST NOT default: a trigger with no subject either matches nothing
+  and never fires, or matches everything and fires on every object — and both
+  are silent
+- @e2e exclude engine-internal config validation — covered by the node's unit tests
+
+#### Scenario: Two schemas require two triggers, not one wider trigger
+- **GIVEN** a flow that must react to objects of two different schemas
+- **WHEN** it is authored
+- **THEN** it MUST carry one trigger node per schema
+- **AND** differing JSON shapes MUST be normalised by a mapping node downstream,
+  because a single trigger admitting both would hand the next node two shapes
+  under one name and it would read the fields the two happen to share
+- @e2e exclude an authoring constraint with no engine-side assertion — covered by
+  the canvas tests
+
+#### Scenario: A schedule trigger carries a five-field cron expression
+- **GIVEN** a node of type `openregister.trigger-schedule`
+- **WHEN** its config is validated
+- **THEN** `cron` MUST be present and MUST have five space-separated fields
+- **AND** the semantics are NOT checked — whether an expression ever matches a
+  real minute is the scheduler's question, not the node's
+- @e2e exclude engine-internal config validation — covered by the node's unit tests
+
+#### Scenario: A manual trigger says out loud that a person starts the flow
+- **GIVEN** a node of type `openregister.trigger-manual`
+- **WHEN** its config is validated
+- **THEN** it MUST accept no configuration keys at all
+- **AND** it MUST remain distinguishable from a flow with NO trigger node, which
+  is an unfinished flow rather than a deliberate on-demand one
+- @e2e exclude engine-internal config validation — covered by the node's unit tests
+
+### Requirement: Trigger matching MUST NOT scale with the number of flows
+
+An object event fires inside the dispatch of a user action — a save, an
+upload, a delete. Whatever the engine does to decide which flows want that
+event is therefore paid by the person who performed the action, on every
+action, forever.
+
+Resolving flows for an event MUST NOT open flow documents. It MUST match on an
+indexed projection of the trigger nodes — the exact `(event, register, schema)`
+triple each object trigger declares — so the cost is one indexed lookup
+regardless of how many flows exist or how many nodes each contains.
+
+The single-subject rule on `openregister.trigger-object` is what makes this an
+exact-match lookup rather than a set intersection. That is a consequence of the
+rule and not its justification: the reason for one subject per trigger is that
+objects of different schemas carry different JSON.
+
+A flow whose triggers cannot be projected MUST be reported, not silently
+skipped: a trigger that never matches is indistinguishable from a flow with
+nothing to do.
+
+#### Scenario: Firing an event does not read flow documents
+- **GIVEN** an instance with many flows, each carrying several trigger nodes
+- **WHEN** an object event fires
+- **THEN** the resolver MUST answer from the indexed projection
+- **AND** it MUST NOT load flow documents to inspect their nodes
+- @e2e exclude a performance invariant measured by a query-count assertion in the
+  trigger tests, not through a browser
