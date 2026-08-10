@@ -138,9 +138,9 @@ class BootstrapFactoryChainTest extends TestCase
     public function testDashboardFactoryProducesGenericWithLeafAppId(): void
     {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
 
-        $factory  = $context->factories['OCA\\PetStore\\Controller\\DashboardController'];
+        $factory  = $context->factories['OCA\\PetStoreFixture\\Controller\\DashboardController'];
         $instance = $factory($this->resolvingContainer());
 
         $this->assertInstanceOf(GenericDashboardController::class, $instance);
@@ -149,27 +149,27 @@ class BootstrapFactoryChainTest extends TestCase
     public function testSettingsFactoryChainResolves(): void
     {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
 
-        $instance = $context->factories['OCA\\PetStore\\Controller\\SettingsController']($this->resolvingContainer());
+        $instance = $context->factories['OCA\\PetStoreFixture\\Controller\\SettingsController']($this->resolvingContainer());
         $this->assertInstanceOf(GenericSettingsController::class, $instance);
     }//end testSettingsFactoryChainResolves()
 
     public function testPreferencesFactoryResolves(): void
     {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
 
-        $instance = $context->factories['OCA\\PetStore\\Controller\\PreferencesController']($this->resolvingContainer());
+        $instance = $context->factories['OCA\\PetStoreFixture\\Controller\\PreferencesController']($this->resolvingContainer());
         $this->assertInstanceOf(GenericPreferencesController::class, $instance);
     }//end testPreferencesFactoryResolves()
 
     public function testSettingsServiceFactoryResolves(): void
     {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
 
-        $instance = $context->factories['OCA\\PetStore\\Service\\SettingsService']($this->resolvingContainer());
+        $instance = $context->factories['OCA\\PetStoreFixture\\Service\\SettingsService']($this->resolvingContainer());
         $this->assertInstanceOf(AppHostSettingsService::class, $instance);
     }//end testSettingsServiceFactoryResolves()
 
@@ -187,7 +187,7 @@ class BootstrapFactoryChainTest extends TestCase
     {
         $context = new RecordingRegistrationContext();
         Bootstrap::register($context, 'petstore', [
-            'namespace'    => 'OCA\\PetStore',
+            'namespace'    => 'OCA\\PetStoreFixture',
             'observability' => true,
             'deepLinks'     => true,
         ]);
@@ -196,21 +196,21 @@ class BootstrapFactoryChainTest extends TestCase
 
         // Leaf alias name => expected generic class produced by its factory.
         $expected = [
-            'OCA\\PetStore\\Controller\\DashboardController'             => GenericDashboardController::class,
-            'OCA\\PetStore\\Controller\\PreferencesController'           => GenericPreferencesController::class,
-            'OCA\\PetStore\\Controller\\SettingsController'              => GenericSettingsController::class,
-            'OCA\\PetStore\\Controller\\HealthController'                => GenericHealthController::class,
-            'OCA\\PetStore\\Controller\\MetricsController'               => GenericMetricsController::class,
-            'OCA\\PetStore\\Service\\SettingsService'                    => AppHostSettingsService::class,
-            'OCA\\PetStore\\Service\\ActionAuthService'                  => GenericActionAuthService::class,
-            'OCA\\PetStore\\Repair\\InitializeSettings'                  => GenericInitializeSettings::class,
-            'OCA\\PetStore\\Repair\\InitializeActions'                   => GenericInitializeActions::class,
-            'OCA\\PetStore\\Settings\\AdminSettings'                     => GenericAdminSettings::class,
-            'OCA\\PetStore\\Sections\\SettingsSection'                   => GenericSettingsSection::class,
-            'OCA\\PetStore\\Listener\\DeepLinkRegistrationListener'      => GenericDeepLinkRegistrationListener::class,
+            'OCA\\PetStoreFixture\\Controller\\DashboardController'             => GenericDashboardController::class,
+            'OCA\\PetStoreFixture\\Controller\\PreferencesController'           => GenericPreferencesController::class,
+            'OCA\\PetStoreFixture\\Controller\\SettingsController'              => GenericSettingsController::class,
+            'OCA\\PetStoreFixture\\Controller\\HealthController'                => GenericHealthController::class,
+            'OCA\\PetStoreFixture\\Controller\\MetricsController'               => GenericMetricsController::class,
+            'OCA\\PetStoreFixture\\Service\\SettingsService'                    => AppHostSettingsService::class,
+            'OCA\\PetStoreFixture\\Service\\ActionAuthService'                  => GenericActionAuthService::class,
+            'OCA\\PetStoreFixture\\Repair\\InitializeSettings'                  => GenericInitializeSettings::class,
+            'OCA\\PetStoreFixture\\Repair\\InitializeActions'                   => GenericInitializeActions::class,
+            'OCA\\PetStoreFixture\\Settings\\AdminSettings'                     => GenericAdminSettings::class,
+            'OCA\\PetStoreFixture\\Sections\\SettingsSection'                   => GenericSettingsSection::class,
+            'OCA\\PetStoreFixture\\Listener\\DeepLinkRegistrationListener'      => GenericDeepLinkRegistrationListener::class,
             // ADR-066 settings-plane consumables (apphost-settings-plane).
             'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService' => \OCA\OpenRegister\AppHost\Service\GenericSettingsService::class,
-            'OCA\\PetStore\\Service\\RegisterConfigResolver'             => \OCA\OpenRegister\AppHost\Service\RegisterConfigResolver::class,
+            'OCA\\PetStoreFixture\\Service\\RegisterConfigResolver'             => \OCA\OpenRegister\AppHost\Service\RegisterConfigResolver::class,
         ];
 
         foreach ($expected as $alias => $class) {
@@ -239,7 +239,7 @@ class BootstrapFactoryChainTest extends TestCase
     public function testPreferencesControllerRoundTripsPerUserValue(): void
     {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
 
         // Build a controller against a real (in-memory) config + a session user.
         $user = $this->createMock(\OCP\IUser::class);
