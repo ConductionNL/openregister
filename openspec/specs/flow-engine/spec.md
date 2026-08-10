@@ -67,6 +67,46 @@ A node with no outgoing edge is a dead end unless it ends the path deliberately.
 - **WHEN** the document is inspected
 - **THEN** it MUST produce no `node-dead-end` warning
 
+### Requirement: Creating, editing and running a flow are named rights
+
+`flow.create`, `flow.update`, `flow.delete` and `flow.run` MUST exist in the
+action matrix and MUST be enforced by `FlowController`. Before them the flow
+endpoints were `@NoAdminRequired` and scoped only by organisation, so any member
+could do all four and no admin could narrow it.
+
+They MUST be seeded `@authenticated` — the explicit "any signed-in user" grant —
+because that is exactly the access that already exists. A seed defaulting to
+admin-only would lock out every non-admin flow author on upgrade: a breaking
+change wearing a feature's clothes.
+
+`@authenticated` MUST NOT become a default. An action with no entry MUST still
+deny, or the matrix turns from fail-closed to fail-open on the strength of a
+convenience.
+
+Refusal MUST be a 403 response, never an escaping OCS exception: that surfaces
+as a 500 from a plain `Controller`, and a right that reads as a server fault is
+one nobody can act on.
+
+#### Scenario: The shipped seed does not lock out existing authors
+- **GIVEN** an instance upgrading to the release that adds these rights
+- **WHEN** a non-admin member of an organisation creates a flow
+- **THEN** it MUST succeed exactly as before
+- @e2e exclude covered by `ActionAuthEveryoneTest`, which asserts against the
+  shipped seed file itself
+
+#### Scenario: An unlisted action still denies
+- **GIVEN** an action with no entry in the matrix
+- **WHEN** a non-admin invokes it
+- **THEN** it MUST be refused
+- @e2e exclude covered by `ActionAuthEveryoneTest`, with a positive control that
+  makes absence mean open and turns the assertion red
+
+#### Scenario: A narrowed right refuses the write itself
+- **GIVEN** `flow.create` narrowed to a group the caller is not in
+- **WHEN** they call the create endpoint
+- **THEN** it MUST answer 403 and the flow service MUST NOT be reached
+- @e2e exclude covered by `FlowControllerTest`
+
 ### Requirement: A flow MUST have a trigger and an end
 
 Every flow MUST carry at least one TRIGGER node and at least one END node.
