@@ -118,7 +118,17 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		const activeName = (await activeBanner.locator('xpath=..').innerText())
 			.replace(/.*Active Organisation:\s*/is, '').trim()
 		expect(activeName, 'active organisation banner names no organisation').not.toBe('')
-		await expectListSurface(page)
+
+		// NOT expectListSurface(): this page renders a CARD GRID
+		// (`div.card` / `.cardHeader`, OrganisationsIndex.vue), and the shared
+		// helper only knows about tables, lists and empty-content — so it found
+		// nothing here. Asserting the card that carries the ACTIVE
+		// organisation's name is both correct for this page and a stronger item
+		// assertion than "a surface rendered": it ties the list back to the
+		// banner, so a grid of empty cards fails.
+		await expect(
+			page.locator('.card').filter({ hasText: activeName }).first(),
+		).toBeVisible({ timeout: 15_000 })
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
 	})

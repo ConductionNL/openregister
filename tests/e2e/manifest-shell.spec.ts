@@ -129,14 +129,19 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		// `div.widget-empty` (DashboardIndex.vue, `#widget-objects-by-register`).
 		// The selector went unnoticed because CI never executed this file.
 		//
-		// Scoped to the "Objects by Register" widget by its own title so this
-		// asserts THAT widget's body, not "some table exists on the page".
-		const widget = page.locator('.dashboard-widget, .widget, section, article')
-			.filter({ hasText: /Objects by Register/i })
-			.last()
-		await expect(widget).toBeVisible({ timeout: 15_000 })
+		// Scoped to the dashboard by the stable testid CnDashboardPage renders
+		// on its root. Guessing the per-widget wrapper class was the previous
+		// mistake and it is not needed: assert the widget's own TITLE (an item,
+		// and one that only exists if the manifest's widget list reached the
+		// page), then that the dashboard body paints real rows or an explicit
+		// empty state rather than an unpainted panel.
+		const dash = page.locator('[data-testid="cn-dashboard-page"]').first()
+		await expect(dash).toBeVisible({ timeout: 15_000 })
 		await expect(
-			widget.locator('table tbody tr, .widget-empty').first(),
+			dash.getByText('Objects by Register', { exact: true }).first(),
+		).toBeVisible({ timeout: 15_000 })
+		await expect(
+			dash.locator('table tbody tr, .widget-empty').first(),
 		).toBeVisible({ timeout: 15_000 })
 	})
 
