@@ -65,6 +65,18 @@ class FlowEngine
     public const STATUS_FAILED = 'failed';
 
     /**
+     * How many items of a step's input and output the run log keeps.
+     *
+     * Small on purpose. The log answers "what shape was this, and did it look
+     * right" — a question the first few items settle — not "give me the data",
+     * which is what the objects themselves are for. A larger window would put a
+     * synchronisation's whole payload into a record kept for months.
+     *
+     * @var integer
+     */
+    public const LOG_ITEM_SAMPLE = 5;
+
+    /**
      * The run stopped mid-graph and will be resumed.
      *
      * Distinct from `stopped`, which is terminal. A suspended run keeps its
@@ -433,6 +445,13 @@ class FlowEngine
                     'status'     => 'completed',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                    // What the step RECEIVED and RETURNED, not just how many.
+                    // A count answers "did it work"; the question actually
+                    // asked of a run that completed and produced the wrong
+                    // answer is "what did it get, and what did it do with it",
+                    // and no count can answer that.
+                    'input'      => $this->sampleItems(items: $itemsIn),
+                    'output'     => $this->sampleItems(items: $items),
                     'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
             } catch (FlowStop $stop) {
@@ -620,6 +639,38 @@ class FlowEngine
         return null;
 
     }//end outcomeForFailedStep()
+
+    /**
+     * A bounded, honest sample of an item list, for the run log.
+     *
+     * BOUNDED, because a node returning ten thousand items would otherwise put
+     * ten thousand items in a log — and an unbounded log is one that fills a
+     * disk and is then deleted wholesale, taking the runs that mattered with
+     * it. Retention is per flow (`retentionDays`), so these live for months.
+     *
+     * HONEST, because a truncated list that does not say it is truncated is
+     * worse than a count: a reader comparing "10 items" against a node that
+     * processed 10,000 concludes the flow dropped data. The envelope always
+     * carries the true `count`, and `truncated` says whether `items` is all of
+     * them.
+     *
+     * @param array $items The item list.
+     *
+     * @return array{count: int, truncated: bool, items: array<int, mixed>} The sample.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
+     */
+    private function sampleItems(array $items): array
+    {
+        $total = count($items);
+
+        return [
+            'count'     => $total,
+            'truncated' => ($total > self::LOG_ITEM_SAMPLE),
+            'items'     => array_slice($items, 0, self::LOG_ITEM_SAMPLE),
+        ];
+
+    }//end sampleItems()
 
     /**
      * The pinned output for a step, or null when it is not pinned.
