@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -1347,7 +1349,7 @@ class DeleteObject
         $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
         if ($writableOptIn === false || $writable === false || $registerEntity === null) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf(
                     'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
                     (string) $schema->getSlug(),
@@ -1363,7 +1365,7 @@ class DeleteObject
 
         $deleted = $provider->remove(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
         if ($deleted === false) {
-            throw new \OCP\AppFramework\Db\DoesNotExistException('No external row matches id '.$uuid);
+            throw new DoesNotExistException('No external row matches id '.$uuid);
         }
 
         if ($old !== null) {

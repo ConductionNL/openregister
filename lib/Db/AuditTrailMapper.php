@@ -31,6 +31,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Exception;
+use InvalidArgumentException;
 use RuntimeException;
 use stdClass;
 use ReflectionClass;
@@ -692,7 +693,7 @@ class AuditTrailMapper extends QBMapper
             // through the shared row logic so both shapes yield identical rows.
             if ($entry instanceof AuditTrail) {
                 if ($entry->getUuid() === null || $entry->getUuid() === '') {
-                    throw new \InvalidArgumentException('insertAuditTrails() requires every pre-built row to carry a uuid.');
+                    throw new InvalidArgumentException('insertAuditTrails() requires every pre-built row to carry a uuid.');
                 }
 
                 $auditTrails[] = $entry;
@@ -700,7 +701,7 @@ class AuditTrailMapper extends QBMapper
             }
 
             if (is_array($entry) === false) {
-                throw new \InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
+                throw new InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
             }
 
             $auditTrails[] = $this->buildAuditTrail(

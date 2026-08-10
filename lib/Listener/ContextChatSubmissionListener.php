@@ -49,6 +49,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use DateTime;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -382,7 +383,7 @@ class ContextChatSubmissionListener implements IEventListener
             return;
         }
 
-        $lastModified = ($object->getUpdated() ?? $object->getCreated() ?? new \DateTime());
+        $lastModified = ($object->getUpdated() ?? $object->getCreated() ?? new DateTime());
 
         // Resolve BEFORE touching ContentItem or ContentProvider below: both
         // are unloadable on NC < 32 (ContentItem is OCP\ContextChat\*, and

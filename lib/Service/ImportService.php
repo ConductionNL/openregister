@@ -44,6 +44,7 @@ use Symfony\Component\Uid\Uuid;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use DateTime;
+use DateTimeZone;
 use InvalidArgumentException;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -1852,7 +1853,7 @@ class ImportService
                 // an offset-bearing timestamp persists the correct instant
                 // instead of its local wall-clock reading (e.g. +05:00 input
                 // must shift back five hours, not just drop the offset).
-                $dateTime->setTimezone(new \DateTimeZone('UTC'));
+                $dateTime->setTimezone(new DateTimeZone('UTC'));
                 return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (Exception $e) {
                 // Fallback to original value if parsing fails.

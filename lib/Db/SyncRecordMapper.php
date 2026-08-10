@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Service\Sync\SyncRecordStatus;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -106,7 +107,7 @@ class SyncRecordMapper extends QBMapper
     {
         $current = (string) $record->getStatus();
         if (SyncRecordStatus::canTransition(from: $current, to: $newStatus) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $newStatus)
             );
         }

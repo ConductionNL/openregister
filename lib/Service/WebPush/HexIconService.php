@@ -36,6 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\WebPush;
 
+use Imagick;
+use ImagickPixel;
 use OCP\App\IAppManager;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
@@ -188,12 +190,12 @@ class HexIconService
             $size = self::ICON_SIZE;
 
             // Base canvas: the cobalt hexagon for the icon, transparent for the badge.
-            $canvas = new \Imagick();
-            $canvas->newImage($size, $size, new \ImagickPixel('transparent'), 'png');
+            $canvas = new Imagick();
+            $canvas->newImage($size, $size, new ImagickPixel('transparent'), 'png');
 
             if ($badge === false) {
-                $hex = new \Imagick();
-                $hex->setBackgroundColor(new \ImagickPixel('transparent'));
+                $hex = new Imagick();
+                $hex->setBackgroundColor(new ImagickPixel('transparent'));
                 // The brand hex is a regular pointy-top hexagon with a 100:115
                 // (width:height) ratio. Rendering it into a square canvas would
                 // stretch it ~15% horizontally and distort the shape, so fit it
@@ -215,8 +217,8 @@ class HexIconService
             }//end if
 
             // The app glyph, tinted white, scaled to ~60% of the canvas and centred.
-            $glyph = new \Imagick();
-            $glyph->setBackgroundColor(new \ImagickPixel('transparent'));
+            $glyph = new Imagick();
+            $glyph->setBackgroundColor(new ImagickPixel('transparent'));
             $glyph->readImage($svgPath);
             $glyph->setImageFormat('png');
             $glyphSize = (int) ($size * 0.6);
@@ -224,8 +226,8 @@ class HexIconService
 
             // Force the glyph to white (monochrome) so it reads on cobalt / as a badge.
             $glyph->setImageAlphaChannel(\Imagick::ALPHACHANNEL_EXTRACT);
-            $white = new \Imagick();
-            $white->newImage($glyph->getImageWidth(), $glyph->getImageHeight(), new \ImagickPixel('white'), 'png');
+            $white = new Imagick();
+            $white->newImage($glyph->getImageWidth(), $glyph->getImageHeight(), new ImagickPixel('white'), 'png');
             $white->compositeImage($glyph, \Imagick::COMPOSITE_COPYOPACITY, 0, 0);
 
             $offset = (int) (($size - $white->getImageWidth()) / 2);

@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schema;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRun;
@@ -162,7 +163,7 @@ class SchemaMigrationService
     {
         $problems = $this->planner->validatePlan($plan);
         if (count($problems) > 0) {
-            throw new \InvalidArgumentException(implode(' ', $problems));
+            throw new InvalidArgumentException(implode(' ', $problems));
         }
 
         $this->assertNoActiveRun(schemaId: $schemaId);
@@ -321,7 +322,7 @@ class SchemaMigrationService
         $run = $this->runMapper->find($runId);
 
         if ($run->getType() !== SchemaRun::TYPE_MIGRATION) {
-            throw new \InvalidArgumentException('Only migration runs can be rolled back.');
+            throw new InvalidArgumentException('Only migration runs can be rolled back.');
         }
 
         if ($run->getState() === SchemaRun::STATE_ROLLED_BACK) {

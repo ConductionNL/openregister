@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTime;
 use JWadhams\JsonLogic;
 use Throwable;
 
@@ -222,7 +223,7 @@ class FlowExpression
 
         // Dates. `now` takes no argument; `dateFormat` and `dateAdd` accept
         // anything strtotime understands, which is what a stored ISO string is.
-        JsonLogic::add_operation('now', static fn () => (new \DateTime())->format('c'));
+        JsonLogic::add_operation('now', static fn () => (new DateTime())->format('c'));
         JsonLogic::add_operation(
             'dateFormat',
             static function ($value, $format='c') {

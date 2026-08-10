@@ -72,6 +72,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use InvalidArgumentException;
+
 /**
  * Canonical AppHost route table builder.
  *
@@ -191,7 +193,7 @@ class Routes
 
             $name = (string) $route['name'];
             if (isset($seen[$name]) === true) {
-                throw new \InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
+                throw new InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
             }
 
             $seen[$name] = true;
