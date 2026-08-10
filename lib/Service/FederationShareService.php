@@ -80,6 +80,8 @@ class FederationShareService
      * @return FederatedShare The persisted share (carrying the minted token).
      *
      * @throws \InvalidArgumentException When scope/permissions are invalid.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
      */
     public function createOutgoingShare(array $params): FederatedShare
     {

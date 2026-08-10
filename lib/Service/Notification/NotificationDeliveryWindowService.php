@@ -138,6 +138,8 @@ class NotificationDeliveryWindowService
      * @return array{enabled: bool, start: string, end: string, timezone: string, days: array<int, int>|null}
      *
      * @throws \InvalidArgumentException When `start`/`end`/`timezone` are malformed.
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md#requirement-users-must-be-able-to-manage-their-notification-preferences
      */
     public function validateAndNormalize(array $window): array
     {

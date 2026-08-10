@@ -147,6 +147,8 @@ class SecurityService
      *
      * @throws \InvalidArgumentException When the URL is malformed or resolves to a non-public address.
      *
+     * @spec openspec/specs/apphost-store-plane/spec.md#requirement-every-outbound-registry-url-must-be-ssrf-guarded-and-must-not-follow-redirects
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function assertSafeFetchUrl(string $url): void
