@@ -30,13 +30,13 @@
  *
  * THE ESCAPE HATCH
  * ----------------
- * A node can also be marked terminal per-instance with `exit: true` on the node
- * in the flow document, without its TYPE being terminal. That is what a
+ * A node can also be marked as stopping per-instance with `exit: true` on the
+ * node in the flow document, without its TYPE stopping. That is what a
  * migrated flow needs: a sink whose step type is an ordinary action, which was
  * a legitimate end of a path under the old place-and-edge reading and must not
  * start being refused because the reading changed.
  *
- * The two answers are deliberately OR-ed, never AND-ed: a registered terminal
+ * The two answers are deliberately OR-ed, never AND-ed: a registered stop
  * type does not need the flag, and the flag does not need the type's
  * permission. Requiring both would make every migrated flow depend on a
  * registry the migration cannot see.
@@ -60,14 +60,27 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Optional companion to {@see IFlowNode}: this node ends a path on purpose.
  *
- * A marker interface — it declares no methods. Terminality is a property of the
+ * A marker interface — it declares no methods. Stopping is a property of the
  * node TYPE, not a question the engine asks with arguments, so there is nothing
  * to pass and nothing to answer. `instanceof` is the whole contract.
  *
- * A node that does NOT implement this is not assumed non-terminal in any
- * damaging way: it is simply expected to have an outgoing edge, and warns when
- * it does not. The warning never blocks a save.
+ * A node that does NOT implement this is not assumed to run on in any damaging
+ * way: it is simply expected to have an outgoing edge, and warns when it does
+ * not. The warning never blocks a save.
+ *
+ * WHY "STOP" AND NOT "TERMINAL"
+ * -----------------------------
+ * One concept, one word. The node is `openregister.stop` and calls itself
+ * "Stop"; only this interface said "terminal", and the palette badge said
+ * "ends" — three names for the same idea, across the id, the code and the UI.
+ *
+ * "Terminal" was also OVERLOADED: {@see \OCA\OpenRegister\Db\FlowRun::isTerminal()}
+ * and {@see \OCA\OpenRegister\Service\Sync\SyncRecordStatus::isTerminal()} both
+ * mean "this RUN has reached a final status", which is a different question from
+ * "this NODE ends a path". Those keep the word; this one gives it up.
+ *
+ * @see IFlowStartNode The other end: a node a run may begin at.
  */
-interface IFlowTerminalNode
+interface IFlowStopNode
 {
 }//end interface

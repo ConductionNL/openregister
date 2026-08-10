@@ -19,7 +19,7 @@
  * nothing failed. The author sees a green run that did not do the work.
  *
  * A node escapes that three ways, and only the first two are "ending on
- * purpose" ({@see IFlowTerminalNode}), OR-ed and never AND-ed:
+ * purpose" ({@see IFlowStopNode}), OR-ed and never AND-ed:
  *
  *   - the node says `exit: true`
  *   - its TYPE is registered terminal
@@ -167,7 +167,7 @@ class FlowConnectivity
             return false;
         }
 
-        return ($this->registry->isTerminal(type: $type) === false);
+        return ($this->registry->isStop(type: $type) === false);
 
     }//end isDeadEnd()
 

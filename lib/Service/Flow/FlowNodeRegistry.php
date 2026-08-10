@@ -183,6 +183,12 @@ class FlowNodeRegistry
                     'displayName' => $node->getDisplayName(),
                     'description' => $node->getDescription(),
                     'icon'        => $node->getIcon(),
+                    // ALWAYS present, and always one of start/step/stop. An
+                    // editor that had to infer this fell back to matching the
+                    // id against a naming convention, which mis-labels every
+                    // node another app contributes under a name that does not
+                    // fit the pattern. The engine knows; it says so.
+                    'role'        => $this->roleFor(node: $node),
                 ];
 
                 // The node's config vocabulary, when it declares one. This is
@@ -321,34 +327,122 @@ class FlowNodeRegistry
      * Whether a node TYPE ends a path deliberately.
      *
      * Resolved through the registry rather than against a hardcoded list, so a
-     * terminal step contributed by another app — openconnector, hermiq, or one
+     * stop step contributed by another app — openconnector, hermiq, or one
      * not written yet — needs no OpenRegister change to be recognised. A
-     * hardcoded list would silently report every contributed terminal node as a
+     * hardcoded list would silently report every contributed stop node as a
      * dead end, and the warning would train authors to ignore it.
      *
-     * An unknown type is NOT terminal. It is already reported by its own
-     * preflight finding, and guessing "probably terminal" here would suppress
+     * An unknown type does NOT stop. It is already reported by its own
+     * preflight finding, and guessing "probably stops" here would suppress
      * the dead-end warning for exactly the documents most likely to have one.
      *
      * @param string $type The node type id.
      *
-     * @return bool True when the type is registered and marks itself terminal.
+     * @return bool True when the type is registered and marks itself a stop.
      *
-     * @spec openspec/specs/flow-engine/spec.md
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
      */
-    public function isTerminal(string $type): bool
+    public function isStop(string $type): bool
     {
         if (trim($type) === '') {
             return false;
         }
 
         try {
-            return ($this->get(type: $type) instanceof IFlowTerminalNode);
+            return ($this->get(type: $type) instanceof IFlowStopNode);
         } catch (UnexpectedValueException) {
             return false;
         }
 
-    }//end isTerminal()
+    }//end isStop()
+
+    /**
+     * Whether a run may BEGIN at a node TYPE.
+     *
+     * The mirror of {@see isStop()}, and resolved the same way and for the same
+     * reason: a start node contributed by another app is a start node, and no
+     * consumer should have to recognise it by the shape of its id.
+     *
+     * @param string $type The node type id.
+     *
+     * @return bool True when the type is registered and marks itself a start.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     */
+    public function isStart(string $type): bool
+    {
+        if (trim($type) === '') {
+            return false;
+        }
+
+        try {
+            return ($this->get(type: $type) instanceof IFlowStartNode);
+        } catch (UnexpectedValueException) {
+            return false;
+        }
+
+    }//end isStart()
+
+    /**
+     * A node type's ROLE in a flow: `start`, `step` or `stop`.
+     *
+     * One word per concept, decided HERE and shipped to every consumer, so the
+     * palette, the canvas and the connectivity check cannot disagree about what
+     * a node is. Consumers used to infer this from the id
+     * (`id.includes('.trigger-')`, `id.endsWith('.stop')`) — a convention that
+     * mis-labels every node another app contributes under a different name.
+     *
+     * A type that marks itself BOTH is reported as a start: a node a run can
+     * begin at is a start whatever else it does, and the canvas has to draw it
+     * at the top of the flow.
+     *
+     * @param string $type The node type id.
+     *
+     * @return string `'start'`, `'stop'` or `'step'`.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     */
+    public function roleOf(string $type): string
+    {
+        if (trim($type) === '') {
+            return 'step';
+        }
+
+        try {
+            return $this->roleFor(node: $this->get(type: $type));
+        } catch (UnexpectedValueException) {
+            // An unregistered type is a STEP, not a guess at something else.
+            // Its own preflight finding already reports that it is unknown.
+            return 'step';
+        }
+
+    }//end roleOf()
+
+    /**
+     * The role of a node INSTANCE the caller already holds.
+     *
+     * The one place the two marker interfaces are read, so `roleOf()`,
+     * `palette()` and anything added later cannot answer differently.
+     *
+     * @param IFlowNode $node The node.
+     *
+     * @return string `'start'`, `'stop'` or `'step'`.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     */
+    private function roleFor(IFlowNode $node): string
+    {
+        if (($node instanceof IFlowStartNode) === true) {
+            return 'start';
+        }
+
+        if (($node instanceof IFlowStopNode) === true) {
+            return 'stop';
+        }
+
+        return 'step';
+
+    }//end roleFor()
 
     /**
      * Collect contributions once per request.

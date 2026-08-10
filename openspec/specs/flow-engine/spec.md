@@ -47,7 +47,7 @@ Where several edges converge on a node, the lowering MUST give that node ONE sha
 
 ### Requirement: A path MUST end deliberately, and a dead end MUST be reported @e2e exclude engine-internal connectivity check — covered by FlowDeadEndTest
 
-A node with no outgoing edge is a dead end unless it ends the path deliberately. It ends deliberately if EITHER its type is registered terminal (the type implements `IFlowTerminalNode`, resolved through `FlowNodeRegistry::isTerminal()`) OR the node itself declares `exit: true`. The two MUST be OR-ed, never AND-ed, so a migrated flow whose sink carries an ordinary action type is not refused, and a contributed terminal type needs no OpenRegister change.
+A node with no outgoing edge is a dead end unless it ends the path deliberately. It ends deliberately if EITHER its type is registered as a stop (the type implements `IFlowStopNode`, resolved through `FlowNodeRegistry::isStop()`) OR the node itself declares `exit: true`. The two MUST be OR-ed, never AND-ed, so a migrated flow whose sink carries an ordinary action type is not refused, and a contributed stop type needs no OpenRegister change.
 
 `FlowNodePreflight` MUST report every dead end as a WARNING carrying `reason: node-dead-end` and naming the node. It MUST NOT report a node whose `type` is empty — that node is already refused by name in `FlowDefinitionBuilder`, and two findings on one node for one defect is how a warning list becomes noise.
 
@@ -105,6 +105,50 @@ A null `lastRunAt` MUST mean "has never run". The migration adding these columns
 - **WHEN** the flow is read
 - **THEN** `status` MUST be `error` with a message naming the nodes
 - **AND** `lastRunAt` MUST be null, and the two MUST be distinguishable without reading run history
+
+### Requirement: A node declares whether it starts or stops a path
+
+One concept, one word: a node's role is `start`, `step` or `stop`. That
+vocabulary MUST be the same in the node ids, in the engine's code, in the
+palette API and in the editor's badges.
+
+A type declares its role by implementing `IFlowStartNode` or `IFlowStopNode` —
+marker interfaces, because the role is a property of the TYPE and there is
+nothing to pass and nothing to answer. Neither is a `step`. `FlowNodeRegistry`
+resolves both and MUST ship the resulting `role` on every palette entry.
+
+No consumer may INFER the role from the node's id. A convention like
+`id.includes('.trigger-')` mis-labels every node another app contributes under
+a name that does not fit the pattern — which is the hardcoded list
+`FlowNodeRegistry::isStop()` exists to avoid, reintroduced one layer up. The
+engine knows; it says so.
+
+The word "terminal" is deliberately NOT used for a node. It remains the word for
+a RUN that has reached a final status (`FlowRun::isTerminal()`,
+`SyncRecordStatus::isTerminal()`), and one word cannot carry both questions.
+
+#### Scenario: A contributed node's role comes from what it declares
+- **GIVEN** a node from another app whose id matches no naming convention, which
+  implements `IFlowStartNode`
+- **WHEN** the palette is built
+- **THEN** its entry MUST report `role: "start"`
+- @e2e exclude engine-internal registry behaviour — covered by
+  `FlowNodeRegistryTest`, with a positive control that reverts to inferring the
+  role from the id and turns the assertion red
+
+#### Scenario: Every palette entry carries a role
+- **GIVEN** any registered node type
+- **WHEN** the palette is built
+- **THEN** `role` MUST be present and MUST be one of `start`, `step`, `stop`
+- **AND** a type that declares neither marker MUST be `step`
+- @e2e exclude engine-internal registry behaviour — covered by `FlowNodeRegistryTest`
+
+#### Scenario: An unregistered type is a step, not a guess
+- **GIVEN** a type no app has registered
+- **WHEN** its role is asked for
+- **THEN** it MUST be `step`, because its own preflight finding already reports
+  that it is unknown
+- @e2e exclude engine-internal registry behaviour — covered by `FlowNodeRegistryTest`
 
 ### Requirement: A TRIGGER is a node, and a flow may carry several
 

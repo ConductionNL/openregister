@@ -12,6 +12,8 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowStartNode;
+use OCA\OpenRegister\Service\Flow\IFlowStopNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCP\EventDispatcher\Event;
@@ -162,8 +164,102 @@ class FlowNodeRegistryTest extends TestCase
         $registry = $this->registryWith([new TaggingNode()]);
         $entry = $registry->palette()[0];
 
-        $this->assertSame(['id', 'displayName', 'description', 'icon'], array_keys($entry));
+        $this->assertSame(['id', 'displayName', 'description', 'icon', 'role'], array_keys($entry));
         $this->assertSame('Tag', $entry['displayName']);
+
+        // `role` is ALWAYS present, so an editor never has to infer it from the
+        // id. A node that marks itself neither start nor stop is a step.
+        $this->assertSame('step', $entry['role']);
+    }
+
+    public function testThePaletteReportsTheRoleTheNodeDeclaresRatherThanItsId(): void
+    {
+        // Ids that give the naming convention nothing to match on: an editor
+        // that inferred the role from the string would call both of these
+        // steps.
+        $start = new class implements IFlowNode, IFlowStartNode {
+            public function getId(): string
+            {
+                return 'other.begins-here';
+            }
+
+            public function getDisplayName(): string
+            {
+                return 'Begins here';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getIcon(): string
+            {
+                return '';
+            }
+
+            public function isAvailableForScope(int $scope): bool
+            {
+                return true;
+            }
+
+            public function validateConfig(array $config): void
+            {
+            }
+
+            public function execute(array $items, array $config, array $context): array
+            {
+                return $items;
+            }
+        };
+
+        $stop = new class implements IFlowNode, IFlowStopNode {
+            public function getId(): string
+            {
+                return 'other.ends-here';
+            }
+
+            public function getDisplayName(): string
+            {
+                return 'Ends here';
+            }
+
+            public function getDescription(): string
+            {
+                return '';
+            }
+
+            public function getIcon(): string
+            {
+                return '';
+            }
+
+            public function isAvailableForScope(int $scope): bool
+            {
+                return true;
+            }
+
+            public function validateConfig(array $config): void
+            {
+            }
+
+            public function execute(array $items, array $config, array $context): array
+            {
+                return $items;
+            }
+        };
+
+        $registry = $this->registryWith([$start, $stop]);
+        $roles    = [];
+        foreach ($registry->palette() as $entry) {
+            $roles[$entry['id']] = $entry['role'];
+        }
+
+        $this->assertSame('start', $roles['other.begins-here'], 'a contributed start node was not reported as one');
+        $this->assertSame('stop', $roles['other.ends-here'], 'a contributed stop node was not reported as one');
+        $this->assertSame('start', $registry->roleOf('other.begins-here'));
+        $this->assertSame('stop', $registry->roleOf('other.ends-here'));
+        $this->assertSame('step', $registry->roleOf('not.registered.at.all'));
     }
 
     public function testTheDispatcherRoutesAStepToTheNodeThatOwnsItsType(): void

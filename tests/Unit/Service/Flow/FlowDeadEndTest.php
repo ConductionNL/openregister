@@ -43,18 +43,18 @@ use Psr\Log\LoggerInterface;
 class FlowDeadEndTest extends TestCase
 {
     /**
-     * Build a preflight whose registry answers `isTerminal` from a fixed list.
+     * Build a preflight whose registry answers `isStop` from a fixed list.
      *
-     * @param array<int, string> $terminal Types that end a path deliberately.
+     * @param array<int, string> $stopping Types that end a path deliberately.
      *
      * @return FlowNodePreflight
      */
-    private function preflight(array $terminal=[]): FlowNodePreflight
+    private function preflight(array $stopping=[]): FlowNodePreflight
     {
         $registry = $this->createMock(FlowNodeRegistry::class);
         $registry->method('get')->willReturn($this->createMock(IFlowNode::class));
-        $registry->method('isTerminal')->willReturnCallback(
-            static fn (string $type): bool => in_array($type, $terminal, true)
+        $registry->method('isStop')->willReturnCallback(
+            static fn (string $type): bool => in_array($type, $stopping, true)
         );
 
         $appManager = $this->createMock(IAppManager::class);
@@ -116,7 +116,7 @@ class FlowDeadEndTest extends TestCase
      */
     public function testWiredGraphIsSilent(): void
     {
-        $report = $this->preflight(terminal: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
@@ -137,7 +137,7 @@ class FlowDeadEndTest extends TestCase
      */
     public function testRegisteredTerminalTypeIsNotADeadEnd(): void
     {
-        $report = $this->preflight(terminal: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
             flow: [
                 'nodes' => [['id' => 'only', 'type' => 'openregister.stop']],
                 'edges' => [],
@@ -181,7 +181,7 @@ class FlowDeadEndTest extends TestCase
      */
     public function testATerminalNodeElsewhereDoesNotExcuseASink(): void
     {
-        $report = $this->preflight(terminal: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
@@ -224,7 +224,7 @@ class FlowDeadEndTest extends TestCase
      */
     public function testConvergingNodeWithAnExitIsFine(): void
     {
-        $report = $this->preflight(terminal: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
