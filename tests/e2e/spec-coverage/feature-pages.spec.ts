@@ -32,9 +32,14 @@ const NOISE = [
 	// Benign OR bootstrap network-abort race (page still renders fully).
 	'[AppInit]', 'Failed to fetch', 'Failed to load data',
 	// Anonymous browser mirror of a failed request (no URL → can't attribute).
-	// Genuine OR 5xx are still caught by URL in the response tracker; named OR
-	// JS errors are NOT matched here and still fail.
+	// Genuine OR 4xx/5xx are still caught BY URL in the response tracker; named
+	// OR JS errors are NOT matched here and still fail.
 	'Failed to load resource: the server responded with a status of 5',
+	'Failed to load resource: the server responded with a status of 404',
+	// OR probes the OPTIONAL hermiq app's chat health on every page. hermiq is
+	// a separate ExApp and is absent on a stock CI instance, so this 404s on
+	// every route. Filtered BY URL, not by status: any other 404 still fails.
+	'/apps/hermiq/',
 ]
 function isNoise(t: string): boolean { return NOISE.some((n) => t.includes(n)) }
 
@@ -47,8 +52,13 @@ function trackErrors(page: Page, extraNoise: string[] = []): { console: string[]
 		const t = m.text()
 		if (!noisy(t)) errors.console.push(t.slice(0, 160))
 	})
+	// >= 400, not >= 500. The console mirror of a failed request carries NO
+	// url, so suppressing the anonymous 404 line above would have blinded the
+	// test to real 404s. Tracking by URL here is strictly STRONGER than what
+	// this file did before: a genuine 404 now fails the test and NAMES the
+	// endpoint, instead of surfacing as an unattributable console string.
 	page.on('response', (r) => {
-		if (r.status() < 500) return
+		if (r.status() < 400) return
 		const u = r.url()
 		if (!noisy(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})
@@ -156,5 +166,50 @@ test.describe('feature-pages — real UI render + actions', () => {
 		await expectButton(page, /Show roadmap/i)
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
+	})
+
+	/**
+	 * The nav entry is a real router destination, not a decorative row.
+	 *
+	 * Asserts the ITEM, not the container: the specific nav entry
+	 * `FeaturesRoadmapMenu` (the manifest id, rendered by CnAppNav as
+	 * `data-testid="cn-nav-entry-<id>"`), the resulting hash route, and the
+	 * `.cn-features-and-roadmap-view` root that CnFeaturesAndRoadmapView
+	 * itself renders. Then it resolves the view's ANCESTRY, which is the only
+	 * way to tell the spec's two outcomes apart — "renders in the main content
+	 * area" and "renders as an overlay" both look like a visible view.
+	 *
+	 * Starts from /registers so the click is a genuine route TRANSITION; a test
+	 * that begins on the target route would pass without navigating at all.
+	 *
+	 * @e2e openspec/specs/features-roadmap-menu/spec.md#clicking-the-nav-entry-navigates-to-the-route
+	 */
+	test('clicking the Features & Roadmap nav entry routes to it in the main content area', async ({ page }) => {
+		await gotoPage(page, '/registers')
+		await expect(page).toHaveURL(/#\/registers$/)
+
+		// The manifest declares this entry in the `footer` section; CnAppNav
+		// renders footer entries as NcAppNavigationItem router-links.
+		const navEntry = page.locator('[data-testid="cn-nav-entry-FeaturesRoadmapMenu"]')
+		await expect(navEntry).toHaveCount(1)
+		await navEntry.first().click()
+
+		await expect(page).toHaveURL(/#\/features-roadmap$/, { timeout: 15_000 })
+
+		const view = page.locator('.cn-features-and-roadmap-view')
+		await expect(view).toBeVisible({ timeout: 15_000 })
+
+		// "in the main content area, NOT as an overlay" — assert both halves.
+		// `closest()` walks real ancestors, so a view teleported into a dialog
+		// or a modal mask fails here even though it is perfectly visible.
+		const overlayAncestor = await view.first().evaluate(
+			(el) => !!el.closest('[role="dialog"], .modal-container, .modal-mask, .modal-wrapper'),
+		)
+		expect(overlayAncestor, 'view rendered inside an overlay').toBe(false)
+
+		const contentAncestor = await view.first().evaluate(
+			(el) => !!el.closest('#app-content-vue, .app-content'),
+		)
+		expect(contentAncestor, 'view not rendered inside the app content area').toBe(true)
 	})
 })

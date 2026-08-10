@@ -25,6 +25,40 @@
  * `occ`, no docker, and no pre-seeded data. Anything else stays in the root
  * suite and is run deliberately.
  *
+ * HOW THE SET GROWS — `testDir: '..'` + AN EXPLICIT `testMatch` ALLOW-LIST
+ * -----------------------------------------------------------------------
+ * The floor used to be "whatever file sits in `tests/e2e/ci/`", which meant
+ * growing it required MOVING files and rewriting their relative imports. It is
+ * now an explicit allow-list rooted at `tests/e2e`, so a spec is admitted by
+ * naming it here — a one-line, reviewable diff that says exactly which file
+ * started running and can be reverted just as precisely.
+ *
+ * The shared workflow runs `npx playwright test --config="$CONFIG"` with NO
+ * positional path filter (quality.yml, "Run Playwright tests"), so this
+ * config's `testDir` + `testMatch` are the only things deciding what executes.
+ * `playwright-test-path` selects the config and asserts the directory is
+ * non-empty; it does not scope the run.
+ *
+ * ⚠️ ADMISSION CRITERIA — all four, checked per file, and the last two are the
+ * ones that matter most because a suite can be GREEN and still assert nothing:
+ *
+ *   1. Hermetic: no `occ`, no docker, no pre-seeded fixtures.
+ *   2. Non-mutating, or self-cleaning: no `.fill()`/save/delete path that
+ *      leaves rows behind. All four files admitted below only navigate, open a
+ *      modal, and read — they write nothing.
+ *   3. NO UNCONDITIONAL-PASS DEGRADATION. A spec that wraps its assertions in
+ *      `if (await x.isVisible().catch(() => false)) { … }` with no `else`
+ *      PASSES WITHOUT ASSERTING when the data is absent. That is worse than a
+ *      skip, because gate-19 counts its `@e2e` refs as live coverage and the
+ *      run list shows a ✓. `tests/e2e/workflows/dsar-cases.spec.ts` (21 refs)
+ *      is built that way and is deliberately NOT admitted.
+ *   4. NO SEED-DEPENDENT `test.skip()`. The `spec-coverage/mdm-*.spec.ts` files
+ *      state in their own headers that they "degrade to test.skip()" without a
+ *      seed, and CI's own log confirms it every run:
+ *        `pipelinq/masterEntity not found — MDM fixture skipped; MDM specs
+ *         will self-skip.`
+ *      Admitting them would raise the executed count while covering nothing.
+ *
  * ⚠️ `baseURL` comes from the shared resolver, which accepts CI's `BASE_URL`
  * and has NO localhost default — a default would silently target the shared dev
  * container. See tests/e2e/base-url.ts.
@@ -34,7 +68,27 @@ import * as path from 'path'
 import { resolveBaseUrl } from '../base-url'
 
 export default defineConfig({
-	testDir: '.',
+	// Rooted at `tests/e2e` so the allow-list below can admit a spec without
+	// moving it (and without rewriting its `../.auth` / `../base-url` imports).
+	testDir: '..',
+	// EXPLICIT ALLOW-LIST — nothing runs unless it is named here. This is what
+	// keeps `testDir: '..'` from silently pulling in the ~59 other spec files,
+	// including `api-direct/**` (Newman's job, not Playwright's), `visual/**`
+	// (opt-in project, host-font-specific baselines) and `docs-screenshots`
+	// (journeydoc capture).
+	testMatch: [
+		// The original floor.
+		'ci/*.spec.ts',
+		// Admitted 2026-08-10. Genuine behavioural UI specs that assert named
+		// items — a page heading by text, a primary action button by
+		// accessible name — not just "a container rendered". Each was checked
+		// against all four criteria above: zero `test.skip`, zero
+		// conditional-assert guards, and zero write paths.
+		'manifest-shell.spec.ts',
+		'spec-coverage/core-list-pages.spec.ts',
+		'spec-coverage/admin-settings-pages.spec.ts',
+		'spec-coverage/feature-pages.spec.ts',
+	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
 	expect: { timeout: 15_000 },
