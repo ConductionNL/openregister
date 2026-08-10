@@ -232,3 +232,97 @@ would come to deadlock a flow.
 - **THEN** it MUST contain exactly the places and transitions the node implies
 - **AND** the annotation MUST contribute no place, no transition and no marking
 - @e2e exclude engine-internal lowering — covered by FlowDefinitionBuilder tests
+
+### Requirement: A node type declares its own form, and its own run-log actions
+
+A node's behaviour is contributed by an app; so is everything an operator needs
+in order to configure it and to understand what it did. The engine MUST let a
+node type declare both, through optional interfaces alongside `IFlowNode`:
+
+- **A config form.** A declarative field list — key, label, type, help, and
+  where a value comes from (a literal, or a lookup the providing app resolves).
+  A type that declares none keeps the raw-JSON pane, which is the honest
+  fallback rather than a typed pane over guessed keys.
+- **Run-log actions.** Given one log entry, the links that entry earns: for an
+  openconnector call node, the contract or the source it used; for an agent
+  node, the session it created. Each is a label, an href and an icon.
+
+The engine MUST NOT hard-code any app's fields or links. The reason is the one
+the catalogue already proves: `RegisterFlowNodesEvent` exists so an app can add
+a node without OpenRegister knowing about it, and a form registry that only
+OpenRegister could extend would put the form of every contributed node back
+into the engine.
+
+A form declaration MUST be data, not markup. A node that shipped a component
+would tie the engine's rendering to that app's build, and a canvas rendered in
+one app would be asked to mount a component from another.
+
+Actions MUST be derived from a log entry rather than stored on it. An href
+frozen into a log at write time is a link that rots when the target moves, and
+a run log is kept for months.
+
+#### Scenario: A node type with no form declaration still configures
+- **GIVEN** a node type that declares no config form
+- **WHEN** an operator edits a node of that type
+- **THEN** the raw-JSON configuration pane MUST be offered
+- @e2e exclude covered by the node editor's component tests
+
+#### Scenario: A contributed node's form comes from its own app
+- **GIVEN** an app contributing a node type that declares a form
+- **WHEN** the editor renders that node's configuration
+- **THEN** the fields MUST come from the declaration, and the engine MUST NOT
+  carry any knowledge of that app's keys
+- @e2e exclude covered by the registry tests
+
+#### Scenario: A log entry offers the links its node earns
+- **GIVEN** a run log entry written by an openconnector call node
+- **WHEN** the entry is displayed
+- **THEN** the actions that node type declares MUST be offered against it
+- **AND** each action's href MUST be resolved at display time, not read from
+  the stored entry
+- @e2e exclude covered by the run-log component tests
+
+### Requirement: A run records what each node received, returned and logged
+
+Every node execution MUST record its input items, its output items, and its own
+log lines, against the run and the node that produced them.
+
+This is what makes a run inspectable rather than merely scored. A run that
+records only a status per step answers "did it work" and nothing else; the
+question actually asked of a failed run is "what did it get, and what did it do
+with it".
+
+Agent nodes MUST log to the same shape as every other node. An agent's reasoning
+is longer and less structured, which is the argument for a defined shape rather
+than against one: a free-form dump is the format that cannot be read next to
+anything else.
+
+An agent node MUST record the identifier of the session it created, so the run
+log can offer a link to it. It MUST NOT copy the session's content into the log
+— the session is the record, and a copy diverges from it.
+
+Recording MUST be bounded. A node that returns ten thousand items MUST NOT put
+ten thousand items in a log; the record MUST carry a bounded sample and the true
+count, and MUST say that it is a sample. An unbounded log is one that fills a
+disk and is then deleted wholesale, taking the runs that mattered with it.
+
+#### Scenario: A failed step says what it received
+- **GIVEN** a run in which one node failed
+- **WHEN** its log entry is inspected
+- **THEN** the input it received, the output it produced (if any) and its log
+  lines MUST all be available
+- @e2e exclude covered by the engine's run-log tests
+
+#### Scenario: A large item list is sampled, and says so
+- **GIVEN** a node that returns more items than the record's bound
+- **WHEN** its entry is written
+- **THEN** the entry MUST carry a bounded sample, the true count, and a marker
+  that it is a sample
+- @e2e exclude covered by the engine's run-log tests
+
+#### Scenario: An agent node points at its session rather than copying it
+- **GIVEN** an agent node that created a session
+- **WHEN** its log entry is written
+- **THEN** the entry MUST carry the session identifier
+- **AND** it MUST NOT contain a copy of the session's messages
+- @e2e exclude covered by the agent node's tests
