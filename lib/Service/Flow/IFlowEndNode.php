@@ -68,19 +68,21 @@ namespace OCA\OpenRegister\Service\Flow;
  * way: it is simply expected to have an outgoing edge, and warns when it does
  * not. The warning never blocks a save.
  *
- * WHY "STOP" AND NOT "TERMINAL"
- * -----------------------------
- * One concept, one word. The node is `openregister.stop` and calls itself
- * "Stop"; only this interface said "terminal", and the palette badge said
- * "ends" — three names for the same idea, across the id, the code and the UI.
+ * WHY "END" AND NOT "TERMINAL" OR "STOP"
+ * --------------------------------------
+ * One concept, one word: `end`. The node is `openregister.end` and calls
+ * itself "End", this interface is `IFlowEndNode`, the registry answers
+ * `isEnd()` and the palette badge reads "end". It previously managed four
+ * names for the one idea — id `stop`, class `StopNode`, interface `terminal`,
+ * badge `ends` — which is how the editor came to guess it from a string.
  *
  * "Terminal" was also OVERLOADED: {@see \OCA\OpenRegister\Db\FlowRun::isTerminal()}
  * and {@see \OCA\OpenRegister\Service\Sync\SyncRecordStatus::isTerminal()} both
  * mean "this RUN has reached a final status", which is a different question from
  * "this NODE ends a path". Those keep the word; this one gives it up.
  *
- * @see IFlowStartNode The other end: a node a run may begin at.
+ * @see IFlowTriggerNode The other end: a node a run may begin at.
  */
-interface IFlowStopNode
+interface IFlowEndNode
 {
 }//end interface

@@ -69,6 +69,11 @@ class FlowNodeRegistry
         // batches. Sitting next to the real `openregister.iterate`, the old name
         // was a trap that re-armed for every new reader.
         'openregister.loop' => 'openregister.batch',
+        // Renamed so one word carries the concept everywhere. The node ended a
+        // path and called itself "Stop", the interface said "terminal" and the
+        // palette badge said "ends" — three names for one idea. It is `end`
+        // now, in the id, the class, the display name and the badge.
+        'openregister.stop' => 'openregister.end',
     ];
 
     /**
@@ -183,12 +188,21 @@ class FlowNodeRegistry
                     'displayName' => $node->getDisplayName(),
                     'description' => $node->getDescription(),
                     'icon'        => $node->getIcon(),
-                    // ALWAYS present, and always one of start/step/stop. An
+                    // ALWAYS present, and always one of trigger/step/end. An
                     // editor that had to infer this fell back to matching the
                     // id against a naming convention, which mis-labels every
                     // node another app contributes under a name that does not
                     // fit the pattern. The engine knows; it says so.
                     'role'        => $this->roleFor(node: $node),
+                    // Ids that used to mean this node. An editor resolving a
+                    // STORED flow looks its types up in this catalogue, so
+                    // without the aliases a flow saved before a rename shows a
+                    // raw type id where its name should be — the engine
+                    // resolves it perfectly well through RENAMED and only the
+                    // display breaks, which is the sort of half-failure nobody
+                    // files. Published rather than duplicated in each editor,
+                    // so the map has one home.
+                    'aliases'     => $this->aliasesFor(type: $id),
                 ];
 
                 // The node's config vocabulary, when it declares one. This is
@@ -338,53 +352,53 @@ class FlowNodeRegistry
      *
      * @param string $type The node type id.
      *
-     * @return bool True when the type is registered and marks itself a stop.
+     * @return bool True when the type is registered and marks itself an end.
      *
      * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
      */
-    public function isStop(string $type): bool
+    public function isEnd(string $type): bool
     {
         if (trim($type) === '') {
             return false;
         }
 
         try {
-            return ($this->get(type: $type) instanceof IFlowStopNode);
+            return ($this->get(type: $type) instanceof IFlowEndNode);
         } catch (UnexpectedValueException) {
             return false;
         }
 
-    }//end isStop()
+    }//end isEnd()
 
     /**
      * Whether a run may BEGIN at a node TYPE.
      *
-     * The mirror of {@see isStop()}, and resolved the same way and for the same
+     * The mirror of {@see isEnd()}, and resolved the same way and for the same
      * reason: a start node contributed by another app is a start node, and no
      * consumer should have to recognise it by the shape of its id.
      *
      * @param string $type The node type id.
      *
-     * @return bool True when the type is registered and marks itself a start.
+     * @return bool True when the type is registered and marks itself a trigger.
      *
      * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
      */
-    public function isStart(string $type): bool
+    public function isTrigger(string $type): bool
     {
         if (trim($type) === '') {
             return false;
         }
 
         try {
-            return ($this->get(type: $type) instanceof IFlowStartNode);
+            return ($this->get(type: $type) instanceof IFlowTriggerNode);
         } catch (UnexpectedValueException) {
             return false;
         }
 
-    }//end isStart()
+    }//end isTrigger()
 
     /**
-     * A node type's ROLE in a flow: `start`, `step` or `stop`.
+     * A node type's ROLE in a flow: `trigger`, `step` or `end`.
      *
      * One word per concept, decided HERE and shipped to every consumer, so the
      * palette, the canvas and the connectivity check cannot disagree about what
@@ -392,13 +406,13 @@ class FlowNodeRegistry
      * (`id.includes('.trigger-')`, `id.endsWith('.stop')`) — a convention that
      * mis-labels every node another app contributes under a different name.
      *
-     * A type that marks itself BOTH is reported as a start: a node a run can
-     * begin at is a start whatever else it does, and the canvas has to draw it
-     * at the top of the flow.
+     * A type that marks itself BOTH is reported as a trigger: a node a run can
+     * begin at is a trigger whatever else it does, and the canvas has to draw
+     * it at the top of the flow.
      *
      * @param string $type The node type id.
      *
-     * @return string `'start'`, `'stop'` or `'step'`.
+     * @return string `'trigger'`, `'end'` or `'step'`.
      *
      * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
      */
@@ -426,18 +440,42 @@ class FlowNodeRegistry
      *
      * @param IFlowNode $node The node.
      *
-     * @return string `'start'`, `'stop'` or `'step'`.
+     * @return string `'trigger'`, `'end'` or `'step'`.
      *
      * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
      */
-    private function roleFor(IFlowNode $node): string
+    /**
+     * The old ids that still resolve to a type.
+     *
+     * The reverse of {@see RENAMED}. Empty for almost every node, which is why
+     * it is computed rather than stored: the map is small and read once per
+     * palette build.
+     *
+     * @param string $type The current type id.
+     *
+     * @return array<int, string> The ids that used to mean this node.
+     */
+    private function aliasesFor(string $type): array
     {
-        if (($node instanceof IFlowStartNode) === true) {
-            return 'start';
+        $aliases = [];
+        foreach (self::RENAMED as $old => $new) {
+            if ($new === $type) {
+                $aliases[] = $old;
+            }
         }
 
-        if (($node instanceof IFlowStopNode) === true) {
-            return 'stop';
+        return $aliases;
+
+    }//end aliasesFor()
+
+    private function roleFor(IFlowNode $node): string
+    {
+        if (($node instanceof IFlowTriggerNode) === true) {
+            return 'trigger';
+        }
+
+        if (($node instanceof IFlowEndNode) === true) {
+            return 'end';
         }
 
         return 'step';

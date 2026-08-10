@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  */
 class FlowNodePreflightRegressionTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * The graph of hydra/flows/hydra-file-findings.flow.json, verbatim.
@@ -165,7 +167,7 @@ class FlowNodePreflightRegressionTest extends TestCase
             'openregister.merge',
             'openregister.loop',
             'openregister.wait',
-            'openregister.stop',
+            'openregister.end',
             'openregister.set-fields',
             'openregister.sub-flow',
             'openregister.flow-state',
@@ -283,7 +285,7 @@ class FlowNodePreflightRegressionTest extends TestCase
         // source-call is owned by an app that is not enabled.
         $this->assertCount(1, $report['blocking']);
         $this->assertSame('openregister.filter', $report['blocking'][0]['type']);
-        $this->assertCount(1, $report['warnings']);
-        $this->assertSame('openconnector.source-call', $report['warnings'][0]['type']);
+        $this->assertCount(1, $this->nodeWarnings($report));
+        $this->assertSame('openconnector.source-call', $this->nodeWarnings($report)[0]['type']);
     }
 }

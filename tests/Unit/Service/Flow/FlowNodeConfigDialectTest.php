@@ -60,6 +60,8 @@ use UnexpectedValueException;
  */
 class FlowNodeConfigDialectTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * A preflight over the REAL router and set-fields nodes.
@@ -136,7 +138,7 @@ class FlowNodeConfigDialectTest extends TestCase
 
         $report = $this->preflight()->inspect(flow: $flow);
 
-        $this->assertSame([], $report['warnings']);
+        $this->assertSame([], $this->nodeWarnings($report));
 
         foreach ($report['blocking'] as $finding) {
             $this->assertSame('openregister', $finding['app']);
@@ -160,7 +162,7 @@ class FlowNodeConfigDialectTest extends TestCase
         //                             that ARE there will never be read
         //
         // The second is what the whole document would have needed if the first
-        // had had nothing to say, which is exactly the StopNode / SubFlowNode
+        // had had nothing to say, which is exactly the EndNode / SubFlowNode
         // case (see FlowNodeConfigVocabularyTest). Asserting both are present
         // keeps either from silently regressing behind the other.
         $reasons = array_unique(array_column($report['blocking'], 'reason'));
@@ -250,7 +252,8 @@ class FlowNodeConfigDialectTest extends TestCase
 
         $report = $this->preflight()->inspect(flow: $flow);
 
-        $this->assertSame(['blocking' => [], 'warnings' => []], $report);
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 
     /**
@@ -304,6 +307,6 @@ class FlowNodeConfigDialectTest extends TestCase
         );
 
         $this->assertSame([], $report['blocking']);
-        $this->assertCount(1, $report['warnings']);
+        $this->assertCount(1, $this->nodeWarnings($report));
     }
 }

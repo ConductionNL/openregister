@@ -51,10 +51,10 @@
  *   missing or malformed. It cannot catch anything else, because a node only
  *   examines the keys it looks for; a key it does not look for is invisible to
  *   it by construction. Where the required set is empty the method is a no-op no
- *   matter how carefully it is written — `StopNode::validateConfig()` is empty
+ *   matter how carefully it is written — `EndNode::validateConfig()` is empty
  *   for exactly that reason, and it is not wrong to be.
  * - The node's declared vocabulary ({@see IFlowNodeConfigKeys}) — catches a key
- *   the node will silently ignore. `StopNode` accepting `status`/`reason` while
+ *   the node will silently ignore. `EndNode` accepting `status`/`reason` while
  *   reading `error`/`message`, `SubFlowNode` accepting `input`/`output` while
  *   implementing neither: both satisfied every required key and both were inert.
  *
@@ -142,7 +142,7 @@ class FlowNodePreflight
      * That method answers "is anything REQUIRED missing"; a step written in
      * another node's dialect can satisfy every required key and still be inert,
      * because the keys carrying the actual intent are ones the node ignores.
-     * `StopNode` requires nothing at all, so it accepted `status`/`reason`
+     * `EndNode` requires nothing at all, so it accepted `status`/`reason`
      * (it reads `error`/`message`) and stopped runs with the generic "Flow
      * stopped" and `isError=false`. `SubFlowNode` requires only `flow`, so it
      * accepted `input`/`output` and passed the child nothing. Neither was
@@ -184,6 +184,27 @@ class FlowNodePreflight
      * time, where the cost of a silent stop is actually paid.
      */
     public const REASON_DEAD_END = 'node-dead-end';
+
+    /**
+     * The flow carries no TRIGGER node, so nothing can ever start it.
+     *
+     * A WARNING for the same reason as a dead end: a flow being authored is
+     * incomplete by definition, and refusing the save would force the author to
+     * build in an order where the document is never invalid — which no editor
+     * can require. The editor surfaces it as an error banner, and the cost is
+     * paid at run time, not at save time.
+     */
+    public const REASON_NO_TRIGGER = 'flow-has-no-trigger';
+
+    /**
+     * The flow carries no END node, so no path finishes deliberately.
+     *
+     * Distinct from {@see REASON_DEAD_END}, which is about ONE node having
+     * nowhere to send its token. This is about the document as a whole: a flow
+     * with no end node has no deliberate exit at all, and every path through it
+     * stops somewhere the author did not mark.
+     */
+    public const REASON_NO_END = 'flow-has-no-end';
 
     /**
      * The key the engine reads from the EDGE and never from `config`.
@@ -348,7 +369,12 @@ class FlowNodePreflight
         // The graph-SHAPE question lives in its own collaborator: this class
         // answers questions about each node's type and config, which is a
         // different subject over the same document.
-        $warnings = array_merge($warnings, (new FlowConnectivity($this->registry))->deadEnds(flow: $flow));
+        $connectivity = new FlowConnectivity($this->registry);
+        $warnings     = array_merge($warnings, $connectivity->deadEnds(flow: $flow));
+
+        // Whether the flow has a way in and a way out at all — a question about
+        // the DOCUMENT, where the dead-end check is a question about each node.
+        $warnings = array_merge($warnings, $connectivity->entryAndExit(flow: $flow));
 
         return [
             'blocking' => $blocking,

@@ -39,6 +39,8 @@ use UnexpectedValueException;
  */
 class FlowNodePreflightTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * Build a preflight over a fixed set of known types and enabled apps.
@@ -125,9 +127,9 @@ class FlowNodePreflightTest extends TestCase
 
         $report = $preflight->inspect(flow: $this->flowWith('openconnector.source-call'));
         $this->assertSame([], $report['blocking']);
-        $this->assertCount(1, $report['warnings']);
-        $this->assertSame(FlowNodePreflight::REASON_OWNER_NOT_ENABLED, $report['warnings'][0]['reason']);
-        $this->assertSame('openconnector', $report['warnings'][0]['app']);
+        $this->assertCount(1, $this->nodeWarnings($report));
+        $this->assertSame(FlowNodePreflight::REASON_OWNER_NOT_ENABLED, $this->nodeWarnings($report)[0]['reason']);
+        $this->assertSame('openconnector', $this->nodeWarnings($report)[0]['app']);
     }
 
     /**
@@ -153,7 +155,7 @@ class FlowNodePreflightTest extends TestCase
             'nodes' => [
                 ['id' => 'a', 'type' => 'openregister.explode'],
                 ['id' => 'b', 'type' => 'openregister.teleport'],
-                ['id' => 'c', 'type' => 'openregister.stop'],
+                ['id' => 'c', 'type' => 'openregister.end'],
             ],
             'edges' => [
                 ['id' => 'e1', 'from' => 'a', 'to' => 'b'],
@@ -191,7 +193,9 @@ class FlowNodePreflightTest extends TestCase
         ];
 
         $preflight->assertRunnable(flow: $flow);
-        $this->assertSame(['blocking' => [], 'warnings' => []], $preflight->inspect(flow: $flow));
+        $report = $preflight->inspect(flow: $flow);
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 
     /**
@@ -297,6 +301,7 @@ class FlowNodePreflightTest extends TestCase
             ]
         );
 
-        $this->assertSame(['blocking' => [], 'warnings' => []], $report);
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 }

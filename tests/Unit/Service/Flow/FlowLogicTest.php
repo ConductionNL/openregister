@@ -14,7 +14,7 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
-use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -41,7 +41,7 @@ class TrackingDispatcher implements FlowStepDispatcher
             $this->ran[] = $type;
         }
 
-        // A stop step ends the run, like the real StopNode.
+        // A stop step ends the run, like the real EndNode.
         if ($type === 'stop') {
             throw new FlowStop(reason: (string) ($step['config']['message'] ?? 'stopped'), isError: (($step['config']['error'] ?? false) === true));
         }
@@ -311,7 +311,7 @@ class SwitchAndStopNodeTest extends TestCase
 
     public function testStopThrowsFlowStop(): void
     {
-        $node = new StopNode($this->l10n(), $this->createMock(IURLGenerator::class));
+        $node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
         $this->expectException(FlowStop::class);
         $node->execute([], ['message' => 'halt'], []);
@@ -319,7 +319,7 @@ class SwitchAndStopNodeTest extends TestCase
 
     public function testStopCarriesTheErrorFlag(): void
     {
-        $node = new StopNode($this->l10n(), $this->createMock(IURLGenerator::class));
+        $node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
         try {
             $node->execute([], ['error' => true, 'message' => 'bad'], []);

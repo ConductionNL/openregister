@@ -9,14 +9,14 @@
  * only examines the keys it looks for, so a key it does not look for is
  * invisible to it by construction — however carefully the method is written.
  * Where a node requires nothing the method is a no-op no matter what:
- * `StopNode::validateConfig()` has a literally empty body, and on its own terms
+ * `EndNode::validateConfig()` has a literally empty body, and on its own terms
  * that is correct, because a stop with no config is a perfectly good "end this
  * branch here".
  *
- * Which is exactly why StopNode was the node that let this through. Measured in
+ * Which is exactly why EndNode was the node that let this through. Measured in
  * hydra#489:
  *
- *   config.status / .reason   StopNode reads error / message    → run stopped
+ *   config.status / .reason   EndNode reads error / message    → run stopped
  *                                                                 with the
  *                                                                 generic
  *                                                                 "Flow stopped"
@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
-use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
@@ -87,6 +87,8 @@ use UnexpectedValueException;
  */
 class FlowNodeConfigVocabularyTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * A preflight over the REAL nodes, with only openregister enabled.
@@ -133,7 +135,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
                 $event->registerNode(new LoopNode($l10n, $urls));
                 $event->registerNode(new ExplodeNode($l10n, $urls));
                 $event->registerNode(new WaitNode($l10n, $urls));
-                $event->registerNode(new StopNode($l10n, $urls));
+                $event->registerNode(new EndNode($l10n, $urls));
 
                 // These three take collaborators (mappers, object service) that
                 // nothing here exercises: only getId(), configKeys() and
@@ -208,7 +210,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
      * THE REGRESSION — a stop step in another node's dialect.
      *
      * Verbatim from the hydra flow that shipped it. or#2254's preflight passes
-     * this document: `StopNode::validateConfig()` requires nothing, so there is
+     * this document: `EndNode::validateConfig()` requires nothing, so there is
      * nothing for it to object to.
      *
      * @return void
@@ -218,7 +220,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $flow = $this->flowWith(
             [
                 'id'     => 'give-up',
-                'type'   => 'openregister.stop',
+                'type'   => 'openregister.end',
                 'config' => [
                     'status' => 'failed',
                     'reason' => 'no work left',
@@ -253,7 +255,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $flow = $this->flowWith(
             [
                 'id'     => 'give-up',
-                'type'   => 'openregister.stop',
+                'type'   => 'openregister.end',
                 'config' => ['status' => 'failed'],
             ]
         );
@@ -265,7 +267,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
     }//end testTheSaveIsRefusedForABogusStopConfig()
 
     /**
-     * POSITIVE CONTROL — the same step in the dialect StopNode reads.
+     * POSITIVE CONTROL — the same step in the dialect EndNode reads.
      *
      * Without this the test above is satisfied by a preflight that refuses every
      * stop step it is shown.
@@ -277,7 +279,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $flow = $this->flowWith(
             [
                 'id'     => 'give-up',
-                'type'   => 'openregister.stop',
+                'type'   => 'openregister.end',
                 'config' => [
                     'error'   => true,
                     'message' => 'no work left',
@@ -288,7 +290,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $report = $this->preflight()->inspect(flow: $flow);
 
         $this->assertSame([], $report['blocking']);
-        $this->assertSame([], $report['warnings']);
+        $this->assertSame([], $this->nodeWarnings($report));
 
     }//end testTheCorrectStopDialectPasses()
 
@@ -302,7 +304,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
      */
     public function testAStopStepWithNoConfigPasses(): void
     {
-        $flow = $this->flowWith(['id' => 'done', 'type' => 'openregister.stop']);
+        $flow = $this->flowWith(['id' => 'done', 'type' => 'openregister.end']);
 
         $this->assertSame([], $this->preflight()->inspect(flow: $flow)['blocking']);
 
@@ -433,7 +435,7 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $report = $this->preflight()->inspect(flow: $flow);
 
         $this->assertSame([], $report['blocking']);
-        $this->assertSame([], $report['warnings']);
+        $this->assertSame([], $this->nodeWarnings($report));
 
     }//end testAnnotationKeysAreTolerated()
 
@@ -509,10 +511,10 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $report = $this->preflight()->inspect(flow: $flow);
 
         $this->assertSame([], $report['blocking']);
-        $this->assertCount(1, $report['warnings']);
+        $this->assertCount(1, $this->nodeWarnings($report));
         $this->assertSame(
             FlowNodePreflight::REASON_CONFIG_ONERROR_MISPLACED,
-            $report['warnings'][0]['reason']
+            $this->nodeWarnings($report)[0]['reason']
         );
 
     }//end testABuriedDefaultOnErrorPolicyOnlyWarns()
@@ -672,8 +674,8 @@ class FlowNodeConfigVocabularyTest extends TestCase
         $palette = $this->registry()->palette(scope: IManager::SCOPE_ADMIN);
         $byId    = array_column($palette, null, 'id');
 
-        $this->assertArrayHasKey('openregister.stop', $byId);
-        $this->assertSame(['error', 'message'], $byId['openregister.stop']['configKeys']);
+        $this->assertArrayHasKey('openregister.end', $byId);
+        $this->assertSame(['error', 'message'], $byId['openregister.end']['configKeys']);
 
         // An empty declaration must survive as `[]`, not vanish — "reads no
         // config" and "did not say" are different answers.

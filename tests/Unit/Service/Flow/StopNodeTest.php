@@ -22,13 +22,13 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowStop;
-use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\Flow\Nodes\StopNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  */
 final class StopNodeTest extends TestCase
 {
@@ -36,9 +36,9 @@ final class StopNodeTest extends TestCase
     /**
      * The node under test.
      *
-     * @var StopNode
+     * @var EndNode
      */
-    private StopNode $node;
+    private EndNode $node;
 
 
     /**
@@ -51,7 +51,7 @@ final class StopNodeTest extends TestCase
         $l10n = $this->createMock(originalClassName: IL10N::class);
         $l10n->method('t')->willReturnArgument(0);
 
-        $this->node = new StopNode($l10n, $this->createMock(originalClassName: IURLGenerator::class));
+        $this->node = new EndNode($l10n, $this->createMock(originalClassName: IURLGenerator::class));
 
     }//end setUp()
 

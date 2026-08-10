@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
-use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
@@ -65,7 +65,7 @@ class FlowNodeRegistrationListener implements IEventListener
      * @param FilterNode          $filter          The built-in "Filter" node.
      * @param WaitNode            $wait            The built-in "Wait" node.
      * @param SwitchNode          $switch          The built-in "Switch" node.
-     * @param StopNode            $stop            The built-in "Stop" node.
+     * @param EndNode            $stop            The built-in "Stop" node.
      * @param MergeNode           $merge           The built-in "Merge" node.
      * @param LoopNode            $loop            The built-in "Loop over items" node.
      * @param SubFlowNode         $subFlow         The built-in "Run a flow" node.
@@ -85,7 +85,7 @@ class FlowNodeRegistrationListener implements IEventListener
         private readonly FilterNode $filter,
         private readonly WaitNode $wait,
         private readonly SwitchNode $switch,
-        private readonly StopNode $stop,
+        private readonly EndNode $stop,
         private readonly MergeNode $merge,
         private readonly LoopNode $loop,
         private readonly SubFlowNode $subFlow,

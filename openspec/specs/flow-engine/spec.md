@@ -47,7 +47,7 @@ Where several edges converge on a node, the lowering MUST give that node ONE sha
 
 ### Requirement: A path MUST end deliberately, and a dead end MUST be reported @e2e exclude engine-internal connectivity check — covered by FlowDeadEndTest
 
-A node with no outgoing edge is a dead end unless it ends the path deliberately. It ends deliberately if EITHER its type is registered as a stop (the type implements `IFlowStopNode`, resolved through `FlowNodeRegistry::isStop()`) OR the node itself declares `exit: true`. The two MUST be OR-ed, never AND-ed, so a migrated flow whose sink carries an ordinary action type is not refused, and a contributed stop type needs no OpenRegister change.
+A node with no outgoing edge is a dead end unless it ends the path deliberately. It ends deliberately if EITHER its type is registered as an end (the type implements `IFlowEndNode`, resolved through `FlowNodeRegistry::isEnd()`) OR the node itself declares `exit: true`. The two MUST be OR-ed, never AND-ed, so a migrated flow whose sink carries an ordinary action type is not refused, and a contributed end type needs no OpenRegister change.
 
 `FlowNodePreflight` MUST report every dead end as a WARNING carrying `reason: node-dead-end` and naming the node. It MUST NOT report a node whose `type` is empty — that node is already refused by name in `FlowDefinitionBuilder`, and two findings on one node for one defect is how a warning list becomes noise.
 
@@ -58,7 +58,7 @@ A node with no outgoing edge is a dead end unless it ends the path deliberately.
 - **AND** `blocking` MUST remain empty, because a dead end never blocks a save
 
 #### Scenario: A wired graph reports nothing
-- **GIVEN** the same document with `forgotten` connected onward to a terminal node
+- **GIVEN** the same document with `forgotten` connected onward to an end node
 - **WHEN** the document is inspected
 - **THEN** it MUST produce no `node-dead-end` warning
 
@@ -66,6 +66,51 @@ A node with no outgoing edge is a dead end unless it ends the path deliberately.
 - **GIVEN** a single node carrying `type: openregister.set-fields` and `exit: true`, with no edges
 - **WHEN** the document is inspected
 - **THEN** it MUST produce no `node-dead-end` warning
+
+### Requirement: A flow MUST have a trigger and an end
+
+Every flow MUST carry at least one TRIGGER node and at least one END node.
+Without a trigger nothing can ever start it, and the flow sits fully authored
+and never runs with no run record to say why. Without an end node no path
+finishes deliberately, so every path stops somewhere the author did not mark
+while the run is still reported completed.
+
+Both MUST be decided by the node's TYPE, never by its position in the graph.
+
+A flow may end in SUCCESS or in ERROR — `openregister.end` carries an `error`
+flag — and both are deliberate ends. Failing is an outcome, not the absence of
+one.
+
+`exit: true` MUST NOT satisfy this. The flag is a per-instance escape that ends
+one PATH for a migrated document; it is not a node saying the flow finishes
+here.
+
+Both MUST be WARNINGS rather than blocking, for the same reason a dead end is: a
+flow mid-authoring is legitimately missing both, and refusing the save would
+force the author to build in an order where the document is never incomplete.
+The editor MUST surface them as an error banner.
+
+#### Scenario: A flow with no trigger is reported
+- **GIVEN** a document with a step and an end node but no trigger node
+- **WHEN** it is inspected
+- **THEN** a `flow-has-no-trigger` warning MUST be reported
+- **AND** `blocking` MUST remain empty
+- @e2e exclude engine-internal check — covered by `FlowEntryAndExitTest`
+
+#### Scenario: Graph position is not a role
+- **GIVEN** two ordinary steps wired `a → b`, so `a` has nothing pointing at it
+  and `b` has no outgoing edge
+- **WHEN** the document is inspected
+- **THEN** BOTH `flow-has-no-trigger` and `flow-has-no-end` MUST be reported,
+  because neither node's TYPE says it can start or end a run
+- @e2e exclude engine-internal check — covered by `FlowEntryAndExitTest`, with a
+  positive control that reads the graph shape instead and turns it red
+
+#### Scenario: An end that fails still counts
+- **GIVEN** a flow whose only end node carries `config.error: true`
+- **WHEN** it is inspected
+- **THEN** no `flow-has-no-end` warning MUST be reported
+- @e2e exclude engine-internal check — covered by `FlowEntryAndExitTest`
 
 ### Requirement: Saving a half-wired flow MUST succeed and warn; running one MUST be refused @e2e exclude API contract — covered by Newman and by FlowDeadEndTest
 
@@ -106,21 +151,26 @@ A null `lastRunAt` MUST mean "has never run". The migration adding these columns
 - **THEN** `status` MUST be `error` with a message naming the nodes
 - **AND** `lastRunAt` MUST be null, and the two MUST be distinguishable without reading run history
 
-### Requirement: A node declares whether it starts or stops a path
+### Requirement: A node declares whether it triggers or ends a path
 
-One concept, one word: a node's role is `start`, `step` or `stop`. That
+One concept, one word: a node's role is `trigger`, `step` or `end`. That
 vocabulary MUST be the same in the node ids, in the engine's code, in the
 palette API and in the editor's badges.
 
-A type declares its role by implementing `IFlowStartNode` or `IFlowStopNode` —
+A type declares its role by implementing `IFlowTriggerNode` or `IFlowEndNode` —
 marker interfaces, because the role is a property of the TYPE and there is
 nothing to pass and nothing to answer. Neither is a `step`. `FlowNodeRegistry`
 resolves both and MUST ship the resulting `role` on every palette entry.
 
+A node's role MUST come from its TYPE and never from its position in the graph.
+"Nothing points at this node" and "this node has no outgoing edge" are facts
+about one drawing, and reading them as roles calls an unconnected step a
+trigger.
+
 No consumer may INFER the role from the node's id. A convention like
 `id.includes('.trigger-')` mis-labels every node another app contributes under
 a name that does not fit the pattern — which is the hardcoded list
-`FlowNodeRegistry::isStop()` exists to avoid, reintroduced one layer up. The
+`FlowNodeRegistry::isEnd()` exists to avoid, reintroduced one layer up. The
 engine knows; it says so.
 
 The word "terminal" is deliberately NOT used for a node. It remains the word for
@@ -131,7 +181,7 @@ a RUN that has reached a final status (`FlowRun::isTerminal()`,
 - **GIVEN** a node from another app whose id matches no naming convention, which
   implements `IFlowStartNode`
 - **WHEN** the palette is built
-- **THEN** its entry MUST report `role: "start"`
+- **THEN** its entry MUST report `role: "trigger"`
 - @e2e exclude engine-internal registry behaviour — covered by
   `FlowNodeRegistryTest`, with a positive control that reverts to inferring the
   role from the id and turns the assertion red
@@ -139,7 +189,7 @@ a RUN that has reached a final status (`FlowRun::isTerminal()`,
 #### Scenario: Every palette entry carries a role
 - **GIVEN** any registered node type
 - **WHEN** the palette is built
-- **THEN** `role` MUST be present and MUST be one of `start`, `step`, `stop`
+- **THEN** `role` MUST be present and MUST be one of `trigger`, `step`, `end`
 - **AND** a type that declares neither marker MUST be `step`
 - @e2e exclude engine-internal registry behaviour — covered by `FlowNodeRegistryTest`
 

@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 class FlowDeadEndTest extends TestCase
 {
     /**
-     * Build a preflight whose registry answers `isStop` from a fixed list.
+     * Build a preflight whose registry answers `isEnd` from a fixed list.
      *
      * @param array<int, string> $stopping Types that end a path deliberately.
      *
@@ -53,7 +53,7 @@ class FlowDeadEndTest extends TestCase
     {
         $registry = $this->createMock(FlowNodeRegistry::class);
         $registry->method('get')->willReturn($this->createMock(IFlowNode::class));
-        $registry->method('isStop')->willReturnCallback(
+        $registry->method('isEnd')->willReturnCallback(
             static fn (string $type): bool => in_array($type, $stopping, true)
         );
 
@@ -116,11 +116,11 @@ class FlowDeadEndTest extends TestCase
      */
     public function testWiredGraphIsSilent(): void
     {
-        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'b', 'type' => 'openregister.stop'],
+                    ['id' => 'b', 'type' => 'openregister.end'],
                 ],
                 'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
             ]
@@ -135,18 +135,18 @@ class FlowDeadEndTest extends TestCase
      *
      * @return void
      */
-    public function testRegisteredTerminalTypeIsNotADeadEnd(): void
+    public function testRegisteredEndTypeIsNotADeadEnd(): void
     {
-        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
             flow: [
-                'nodes' => [['id' => 'only', 'type' => 'openregister.stop']],
+                'nodes' => [['id' => 'only', 'type' => 'openregister.end']],
                 'edges' => [],
             ]
         );
 
         $this->assertSame([], $this->deadEnds($report));
 
-    }//end testRegisteredTerminalTypeIsNotADeadEnd()
+    }//end testRegisteredEndTypeIsNotADeadEnd()
 
     /**
      * `exit: true` ends a path without the type being terminal.
@@ -179,13 +179,13 @@ class FlowDeadEndTest extends TestCase
      *
      * @return void
      */
-    public function testATerminalNodeElsewhereDoesNotExcuseASink(): void
+    public function testAnEndNodeElsewhereDoesNotExcuseASink(): void
     {
-        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'ends', 'type' => 'openregister.stop'],
+                    ['id' => 'ends', 'type' => 'openregister.end'],
                     ['id' => 'forgotten', 'type' => 'openregister.set-fields'],
                 ],
                 'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'ends']],
@@ -194,7 +194,7 @@ class FlowDeadEndTest extends TestCase
 
         $this->assertSame(['forgotten'], $this->deadEnds($report));
 
-    }//end testATerminalNodeElsewhereDoesNotExcuseASink()
+    }//end testAnEndNodeElsewhereDoesNotExcuseASink()
 
     /**
      * A typeless node is left to the builder, which refuses it by name.
@@ -224,13 +224,13 @@ class FlowDeadEndTest extends TestCase
      */
     public function testConvergingNodeWithAnExitIsFine(): void
     {
-        $report = $this->preflight(stopping: ['openregister.stop'])->inspect(
+        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
             flow: [
                 'nodes' => [
                     ['id' => 'a', 'type' => 'openregister.set-fields'],
                     ['id' => 'b', 'type' => 'openregister.set-fields'],
                     ['id' => 'join', 'type' => 'openregister.set-fields'],
-                    ['id' => 'end', 'type' => 'openregister.stop'],
+                    ['id' => 'end', 'type' => 'openregister.end'],
                 ],
                 'edges' => [
                     ['id' => 'e1', 'from' => 'a', 'to' => 'join'],

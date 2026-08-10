@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
-use OCA\OpenRegister\Service\Flow\IFlowStopNode;
+use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -38,7 +38,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class StopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowStopNode
+class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode
 {
     /**
      * Constructor.
@@ -60,7 +60,7 @@ class StopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowStopNode
      */
     public function getId(): string
     {
-        return 'openregister.stop';
+        return 'openregister.end';
 
     }//end getId()
 
@@ -71,7 +71,7 @@ class StopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowStopNode
      */
     public function getDisplayName(): string
     {
-        return $this->l10n->t('Stop');
+        return $this->l10n->t('End');
 
     }//end getDisplayName()
 
