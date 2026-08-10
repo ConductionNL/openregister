@@ -207,17 +207,12 @@ class FlowService
      */
     public function save(array $data, ?string $uuid=null): Flow
     {
-        $isCreate = ($uuid === null || $uuid === '');
-        $flow     = $this->flowToSave(data: $data, uuid: $uuid);
+        $flow = $this->flowToSave(data: $data, uuid: $uuid);
 
         $this->applyEditableFields(flow: $flow, data: $data);
         $flow->setUpdated(new DateTime());
 
-        if ($isCreate === true) {
-            $stored = $this->mapper->insert($flow);
-        } else {
-            $stored = $this->mapper->update($flow);
-        }
+        $stored = $this->persistFlow(flow: $flow, uuid: $uuid);
 
         // Re-derive the trigger index from the nodes that were just saved.
         // AFTER the write, so the index can never name a subscription the
@@ -228,6 +223,32 @@ class FlowService
         return $stored;
 
     }//end save()
+
+    /**
+     * Insert a new flow, or update the existing one.
+     *
+     * Extracted from `save()` so the create/update branch is expressed as two
+     * returns rather than an if/else — the `ElseExpression` rule is on in
+     * phpmd.xml, and the alternatives were worse: assigning in both arms of an
+     * `if`/`if` leaves `$stored` possibly-undefined for Psalm and PHPStan, and a
+     * ternary trips the `Inline IF statements are not allowed` sniff in
+     * phpcs.xml. It takes the uuid rather than a boolean so it does not
+     * introduce a `BooleanArgumentFlag` finding in place of the one it removes.
+     *
+     * @param Flow        $flow The flow to write.
+     * @param string|null $uuid The flow being updated, or null/empty to create.
+     *
+     * @return Flow The stored flow, as the mapper returned it.
+     */
+    private function persistFlow(Flow $flow, ?string $uuid): Flow
+    {
+        if ($uuid === null || $uuid === '') {
+            return $this->mapper->insert($flow);
+        }
+
+        return $this->mapper->update($flow);
+
+    }//end persistFlow()
 
     /**
      * The flow a save() will write to: a fresh one, or the caller's existing one.

@@ -134,7 +134,8 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
     public function getDescription(): string
     {
         return $this->l10n->t(
-            'Start the flow when one kind of object is created, updated or deleted. One event, one register, one schema — use a mapping node to normalise other shapes.'
+            'Start the flow when one kind of object is created, updated or deleted. '
+            .'One event, one register, one schema — use a mapping node to normalise other shapes.'
         );
 
     }//end getDescription()
@@ -219,7 +220,8 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
             if (trim((string) ($config[$key] ?? '')) === '') {
                 throw new InvalidArgumentException(
                     sprintf(
-                        'An object trigger must name one "%s". A trigger with no %s either matches nothing and never fires, or matches everything — and both are silent.',
+                        'An object trigger must name one "%s". A trigger with no %s either matches nothing '
+                        .'and never fires, or matches everything — and both are silent.',
                         $key,
                         $key
                     )

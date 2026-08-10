@@ -65,7 +65,7 @@ class FlowNodeRegistrationListener implements IEventListener
      * @param FilterNode          $filter          The built-in "Filter" node.
      * @param WaitNode            $wait            The built-in "Wait" node.
      * @param SwitchNode          $switch          The built-in "Switch" node.
-     * @param EndNode            $stop            The built-in "Stop" node.
+     * @param EndNode             $end             The built-in "End" node.
      * @param MergeNode           $merge           The built-in "Merge" node.
      * @param LoopNode            $loop            The built-in "Loop over items" node.
      * @param SubFlowNode         $subFlow         The built-in "Run a flow" node.
@@ -85,7 +85,7 @@ class FlowNodeRegistrationListener implements IEventListener
         private readonly FilterNode $filter,
         private readonly WaitNode $wait,
         private readonly SwitchNode $switch,
-        private readonly EndNode $stop,
+        private readonly EndNode $end,
         private readonly MergeNode $merge,
         private readonly LoopNode $loop,
         private readonly SubFlowNode $subFlow,
@@ -122,7 +122,7 @@ class FlowNodeRegistrationListener implements IEventListener
         $event->registerNode(node: $this->filter);
         $event->registerNode(node: $this->wait);
         $event->registerNode(node: $this->switch);
-        $event->registerNode(node: $this->stop);
+        $event->registerNode(node: $this->end);
         $event->registerNode(node: $this->merge);
         $event->registerNode(node: $this->loop);
         $event->registerNode(node: $this->subFlow);

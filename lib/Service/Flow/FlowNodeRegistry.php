@@ -354,7 +354,7 @@ class FlowNodeRegistry
      *
      * @return bool True when the type is registered and marks itself an end.
      *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
      */
     public function isEnd(string $type): bool
     {
@@ -381,7 +381,7 @@ class FlowNodeRegistry
      *
      * @return bool True when the type is registered and marks itself a trigger.
      *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
      */
     public function isTrigger(string $type): bool
     {
@@ -414,7 +414,7 @@ class FlowNodeRegistry
      *
      * @return string `'trigger'`, `'end'` or `'step'`.
      *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
      */
     public function roleOf(string $type): string
     {
@@ -432,18 +432,6 @@ class FlowNodeRegistry
 
     }//end roleOf()
 
-    /**
-     * The role of a node INSTANCE the caller already holds.
-     *
-     * The one place the two marker interfaces are read, so `roleOf()`,
-     * `palette()` and anything added later cannot answer differently.
-     *
-     * @param IFlowNode $node The node.
-     *
-     * @return string `'trigger'`, `'end'` or `'step'`.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-starts-or-stops-a-path
-     */
     /**
      * The old ids that still resolve to a type.
      *
@@ -468,6 +456,18 @@ class FlowNodeRegistry
 
     }//end aliasesFor()
 
+    /**
+     * The role of a node INSTANCE the caller already holds.
+     *
+     * The one place the two marker interfaces are read, so `roleOf()`,
+     * `palette()` and anything added later cannot answer differently.
+     *
+     * @param IFlowNode $node The node.
+     *
+     * @return string `'trigger'`, `'end'` or `'step'`.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
+     */
     private function roleFor(IFlowNode $node): string
     {
         if (($node instanceof IFlowTriggerNode) === true) {

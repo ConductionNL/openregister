@@ -221,6 +221,61 @@ class FlowTriggerDerivation
         $columns = $this->columnTriggerOf(flow: $flow);
         $nodes   = $this->objectTriggersOf(flow: $flow);
 
+        $decided = $this->verdictWithoutComparing(columns: $columns, nodes: $nodes);
+        if ($decided !== null) {
+            return $decided;
+        }
+
+        foreach ($nodes as $node) {
+            if ($node !== $columns) {
+                continue;
+            }
+
+            $reason = 'exact match';
+            if (count($nodes) > 1) {
+                $reason = 'the column trigger is among the node triggers; the extra node triggers are NEW';
+            }
+
+            return [
+                'equivalent' => true,
+                'reason'     => $reason,
+                'columns'    => $columns,
+                'nodes'      => $nodes,
+            ];
+        }
+
+        return [
+            'equivalent' => false,
+            'reason'     => 'no node trigger matches the column trigger',
+            'columns'    => $columns,
+            'nodes'      => $nodes,
+        ];
+
+    }//end compare()
+
+    /**
+     * The verdicts reachable without comparing one trigger to another.
+     *
+     * Extracted from `compare()`, which sat exactly on the configured
+     * Cyclomatic Complexity threshold (10 of 10). The seam is real rather than
+     * arbitrary: every branch here is decided by what EXISTS on each side, and
+     * the caller keeps the one question that needs the two sides held together
+     * — does any node trigger equal the column trigger.
+     *
+     * THE ORDER OF THESE FOUR CHECKS IS LOAD-BEARING and is unchanged. The
+     * unscoped-column case must be judged before any equality test, because a
+     * `*` register or schema is not a value a node can hold: comparing it would
+     * report "no node matches" and read as a re-authoring gap, when the truth is
+     * that the column trigger cannot be expressed as a node at all.
+     *
+     * @param array{event: string, register: string, schema: string}|null        $columns The column trigger.
+     * @param array<int, array{event: string, register: string, schema: string}> $nodes   The node triggers.
+     *
+     * @return array{equivalent: bool, reason: string, columns: array|null, nodes: array}|null The
+     *         verdict, or null when the two sides must actually be compared.
+     */
+    private function verdictWithoutComparing(?array $columns, array $nodes): ?array
+    {
         if ($columns === null && $nodes === []) {
             return [
                 'equivalent' => true,
@@ -257,30 +312,7 @@ class FlowTriggerDerivation
             ];
         }
 
-        foreach ($nodes as $node) {
-            if ($node !== $columns) {
-                continue;
-            }
+        return null;
 
-            $reason = 'exact match';
-            if (count($nodes) > 1) {
-                $reason = 'the column trigger is among the node triggers; the extra node triggers are NEW';
-            }
-
-            return [
-                'equivalent' => true,
-                'reason'     => $reason,
-                'columns'    => $columns,
-                'nodes'      => $nodes,
-            ];
-        }
-
-        return [
-            'equivalent' => false,
-            'reason'     => 'no node trigger matches the column trigger',
-            'columns'    => $columns,
-            'nodes'      => $nodes,
-        ];
-
-    }//end compare()
+    }//end verdictWithoutComparing()
 }//end class

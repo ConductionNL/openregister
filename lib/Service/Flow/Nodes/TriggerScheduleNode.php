@@ -162,17 +162,23 @@ class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTrigge
         $cron = trim((string) ($config['cron'] ?? ''));
         if ($cron === '') {
             throw new InvalidArgumentException(
-                'A schedule trigger must carry a "cron" expression — without one nothing ever starts it, which is indistinguishable from a flow with nothing to do.'
+                'A schedule trigger must carry a "cron" expression — without one nothing ever starts it, '
+                .'which is indistinguishable from a flow with nothing to do.'
             );
         }
 
         $fields = preg_split('/\s+/', $cron);
         if (is_array($fields) === false || count($fields) !== 5) {
+            $fieldCount = 0;
+            if (is_array($fields) === true) {
+                $fieldCount = count($fields);
+            }
+
             throw new InvalidArgumentException(
                 sprintf(
                     'A cron expression has five space-separated fields (minute hour day month weekday); "%s" has %d.',
                     $cron,
-                    (is_array($fields) === true) ? count($fields) : 0
+                    $fieldCount
                 )
             );
         }
