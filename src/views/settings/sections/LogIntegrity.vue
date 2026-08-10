@@ -389,4 +389,10 @@ export default {
 	padding: 4px 8px;
 	word-break: break-all;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.integrity__bar-fill {
+		transition: none;
+	}
+}
 </style>

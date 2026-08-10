@@ -27,8 +27,37 @@ on:
     branches: [main, beta, development]
   workflow_dispatch:
 
+# Deduplicating a `push` run against the `pull_request` run for the SAME head
+# ref is the point of this block, and for a feature branch it is exactly right:
+# two runs of identical jobs, one of them wasted.
+#
+# It is wrong for `main` and `development`, because the push run there is NOT a
+# duplicate — it is the only carrier of the push-only jobs: "Coverage Baseline
+# Check" (`github.event_name == 'push'`), "SBOM" and "Features Extract". And
+# those two branches always have an open PR whose `head_ref` IS the branch
+# name: the standing "Release: merge development into beta" (#1711 here).
+# `github.head_ref` on that PR run and `github.ref_name` on the push run both
+# render the identical group `quality-development`, and `cancel-in-progress`
+# then killed whichever started first — always the push run, by a few seconds.
+#
+# Measured on this repo: push runs 31038051904 (cancelled 27s in) and
+# 30906672684 (cancelled 61s in). That duration is the discriminator: the
+# shared workflow's `timeout-minutes: 45` cancellation lands at 45m16s–45m28s,
+# so these are concurrency kills, not timeouts.
+#
+# On the surviving PR run "Coverage Baseline Check" reports `skipped`, which is
+# CORRECT for a pull_request event and renders exactly like a pass. So the gate
+# appears on both runs and executes on neither — a dead gate of the
+# permanently-pending shape.
+#
+# Suffixing only the default-branch push keeps feature-branch dedup untouched
+# (`quality-feature/x` for both events, exactly as before) and gives the two
+# default branches' push runs a lane of their own.
+#
+# Proven in openconnector#1158: its first-ever completed `development` push run
+# (31048998594) executed Coverage Baseline Check, SBOM and Features Extract.
 concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
+  group: quality-${{ github.head_ref || github.ref_name }}${{ (github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'development')) && '-push' || '' }}
   cancel-in-progress: true
 
 # Permission CEILING for the called quality pipeline. GitHub statically
@@ -100,30 +129,54 @@ jobs:
       # assuming the gates were already covering this repo.
       #
       # No count is written here on purpose: the number of gates depends on the
-      # pin below and the number that actually run depends on this repo's diff
-      # and toolchain. The package prints both (`COVERAGE: N of M`) in the job
-      # log; a digit in prose has nothing to reconcile against and goes stale
-      # silently. See https://github.com/ConductionNL/.github/tree/main/hydra-gates
-      #
-      # Pinned to a tag, not `main`, so a change to the gate package cannot
-      # alter this repository's verdict without a commit here to move the pin.
-      # v1.0.1 deliberately matches the pin openbuild already runs, so this
-      # repo's first result is directly comparable with the only live-verified
-      # reference the fleet has. (v1.1.0 exists; moving to it is a separate,
-      # measurable change.)
+      # gate package version in use and the number that actually run depends on
+      # this repo's diff and toolchain. The package prints both
+      # (`COVERAGE: N of M`) in the job log; a digit in prose has nothing to
+      # reconcile against and goes stale silently.
+      # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       enable-hydra-gates: true
-      hydra-gates-ref: v1.0.1
-      # Set explicitly, because the shared workflow's default flipped to `true`
-      # and this repo cannot honestly satisfy it yet. Every gate PASSES here;
-      # what does not run is gate-33, whose producer (`enable-axe`) is
-      # deliberately off for the reason recorded immediately below, and gate-4.
-      # Inheriting the new default would block this repo on a deferral it made
-      # on purpose, and the usual response to that is to switch the control off
-      # everywhere — which costs more than it saves.
+      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # to @main, and this workflow is itself consumed at @main, so the two
+      # sides move together and a gate fix reaches this repo without a commit
+      # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
+      # 16 gates were dead fleet-wide while every one reported PASS (.github#159),
+      # and a default flipped at @main later reached those old runners and made
+      # them red on gates they had no subject matter for (.github#173).
+      # To hold this repo still for a specific reason, set the input explicitly
+      # and say why — it is still honoured. To roll back for everyone, revert on
+      # ConductionNL/.github main.
       #
-      # Remove this line in the same change that turns `enable-axe` on, so the
-      # coverage requirement arrives with the coverage.
-      hydra-gates-require-full-coverage: false
+      # THIRD CAUSE, and the one that is failing this repo RIGHT NOW
+      # (.github#177): quality.yml@main began executing three gate helpers BY
+      # NAME — check_spec_anchors.py, check_form_labels.py and
+      # check_license_triangle.py — which exist in NO tag before v1.5.0.
+      # Verified by DIRECTORY LISTING of each tag, not by per-file lookups:
+      # those answered "present" uniformly across v1.0.0..v1.5.0, and the
+      # uniformity across independent inputs was the tell that the instrument
+      # was wrong. So the Hydra Gates job here fails at "Verify the pinned gates
+      # package satisfies this workflow", before a single gate runs, with the
+      # workflow's own words: "This is NOT a code-quality finding about your
+      # repository." Removing the pin is the repair.
+      #
+      # Unpinning also picks up v1.5.1's push scoping (.github#179): on a push to
+      # `development`, `origin/development` IS `HEAD`, so the diff was empty by
+      # construction — <= v1.4.0 passed over it (permanently green) and v1.5.0
+      # refused with exit 99 (permanently red). The scope is now
+      # `github.event.before...HEAD`, what the push actually changed.
+      #
+      # `hydra-gates-require-full-coverage: false` USED TO BE SET HERE and is
+      # deliberately NOT set now. It was added when the shared workflow's
+      # default flipped to `true`, on the reasoning that this repo "cannot
+      # honestly satisfy it yet" — gate-33 (producer `enable-axe` deliberately
+      # off) and gate-4 (correctly diff-scoped out per ADR-020) did not report.
+      # Neither is a coverage gap: they are NOT APPLICABLE, and a current gate
+      # package says so out loud instead of counting them as "DID NOT RUN".
+      # Measured diff-scoped against origin/development WITH
+      # --require-full-coverage — exactly the condition the override existed to
+      # avoid — the run exits 0 with all applicable gates passing and 4/6/7/33
+      # each naming itself NOT APPLICABLE and why. A switched-off control is
+      # worth less than a loud one, so do not re-add the override without a
+      # measurement showing it is needed.
       # `enable-axe` is deliberately NOT set. It is the input that produces
       # `tests/axe/report.json`, which gate-33 consumes; without it gate-33
       # reports SKIPPED, as it has done in every repo in the fleet. Measured

@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * CI PLAYWRIGHT CONFIG — a deliberately small, always-green spec set.
  *
@@ -43,8 +43,33 @@ export default defineConfig({
 	// without hiding a real failure — a broken assertion fails twice.
 	retries: process.env.CI ? 1 : 0,
 	workers: 1,
-	reporter: [['list']],
-	outputDir: path.resolve(__dirname, '../test-results-ci'),
+	// This is the config the shared workflow actually loads (it resolves
+	// `${playwright-test-path}/playwright.config.ts` — here `tests/e2e/ci` —
+	// before falling back to the app-root one), so the timeout belongs here.
+	// The job is `timeout-minutes: 45`, and a job cancelled by that cap
+	// produces NO verdict: Playwright never prints its tally, the
+	// `if: failure()` trace upload never fires, and the `if: always()` report
+	// upload does not run on a cancelled job either — which would undo the
+	// reporter and outputDir fixes noted just below, since a cancelled job
+	// uploads nothing however correct the paths are. Measured overhead before
+	// `Run Playwright tests` starts is 2.0-2.4 min and the uploads after it
+	// take seconds, so 38m keeps ~7 min of margin.
+	globalTimeout: 38 * 60_000,
+	reporter: [
+		['list'],
+		// The shared workflow uploads `tests/e2e/playwright-report/` as the
+		// `playwright-report` artifact. With `list` as the only reporter that
+		// directory was never created, so the artifact was empty on every run.
+		['html', { open: 'never', outputFolder: path.resolve(__dirname, '../playwright-report') }],
+	],
+	// ⚠️ MUST stay `tests/e2e/test-results`. This was `../test-results-ci`, and
+	// the shared workflow's "Upload Playwright traces" step globs exactly
+	// `tests/e2e/test-results/` — so Playwright wrote trace.zip, the failure
+	// screenshot and error-context.md on every red run, and the upload matched
+	// nothing and said so quietly (`if-no-files-found: ignore`). Six flaky and
+	// two hard-failing runs of flow-controls.spec.ts were diagnosed from job
+	// logs alone because the traces that existed on the runner were discarded.
+	outputDir: path.resolve(__dirname, '../test-results'),
 
 	use: {
 		baseURL: resolveBaseUrl(),
@@ -55,7 +80,13 @@ export default defineConfig({
 				}`,
 			).toString('base64')}`,
 		},
-		trace: 'on-first-retry',
+		// `retain-on-failure`, not `on-first-retry`. With `retries: 1` a FLAKE is
+		// exactly the case where attempt 1 fails and attempt 2 passes — and
+		// `on-first-retry` traces the RETRY, so the only attempt it ever
+		// captured was the one that worked. flow-controls.spec.ts failed its
+		// first attempt on 6 of 8 runs and every trace on disk was of a green
+		// run. This keeps the trace of whichever attempt actually failed.
+		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
 

@@ -27,14 +27,30 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				<table class="sheetSummaryTable">
 					<thead>
 						<tr>
-							<th>Sheet</th>
-							<th>Found</th>
-							<th>Created</th>
-							<th>Updated</th>
-							<th>Unchanged</th>
-							<th>Invalid</th>
-							<th>Errors</th>
-							<th>Total</th>
+							<th scope="col">
+								Sheet
+							</th>
+							<th scope="col">
+								Found
+							</th>
+							<th scope="col">
+								Created
+							</th>
+							<th scope="col">
+								Updated
+							</th>
+							<th scope="col">
+								Unchanged
+							</th>
+							<th scope="col">
+								Invalid
+							</th>
+							<th scope="col">
+								Errors
+							</th>
+							<th scope="col">
+								Total
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -90,8 +106,11 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										<span>{{ (sheetSummary.errors && sheetSummary.errors.length) || 0 }}</span>
 										<button
 											v-if="sheetSummary.errors && sheetSummary.errors.length > 0"
+											type="button"
 											class="expandButton"
 											:class="{ expanded: expandedErrors[sheetKey] }"
+											:aria-expanded="!!expandedErrors[sheetKey]"
+											:aria-label="t('openregister', 'Error Details')"
 											@click="toggleErrorDetails(sheetKey)">
 											<ChevronDown :size="16" />
 										</button>
@@ -114,10 +133,18 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 										<table class="errorTable">
 											<thead>
 												<tr>
-													<th>Row</th>
-													<th>Error Type</th>
-													<th>Error Message</th>
-													<th>Data</th>
+													<th scope="col">
+														Row
+													</th>
+													<th scope="col">
+														Error Type
+													</th>
+													<th scope="col">
+														Error Message
+													</th>
+													<th scope="col">
+														Data
+													</th>
 												</tr>
 											</thead>
 											<tbody>
@@ -1333,6 +1360,12 @@ export default {
 		flex-direction: column;
 		gap: 0.5rem;
 		align-items: flex-start;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.expandButton {
+		transition: none;
 	}
 }
 </style>

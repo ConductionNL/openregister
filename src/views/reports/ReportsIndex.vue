@@ -42,12 +42,18 @@
 				<article
 					v-for="dashboard in dashboards"
 					:key="dashboard.id || dashboard.uuid"
-					class="reportCard"
-					@click="openDashboard(dashboard)">
+					class="reportCard">
 					<div class="reportCardHeader">
 						<ChartBoxOutline :size="32" class="reportCardIcon" />
 						<div>
-							<h3>{{ dashboard.titel || dashboard['@self']?.name || t('openregister', 'Untitled') }}</h3>
+							<!-- The activator is a real <button>; its ::after overlay keeps the whole
+								card mouse-clickable without turning the <article> into a role="button",
+								which would hide the heading and the widget-count footer from AT. -->
+							<h3>
+								<button type="button" class="reportCardActivator" @click="openDashboard(dashboard)">
+									{{ dashboard.titel || dashboard['@self']?.name || t('openregister', 'Untitled') }}
+								</button>
+							</h3>
 							<span class="badge">{{ dashboard.category || 'operational' }}</span>
 						</div>
 					</div>
@@ -181,12 +187,36 @@ export default {
 	gap: 16px;
 }
 .reportCard {
+	position: relative;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
 	padding: 16px;
 	cursor: pointer;
 	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+/* Real button carrying the card's action; the ::after overlay restores
+   whole-card mouse clickability while keyboard users get a genuine button. */
+.reportCardActivator {
+	appearance: none;
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.reportCardActivator::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: var(--border-radius-large);
+}
+.reportCardActivator:focus-visible::after {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
 }
 .reportCard:hover {
 	border-color: var(--color-primary);
@@ -233,5 +263,11 @@ export default {
 .badge-status-published {
 	background: var(--color-success);
 	color: var(--color-primary-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reportCard {
+		transition: none;
+	}
 }
 </style>

@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use Exception;
 
 /**
  * DataManipulationHandler class
@@ -76,68 +75,19 @@ class DataManipulationHandler
         return $current;
     }//end getValueFromPath()
 
-    /**
-     * Generate a unique slug from a given value
+    /*
+     * SLUG GENERATION DOES NOT LIVE HERE.
      *
-     * Creates a URL-friendly slug with a timestamp suffix for uniqueness.
-     * Used for generating identifiers for objects based on their names or titles.
-     *
-     * @param string $value The value to convert to a slug.
-     *
-     * @return null|string The generated slug or null if generation failed
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * `generateSlugFromValue()` + `createSlugHelper()` were removed: they had
+     * no callers, and a byte-identical copy of the same pair sat on
+     * `MetadataHandler`. Object slugs are produced by
+     * `SaveObject\MetadataHydrationHandler::generateSlug(array $data, Schema
+     * $schema)` (invoked from that class and from
+     * `SaveObject::generateSlug()`), which is schema-aware — it reads the
+     * schema's configured slug source instead of slugifying whatever string
+     * a caller happened to pass. Nothing should reintroduce a
+     * schema-unaware slug helper here.
      */
-    public function generateSlugFromValue(string $value): string|null
-    {
-        try {
-            if (empty($value) === true) {
-                return null;
-            }
-
-            // Generate the base slug.
-            $slug = $this->createSlugHelper(text: $value);
-
-            // Add timestamp for uniqueness.
-            $timestamp  = time();
-            $uniqueSlug = $slug.'-'.$timestamp;
-
-            return $uniqueSlug;
-        } catch (Exception $e) {
-            return null;
-        }
-    }//end generateSlugFromValue()
-
-    /**
-     * Create a URL-friendly slug from a string
-     *
-     * Converts text to lowercase, replaces non-alphanumeric characters with hyphens,
-     * and removes leading/trailing hyphens. Ensures the slug is never empty.
-     *
-     * @param string $text The text to convert to a slug.
-     *
-     * @return string The generated slug
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function createSlugHelper(string $text): string
-    {
-        // Convert to lowercase.
-        $text = strtolower($text);
-
-        // Replace non-alphanumeric characters with hyphens.
-        $text = preg_replace('/[^a-z0-9]+/', '-', $text);
-
-        // Remove leading and trailing hyphens.
-        $text = trim($text, '-');
-
-        // Ensure the slug is not empty.
-        if (empty($text) === true) {
-            $text = 'object';
-        }
-
-        return $text;
-    }//end createSlugHelper()
 
     /**
      * Map properties from source data to target structure

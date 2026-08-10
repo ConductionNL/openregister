@@ -11,23 +11,76 @@
  * the deep-link listener, optional dashboard widgets and MCP provider, and the
  * observability aliases (only when the observability engine classes exist).
  *
- * ## Lazy by construction — a disabled OpenRegister never fatals NC bootstrap
+ * ## Lazy BODIES — but resolving THIS class is not lazy
  *
  * Every registration here is `IRegistrationContext::registerService($name,
- * Closure)`. The closure body — which references `OCA\OpenRegister\AppHost\…`
+ * Closure)`. The closure BODY — which references `OCA\OpenRegister\AppHost\…`
  * classes — is NOT executed at bootstrap; it runs only when the leaf app's DI
  * container is asked to resolve that exact service name, i.e. when a route is
- * dispatched. Therefore:
+ * dispatched. So once `register()` has been entered, an absent OpenRegister
+ * degrades rather than fatals: the first request to an aliased route triggers
+ * the closure, fails to autoload the generic class, and surfaces as a 5xx JSON
+ * error, with health reporting `orAvailable: failed`.
  *
- *   - With OpenRegister disabled/absent, `Application::register()` (and this
- *     method) complete without loading a single OR class, so Nextcloud boots.
- *   - The first request to an aliased route triggers the closure, which fails
- *     to autoload the generic class and surfaces as a 5xx JSON error — the
- *     correct DEGRADED behaviour, and health reports `orAvailable: failed`.
+ * That laziness does NOT extend to reaching this method in the first place, and
+ * an earlier version of this docblock claimed it did. To CALL
+ * `Bootstrap::register()` the leaf must resolve the symbol
+ * `OCA\OpenRegister\AppHost\Bootstrap` itself, and that is an ordinary
+ * autoload. If `OCA\OpenRegister\` is not on the autoloader at that moment, the
+ * call throws before a single closure has been created.
+ *
+ * ## The load-order trap, and the prelude that closes it
+ *
+ * "Not on the autoloader at that moment" is the NORMAL case for many leaves, not
+ * an edge case. `OC_App::getEnabledApps()` does `sort($apps)`, and
+ * `Coordinator::registerApps()` walks that sorted list calling
+ * `OC_App::registerAutoloading($appId, $path)` and then `$application->register()`
+ * for ONE APP AT A TIME. So every app's `register()` runs BEFORE the PSR-4 prefix
+ * of every alphabetically-LATER app exists. Any leaf whose app id sorts before
+ * `openregister` — docudesk, doriath, larpingapp, launchpad, mydash, nldesign,
+ * opencatalogi, openconnector, openbuild, … — reaches `register()` while
+ * `OCA\OpenRegister\` is NOT autoloadable, on a perfectly healthy instance with
+ * OpenRegister enabled.
+ *
+ * Both outcomes are quiet. GUARDED behind `class_exists()`, the probe answers
+ * FALSE and the plumbing is silently skipped — and classes that exist ONLY as
+ * aliases registered here (a leaf's `Controller\HealthController` aliasing
+ * `AppHost\Controller\GenericHealthController`) then fail to resolve, so those
+ * endpoints return 500, not 404. UNGUARDED, the `\Error` aborts the leaf's
+ * ENTIRE `register()`; `Coordinator` logs an `emergency` and continues, so the
+ * app stays enabled while every listener below the call silently never
+ * registered. Measured on doriath, whose audit listener recorded ZERO dispatched
+ * events, and independently on openconnector.
+ *
+ * ADOPTING APPHOST THEREFORE REQUIRES THIS PRELUDE, first thing in the leaf's
+ * `register()`, before any AppHost reference including a `class_exists()` probe:
+ *
+ *     try {
+ *         $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)
+ *             ->getAppPath('openregister');
+ *         \OC_App::registerAutoloading('openregister', $orPath);
+ *     } catch (\Throwable) {
+ *         // OpenRegister absent/disabled — fall through to the degraded path.
+ *     }
+ *
+ * `OC_App::registerAutoloading()` touches only the autoloader and is idempotent
+ * (it early-returns on an `$alreadyRegistered` key). Do NOT substitute
+ * `IAppManager::loadApp('openregister')`: it sets `loadedApps[..]=true` and calls
+ * `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has
+ * run. Do NOT substitute `include_once __DIR__.'/../../../openregister/vendor/
+ * autoload.php'` either — it assumes both apps share one apps directory and
+ * silently does nothing on a multi-`apps_paths` install.
+ *
+ * Note that any single app doing this registers the prefix PROCESS-WIDE, which
+ * masks the defect for every app registering after it. That is precisely why
+ * this failed silently for so long: on a dev instance with one such app present
+ * everything resolves, and in CI with a minimal app set it does not. Enforced by
+ * hydra gate-64 (apphost-autoload-prelude).
  *
  * No `OCA\OpenRegister\…` symbol is referenced outside a closure in this file
  * (no `use` of OR classes, no `::class` at top level) — that invariant is what
- * keeps bootstrap fatal-free, and it is asserted by the unit test.
+ * keeps the CLOSURES lazy, and it is asserted by the unit test. It says nothing
+ * about resolving `Bootstrap` itself, which is the leaf's responsibility above.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

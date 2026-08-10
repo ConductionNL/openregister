@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowTerminalNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -37,7 +38,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class StopNode implements IFlowNode, IFlowNodeConfigKeys
+class StopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTerminalNode
 {
     /**
      * Constructor.

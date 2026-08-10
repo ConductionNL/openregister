@@ -67,7 +67,10 @@ class FlowNodePreflightRegressionTest extends TestCase
             'nodes' => [
                 ['id' => 'explode-findings', 'type' => 'openregister.explode'],
                 ['id' => 'actionable-only', 'type' => 'openregister.filter'],
-                ['id' => 'file-issue', 'type' => 'openconnector.source-call'],
+                // Filing the issue is where this flow ends. Saying so keeps the
+                // fixture a complete document, so the assertions below count
+                // only the registry findings they are about.
+                ['id' => 'file-issue', 'type' => 'openconnector.source-call', 'exit' => true],
             ],
             'edges' => [
                 [

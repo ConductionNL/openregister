@@ -1311,4 +1311,10 @@ export default {
 :deep(.v-select) {
 	margin-bottom: 8px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.complexityProgressBar {
+		transition: none;
+	}
+}
 </style>

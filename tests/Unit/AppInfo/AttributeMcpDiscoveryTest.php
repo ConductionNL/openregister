@@ -31,7 +31,7 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\AppInfo
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  *
  * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md

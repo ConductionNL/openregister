@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Flow engine e2e — the one native flow store, end to end.
  *
@@ -207,13 +207,19 @@ test.describe('the Flows page', () => {
 	test('lists flows and opens one', async ({ page, request }) => {
 		const flow = await createFlow(request, { name: `${RUN_ID} visible` })
 
-		await page.goto('/apps/openregister/#/flows')
-		await page.waitForLoadState('networkidle')
+		// `networkidle` never settles on Nextcloud (ADR-074 rule 4) — the
+		// readiness signal is the row/name assertion that follows each goto.
+		await page.goto('/apps/openregister/#/flows', { waitUntil: 'domcontentloaded' })
 
 		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({ timeout: 15000 })
 
-		await page.goto(`/apps/openregister/#/flows/${flow.id}`)
-		await page.waitForLoadState('networkidle')
+		await page.goto(`/apps/openregister/#/flows/${flow.id}`, { waitUntil: 'domcontentloaded' })
+
+		// Assert the FLOW, not just its frame: `.cn-flow-detail` is the
+		// nc-vue detail shell and renders for any flow, including one that
+		// failed to load. The name is the thing that proves this page is
+		// showing the flow we just created.
+		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({ timeout: 15000 })
 
 		// The canvas renders its empty state for a flow with no steps, which is
 		// the honest answer rather than a blank page.
@@ -231,8 +237,9 @@ test.describe('the Flows page', () => {
 		// that HAS an owner reads as plainly enabled.
 		expect(flow.owner).toBeTruthy()
 
-		await page.goto('/apps/openregister/#/flows')
-		await page.waitForLoadState('networkidle')
+		// `networkidle` never settles on Nextcloud (ADR-074 rule 4); the row
+		// assertion below is the real wait.
+		await page.goto('/apps/openregister/#/flows', { waitUntil: 'domcontentloaded' })
 
 		const row = page.locator('tr', { hasText: `${RUN_ID} ownerless` })
 		await expect(row).toBeVisible({ timeout: 15000 })

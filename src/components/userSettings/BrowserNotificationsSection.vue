@@ -19,7 +19,7 @@
  mount point exists the component is unmounted; it is fully functional and only
  needs the host shell. See openspec/changes/openregister-web-push-engine.
 
- @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
+ @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 -->
 <template>
 	<NcSettingsSection :name="t('openregister', 'Browser notifications')"
@@ -79,7 +79,7 @@ export default {
 		 * Human-readable label for the current permission state.
 		 *
 		 * @return {string} The localised permission label.
-		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
+		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 		 */
 		permissionLabel() {
 			switch (this.permission) {
@@ -100,7 +100,7 @@ export default {
 		 * Resolve the WebPush client exposed by the always-loaded script.
 		 *
 		 * @return {object|null} The WebPush client, or null when absent.
-		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
+		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 		 */
 		client() {
 			return (window.OCA && window.OCA.OpenRegister && window.OCA.OpenRegister.WebPush) || null
@@ -108,7 +108,7 @@ export default {
 		/**
 		 * Read support + permission state from the WebPush client. Never prompts.
 		 *
-		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
+		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 		 * @return {void}
 		 */
 		refreshState() {
@@ -134,7 +134,7 @@ export default {
 		 * The permission prompt only ever fires from this user gesture.
 		 *
 		 * @param {boolean} checked The requested toggle state.
-		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-52
+		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 		 * @return {Promise<void>}
 		 */
 		async onToggle(checked) {

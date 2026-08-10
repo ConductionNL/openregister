@@ -21,9 +21,37 @@
  * catch-all is ordered LAST and carries a distinct name so it never shadows the
  * dashboard index route.
  *
- * This file references no `OCA\OpenRegister\…` symbol — it is a pure array
- * builder, so requiring it from a leaf `routes.php` is safe even when
- * OpenRegister is disabled.
+ * ## What is, and is not, safe when OpenRegister is disabled
+ *
+ * This file's BODY references no `OCA\OpenRegister\…` symbol — it is a pure
+ * array builder with no dependency on the rest of the app. An earlier version of
+ * this docblock concluded from that that "requiring it from a leaf `routes.php`
+ * is safe even when OpenRegister is disabled". That does not follow, and it is
+ * wrong as written.
+ *
+ * Calling `\OCA\OpenRegister\AppHost\Routes::standard()` first requires
+ * RESOLVING the symbol `Routes`, which is an ordinary autoload of an
+ * `OCA\OpenRegister\` class. With OpenRegister absent or disabled that throws an
+ * `\Error` out of the leaf's `appinfo/routes.php` — the route file being a pure
+ * array builder does not help, because control never reaches the array.
+ *
+ * A leaf that wants to survive a disabled OpenRegister must therefore guard the
+ * call, which is what the canonical form does:
+ *
+ *     if (class_exists('OCA\OpenRegister\AppHost\Routes') === true) {
+ *         return \OCA\OpenRegister\AppHost\Routes::standard($extra);
+ *     }
+ *     return ['routes' => $ownRoutes];   // degraded, app-specific routes only
+ *
+ * A bare `return \OCA\OpenRegister\AppHost\Routes::standard([...]);` with no
+ * guard is a hard dependency on OpenRegister being installed AND enabled.
+ *
+ * Route files are loaded by the router during request matching, long after every
+ * app has registered, so — unlike `Application::register()` — they are NOT
+ * exposed to the app-registration sort-order trap. See the load-order section in
+ * `Bootstrap`'s docblock for that trap and the autoload prelude that closes it;
+ * a leaf needs the prelude for its `register()` regardless of what its
+ * `routes.php` does.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

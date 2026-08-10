@@ -76,27 +76,39 @@
 					<table class="statisticsTable entityInfoTable">
 						<tbody>
 							<tr>
-								<td><strong>{{ t('openregister', 'Value') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Value') }}</strong>
+								</th>
 								<td>{{ entity.value }}</td>
 							</tr>
 							<tr>
-								<td><strong>{{ t('openregister', 'Type') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Type') }}</strong>
+								</th>
 								<td><span class="badge badge-type">{{ entity.type }}</span></td>
 							</tr>
 							<tr>
-								<td><strong>{{ t('openregister', 'Category') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Category') }}</strong>
+								</th>
 								<td><span class="badge badge-category">{{ entity.category }}</span></td>
 							</tr>
 							<tr>
-								<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Detected At') }}</strong>
+								</th>
 								<td>{{ formatDate(entity.detectedAt) }}</td>
 							</tr>
 							<tr>
-								<td><strong>{{ t('openregister', 'Confidence Score') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Confidence Score') }}</strong>
+								</th>
 								<td>{{ entity.confidence ? (entity.confidence * 100).toFixed(2) + '%' : '-' }}</td>
 							</tr>
 							<tr v-if="entity.source">
-								<td><strong>{{ t('openregister', 'Source') }}</strong></td>
+								<th scope="row">
+									<strong>{{ t('openregister', 'Source') }}</strong>
+								</th>
 								<td>{{ entity.source }}</td>
 							</tr>
 						</tbody>
@@ -470,11 +482,15 @@ export default {
 	border-bottom: none;
 }
 
-.entityInfoTable td {
+.entityInfoTable td,
+.entityInfoTable th {
 	padding: 12px 16px;
+	text-align: left;
+	font-weight: normal;
 }
 
-.entityInfoTable td:first-child {
+.entityInfoTable td:first-child,
+.entityInfoTable th:first-child {
 	width: 30%;
 	color: var(--color-text-maxcontrast);
 }

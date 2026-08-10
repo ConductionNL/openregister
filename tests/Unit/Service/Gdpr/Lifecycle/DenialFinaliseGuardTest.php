@@ -87,6 +87,59 @@ class DenialFinaliseGuardTest extends TestCase
     }//end testFinaliseAllowedWithRegulatorReference()
 
     /**
+     * Fail closed on an unidentified caller: `LifecycleValidationListener`
+     * passes `''` when there is no session user, and an unattributable
+     * finalise must be refused even when the regulatorReference is present.
+     *
+     * @param string $userId The caller uid variant.
+     *
+     * @dataProvider unidentifiedCallerProvider
+     *
+     * @return void
+     */
+    public function testFinaliseBlockedForUnidentifiedCaller(string $userId): void
+    {
+        $result = $this->guard->check(
+            ['regulatorReference' => 'REG-REF-PLACEHOLDER-0001'],
+            'finaliseDenial',
+            $userId
+        );
+        $this->assertFalse(
+            $result->isAllowed(),
+            'A finalise with no attributable caller must be denied'
+        );
+        $this->assertNotNull($result->getMessage());
+
+    }//end testFinaliseBlockedForUnidentifiedCaller()
+
+    /**
+     * Caller-identity variants that are not a usable uid.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function unidentifiedCallerProvider(): array
+    {
+        return [
+            'no session user' => [''],
+            'whitespace only' => ['   '],
+        ];
+
+    }//end unidentifiedCallerProvider()
+
+    /**
+     * draftDenial stays ungated even for an unidentified caller — the
+     * identity requirement is a FINALISE-time precondition only.
+     *
+     * @return void
+     */
+    public function testDraftDenialNotGatedForUnidentifiedCaller(): void
+    {
+        $result = $this->guard->check(['denialGround' => 'some-ground'], 'draftDenial', '');
+        $this->assertTrue($result->isAllowed());
+
+    }//end testDraftDenialNotGatedForUnidentifiedCaller()
+
+    /**
      * draftDenial is never gated — allowed even with no regulatorReference.
      *
      * @return void

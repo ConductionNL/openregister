@@ -75,25 +75,25 @@
 				<table v-else class="webhooksTable">
 					<thead>
 						<tr>
-							<th class="column-name">
+							<th scope="col" class="column-name">
 								{{ t('openregister', 'Name') }}
 							</th>
-							<th class="column-url">
+							<th scope="col" class="column-url">
 								{{ t('openregister', 'URL') }}
 							</th>
-							<th class="column-method">
+							<th scope="col" class="column-method">
 								{{ t('openregister', 'Method') }}
 							</th>
-							<th class="column-status">
+							<th scope="col" class="column-status">
 								{{ t('openregister', 'Status') }}
 							</th>
-							<th class="column-last-triggered">
+							<th scope="col" class="column-last-triggered">
 								{{ t('openregister', 'Last Triggered') }}
 							</th>
-							<th class="column-success-rate">
+							<th scope="col" class="column-success-rate">
 								{{ t('openregister', 'Success Rate') }}
 							</th>
-							<th class="column-actions">
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>

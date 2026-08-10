@@ -84,7 +84,6 @@ use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
 use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
 use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
 use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -316,7 +315,7 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  * @package  OCA\OpenRegister\AppInfo
  *
  * @author  Nextcloud Dev Team
- * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *

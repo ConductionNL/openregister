@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/manifest-user-context/tasks.md
+ * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-013
  */
 
 declare(strict_types=1);
@@ -124,7 +124,7 @@ class ManifestService
      *   returns requires several guard branches; removing any guard would introduce
      *   an injection or data-leak risk.
      *
-     * @spec openspec/changes/manifest-user-context/tasks.md#task-1
+     * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-013
      */
     public function getEnrichedManifest(array $manifest): array
     {

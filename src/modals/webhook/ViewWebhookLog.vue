@@ -12,25 +12,25 @@
 				<h3>{{ t('openregister', 'Basic Information') }}</h3>
 				<table class="logDetailsTable">
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Webhook') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ getWebhookName(logItem.webhookId) }}
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Event') }}
-						</td>
+						</th>
 						<td class="logValue">
 							<code class="event-class">{{ logItem.eventClass }}</code>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Status') }}
-						</td>
+						</th>
 						<td class="logValue">
 							<span :class="logItem.success ? 'status-success' : 'status-failed'">
 								{{ logItem.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
@@ -38,26 +38,26 @@
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Status Code') }}
-						</td>
+						</th>
 						<td class="logValue">
 							<span v-if="logItem.statusCode">{{ logItem.statusCode }}</span>
 							<span v-else class="text-muted">-</span>
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Attempt') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ logItem.attempt }}
 						</td>
 					</tr>
 					<tr>
-						<td class="logLabel">
+						<th scope="row" class="logLabel">
 							{{ t('openregister', 'Created') }}
-						</td>
+						</th>
 						<td class="logValue">
 							{{ formatDate(logItem.created) }}
 						</td>
@@ -144,7 +144,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
  * @module Modals/Webhook
  * @author Conduction
  * @copyright 2024 Conduction
- * @license AGPL-3.0-or-later
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
 export default {
@@ -358,9 +358,11 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
-.logDetailsTable td {
+.logDetailsTable td,
+.logDetailsTable th {
 	padding: 12px 0;
 	vertical-align: top;
+	text-align: left;
 }
 
 .logLabel {

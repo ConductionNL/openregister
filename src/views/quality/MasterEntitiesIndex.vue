@@ -46,10 +46,18 @@
 				<table v-else class="masterEntitiesTable">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Id') }}</th>
-							<th>{{ t('openregister', 'Quality score') }}</th>
-							<th>{{ t('openregister', 'Quality status') }}</th>
-							<th>{{ t('openregister', 'Actions') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Id') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Quality score') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Quality status') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>

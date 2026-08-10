@@ -269,10 +269,19 @@ class FacetCacheHandler
                 ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
             $deletedCount = $qb->executeStatement();
         } catch (\Exception $e) {
-            // If the cache table doesn't exist yet, just log a debug message and continue.
-            // This allows the app to work even if the migration hasn't been run yet.
-            $this->logger->debug(
-                message: '[FacetCacheHandler] Schema facet cache table does not exist yet, skipping db cache invalidation',
+            // The cache is an optimisation, so a database failure must not fail
+            // the schema change that triggered it — but it is NOT expected.
+            //
+            // This block used to say the table "doesn't exist yet" and that the
+            // tolerance let the app work "even if the migration hasn't been run
+            // yet". No migration created this table, so the condition was
+            // permanent rather than transitional, and at default log level
+            // `debug` emitted nothing — the only trace was 22 `relation ...
+            // does not exist` errors per run in the Postgres server log. The
+            // table is now created by Version1Date20260809000000, so reaching
+            // this branch means something real went wrong.
+            $this->logger->warning(
+                message: '[FacetCacheHandler] Failed to invalidate the database facet cache; continuing on the memory cache only',
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,
@@ -280,7 +289,7 @@ class FacetCacheHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-        }
+        }//end try
 
         // Remove from memory cache (always safe to do).
         $memoryClearedCount = 0;

@@ -5,8 +5,11 @@
 				Dry run -- no data will be persisted.
 			</p>
 			<div class="form-group">
-				<label>Sample Data (JSON)</label>
-				<textarea v-model="sampleDataJson" rows="10" class="json-editor" />
+				<label for="workflow-test-hook-sample-data">Sample Data (JSON)</label>
+				<textarea id="workflow-test-hook-sample-data"
+					v-model="sampleDataJson"
+					rows="10"
+					class="json-editor" />
 			</div>
 			<div class="form-actions">
 				<NcButton @click="isOpen = false">

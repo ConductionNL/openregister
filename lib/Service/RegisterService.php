@@ -390,7 +390,7 @@ class RegisterService
      *
      * @throws Exception If register creation fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (after mapper create, assigns the active/default organisation for multi-tenancy
      *   and provisions the register's backing folder)
      */
@@ -438,7 +438,7 @@ class RegisterService
      *
      * @throws Exception If register update fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (after mapper update, ensures the register's backing folder exists,
      *   healing legacy null/string folder properties)
      */

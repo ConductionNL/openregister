@@ -693,4 +693,10 @@ export default {
 	50% { transform: scale(1.2); }
 	100% { transform: scale(1); }
 }
+
+@media (prefers-reduced-motion: reduce) {
+	:deep(.copySuccessIcon) {
+		animation: none;
+	}
+}
 </style>

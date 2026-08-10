@@ -2021,4 +2021,10 @@ export default {
 	color: var(--color-primary-element);
 	text-decoration: underline;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.stat-card {
+		transition: none;
+	}
+}
 </style>

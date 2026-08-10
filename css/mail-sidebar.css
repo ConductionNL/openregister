@@ -193,8 +193,14 @@ aside.or-mail-sidebar.app-sidebar,
 	font-size: 13px;
 }
 
-.or-action-result:hover {
+.or-action-result:hover,
+.or-action-result:focus-visible {
 	background: var(--color-background-hover);
+}
+
+.or-action-result:focus-visible {
+	outline: 2px solid var(--color-primary-element);
+	outline-offset: -2px;
 }
 
 .or-action-result-name {

@@ -135,7 +135,7 @@ class PropertyRbacHandler
      *
      * @return array Filtered object with only readable properties
      *
-     * @spec openspec/specs/row-field-level-security/spec.md#fls-strips-restricted-fields (strips unreadable
+     * @spec openspec/specs/row-field-level-security/spec.md#fls-must-strip-restricted-fields-from-api-responses-and-export-outputs (strips unreadable
      *       property-authorized fields from outgoing data; admin + no-property-auth short-circuit)
      * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
      *       (writeOnly stripping runs before the admin bypass — admin is NOT exempt from writeOnly)
