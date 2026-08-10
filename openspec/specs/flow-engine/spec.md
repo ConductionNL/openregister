@@ -189,6 +189,22 @@ A flow whose triggers cannot be projected MUST be reported, not silently
 skipped: a trigger that never matches is indistinguishable from a flow with
 nothing to do.
 
+**Measured 2026-08-10, on the column-based path that is still authoritative.**
+`FlowMapper::findByTrigger()` is an INDEX SCAN on `or_flow_trigger_idx
+(enabled, trigger)` — it does not table-scan, and it does not parse any flow's
+nodes to decide a match. That half of the requirement already holds.
+
+What it does do is `SELECT *`, so every candidate row arrives carrying its
+`nodes` and `edges` JSON: row width 2418 against 51 for `id, uuid, owner`, and
+the documents themselves average 3,068 bytes with a worst case of 14,232 on
+this instance. The resolver needs the id, the uuid and the owner — it reads the
+document for nothing.
+
+At sixteen flows that is 0.08 ms and invisible. It is recorded because the cost
+is per MATCHING flow and is paid inside the dispatch of every user's save, so
+it grows with exactly the thing this requirement exists to bound. The fix is a
+narrow projection in the mapper, not a cache.
+
 #### Scenario: Firing an event does not read flow documents
 - **GIVEN** an instance with many flows, each carrying several trigger nodes
 - **WHEN** an object event fires
