@@ -168,6 +168,54 @@ representation and was worked around by duplicating the flow.
   is an unfinished flow rather than a deliberate on-demand one
 - @e2e exclude engine-internal config validation — covered by the node's unit tests
 
+### Requirement: The cutover from trigger COLUMNS to trigger NODES MUST be proven per flow
+
+The four columns remain AUTHORITATIVE for matching until every flow's node set
+is shown to fire on the same events. `FlowTriggerDerivation` is the single place
+that maps between the two, and `compare()` answers the question per flow —
+never in aggregate, because "most flows agree" is not a basis for changing which
+flows run.
+
+A divergence MUST be reported in the direction it breaks: a column trigger with
+no node means the flow WOULD STOP firing; a node trigger with no column means
+the flow does NOT fire today and the cutover would START it. Both are behaviour
+changes an operator has to be told about, and a single "not equivalent" hides
+which one happened.
+
+**Measured on the development instance, 2026-08-10: the cutover is BLOCKED.**
+All 16 flows carry ZERO trigger nodes — every flow is authored purely on the
+columns — so switching the resolver today would stop all of them. A backfill
+must come first, and 4 of the 5 object-triggered flows CANNOT be backfilled:
+they are scoped to any register and any schema, which `openregister.trigger-object`
+deliberately refuses to express. Widening the node to accept a wildcard would
+contradict the scenario above; leaving those flows on the columns would mean two
+matching paths. That choice is a product decision, not an implementation detail.
+
+#### Scenario: An unscoped column trigger is never reported as reproducible by a node
+
+- **GIVEN** a flow whose `triggerRegister` and `triggerSchema` are empty (any/any)
+- **WHEN** it is compared against a node naming the same event
+- **THEN** the verdict MUST be NOT equivalent, naming the unscoped trigger
+- **AND** the reason is that the two do not match the same set of events: the
+  column form fires on registers the node form does not
+- @e2e exclude an engine-internal comparison — covered by `FlowTriggerDerivationTest`
+
+#### Scenario: A half-authored trigger node subscribes to nothing, never to everything
+
+- **GIVEN** an object trigger node missing its `register`
+- **WHEN** the flow's trigger set is derived
+- **THEN** that node MUST contribute NO trigger
+- **AND** it MUST NOT be widened to "any register", which would subscribe the
+  flow to every object event in the instance
+- @e2e exclude an engine-internal derivation — covered by `FlowTriggerDerivationTest`
+
+#### Scenario: The same trigger authored twice is one subscription
+
+- **GIVEN** a flow carrying two identical object trigger nodes
+- **WHEN** its trigger set is derived
+- **THEN** exactly one trigger MUST result, so one event starts one run
+- @e2e exclude an engine-internal derivation — covered by `FlowTriggerDerivationTest`
+
 ### Requirement: Trigger matching MUST NOT scale with the number of flows
 
 An object event fires inside the dispatch of a user action — a save, an
