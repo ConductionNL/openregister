@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
@@ -61,8 +62,30 @@ class HealthCheckExecutorTest extends TestCase
             $this->appManager,
             $this->appConfig,
             $this->container,
+            // No app-specific container, so the executor falls back to the one
+            // these tests build — the topology is stated here rather than read
+            // from whichever apps the developer has installed.
+            $this->locatorReturning(null),
             $this->createMock(LoggerInterface::class)
         );
+    }
+
+    /**
+     * A locator that hands back the given container for any app.
+     *
+     * @param ContainerInterface|null $appContainer The app's own container, or null when it has none.
+     */
+    private function locatorReturning(?ContainerInterface $appContainer): AppContainerLocator
+    {
+        $locator = $this->createMock(AppContainerLocator::class);
+        $locator->method('find')->willReturn($appContainer);
+        $locator->method('findOr')->willReturnCallback(
+            static function (string $appId, ContainerInterface $fallback) use ($appContainer): ContainerInterface {
+                return ($appContainer ?? $fallback);
+            }
+        );
+
+        return $locator;
     }
 
     private function manifest(array $checks, string $policy = ObservabilityManifest::POLICY_ADR006): ObservabilityManifest

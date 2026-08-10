@@ -305,6 +305,7 @@ use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
@@ -2818,6 +2819,7 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
                     container: $container,
+                    locator: $container->get(AppContainerLocator::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2859,6 +2861,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new ProviderMetricSource(
                     container: $container,
+                    locator: $container->get(AppContainerLocator::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -3325,26 +3328,12 @@ class Application extends App implements IBootstrap
         string $appId,
         \Psr\Log\LoggerInterface $logger
     ): ?ContainerInterface {
-        try {
-            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
-            // resolves the server container only. The sniff says this is removed in NC 34,
-            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
-            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
-            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
-            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
-        } catch (\Throwable $e) {
-            $logger->debug(
-                '[Application] No registered app container',
-                ['appId' => $appId, 'error' => $e->getMessage()]
-            );
-            return null;
-        }
-
-        if ($appContainer instanceof ContainerInterface) {
-            return $appContainer;
-        }
-
-        return null;
+        // Delegated so the `\OC::$server` reach lives in exactly one place.
+        // It used to be inlined here AND in ProviderMetricSource AND in
+        // HealthCheckExecutor — three copies of one rule, none of them
+        // substitutable, which is what made the tests around them depend on
+        // which apps happened to be installed.
+        return (new AppContainerLocator(logger: $logger))->find(appId: $appId);
 
     }//end getRegisteredAppContainer()
 

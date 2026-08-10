@@ -62,6 +62,44 @@ The system SHALL render Prometheus text-format 0.0.4 from `observability.metrics
 
 ---
 
+### Requirement: A leaf app's provider MUST be resolved from that app's OWN container
+
+Nextcloud app containers are ISOLATED. An alias a leaf app registers —
+`IMetricsProvider::{appId}`, `IHealthCheckProvider::{appId}`, its MCP tool
+provider — exists only in that app's container and is invisible in
+OpenRegister's. Resolving it against OpenRegister's container returns nothing,
+which reads as "the app contributes no metrics" rather than as a failed lookup
+(#390).
+
+The lookup MUST therefore go through the calling app's registered container, and
+MUST be reachable through ONE injectable collaborator
+(`AppHost\AppContainerLocator`) rather than inlined at each call site. Three
+private copies of it existed — in `ProviderMetricSource`, `HealthCheckExecutor`
+and `Application` — and none was substitutable, which is what made the tests
+around them silently depend on which apps happened to be installed.
+
+An app with no registered container MUST fail soft: one app that was never
+bootstrapped cannot fatal a scrape that walks every installed app.
+
+#### Scenario: The provider is read from the app's container, not OpenRegister's
+
+- **GIVEN** an app whose own container answers `IMetricsProvider::{appId}`, and
+  an OpenRegister container that would answer the same alias differently
+- **WHEN** the metrics endpoint collects that app's provider metrics
+- **THEN** the APP's container MUST be the one consulted
+- @e2e exclude container topology is not observable from a browser — asserted in
+  `tests/Unit/AppHost/MetricSourceTest.php`, with a positive control that turns
+  red when the lookup is pointed back at OpenRegister's container
+
+#### Scenario: An app with no registered container falls back rather than fataling
+
+- **GIVEN** an app that was never bootstrapped, so it has no registered container
+- **WHEN** its provider metrics are collected
+- **THEN** no samples MUST be returned and the scrape MUST continue
+- @e2e exclude covered by `tests/Unit/AppHost/MetricSourceTest.php`
+
+---
+
 ### Requirement: Engine-Owned Auth Posture and Format
 
 The generic health endpoint SHALL be public (`#[PublicPage]` + `#[NoCSRFRequired]`) and the generic metrics endpoint SHALL be admin-only, per ADR-006; the metrics content type SHALL be `text/plain; version=0.0.4`. Leaf apps MUST NOT be able to alter these through the manifest.
