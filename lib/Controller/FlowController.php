@@ -199,6 +199,38 @@ class FlowController extends Controller
     }//end nodeCatalog()
 
     /**
+     * The links one run-log entry earns, from the node that wrote it.
+     *
+     * The editor sends the entry and gets back whatever the contributing app
+     * says it points at — an openconnector call's source and call log, an agent
+     * step's session. OpenRegister does not know what any of those are, which
+     * is the whole point: the app that ships the node ships its links.
+     *
+     * POST, not GET. A log entry carries the run's payload, and a GET would put
+     * that data in a URL — and therefore in every access log, proxy and browser
+     * history it passes through.
+     *
+     * Never fails on a bad entry: an unknown node type, a removed app or a
+     * provider that throws all yield an empty list. This decorates a log an
+     * operator is already reading, and losing the log to decorate it would be
+     * the worse outcome.
+     *
+     * @return JSONResponse `{ results: [{label, href, icon?}] }`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+     */
+    public function logActions(): JSONResponse
+    {
+        $entry = (array) ($this->request->getParam('entry') ?? []);
+
+        return new JSONResponse(['results' => $this->nodes->logActions(entry: $entry)]);
+
+    }//end logActions()
+
+    /**
      * What a flow is currently holding between its runs.
      *
      * The state itself has existed since #2219 and nodes can write it since

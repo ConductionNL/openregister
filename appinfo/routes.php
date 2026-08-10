@@ -504,6 +504,11 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // The links one run-log entry earns, asked of the node that wrote it.
+        // POST because the entry is the input and a log entry carries payloads
+        // — a GET would put a run's data in a URL, and in every access log that
+        // URL passes through.
+        ['name' => 'flow#logActions', 'url' => '/api/flow/log-actions', 'verb' => 'POST'],
         // Preflight a flow document against the live node registry WITHOUT
         // saving it — the question a CI job or a deploy check needs to ask
         // about a document it is not writing. Must stay above `{flowId}` so

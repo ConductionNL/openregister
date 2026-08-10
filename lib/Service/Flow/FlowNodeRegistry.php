@@ -201,6 +201,16 @@ class FlowNodeRegistry
                     $entry['configKeys'] = array_values($node->configKeys());
                 }
 
+                // The node's own form, when it describes one. Absent — not
+                // empty — when it does not, for the same reason `configKeys`
+                // is: the editor must be able to tell "this node described no
+                // form, fall back to raw JSON" from "this node has no fields",
+                // and an empty array would say the second while meaning the
+                // first.
+                if (($node instanceof IFlowNodeConfigForm) === true) {
+                    $entry['configForm'] = array_values($node->configForm());
+                }
+
                 $palette[] = $entry;
             } catch (\Throwable $e) {
                 // One node whose metadata throws (a missing icon, a broken
@@ -216,6 +226,53 @@ class FlowNodeRegistry
         return $palette;
 
     }//end palette()
+
+    /**
+     * The links one run-log entry earns, from the node that wrote it.
+     *
+     * Asked of the node NOW rather than read from the entry: an href frozen
+     * into a log at write time rots when the target moves, and these records
+     * live for months.
+     *
+     * An entry whose node is unknown — a type an app stopped contributing, or
+     * a log older than the node's removal — yields no links rather than an
+     * error. A run log is history, and history routinely names things that no
+     * longer exist; refusing to render it would lose the rest of the entry too.
+     *
+     * A node whose `logActions()` throws is skipped for the same reason
+     * `palette()` skips one whose metadata throws: one broken provider must not
+     * take out the log an operator is trying to read.
+     *
+     * @param array<string, mixed> $entry One entry from a run's log.
+     *
+     * @return array<int, array<string, mixed>> The links.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+     */
+    public function logActions(array $entry): array
+    {
+        $type = trim((string) ($entry['type'] ?? ''));
+        if ($type === '') {
+            return [];
+        }
+
+        $node = ($this->all()[$type] ?? null);
+        if ($node === null || ($node instanceof IFlowNodeLogActions) === false) {
+            return [];
+        }
+
+        try {
+            return array_values($node->logActions(entry: $entry));
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[FlowNodeRegistry] A node\'s log actions failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type]
+            );
+
+            return [];
+        }
+
+    }//end logActions()
 
     /**
      * Resolve a step's `type` to its node.
