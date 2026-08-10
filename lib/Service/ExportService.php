@@ -623,7 +623,7 @@ class ExportService
      *
      * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (builds a header-only
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (builds a header-only
      *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
      */
     public function buildTemplateSpreadsheet(
@@ -661,7 +661,7 @@ class ExportService
      *
      * @return string CSV content with a UTF-8 BOM prefix and a single header row
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (renders the per-schema
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (renders the per-schema
      *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
      */
     public function buildTemplateCsv(

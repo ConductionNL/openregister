@@ -12,6 +12,7 @@ namespace Unit\Service\Config;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -26,12 +27,15 @@ class FlowShareableConfigTypeTest extends TestCase
 
     private FlowMapper&MockObject $mapper;
 
+    private FlowService&MockObject $flows;
+
     private FlowShareableConfigType $type;
 
     protected function setUp(): void
     {
         $this->mapper = $this->createMock(FlowMapper::class);
-        $this->type   = new FlowShareableConfigType($this->mapper);
+        $this->flows  = $this->createMock(FlowService::class);
+        $this->type   = new FlowShareableConfigType($this->mapper, $this->flows);
     }//end setUp()
 
     private function storedFlow(): Flow
@@ -58,7 +62,7 @@ class FlowShareableConfigTypeTest extends TestCase
 
     public function testSerialiseKeepsPortableFieldsAndDropsInstanceFields(): void
     {
-        $this->mapper->method('findByUuid')->willReturn($this->storedFlow());
+        $this->flows->method('find')->willReturn($this->storedFlow());
 
         $bundle = $this->type->serialise(['flowIds' => ['flow-1']]);
 
@@ -81,13 +85,69 @@ class FlowShareableConfigTypeTest extends TestCase
 
     public function testAFlowThatCannotBeLoadedIsSkippedRatherThanFailingTheBundle(): void
     {
-        $this->mapper->method('findByUuid')
+        $this->flows->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('gone'));
 
         $bundle = $this->type->serialise(['flowIds' => ['missing']]);
 
         $this->assertSame([], $bundle['flows']);
     }//end testAFlowThatCannotBeLoadedIsSkippedRatherThanFailingTheBundle()
+
+    /**
+     * THE SECURITY PROPERTY on the READ side.
+     *
+     * `serialise()` used to resolve each requested uuid through
+     * `FlowMapper::findByUuid()`, which applies no organisation scoping — so
+     * naming another tenant's flow uuid in `{flowIds: […]}` put that tenant's
+     * whole flow definition in the bundle. The read must go through
+     * `FlowService::find()`, which refuses a flow that is not the caller's.
+     *
+     * Asserting on the collaborator rather than on the payload is deliberate:
+     * a payload assertion passes just as well when the mapper is consulted and
+     * happens to return nothing, which is the state this test exists to rule
+     * out.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function testSerialiseNeverReachesTheUnscopedMapper(): void
+    {
+        $this->mapper->expects($this->never())->method('findByUuid');
+        $this->flows->expects($this->once())
+            ->method('find')
+            ->willReturn($this->storedFlow());
+
+        $this->type->serialise(['flowIds' => ['flow-1']]);
+    }//end testSerialiseNeverReachesTheUnscopedMapper()
+
+    /**
+     * A flow the caller may not see contributes NOTHING to the bundle — not a
+     * stub, not an empty entry. `FlowService::find()` raises the same
+     * `DoesNotExistException` for "not yours" as for "does not exist", so the
+     * refusal is also not an enumeration oracle.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function testAnotherOrganisationsFlowIsNotBundled(): void
+    {
+        $this->flows->method('find')->willReturnCallback(
+            static function (string $uuid): Flow {
+                if ($uuid === 'other-org-flow') {
+                    throw new \OCP\AppFramework\Db\DoesNotExistException('No such flow');
+                }
+
+                $flow = new Flow();
+                $flow->setUuid($uuid);
+                $flow->setName('Mine');
+
+                return $flow;
+            }
+        );
+
+        $bundle = $this->type->serialise(['flowIds' => ['mine-1', 'other-org-flow']]);
+
+        $this->assertCount(1, $bundle['flows']);
+        $this->assertSame('Mine', $bundle['flows'][0]['name']);
+    }//end testAnotherOrganisationsFlowIsNotBundled()
 
     public function testDeserialiseWritesEachFlowIntoTheStore(): void
     {
@@ -170,7 +230,7 @@ class FlowShareableConfigTypeTest extends TestCase
 
     public function testARoundTripPreservesTheFlowShape(): void
     {
-        $this->mapper->method('findByUuid')->willReturn($this->storedFlow());
+        $this->flows->method('find')->willReturn($this->storedFlow());
         $bundle = $this->type->serialise(['flowIds' => ['flow-1']]);
 
         $captured = null;

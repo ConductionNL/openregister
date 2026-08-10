@@ -49,7 +49,9 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use OCP\WorkflowEngine\IManager;
 
 /**
@@ -88,6 +90,8 @@ class FlowController extends Controller
      * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
      * @param FlowNodePreflight   $preflight    Resolves a document's step types.
      * @param FlowService         $flows        Reads, writes and runs flow definitions.
+     * @param IUserSession        $userSession  Resolves the calling user.
+     * @param IGroupManager       $groupManager Answers whether that user is an administrator.
      */
     public function __construct(
         string $appName,
@@ -97,9 +101,29 @@ class FlowController extends Controller
         private readonly FlowStateMapper $flowState,
         private readonly FlowNodePreflight $preflight,
         private readonly FlowService $flows,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Whether the calling user is a Nextcloud administrator.
+     *
+     * Fails CLOSED: an unresolvable session answers false, so the reduced
+     * SCOPE_USER palette is what gets served rather than the admin one.
+     *
+     * @return boolean Whether the caller is an administrator.
+     */
+    private function callerIsAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end callerIsAdmin()
 
     /**
      * Return the declarative-flow trigger catalog.
@@ -138,6 +162,18 @@ class FlowController extends Controller
      * Scope-filtered, so a non-administrator is never offered a step they could
      * not run. Every node implements `isAvailableForScope()` already.
      *
+     * The scope is derived from the CALLER, not from a request parameter. It
+     * used to default to SCOPE_ADMIN and drop to SCOPE_USER only when the
+     * request said `?scope=user`, which meant the docblock claim above was
+     * false in the one direction that matters: a non-administrator who simply
+     * omitted the parameter — the default for anything that is not deliberately
+     * asking for the reduced view — was served the ADMIN palette. The parameter
+     * was the caller's to set, so it could never have been a privilege check.
+     *
+     * An administrator may still pass `?scope=user` to preview what a
+     * non-administrator sees; that direction only ever narrows the result. A
+     * non-administrator is pinned to SCOPE_USER regardless of what they send.
+     *
      * @return JSONResponse `{ results: [{id,displayName,description,icon}], total }`.
      *
      * @NoAdminRequired
@@ -147,9 +183,9 @@ class FlowController extends Controller
      */
     public function nodeCatalog(): JSONResponse
     {
-        $scope = IManager::SCOPE_ADMIN;
-        if ($this->request->getParam('scope') === 'user') {
-            $scope = IManager::SCOPE_USER;
+        $scope = IManager::SCOPE_USER;
+        if ($this->callerIsAdmin() === true && $this->request->getParam('scope') !== 'user') {
+            $scope = IManager::SCOPE_ADMIN;
         }
 
         $results = $this->nodes->palette(scope: $scope);
@@ -186,15 +222,34 @@ class FlowController extends Controller
      * shape of the data — a flow's state is arbitrary and "looks like a slot
      * table" is not a contract.
      *
+     * The flow is resolved through `FlowService` FIRST, and the state is only
+     * read once that resolution succeeds. This method used to hand the
+     * client-supplied `{flowId}` straight to `FlowStateMapper`, which applies no
+     * organisation scoping at all — so any authenticated user could read any
+     * other organisation's flow state by uuid. It was also the one method in
+     * this class that broke the invariant stated at the top of the file ("every
+     * CRUD method goes through FlowService, never FlowMapper"). A flow the
+     * caller may not see now 404s exactly like a flow that does not exist,
+     * which is the same non-oracle refusal `FlowService::find()` gives
+     * everywhere else.
+     *
      * @param string $flowId The flow's uuid.
      *
-     * @return JSONResponse `{ flowId, state, updated }`, plus `{ key, results, total }` with `?list=`.
+     * @return JSONResponse `{ flowId, state, updated }`, plus `{ key, results, total }` with `?list=`, or 404.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     public function state(string $flowId): JSONResponse
     {
+        try {
+            $this->flows->find(uuid: $flowId);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
         $stored  = $this->flowState->findByFlow(flowId: $flowId);
         $state   = [];
         $updated = null;

@@ -168,7 +168,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 								:key="file.path"
 								class="fileCard"
 								:class="{ selected: selectedFile === file }"
-								@click="selectedFile = file">
+								role="button"
+								tabindex="0"
+								:aria-pressed="selectedFile === file"
+								@click="selectedFile = file"
+								@keydown.enter="selectedFile = file"
+								@keydown.space.prevent="selectedFile = file">
 								<h4>{{ file.config.title }}</h4>
 								<p class="fileDescription">
 									{{ file.config.description || 'No description' }}
@@ -214,9 +219,17 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							Upload a configuration JSON file from your computer.
 						</p>
 
+						<!-- Only a button while the zone is empty: once a file is picked the
+							click handler is inert and the body contains a real "Clear" button,
+							which role="button" would hide (children-presentational). The zone is
+							then named by its visible text in both states, so no aria-label. -->
 						<div class="fileUploadZone"
 							:class="{ 'dragover': isDragging }"
+							:role="selectedUploadFile ? null : 'button'"
+							:tabindex="selectedUploadFile ? null : 0"
 							@click="!selectedUploadFile && $refs.fileInput.click()"
+							@keydown.enter="!selectedUploadFile && $refs.fileInput.click()"
+							@keydown.space.prevent="!selectedUploadFile && $refs.fileInput.click()"
 							@drop.prevent="handleFileDrop"
 							@dragover.prevent="isDragging = true"
 							@dragleave.prevent="isDragging = false">
@@ -1076,5 +1089,12 @@ export default {
 .fileSize {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fileCard,
+	.fileUploadZone {
+		transition: none;
+	}
 }
 </style>

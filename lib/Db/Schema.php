@@ -2048,7 +2048,7 @@ class Schema extends Entity implements JsonSerializable
     private function validateWriteOnlyPathsValue(mixed $value): array
     {
         if (is_array($value) === false || array_is_list($value) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 self::WRITEONLY_PATHS_ANNOTATION.' must be a list of dot-separated path strings'
             );
         }
@@ -2061,7 +2061,7 @@ class Schema extends Entity implements JsonSerializable
         $validated = [];
         foreach ($value as $path) {
             if (is_string($path) === false || trim($path) === '') {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     self::WRITEONLY_PATHS_ANNOTATION.' entries must be non-empty strings'
                 );
             }
@@ -2069,7 +2069,7 @@ class Schema extends Entity implements JsonSerializable
             $segments = explode('.', $path);
             foreach ($segments as $segment) {
                 if (trim($segment) === '') {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" has an empty segment'
                     );
                 }
@@ -2081,7 +2081,7 @@ class Schema extends Entity implements JsonSerializable
             // would reject valid declarations for the wrong reason.
             $rootIsDeclared = (empty($declared) === true || in_array($segments[0], $declared, true) === true);
             if ($rootIsDeclared === false) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" is rooted at "'.$segments[0]
                     .'", which is not a declared property of this schema'
                 );

@@ -143,6 +143,11 @@ class WorkflowExecutionController extends Controller
      *
      * @param int $id Execution ID
      *
+     * @auth admin-only Execution rows are the audit trail of what this instance sent to an external
+     *       engine and what came back. Deleting audit history is an administrative act, and the
+     *       prose above already said "admin only" without anything enforcing or declaring it —
+     *       WorkflowExecution has no owner column, so no per-object guard is expressible either.
+     *
      * @return JSONResponse
      *
      * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async

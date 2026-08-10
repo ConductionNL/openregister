@@ -66,7 +66,56 @@ Vrij en open source onder de EUPL-licentie.
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
-        <nextcloud min-version="28" max-version="34"/>
+        <!-- 32, as a deliberate product decision: the platform floor moves to
+             Nextcloud 32 fleet-wide.
+
+             This repository has been round the 28/32 loop once already —
+             #2378 raised it to 32, #2379 recorded the fallout, #2380 put it
+             back to 28 — so the reasoning is written out here rather than
+             left to the commit log.
+
+             WHY 32 IS THE RIGHT DECLARATION
+
+             openregister is the foundation app. openconnector, openbuild,
+             larpingapp and scholiq all name it as a hard `<app>` dependency,
+             and the rule established by openconnector#1172/#1173 is that an
+             app's min-version must be at least the maximum floor of every
+             `<app>` it depends on — otherwise the App Store advertises a
+             range the app cannot deliver: on a server below the dependency's
+             floor the dependency refuses to install and every entity in the
+             dependent app is unreachable. openconnector's own info.xml
+             already justifies its floor by asserting that openregister
+             declares 32. Until this change that assertion was false.
+
+             It also matches what is actually tested. This repo's CI matrix is
+             a single leg — PHP 8.3 / stable32 (.github/workflows/
+             code-quality.yml). There has never been a job below 32, so
+             declaring 28-31 supported claimed coverage that does not exist.
+
+             WHAT THIS COSTS, MEASURED — read before lowering it again
+
+             min-version is enforced at INSTALL time. Eight fleet repos install
+             openregister as an additional-app while their own e2e runs on
+             stable31: procest, shillinq, portaliq, openbuild, decidesk,
+             doriath, hermiq and larpingapp. When #2378 last moved this floor,
+             each failed its seed with "OpenRegister is not installed or
+             enabled" followed by a 404 from /api/configurations/import —
+             observed on procest#758 and tracked in #2379.
+
+             Those eight repos must move their own test matrices to stable32.
+             Until they do, they will fail exactly as they did before. That is
+             the accepted, known cost of the decision, not an unforeseen
+             regression — if these failures reappear, the fix is to move the
+             consumer matrices up, NOT to lower this floor again.
+
+             Note: `<php min-version="8.3">` above is enforced independently of
+             the Nextcloud version, so the PHP 8.3 requirement does not itself
+             depend on this floor.
+
+             max-version stays 34, which is the fleet-wide value everywhere
+             except openconnector, which declares 35. That split is known and
+             deliberately not resolved here. -->
+        <nextcloud min-version="32" max-version="34"/>
     </dependencies>
 
 	<repair-steps>

@@ -107,9 +107,15 @@ import formatBytes from '../../services/formatBytes.js'
 					<table class="statisticsTable schemaStats">
 						<thead>
 							<tr>
-								<th>{{ t('openregister', 'Type') }}</th>
-								<th>{{ t('openregister', 'Total') }}</th>
-								<th>{{ t('openregister', 'Size') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Type') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Total') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Size') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -439,6 +445,12 @@ export default {
 			color: var(--color-primary);
 			border-bottom-color: var(--color-primary);
 		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.schemaTabNav .tabButton {
+		transition: none;
 	}
 }
 </style>

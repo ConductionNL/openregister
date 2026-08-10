@@ -159,48 +159,4 @@ class AuditHandler
 
         return $auditFilters;
     }//end prepareFilters()
-
-    /**
-     * Extract schema ID from schema data
-     *
-     * @param mixed $schema Schema data (array, object, or string)
-     *
-     * @return string Schema ID
-     *
-     * @spec openspec/specs/audit-trail-immutable/spec.md
-     */
-    private function extractSchemaId(mixed $schema): string
-    {
-        if (is_array($schema) === true && isset($schema['id']) === true) {
-            return (string) $schema['id'];
-        }
-
-        if (is_object($schema) === true && isset($schema->id) === true) {
-            return (string) $schema->id;
-        }
-
-        return (string) $schema;
-    }//end extractSchemaId()
-
-    /**
-     * Extract schema slug from schema data
-     *
-     * @param mixed $schema Schema data (array, object, or string)
-     *
-     * @return null|string Schema slug
-     *
-     * @spec openspec/specs/audit-trail-immutable/spec.md
-     */
-    private function extractSchemaSlug(mixed $schema): string|null
-    {
-        if (is_array($schema) === true && isset($schema['slug']) === true) {
-            return strtolower($schema['slug']);
-        }
-
-        if (is_object($schema) === true && isset($schema->slug) === true) {
-            return strtolower($schema->slug);
-        }
-
-        return null;
-    }//end extractSchemaSlug()
 }//end class

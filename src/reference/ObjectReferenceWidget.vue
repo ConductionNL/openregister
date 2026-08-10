@@ -241,4 +241,10 @@ export default {
 		justify-content: flex-start;
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.openregister-reference-widget {
+		transition: none;
+	}
+}
 </style>

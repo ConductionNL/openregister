@@ -33,6 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
 
 /**
@@ -62,10 +63,18 @@ class FlowShareableConfigType implements IShareableConfigType
     /**
      * Constructor.
      *
-     * @param FlowMapper $mapper Reads and writes flow definitions.
+     * The mapper is the WRITE side (install), which runs the flows this
+     * instance is importing. The READ side goes through `FlowService`, because
+     * `FlowMapper::findByUuid()` applies no organisation scoping — the engine
+     * needs that (a queue worker has no session), a request does not.
+     *
+     * @param FlowMapper  $mapper Writes flow definitions on install.
+     * @param FlowService $flows  Reads flows the CALLER is allowed to see.
      */
-    public function __construct(private readonly FlowMapper $mapper)
-    {
+    public function __construct(
+        private readonly FlowMapper $mapper,
+        private readonly FlowService $flows
+    ) {
 
     }//end __construct()
 
@@ -108,6 +117,12 @@ class FlowShareableConfigType implements IShareableConfigType
      * `$selection` is `{flowIds: [uuid, ...]}`. Each flow is reduced to its
      * portable fields — no id, uuid, owner or organisation.
      *
+     * Resolution goes through `FlowService::find()`, which refuses a flow that
+     * is not the caller's with the same "no such flow" as one that does not
+     * exist. This used to call `FlowMapper::findByUuid()` directly, so a caller
+     * who named another organisation's flow uuid got that flow's full
+     * definition — nodes, edges, cron and all — in the bundle.
+     *
      * @param array $selection `{flowIds: [...]}`.
      *
      * @return array `{type, version, flows: [...]}`.
@@ -119,7 +134,7 @@ class FlowShareableConfigType implements IShareableConfigType
         $flows = [];
         foreach ((array) ($selection['flowIds'] ?? []) as $flowId) {
             try {
-                $flow = $this->mapper->findByUuid((string) $flowId);
+                $flow = $this->flows->find(uuid: (string) $flowId);
             } catch (Throwable $e) {
                 continue;
             }

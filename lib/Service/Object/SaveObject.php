@@ -53,8 +53,6 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
@@ -5649,7 +5647,7 @@ class SaveObject
         $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
         if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf(
                     'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
                     (string) $schema->getSlug(),

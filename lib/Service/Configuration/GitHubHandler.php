@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
+use InvalidArgumentException;
 use RuntimeException;
 use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
@@ -536,7 +537,7 @@ class GitHubHandler
                     }
 
                     if ($segment === '..' || preg_match('/[\x00-\x1f\x7f]/', $segment) === 1) {
-                        throw new \InvalidArgumentException('Invalid path segment.');
+                        throw new InvalidArgumentException('Invalid path segment.');
                     }
 
                     $encoded[] = rawurlencode($segment);

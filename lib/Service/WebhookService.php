@@ -1396,7 +1396,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
      * Fallback when formatter is unavailable
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      *   (finds before-event webhooks for the event type, formats the request as a CloudEvent, delivers to each,
      *   and continues past per-webhook failures, returning the request data)
      */
@@ -1538,7 +1538,7 @@ class WebhookService
      *
      * @return bool True when the webhook intercepts requests for the event type
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     private function matchesInterception(Webhook $webhook, string $eventType): bool
     {
@@ -1577,7 +1577,7 @@ class WebhookService
      *
      * @return bool True when at least one enabled interception webhook exists for the event type
      *
-     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
      */
     private function hasInterceptionWebhooks(string $eventType): bool
     {

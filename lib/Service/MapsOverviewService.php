@@ -407,7 +407,6 @@ class MapsOverviewService
      */
     private function representativeLatLng(array $geometry): ?array
     {
-        $type        = ($geometry['type'] ?? null);
         $coordinates = ($geometry['coordinates'] ?? null);
         if (is_array($coordinates) === false) {
             return null;

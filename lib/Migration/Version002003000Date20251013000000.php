@@ -1,6 +1,10 @@
 <?php
 
 /**
+ * OpenRegister Migration Version002003000Date20251013000000
+ *
+ * This file contains the migration step for the OpenRegister application.
+ *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *

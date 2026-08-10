@@ -684,7 +684,7 @@ class FileService
      *
      * @phpstan-return Node|null
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
@@ -795,7 +795,7 @@ class FileService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple filter toggle
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File retrieval requires entity type checking
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
      *   (unified file listing for a Register or ObjectEntity via the stored folder, with optional shared-only filter)
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
@@ -1275,7 +1275,7 @@ class FileService
      *
      * @return Node The Node object for the folder (existing or newly created), or null on failure
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (idempotent get-or-create of a folder at the given path under the OpenRegister root)
      */
     public function createFolder(string $folderPath): Node
@@ -1288,13 +1288,15 @@ class FileService
      *
      * Delegates to UpdateFileHandler for single-responsibility file update operations.
      *
-     * @param string|int        $filePath The path (from root) where to save the file,
-     *                                    including filename and extension, or file ID.
-     * @param mixed             $content  Optional content of the file.
-     *                                    If null, only metadata like tags will be updated.
-     * @param array             $tags     Optional array of tags to attach to the file
-     *                                    (excluding object tags which are preserved).
-     * @param ObjectEntity|null $object   Optional object entity to search in object folder first.
+     * @param string|int           $filePath The path (from root) where to save the file,
+     *                                       including filename and extension, or file ID.
+     * @param string|resource|null $content  Optional content of the file: a byte string, or a
+     *                                       readable stream resource (streamed straight to storage
+     *                                       via OCP\Files\File::putContent()).
+     *                                       If null, only metadata like tags will be updated.
+     * @param array                $tags     Optional array of tags to attach to the file
+     *                                       (excluding object tags which are preserved).
+     * @param ObjectEntity|null    $object   Optional object entity to search in object folder first.
      *
      * @throws Exception If the file doesn't exist or if file operations fail.
      *
@@ -1303,7 +1305,8 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (updates a file's content and tags within an object's folder)
+     * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
+     *   (updates a file's content and tags within an object's folder)
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
@@ -1358,7 +1361,8 @@ class FileService
      *
      * @throws Exception If deleting the file is not permitted or file operations fail.
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (deletes a file resolved by node/path/id, with object-folder context)
+     * @spec openspec/specs/file-actions/spec.md#file-update-and-delete-enforce-per-action-node-permissions
+     *   (deletes a file resolved by node/path/id, with object-folder context)
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
@@ -1381,7 +1385,8 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
      *
-     * @spec openspec/specs/file-actions/spec.md#object-tagging-via-nextcloud-system-tags (attaches NC system tags to a file by id)
+     * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
+     *   (the `object:<uuid>` + caller-tag attachment step of the create/upsert pipeline)
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -1417,7 +1422,7 @@ class FileService
      *
      * @param ObjectEntity|string      $objectEntity The object entity to add the file to.
      * @param string                   $fileName     The name of the file to create.
-     * @param string                   $content      The content to write to the file.
+     * @param string|resource          $content      File content: a byte string, or a readable stream resource.
      * @param bool                     $share        Whether to create a share link for the file.
      * @param array                    $tags         Optional array of tags to attach to the file.
      * @param int|string|Schema|null   $_schema      The register of the object to add the file to.
@@ -1439,7 +1444,7 @@ class FileService
     public function addFile(
         ObjectEntity | string $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[],
         int | string | Schema | null $_schema=null,
@@ -1463,11 +1468,11 @@ class FileService
      *
      * Delegates to CreateFileHandler for single-responsibility upsert operations.
      *
-     * @param ObjectEntity $objectEntity The object entity to save the file to.
-     * @param string       $fileName     The name of the file to save.
-     * @param string       $content      The content to write to the file.
-     * @param bool         $share        Whether to create a share link for the file (only for new files).
-     * @param array        $tags         Optional array of tags to attach to the file.
+     * @param ObjectEntity    $objectEntity The object entity to save the file to.
+     * @param string          $fileName     The name of the file to save.
+     * @param string|resource $content      File content: a byte string, or a readable stream resource.
+     * @param bool            $share        Whether to create a share link for the file (only for new files).
+     * @param array           $tags         Optional array of tags to attach to the file.
      *
      * @return File The saved file.
      *
@@ -1479,13 +1484,13 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
      *   (creates/writes a file into an object's folder with optional tags and share toggle)
      */
     public function saveFile(
         ObjectEntity $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[]
     ): File {
@@ -1548,7 +1553,7 @@ class FileService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects
+     * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
      *   (lists an object's files via its stored folder, with optional shared-only filter)
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
@@ -1601,7 +1606,8 @@ class FileService
      * @phpstan-param  int $fileId
      * @phpstan-return File|null
      *
-     * @spec openspec/specs/file-actions/spec.md#file-crud-operations-on-objects (resolves a single file node by NC file id, null on miss)
+     * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
+     *   (resolves a single file node by NC file id, null on miss)
      */
     public function getFileById(int $fileId): ?File
     {
@@ -1930,7 +1936,7 @@ class FileService
      *
      * @return int The created folder ID
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (provisions an object's folder and returns its id without writing the id back onto the entity)
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int

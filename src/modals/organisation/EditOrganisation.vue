@@ -25,22 +25,22 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 						<div class="form-editor">
 							<NcTextField
+								v-model="organisationItem.name"
 								:disabled="loading"
 								:label="t('openregister', 'Name *')"
-								v-model="organisationItem.name"
 								:error="!organisationItem.name.trim()"
 								:placeholder="t('openregister', 'Enter organisation name')" />
 
 							<NcTextField
+								v-model="organisationItem.slug"
 								:disabled="loading"
 								:label="t('openregister', 'Slug')"
-								v-model="organisationItem.slug"
 								:placeholder="t('openregister', 'Optional URL-friendly identifier')" />
 
 							<NcTextArea
+								v-model="organisationItem.description"
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								v-model="organisationItem.description"
 								:placeholder="t('openregister', 'Enter organisation description (optional)')"
 								:rows="4" />
 
@@ -75,8 +75,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</div>
 
 							<NcCheckboxRadioSwitch
-								:disabled="loading"
-								v-model="organisationItem.active">
+								v-model="organisationItem.active"
+								:disabled="loading">
 								{{ t('openregister', 'Active') }}
 							</NcCheckboxRadioSwitch>
 
@@ -285,9 +285,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 											<table class="rbac-table special-rights-table">
 												<thead>
 													<tr>
-														<th>{{ t('openregister', 'Right') }}</th>
-														<th>{{ t('openregister', 'Description') }}</th>
-														<th>{{ t('openregister', 'Groups') }}</th>
+														<th scope="col">
+															{{ t('openregister', 'Right') }}
+														</th>
+														<th scope="col">
+															{{ t('openregister', 'Description') }}
+														</th>
+														<th scope="col">
+															{{ t('openregister', 'Groups') }}
+														</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -382,9 +388,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<template #actions>
 			<NcCheckboxRadioSwitch
 				v-if="!organisationStore.organisationItem?.uuid"
+				v-model="createAnother"
 				class="create-another-checkbox"
-				:disabled="loading"
-				v-model="createAnother">
+				:disabled="loading">
 				{{ t('openregister', 'Create another') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton @click="closeModal">

@@ -28,9 +28,15 @@
 				<table class="mergeWizard__table">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Attribute') }}</th>
-							<th>{{ t('openregister', 'Winning value') }}</th>
-							<th>{{ t('openregister', 'Source') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Attribute') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Winning value') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Source') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>

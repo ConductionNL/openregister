@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Mcp;
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use Psr\Log\LoggerInterface;
+use stdClass;
 
 /**
  * McpToolsService handles MCP tool operations
@@ -155,7 +156,7 @@ class McpToolsService
     private function normaliseInputSchema(mixed $inputSchema): array
     {
         if (is_array($inputSchema) === false) {
-            return ['type' => 'object', 'properties' => new \stdClass()];
+            return ['type' => 'object', 'properties' => new stdClass()];
         }
 
         if (isset($inputSchema['type']) === false) {
@@ -166,7 +167,7 @@ class McpToolsService
             || $inputSchema['properties'] === []
             || $inputSchema['properties'] === null
         ) {
-            $inputSchema['properties'] = new \stdClass();
+            $inputSchema['properties'] = new stdClass();
         }
 
         return $inputSchema;

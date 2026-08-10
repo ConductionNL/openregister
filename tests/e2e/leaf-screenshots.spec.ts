@@ -41,8 +41,13 @@ test.describe('Per-leaf screenshot harness', () => {
 			// HASH form — the router runs in hash mode (src/main.js); the
 			// path-form URL renders the dashboard instead of the integrations view.
 			`${baseURL}/index.php/apps/openregister/#/integrations/${REGISTER}/${SCHEMA}/${OBJECT_ID}`,
+			// `networkidle` never settles on Nextcloud — its long-poll and
+			// notification channels keep at least one request in flight for
+			// the life of the page, so waiting for idle waits for the
+			// timeout (ADR-074 rule 4). The real readiness signal is step 3
+			// below, which waits for the registry's own contents.
+			{ waitUntil: 'domcontentloaded' },
 		)
-		await page.waitForLoadState('networkidle')
 
 		// 3. Wait until the in-page registry has flushed all provider
 		//    descriptors and the tab strip rendered.

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use InvalidArgumentException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -146,18 +147,20 @@ class SecurityService
      *
      * @throws \InvalidArgumentException When the URL is malformed or resolves to a non-public address.
      *
+     * @spec openspec/specs/apphost-store-plane/spec.md#requirement-every-outbound-registry-url-must-be-ssrf-guarded-and-must-not-follow-redirects
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function assertSafeFetchUrl(string $url): void
     {
         $parts = parse_url($url);
         if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
-            throw new \InvalidArgumentException('Invalid URL.');
+            throw new InvalidArgumentException('Invalid URL.');
         }
 
         $scheme = strtolower($parts['scheme']);
         if (in_array($scheme, ['http', 'https'], true) === false) {
-            throw new \InvalidArgumentException('Only http and https URLs are allowed.');
+            throw new InvalidArgumentException('Only http and https URLs are allowed.');
         }
 
         $host = $parts['host'];
@@ -185,7 +188,7 @@ class SecurityService
 
         if (empty($ips) === true) {
             // Fail closed: a host we cannot resolve must not be fetched.
-            throw new \InvalidArgumentException('URL host could not be resolved.');
+            throw new InvalidArgumentException('URL host could not be resolved.');
         }
 
         foreach ($ips as $ip) {
@@ -195,7 +198,7 @@ class SecurityService
                 (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
             );
             if ($isPublic === false) {
-                throw new \InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
+                throw new InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
             }
         }
     }//end assertSafeFetchUrl()

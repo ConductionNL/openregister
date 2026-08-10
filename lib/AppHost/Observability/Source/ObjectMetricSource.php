@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability\Source;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
@@ -194,11 +195,11 @@ class ObjectMetricSource implements MetricSourceInterface
     private function resolveValue(mixed $value): mixed
     {
         if ($value === 'now') {
-            return (new \DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+            return (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
         }
 
         if ($value === 'today') {
-            return (new \DateTimeImmutable('today'))->format('Y-m-d');
+            return (new DateTimeImmutable('today'))->format('Y-m-d');
         }
 
         return $value;

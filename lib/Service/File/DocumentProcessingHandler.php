@@ -223,7 +223,7 @@ class DocumentProcessingHandler
      *                                    branch (DOCX/ODT/text — no PDF
      *                                    structure tree is involved).
      *
-     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+     * @spec openspec/specs/tag-preserving-redaction/spec.md#every-pdf-redaction-must-return-the-structurepreservation-result-block-with-the-exact-contracted-fields-req-ortpr-003
      */
     public function getLastStructurePreservation(): ?StructurePreservation
     {

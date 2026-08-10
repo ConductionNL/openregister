@@ -43,6 +43,18 @@ export default defineConfig({
 	// without hiding a real failure — a broken assertion fails twice.
 	retries: process.env.CI ? 1 : 0,
 	workers: 1,
+	// This is the config the shared workflow actually loads (it resolves
+	// `${playwright-test-path}/playwright.config.ts` — here `tests/e2e/ci` —
+	// before falling back to the app-root one), so the timeout belongs here.
+	// The job is `timeout-minutes: 45`, and a job cancelled by that cap
+	// produces NO verdict: Playwright never prints its tally, the
+	// `if: failure()` trace upload never fires, and the `if: always()` report
+	// upload does not run on a cancelled job either — which would undo the
+	// reporter and outputDir fixes noted just below, since a cancelled job
+	// uploads nothing however correct the paths are. Measured overhead before
+	// `Run Playwright tests` starts is 2.0-2.4 min and the uploads after it
+	// take seconds, so 38m keeps ~7 min of margin.
+	globalTimeout: 38 * 60_000,
 	reporter: [
 		['list'],
 		// The shared workflow uploads `tests/e2e/playwright-report/` as the

@@ -78,15 +78,6 @@ class StreamYieldChannel
     private array $toolResultCallbacks = [];
 
     /**
-     * Registered heartbeat callbacks. Each receives no arguments — the
-     * timestamp is the controller's responsibility to attach when framing
-     * the SSE event.
-     *
-     * @var array<int, callable>
-     */
-    private array $heartbeatCallbacks = [];
-
-    /**
      * Register a callback invoked for each token delta emitted by the LLM
      * stream.
      *
@@ -134,22 +125,6 @@ class StreamYieldChannel
     {
         $this->toolResultCallbacks[] = $callback;
     }//end onToolResult()
-
-    /**
-     * Register a callback invoked when the handler emits an explicit
-     * heartbeat. The pre-emit heartbeat interleaving in the controller
-     * uses its own clock and does not flow through this channel.
-     *
-     * @param callable $callback Function invoked with no arguments.
-     *
-     * @return void
-     *
-     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic.
-     */
-    public function onHeartbeat(callable $callback): void
-    {
-        $this->heartbeatCallbacks[] = $callback;
-    }//end onHeartbeat()
 
     /**
      * Emit a token delta to every registered token callback in registration
@@ -204,18 +179,28 @@ class StreamYieldChannel
         }
     }//end emitToolResult()
 
-    /**
-     * Emit an explicit heartbeat to every registered heartbeat callback in
-     * registration order.
+    /*
+     * NO HEARTBEAT PUB/SUB HERE, AND THERE CANNOT BE ONE.
      *
-     * @return void
+     * This class used to carry an `onHeartbeat()` / `emitHeartbeat()` pair.
+     * `ChatStreamController` registered the consumer half; nothing ever
+     * called the producer half, and nothing could:
      *
-     * @spec exclude Pure pub-sub forwarder plumbing — loops registered callbacks; carries no business logic.
+     *   - the only silences long enough to need a keepalive are INSIDE a
+     *     blocking call — LLPhant's `generateChat`, the Fireworks HTTP
+     *     round-trip, or a slow tool in `StreamingToolInstanceWrapper::
+     *     __call()` — and PHP runs no code of ours during those;
+     *   - `IMcpToolProvider::invokeTool()`, whose own docblock names a >15s
+     *     tool as the heartbeat problem, is never handed this channel, so a
+     *     leaf app cannot produce one either;
+     *   - every moment the producer side DOES hold control is a moment it is
+     *     already emitting a token/tool_call/tool_result frame, which the
+     *     controller's `forwardWithHeartbeat()` already interleaves a
+     *     heartbeat ahead of.
+     *
+     * The live keepalive is therefore the controller's own: the heartbeat
+     * frame emitted right after the SSE headers, plus the wall-clock
+     * interleave in `forwardWithHeartbeat()`.
      */
-    public function emitHeartbeat(): void
-    {
-        foreach ($this->heartbeatCallbacks as $callback) {
-            $callback();
-        }
-    }//end emitHeartbeat()
+
 }//end class

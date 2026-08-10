@@ -522,7 +522,7 @@
     {
       "id": "Flows",
       "label": "Flows",
-      "icon": "Sitemap",
+      "icon": "SitemapOutline",
       "route": "flows",
       "section": "main",
       "order": 45
