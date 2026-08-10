@@ -342,3 +342,59 @@ disk and is then deleted wholesale, taking the runs that mattered with it.
 - **THEN** the entry MUST carry the session identifier
 - **AND** it MUST NOT contain a copy of the session's messages
 - @e2e exclude covered by the agent node's tests
+
+### Requirement: A node that calls out per item MUST be able to do so concurrently
+
+The engine dispatches a node once with the whole item list, and a node that
+performs one outbound call per item currently loops. For N items that is N
+sequential round-trips, and the wall-clock is N times one call's latency
+regardless of how idle the machine is.
+
+**Measured 2026-08-10.** `SourceCallNode::execute()` is a `foreach` over items
+calling `performCall()` in turn. openconnector's own synchronisation reader —
+the code a flow-based openconnector replaces — does the opposite:
+`Each::ofLimit()` with an admission gate enforcing a concurrency cap
+(`FETCH_CONCURRENCY_DEFAULT` 5, `FETCH_CONCURRENCY_MAX` 20) AND an in-flight
+byte budget, per-item failure isolation, and saves pipelined behind the fetch
+window. The difference is structural, not marginal: N serial round-trips
+against ceil(N/5) waves. A flow-based reader that keeps the loop is slower than
+the thing it replaces, by a factor that grows with the list.
+
+The engine MUST therefore let a node declare that its per-item work is
+concurrency-safe, and run it within a bound. The bound is not optional: an
+unbounded fan-out turns one flow over a large list into a burst against an
+upstream that did nothing to deserve it, which is why the reader being replaced
+caps by COUNT and by BYTES — ten 5 MB attachments are trivial where ten 2 GB
+exports are not.
+
+Concurrency MUST NOT change what the run records. `pairedItem` already ties an
+output back to the input that produced it, and the run log's `input`/`output`
+sample MUST stay in input order — a log whose order depends on which call
+returned first is not comparable between two runs of the same flow.
+
+One item's failure MUST NOT abort the others, and MUST still reach the step's
+`onError` policy. Losing per-item isolation to gain speed would trade a
+correctness property the serial loop has for a performance one.
+
+#### Scenario: A per-item caller runs within a bound, not one at a time
+- **GIVEN** a node declaring its per-item work concurrency-safe, and 20 items
+- **WHEN** the step runs with a cap of 5
+- **THEN** at most 5 calls MUST be in flight at once
+- **AND** the wall-clock MUST be closer to 4 waves than to 20 round-trips
+- @e2e exclude a timing property — covered by the dispatcher's tests with a
+  stubbed transport
+
+#### Scenario: Concurrency does not reorder the record
+- **GIVEN** a concurrent step whose calls return out of order
+- **WHEN** the run log is written
+- **THEN** the recorded items MUST be in INPUT order
+- **AND** each output's `pairedItem` MUST name the input that produced it
+- @e2e exclude covered by the dispatcher's tests
+
+#### Scenario: One item's failure does not take the others
+- **GIVEN** a concurrent step where one of five calls fails
+- **WHEN** the step completes
+- **THEN** the other four results MUST be present
+- **AND** the failure MUST reach the step's `onError` policy exactly as it does
+  from the serial loop
+- @e2e exclude covered by the dispatcher's tests
