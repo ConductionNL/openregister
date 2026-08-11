@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
@@ -310,4 +311,126 @@ class ViewPresentationServiceTest extends TestCase
         $this->assertSame(['obj-spans-in', 'obj-starts-in-range'], $ids);
         $this->assertSame('endDate', $result['endDateField']);
     }//end testGetCalendarObjectsMergesSpanningObjectsWithEndDateField()
+
+    // ── getCalendarObjects() — de-duplication across the two queries, ENTITY rows ──
+    //
+    // Everything above feeds the service plain arrays. searchObjectsPaginated()
+    // also returns ObjectEntity rows — ObjectService::collectNamesForResults()
+    // branches on `instanceof ObjectEntity` before it branches on is_array() —
+    // and that is the shape the identity key was broken for: ObjectEntity
+    // declares getUuid()/getId() only as `@method`, served through
+    // Entity::__call(), so method_exists() is FALSE and every row fell through
+    // to spl_object_hash(). The tests below use REAL entities for that reason.
+
+    /**
+     * One database row hydrated twice — once by the "starting" query, once by the
+     * "spanning" query — must collapse to a single calendar entry.
+     *
+     * @return void
+     */
+    public function testGetCalendarObjectsDeduplicatesTheSameEntityRowAcrossBothQueries(): void
+    {
+        $view = $this->createView(
+            ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'endDate']],
+            ['registers' => [1], 'schemas' => [2]]
+        );
+
+        // Two SEPARATE PHP instances carrying the SAME uuid: exactly what two
+        // queries hydrating one row produce. spl_object_hash() differs between
+        // them, so an identity that falls back to it renders the object twice.
+        $startingRow = new ObjectEntity();
+        $startingRow->setUuid('shared-row-uuid');
+        $spanningRow = new ObjectEntity();
+        $spanningRow->setUuid('shared-row-uuid');
+
+        $callCount = 0;
+        $this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+            function (array $query) use (&$callCount, $startingRow, $spanningRow) {
+                $callCount++;
+                if ($callCount === 1) {
+                    return ['results' => [$startingRow], 'total' => 1];
+                }
+
+                return ['results' => [$spanningRow], 'total' => 1];
+            }
+        );
+
+        $result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+
+        $this->assertCount(1, $result['objects'], 'The same row must not render twice on the calendar');
+        $this->assertSame(1, $result['total']);
+    }//end testGetCalendarObjectsDeduplicatesTheSameEntityRowAcrossBothQueries()
+
+    /**
+     * Two genuinely different entity rows must still both survive the merge —
+     * the fail-closed control for the test above, which a "collapse everything"
+     * identity would pass.
+     *
+     * @return void
+     */
+    public function testGetCalendarObjectsKeepsDistinctEntityRows(): void
+    {
+        $view = $this->createView(
+            ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'endDate']],
+            ['registers' => [1], 'schemas' => [2]]
+        );
+
+        $first = new ObjectEntity();
+        $first->setUuid('row-one');
+        $second = new ObjectEntity();
+        $second->setUuid('row-two');
+
+        $callCount = 0;
+        $this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+            function (array $query) use (&$callCount, $first, $second) {
+                $callCount++;
+                if ($callCount === 1) {
+                    return ['results' => [$first], 'total' => 1];
+                }
+
+                return ['results' => [$second], 'total' => 1];
+            }
+        );
+
+        $result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+
+        $this->assertCount(2, $result['objects']);
+        $this->assertSame(2, $result['total']);
+    }//end testGetCalendarObjectsKeepsDistinctEntityRows()
+
+    /**
+     * An entity row and an already-rendered array row for the SAME object must
+     * produce the same key. getObject()/jsonSerialize() publish the uuid under
+     * `id`, which is what the is_array() branch reads, so the object branch has
+     * to prefer uuid over the numeric primary key or the two shapes diverge.
+     *
+     * @return void
+     */
+    public function testGetCalendarObjectsCollapsesAnEntityAndItsRenderedArrayForm(): void
+    {
+        $view = $this->createView(
+            ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'endDate']],
+            ['registers' => [1], 'schemas' => [2]]
+        );
+
+        $entityRow = new ObjectEntity();
+        $entityRow->setId(42);
+        $entityRow->setUuid('mixed-shape-uuid');
+
+        $callCount = 0;
+        $this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+            function (array $query) use (&$callCount, $entityRow) {
+                $callCount++;
+                if ($callCount === 1) {
+                    return ['results' => [$entityRow], 'total' => 1];
+                }
+
+                return ['results' => [['id' => 'mixed-shape-uuid']], 'total' => 1];
+            }
+        );
+
+        $result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+
+        $this->assertCount(1, $result['objects']);
+    }//end testGetCalendarObjectsCollapsesAnEntityAndItsRenderedArrayForm()
 }//end class
