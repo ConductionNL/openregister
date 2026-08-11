@@ -55,14 +55,23 @@ schemas / 79 properties** (wire, to be marked not renamed), **6 files / 6 classe
       records, so `zaaktype` may be wire — but procest is renaming its `Zaak` family and
       may extend that to type names. Record as blocked on procest.
 
-## 7. Verify against the whole fleet
+## 7. Data migration — why this app has none
 
-- [ ] 7.1 Search every consuming app for the old class names. openregister is the
+- [ ] 7.1 Record the evidenced reason openregister needs no object migration: its own
+      schemas measure **0 Dutch schemas / 0 Dutch properties**, and the 79 Dutch properties
+      all sit inside mock registers this change deliberately does **not** rename. Confirm
+      that by counting objects for the five mock registers' schemas and showing the rename
+      set is empty — an evidenced skip, not an assumed one. Every other app in the
+      programme carries a migration; openregister is the one exception and must prove it.
+
+## 8. Verify against the whole fleet
+
+- [ ] 8.1 Search every consuming app for the old class names. openregister is the
       foundation — a class that no longer resolves 500s **every route** in a consuming
       app, because the router reflects every controller, and only the class header is
       fatal. Check headers, not just call sites.
-- [ ] 7.2 `l10n/nl.json` + `check-l10n`; full suite plus hydra gates 46/53/54/55/57/61.
-- [ ] 7.3 Re-run the token-aware scan **excluding** `custom_apps/` and `lib.pre-orgcred.bak/`;
+- [ ] 8.2 `l10n/nl.json` + `check-l10n`; full suite plus hydra gates 46/53/54/55/57/61.
+- [ ] 8.3 Re-run the token-aware scan **excluding** `custom_apps/` and `lib.pre-orgcred.bak/`;
       require 0 own Dutch schemas, 0 own Dutch properties, 0 Dutch code identifiers, and
       the 15 mock schemas still present and marked.
 
