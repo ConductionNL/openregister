@@ -35,7 +35,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -51,6 +53,8 @@ class FlowMcpToolProvider implements IMcpToolProvider
      *
      * @param FlowRunService     $runner        Queues a flow run.
      * @param FlowRunMapper      $mapper        Reads recent runs (for listing / status).
+     * @param FlowService        $flows         Authors flows, with the organisation scoping.
+     * @param FlowNodePreflight  $preflight     Reports what a saved document is missing.
      * @param IUserSession       $userSession   The invoking session — an MCP tool
      *                                          call always
      * @param ObjectService|null $objectService Resolves the flow WITH RBAC for the run guard; nullable
@@ -62,6 +66,8 @@ class FlowMcpToolProvider implements IMcpToolProvider
     public function __construct(
         private readonly FlowRunService $runner,
         private readonly FlowRunMapper $mapper,
+        private readonly FlowService $flows,
+        private readonly FlowNodePreflight $preflight,
         private readonly IUserSession $userSession,
         private readonly ?ObjectService $objectService=null,
         private readonly ?IAppConfig $appConfig=null
@@ -128,6 +134,44 @@ class FlowMcpToolProvider implements IMcpToolProvider
                 'reach'           => 'instance',
             ],
             [
+                'id'              => 'openregister.saveFlow',
+                'name'            => 'Create or update a flow',
+                'description'     => 'Author an OpenRegister flow: its nodes (each with a type and config) and the '
+                    .'edges between them. Omit uuid to create, pass one to update. A flow needs at least one trigger '
+                    .'node (openregister.trigger-manual, .trigger-schedule or .trigger-object) and at least one end '
+                    .'node (openregister.end). A node carries the step; an edge carries only from/to — an edge with a '
+                    .'type is refused. List the available node types first.',
+                'inputSchema'     => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'uuid'        => ['type' => 'string', 'description' => 'The flow to update. Omit to create a new one.'],
+                        'name'        => ['type' => 'string', 'description' => 'The flow name.'],
+                        'description' => ['type' => 'string', 'description' => 'What the flow does.'],
+                        'app'         => ['type' => 'string', 'description' => 'The owning app id (defaults to openregister).'],
+                        'enabled'     => ['type' => 'boolean', 'description' => 'Whether triggers may fire it.'],
+                        'nodes'       => [
+                            'type'        => 'array',
+                            'description' => 'The nodes. Each: {id, type, config, x?, y?}.',
+                            'items'       => ['type' => 'object'],
+                        ],
+                        'edges'       => [
+                            'type'        => 'array',
+                            'description' => 'The connections. Each: {id, from, to}. NEVER a type.',
+                            'items'       => ['type' => 'object'],
+                        ],
+                    ],
+                    'required'   => ['name'],
+                ],
+                'readOnlyHint'    => false,
+                'destructiveHint' => true,
+                'idempotentHint'  => false,
+                'scope'           => 'create',
+                // Authoring a flow is authoring something that can later write
+                // objects and call outbound integrations, so its reach is the
+                // reach of what it may become — not the reach of one save.
+                'reach'           => 'instance',
+            ],
+            [
                 'id'              => 'openregister.flowRunStatus',
                 'name'            => 'Get a flow run status',
                 'description'     => 'Read the status, per-step log and result items of a flow run by its uuid.',
@@ -169,6 +213,10 @@ class FlowMcpToolProvider implements IMcpToolProvider
     {
         if ($toolId === 'openregister.runFlow') {
             return $this->runFlow(arguments: $arguments);
+        }
+
+        if ($toolId === 'openregister.saveFlow') {
+            return $this->saveFlow(arguments: $arguments);
         }
 
         if ($toolId === 'openregister.flowRunStatus') {
@@ -218,6 +266,66 @@ class FlowMcpToolProvider implements IMcpToolProvider
      * @return array<string, mixed> The queued run's uuid and status.
      *
      * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+     */
+    private function saveFlow(array $arguments): array
+    {
+        $name = trim((string) ($arguments['name'] ?? ''));
+        if ($name === '') {
+            throw new UnexpectedValueException('saveFlow needs a name.');
+        }
+
+        // Through FlowService, never FlowMapper: the service is where the
+        // organisation scoping, the owner stamping and the per-flow guard live,
+        // and an MCP call is exactly the caller that must not bypass them.
+        $uuid   = trim((string) ($arguments['uuid'] ?? ''));
+        $target = null;
+        if ($uuid !== '') {
+            $target = $uuid;
+        }
+
+        $flow = $this->flows->save(
+            data: [
+                'name'        => $name,
+                'description' => (string) ($arguments['description'] ?? ''),
+                'app'         => (string) ($arguments['app'] ?? 'openregister'),
+                'enabled'     => (bool) ($arguments['enabled'] ?? false),
+                'nodes'       => (array) ($arguments['nodes'] ?? []),
+                'edges'       => (array) ($arguments['edges'] ?? []),
+            ],
+            uuid: $target
+        );
+
+        // The preflight's findings come back with the flow. An agent that saved
+        // a half-wired document otherwise learns nothing until the run silently
+        // completes having done nothing — which is the failure this engine's
+        // dead-end check exists to make visible.
+        $report = $this->preflight->inspect(
+            flow: [
+                'nodes' => ($flow->getNodes() ?? []),
+                'edges' => ($flow->getEdges() ?? []),
+            ]
+        );
+
+        return [
+            'uuid'     => $flow->getUuid(),
+            'name'     => $flow->getName(),
+            'enabled'  => $flow->getEnabled(),
+            'nodes'    => count($flow->getNodes() ?? []),
+            'edges'    => count($flow->getEdges() ?? []),
+            'blocking' => $report['blocking'],
+            'warnings' => $report['warnings'],
+        ];
+
+    }//end saveFlow()
+
+    /**
+     * Queue a run of a flow the caller may run.
+     *
+     * @param array<string, mixed> $arguments The tool arguments.
+     *
+     * @return array<string, mixed> The queued run.
+     *
+     * @throws UnexpectedValueException When no flowId is given.
      */
     private function runFlow(array $arguments): array
     {

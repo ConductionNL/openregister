@@ -42,9 +42,15 @@ class FlowMcpToolProviderTest extends TestCase
         $appConfig = $this->createMock(\OCP\IAppConfig::class);
         $appConfig->method('getValueString')->willReturnArgument(2);
 
+        $this->flows     = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
+        $this->preflight = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodePreflight::class);
+        $this->preflight->method('inspect')->willReturn(['blocking' => [], 'warnings' => []]);
+
         $this->provider = new FlowMcpToolProvider(
             $this->runner,
             $this->mapper,
+            $this->flows,
+            $this->preflight,
             $this->userSession,
             $objectService,
             $appConfig
