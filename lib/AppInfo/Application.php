@@ -140,6 +140,7 @@ use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\EventCatalogListener;
@@ -2649,6 +2650,18 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SourceUpdatedEvent::class,         SystemEntityNotificationListener::class);
         $context->registerEventListener(AgentCreatedEvent::class,          SystemEntityNotificationListener::class);
         $context->registerEventListener(AgentUpdatedEvent::class,          SystemEntityNotificationListener::class);
+
+        // Authorization cache eviction when the POLICY behind a memoised verdict
+        // is rewritten. PermissionHandler::clearInheritFromPublicCache() has
+        // always documented that "any path that mutates authorization and then
+        // re-reads it within the same request must bust this cache"; until this
+        // registration, nothing in production called it or its sibling
+        // clearPermissionCache(), so the invariant was stated and unenforced —
+        // in the repo every other app inherits its RBAC from.
+        $context->registerEventListener(SchemaUpdatedEvent::class,   AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class,   AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, AuthorizationCacheInvalidationListener::class);
 
         // Aggregation cache eviction on every object write.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);

@@ -79,6 +79,17 @@ class FederationController extends Controller
     /**
      * List the active organisation's federated shares.
      *
+     * @no-admin-idor-exempt Tenancy is enforced in the query, not in this body:
+     *       `FederationShareService::listShares()` reads through
+     *       `FederatedShareMapper::findAll()`, which applies
+     *       `MultiTenancyTrait::applyOrganisationFilter()` and fails CLOSED
+     *       (`1 = 0`) when the session has no active organisation. There is no
+     *       caller-supplied object reference here to substitute, and a guard
+     *       repeated in the controller would only be a second, weaker copy of the
+     *       one that actually runs. Pinned by
+     *       tests/Unit/Db/FederatedShareMapperTenancyTest.php, which goes red if
+     *       that filter call is removed.
+     *
      * @return JSONResponse `{ results, total }`.
      */
     #[NoAdminRequired]
@@ -131,6 +142,17 @@ class FederationController extends Controller
      * @param int $id The share id.
      *
      * @return JSONResponse The revoked share, or an error.
+     *
+     * @no-admin-idor-exempt The id IS caller-supplied, and it is checked — one
+     *       layer down. `FederationShareService::setStatus()` writes through
+     *       `FederatedShareMapper::updateFromArray()`, which loads the row with
+     *       `find()` FIRST, and `find()` applies
+     *       `MultiTenancyTrait::applyOrganisationFilter()`. Another
+     *       organisation's id therefore raises `DoesNotExistException` and is
+     *       answered 404, deliberately rather than 403: a 403 would confirm the
+     *       id exists and turn this endpoint into an existence oracle for
+     *       another tenant's shares. Pinned by
+     *       tests/Unit/Db/FederatedShareMapperTenancyTest.php.
      */
     #[NoAdminRequired]
     public function revokeShare(int $id): JSONResponse

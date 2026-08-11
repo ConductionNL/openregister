@@ -32,16 +32,12 @@ class FlowMcpToolProviderTest extends TestCase
         $this->runner = $this->createMock(FlowRunService::class);
         $this->mapper = $this->createMock(FlowRunMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
-        // runFlow() now resolves the flow WITH RBAC before queueing, and fails
-        // CLOSED without these collaborators — an unguarded run is what that
-        // guard exists to prevent. Supply them so these tests exercise the
-        // queueing behaviour they are actually about.
-        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-        $objectService->method('find')->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
-
-        $appConfig = $this->createMock(\OCP\IAppConfig::class);
-        $appConfig->method('getValueString')->willReturnArgument(2);
-
+        // The ObjectService and IAppConfig mocks that used to be supplied here
+        // are gone with the collaborators themselves. runFlow()'s guard resolves
+        // the flow through FlowService — the store flows actually live in — so
+        // an ObjectService is no longer part of the answer, and PHPStan was
+        // failing `PHP Quality (phpstan)` on the two properties left injected
+        // and never read.
         $this->flows     = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
         $this->preflight = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodePreflight::class);
         $this->preflight->method('inspect')->willReturn(['blocking' => [], 'warnings' => []]);
@@ -51,9 +47,7 @@ class FlowMcpToolProviderTest extends TestCase
             $this->mapper,
             $this->flows,
             $this->preflight,
-            $this->userSession,
-            $objectService,
-            $appConfig
+            $this->userSession
         );
     }
 

@@ -340,7 +340,17 @@ class FederatedConfigController extends Controller
     /**
      * Discover published bundles across GitHub by a type's discovery topic.
      *
-     * @return JSONResponse `{results: [{repo, name, description, url, stars, updated, topics}]}`.
+     * Gated on `canInstall`, exactly like `install()` — for the reason `bundle()`
+     * is gated like `publish()`. Discovery and fetch are the two steps that
+     * PRECEDE an install, and both drive this server's GitHub client with the
+     * caller's chosen store credential. That credential is held by reference: the
+     * broker signs the request and the caller never sees the secret. Leaving
+     * these two ungated therefore handed anyone who may NOT install a
+     * credentialed GitHub proxy, which is more than the install they were
+     * refused. Orgs that have not curated `federated_config_install_groups` are
+     * unaffected — an empty list still means "any signed-in user".
+     *
+     * @return JSONResponse `{results: [...]}`, or 403 when the caller may not install.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -351,6 +361,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function discover(): JSONResponse
     {
+        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to browse shared configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
         $topic = trim((string) $this->request->getParam('topic', ''));
         if ($topic === '') {
             return new JSONResponse(['error' => 'Discovery needs a topic.'], Http::STATUS_BAD_REQUEST);
@@ -375,7 +389,12 @@ class FederatedConfigController extends Controller
      * Fetch a published bundle file from a GitHub repo (the bridge from discover
      * to install).
      *
-     * @return JSONResponse The decoded bundle, or a 4xx.
+     * Gated on `canInstall` for the reason given on `discover()`: this method
+     * takes a caller-supplied `repo` and `path` and has the broker sign the
+     * request with the caller's store credential, so ungated it is an arbitrary
+     * credentialed GitHub read for anyone the install gate would have refused.
+     *
+     * @return JSONResponse The decoded bundle, 403 when the caller may not install, or a 4xx.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -386,6 +405,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function fetch(): JSONResponse
     {
+        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to fetch shared configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
         $repo = trim((string) $this->request->getParam('repo', ''));
         $path = trim((string) $this->request->getParam('path', ''));
         if ($repo === '' || $path === '') {

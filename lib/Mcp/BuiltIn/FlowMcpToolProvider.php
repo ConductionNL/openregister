@@ -38,8 +38,6 @@ use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\IAppConfig;
 use OCP\IUserSession;
 use UnexpectedValueException;
 
@@ -51,26 +49,20 @@ class FlowMcpToolProvider implements IMcpToolProvider
     /**
      * Constructor.
      *
-     * @param FlowRunService     $runner        Queues a flow run.
-     * @param FlowRunMapper      $mapper        Reads recent runs (for listing / status).
-     * @param FlowService        $flows         Authors flows, with the organisation scoping.
-     * @param FlowNodePreflight  $preflight     Reports what a saved document is missing.
-     * @param IUserSession       $userSession   The invoking session — an MCP tool
-     *                                          call always
-     * @param ObjectService|null $objectService Resolves the flow WITH RBAC for the run guard; nullable
-     *                                          so adding it is not a fatal at existing construction sites.
-     * @param IAppConfig|null    $appConfig     Reads the flow register/schema slugs.
-     *                                          arrives inside one, and its user is the actor
-     *                                          a queued run is attributed to.
+     * @param FlowRunService    $runner      Queues a flow run.
+     * @param FlowRunMapper     $mapper      Reads recent runs (for listing / status).
+     * @param FlowService       $flows       Authors flows, with the organisation scoping.
+     * @param FlowNodePreflight $preflight   Reports what a saved document is missing.
+     * @param IUserSession      $userSession The invoking session — an MCP tool call
+     *                                       always arrives inside one, and its user is
+     *                                       the actor a queued run is attributed to.
      */
     public function __construct(
         private readonly FlowRunService $runner,
         private readonly FlowRunMapper $mapper,
         private readonly FlowService $flows,
         private readonly FlowNodePreflight $preflight,
-        private readonly IUserSession $userSession,
-        private readonly ?ObjectService $objectService=null,
-        private readonly ?IAppConfig $appConfig=null
+        private readonly IUserSession $userSession
     ) {
 
     }//end __construct()

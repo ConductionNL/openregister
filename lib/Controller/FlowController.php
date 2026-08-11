@@ -39,20 +39,18 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCP\WorkflowEngine\IManager;
 
 /**
@@ -84,16 +82,14 @@ class FlowController extends Controller
     /**
      * Constructor.
      *
-     * @param string                        $appName      App id.
-     * @param IRequest                      $request      HTTP request.
-     * @param EventCatalogService           $eventCatalog The flow trigger catalog.
-     * @param FlowNodeRegistry              $nodes        The registered flow-step types.
-     * @param FlowStateMapper               $flowState    Reads state a flow keeps between runs.
-     * @param FlowNodePreflight             $preflight    Resolves a document's step types.
-     * @param FlowService                   $flows        Reads, writes and runs flow definitions.
-     * @param IUserSession                  $userSession  Resolves the calling user.
-     * @param IGroupManager                 $groupManager Answers whether that user is an administrator.
-     * @param OpenRegisterActionAuthService $actionAuth   The flow action-rights matrix.
+     * @param string              $appName      App id.
+     * @param IRequest            $request      HTTP request.
+     * @param EventCatalogService $eventCatalog The flow trigger catalog.
+     * @param FlowNodeRegistry    $nodes        The registered flow-step types.
+     * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
+     * @param FlowNodePreflight   $preflight    Resolves a document's step types.
+     * @param FlowService         $flows        Reads, writes and runs flow definitions.
+     * @param FlowAccess          $access       Who may do what with a flow.
      */
     public function __construct(
         string $appName,
@@ -103,9 +99,7 @@ class FlowController extends Controller
         private readonly FlowStateMapper $flowState,
         private readonly FlowNodePreflight $preflight,
         private readonly FlowService $flows,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
-        private readonly OpenRegisterActionAuthService $actionAuth,
+        private readonly FlowAccess $access,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -132,12 +126,12 @@ class FlowController extends Controller
      */
     private function denyUnless(string $action): ?JSONResponse
     {
-        $user = $this->userSession->getUser();
+        $user = $this->access->currentUser();
         if ($user === null) {
             return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
         }
 
-        if ($this->actionAuth->can(user: $user, action: $action) === true) {
+        if ($this->access->may(user: $user, action: $action) === true) {
             return null;
         }
 
@@ -158,12 +152,10 @@ class FlowController extends Controller
      */
     private function callerIsAdmin(): bool
     {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return false;
-        }
-
-        return $this->groupManager->isAdmin($user->getUID());
+        // Delegated rather than reimplemented: FlowAccess owns the fail-closed
+        // rule (an unresolvable session is NOT an administrator), and having it
+        // in one place is the point of the extraction.
+        return $this->access->callerIsAdmin();
     }//end callerIsAdmin()
 
     /**
@@ -257,6 +249,18 @@ class FlowController extends Controller
      * the worse outcome.
      *
      * @return JSONResponse `{ results: [{label, href, icon?}] }`.
+     *
+     * @no-admin-idor-exempt This endpoint dereferences nothing. The log entry is
+     *       the caller's own POST body, and the only thing read on this side is
+     *       the node registry — `FlowNodeRegistry::logActions()` looks the entry's
+     *       `type` up and forwards the entry to that node, returning an empty list
+     *       for an unknown type. There is no stored object addressed by id here, so
+     *       there is no reference to substitute for another user's. Where a
+     *       contributing app's node DOES resolve something (openconnector's call
+     *       log, an agent session), that node authorises it — a requirement now
+     *       stated on IFlowNodeLogActions::logActions() rather than left implied,
+     *       because a guard added here could only check ids this app does not
+     *       understand.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -367,6 +371,16 @@ class FlowController extends Controller
      * the fix and the document is not wrong.
      *
      * @return JSONResponse `{ valid, blocking, warnings, message? }`.
+     *
+     * @no-admin-idor-exempt Nothing stored is read or written. The document under
+     *       inspection arrives whole in the request body — `validate()` never
+     *       loads a flow by id, and pointedly does not, since the callers that
+     *       need it (a CI job, the editor, a deployment check) are asking about a
+     *       document they are NOT writing. `FlowNodePreflight::inspect()` walks
+     *       that literal array and compares each node's `type` against the node
+     *       registry. With no direct object reference in the request there is
+     *       nothing to substitute, which is the same structural argument the gate
+     *       recognises for session-scoped endpoints.
      *
      * @NoAdminRequired
      *
