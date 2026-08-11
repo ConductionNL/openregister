@@ -50,13 +50,16 @@ use Psr\Log\LoggerInterface;
  * ToolRegistryFacade
  *
  * Small, additive public read/invoke surface over ToolRegistry. Exposes
- * exactly two methods:
+ * exactly three methods:
  *
  * - listTools()  — every LLPhant-shaped function descriptor known to the
  *   registry (built-in tools AND MCP-bridged per-app tools), optionally
  *   narrowed by a whitelist of registry ids ({appId}.{toolName} — the
  *   hydra ADR-035 Decision 4 `Agent.toolWhitelist` semantics; empty means
  *   "all discovered tools allowed").
+ * - describeTools() — the same tools described for a PERSON: app, tool and
+ *   the operation (create/read/update/delete/special). Separate from
+ *   listTools() because those descriptors go to the model verbatim.
  * - invokeTool() — resolve a function name (or dotted mcpId) back to its
  *   owning ToolInterface and delegate to executeFunction(), returning the
  *   same {result, isError} envelope as McpToolsService::invokeTool().
@@ -150,6 +153,130 @@ class ToolRegistryFacade
 
         return $descriptors;
     }//end listTools()
+
+    /**
+     * The same tools, described for a PERSON choosing between them.
+     *
+     * A separate method, deliberately. `listTools()`' descriptors are handed to
+     * the LLM as function definitions — `ToolLoop` passes them straight through
+     * — so adding keys there would put `app` and `right` into a tool-calling
+     * payload, which strict provider APIs reject outright. The agent form needs
+     * more than the LLM does; the LLM must keep getting exactly what it got.
+     *
+     * WHAT AN EDITOR COULD NOT KNOW
+     * -----------------------------
+     * A descriptor carries `name`, `description` and `parameters` and nothing
+     * else, so a picker rendering the catalogue could only show 98 raw ids like
+     * `cms_create_page`. Which APP contributed a tool is known only here — it
+     * is the first segment of the registry id — and a consumer guessing it from
+     * the name prefix would be inventing a mapping the registry already owns.
+     *
+     * `right` IS DERIVED, and says so. The verb is recovered from the function
+     * name, which is a naming convention this registry owns; anything the
+     * convention does not cover is `special` rather than guessed into a CRUD
+     * bucket it might not belong in. Measured over the 98 registered functions:
+     * 87 classify, 11 stay special — `delegateAgent`, `pipelineForecast`,
+     * `upsertSchema` and friends, which genuinely are neither create nor update
+     * alone.
+     *
+     * @return array<int, array{name: string, description: string, app: string, tool: string, group: string, right: string}>
+     *         One entry per callable function.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     */
+    public function describeTools(): array
+    {
+        $described = [];
+
+        foreach ($this->resolveRegisteredTools(toolWhitelist: []) as $registryId => $tool) {
+            // `<app>.<group>` — the app is authoritative here and nowhere else.
+            $segments = explode('.', (string) $registryId);
+            $app      = ($segments[0] ?? '');
+            $group    = ($segments[1] ?? '');
+
+            foreach ($tool->getFunctions() as $function) {
+                $name = (string) ($function['name'] ?? '');
+                if ($name === '') {
+                    continue;
+                }
+
+                $described[] = [
+                    'name'        => $name,
+                    'description' => (string) ($function['description'] ?? ''),
+                    'app'         => $app,
+                    // The FUNCTION, not its group. Grouping collapsed
+                    // `cms_create_page` and `cms_create_publication` into one
+                    // label — "opencatalogi | cms | create" twice over — and a
+                    // picker with two identical rows is one an author cannot
+                    // choose from. The group is still available as `group` for
+                    // anything that wants to bucket them.
+                    'tool'        => $name,
+                    'group'       => $group,
+                    'right'       => self::rightOf(name: $name),
+                ];
+            }//end foreach
+        }//end foreach
+
+        return $described;
+
+    }//end describeTools()
+
+    /**
+     * The operation a tool name describes: a CRUD verb, or `special`.
+     *
+     * The name is split on underscores, dots AND camelCase humps —
+     * `decidesk_listOpenActionItems` hides its verb inside one token, and a
+     * split that missed it mislabelled 36 of 98 tools as `special`.
+     *
+     * Unrecognised is `special`, never a guess. A tool filed under the wrong
+     * CRUD right is worse than one filed under none: it tells an administrator
+     * granting rights something confident and false.
+     *
+     * @param string $name The function name.
+     *
+     * @return string `create`, `read`, `update`, `delete` or `special`.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     */
+    private static function rightOf(string $name): string
+    {
+        $verbs = [
+            'create'   => 'create',
+            'add'      => 'create',
+            'new'      => 'create',
+            'import'   => 'create',
+            'send'     => 'create',
+            'start'    => 'create',
+            'list'     => 'read',
+            'get'      => 'read',
+            'read'     => 'read',
+            'search'   => 'read',
+            'find'     => 'read',
+            'fetch'    => 'read',
+            'show'     => 'read',
+            'describe' => 'read',
+            'export'   => 'read',
+            'update'   => 'update',
+            'edit'     => 'update',
+            'set'      => 'update',
+            'patch'    => 'update',
+            'move'     => 'update',
+            'delete'   => 'delete',
+            'remove'   => 'delete',
+            'destroy'  => 'delete',
+        ];
+
+        $spaced = preg_replace('/([a-z0-9])([A-Z])/', '$1 $2', $name);
+        foreach (preg_split('/[_.\s]+/', (string) $spaced) as $part) {
+            $verb = strtolower((string) $part);
+            if (isset($verbs[$verb]) === true) {
+                return $verbs[$verb];
+            }
+        }
+
+        return 'special';
+
+    }//end rightOf()
 
     /**
      * Whether one function descriptor is admitted by a whitelist.

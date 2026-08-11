@@ -366,6 +366,46 @@ the same precedence MUST govern both surfaces.
 - **WHEN** a consumer calls `ToolRegistryFacade::listTools()`
 - **THEN** the derived tool MUST be present (bridged via `McpProviderBridge`, dotted id and `_`-alias forms both resolving to the same tool)
 
+### Requirement: The facade describes tools for a PERSON without changing what the model is sent
+
+`ToolRegistryFacade` MUST expose `describeTools()` alongside `listTools()`, and
+the two MUST return different shapes.
+
+`listTools()`' descriptors are handed to the LLM as function definitions — a
+tool loop passes them straight through — so they MUST carry `name`,
+`description` and `parameters` and nothing else. Adding keys there puts them
+into a tool-calling payload, which strict provider APIs reject.
+
+`describeTools()` MUST additionally carry `app`, `tool`, `group` and `right`,
+because an editor rendering the catalogue can otherwise only show raw function
+ids. Which APP contributed a tool is known only to the registry — it is the
+first segment of the registry id — and a consumer deriving it from the name
+prefix would be inventing a mapping the registry already owns.
+
+`right` MUST be one of `create`, `read`, `update`, `delete` or `special`, and
+anything the naming convention does not cover MUST be `special` rather than
+guessed into a CRUD bucket. A tool filed under the wrong right tells an
+administrator granting access something confident and false.
+
+`tool` MUST identify the FUNCTION, not its group: grouping collapses
+`cms_create_page` and `cms_create_menu` into one label, and a picker with two
+identical rows is one nobody can choose from.
+
+This widens the governed facade surface from two public methods to three
+(gate-27 / ADR-022).
+
+#### Scenario: The model's descriptors are unchanged
+- **GIVEN** any registered tool
+- **WHEN** `listTools()` is called
+- **THEN** each descriptor MUST carry only `name`, `description` and `parameters`
+- @e2e exclude asserted in `ToolRegistryFacadeTest`
+
+#### Scenario: Every described tool is distinguishable
+- **GIVEN** the full registry
+- **WHEN** `describeTools()` is called
+- **THEN** every `app | tool | right` label MUST be distinct
+- @e2e exclude asserted in `ToolRegistryFacadeTest`
+
 ### Requirement: REQ-DERIVED-003 — Hand-written provider tools take precedence over derived tools
 
 On a tool-id collision, a hand-written per-app `IMcpToolProvider` tool MUST win

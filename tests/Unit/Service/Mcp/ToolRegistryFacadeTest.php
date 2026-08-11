@@ -532,10 +532,128 @@ class ToolRegistryFacadeTest extends TestCase
             (new \ReflectionClass(ToolRegistryFacade::class))->getMethods(\ReflectionMethod::IS_PUBLIC),
             static fn($m) => $m->isConstructor() === false
         );
+        // THREE now, deliberately. `describeTools()` was added for the agent
+        // form's tool picker, which needs the contributing app and the
+        // operation — neither of which an LLM function descriptor carries.
+        // It is a SEPARATE method precisely so `listTools()` keeps returning
+        // exactly what the model is sent: adding keys there would put `app`
+        // and `right` into a tool-calling payload that strict provider APIs
+        // reject.
+        //
+        // This list is the governed surface (gate-27 / ADR-022). Widening it
+        // is a spec change, not an edit to this array — see ai-mcp REQ-006.
         $this->assertSame(
-            ['listTools', 'invokeTool'],
+            ['listTools', 'describeTools', 'invokeTool'],
             array_values(array_map(static fn($m) => $m->getName(), $publicMethods)),
-            'The facade must expose exactly two public methods'
+            'The facade must expose exactly three public methods'
         );
     }//end testPublicContractHasNoImpersonationParameter()
+    /**
+     * `describeTools()` adds what a PERSON needs; `listTools()` adds nothing.
+     *
+     * The split is the whole point. A tool loop hands `listTools()`' descriptors
+     * to the model as function definitions, so an extra key there travels into a
+     * tool-calling payload that strict provider APIs reject. The picker needs
+     * the contributing app and the operation; the model must keep getting
+     * exactly what it got.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md#requirement-the-facade-describes-tools-for-a-person-without-changing-what-the-model-is-sent
+     */
+    public function testDescribeToolsEnrichesWithoutChangingTheModelsDescriptors(): void
+    {
+        $this->registry->registerTool(
+            'opencatalogi.cms',
+            $this->createToolMock(
+                [
+                    ['name' => 'cms_create_page', 'description' => 'Create a page.', 'parameters' => []],
+                    ['name' => 'cms_list_pages', 'description' => 'List pages.', 'parameters' => []],
+                ]
+            ),
+            $this->metadata(app: 'opencatalogi')
+        );
+
+        // The model's view is untouched.
+        foreach ($this->facade->listTools() as $descriptor) {
+            $this->assertSame(
+                ['name', 'description', 'parameters'],
+                array_keys($descriptor),
+                'a key leaked into the descriptors the model is sent'
+            );
+        }
+
+        $described = $this->facade->describeTools();
+        $this->assertCount(2, $described);
+
+        $this->assertSame('opencatalogi', $described[0]['app'], 'the app must come from the registry id');
+        $this->assertSame('cms_create_page', $described[0]['tool']);
+        $this->assertSame('cms', $described[0]['group']);
+        $this->assertSame('create', $described[0]['right']);
+        $this->assertSame('read', $described[1]['right']);
+
+    }//end testDescribeToolsEnrichesWithoutChangingTheModelsDescriptors()
+
+    /**
+     * Every described tool is distinguishable in a picker.
+     *
+     * Grouping collapsed `cms_create_page` and `cms_create_menu` into one label
+     * — "opencatalogi | cms | create", twice — and two identical rows is a list
+     * nobody can choose from.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md#requirement-the-facade-describes-tools-for-a-person-without-changing-what-the-model-is-sent
+     */
+    public function testEveryDescribedToolHasADistinctLabel(): void
+    {
+        $this->registry->registerTool(
+            'opencatalogi.cms',
+            $this->createToolMock(
+                [
+                    ['name' => 'cms_create_page', 'description' => '', 'parameters' => []],
+                    ['name' => 'cms_create_menu', 'description' => '', 'parameters' => []],
+                ]
+            ),
+            $this->metadata(app: 'opencatalogi')
+        );
+
+        $labels = array_map(
+            static fn (array $entry): string => $entry['app'].' | '.$entry['tool'].' | '.$entry['right'],
+            $this->facade->describeTools()
+        );
+
+        $this->assertCount(2, $labels);
+        $this->assertSame($labels, array_unique($labels), 'two tools produced the same label');
+
+    }//end testEveryDescribedToolHasADistinctLabel()
+
+    /**
+     * An unrecognised verb is `special`, never guessed into a CRUD bucket.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md#requirement-the-facade-describes-tools-for-a-person-without-changing-what-the-model-is-sent
+     */
+    public function testAnUnrecognisedVerbIsSpecial(): void
+    {
+        $this->registry->registerTool(
+            'decidesk.actions',
+            $this->createToolMock(
+                [
+                    // camelCase, so the verb hides inside one token — a split
+                    // that missed it mislabelled 36 of 98 real tools.
+                    ['name' => 'decidesk_listOpenActionItems', 'description' => '', 'parameters' => []],
+                    ['name' => 'pipelinq_pipelineForecast', 'description' => '', 'parameters' => []],
+                ]
+            ),
+            $this->metadata(app: 'decidesk')
+        );
+
+        $rights = array_column($this->facade->describeTools(), 'right', 'tool');
+
+        $this->assertSame('read', $rights['decidesk_listOpenActionItems'], 'a camelCase verb was not recovered');
+        $this->assertSame('special', $rights['pipelinq_pipelineForecast']);
+
+    }//end testAnUnrecognisedVerbIsSpecial()
 }//end class
