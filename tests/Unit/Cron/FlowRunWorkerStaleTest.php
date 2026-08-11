@@ -22,8 +22,7 @@ use DateTime;
 use OCA\OpenRegister\Cron\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -34,7 +33,7 @@ class FlowRunWorkerStaleTest extends TestCase
 {
     private FlowRunMapper&MockObject $mapper;
 
-    private FlowRunService&MockObject $runner;
+    private FlowRunAdvancer&MockObject $advancer;
 
     private IAppConfig&MockObject $appConfig;
 
@@ -45,7 +44,7 @@ class FlowRunWorkerStaleTest extends TestCase
         parent::setUp();
 
         $this->mapper    = $this->createMock(FlowRunMapper::class);
-        $this->runner    = $this->createMock(FlowRunService::class);
+        $this->advancer  = $this->createMock(FlowRunAdvancer::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
 
         // Nothing queued, nothing due, and pruning off — this suite is only
@@ -56,8 +55,7 @@ class FlowRunWorkerStaleTest extends TestCase
         $this->worker = new FlowRunWorker(
             $this->createMock(ITimeFactory::class),
             $this->mapper,
-            $this->runner,
-            $this->createMock(FlowLocator::class),
+            $this->advancer,
             $this->appConfig,
             new NullLogger()
         );
@@ -120,8 +118,8 @@ class FlowRunWorkerStaleTest extends TestCase
         $this->mapper->method('findStale')->willReturn([$this->runningRun()]);
         $this->mapper->method('update')->willReturnArgument(0);
 
-        $this->runner->expects($this->never())->method('retry');
-        $this->runner->expects($this->never())->method('execute');
+        // `FlowRunAdvancer::advance()` is the worker's only execution path.
+        $this->advancer->expects($this->never())->method('advance');
 
         $this->pass();
     }
