@@ -88,6 +88,13 @@ export default defineConfig({
 		'spec-coverage/core-list-pages.spec.ts',
 		'spec-coverage/admin-settings-pages.spec.ts',
 		'spec-coverage/feature-pages.spec.ts',
+		// Admitted 2026-08-11. Behavioural (not render-only) specs for the
+		// Features & Roadmap surface. Checked against all four criteria: no
+		// `test.skip`, no conditional-assert guards, and its ONE write (the
+		// `features_roadmap_enabled` app-config key) is made and removed inside
+		// a single test's `finally`. Its outbound GitHub call is stubbed with
+		// `page.route()`, so admitting it adds no external network dependency.
+		'spec-coverage/features-roadmap-surface.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
