@@ -162,6 +162,75 @@ class FederatedConfigControllerDiscoverGateTest extends TestCase
     }//end testACallerWhoMayNotInstallCannotFetchABundle()
 
     /**
+     * ORDER MATTERS. The gate runs BEFORE the parameter check, so a caller who
+     * may not install is told 403 rather than 400 — a 400 would confirm the
+     * endpoint is reachable for them and turn the validation message into a
+     * probe. Asserting the empty-topic case specifically, because that is the
+     * request an unauthorised caller makes first.
+     *
+     * @return void
+     */
+    public function testTheInstallGateIsCheckedBeforeTheTopicIsValidated(): void
+    {
+        $this->access->method('canInstall')->willReturn(false);
+        $this->request->method('getParam')->willReturn('');
+
+        $this->assertSame(403, $this->controller->discover()->getStatus());
+
+    }//end testTheInstallGateIsCheckedBeforeTheTopicIsValidated()
+
+    /**
+     * An allowed caller with no topic gets the validation error, not a search
+     * for the empty string. Pairs with the test above: together they show the
+     * 403 is the gate talking and the 400 is the validator.
+     *
+     * @return void
+     */
+    public function testAnAllowedCallerStillNeedsATopic(): void
+    {
+        $this->access->method('canInstall')->willReturn(true);
+        $this->service->expects($this->never())->method('discover');
+        $this->request->method('getParam')->willReturn('');
+
+        $this->assertSame(400, $this->controller->discover()->getStatus());
+
+    }//end testAnAllowedCallerStillNeedsATopic()
+
+    /**
+     * The same ordering for fetch, and the same reasoning.
+     *
+     * @return void
+     */
+    public function testAnAllowedCallerStillNeedsARepoAndPath(): void
+    {
+        $this->access->method('canInstall')->willReturn(true);
+        $this->service->expects($this->never())->method('fetchBundle');
+        $this->request->method('getParam')->willReturn('');
+
+        $this->assertSame(400, $this->controller->fetch()->getStatus());
+
+    }//end testAnAllowedCallerStillNeedsARepoAndPath()
+
+    /**
+     * A fetch the service refuses is a 404, not a 500 — the bundle is simply
+     * not there. Covers the catch arm the guard tests skip past.
+     *
+     * @return void
+     */
+    public function testAMissingBundleIsReportedAsNotFound(): void
+    {
+        $this->access->method('canInstall')->willReturn(true);
+        $this->service->method('fetchBundle')->willThrowException(new \RuntimeException('No bundle at x in y.'));
+        $this->request->method('getParam')->willReturn('ConductionNL/store');
+
+        $response = $this->controller->fetch();
+
+        $this->assertSame(404, $response->getStatus());
+        $this->assertSame('No bundle at x in y.', $response->getData()['error']);
+
+    }//end testAMissingBundleIsReportedAsNotFound()
+
+    /**
      * The positive control for fetch.
      *
      * @return void
