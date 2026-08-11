@@ -1451,11 +1451,30 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
             );
         }
 
+        // Accept the map shorthand — `{"status": "flagged"}` — alongside the
+        // canonical pair list. It is the shape every author reaches for first
+        // (it is how `fields` and `filters` are written on neighbouring nodes),
+        // and rejecting it bought nothing: the two are unambiguous, because a
+        // pair list is a LIST and a map is not.
+        //
+        // Detected by key shape rather than by inspecting the values: a list has
+        // sequential integer keys, so anything else is a map of property =>
+        // value. `[]` stays a pair list and means "no match", which is what an
+        // empty config should mean.
+        if ($raw !== [] && array_is_list($raw) === false) {
+            $shorthand = [];
+            foreach ($raw as $property => $value) {
+                $shorthand[] = ['property' => (string) $property, 'value' => $value];
+            }
+
+            $raw = $shorthand;
+        }
+
         $pairs = [];
         foreach ($raw as $entry) {
             if (is_array($entry) === false) {
                 throw new UnexpectedValueException(
-                    $this->l10n->t('Every match entry must name a property and a value.')
+                    $this->l10n->t('Every match entry must name a property and a value. Write [{"property": "status", "value": "flagged"}] or {"status": "flagged"}.')
                 );
             }
 
