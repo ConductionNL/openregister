@@ -78,16 +78,27 @@ export default {
 	emits: ['closing', 'confirm', 'update:cacheType'],
 	computed: {
 		/**
-		 * The radio selection, kept in the parent (and behind it, the settings
-		 * store) so the confirm handler reads the same value it always did.
-		 * Written back through an event rather than mutating the prop.
-		 *
-		 * @return {string} The currently selected cache type.
+		 * The radio selection. It still lives in the parent — and behind the
+		 * parent, the settings store — so the confirm handler reads the value
+		 * it always did; this pair only moves it across the prop/event boundary.
 		 */
 		selectedCacheType: {
+			/**
+			 * Read the selected clear-cache type from the parent.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the prop
+			 * @return {string}
+			 */
 			get() {
 				return this.cacheType
 			},
+			/**
+			 * Write the selected clear-cache type back to the parent.
+			 *
+			 * @param {string} value The new clear-cache type.
+			 * @spec exclude UI plumbing — computed setter emits to the parent
+			 * @return {void}
+			 */
 			set(value) {
 				this.$emit('update:cacheType', value)
 			},
