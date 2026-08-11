@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCP\AppFramework\Db\Entity;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -288,7 +289,7 @@ class LogDanglingLinkedTypes implements IRepairStep
     private function safeStringAccessor($schema, array $accessors): ?string
     {
         foreach ($accessors as $method) {
-            if (method_exists($schema, $method) === false) {
+            if ($this->accessorIsAvailable(schema: $schema, method: $method) === false) {
                 continue;
             }
 
@@ -309,4 +310,46 @@ class LogDanglingLinkedTypes implements IRepairStep
 
         return null;
     }//end safeStringAccessor()
+
+    /**
+     * Decide whether an accessor can actually be invoked on a schema entity.
+     *
+     * Probing with method_exists() alone is the wrong instrument here. Nextcloud's Entity
+     * serves get*() through __call(), declaring the accessors only as `@method`,
+     * so method_exists() is FALSE for every one of them. Db\Schema declares no
+     * concrete getSlug()/getUuid() and inherits getId() as a docblock from
+     * Entity, so the old probe rejected every candidate this class passes in and
+     * scan() logged `slug: 'unknown', id: ''` for 100% of the rows — defeating
+     * the entire purpose of the report.
+     *
+     * Entity::getter() resolves the name with property_exists() and throws
+     * BadFunctionCallException otherwise, so mirroring that derivation here is a
+     * genuine membership test rather than the always-true answer is_callable()
+     * would give on a __call class.
+     *
+     * @param mixed  $schema Schema entity.
+     * @param string $method Accessor name to probe.
+     *
+     * @return bool True when calling $method on $schema will resolve.
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
+     */
+    private function accessorIsAvailable($schema, string $method): bool
+    {
+        if (is_object($schema) === false) {
+            return false;
+        }
+
+        if (method_exists($schema, $method) === true) {
+            return true;
+        }
+
+        if (($schema instanceof Entity) === false || str_starts_with($method, 'get') === false) {
+            return false;
+        }
+
+        // The exact derivation Entity::__call() performs before handing the name
+        // to Entity::getter(): lcfirst(substr($methodName, 3)).
+        return property_exists($schema, lcfirst(substr($method, 3)));
+    }//end accessorIsAvailable()
 }//end class
