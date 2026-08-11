@@ -187,6 +187,26 @@ export const CASES = [
 		expect: { status: 'paged', atLeast: 100 },
 	},
 	{
+		key: 'sync-cursor',
+		title: '10 — Remember a sync cursor between runs',
+		description: 'Stores where the last sync got to, reads it back, and records it — the state a real incremental sync keeps.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			{ id: 'put1', type: 'openregister.flow-state', config: { operation: 'set', key: 'lastSyncedId', value: 100 } },
+			{ id: 'get1', type: 'openregister.flow-state', config: { operation: 'get', key: 'lastSyncedId', as: 'cursor', default: 0 } },
+			{ id: 'w1', type: 'openregister.object-write', config: { register: '{{register}}', schema: '{{schema}}', operation: 'create', fields: { name: 'cursor', status: 'cursor-stored', externalId: '{{ cursor }}' } } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 't1', to: 'put1' }, { id: 'b', from: 'put1', to: 'get1' }, { id: 'c', from: 'get1', to: 'w1' }, { id: 'd', from: 'w1', to: 'e1' }],
+		// The WRITTEN value is the assertion, not the fact that the steps ran: a
+		// state node that stored nothing and read back its default would also
+		// report `completed`, and would write the default instead.
+		// The stored VALUE, not merely that the steps ran: a state node that
+		// stored nothing and read back its default would also report
+		// `completed`, and would write 0 here instead of 100.
+		expect: { status: 'cursor-stored', atLeast: 1, field: { name: 'externalId', equals: 100 } },
+	},
+	{
 		key: 'batch-export',
 		title: '8 — Batch export to an external endpoint',
 		description: 'Read local objects and POST them outward in fixed-size batches.',

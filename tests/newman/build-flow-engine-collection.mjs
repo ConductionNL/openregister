@@ -270,6 +270,15 @@ const caseFolder = (c) => {
 								: [`pm.test('${c.key}: wrote at least ${c.expect.atLeast} ${c.expect.status} object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(${c.expect.atLeast}))`]),
 						]
 						: []),
+					...(c.expect.field !== undefined
+						? [
+							`const carrying = objects.filter((o) => o.status === ${JSON.stringify(c.expect.status)})`,
+							`pm.test('${c.key}: ${c.expect.field.name} carries the stored value, not a default', () => {`,
+							"    pm.expect(carrying.length, 'nothing to check the value on').to.be.above(0)",
+							`    pm.expect(Number(carrying[0][${JSON.stringify(c.expect.field.name)}])).to.eql(${c.expect.field.equals})`,
+							'})',
+						]
+						: []),
 					...(c.expect.batched !== undefined
 						? [
 							`const batchStep = steps.filter((s) => s.transition === ${JSON.stringify(c.expect.batched.node)})[0]`,

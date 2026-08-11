@@ -1916,6 +1916,183 @@
       ]
     },
     {
+      "name": "10 — Remember a sync cursor between runs",
+      "description": "Stores where the last sync got to, reads it back, and records it — the state a real incremental sync keeps.",
+      "item": [
+        {
+          "name": "sync-cursor — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_sync_cursor_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('sync-cursor: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-sync-cursor-{{stamp}}\",\n  \"description\": \"Stores where the last sync got to, reads it back, and records it — the state a real incremental sync keeps.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"put1\",\n      \"type\": \"openregister.flow-state\",\n      \"config\": {\n        \"operation\": \"set\",\n        \"key\": \"lastSyncedId\",\n        \"value\": 100\n      }\n    },\n    {\n      \"id\": \"get1\",\n      \"type\": \"openregister.flow-state\",\n      \"config\": {\n        \"operation\": \"get\",\n        \"key\": \"lastSyncedId\",\n        \"as\": \"cursor\",\n        \"default\": 0\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"cursor\",\n          \"status\": \"cursor-stored\",\n          \"externalId\": \"{{ cursor }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"put1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"put1\",\n      \"to\": \"get1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"get1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "sync-cursor — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_sync_cursor_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_sync_cursor_status', String(run.status))",
+                  "pm.collectionVariables.set('case_sync_cursor_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('sync-cursor: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('sync-cursor: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_sync_cursor_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_sync_cursor_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "sync-cursor — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_sync_cursor_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_sync_cursor_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('sync-cursor: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"cursor-stored\")",
+                  "pm.test('sync-cursor: wrote at least 1 cursor-stored object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))",
+                  "const carrying = objects.filter((o) => o.status === \"cursor-stored\")",
+                  "pm.test('sync-cursor: externalId carries the stored value, not a default', () => {",
+                  "    pm.expect(carrying.length, 'nothing to check the value on').to.be.above(0)",
+                  "    pm.expect(Number(carrying[0][\"externalId\"])).to.eql(100)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "8 — Batch export to an external endpoint",
       "description": "Read local objects and POST them outward in fixed-size batches.",
       "item": [
