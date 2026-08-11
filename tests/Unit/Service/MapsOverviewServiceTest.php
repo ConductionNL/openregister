@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\MapsOverviewService;
@@ -272,6 +273,58 @@ class MapsOverviewServiceTest extends TestCase
         $this->assertSame(52.3, $points[1]['lat']);
         $this->assertSame(4.9, $points[1]['lng']);
     }//end testQueryPointsExtractsMarkersAndSkipsGeometryless()
+
+
+    /**
+     * The SAME extraction, against the shape `ObjectService::findAll()`
+     * ACTUALLY returns.
+     *
+     * The test above hands the double a list of plain arrays. `findAll()`
+     * never returns those: it returns rendered `ObjectEntity` **objects**
+     * (`ObjectService::findAll()` -> `RenderObject::renderEntities()`,
+     * declared `@return ObjectEntity[]`). `queryPoints()` skipped every row
+     * that was not an array, so the endpoint returned
+     * `{"points":[],"count":0}` for every register/schema while this suite
+     * stayed green — the double encoded the bug.
+     *
+     * A test double is a claim about a collaborator's contract. This one
+     * asserts the real contract, so it fails if `queryPoints()` ever goes
+     * back to array-only handling.
+     *
+     * @return void
+     */
+    public function testQueryPointsReadsTheObjectEntitiesFindAllActuallyReturns(): void
+    {
+        $point = new ObjectEntity();
+        $point->setUuid('obj-1');
+        $point->setName('Case 1');
+        $point->setObject(['location' => ['type' => 'Point', 'coordinates' => [5.12, 52.09]]]);
+
+        $geometryless = new ObjectEntity();
+        $geometryless->setUuid('obj-3');
+        $geometryless->setName('No location');
+        $geometryless->setObject(['note' => 'nothing to plot']);
+
+        $objectService = $this->createMock(ObjectService::class);
+        $objectService->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$point, $geometryless]);
+
+        $service = new MapsOverviewService(
+            objectService: $objectService,
+            geoBuilder: new GeoFeatureCollectionBuilder(),
+            registry: $this->buildRegistry(),
+            userSession: $this->buildUserSession('alice'),
+            groupManager: $this->buildGroupManager(false),
+        );
+
+        $points = $service->queryPoints(register: 'zaakregister', schema: 'zaak');
+
+        $this->assertCount(1, $points, 'the ObjectEntity carrying geometry must produce a marker');
+        $this->assertSame('obj-1', $points[0]['id']);
+        $this->assertSame(52.09, $points[0]['lat']);
+        $this->assertSame(5.12, $points[0]['lng']);
+    }//end testQueryPointsReadsTheObjectEntitiesFindAllActuallyReturns()
 
 
     /**
