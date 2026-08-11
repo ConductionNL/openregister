@@ -49,6 +49,15 @@ interface IFlowNodeLogActions
     /**
      * The links this log entry earns.
      *
+     * `$entry` IS UNTRUSTED. `FlowController::logActions()` is `#[NoAdminRequired]`
+     * and passes the caller's POST body through verbatim — it is not read back from
+     * a stored run log, and OpenRegister cannot check it, because only the node that
+     * wrote the entry knows what its fields mean. An implementer that resolves an id
+     * out of `$entry` (a call log, a source, an agent session) MUST authorise that
+     * read for the current user before returning a link to it. Returning a link to a
+     * record the caller may not see is an IDOR whichever app the link points into,
+     * and an href alone already discloses that the record exists.
+     *
      * Each entry:
      *
      *   label string Translated — it is a link an operator reads.

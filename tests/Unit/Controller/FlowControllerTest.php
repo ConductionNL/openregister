@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\IGroupManager;
@@ -125,16 +126,41 @@ class FlowControllerTest extends TestCase
             $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            // An action-auth that ALLOWS by default, so the pre-existing tests
-            // keep asserting what they were written to assert. The rights
-            // themselves are covered in ActionAuthEveryoneTest, and the refusal
-            // path below overrides this.
-            $this->actionAuth
+            // A REAL FlowAccess over the same three mocks the controller used
+            // to take directly, not a mock of it. The extraction moved where
+            // these live, not what they decide, and every assertion below still
+            // exercises the same session / group / rights logic end to end.
+            //
+            // The action-auth ALLOWS by default, so the pre-existing tests keep
+            // asserting what they were written to assert. The rights themselves
+            // are covered in ActionAuthEveryoneTest, and the refusal path below
+            // overrides this.
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
     }//end setUp()
+
+    /**
+     * A real FlowAccess over the given collaborators.
+     *
+     * @param IUserSession                                            $userSession  The session.
+     * @param IGroupManager                                           $groupManager The group manager.
+     * @param \OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth   The rights matrix.
+     *
+     * @return FlowAccess The access service.
+     */
+    private function access(
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        \OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth
+    ): FlowAccess {
+        return new FlowAccess(
+            userSession: $userSession,
+            groupManager: $groupManager,
+            actionAuth: $actionAuth
+        );
+
+    }//end access()
 
     /**
      * The catalog surfaces the registry's palette in the documented envelope.
@@ -268,9 +294,7 @@ class FlowControllerTest extends TestCase
             $mapper,
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            $this->actionAuth
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -321,9 +345,7 @@ class FlowControllerTest extends TestCase
             $mapper,
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            $this->actionAuth
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $response = $controller->state(flowId: 'someone-elses-flow');
@@ -360,9 +382,7 @@ class FlowControllerTest extends TestCase
             $mapper,
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            $this->actionAuth
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $response = $controller->state(flowId: 'flow-1');
@@ -392,9 +412,7 @@ class FlowControllerTest extends TestCase
             $mapper,
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            $this->actionAuth
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -532,9 +550,7 @@ class FlowControllerTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
             $this->flows,
-            $userSession,
-            $groupManager,
-            $this->actionAuth
+            $this->access($userSession, $groupManager, $this->actionAuth)
         );
 
         $controller->nodeCatalog();
@@ -569,9 +585,7 @@ class FlowControllerTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
             $this->flows,
-            $userSession,
-            $groupManager,
-            $this->actionAuth
+            $this->access($userSession, $groupManager, $this->actionAuth)
         );
 
         $controller->nodeCatalog();
@@ -604,9 +618,7 @@ class FlowControllerTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
             $this->flows,
-            $userSession,
-            $groupManager,
-            $this->actionAuth
+            $this->access($userSession, $groupManager, $this->actionAuth)
         );
 
         $controller->nodeCatalog();
@@ -639,9 +651,7 @@ class FlowControllerTest extends TestCase
             $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->preflight,
             $this->flows,
-            $this->userSession,
-            $this->groupManager,
-            $denying
+            $this->access($this->userSession, $this->groupManager, $denying)
         );
 
         // The flow service must never be reached: a refusal that still wrote
