@@ -649,16 +649,32 @@ class MappingService
     }//end getCachedTemplate()
 
     /**
-     * Invalidates the distributed cache entry for a mapping.
+     * Evicts ONE distributed-cache key for a mapping.
      *
-     * Called by MappingMapper on create, update, or delete to ensure stale data
-     * is not served from the cache.
+     * NOT the write-path invalidation, despite what this docblock used to claim.
+     * It said "Called by MappingMapper on create, update, or delete" and no such
+     * call exists or ever did — `MappingMapper` invalidates through its OWN
+     * private `invalidateCache()`, on all three write paths, against the same
+     * `openregister_mapping_` prefix. The design the sentence described is real;
+     * it just never ran through here.
      *
-     * @param int|string $id The mapping ID, UUID, or slug to invalidate
+     * Prefer the mapper's version, and understand the difference before reaching
+     * for this one: `getMapping()` caches under WHATEVER identifier the caller
+     * passed, and `MappingMapper::find()` accepts an id, a uuid OR a slug — so
+     * one mapping can sit in the cache under three keys. This method removes
+     * exactly the one it is given. Evicting by id therefore leaves the uuid- and
+     * slug-keyed copies live, which looks like a flush and is not one. The
+     * mapper's `invalidateCache()` removes all three, from the entity.
+     *
+     * Kept as the single-key primitive for a caller that genuinely holds one key
+     * and means one key.
+     *
+     * @param int|string $id The single cache key to remove (id, uuid or slug).
      *
      * @return void
      *
-     * @spec exclude One-line distributed-cache invalidation called by MappingMapper on write; cache plumbing.
+     * @spec exclude Single-key distributed-cache eviction primitive; the write-path invalidation is
+     *              MappingMapper::invalidateCache(), pinned by MappingMapperCacheInvalidationTest.
      */
     public function invalidateMappingCache(int|string $id): void
     {

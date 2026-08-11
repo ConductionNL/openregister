@@ -57,19 +57,13 @@ use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\UserService;
-use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
-use OCA\OpenRegister\Service\Objects\DeleteObject;
-use OCA\OpenRegister\Service\Objects\GetObject;
-use OCA\OpenRegister\Service\Objects\PerformanceHandler;
-use OCA\OpenRegister\Service\Objects\PermissionHandler;
-use OCA\OpenRegister\Service\Objects\RenderObject;
-use OCA\OpenRegister\Service\Objects\SaveObject;
-use OCA\OpenRegister\Service\Objects\SaveObject\FilePropertyHandler;
-use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
+// Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
+// namespace that DOES NOT EXIST. Those classes live under Service\Object\
+// (singular); the plural was left behind by the rename. Every one was unused, so
+// PHP never resolved them and they were inert — which is why nothing ever
+// failed. The first person to actually reference one would have got a fatal at
+// boot, in the app's own bootstrap, from a line that looks like every other
+// import in the file.
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService\FacetHandler;
