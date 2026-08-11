@@ -378,26 +378,29 @@ class FlowMcpToolProvider implements IMcpToolProvider
      */
     private function assertRunnable(string $flowId): void
     {
-        if ($this->objectService === null || $this->appConfig === null) {
-            // Fail CLOSED: without the collaborators there is no way to decide.
-            throw new UnexpectedValueException('No such flow: '.$flowId);
-        }
-
+        // Resolved through FlowService — the SAME store the flow lives in.
+        //
+        // This used to look the flow up as an OpenRegister OBJECT, via
+        // `ObjectService->find(register: 'flows', schema: 'flow')`. Flows are
+        // not objects: they live in the native `oc_openregister_flows` table,
+        // and the flow-storage spec forbids storing a definition as an object
+        // outright. So the guard consulted a store no correctly-stored flow is
+        // ever in, and answered "No such flow" for every one of them —
+        // `openregister.runFlow` could only ever run a flow that violated the
+        // spec.
+        //
+        // Found by using it: an agent authored a flow with `saveFlow`, then
+        // `runFlow` refused to run the flow it had just created.
+        //
+        // `FlowService::find()` is organisation-scoped and throws for a flow
+        // the caller may not see, which is exactly the check this needs — and
+        // it is the same resolution `FlowService::run()` performs, so the guard
+        // can no longer disagree with the thing it guards.
         try {
-            $flow = $this->objectService->find(
-                id: $flowId,
-                register: $this->appConfig->getValueString('openregister', 'flow_register', 'flows'),
-                schema: $this->appConfig->getValueString('openregister', 'flow_schema', 'flow'),
-                _rbac: true,
-                _multitenancy: true
-            );
+            $this->flows->find(uuid: $flowId);
         } catch (\Throwable $e) {
-            throw new UnexpectedValueException('No such flow: '.$flowId);
-        }
-
-        if ($flow === null) {
-            // Same message as a genuinely missing flow, so this cannot be used
-            // to discover which ids exist.
+            // One message for "absent" and "not yours" alike, so this cannot be
+            // used to discover which ids exist.
             throw new UnexpectedValueException('No such flow: '.$flowId);
         }
     }//end assertRunnable()
