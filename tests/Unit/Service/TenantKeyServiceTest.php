@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scholiq-deps/tenant-key-api/tasks.md
+ * @spec openspec/specs/saas-multi-tenant/spec.md#tenantkeyservice-must-be-di-registered-as-a-server-side-internal-api
  */
 
 declare(strict_types=1);

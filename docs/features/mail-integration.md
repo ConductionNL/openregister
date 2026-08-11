@@ -60,8 +60,8 @@ The Mail Integration feature connects OpenRegister objects to Nextcloud Mail thr
 | LinkedObjectsList.vue | `src/mail-sidebar/components/LinkedObjectsList.vue` | Displays explicitly linked objects |
 | SuggestedObjectsList.vue | `src/mail-sidebar/components/SuggestedObjectsList.vue` | Displays sender-based discovery results |
 | ObjectCard.vue | `src/mail-sidebar/components/ObjectCard.vue` | Card with title, schema, register, deep link, unlink button |
-| CreateConnectedObjectDialog.vue | `src/mail-sidebar/dialogs/CreateConnectedObjectDialog.vue` | Create a new object from the current email |
-| RemoveConnectionDialog.vue | `src/mail-sidebar/dialogs/RemoveConnectionDialog.vue` | Confirm removing a link |
+| CreateConnectedObjectDialog.vue | `src/dialogs/mail/CreateConnectedObjectDialog.vue` | Create a new object from the current email |
+| RemoveConnectionDialog.vue | `src/dialogs/mail/RemoveConnectionDialog.vue` | Confirm removing a link |
 | useMailObserver.js | `src/mail-sidebar/composables/useMailObserver.js` | Observes Mail app URL changes (hash-based routing) |
 | useEmailLinks.js | `src/mail-sidebar/composables/useEmailLinks.js` | API state management with caching and abort control |
 | useAttachmentDrag.js | `src/mail-sidebar/composables/useAttachmentDrag.js` | Drag-and-drop of mail attachments onto objects |

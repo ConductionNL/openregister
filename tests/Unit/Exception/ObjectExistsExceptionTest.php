@@ -9,7 +9,7 @@
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/specs/object-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 
 declare(strict_types=1);
