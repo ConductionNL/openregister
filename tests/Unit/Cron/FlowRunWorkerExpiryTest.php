@@ -33,8 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Cron\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -47,9 +46,7 @@ class FlowRunWorkerExpiryTest extends TestCase
 
     private FlowRunMapper&MockObject $mapper;
 
-    private FlowRunService&MockObject $runner;
-
-    private FlowLocator&MockObject $resolvers;
+    private FlowRunAdvancer&MockObject $advancer;
 
     private IAppConfig&MockObject $appConfig;
 
@@ -60,8 +57,7 @@ class FlowRunWorkerExpiryTest extends TestCase
         parent::setUp();
 
         $this->mapper    = $this->createMock(FlowRunMapper::class);
-        $this->runner    = $this->createMock(FlowRunService::class);
-        $this->resolvers = $this->createMock(FlowLocator::class);
+        $this->advancer  = $this->createMock(FlowRunAdvancer::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
 
         // findStale/findDue/findQueued all declare `: array`, so an unstubbed
@@ -71,8 +67,7 @@ class FlowRunWorkerExpiryTest extends TestCase
         $this->worker = new FlowRunWorker(
             $this->createMock(ITimeFactory::class),
             $this->mapper,
-            $this->runner,
-            $this->resolvers,
+            $this->advancer,
             $this->appConfig,
             new NullLogger()
         );
@@ -134,11 +129,12 @@ class FlowRunWorkerExpiryTest extends TestCase
         $this->config(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '0']);
         $this->mapper->method('expireQueuedBefore')->willReturn([$this->expiredRun()]);
 
-        $this->runner->expects($this->never())->method('execute');
-        $this->runner->expects($this->never())->method('retry');
-        $this->runner->expects($this->never())->method('queue');
-        $this->resolvers->expects($this->never())->method('resolveFlow');
-        $this->resolvers->expects($this->never())->method('resolveSubject');
+        // `FlowRunAdvancer::advance()` is now the worker's ONLY execution
+        // path (FlowRunWorker::advance() -> advancer->advance()), so asserting
+        // it is never called is the whole claim — stronger than the five
+        // FlowRunService/FlowLocator expectations this replaced, which named
+        // collaborators the worker no longer holds.
+        $this->advancer->expects($this->never())->method('advance');
 
         $this->pass();
     }
