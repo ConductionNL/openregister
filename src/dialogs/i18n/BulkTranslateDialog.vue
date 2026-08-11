@@ -133,9 +133,18 @@ export default {
 		 * @spec exclude NcSelect null/'' model proxy, UI plumbing
 		 */
 		source: {
+			/**
+			 * @return {string|null} The source language, null when unset.
+			 * @spec exclude NcSelect null/'' model proxy getter, UI plumbing
+			 */
 			get() {
 				return this.from === '' ? null : this.from
 			},
+			/**
+			 * @param {string|null} value The language NcSelect emitted.
+			 * @return {void}
+			 * @spec exclude NcSelect null/'' model proxy setter, UI plumbing
+			 */
 			set(value) {
 				this.from = value ?? ''
 			},
@@ -148,9 +157,18 @@ export default {
 		 * @spec exclude NcSelect null/'' model proxy, UI plumbing
 		 */
 		target: {
+			/**
+			 * @return {string|null} The target language, null when unset.
+			 * @spec exclude NcSelect null/'' model proxy getter, UI plumbing
+			 */
 			get() {
 				return this.to === '' ? null : this.to
 			},
+			/**
+			 * @param {string|null} value The language NcSelect emitted.
+			 * @return {void}
+			 * @spec exclude NcSelect null/'' model proxy setter, UI plumbing
+			 */
 			set(value) {
 				this.to = value ?? ''
 			},
