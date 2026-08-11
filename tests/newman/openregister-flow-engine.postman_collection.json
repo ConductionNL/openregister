@@ -1,0 +1,2313 @@
+{
+  "info": {
+    "name": "OpenRegister — flow engine execution",
+    "description": "Executes eight real flows end to end and asserts what each one CHANGED, not merely that it reported success. Needs a FlowRunWorker alongside it: use tests/newman/run-flow-engine.sh.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin"
+    },
+    {
+      "key": "agentModel",
+      "value": "qwen2.5:3b"
+    },
+    {
+      "key": "stamp",
+      "value": ""
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "register",
+      "value": ""
+    },
+    {
+      "key": "schema",
+      "value": ""
+    },
+    {
+      "key": "extSource",
+      "value": ""
+    },
+    {
+      "key": "ncSource",
+      "value": ""
+    },
+    {
+      "key": "agent",
+      "value": ""
+    },
+    {
+      "key": "flows",
+      "value": ""
+    },
+    {
+      "key": "deleteQueue",
+      "value": "[]"
+    },
+    {
+      "key": "deleteHead",
+      "value": ""
+    },
+    {
+      "key": "objectQueue",
+      "value": "[]"
+    },
+    {
+      "key": "objectHead",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 — setup",
+      "item": [
+        {
+          "name": "bootstrap variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = 'fe' + Date.now().toString(36)",
+                  "pm.collectionVariables.set('stamp', stamp)",
+                  "pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'))",
+                  "pm.test('instance is up', () => pm.response.to.have.status(200))",
+                  "pm.test('instance is NOT mid-upgrade', () => {",
+                  "    // needsDbUpgrade makes every /apps route answer 503, which reads",
+                  "    // downstream as \"the flow API is broken\" rather than \"run occ upgrade\".",
+                  "    pm.expect(pm.response.json().needsDbUpgrade, 'run `occ upgrade` first').to.eql(false)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/status.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "status.php"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('register', pm.response.json().id)",
+                  "pm.test('register created', () => pm.expect(pm.response.json().id).to.be.a('number'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"flow-engine-{{stamp}}\",\n  \"slug\": \"flow-engine-{{stamp}}\",\n  \"description\": \"flow engine coverage\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/registers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "registers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('schema', pm.response.json().id)",
+                  "pm.test('schema created', () => pm.expect(pm.response.json().id).to.be.a('number'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"flow-engine-item-{{stamp}}\",\n  \"slug\": \"flow-engine-item-{{stamp}}\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"sourceId\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/schemas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "attach schema to register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema attached', () => pm.response.to.have.status(200))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schemas\": [\n    \"{{schema}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/registers/{{register}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{register}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create external source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('extSource', (b['@self'] && b['@self'].id) || b.id)",
+                  "pm.test('external source created', () => pm.expect(pm.collectionVariables.get('extSource')).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-ext-{{stamp}}\",\n  \"location\": \"https://jsonplaceholder.typicode.com\",\n  \"type\": \"api\",\n  \"isEnabled\": true,\n  \"version\": \"1.0.0\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "openconnector",
+                "source"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create nextcloud source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('ncSource', (b['@self'] && b['@self'].id) || b.id)",
+                  "pm.test('nextcloud source created', () => pm.expect(pm.collectionVariables.get('ncSource')).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-nc-{{stamp}}\",\n  \"location\": \"http://localhost\",\n  \"type\": \"api\",\n  \"isEnabled\": true,\n  \"version\": \"1.0.0\",\n  \"configuration\": {\n    \"headers\": {\n      \"Authorization\": \"Basic {{authToken}}\",\n      \"OCS-APIRequest\": \"true\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "openconnector",
+                "source"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create summariser agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('agent', (b['@self'] && b['@self'].id) || b.id || '')",
+                  "// Not a failure when hermiq is absent: only case 3 needs it, and that",
+                  "// case guards on the variable being set.",
+                  "pm.test('agent fixture resolved (or hermiq absent)', () => pm.expect(true).to.be.true)"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-summariser-{{stamp}}\",\n  \"description\": \"Summarises a mailbox for the flow engine coverage\",\n  \"provider\": \"ollama\",\n  \"model\": \"{{agentModel}}\",\n  \"prompt\": \"You summarise messages in one short sentence.\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/hermiq/agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "hermiq",
+                "agent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 — Synchronise objects from an external API",
+      "description": "Fetch a collection from an external API and write each item as a local object.",
+      "item": [
+        {
+          "name": "api-sync — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_api_sync_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('api-sync: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-api-sync-{{stamp}}\",\n  \"description\": \"Fetch a collection from an external API and write each item as a local object.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"call1\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"GET\",\n        \"source\": \"{{extSource}}\",\n        \"endpoint\": \"/users\"\n      }\n    },\n    {\n      \"id\": \"x1\",\n      \"type\": \"openregister.explode\",\n      \"config\": {\n        \"path\": \"response.body\",\n        \"as\": \"item\",\n        \"keepRecord\": false\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"{{ item.name }}\",\n          \"sourceId\": \"{{ item.username }}\",\n          \"status\": \"synced\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"call1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"call1\",\n      \"to\": \"x1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"x1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "api-sync — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_api_sync_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_api_sync_status', String(run.status))",
+                  "pm.collectionVariables.set('case_api_sync_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('api-sync: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('api-sync: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_api_sync_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_api_sync_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "api-sync — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_api_sync_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_api_sync_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('api-sync: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"synced\")",
+                  "pm.test('api-sync: wrote at least 10 synced object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(10))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 — Alter an object and notify a human",
+      "description": "Read a synced object, move it to reviewed, and raise a Nextcloud notification.",
+      "item": [
+        {
+          "name": "notify-on-change — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_notify_on_change_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('notify-on-change: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-notify-on-change-{{stamp}}\",\n  \"description\": \"Read a synced object, move it to reviewed, and raise a Nextcloud notification.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"filters\": {\n          \"status\": \"synced\"\n        },\n        \"limit\": 1,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"s1\",\n      \"type\": \"openregister.set-fields\",\n      \"config\": {\n        \"set\": {\n          \"status\": \"reviewed\"\n        }\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"update\",\n        \"match\": [\n          {\n            \"property\": \"sourceId\",\n            \"value\": \"{{ sourceId }}\"\n          }\n        ],\n        \"fields\": {\n          \"status\": \"reviewed\"\n        }\n      }\n    },\n    {\n      \"id\": \"n1\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"POST\",\n        \"source\": \"{{ncSource}}\",\n        \"endpoint\": \"/ocs/v2.php/apps/notifications/api/v2/admin_notifications/admin\",\n        \"body\": {\n          \"shortMessage\": \"Flow engine test: an object was reviewed\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"s1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"s1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"n1\"\n    },\n    {\n      \"id\": \"e\",\n      \"from\": \"n1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "notify-on-change — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_notify_on_change_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_notify_on_change_status', String(run.status))",
+                  "pm.collectionVariables.set('case_notify_on_change_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('notify-on-change: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('notify-on-change: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_notify_on_change_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_notify_on_change_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "notify-on-change — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_notify_on_change_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_notify_on_change_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('notify-on-change: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"reviewed\")",
+                  "pm.test('notify-on-change: wrote at least 1 reviewed object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 — Summarise a mailbox with an AI agent",
+      "description": "Fetch messages, hand them to an agent for a one-line summary, store the result.",
+      "item": [
+        {
+          "name": "mailbox-summary-ai — create flow",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('agent')) {",
+                  "    console.log('SKIP mailbox-summary-ai: no agent fixture (hermiq/ollama absent) — the AI case did not run')",
+                  "    pm.collectionVariables.set('case_mailbox_summary_ai_skipped', '1')",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_mailbox_summary_ai_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('mailbox-summary-ai: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-mailbox-summary-ai-{{stamp}}\",\n  \"description\": \"Fetch messages, hand them to an agent for a one-line summary, store the result.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"call1\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"GET\",\n        \"source\": \"{{extSource}}\",\n        \"endpoint\": \"/posts?_limit=3\"\n      }\n    },\n    {\n      \"id\": \"a1\",\n      \"type\": \"hermiq.agent-step\",\n      \"config\": {\n        \"agent\": \"{{agent}}\",\n        \"prompt\": \"Summarise these messages in one short sentence.\"\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"mailbox-summary\",\n          \"status\": \"summarised\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"call1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"call1\",\n      \"to\": \"a1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"a1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "mailbox-summary-ai — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_mailbox_summary_ai_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_mailbox_summary_ai_status', String(run.status))",
+                  "pm.collectionVariables.set('case_mailbox_summary_ai_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('mailbox-summary-ai: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('mailbox-summary-ai: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_mailbox_summary_ai_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_mailbox_summary_ai_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "mailbox-summary-ai — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_mailbox_summary_ai_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_mailbox_summary_ai_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('mailbox-summary-ai: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"summarised\")",
+                  "pm.test('mailbox-summary-ai: wrote at least 1 summarised object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 — Scheduled data-quality sweep",
+      "description": "Walk the register on a schedule and flag every record that fails a rule.",
+      "item": [
+        {
+          "name": "data-quality-sweep — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_data_quality_sweep_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('data-quality-sweep: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-data-quality-sweep-{{stamp}}\",\n  \"description\": \"Walk the register on a schedule and flag every record that fails a rule.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-schedule\",\n      \"config\": {\n        \"cron\": \"0 3 * * *\"\n      }\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"limit\": 100,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"f1\",\n      \"type\": \"openregister.filter\",\n      \"config\": {\n        \"condition\": {\n          \"==\": [\n            {\n              \"var\": \"json.status\"\n            },\n            \"synced\"\n          ]\n        }\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"quality-finding\",\n          \"status\": \"flagged\",\n          \"sourceId\": \"{{ sourceId }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"f1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"f1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "data-quality-sweep — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_data_quality_sweep_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_data_quality_sweep_status', String(run.status))",
+                  "pm.collectionVariables.set('case_data_quality_sweep_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('data-quality-sweep: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('data-quality-sweep: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_data_quality_sweep_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_data_quality_sweep_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "data-quality-sweep — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_data_quality_sweep_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_data_quality_sweep_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('data-quality-sweep: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"flagged\")",
+                  "pm.test('data-quality-sweep: wrote at least 1 flagged object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 — Enrich an object from an external register",
+      "description": "Look a record up in an external source and store the derived field.",
+      "item": [
+        {
+          "name": "enrichment — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_enrichment_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('enrichment: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-enrichment-{{stamp}}\",\n  \"description\": \"Look a record up in an external source and store the derived field.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"call1\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"GET\",\n        \"source\": \"{{extSource}}\",\n        \"endpoint\": \"/users/1\"\n      }\n    },\n    {\n      \"id\": \"m1\",\n      \"type\": \"openregister.set-fields\",\n      \"config\": {\n        \"set\": {\n          \"note\": \"{{ response.body.company.name }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"enriched\",\n          \"status\": \"enriched\",\n          \"note\": \"{{ note }}\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"call1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"call1\",\n      \"to\": \"m1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"m1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "enrichment — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_enrichment_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_enrichment_status', String(run.status))",
+                  "pm.collectionVariables.set('case_enrichment_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('enrichment: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('enrichment: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_enrichment_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_enrichment_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "enrichment — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_enrichment_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_enrichment_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('enrichment: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"enriched\")",
+                  "pm.test('enrichment: wrote at least 1 enriched object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6 — Route an object for approval",
+      "description": "Branch on a record state and raise an approval task down the matching path.",
+      "item": [
+        {
+          "name": "approval-routing — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_approval_routing_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('approval-routing: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-approval-routing-{{stamp}}\",\n  \"description\": \"Branch on a record state and raise an approval task down the matching path.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"filters\": {\n          \"status\": \"reviewed\"\n        },\n        \"limit\": 5,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"sw1\",\n      \"type\": \"openregister.switch\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"approval-task\",\n          \"status\": \"awaiting-approval\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"sw1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"sw1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "approval-routing — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_approval_routing_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_approval_routing_status', String(run.status))",
+                  "pm.collectionVariables.set('case_approval_routing_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('approval-routing: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('approval-routing: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_approval_routing_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_approval_routing_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "approval-routing — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_approval_routing_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_approval_routing_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('approval-routing: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"awaiting-approval\")",
+                  "pm.test('approval-routing: wrote at least 1 awaiting-approval object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 — Retention sweep",
+      "description": "Delete records that are past their keep-by state.",
+      "item": [
+        {
+          "name": "retention-sweep — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_retention_sweep_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('retention-sweep: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-retention-sweep-{{stamp}}\",\n  \"description\": \"Delete records that are past their keep-by state.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"filters\": {\n          \"status\": \"flagged\"\n        },\n        \"limit\": 100,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"delete\",\n        \"match\": [\n          {\n            \"property\": \"sourceId\",\n            \"value\": \"{{ sourceId }}\"\n          },\n          {\n            \"property\": \"status\",\n            \"value\": \"flagged\"\n          }\n        ],\n        \"confirmDelete\": true\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "retention-sweep — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_retention_sweep_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_retention_sweep_status', String(run.status))",
+                  "pm.collectionVariables.set('case_retention_sweep_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('retention-sweep: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('retention-sweep: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_retention_sweep_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_retention_sweep_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "retention-sweep — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_retention_sweep_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_retention_sweep_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('retention-sweep: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"flagged\")",
+                  "pm.test('retention-sweep: flagged rows are gone', () => pm.expect(matching.length).to.eql(0))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8 — Batch export to an external endpoint",
+      "description": "Read local objects and POST them outward in fixed-size batches.",
+      "item": [
+        {
+          "name": "batch-export — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_batch_export_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('batch-export: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-batch-export-{{stamp}}\",\n  \"description\": \"Read local objects and POST them outward in fixed-size batches.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"limit\": 10,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"b1\",\n      \"type\": \"openregister.batch\",\n      \"config\": {\n        \"batchSize\": 5\n      }\n    },\n    {\n      \"id\": \"call1\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"POST\",\n        \"source\": \"{{extSource}}\",\n        \"endpoint\": \"/posts\"\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"b1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"b1\",\n      \"to\": \"call1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"call1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "batch-export — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_batch_export_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_batch_export_status', String(run.status))",
+                  "pm.collectionVariables.set('case_batch_export_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('batch-export: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('batch-export: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_batch_export_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_batch_export_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "batch-export — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_batch_export_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_batch_export_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('batch-export: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const batchStep = steps.filter((s) => s.transition === \"b1\")[0]",
+                  "pm.test('batch-export: the batch node actually batched', () => {",
+                  "    pm.expect(batchStep, 'no batch step in the log').to.not.be.undefined",
+                  "    pm.expect(batchStep.itemsOut, 'batching did not reduce the item count').to.be.at.most(3)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 — teardown",
+      "item": [
+        {
+          "name": "delete flows",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json()",
+                  "const all = body.results || body || []",
+                  "const stamp = pm.collectionVariables.get('stamp')",
+                  "const mine = all.filter((f) => String(f.name || '').indexOf(stamp) !== -1)",
+                  "pm.collectionVariables.set('toDelete', JSON.stringify(mine.map((f) => f.uuid)))",
+                  "pm.test('found this run\\'s flows to delete', () => pm.expect(mine.length, 'nothing matched the run stamp — teardown would silently no-op').to.be.above(0))",
+                  "const next = mine.map((f) => f.uuid)",
+                  "if (next.length) { pm.collectionVariables.set('deleteQueue', JSON.stringify(next)) }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows?limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows?limit=200"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete one flow",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const queue = JSON.parse(pm.collectionVariables.get('deleteQueue') || '[]')",
+                  "if (!pm.collectionVariables.get('deleteHead') && queue.length) {",
+                  "    pm.collectionVariables.set('deleteHead', queue.shift())",
+                  "    pm.collectionVariables.set('deleteQueue', JSON.stringify(queue))",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('flow deleted', () => pm.expect([200, 404]).to.include(pm.response.code))",
+                  "const queue = JSON.parse(pm.collectionVariables.get('deleteQueue') || '[]')",
+                  "if (queue.length) {",
+                  "    pm.collectionVariables.set('deleteHead', queue.shift())",
+                  "    pm.collectionVariables.set('deleteQueue', JSON.stringify(queue))",
+                  "    postman.setNextRequest('delete one flow')",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{deleteHead}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{deleteHead}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "list objects to purge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const ids = objects.map((o) => (o['@self'] && o['@self'].id) || o.id).filter(Boolean)",
+                  "pm.collectionVariables.set('objectQueue', JSON.stringify(ids))",
+                  "pm.collectionVariables.set('objectHead', ids.length ? ids[0] : '')",
+                  "console.log('purging ' + ids.length + ' object(s)')",
+                  "if (!ids.length) { postman.setNextRequest('delete schema') }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=500",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=500"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete one object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object purged', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+                  "const queue = JSON.parse(pm.collectionVariables.get('objectQueue') || '[]')",
+                  "queue.shift()",
+                  "pm.collectionVariables.set('objectQueue', JSON.stringify(queue))",
+                  "if (queue.length) {",
+                  "    pm.collectionVariables.set('objectHead', queue[0])",
+                  "    postman.setNextRequest('delete one object')",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}/{{objectHead}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}",
+                "{{objectHead}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema deleted', () => pm.expect([200, 204, 404], JSON.stringify(pm.response.json())).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/schemas/{{schema}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{schema}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register deleted', () => pm.expect([200, 204, 404], JSON.stringify(pm.response.json())).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/registers/{{register}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{register}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete external source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('external source deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source/{{extSource}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "openconnector",
+                "source",
+                "{{extSource}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete nextcloud source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('nextcloud source deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/openconnector/source/{{ncSource}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "openconnector",
+                "source",
+                "{{ncSource}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('agent deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/hermiq/agent/{{agent}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "hermiq",
+                "agent",
+                "{{agent}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "no run history survives its flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Deleting a flow cascades its runs, steps and state. This asserts the",
+                  "// cascade fired rather than trusting it: before that cascade existed the",
+                  "// dev instance had accumulated 493 orphaned runs across 80 dead flows,",
+                  "// and nothing in any test noticed.",
+                  "pm.test('flow-runs endpoint still answers after teardown', () => pm.response.to.have.status(200))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flow-runs?limit=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flow-runs?limit=1"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

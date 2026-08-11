@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -118,6 +119,7 @@ class FlowRunWorker extends TimedJob
      * @param FlowRunMapper   $mapper    Reads and prunes runs.
      * @param FlowRunService  $runner    Executes a run.
      * @param FlowLocator     $resolvers Loads a run's flow and subject.
+     * @param FlowRunAdvancer $advancer  Advances one run (shared with sync runs).
      * @param IAppConfig      $appConfig Reads the retention setting.
      * @param LoggerInterface $logger    The logger.
      */
@@ -126,6 +128,7 @@ class FlowRunWorker extends TimedJob
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
         private readonly FlowLocator $resolvers,
+        private readonly FlowRunAdvancer $advancer,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
@@ -310,76 +313,21 @@ class FlowRunWorker extends TimedJob
     /**
      * Advance one run, never letting its failure stop the batch.
      *
+     * The body lives in {@see FlowRunAdvancer} so a synchronous run executes
+     * through exactly this path rather than a parallel implementation that
+     * could drift from it.
+     *
      * @param FlowRun $run The run.
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is a pure value
-     * constructor with no state to inject; a factory collaborator would add a
-     * dependency to say the same thing.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
     private function advance(FlowRun $run): void
     {
-        try {
-            $flow = $this->resolvers->resolveFlow((string) $run->getFlowId());
-            if ($flow === null) {
-                // No installed app owns this flow — it was deleted, or the app
-                // that stored it was removed. The run cannot proceed; fail it
-                // with a clear reason rather than leaving it queued forever.
-                $run->setStatus(FlowRun::STATUS_FAILED);
-                $run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
-                $this->mapper->update($run);
-                return;
-            }
-
-            // A run may legitimately have no subject (a manual or webhook run
-            // seeded from its payload). Only resolve one when the run names it.
-            $subject = null;
-            if (trim((string) $run->getSubjectUuid()) !== '') {
-                $subject = $this->resolvers->resolveSubject(
-                    (string) $run->getSubjectUuid(),
-                    (string) $run->getSubjectRegister(),
-                    (string) $run->getSubjectSchema()
-                );
-
-                if ($subject === null) {
-                    $run->setStatus(FlowRun::STATUS_FAILED);
-                    $run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
-                    $this->mapper->update($run);
-                    return;
-                }
-            }
-
-            // A subjectless run still needs an object to carry the marking; a
-            // bare holder does, since the marking store keeps the marking on the
-            // run itself ({@see FlowRunMarkingStore}). Such a run is seeded from
-            // its payload instead of an object: a non-object trigger (a file, a
-            // user) puts what it is about under `payload` on the run context, and
-            // that becomes the first item, so the flow reads a file's path or a
-            // user's id exactly as it would an object's fields.
-            $seed = null;
-            if ($subject === null) {
-                $subject = new stdClass();
-                $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
-                if ($payload !== []) {
-                    $seed = [FlowItems::item(json: $payload)];
-                }
-            }
-
-            $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
-        } catch (Throwable $e) {
-            $this->logger->error(
-                message: '[FlowRunWorker] Failed to advance a run',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'run'   => $run->getUuid(),
-                    'error' => $e->getMessage(),
-                ]
-            );
-        }//end try
+        // Swallowing is deliberate here and NOT in the synchronous path: one
+        // poisoned run must not stop the queue draining for every other flow.
+        $this->advancer->advance(run: $run, rethrow: false);
 
     }//end advance()
 

@@ -692,11 +692,25 @@ class FlowController extends Controller
         $subject = $this->request->getParam('subject', []);
         $context = $this->request->getParam('context', []);
 
+        // `sync` executes the run inline and answers with the FINISHED run
+        // rather than a queued one. Two callers want it: a person pressing Run
+        // in the editor, who should see the outcome instead of a row that says
+        // `queued`; and any test, which otherwise has to keep a background
+        // worker alive and poll — a harness whose absence makes a perfectly
+        // healthy engine look stuck.
+        //
+        // Accepts the string forms too: a query string carries `?sync=true`,
+        // not a JSON boolean, and `(bool) 'false'` is TRUE — so reading this
+        // with a bare cast would make sync=false run synchronously.
+        $syncParam = $this->request->getParam('sync', false);
+        $sync      = ($syncParam === true || $syncParam === 'true' || $syncParam === '1' || $syncParam === 1);
+
         try {
             $flowRun = $this->flows->run(
                 uuid: $id,
                 subject: (array) $subject,
-                context: (array) $context
+                context: (array) $context,
+                sync: $sync
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);

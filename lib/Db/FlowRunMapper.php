@@ -219,6 +219,59 @@ class FlowRunMapper extends QBMapper
     }//end deleteTerminalOlderThan()
 
     /**
+     * Delete EVERY run of one flow, whatever its status or age.
+     *
+     * This is the cascade behind deleting a flow, so it deliberately does not
+     * share `deleteTerminalOlderThan()`'s two guards. Age is irrelevant — the
+     * flow is going away, so none of its history can ever be read again. And
+     * terminality is irrelevant for the same reason: a `queued` or `suspended`
+     * run of a deleted flow is not work waiting to happen, it is work that can
+     * never happen, because the worker resolves the flow by uuid before it can
+     * advance a token and will only ever fail to load it.
+     *
+     * @param string $flowId The flow uuid whose runs are removed.
+     *
+     * @return array<int, string> The uuids of the deleted runs, so their step
+     *                            rows can be removed too.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteByFlow(string $flowId): array
+    {
+        if ($flowId === '') {
+            // Never let an empty id widen into "every run on the instance".
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteByFlow()
+
+    /**
      * Delete terminal runs older than a cutoff, EXCLUDING a set of flows.
      *
      * The instance-wide half of the sweep: every flow that does not declare its

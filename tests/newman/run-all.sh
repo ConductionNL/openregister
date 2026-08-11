@@ -110,6 +110,7 @@ DOMAIN_ORDER=(
     "files"
     "referential-integrity"
     "schema-migration"
+    "flow-engine"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -131,6 +132,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
+    [flow-engine]="$REPO_ROOT/tests/newman/openregister-flow-engine.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -168,6 +170,36 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
     echo -e "${BLUE}━━━ Running domain: ${domain} ━━━${NC}"
 
     rc=0
+    ##
+    # flow-engine is the one domain that cannot go through the generic Newman
+    # path: it EXECUTES flows, and a run is queued for a background worker
+    # rather than run inline. Its wrapper keeps a FlowRunWorker alive for the
+    # duration and checks afterwards that the collection left no rows behind.
+    # Run bare, every assertion in it would time out against a healthy engine
+    # for want of a scheduler.
+    ##
+    if [ "$domain" = "flow-engine" ]; then
+        BASE_URL="$BASE_URL" ADMIN_USER="$ADMIN_USER" ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+            CONTAINER_NAME="$CONTAINER_NAME" \
+            bash "$SCRIPT_DIR/run-flow-engine.sh" || rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+            echo -e "${GREEN}✓ $domain passed${NC}"
+            PASSED=$((PASSED + 1))
+        else
+            echo -e "${RED}✗ $domain failed (rc=$rc)${NC}"
+            FAILED=$((FAILED + 1))
+            FAILED_DOMAINS+=("$domain")
+            OVERALL_RC=1
+            if [ "$FAIL_FAST" = "1" ]; then
+                break
+            fi
+        fi
+
+        echo ""
+        continue
+    fi
+
     # Collections in this repo split between two URL-variable
     # conventions: legacy ones use `{{base_url}}` (snake_case), newer
     # ones use `{{baseUrl}}` (camelCase). Set both so every collection

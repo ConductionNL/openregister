@@ -38,6 +38,9 @@ use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowStateMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -64,6 +67,10 @@ class FlowService
      * @param FlowMapper         $mapper       Reads and writes flow definitions.
      * @param FlowTriggerIndex   $triggerIndex Keeps the trigger index derived from the nodes.
      * @param FlowRunService     $runner       Queues and executes runs.
+     * @param FlowRunAdvancer    $advancer     Advances a run inline for a synchronous caller.
+     * @param FlowRunMapper      $runs         Sweeps a deleted flow's runs.
+     * @param FlowRunStepMapper  $steps        Sweeps those runs' step rows.
+     * @param FlowStateMapper    $state        Sweeps a deleted flow's carried state.
      * @param IUserSession       $userSession  Identifies the acting user.
      * @param LoggerInterface    $logger       Records refusals and failures.
      * @param ContainerInterface $container    Resolves OrganisationService lazily.
@@ -72,6 +79,10 @@ class FlowService
         private readonly FlowMapper $mapper,
         private readonly FlowTriggerIndex $triggerIndex,
         private readonly FlowRunService $runner,
+        private readonly FlowRunAdvancer $advancer,
+        private readonly FlowRunMapper $runs,
+        private readonly FlowRunStepMapper $steps,
+        private readonly FlowStateMapper $state,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container
@@ -403,6 +414,34 @@ class FlowService
         // so it costs a failed lookup per event, forever.
         $this->triggerIndex->forget(flowUuid: $uuid);
 
+        // And its execution history, by the same reasoning. `flow_runs` and
+        // `flow_state` key on the flow UUID, so once the flow row is gone every
+        // one of those rows is unreachable through any read path the app has —
+        // there is no endpoint that lists or deletes a run except by its flow.
+        // Left behind they are pure landfill: measured on the dev instance,
+        // 493 runs across 80 already-deleted flows, plus 4 state rows.
+        //
+        // Steps are removed BEFORE nothing else can name them: `deleteByFlow()`
+        // returns the run uuids precisely because `flow_run_steps` keys on the
+        // run, not the flow, so dropping the runs first would strand the steps
+        // with no way left to find them.
+        try {
+            $runUuids = $this->runs->deleteByFlow(flowId: $uuid);
+            foreach ($runUuids as $runUuid) {
+                $this->steps->deleteByRun(runUuid: $runUuid);
+            }
+
+            $this->state->deleteByFlow(flowId: $uuid);
+        } catch (Throwable $e) {
+            // The flow itself is already gone, so this must not turn a
+            // successful delete into an error the caller has to retry — a retry
+            // would 404 on the flow and never reach this cascade anyway.
+            $this->logger->warning(
+                message: '[FlowService] Deleted flow '.$uuid.' but could not sweep its history: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
     }//end delete()
 
     /**
@@ -417,25 +456,41 @@ class FlowService
      * @param string               $uuid    The flow uuid.
      * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
      * @param array<string, mixed> $context Run-level metadata.
+     * @param boolean              $sync    Execute inline and return the finished run.
      *
-     * @return FlowRun The queued run.
+     * @return FlowRun The queued run, or the finished run when $sync is true.
      *
      * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
      * @throws FlowDeadEnd          When a node's token has nowhere to go, so the run is refused.
      *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
-    public function run(string $uuid, array $subject=[], array $context=[]): FlowRun
+    public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false): FlowRun
     {
         $flow = $this->find(uuid: $uuid);
 
-        return $this->runner->queue(
+        $run = $this->runner->queue(
             flowId: (string) $flow->getUuid(),
             subject: $subject,
             trigger: Flow::TRIGGER_MANUAL,
             context: $context,
             user: $this->actingUser()
         );
+
+        if ($sync === false) {
+            return $run;
+        }
+
+        // Queue FIRST, then advance the queued row — never execute instead of
+        // queueing. The run record is what the retry endpoint, the run log and
+        // every observability surface read; a synchronous run that skipped it
+        // would execute invisibly and leave a person who pressed Run with
+        // nothing to look at afterwards.
+        //
+        // `rethrow: true` because this call is answering a request ABOUT this
+        // run: a caller who asked to wait has earned the error. The worker
+        // swallows for the opposite reason — one bad run must not stop a queue.
+        return $this->advancer->advance(run: $run, rethrow: true);
 
     }//end run()
 
