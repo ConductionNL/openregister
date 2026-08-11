@@ -187,6 +187,44 @@ export const CASES = [
 		expect: { status: 'paged', atLeast: 100 },
 	},
 	{
+		key: 'route-and-merge',
+		title: '11 — Split records down two paths, then bring them back together',
+		description: 'Routes each record to a different branch by a rule, writes a different outcome on each, and merges the branches back into one list.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			{ id: 'r1', type: 'openregister.object-read', config: { register: '{{register}}', schema: '{{schema}}', filters: { status: 'paged' }, limit: 100, fanOut: true } },
+			// A router's `output` is the ID OF THE TARGET NODE — placement asks
+			// `itemsForOutput(items, output: $to)`. Naming a branch anything else
+			// sends its items nowhere, silently.
+			{
+				id: 'route1',
+				type: 'openregister.route',
+				config: {
+					rules: [{ condition: { '>': [{ var: 'json.externalId' }, 50] }, output: 'hi1' }],
+					default: 'lo1',
+				},
+			},
+			{ id: 'hi1', type: 'openregister.object-write', config: { register: '{{register}}', schema: '{{schema}}', operation: 'create', fields: { name: 'high', status: 'routed-high' } } },
+			{ id: 'lo1', type: 'openregister.object-write', config: { register: '{{register}}', schema: '{{schema}}', operation: 'create', fields: { name: 'low', status: 'routed-low' } } },
+			{ id: 'merge1', type: 'openregister.merge', config: { mode: 'append' } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [
+			{ id: 'a', from: 't1', to: 'r1' },
+			{ id: 'b', from: 'r1', to: 'route1' },
+			{ id: 'c', from: 'route1', to: 'hi1', title: 'over 50' },
+			{ id: 'd', from: 'route1', to: 'lo1', title: 'the rest' },
+			{ id: 'e', from: 'hi1', to: 'merge1' },
+			{ id: 'f', from: 'lo1', to: 'merge1' },
+			{ id: 'g', from: 'merge1', to: 'e1' },
+		],
+		// BOTH branches, because either one alone proves nothing: a router that
+		// sent everything down one path would satisfy a single-branch assertion
+		// while doing no routing at all. The split is the claim.
+		expect: { status: 'routed-high', atLeast: 1, also: { status: 'routed-low', atLeast: 1 } },
+		after: 'paginated-sync',
+	},
+	{
 		key: 'sync-cursor',
 		title: '10 — Remember a sync cursor between runs',
 		description: 'Stores where the last sync got to, reads it back, and records it — the state a real incremental sync keeps.',

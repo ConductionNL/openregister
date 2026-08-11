@@ -2,10 +2,11 @@
 ##
 # Flow ENGINE coverage — the collection that actually executes flows.
 #
-# Eight real flows are created, RUN, and checked for what they changed:
+# Eleven real flows are created, RUN, and checked for what they changed:
 # an API sync, an object change plus a notification, an AI mailbox summary, a
 # scheduled quality sweep, an enrichment, approval routing, a retention sweep,
-# and a batched export.
+# a batched export, a paginated sync through a sub-flow, a persisted sync cursor,
+# and a route/merge split.
 #
 # Every run goes through the endpoint's `sync: true` mode, which executes the
 # flow inline and answers with the finished run. That is what makes this
@@ -51,20 +52,28 @@ echo -e "${BLUE}━━━ Flow engine coverage ━━━${NC}"
 echo -e "  Base URL: ${YELLOW}$BASE_URL${NC}"
 
 ##
-# What the collection must leave behind: nothing. Captured BEFORE the run so
-# the comparison is a DELTA — the dev instance legitimately has flows and runs
-# of its own, so an absolute count would prove nothing either way.
+# What the collection must leave behind: nothing OF ITS OWN.
+#
+# Counted by NAME and by REFERENTIAL INTEGRITY, not by a global row count. The
+# first version compared total flows/runs/steps before and after, and on a
+# shared dev instance that fails for someone else's work: another agent ran a
+# flow during the window, three step rows appeared, and the check reported "the
+# collection left rows behind" about a collection that had cleaned up perfectly.
+# A leak check that another workstream can fail is a leak check nobody trusts.
 ##
-count_state() {
+leftovers() {
     docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
-        "select (select count(*) from oc_openregister_flows)||'/'||(select count(*) from oc_openregister_flow_runs)||'/'||(select count(*) from oc_openregister_flow_steps);" 2>/dev/null | tr -d ' '
+        "select (select count(*) from oc_openregister_flows where name like 'flow-engine-%')
+              + (select count(*) from oc_openregister_registers where slug like 'flow-engine-%')
+              + (select count(*) from oc_openregister_schemas where slug like 'flow-engine-item-%');" 2>/dev/null | tr -d ' '
 }
 
-BEFORE=""
-if [ "$SKIP_LEAK_CHECK" != "1" ]; then
-    BEFORE=$(count_state)
-    echo -e "  State before (flows/runs/steps): ${YELLOW}${BEFORE:-unavailable}${NC}"
-fi
+orphans() {
+    docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
+        "select (select count(*) from oc_openregister_flow_runs r where not exists (select 1 from oc_openregister_flows f where f.uuid=r.flow_id))
+              + (select count(*) from oc_openregister_flow_steps s where not exists (select 1 from oc_openregister_flow_runs r2 where r2.uuid=s.run_uuid));" 2>/dev/null | tr -d ' '
+}
+
 echo ""
 
 rc=0
@@ -78,32 +87,27 @@ newman run "$COLLECTION" \
     --color on || rc=$?
 
 ##
-# The collection tears down after itself. VERIFY that rather than trusting it:
-# a teardown request that 404s still reports "collection passed", and the
-# residue only surfaces later as a dev database nobody can read. Before the
-# delete cascade landed this instance had 493 orphaned runs across 80 dead
-# flows, accumulated exactly that way.
+# The collection tears down after itself. VERIFY that rather than trusting it: a
+# teardown request that 404s still reports "collection passed", and the residue
+# only surfaces later as a dev database nobody can read. Before the delete
+# cascade landed this instance had 493 orphaned runs across 80 dead flows,
+# accumulated exactly that way.
 ##
-if [ -n "$BEFORE" ]; then
-    AFTER=$(count_state)
+if [ "$SKIP_LEAK_CHECK" != "1" ]; then
+    LEFT=$(leftovers)
+    ORPH=$(orphans)
     echo ""
     echo -e "${BLUE}━━━ Leak check ━━━${NC}"
-    echo -e "  before: ${YELLOW}${BEFORE}${NC}   after: ${YELLOW}${AFTER}${NC}  (flows/runs/steps)"
+    echo -e "  fixtures left: ${YELLOW}${LEFT:-?}${NC}   orphaned run/step rows: ${YELLOW}${ORPH:-?}${NC}"
 
-    if [ "$BEFORE" != "$AFTER" ]; then
-        echo -e "${RED}✗ the collection left rows behind — teardown is incomplete${NC}"
+    if [ -n "$LEFT" ] && [ "$LEFT" != "0" ]; then
+        echo -e "${RED}✗ $LEFT fixture(s) left behind — teardown is incomplete${NC}"
+        rc=1
+    elif [ -n "$ORPH" ] && [ "$ORPH" != "0" ]; then
+        echo -e "${RED}✗ $ORPH orphaned row(s) — the delete cascade did not fire${NC}"
         rc=1
     else
-        echo -e "${GREEN}✓ no rows left behind${NC}"
-    fi
-
-    ORPHANS=$(docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
-        "select count(*) from oc_openregister_flow_runs r where not exists (select 1 from oc_openregister_flows f where f.uuid=r.flow_id);" 2>/dev/null | tr -d ' ')
-    if [ -n "$ORPHANS" ] && [ "$ORPHANS" != "0" ]; then
-        echo -e "${RED}✗ $ORPHANS orphaned run(s) — the delete cascade did not fire${NC}"
-        rc=1
-    else
-        echo -e "${GREEN}✓ no orphaned runs${NC}"
+        echo -e "${GREEN}✓ nothing left behind, no orphaned rows${NC}"
     fi
 fi
 

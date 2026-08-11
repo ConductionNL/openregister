@@ -245,8 +245,13 @@ const caseFolder = (c) => {
 				'})',
 			]),
 
+			// _limit=1000, and it is load-bearing. At 200 the paginated case's
+			// own 100 records plus the routed branches pushed later cases' rows
+			// past the page boundary, and the assertion read "wrote nothing"
+			// about a flow that had written correctly — a harness limit
+			// reporting itself as a product failure.
 			req(`${c.key} — assert effect`, 'GET',
-				'/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200',
+				'/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000',
 				undefined,
 				[
 					`const steps = JSON.parse(pm.collectionVariables.get('${v}_log') || '[]')`,
@@ -268,6 +273,14 @@ const caseFolder = (c) => {
 							...(c.expect.exactly !== undefined
 								? [`pm.test('${c.key}: ${c.expect.status} rows are gone', () => pm.expect(matching.length).to.eql(${c.expect.exactly}))`]
 								: [`pm.test('${c.key}: wrote at least ${c.expect.atLeast} ${c.expect.status} object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(${c.expect.atLeast}))`]),
+						]
+						: []),
+					...(c.expect.also !== undefined
+						? [
+							`const other = objects.filter((o) => o.status === ${JSON.stringify(c.expect.also.status)})`,
+							`pm.test('${c.key}: the other branch ran too (${c.expect.also.status})', () => {`,
+							`    pm.expect(other.length, 'only one branch produced anything — nothing was actually split').to.be.at.least(${c.expect.also.atLeast})`,
+							'})',
 						]
 						: []),
 					...(c.expect.field !== undefined

@@ -682,7 +682,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -692,7 +692,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -854,7 +854,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -864,7 +864,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1038,7 +1038,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1048,7 +1048,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1210,7 +1210,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1220,7 +1220,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1382,7 +1382,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1392,7 +1392,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1554,7 +1554,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1564,7 +1564,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1726,7 +1726,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1736,7 +1736,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -1898,7 +1898,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1908,7 +1908,183 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 — Split records down two paths, then bring them back together",
+      "description": "Routes each record to a different branch by a rule, writes a different outcome on each, and merges the branches back into one list.",
+      "item": [
+        {
+          "name": "route-and-merge — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_route_and_merge_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('route-and-merge: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-route-and-merge-{{stamp}}\",\n  \"description\": \"Routes each record to a different branch by a rule, writes a different outcome on each, and merges the branches back into one list.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"r1\",\n      \"type\": \"openregister.object-read\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"filters\": {\n          \"status\": \"paged\"\n        },\n        \"limit\": 100,\n        \"fanOut\": true\n      }\n    },\n    {\n      \"id\": \"route1\",\n      \"type\": \"openregister.route\",\n      \"config\": {\n        \"rules\": [\n          {\n            \"condition\": {\n              \">\": [\n                {\n                  \"var\": \"json.externalId\"\n                },\n                50\n              ]\n            },\n            \"output\": \"hi1\"\n          }\n        ],\n        \"default\": \"lo1\"\n      }\n    },\n    {\n      \"id\": \"hi1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"high\",\n          \"status\": \"routed-high\"\n        }\n      }\n    },\n    {\n      \"id\": \"lo1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"low\",\n          \"status\": \"routed-low\"\n        }\n      }\n    },\n    {\n      \"id\": \"merge1\",\n      \"type\": \"openregister.merge\",\n      \"config\": {\n        \"mode\": \"append\"\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"r1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"r1\",\n      \"to\": \"route1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"route1\",\n      \"to\": \"hi1\",\n      \"title\": \"over 50\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"route1\",\n      \"to\": \"lo1\",\n      \"title\": \"the rest\"\n    },\n    {\n      \"id\": \"e\",\n      \"from\": \"hi1\",\n      \"to\": \"merge1\"\n    },\n    {\n      \"id\": \"f\",\n      \"from\": \"lo1\",\n      \"to\": \"merge1\"\n    },\n    {\n      \"id\": \"g\",\n      \"from\": \"merge1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "route-and-merge — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_route_and_merge_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_route_and_merge_status', String(run.status))",
+                  "pm.collectionVariables.set('case_route_and_merge_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('route-and-merge: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('route-and-merge: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_route_and_merge_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_route_and_merge_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "route-and-merge — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_route_and_merge_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_route_and_merge_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('route-and-merge: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"routed-high\")",
+                  "pm.test('route-and-merge: wrote at least 1 routed-high object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))",
+                  "const other = objects.filter((o) => o.status === \"routed-low\")",
+                  "pm.test('route-and-merge: the other branch ran too (routed-low)', () => {",
+                  "    pm.expect(other.length, 'only one branch produced anything — nothing was actually split').to.be.at.least(1)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -2075,7 +2251,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2085,7 +2261,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
@@ -2250,7 +2426,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2260,7 +2436,7 @@
                 "api",
                 "objects",
                 "{{register}}",
-                "{{schema}}?_limit=200"
+                "{{schema}}?_limit=1000"
               ]
             }
           }
