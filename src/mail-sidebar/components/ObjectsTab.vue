@@ -93,7 +93,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
-import RemoveConnectionDialog from '../dialogs/RemoveConnectionDialog.vue'
+import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
 import { schemaIconComponent } from '../icons.js'
 
 export default {
