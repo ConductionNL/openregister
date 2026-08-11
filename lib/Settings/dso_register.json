@@ -5,6 +5,11 @@
     "description": "Mock DSO (Digitaal Stelsel Omgevingswet) register with environmental permit data aligned to the CIM-OW/IMOW data model. Contains activities, locations, environmental documents, and permit applications for development and testing.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "DSO — CIM-OW / IMOW data model (Omgevingswet)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "activiteit, locatie, omgevingsdocument and vergunningaanvraag are IMOW's own object types, and besluitdatum / indieningsdatum / bevoegdGezag are its field names. This register mirrors the model so a connector can be built without hitting the real DSO. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",
