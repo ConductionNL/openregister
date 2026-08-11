@@ -88,6 +88,10 @@ const setup = {
 			properties: {
 				name: { type: 'string' },
 				sourceId: { type: 'string' },
+				// The paginated case matches on the SOURCE's own id, which is an
+				// integer: `{{ item.id }}` is the whole value, so it renders as
+				// the raw typed value and a string property rejects it.
+				externalId: { type: 'integer' },
 				status: { type: 'string' },
 				note: { type: 'string' },
 			},
@@ -126,6 +130,46 @@ const setup = {
 			"const b = pm.response.json()",
 			"pm.collectionVariables.set('ncSource', (b['@self'] && b['@self'].id) || b.id)",
 			"pm.test('nextcloud source created', () => pm.expect(pm.collectionVariables.get('ncSource')).to.be.a('string'))",
+		]),
+		req('create pager sub-flow', 'POST', '/apps/openregister/api/flows', {
+			name: 'flow-engine-pager-{{stamp}}',
+			description: 'Fetches one page and emits an item per record. Empty when the pages run out.',
+			app: 'openregister', enabled: true, executionMode: 'async',
+			nodes: [
+				{ id: 'p1', type: 'openregister.trigger-manual', config: {} },
+				{ id: 'p2', type: 'openconnector.source-call', config: { method: 'GET', source: '{{extSource}}', endpoint: '/posts?_limit=10&_page={{ iteration.index }}' } },
+				{ id: 'p3', type: 'openregister.explode', config: { path: 'response.body', as: 'item', keepRecord: false } },
+				{ id: 'p4', type: 'openregister.end', config: {} },
+			],
+			edges: [{ id: 'a', from: 'p1', to: 'p2' }, { id: 'b', from: 'p2', to: 'p3' }, { id: 'c', from: 'p3', to: 'p4' }],
+		}, [
+			"pm.collectionVariables.set('pagerFlow', pm.response.json().uuid || '')",
+			"pm.test('pager sub-flow created', () => pm.expect(pm.collectionVariables.get('pagerFlow')).to.be.a('string'))",
+		]),
+		req('create sync sub-flow', 'POST', '/apps/openregister/api/flows', {
+			name: 'flow-engine-sync-{{stamp}}',
+			description: 'Upserts one page of records. Called once per page by the paginated sync.',
+			app: 'openregister', enabled: true, executionMode: 'async',
+			nodes: [
+				{ id: 's1', type: 'openregister.trigger-manual', config: {} },
+				{
+					id: 's2',
+					type: 'openregister.object-write',
+					config: {
+						register: '{{register}}', schema: '{{schema}}',
+						// `upsert` is its own operation — `update` + onMissing:create
+						// does not exist, onMissing accepts only omit|fail.
+						operation: 'upsert',
+						match: { externalId: '{{ item.id }}' },
+						fields: { name: '{{ item.title }}', externalId: '{{ item.id }}', status: 'paged' },
+					},
+				},
+				{ id: 's3', type: 'openregister.end', config: {} },
+			],
+			edges: [{ id: 'a', from: 's1', to: 's2' }, { id: 'b', from: 's2', to: 's3' }],
+		}, [
+			"pm.collectionVariables.set('syncFlow', pm.response.json().uuid || '')",
+			"pm.test('sync sub-flow created', () => pm.expect(pm.collectionVariables.get('syncFlow')).to.be.a('string'))",
 		]),
 		req('create summariser agent', 'POST', '/apps/openregister/api/objects/hermiq/agent', {
 			name: 'flow-engine-summariser-{{stamp}}',
@@ -339,6 +383,8 @@ const collection = {
 		{ key: 'flows', value: '' },
 		{ key: 'deleteQueue', value: '[]' },
 		{ key: 'deleteHead', value: '' },
+		{ key: 'pagerFlow', value: '' },
+		{ key: 'syncFlow', value: '' },
 		{ key: 'objectQueue', value: '[]' },
 		{ key: 'objectHead', value: '' },
 	],

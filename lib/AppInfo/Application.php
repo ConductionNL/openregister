@@ -544,6 +544,21 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // The loop node's step dispatcher. `IterateNode` resolves the INTERFACE
+        // — correctly, it should not know which dispatcher runs its body — but
+        // nothing ever bound it, and an interface cannot be instantiated. So
+        // every repeat step failed the moment it executed:
+        //
+        //   Could not resolve …\FlowStepDispatcher! Class can not be instantiated
+        //
+        // The node validated, appeared in the palette and drew on the canvas
+        // throughout, which is why this survived: nothing short of RUNNING a
+        // flow that contains one can see it, and no flow on the instance did.
+        $context->registerServiceAlias(
+            \OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
+            \OCA\OpenRegister\Service\Flow\RegistryStepDispatcher::class
+        );
+
         // DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
         // seam to its default SHA-256-only stub. The real PAdES-LTV signer drops
         // in here later by replacing this binding — the ExportBundleService

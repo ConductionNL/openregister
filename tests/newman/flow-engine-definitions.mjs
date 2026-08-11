@@ -157,6 +157,36 @@ export const CASES = [
 		after: 'data-quality-sweep',
 	},
 	{
+		key: 'paginated-sync',
+		title: '9 — Page an API until it runs out, syncing each page',
+		description: 'Loops pages of an external API and hands each page to a sync sub-flow, upserting so a re-run converges.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			{
+				id: 'pages1',
+				type: 'openregister.iterate',
+				config: {
+					// The SOURCE is a sub-flow, and it has to be. A loop ends when
+					// its source returns NO items, and a source-call always returns
+					// exactly one response item — empty page or not — so a bare
+					// source-call can never signal "exhausted". The sub-flow fetches
+					// AND explodes, so a page past the end yields zero items, which
+					// is the one termination rule.
+					source: { type: 'openregister.sub-flow', config: { flowId: '{{pagerFlow}}', wait: true } },
+					body: [{ type: 'openregister.sub-flow', config: { flowId: '{{syncFlow}}', wait: true } }],
+					maxIterations: 15,
+					onLimit: 'fail',
+				},
+			},
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 't1', to: 'pages1' }, { id: 'b', from: 'pages1', to: 'e1' }],
+		// 100 records over 11 pages of 10. The count is the claim: a loop that
+		// fetched page one eleven times would also report success, and would also
+		// leave objects behind — just the same ten, over and over.
+		expect: { status: 'paged', atLeast: 100 },
+	},
+	{
 		key: 'batch-export',
 		title: '8 — Batch export to an external endpoint',
 		description: 'Read local objects and POST them outward in fixed-size batches.',

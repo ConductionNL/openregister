@@ -335,8 +335,16 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys
      */
     private function itemsFrom(FlowRun $run, string $flowId): array
     {
-        $status = (string) $run->getStatus();
-        if ($status !== FlowRun::STATUS_COMPLETED) {
+        // `stopped` is a SUCCESS terminal state, not a failure: it is what an
+        // End node does — it halts the token deliberately. Accepting only
+        // `completed` made a well-formed child unusable as a sub-flow, and the
+        // engine REQUIRES an end node on every flow, so the two rules
+        // contradicted each other: any child that satisfied the connectivity
+        // check failed here with "did not complete (status: stopped)". Measured
+        // on a paginated sync whose per-page child ended, correctly, at an End.
+        $status   = (string) $run->getStatus();
+        $finished = [FlowRun::STATUS_COMPLETED, FlowRun::STATUS_STOPPED];
+        if (in_array($status, $finished, true) === false) {
             $detail = '';
             if ($run->getError() !== null) {
                 $detail = ': '.$run->getError();

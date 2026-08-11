@@ -62,6 +62,14 @@
       "value": ""
     },
     {
+      "key": "pagerFlow",
+      "value": ""
+    },
+    {
+      "key": "syncFlow",
+      "value": ""
+    },
+    {
       "key": "objectQueue",
       "value": "[]"
     },
@@ -202,7 +210,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"flow-engine-item-{{stamp}}\",\n  \"slug\": \"flow-engine-item-{{stamp}}\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"sourceId\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+              "raw": "{\n  \"title\": \"flow-engine-item-{{stamp}}\",\n  \"slug\": \"flow-engine-item-{{stamp}}\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    },\n    \"sourceId\": {\n      \"type\": \"string\"\n    },\n    \"externalId\": {\n      \"type\": \"integer\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    }\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/apps/openregister/api/schemas",
@@ -364,6 +372,102 @@
                 "objects",
                 "openconnector",
                 "source"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create pager sub-flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('pagerFlow', pm.response.json().uuid || '')",
+                  "pm.test('pager sub-flow created', () => pm.expect(pm.collectionVariables.get('pagerFlow')).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-pager-{{stamp}}\",\n  \"description\": \"Fetches one page and emits an item per record. Empty when the pages run out.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"p1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"p2\",\n      \"type\": \"openconnector.source-call\",\n      \"config\": {\n        \"method\": \"GET\",\n        \"source\": \"{{extSource}}\",\n        \"endpoint\": \"/posts?_limit=10&_page={{ iteration.index }}\"\n      }\n    },\n    {\n      \"id\": \"p3\",\n      \"type\": \"openregister.explode\",\n      \"config\": {\n        \"path\": \"response.body\",\n        \"as\": \"item\",\n        \"keepRecord\": false\n      }\n    },\n    {\n      \"id\": \"p4\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"p1\",\n      \"to\": \"p2\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"p2\",\n      \"to\": \"p3\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"p3\",\n      \"to\": \"p4\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create sync sub-flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('syncFlow', pm.response.json().uuid || '')",
+                  "pm.test('sync sub-flow created', () => pm.expect(pm.collectionVariables.get('syncFlow')).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-sync-{{stamp}}\",\n  \"description\": \"Upserts one page of records. Called once per page by the paginated sync.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"s1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"s2\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"upsert\",\n        \"match\": {\n          \"externalId\": \"{{ item.id }}\"\n        },\n        \"fields\": {\n          \"name\": \"{{ item.title }}\",\n          \"externalId\": \"{{ item.id }}\",\n          \"status\": \"paged\"\n        }\n      }\n    },\n    {\n      \"id\": \"s3\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"s1\",\n      \"to\": \"s2\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"s2\",\n      \"to\": \"s3\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
               ]
             }
           }
@@ -1601,6 +1705,178 @@
                   "const objects = body.results || body || []",
                   "const matching = objects.filter((o) => o.status === \"flagged\")",
                   "pm.test('retention-sweep: flagged rows are gone', () => pm.expect(matching.length).to.eql(0))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=200",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=200"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9 — Page an API until it runs out, syncing each page",
+      "description": "Loops pages of an external API and hands each page to a sync sub-flow, upserting so a re-run converges.",
+      "item": [
+        {
+          "name": "paginated-sync — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_paginated_sync_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('paginated-sync: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-paginated-sync-{{stamp}}\",\n  \"description\": \"Loops pages of an external API and hands each page to a sync sub-flow, upserting so a re-run converges.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"pages1\",\n      \"type\": \"openregister.iterate\",\n      \"config\": {\n        \"source\": {\n          \"type\": \"openregister.sub-flow\",\n          \"config\": {\n            \"flowId\": \"{{pagerFlow}}\",\n            \"wait\": true\n          }\n        },\n        \"body\": [\n          {\n            \"type\": \"openregister.sub-flow\",\n            \"config\": {\n              \"flowId\": \"{{syncFlow}}\",\n              \"wait\": true\n            }\n          }\n        ],\n        \"maxIterations\": 15,\n        \"onLimit\": \"fail\"\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"pages1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"pages1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "paginated-sync — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_paginated_sync_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_paginated_sync_status', String(run.status))",
+                  "pm.collectionVariables.set('case_paginated_sync_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('paginated-sync: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('paginated-sync: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_paginated_sync_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_paginated_sync_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "paginated-sync — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_paginated_sync_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_paginated_sync_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('paginated-sync: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"paged\")",
+                  "pm.test('paginated-sync: wrote at least 100 paged object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(100))"
                 ]
               }
             }
