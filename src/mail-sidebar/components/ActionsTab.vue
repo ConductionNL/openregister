@@ -82,7 +82,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { NcLoadingIcon } from '@nextcloud/vue'
-import CreateConnectedObjectDialog from '../dialogs/CreateConnectedObjectDialog.vue'
+import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 
 export default {
 	name: 'ActionsTab',
