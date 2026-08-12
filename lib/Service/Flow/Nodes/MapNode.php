@@ -261,6 +261,17 @@ class MapNode implements IFlowNode, IFlowNodeConfigKeys
             }
         }
 
+        // Resolving a uuid or a slug is find()'s job — it switches to matching those
+        // columns for any non-numeric string. Going straight to findByRef() instead
+        // consulted the `reference` column alone, so a flow naming its mapping by
+        // uuid or slug died on "No mapping matches ... by id, uuid, slug or
+        // reference" while the row sat there matching two of the four.
+        try {
+            return $this->mapper->find($reference);
+        } catch (Throwable $e) {
+            // Fall through to the reference lookup below.
+        }
+
         try {
             $byRef = $this->mapper->findByRef($reference);
         } catch (Throwable $e) {

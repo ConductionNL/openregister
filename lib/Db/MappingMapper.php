@@ -166,7 +166,15 @@ class MappingMapper extends QBMapper
 
         // Step 3: Apply organisation filter for multi-tenancy.
         // This ensures users only see mappings from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+        //
+        // allowNullOrg, as RegisterMapper, SchemaMapper and AgentMapper all do at
+        // every one of their read sites: a mapping is a configuration resource, and
+        // one carrying no organisation belongs to the instance rather than to a
+        // tenant. Without it a session with no ACTIVE organisation gets `1 = 0`
+        // welded onto the query while createFromArray() happily writes the row with
+        // organisation NULL — so POST returns 201 and the very next GET returns 404,
+        // for the same session, every time.
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
 
         // Step 4: Apply pagination if limit specified.
         if ($limit !== null) {
@@ -198,7 +206,7 @@ class MappingMapper extends QBMapper
      * @throws DoesNotExistException If mapping not found or not accessible
      * @throws MultipleObjectsReturnedException If multiple mappings found (should not happen)
      */
-    public function find(int|string $id, bool $includeNullOrg=false): Mapping
+    public function find(int|string $id, bool $includeNullOrg=true): Mapping
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -214,12 +222,18 @@ class MappingMapper extends QBMapper
         );
         if (is_string($id) === true && ctype_digit($id) === false) {
             // For non-numeric strings, search in uuid and slug columns.
+            //
+            // NOT in `id`. This branch is reached only when $id is non-numeric, so
+            // an id comparison could never match anyway — but on Postgres it does
+            // worse than not match: `id = 'some-uuid'` raises "invalid input syntax
+            // for type bigint" and takes the WHOLE disjunction down with it. Every
+            // lookup by uuid or slug therefore threw, and callers that wrap the
+            // lookup in a catch read that as "no such mapping".
             $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
-                    $qb->expr()->eq('slug', $qb->createNamedParameter($id)),
-                    $qb->expr()->eq('id', $qb->createNamedParameter($id))
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($id))
                 )
             );
         }
@@ -250,7 +264,7 @@ class MappingMapper extends QBMapper
                 $qb->expr()->eq('reference', $qb->createNamedParameter($reference))
             );
 
-        $this->applyOrganisationFilter(qb: $qb);
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
 
         return $this->findEntities(query: $qb);
     }//end findByRef()
@@ -419,7 +433,7 @@ class MappingMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*) as count'))
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter(qb: $qb);
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
 
         $result = $qb->executeQuery();
         $row    = $result->fetch();
@@ -445,7 +459,7 @@ class MappingMapper extends QBMapper
 
         $qb->setParameter('configId', '"'.$configurationId.'"');
 
-        $this->applyOrganisationFilter(qb: $qb);
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
 
         return $this->findEntities(query: $qb);
     }//end findByConfiguration()
@@ -459,7 +473,7 @@ class MappingMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls org filter inclusion
      */
-    public function getIdToSlugMap(bool $includeNullOrg=false): array
+    public function getIdToSlugMap(bool $includeNullOrg=true): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'slug')
@@ -485,7 +499,7 @@ class MappingMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls org filter inclusion
      */
-    public function getSlugToIdMap(bool $includeNullOrg=false): array
+    public function getSlugToIdMap(bool $includeNullOrg=true): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'slug')
