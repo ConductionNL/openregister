@@ -166,26 +166,32 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 }
+
 .viewHeader {
 	border-bottom: 1px solid var(--color-border);
 	padding-bottom: 12px;
 }
+
 .viewHeaderTitleIndented {
 	margin: 0;
 }
+
 .viewActionsBar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
+
 .viewInfo {
 	color: var(--color-text-maxcontrast);
 }
+
 .reportsGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 	gap: 16px;
 }
+
 .reportCard {
 	position: relative;
 	background: var(--color-main-background);
@@ -208,40 +214,48 @@ export default {
 	text-align: left;
 	cursor: pointer;
 }
+
 .reportCardActivator::after {
 	content: '';
 	position: absolute;
 	inset: 0;
 	border-radius: var(--border-radius-large);
 }
+
 .reportCardActivator:focus-visible::after {
 	outline: 2px solid var(--color-primary-element);
 	outline-offset: -2px;
 }
+
 .reportCard:hover {
 	border-color: var(--color-primary);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
+
 .reportCardHeader {
 	display: flex;
 	align-items: flex-start;
 	gap: 12px;
 	margin-bottom: 8px;
 }
+
 .reportCardIcon {
 	color: var(--color-primary);
 	flex-shrink: 0;
 }
+
 .reportCardHeader h3 {
 	margin: 0 0 4px 0;
 	font-size: 16px;
 }
+
 .reportCardBody {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0 0 12px 0;
 	line-height: 1.4;
 }
+
 .reportCardFooter {
 	display: flex;
 	justify-content: space-between;
@@ -249,6 +263,7 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .badge {
 	display: inline-flex;
 	align-items: center;
@@ -260,6 +275,7 @@ export default {
 	font-weight: 600;
 	text-transform: uppercase;
 }
+
 .badge-status-published {
 	background: var(--color-success);
 	color: var(--color-primary-text);

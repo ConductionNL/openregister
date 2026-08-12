@@ -119,9 +119,14 @@ export default {
 
 <style scoped>
 .section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
+
 .section__disabled { color: var(--color-text-maxcontrast); font-style: italic; }
+
 .section__error { color: var(--color-error); margin-top: 8px; }
+
 .section__success { color: var(--color-success); margin-top: 8px; }
+
 .avatar-section { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+
 .avatar-section__actions { display: flex; gap: 8px; }
 </style>

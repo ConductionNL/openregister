@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="openregister" xsi:noNamespaceSchemaLocation="phpcs.xsd">
     <description>
-        openregister — SEMANTICS ONLY. Formatting belongs to php-cs-fixer via
+        OpenRegister — SEMANTICS ONLY. Formatting belongs to php-cs-fixer via
         conduction/coding-standard; see .php-cs-fixer.dist.php.
     </description>
 

@@ -95,10 +95,16 @@ export default {
 
 <style scoped>
 .section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
+
 .section__loading { color: var(--color-text-maxcontrast); }
+
 .section__error { color: var(--color-error); margin-top: 8px; }
+
 .section__success { color: var(--color-success); margin-top: 8px; }
+
 .notifications-section__toggle { margin-bottom: 8px; }
+
 .notifications-section__digest { margin-top: 16px; }
+
 .notifications-section__digest label { display: block; margin-bottom: 4px; font-weight: bold; }
 </style>

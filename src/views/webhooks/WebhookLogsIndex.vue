@@ -586,14 +586,6 @@ export default {
 	background: var(--color-background-hover);
 }
 
-.webhooksTable thead .column-actions {
-	z-index: 10;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
 .status-success {
 	color: var(--color-success);
 	font-weight: 600;

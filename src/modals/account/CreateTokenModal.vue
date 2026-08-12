@@ -43,6 +43,8 @@ export default {
 
 <style scoped>
 .section__field { margin-bottom: 12px; }
+
 .section__field label { display: block; margin-bottom: 4px; font-weight: bold; }
+
 .tokens-section__modal { padding: 24px; }
 </style>

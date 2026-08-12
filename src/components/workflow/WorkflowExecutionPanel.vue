@@ -132,11 +132,18 @@ export default {
 
 <style scoped>
 .execution-table { width: 100%; border-collapse: collapse; }
+
 .execution-table th, .execution-table td { padding: 8px; border-bottom: 1px solid var(--color-border); }
+
 .execution-table tr:hover { background: var(--color-background-hover); cursor: pointer; }
+
 .status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+
 .status-approved { background: var(--color-success); color: white; }
+
 .status-error, .status-rejected { background: var(--color-error); color: white; }
+
 .status-modified, .status-delivered { background: var(--color-warning); color: white; }
+
 .pagination { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 </style>
