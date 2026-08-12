@@ -49,6 +49,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\IGroupManager;
@@ -295,15 +296,23 @@ class MapsOverviewService
             _multitenancy: $rbac
         );
 
-        // The findAll() call returns a list of rendered object arrays (each
-        // carrying @self metadata + the schema properties incl. the geometry).
+        // `ObjectService::findAll()` returns rendered **ObjectEntity objects**
+        // (ObjectService.php -> RenderObject::renderEntities(), declared
+        // `@return ObjectEntity[]`), NOT arrays. This loop used to say
+        // `if (is_array($row) === false) { continue; }` on the strength of a
+        // comment claiming the opposite, so EVERY row was skipped and this
+        // endpoint answered HTTP 200 with `{"points":[],"count":0}` for every
+        // register/schema — indistinguishable from "nothing has geometry".
+        // `jsonSerialize()` is the rendered array shape `pointFromRow()` reads
+        // (@self + id + the schema properties at top level).
         $points = [];
         foreach ($result as $row) {
-            if (is_array($row) === false) {
+            $rowArray = $this->rowToArray(row: $row);
+            if ($rowArray === null) {
                 continue;
             }
 
-            $point = $this->pointFromRow(row: $row, geoProperty: $geoProperty, register: $register, schema: $schema);
+            $point = $this->pointFromRow(row: $rowArray, geoProperty: $geoProperty, register: $register, schema: $schema);
             if ($point !== null) {
                 $points[] = $point;
             }
@@ -311,6 +320,39 @@ class MapsOverviewService
 
         return $points;
     }//end queryPoints()
+
+    /**
+     * Normalise one `findAll()` row to the rendered array shape.
+     *
+     * `ObjectService::findAll()` returns rendered **ObjectEntity objects**
+     * (`ObjectService::findAll()` -> `RenderObject::renderEntities()`, declared
+     * `@return ObjectEntity[]`), NOT arrays. `queryPoints()` used to test
+     * `is_array($row)` on the strength of a comment claiming the opposite, so
+     * EVERY row was skipped and the overview endpoint answered HTTP 200 with
+     * `{"points":[],"count":0}` for every register/schema — indistinguishable
+     * from "nothing here has geometry". `jsonSerialize()` is exactly the shape
+     * `pointFromRow()` reads: `@self` + `id` + the schema properties at top
+     * level. Plain arrays are still accepted so a caller passing pre-rendered
+     * rows keeps working.
+     *
+     * @param mixed $row One row as returned by ObjectService::findAll().
+     *
+     * @return array<string,mixed>|null The rendered array, or null when unusable.
+     *
+     * @spec openspec/specs/integration-maps-overview/spec.md
+     */
+    private function rowToArray(mixed $row): ?array
+    {
+        if ($row instanceof ObjectEntity === true) {
+            return $row->jsonSerialize();
+        }
+
+        if (is_array($row) === true) {
+            return $row;
+        }
+
+        return null;
+    }//end rowToArray()
 
     /**
      * Build the OpenRegister findAll filter array for a map query.

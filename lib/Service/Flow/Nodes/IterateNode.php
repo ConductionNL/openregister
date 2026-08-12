@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -202,6 +203,55 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
     }//end validateConfig()
 
     /**
+     * What the SOURCE runs against on one pass.
+     *
+     * Two things had to be true for a paging source to work, and neither was:
+     *
+     * ONE ITEM, ALWAYS. A per-item source does its work once per item, so a
+     * pass seeded with zero items does nothing and returns nothing — which the
+     * loop reads as "the source ran out" and stops. Measured: a paging
+     * source-call fetched one page and terminated, so `iterate` could express a
+     * loop that never looped, while reporting success.
+     *
+     * THE ITERATION ON THE ITEM. This class documents `context['iteration']` as
+     * how a source asks for the right page, but a step's templates render
+     * against the ITEM, not the context — so `{{ iteration.index }}` in an
+     * endpoint resolved to nothing and every pass fetched page one. Measured
+     * against a real paging API: identical ids every pass, the source never ran
+     * out, and the loop hit its ceiling and failed with "the source never runs
+     * out" — blaming the API for what the engine had not told it.
+     *
+     * Later passes deliberately do NOT carry the previous pass's output: the
+     * source is paging, not re-filtering what it just produced.
+     *
+     * @param integer              $index     The pass number.
+     * @param array<int, mixed>    $upstream  The items that entered the loop.
+     * @param array<string, mixed> $iteration The `{index, first}` descriptor.
+     *
+     * @return array<int, mixed> The items the source runs against.
+     *
+     * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+     */
+    private function seedFor(int $index, array $upstream, array $iteration): array
+    {
+        if ($index > 0 || $upstream === []) {
+            return [FlowItems::item(json: ['iteration' => $iteration])];
+        }
+
+        // First pass: whatever entered the loop, each item told which pass it is
+        // on, so a source can page from the caller's own data.
+        return array_map(
+            static function (array $item) use ($iteration): array {
+                $item['json'] = array_merge((array) ($item['json'] ?? []), ['iteration' => $iteration]);
+
+                return $item;
+            },
+            $upstream
+        );
+
+    }//end seedFor()
+
+    /**
      * A loop needs something that produces batches.
      *
      * @param mixed $source The declared source step.
@@ -307,7 +357,7 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
         $onLimit    = (string) ($config['onLimit'] ?? self::ON_LIMIT_FAIL);
 
         $gathered = [];
-        $seed     = $items;
+        $upstream = $items;
 
         for ($index = 0; $index < $max; $index++) {
             $scoped = $context;
@@ -316,6 +366,7 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
                 'first' => ($index === 0),
             ];
 
+            $seed  = $this->seedFor(index: $index, upstream: $upstream, iteration: $scoped['iteration']);
             $batch = $dispatcher->dispatch(step: $source, items: $seed, context: $scoped);
 
             // The one termination rule. A source with nothing left returns
@@ -330,10 +381,6 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
             }
 
             $gathered = array_merge($gathered, $batch);
-
-            // Later passes start from nothing: the source is paging, not
-            // re-filtering whatever the previous pass produced.
-            $seed = [];
         }//end for
 
         if ($onLimit === self::ON_LIMIT_STOP) {

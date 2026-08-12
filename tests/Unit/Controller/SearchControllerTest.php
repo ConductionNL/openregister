@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchController;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -108,5 +109,96 @@ class SearchControllerTest extends TestCase
         $this->assertEquals('Unknown', $item['name']);
         $this->assertEquals('object', $item['type']);
         $this->assertEquals('openregister', $item['source']);
+    }
+
+    // ── ObjectEntity rows ──
+    //
+    // Every test above hands the controller plain arrays. searchObjectsPaginated()
+    // also returns ObjectEntity instances — ObjectService::collectNamesForResults()
+    // branches on `instanceof ObjectEntity` before it branches on is_array() — and
+    // the formatter was broken for exactly that shape: ObjectEntity declares
+    // getUuid()/getName() only as `@method`, served through Entity::__call(), so
+    // method_exists() was FALSE, the entity branch was never taken, and the array
+    // branch could not read an object either. Every hit came back id: null,
+    // name: 'Unknown'. Nothing on this path routes through getObject(), so there
+    // was no fallback to recover the uuid.
+
+    public function testSearchFormatsObjectEntityRowsWithTheirRealUuidAndName(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'test'],
+                ['offset', 0, 0],
+                ['limit', 25, 25],
+                ['_search', [], []],
+            ]);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('entity-uuid-1');
+        $entity->setName('Entity Display Name');
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [$entity],
+            'total'   => 1,
+        ]);
+
+        $data = $this->controller->search()->getData();
+        $item = $data['results'][0];
+
+        $this->assertSame('entity-uuid-1', $item['id']);
+        $this->assertSame('Entity Display Name', $item['name']);
+        $this->assertSame('object', $item['type']);
+        $this->assertSame('openregister', $item['source']);
+    }
+
+    public function testSearchFallsBackToUnknownForAnEntityWithoutAName(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'test'],
+                ['offset', 0, 0],
+                ['limit', 25, 25],
+                ['_search', [], []],
+            ]);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('entity-uuid-2');
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [$entity],
+            'total'   => 1,
+        ]);
+
+        $item = $this->controller->search()->getData()['results'][0];
+
+        $this->assertSame('entity-uuid-2', $item['id']);
+        $this->assertSame('Unknown', $item['name']);
+    }
+
+    /**
+     * A receiver that is neither an Entity nor an array must not fatal. This pins
+     * the reason the guard is `instanceof Entity && property_exists()` rather than
+     * is_callable(), which is unconditionally TRUE on any __call class and would
+     * turn this row into a BadFunctionCallException.
+     */
+    public function testSearchDoesNotFatalOnANonEntityObjectRow(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'test'],
+                ['offset', 0, 0],
+                ['limit', 25, 25],
+                ['_search', [], []],
+            ]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [new \stdClass()],
+            'total'   => 1,
+        ]);
+
+        $item = $this->controller->search()->getData()['results'][0];
+
+        $this->assertNull($item['id']);
+        $this->assertSame('Unknown', $item['name']);
     }
 }
