@@ -52,6 +52,8 @@ class ChunkTextMatcher {
 	 * Find every occurrence of `$needle` in `$chunks`, deduped by
 	 * absolute position across chunk boundaries.
 	 *
+	 * Matches are returned in document order. Empty when no match found.
+	 *
 	 * @param Chunk[] $chunks Chunks for the target file, ordered by chunkIndex.
 	 * @param string $needle Operator-supplied value to match.
 	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
@@ -60,7 +62,6 @@ class ChunkTextMatcher {
 	 *                          cannot reliably be matched per-chunk and are rejected.
 	 *
 	 * @return array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}>
-	 *                                                                                                Matches in document order. Empty when no match found.
 	 *
 	 * @throws ChunkMatcherException When the needle is longer than `$chunkOverlap` or the
 	 *                               regex pattern fails to compile.

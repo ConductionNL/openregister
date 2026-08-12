@@ -128,12 +128,13 @@ class DuplicateDetectionService {
 	/**
 	 * Resolve effective rules, blocking keys and threshold.
 	 *
+	 * Returns `[rules, blockingKeys, threshold]`, or null when no usable rules exist.
+	 *
 	 * @param int|string $schema Schema reference.
 	 * @param array<int, mixed>|null $matchRules Caller-supplied rules, or null.
 	 * @param float|null $threshold Caller-supplied threshold, or null.
 	 *
 	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, string>, 2: float}|null
-	 *                                                                                          [rules, blockingKeys, threshold] or null when no usable rules exist.
 	 */
 	private function resolveConfig($schema, ?array $matchRules, ?float $threshold): ?array {
 		$annotation = $this->loadAnnotation(schema: $schema);

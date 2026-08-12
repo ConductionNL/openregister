@@ -212,20 +212,54 @@ class FlowRunMapper extends QBMapper {
 	}//end deleteTerminalOlderThan()
 
 	/**
-	 * Delete EVERY run of one flow, whatever its status or age.
+	 * Mark a running run as still alive.
 	 *
-	 * This is the cascade behind deleting a flow, so it deliberately does not
-	 * share `deleteTerminalOlderThan()`'s two guards. Age is irrelevant — the
-	 * flow is going away, so none of its history can ever be read again. And
-	 * terminality is irrelevant for the same reason: a `queued` or `suspended`
-	 * run of a deleted flow is not work waiting to happen, it is work that can
-	 * never happen, because the worker resolves the flow by uuid before it can
-	 * advance a token and will only ever fail to load it.
+	 * The stale reaper fails any run left `running` with an `updated` older than
+	 * its threshold, on the stated premise that "a pass that is still going has
+	 * touched its row far more recently than this". Nothing made that true:
+	 * `updated` was written once when the run entered `running` and not again
+	 * until it finished, so the reaper was not measuring liveness at all — it was
+	 * measuring how long the run had been going. Any walk longer than the
+	 * threshold was failed underneath a healthy executor, which then carried on
+	 * and completed. Measured on the dev instance at low load: a run started
+	 * 09:00:56 was marked abandoned 09:20:03 and went on to import every record.
 	 *
-	 * @param string $flowId The flow uuid whose runs are removed.
+	 * This is the write that makes the premise true. It is deliberately a narrow
+	 * UPDATE rather than an entity save: the executor holds a FlowRun loaded
+	 * before the walk, and persisting that would write back its whole stale row.
 	 *
-	 * @return array<int, string> The uuids of the deleted runs, so their step
-	 *                            rows can be removed too.
+	 * @param string $uuid The run uuid.
+	 * @param DateTime $when The moment to record.
+	 *
+	 * @return boolean Whether a running row was updated.
+	 *
+	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 */
+	public function touch(string $uuid, DateTime $when): bool {
+		if ($uuid === '') {
+			return false;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('updated', $qb->createNamedParameter($when, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+			// Only while it is RUNNING. Without this a late beat from an executor
+			// that has already been reaped would push `updated` forward on a row
+			// the reaper has marked failed, hiding the abandonment it just
+			// recorded — and a beat arriving after a legitimate finish would
+			// disturb a terminal row for no reason.
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_RUNNING)));
+
+		return $qb->executeStatement() > 0;
+	}//end touch()
+
+	/**
+	 * Delete every run of one flow, returning their uuids.
+	 *
+	 * @param string $flowId The flow uuid.
+	 *
+	 * @return array<int, string> The deleted runs' uuids.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */

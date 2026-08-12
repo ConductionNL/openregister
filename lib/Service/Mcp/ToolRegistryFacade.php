@@ -177,8 +177,9 @@ class ToolRegistryFacade {
 	 * `upsertSchema` and friends, which genuinely are neither create nor update
 	 * alone.
 	 *
+	 * Returns one entry per callable function.
+	 *
 	 * @return array<int, array{name: string, description: string, app: string, tool: string, group: string, right: string}>
-	 *                                                                                                                       One entry per callable function.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */

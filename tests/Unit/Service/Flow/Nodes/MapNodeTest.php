@@ -195,8 +195,14 @@ class MapNodeTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testANonNumericReferenceResolvesByRef(): void {
+	public function testANonNumericReferenceFallsBackToRefWhenItIsNotAUuidOrSlug(): void {
 		$mapping = $this->createMock(Mapping::class);
+
+		// find() IS consulted first now, and is expected to miss here: it is what
+		// resolves a uuid or a slug, and this reference is neither. Asserting it
+		// was never called pinned the old behaviour, where resolve() went straight
+		// to findByRef() and a mapping named by uuid or slug could not be found at
+		// all — the `reference` column was the only one ever consulted.
 		$this->mapper->expects($this->once())
 			->method('find')
 			->with('person-to-contact')
@@ -216,7 +222,43 @@ class MapNodeTest extends TestCase {
 
 		$this->assertCount(1, $out);
 
-	}//end testANonNumericReferenceResolvesByRef()
+	}//end testANonNumericReferenceFallsBackToRefWhenItIsNotAUuidOrSlug()
+
+	/**
+	 * A mapping named by UUID resolves, and never reaches the reference lookup.
+	 *
+	 * The case this exists for: a flow definition is portable between instances
+	 * where the numeric id differs, so authors name mappings by uuid. resolve()
+	 * used to send every non-numeric reference straight to findByRef(), which
+	 * consults the `reference` column alone — so a uuid matched nothing and the
+	 * step failed with "No mapping matches ... by id, uuid, slug or reference"
+	 * while the row sat there matching two of the four named identifiers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function testAUuidResolvesThroughFindAndNeverReachesTheRefLookup(): void {
+		$mapping = $this->createMock(Mapping::class);
+		$uuid = '7427bd97-103a-4965-a47a-5e3357afc479';
+
+		$this->mapper->expects($this->once())
+			->method('find')
+			->with($uuid)
+			->willReturn($mapping);
+		$this->mapper->expects($this->never())->method('findByRef');
+
+		$this->mappings->method('executeMapping')->willReturn(['ok' => true]);
+
+		$out = $this->node->execute(
+			[FlowItems::item(json: [])],
+			['mapping' => $uuid],
+			[]
+		);
+
+		$this->assertCount(1, $out);
+
+	}//end testAUuidResolvesThroughFindAndNeverReachesTheRefLookup()
 
 	/**
 	 * A uuid or a slug resolves through find(), and findByRef() is never reached.

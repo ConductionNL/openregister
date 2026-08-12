@@ -81,6 +81,29 @@ class FlowRunWorker extends TimedJob {
 	private const DEFAULT_STALE_MINUTES = 15;
 
 	/**
+	 * The instance-wide runtime ceiling this reaper must not undercut.
+	 *
+	 * Kept in step with FlowRunService::DEFAULT_MAX_RUNTIME_MINUTES: the reaper
+	 * reads the same setting so its patience is derived from what runs are
+	 * actually allowed, rather than being a second, contradictory number.
+	 *
+	 * @var int
+	 */
+	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
+
+	/**
+	 * Slack between a run's deadline and the reaper's.
+	 *
+	 * A run that hits its ceiling fails itself at the next checkpoint, which may
+	 * be a little after the deadline. Reaping the instant the budget expires
+	 * would race that, and produce the abandonment message for a run that was
+	 * about to record a perfectly accurate one of its own.
+	 *
+	 * @var int
+	 */
+	private const REAP_GRACE_MINUTES = 5;
+
+	/**
 	 * How long a run may sit in `queued` before it is too late to run it.
 	 *
 	 * A queued run says "do this now". Twenty-four hours later that is no
@@ -197,6 +220,28 @@ class FlowRunWorker extends TimedJob {
 			// An operator who runs very long single steps can switch the reaper
 			// off rather than have it fail work that is still going.
 			return;
+		}
+
+		// The reaper must never call a run abandoned while that run is still
+		// inside the time it was GRANTED. Those two numbers used to be set
+		// independently and contradicted each other by default: runs were allowed
+		// an hour and declared dead at fifteen minutes, so any walk between the
+		// two was failed while working perfectly — measured on the dev instance,
+		// a run reaped at 09:20 that went on to import everything it was asked
+		// for.
+		//
+		// The executor beats at every checkpoint, so a run that has gone quiet for
+		// longer than its whole budget really is gone. Waiting that long is the
+		// price of not being able to distinguish "dead" from "inside one long
+		// step" any faster.
+		$maxRuntime = (int)$this->appConfig->getValueString(
+			'openregister',
+			'flow_max_runtime_minutes',
+			(string)self::DEFAULT_MAX_RUNTIME_MINUTES
+		);
+
+		if ($maxRuntime > 0) {
+			$minutes = max($minutes, ($maxRuntime + self::REAP_GRACE_MINUTES));
 		}
 
 		$cutoff = (clone $now)->modify('-' . $minutes . ' minutes');

@@ -284,7 +284,13 @@ class DocumentProcessingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
-	public function replaceWords(Node $node, array $replacements, ?string $outputName = null, bool $strict = false, ?bool $preserveStructure = null): File {
+	public function replaceWords(
+		Node $node,
+		array $replacements,
+		?string $outputName = null,
+		bool $strict = false,
+		?bool $preserveStructure = null,
+	): File {
 		if (($node instanceof File) === false) {
 			throw new Exception('Node must be a file');
 		}

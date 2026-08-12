@@ -260,6 +260,13 @@ class ValidationHandler {
 	 *
 	 * Example: 671K objects processed in ~5 minutes with 1K chunks
 	 *
+	 * Returns statistics about the validation and save operation:
+	 * - processed: Total number of objects processed in this batch
+	 * - updated: Number of objects successfully updated
+	 * - failed: Number of objects that failed validation/save
+	 * - total: Total number of objects in the schema (for pagination)
+	 * - errors: Array of error details (currently empty)
+	 *
 	 * @param int $registerId The ID of the register containing the schema
 	 * @param int $schemaId The ID of the schema whose objects should be validated
 	 * @param array $saveCallback Array-callable to save objects, e.g. [$objectService, 'saveObject']
@@ -267,12 +274,6 @@ class ValidationHandler {
 	 * @param int $offset Number of objects to skip before processing
 	 *
 	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
-	 *                                                                                     Statistics about the validation and save operation:
-	 *                                                                                     - processed: Total number of objects processed in this batch
-	 *                                                                                     - updated: Number of objects successfully updated
-	 *                                                                                     - failed: Number of objects that failed validation/save
-	 *                                                                                     - total: Total number of objects in the schema (for pagination)
-	 *                                                                                     - errors: Array of error details (currently empty)
 	 *
 	 * @throws \Exception If schema/register loading fails or object retrieval fails
 	 *

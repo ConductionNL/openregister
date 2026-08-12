@@ -226,7 +226,8 @@ class FederationController extends Controller {
 			$this->setServeContext(share: $share);
 			$objects = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->error('[Federation] serve objects failed: ' . get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+			$this->logger->error('[Federation] serve objects failed: ' . get_class($e) . ': ' . $e->getMessage()
+				. ' @ ' . $e->getFile() . ':' . $e->getLine());
 			return new JSONResponse(data: ['error' => 'Could not read shared objects'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 

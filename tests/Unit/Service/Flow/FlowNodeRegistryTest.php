@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
@@ -64,6 +65,25 @@ class TaggingNode implements IFlowNode {
 		}
 
 		return $out;
+	}
+}
+
+/**
+ * A node that reliably outlives a one-second ceiling.
+ *
+ * It sleeps rather than reporting a fake duration, because what is under test is
+ * the dispatcher measuring a real call. 1.2s buys enough margin that a loaded
+ * machine cannot make this flap the other way.
+ */
+class SlowNode extends TaggingNode {
+	public function __construct() {
+		parent::__construct('test.slow');
+	}
+
+	public function execute(array $items, array $config, array $context): array {
+		usleep(1_200_000);
+
+		return $items;
 	}
 }
 
@@ -304,5 +324,64 @@ class FlowNodeRegistryTest extends TestCase {
 
 		$this->expectException(UnexpectedValueException::class);
 		$dispatcher->dispatch(['type' => 'ghost.step'], [], []);
+	}
+
+	/**
+	 * A node with no `maxRuntimeSeconds` is not on a clock.
+	 *
+	 * The ceiling is opt-in per step: imposing a default on every node would
+	 * fail slow-but-correct integrations that nobody asked to bound.
+	 */
+	public function testAStepWithNoCeilingIsNotTimed(): void {
+		$dispatcher = new RegistryStepDispatcher($this->registryWith([new TaggingNode()]));
+
+		$out = $dispatcher->dispatch(
+			['type' => 'test.tag', 'config' => ['label' => 'x']],
+			[FlowItems::item(json: [])],
+			[]
+		);
+
+		$this->assertCount(1, $out);
+	}
+
+	/**
+	 * A ceiling of zero means "no ceiling", matching the flow-level budget.
+	 */
+	public function testAZeroNodeCeilingIsNotEnforced(): void {
+		$dispatcher = new RegistryStepDispatcher($this->registryWith([new TaggingNode()]));
+
+		$out = $dispatcher->dispatch(
+			['type' => 'test.tag', 'config' => ['label' => 'x', 'maxRuntimeSeconds' => 0]],
+			[FlowItems::item(json: [])],
+			[]
+		);
+
+		$this->assertCount(1, $out);
+	}
+
+	/**
+	 * A step that overruns its own ceiling fails, naming itself.
+	 *
+	 * The per-node ceiling exists so one slow integration is answerable for
+	 * itself, instead of only surfacing an hour later as the whole run expiring
+	 * — at which point the log says the run ran out of time and not which of
+	 * fifteen steps ate it.
+	 *
+	 * The node really does take longer than its ceiling — a second of wall clock
+	 * rather than a stubbed duration, because the thing under test is the
+	 * dispatcher timing a real call. A negative ceiling would not do: values at
+	 * or below zero mean "unlimited", as they do for the flow budget.
+	 */
+	public function testAStepThatOverrunsItsCeilingIsStopped(): void {
+		$dispatcher = new RegistryStepDispatcher($this->registryWith([new SlowNode()]));
+
+		$this->expectException(FlowRunExpired::class);
+		$this->expectExceptionMessageMatches('/test\.slow/');
+
+		$dispatcher->dispatch(
+			['type' => 'test.slow', 'config' => ['maxRuntimeSeconds' => 1]],
+			[FlowItems::item(json: [])],
+			[]
+		);
 	}
 }

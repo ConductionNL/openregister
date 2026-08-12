@@ -80,12 +80,13 @@ class ContentScanService {
 	/**
 	 * Scan a body of text (optionally with structured metadata) for dangerous patterns.
 	 *
+	 * Returns the scan report. `safe` is true only when severity is `clean`.
+	 *
 	 * @param string $content The primary text to scan (e.g. a skill body).
 	 * @param array<string, mixed> $metadata Optional structured metadata to fold in (e.g.
 	 *                                       a skill's frontmatter); scalar leaves are scanned.
 	 *
 	 * @return array{safe: bool, severity: string, findings: array<int, array<string, string>>, scannedBytes: int, truncated: bool}
-	 *                                                                                                                              The scan report. `safe` is true only when severity is `clean`.
 	 */
 	public function scan(string $content, array $metadata = []): array {
 		$haystack = $content;

@@ -167,6 +167,10 @@ class ValidateObject {
 	 * `SchemaMapper.php:2303-2304` flagged it as a "freely overridable
 	 * metadataField," with no write-path enforcement anywhere.
 	 *
+	 * Returns the list of violations, empty when the update is compliant. Callers
+	 * MUST throw `ValidationException` (or return an equivalent 422 response) when
+	 * this method returns a non-empty list.
+	 *
 	 * @param array $incomingObject The candidate object data (top-level keys
 	 *                              are property names).
 	 * @param array $existingObject The previously-stored object data (same
@@ -176,9 +180,6 @@ class ValidateObject {
 	 *                       drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
-	 *                                                                                               List of violations. Empty array when the update is compliant.
-	 *                                                                                               Callers MUST throw `ValidationException` (or equivalent 422
-	 *                                                                                               response) when this method returns a non-empty list.
 	 */
 	public function validateReadOnlyConstraints(
 		array $incomingObject,
@@ -1662,11 +1663,13 @@ class ValidateObject {
 	 * fields. The output depends only on the schema (never on the object being
 	 * validated), which is what makes it cacheable per schemaId:version.
 	 *
+	 * Returns the prepared schema object plus the derived computed-property and
+	 * required-field lists.
+	 *
 	 * @param object $schemaObject The raw schema object to prepare
 	 * @param Schema|null $schema The schema entity (for slug-based circular reference detection)
 	 *
-	 * @return array{schemaObject: object, computed: list<string>, required: array} The prepared
-	 *                                                                              schema object plus the derived computed-property and required-field lists
+	 * @return array{schemaObject: object, computed: list<string>, required: array}
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential schema mutations with per-property branching
 	 * @SuppressWarnings(PHPMD.NPathComplexity)

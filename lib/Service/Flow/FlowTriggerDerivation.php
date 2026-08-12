@@ -261,11 +261,12 @@ class FlowTriggerDerivation {
 	 * report "no node matches" and read as a re-authoring gap, when the truth is
 	 * that the column trigger cannot be expressed as a node at all.
 	 *
+	 * Returns the verdict, or null when the two sides must actually be compared.
+	 *
 	 * @param array{event: string, register: string, schema: string}|null $columns The column trigger.
 	 * @param array<int, array{event: string, register: string, schema: string}> $nodes The node triggers.
 	 *
-	 * @return array{equivalent: bool, reason: string, columns: array|null, nodes: array}|null The
-	 *                                                                                         verdict, or null when the two sides must actually be compared.
+	 * @return array{equivalent: bool, reason: string, columns: array|null, nodes: array}|null
 	 */
 	private function verdictWithoutComparing(?array $columns, array $nodes): ?array {
 		if ($columns === null && $nodes === []) {

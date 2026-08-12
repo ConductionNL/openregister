@@ -3988,7 +3988,8 @@ class ObjectsController extends Controller {
 	 * @param ObjectService $objectService The object service
 	 *
 	 * @return DataDownloadResponse|JSONResponse The exported file as a download response, or a
-	 *                                           400 JSON error when a `format=pdf` request exceeds {@see \OCA\OpenRegister\Service\ExportService::MAX_PDF_EXPORT_ROWS}.
+	 *                                           400 JSON error when a `format=pdf` request exceeds
+	 *                                           {@see \OCA\OpenRegister\Service\ExportService::MAX_PDF_EXPORT_ROWS}.
 	 *
 	 * @NoAdminRequired
 	 *

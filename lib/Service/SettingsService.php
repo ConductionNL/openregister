@@ -1446,15 +1446,21 @@ class SettingsService {
 		$last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
 		$value = (int)$memoryLimit;
 
+		// Multipliers are spelled out per case rather than reached by
+		// fall-through: php-cs-fixer's no_break_comment fixer requires the
+		// marker comment to read exactly `no break`, while PHPCS's
+		// Squiz.Commenting.InlineComment.NotCapital requires a capital. No
+		// spelling of the comment satisfies both, so the fall-through goes.
 		switch ($last) {
 			case 'g':
-				$value *= 1024;
-				// no break.
+				$value *= 1024 * 1024 * 1024;
+				break;
 			case 'm':
-				$value *= 1024;
-				// no break.
+				$value *= 1024 * 1024;
+				break;
 			case 'k':
 				$value *= 1024;
+				break;
 		}
 
 		return $value;

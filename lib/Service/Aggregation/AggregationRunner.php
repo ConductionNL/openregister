@@ -58,6 +58,9 @@ use RuntimeException;
 /**
  * Runs a named aggregation against a schema.
  *
+ * @phpstan-type AggregationGroups array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>
+ * @psalm-type AggregationGroups = array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
@@ -2087,9 +2090,7 @@ class AggregationRunner {
 	 * @param array<string, mixed>|null $groupBy Optional group spec (see {@see tryNativeAggregation()}).
 	 * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries (>1).
 	 *
-	 * @return array{values: array<string, int|float|null>}
-	 *                                                      |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>}
-	 *                                                      |null
+	 * @return array{values: array<string, int|float|null>}|array{groups: AggregationGroups}|null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */

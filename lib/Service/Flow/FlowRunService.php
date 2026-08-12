@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Exception\FlowRunExpired;
+use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -47,6 +49,19 @@ use Throwable;
  * The durable half of flow execution.
  */
 class FlowRunService {
+	/**
+	 * How long one run may take, in minutes, when nothing overrides it.
+	 *
+	 * An hour is far above any flow that is working normally and far below
+	 * "forever", which is what the ceiling was before: a run had no time limit
+	 * at all, and the only thing that ever stopped a long one was the stale
+	 * reaper mistaking it for dead — which did not stop it, it only relabelled
+	 * it while it kept running.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
+
 	/**
 	 * Constructor.
 	 *
@@ -61,6 +76,10 @@ class FlowRunService {
 	 *                                      unit tests can build this service
 	 *                                      without it; history is then simply
 	 *                                      not recorded, never faked.
+	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
+	 *                                   ceiling. Nullable on the same terms
+	 *                                   as $steps; absent, the compiled-in
+	 *                                   default applies.
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $mapper,
@@ -70,9 +89,126 @@ class FlowRunService {
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunStepMapper $steps = null,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The node context a walk starts from, before its live handles are added.
+	 *
+	 * `triggeredBy` carries the run's owner into the node context. Nodes read it
+	 * to attribute what they do — ObjectWriteNode REFUSES to write without it,
+	 * SubFlowNode propagates it to child runs, and Hermiq's agent node runs the
+	 * turn as that user. Nothing else in lib/ ever wrote this key, so every
+	 * trigger reached its nodes ownerless and only hand-injected contexts (tests,
+	 * harnesses) worked. An explicit context value still wins, so a caller can
+	 * attribute a run to someone other than whoever queued it. See or#2158.
+	 *
+	 * @param FlowRun $run The run being executed.
+	 * @param boolean $resuming Whether this walk resumes a suspended run.
+	 *
+	 * @return array The starting context.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $resuming is a fact about the
+	 * run being reported into the context, not a mode switch on this method.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function baseContextFor(FlowRun $run, bool $resuming): array {
+		$context = ($run->getContext() ?? []);
+
+		$context['runUuid'] = $run->getUuid();
+		$context['resuming'] = $resuming;
+		$context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
+
+		return $context;
+	}//end baseContextFor()
+
+	/**
+	 * Put the flow's carried state into the node context.
+	 *
+	 * Flow state is the token's long-lived sibling: the token belongs to THIS run
+	 * and dies with it, this belongs to the FLOW and outlives every run of it.
+	 * Loaded from its own table rather than from the run's context, because a
+	 * scheduled flow's next tick is a different run and would otherwise start
+	 * blank — which is the whole gap OR#2216 exists to close.
+	 *
+	 * Handed over as an object for the same reason as the token: nodes take
+	 * $context by value, so only a handle gives them write access.
+	 *
+	 * @param FlowRun $run The run being executed.
+	 * @param array $context The node context, modified in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function attachFlowState(FlowRun $run, array &$context): void {
+		if (trim((string)$run->getFlowId()) === '') {
+			return;
+		}
+
+		$stored = $this->stateMapper->findByFlow(flowId: (string)$run->getFlowId());
+		$context[FlowStateHandle::CONTEXT_KEY] = new FlowStateHandle(values: ($stored?->getState() ?? []));
+
+	}//end attachFlowState()
+
+	/**
+	 * The liveness-and-deadline handle for one run of one flow.
+	 *
+	 * @param FlowRun $run The run being executed.
+	 * @param array $flow The resolved flow document being run.
+	 *
+	 * @return FlowRunGuard The guard for this walk.
+	 *
+	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 */
+	private function guardFor(FlowRun $run, array $flow): FlowRunGuard {
+		return new FlowRunGuard(
+			mapper: $this->mapper,
+			logger: $this->logger,
+			runUuid: (string)$run->getUuid(),
+			startedAt: microtime(true),
+			budget: $this->runtimeBudgetSeconds(flow: $flow)
+		);
+
+	}//end guardFor()
+
+	/**
+	 * Seconds one run of this flow may take before it is stopped.
+	 *
+	 * Three layers, most specific first: the flow's own `limits.maxRuntimeMinutes`,
+	 * then the instance's `flow_max_runtime_minutes`, then an hour. A flow that
+	 * legitimately runs longer says so on itself rather than forcing the ceiling
+	 * up for every flow on the instance.
+	 *
+	 * Zero at either layer means "no ceiling", for an operator running
+	 * deliberately long imports who would rather see them finish than be killed.
+	 *
+	 * @param array $flow The resolved flow document being run.
+	 *
+	 * @return integer The budget in seconds, or 0 for unlimited.
+	 *
+	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 */
+	private function runtimeBudgetSeconds(array $flow): int {
+		$limits = (array)($flow['limits'] ?? []);
+		if (array_key_exists('maxRuntimeMinutes', $limits) === true) {
+			return (max(0, (int)$limits['maxRuntimeMinutes']) * 60);
+		}
+
+		$minutes = self::DEFAULT_MAX_RUNTIME_MINUTES;
+		if ($this->appConfig !== null) {
+			$minutes = (int)$this->appConfig->getValueString(
+				'openregister',
+				'flow_max_runtime_minutes',
+				(string)self::DEFAULT_MAX_RUNTIME_MINUTES
+			);
+		}
+
+		return (max(0, $minutes) * 60);
+	}//end runtimeBudgetSeconds()
 
 	/**
 	 * The organisation to attribute a run to, or null when there is none.
@@ -393,18 +529,7 @@ class FlowRunService {
 			$start = null;
 		}
 
-		$context = ($run->getContext() ?? []);
-		$context['runUuid'] = $run->getUuid();
-		$context['resuming'] = $resuming;
-		// Carry the run's owner into the node context. Nodes read
-		// `context['triggeredBy']` to attribute what they do — ObjectWriteNode
-		// REFUSES to write without it, SubFlowNode propagates it to child runs,
-		// and Hermiq's agent node runs the turn as that user. Nothing else in
-		// lib/ ever wrote this key, so every trigger reached its nodes
-		// ownerless and only hand-injected contexts (tests, harnesses) worked.
-		// An explicit context value still wins, so a caller can attribute a run
-		// to someone other than whoever queued it. See or#2158.
-		$context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
+		$context = $this->baseContextFor(run: $run, resuming: $resuming);
 
 		// The token is stored as plain values but handed to steps as an object:
 		// a step receives $context by value, so only a handle gives it write
@@ -413,32 +538,48 @@ class FlowRunService {
 		// gets back exactly what it held when it stopped.
 		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
 
-		// Flow state is the token's long-lived sibling: the token belongs to
-		// THIS run and dies with it, this belongs to the FLOW and outlives every
-		// run of it. Loaded from its own table rather than from the run's
-		// context, because a scheduled flow's next tick is a different run and
-		// would otherwise start blank — which is the whole gap OR#2216 exists
-		// to close.
-		//
-		// Handed over as an object for the same reason as the token: nodes take
-		// $context by value, so only a handle gives them write access.
-		$flowState = null;
-		if (trim((string)$run->getFlowId()) !== '') {
-			$stored = $this->stateMapper->findByFlow(flowId: (string)$run->getFlowId());
-			$flowState = new FlowStateHandle(values: ($stored?->getState() ?? []));
-			$context[FlowStateHandle::CONTEXT_KEY] = $flowState;
-		}
+		// The run's liveness signal and its deadline. Handed to the dispatcher,
+		// which checkpoints between steps, AND put in the node context, because
+		// between-steps is not enough on its own: a single step that runs past the
+		// threshold gets the run failed underneath it. A node that works in pages,
+		// batches or records checkpoints between them; one that returns quickly
+		// never needs to.
+		$guard = $this->guardFor(run: $run, flow: $flow);
+		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
+
+		$this->attachFlowState(run: $run, context: $context);
 
 		try {
 			$result = $this->engine->run(
 				flow: $flow,
 				store: new FlowRunMarkingStore(run: $run),
 				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry),
+				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard),
 				context: $context,
 				items: $items,
 				startAt: $start
 			);
+		} catch (FlowRunExpired $e) {
+			// The run stopped ITSELF at a checkpoint, having used its budget.
+			// Recorded as a first-class outcome rather than folded into the crash
+			// path below: nothing went wrong with the work, and the message has to
+			// say so or every timed-out import reads as a broken flow.
+			$this->logger->warning(
+				message: '[FlowRunService] Flow run stopped at its runtime ceiling',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'run' => $run->getUuid(),
+					'flow' => $run->getFlowId(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			$run->setStatus(FlowRun::STATUS_FAILED);
+			$run->setError($e->getMessage());
+			$run->setUpdated(new DateTime());
+
+			return $this->mapper->update($run);
 		} catch (Throwable $e) {
 			// The engine itself failing (rather than a step) is not something
 			// the run should be left `running` for — that status would make it
@@ -603,6 +744,12 @@ class FlowRunService {
 		// five-minute schedule makes that difference thousands of writes a week.
 		$this->persistFlowState(run: $run, context: $context);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
+
+		// Same reason as the state handle one line up: it is a live collaborator,
+		// not run data. Left in, it would be serialised into the run's context
+		// column as a meaningless object and handed back to a resumed run as
+		// something that no longer beats.
+		unset($context[FlowRunGuard::CONTEXT_KEY]);
 
 		$run->setStatus($status);
 		$run->setItems((array)($result['items'] ?? []));

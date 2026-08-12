@@ -105,6 +105,12 @@ class FlowEngine {
 	/**
 	 * Constructor.
 	 *
+	 * $router and $placement are added LAST, and defaulted: three unit tests
+	 * construct the engine positionally and one passes the oversight registry
+	 * third, so slotting a parameter in ahead of it would silently rebind that
+	 * argument — a test that still passes while checking nothing. Neither holds
+	 * state, so a locally-made one is indistinguishable from an injected one.
+	 *
 	 * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
 	 * @param LoggerInterface $logger The logger.
 	 * @param FlowOversightRegistry|null $oversight The pre-hop gate. Nullable so the
@@ -113,17 +119,6 @@ class FlowEngine {
 	 *                                              exactly as an empty registry does.
 	 * @param FlowTokenRouter|null $router Decides which exit a token takes.
 	 * @param FlowItemPlacement|null $placement Decides which items sit on which place.
-	 *
-	 *                                              Both are added LAST, and defaulted:
-	 *                                              three unit tests construct the engine
-	 *                                              positionally and one passes the
-	 *                                              oversight registry third, so slotting a
-	 *                                              parameter in ahead of it would silently
-	 *                                              rebind that argument — a test that
-	 *                                              still passes while checking nothing.
-	 *                                              Neither holds state, so a locally-made
-	 *                                              one is indistinguishable from an
-	 *                                              injected one.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,

@@ -309,10 +309,11 @@ class McpToolsService {
 	 * application log. External providers should namespace any short name
 	 * that could collide.
 	 *
+	 * The first matching provider + its descriptor is returned, or null if not found.
+	 *
 	 * @param string $toolId Tool identifier as sent by the client.
 	 *
 	 * @return array{provider: IMcpToolProvider, descriptor: array<string, mixed>}|null
-	 *                                                                                  The first matching provider + its descriptor, or null if not found.
 	 */
 	private function findProviderForTool(string $toolId): ?array {
 		$first = null;
