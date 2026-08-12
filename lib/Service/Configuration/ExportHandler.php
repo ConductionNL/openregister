@@ -424,7 +424,7 @@ class ExportHandler {
 	 *
 	 * @return array<string, mixed> The document with `components.securitySchemes` populated.
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function attachDeclaredScopes(array $openApiSpec): array {
 		$collector = new RbacGroupCollector();
@@ -464,7 +464,7 @@ class ExportHandler {
 	 *
 	 * @return string The scope description.
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function describeScope(string $group): string {
 		if ($group === 'admin') {

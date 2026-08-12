@@ -48,7 +48,7 @@ use Throwable;
 /**
  * Reconciles declared RBAC groups into Nextcloud on a schedule.
  *
- * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class GroupReconciler {
 
@@ -88,7 +88,7 @@ class GroupReconciler {
 	 *
 	 * @return array{declared: string[], created: string[]} What was declared and what was created.
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reconcile(): array {
 		try {
@@ -129,7 +129,7 @@ class GroupReconciler {
 	 *
 	 * @return string[] Provisionable group ids.
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function collectDeclared(): array {
 		$groups = array_merge(
@@ -151,7 +151,7 @@ class GroupReconciler {
 	 *
 	 * @return string[] Group ids (unfiltered).
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function fromLiveRegisters(): array {
 		$groups = [];
@@ -173,7 +173,7 @@ class GroupReconciler {
 	 *
 	 * @return string[] Group ids (unfiltered).
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function fromLiveSchemas(): array {
 		$groups = [];
@@ -200,7 +200,7 @@ class GroupReconciler {
 	 *
 	 * @return string[] Group ids (unfiltered).
 	 *
-	 * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function fromStoredDeclarations(): array {
 		$groups = [];
