@@ -130,15 +130,16 @@ class ConfidentialityClauseEnforcementTest extends TestCase
      */
     public function testEngineHonoursTheBuiltClause(string $maxLevel, string $objectLevel, bool $expected): void
     {
+        $actual  = $this->admits(maxLevel: $maxLevel, objectLevel: $objectLevel);
+        $verdict = 'denied';
+        if ($actual === true) {
+            $verdict = 'ADMITTED';
+        }
+
         $this->assertSame(
             $expected,
-            $this->admits(maxLevel: $maxLevel, objectLevel: $objectLevel),
-            sprintf(
-                'clearance %s / object %s was %s',
-                $maxLevel,
-                $objectLevel,
-                $this->admits(maxLevel: $maxLevel, objectLevel: $objectLevel) ? 'ADMITTED' : 'denied'
-            )
+            $actual,
+            sprintf('clearance %s / object %s was %s', $maxLevel, $objectLevel, $verdict)
         );
 
     }//end testEngineHonoursTheBuiltClause()
