@@ -41,125 +41,123 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 /**
  * Static registry of Nextcloud-entity → virtual-schema semantic mappings.
  */
-final class NcEntitySemanticMap
-{
+final class NcEntitySemanticMap {
 
-    /**
-     * The virtual register slug every core NC-entity schema is seeded under.
-     *
-     * @var string
-     */
-    public const DIRECTORY_REGISTER = 'directory';
+	/**
+	 * The virtual register slug every core NC-entity schema is seeded under.
+	 *
+	 * @var string
+	 */
+	public const DIRECTORY_REGISTER = 'directory';
 
-    /**
-     * Canonical NC-entity → virtual-schema rows.
-     *
-     * Row shape:
-     *  - `register`    — virtual register slug (core rows live in `directory`; each
-     *                    app-gated row lives in its own app-named register so the
-     *                    ADR-048 app-enabled gate degrades it when the app is gone);
-     *  - `schema`      — virtual schema slug (always `nc-`-prefixed so it never
-     *                    collides with a leaf-app schema of the same bare name);
-     *  - `schemaOrg`   — schema.org CURIE → the schema's `x-schema-org` marker;
-     *  - `provider`    — the ObjectSourceProvider id that serves its objects;
-     *  - `requiredApp` — the NC app that must be installed for the provider to be
-     *                    usable (`null` = Nextcloud core, always available);
-     *  - `application` — the register's `application` (drives the ADR-048 gate).
-     *
-     * @var array<string, array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null, application: string}>
-     */
-    public const ENTITIES = [
-        'user'    => [
-            'register'    => self::DIRECTORY_REGISTER,
-            'schema'      => 'nc-user',
-            'schemaOrg'   => 'schema:Person',
-            'provider'    => 'user-directory-source',
-            'requiredApp' => null,
-            'application' => 'openregister',
-        ],
-        'group'   => [
-            'register'    => self::DIRECTORY_REGISTER,
-            'schema'      => 'nc-group',
-            'schemaOrg'   => 'schema:Organization',
-            'provider'    => 'group-source',
-            'requiredApp' => null,
-            'application' => 'openregister',
-        ],
-        // App-gated rows — each lives on its OWN app-named register (application =
-        // register slug) so the ADR-048 app-enabled gate degrades the projection
-        // when the backing app is uninstalled. Schemas are `nc-`-prefixed to avoid
-        // colliding with same-named leaf-app schemas (e.g. `contact`, `event`).
-        'contact' => [
-            'register'    => 'contacts',
-            'schema'      => 'nc-contact',
-            'schemaOrg'   => 'schema:Person',
-            'provider'    => 'contacts-source',
-            'requiredApp' => 'contacts',
-            'application' => 'contacts',
-        ],
-        'event'   => [
-            'register'    => 'calendar',
-            'schema'      => 'nc-event',
-            'schemaOrg'   => 'schema:Event',
-            'provider'    => 'calendar-event-source',
-            'requiredApp' => 'calendar',
-            'application' => 'calendar',
-        ],
-        'file'    => [
-            'register'    => 'files',
-            'schema'      => 'nc-file',
-            'schemaOrg'   => 'schema:DigitalDocument',
-            'provider'    => 'files-source',
-            'requiredApp' => null,
-            'application' => 'files',
-        ],
-        'card'    => [
-            'register'    => 'deck',
-            'schema'      => 'nc-card',
-            'schemaOrg'   => 'schema:Action',
-            'provider'    => 'deck-source',
-            'requiredApp' => 'deck',
-            'application' => 'deck',
-        ],
-        'talk'    => [
-            'register'    => 'talk',
-            'schema'      => 'nc-conversation',
-            'schemaOrg'   => 'schema:Conversation',
-            'provider'    => 'talk-source',
-            'requiredApp' => 'spreed',
-            'application' => 'spreed',
-        ],
-        // Tasks reuse the EXISTING `caldav-vtodo` provider (no new provider
-        // class) — VTODOs are served from the core `dav` app, so the register's
-        // `application` gates on the optional `tasks` UI app.
-        'task'    => [
-            'register'    => 'tasks',
-            'schema'      => 'nc-task',
-            'schemaOrg'   => 'schema:Action',
-            'provider'    => 'caldav-vtodo',
-            'requiredApp' => 'tasks',
-            'application' => 'tasks',
-        ],
-        // Nextcloud Tables hosts MANY tables (unlike the one-entity-kind rows
-        // above), so this row records only the provider + app gate; the concrete
-        // per-table schemas are auto-seeded under the `tables` register by
-        // SeedTablesVirtualSchemas / `occ openregister:tables:sync` (design D7).
-        // The `schema` slug here is a nominal placeholder — no single schema is
-        // seeded from this row.
-        'tables'  => [
-            'register'    => 'tables',
-            'schema'      => 'nc-table',
-            'schemaOrg'   => 'schema:Dataset',
-            'provider'    => 'tables',
-            'requiredApp' => 'tables',
-            'application' => 'tables',
-        ],
-    ];
+	/**
+	 * Canonical NC-entity → virtual-schema rows.
+	 *
+	 * Row shape:
+	 *  - `register`    — virtual register slug (core rows live in `directory`; each
+	 *                    app-gated row lives in its own app-named register so the
+	 *                    ADR-048 app-enabled gate degrades it when the app is gone);
+	 *  - `schema`      — virtual schema slug (always `nc-`-prefixed so it never
+	 *                    collides with a leaf-app schema of the same bare name);
+	 *  - `schemaOrg`   — schema.org CURIE → the schema's `x-schema-org` marker;
+	 *  - `provider`    — the ObjectSourceProvider id that serves its objects;
+	 *  - `requiredApp` — the NC app that must be installed for the provider to be
+	 *                    usable (`null` = Nextcloud core, always available);
+	 *  - `application` — the register's `application` (drives the ADR-048 gate).
+	 *
+	 * @var array<string, array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null, application: string}>
+	 */
+	public const ENTITIES = [
+		'user' => [
+			'register' => self::DIRECTORY_REGISTER,
+			'schema' => 'nc-user',
+			'schemaOrg' => 'schema:Person',
+			'provider' => 'user-directory-source',
+			'requiredApp' => null,
+			'application' => 'openregister',
+		],
+		'group' => [
+			'register' => self::DIRECTORY_REGISTER,
+			'schema' => 'nc-group',
+			'schemaOrg' => 'schema:Organization',
+			'provider' => 'group-source',
+			'requiredApp' => null,
+			'application' => 'openregister',
+		],
+		// App-gated rows — each lives on its OWN app-named register (application =
+		// register slug) so the ADR-048 app-enabled gate degrades the projection
+		// when the backing app is uninstalled. Schemas are `nc-`-prefixed to avoid
+		// colliding with same-named leaf-app schemas (e.g. `contact`, `event`).
+		'contact' => [
+			'register' => 'contacts',
+			'schema' => 'nc-contact',
+			'schemaOrg' => 'schema:Person',
+			'provider' => 'contacts-source',
+			'requiredApp' => 'contacts',
+			'application' => 'contacts',
+		],
+		'event' => [
+			'register' => 'calendar',
+			'schema' => 'nc-event',
+			'schemaOrg' => 'schema:Event',
+			'provider' => 'calendar-event-source',
+			'requiredApp' => 'calendar',
+			'application' => 'calendar',
+		],
+		'file' => [
+			'register' => 'files',
+			'schema' => 'nc-file',
+			'schemaOrg' => 'schema:DigitalDocument',
+			'provider' => 'files-source',
+			'requiredApp' => null,
+			'application' => 'files',
+		],
+		'card' => [
+			'register' => 'deck',
+			'schema' => 'nc-card',
+			'schemaOrg' => 'schema:Action',
+			'provider' => 'deck-source',
+			'requiredApp' => 'deck',
+			'application' => 'deck',
+		],
+		'talk' => [
+			'register' => 'talk',
+			'schema' => 'nc-conversation',
+			'schemaOrg' => 'schema:Conversation',
+			'provider' => 'talk-source',
+			'requiredApp' => 'spreed',
+			'application' => 'spreed',
+		],
+		// Tasks reuse the EXISTING `caldav-vtodo` provider (no new provider
+		// class) — VTODOs are served from the core `dav` app, so the register's
+		// `application` gates on the optional `tasks` UI app.
+		'task' => [
+			'register' => 'tasks',
+			'schema' => 'nc-task',
+			'schemaOrg' => 'schema:Action',
+			'provider' => 'caldav-vtodo',
+			'requiredApp' => 'tasks',
+			'application' => 'tasks',
+		],
+		// Nextcloud Tables hosts MANY tables (unlike the one-entity-kind rows
+		// above), so this row records only the provider + app gate; the concrete
+		// per-table schemas are auto-seeded under the `tables` register by
+		// SeedTablesVirtualSchemas / `occ openregister:tables:sync` (design D7).
+		// The `schema` slug here is a nominal placeholder — no single schema is
+		// seeded from this row.
+		'tables' => [
+			'register' => 'tables',
+			'schema' => 'nc-table',
+			'schemaOrg' => 'schema:Dataset',
+			'provider' => 'tables',
+			'requiredApp' => 'tables',
+			'application' => 'tables',
+		],
+	];
 
-    /**
-     * Not instantiable — this is a static map only.
-     */
-    private function __construct()
-    {
-    }//end __construct()
+	/**
+	 * Not instantiable — this is a static map only.
+	 */
+	private function __construct() {
+	}//end __construct()
 }//end class

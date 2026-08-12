@@ -32,76 +32,74 @@ namespace OCA\OpenRegister\Dto;
  * Maps a (register, schema) pair to a consuming app's URL template,
  * so that search results link to the correct app instead of OpenRegister.
  */
-class DeepLinkRegistration
-{
-    /**
-     * Constructor for DeepLinkRegistration.
-     *
-     * @param string      $appId        The consuming app ID (e.g., "procest")
-     * @param string      $registerSlug The register slug
-     * @param string      $schemaSlug   The schema slug
-     * @param string      $urlTemplate  URL template with placeholders
-     * @param string      $icon         Optional icon identifier
-     * @param string|null $displayName  Optional human-readable label for the
-     *                                  owning app, used to label unified-search
-     *                                  results (defaults to null → app id)
-     *
-     * @return void
-     *
-     * @spec openspec/specs/deep-link-registry/spec.md
-     */
-    public function __construct(
-        public readonly string $appId,
-        public readonly string $registerSlug,
-        public readonly string $schemaSlug,
-        public readonly string $urlTemplate,
-        public readonly string $icon='',
-        public readonly ?string $displayName=null,
-    ) {
-    }//end __construct()
+class DeepLinkRegistration {
+	/**
+	 * Constructor for DeepLinkRegistration.
+	 *
+	 * @param string $appId The consuming app ID (e.g., "procest")
+	 * @param string $registerSlug The register slug
+	 * @param string $schemaSlug The schema slug
+	 * @param string $urlTemplate URL template with placeholders
+	 * @param string $icon Optional icon identifier
+	 * @param string|null $displayName Optional human-readable label for the
+	 *                                 owning app, used to label unified-search
+	 *                                 results (defaults to null → app id)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/deep-link-registry/spec.md
+	 */
+	public function __construct(
+		public readonly string $appId,
+		public readonly string $registerSlug,
+		public readonly string $schemaSlug,
+		public readonly string $urlTemplate,
+		public readonly string $icon = '',
+		public readonly ?string $displayName = null,
+	) {
+	}//end __construct()
 
-    /**
-     * Resolve the URL template by replacing placeholders with object data.
-     *
-     * Supported placeholders: {uuid}, {id}, {register}, {schema},
-     * {contactId}, {contactEmail}, {contactName}, {entityId},
-     * and any top-level key from the object data array.
-     *
-     * Contact placeholders are resolved from the optional contactContext
-     * parameter, applied after object-level placeholder resolution.
-     *
-     * @param array $objectData     The object data from search results
-     * @param array $contactContext Optional contact context with keys:
-     *                              contactId, contactEmail, contactName
-     *
-     * @return string The resolved URL
-     *
-     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
-     */
-    public function resolveUrl(array $objectData, array $contactContext=[]): string
-    {
-        $replacements = [
-            '{uuid}'     => $objectData['uuid'] ?? '',
-            '{id}'       => (string) ($objectData['id'] ?? ''),
-            '{register}' => (string) ($objectData['register'] ?? ''),
-            '{schema}'   => (string) ($objectData['schema'] ?? ''),
-        ];
+	/**
+	 * Resolve the URL template by replacing placeholders with object data.
+	 *
+	 * Supported placeholders: {uuid}, {id}, {register}, {schema},
+	 * {contactId}, {contactEmail}, {contactName}, {entityId},
+	 * and any top-level key from the object data array.
+	 *
+	 * Contact placeholders are resolved from the optional contactContext
+	 * parameter, applied after object-level placeholder resolution.
+	 *
+	 * @param array $objectData The object data from search results
+	 * @param array $contactContext Optional contact context with keys:
+	 *                              contactId, contactEmail, contactName
+	 *
+	 * @return string The resolved URL
+	 *
+	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+	 */
+	public function resolveUrl(array $objectData, array $contactContext = []): string {
+		$replacements = [
+			'{uuid}' => $objectData['uuid'] ?? '',
+			'{id}' => (string)($objectData['id'] ?? ''),
+			'{register}' => (string)($objectData['register'] ?? ''),
+			'{schema}' => (string)($objectData['schema'] ?? ''),
+		];
 
-        // Also support any top-level key from object data.
-        foreach ($objectData as $key => $value) {
-            if (is_scalar($value) === true) {
-                $replacements['{'.$key.'}'] = (string) $value;
-            }
-        }
+		// Also support any top-level key from object data.
+		foreach ($objectData as $key => $value) {
+			if (is_scalar($value) === true) {
+				$replacements['{' . $key . '}'] = (string)$value;
+			}
+		}
 
-        // Apply contact context placeholders (after object placeholders).
-        if (empty($contactContext) === false) {
-            $replacements['{contactId}']    = urlencode((string) ($contactContext['contactId'] ?? ''));
-            $replacements['{contactEmail}'] = urlencode((string) ($contactContext['contactEmail'] ?? ''));
-            $replacements['{contactName}']  = urlencode((string) ($contactContext['contactName'] ?? ''));
-            $replacements['{entityId}']     = $objectData['uuid'] ?? '';
-        }
+		// Apply contact context placeholders (after object placeholders).
+		if (empty($contactContext) === false) {
+			$replacements['{contactId}'] = urlencode((string)($contactContext['contactId'] ?? ''));
+			$replacements['{contactEmail}'] = urlencode((string)($contactContext['contactEmail'] ?? ''));
+			$replacements['{contactName}'] = urlencode((string)($contactContext['contactName'] ?? ''));
+			$replacements['{entityId}'] = $objectData['uuid'] ?? '';
+		}
 
-        return strtr($this->urlTemplate, $replacements);
-    }//end resolveUrl()
+		return strtr($this->urlTemplate, $replacements);
+	}//end resolveUrl()
 }//end class

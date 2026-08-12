@@ -37,49 +37,46 @@ namespace OCA\OpenRegister\Service\Gdpr\Regulator;
 /**
  * Fail-closed default regulator-escalate provider: never escalates.
  */
-final class NullRegulatorEscalateProvider implements RegulatorEscalateProvider
-{
+final class NullRegulatorEscalateProvider implements RegulatorEscalateProvider {
 
-    /**
-     * The stable id the default policy pack binds for this fail-closed provider.
-     *
-     * @var string
-     */
-    public const PROVIDER_ID = 'or.default.regulator-escalate.null';
+	/**
+	 * The stable id the default policy pack binds for this fail-closed provider.
+	 *
+	 * @var string
+	 */
+	public const PROVIDER_ID = 'or.default.regulator-escalate.null';
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return string The fail-closed default provider id.
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
-     */
-    public function getProviderId(): string
-    {
-        return self::PROVIDER_ID;
-    }//end getProviderId()
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @return string The fail-closed default provider id.
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 */
+	public function getProviderId(): string {
+		return self::PROVIDER_ID;
+	}//end getProviderId()
 
-    /**
-     * Always refuses — no escalation is performed, no reference is minted.
-     *
-     * No leaf regulator provider is bound, so there is no supervisory authority
-     * to escalate to; the only safe answer is an explicit refusal (never a
-     * silent success).
-     *
-     * @param string               $caseUuid The case object uuid.
-     * @param array<string, mixed> $case     The case's serialised payload (unused).
-     *
-     * @return RegulatorEscalateResult Always a `refused` result.
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) RegulatorEscalateResult::refused is a named constructor — no DI alternative.
-     */
-    public function escalate(string $caseUuid, array $case): RegulatorEscalateResult
-    {
-        return RegulatorEscalateResult::refused(
-            providerId: self::PROVIDER_ID,
-            message: 'No regulator-escalate provider is bound; escalation not performed (fail-closed default).'
-        );
-    }//end escalate()
+	/**
+	 * Always refuses — no escalation is performed, no reference is minted.
+	 *
+	 * No leaf regulator provider is bound, so there is no supervisory authority
+	 * to escalate to; the only safe answer is an explicit refusal (never a
+	 * silent success).
+	 *
+	 * @param string $caseUuid The case object uuid.
+	 * @param array<string, mixed> $case The case's serialised payload (unused).
+	 *
+	 * @return RegulatorEscalateResult Always a `refused` result.
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RegulatorEscalateResult::refused is a named constructor — no DI alternative.
+	 */
+	public function escalate(string $caseUuid, array $case): RegulatorEscalateResult {
+		return RegulatorEscalateResult::refused(
+			providerId: self::PROVIDER_ID,
+			message: 'No regulator-escalate provider is bound; escalation not performed (fail-closed default).'
+		);
+	}//end escalate()
 }//end class

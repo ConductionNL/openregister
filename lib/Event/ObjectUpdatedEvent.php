@@ -29,71 +29,66 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an object is updated
  */
-class ObjectUpdatedEvent extends Event
-{
+class ObjectUpdatedEvent extends Event {
 
-    /**
-     * The updated object entity state
-     *
-     * @var ObjectEntity The object entity after update
-     */
-    private ObjectEntity $newObject;
+	/**
+	 * The updated object entity state
+	 *
+	 * @var ObjectEntity The object entity after update
+	 */
+	private ObjectEntity $newObject;
 
-    /**
-     * The previous object entity state
-     *
-     * @var ObjectEntity|null The object entity before update (null if not available)
-     */
-    private ?ObjectEntity $oldObject;
+	/**
+	 * The previous object entity state
+	 *
+	 * @var ObjectEntity|null The object entity before update (null if not available)
+	 */
+	private ?ObjectEntity $oldObject;
 
-    /**
-     * Constructor for ObjectUpdatedEvent
-     *
-     * @param ObjectEntity      $newObject The object entity after update
-     * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
-     *
-     * @return void
-     */
-    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
-    {
-        parent::__construct();
-        $this->newObject = $newObject;
-        $this->oldObject = $oldObject;
-    }//end __construct()
+	/**
+	 * Constructor for ObjectUpdatedEvent
+	 *
+	 * @param ObjectEntity $newObject The object entity after update
+	 * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
+	 *
+	 * @return void
+	 */
+	public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject = null) {
+		parent::__construct();
+		$this->newObject = $newObject;
+		$this->oldObject = $oldObject;
+	}//end __construct()
 
-    /**
-     * Get the updated object entity
-     *
-     * @return ObjectEntity The object entity after update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getObject(): ObjectEntity
-    {
-        return $this->newObject;
-    }//end getObject()
+	/**
+	 * Get the updated object entity
+	 *
+	 * @return ObjectEntity The object entity after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getObject(): ObjectEntity {
+		return $this->newObject;
+	}//end getObject()
 
-    /**
-     * Get the updated object entity
-     *
-     * @return ObjectEntity The object entity after update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getNewObject(): ObjectEntity
-    {
-        return $this->newObject;
-    }//end getNewObject()
+	/**
+	 * Get the updated object entity
+	 *
+	 * @return ObjectEntity The object entity after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewObject(): ObjectEntity {
+		return $this->newObject;
+	}//end getNewObject()
 
-    /**
-     * Get the original object entity
-     *
-     * @return ObjectEntity|null The object entity before update (null if not available)
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getOldObject(): ?ObjectEntity
-    {
-        return $this->oldObject;
-    }//end getOldObject()
+	/**
+	 * Get the original object entity
+	 *
+	 * @return ObjectEntity|null The object entity before update (null if not available)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldObject(): ?ObjectEntity {
+		return $this->oldObject;
+	}//end getOldObject()
 }//end class

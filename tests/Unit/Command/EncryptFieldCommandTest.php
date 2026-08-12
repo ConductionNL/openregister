@@ -45,244 +45,232 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class EncryptFieldCommandTest extends TestCase
-{
-    /** @var array<int, array{id:int, object:string}> */
-    private array $rows = [];
+class EncryptFieldCommandTest extends TestCase {
+	/** @var array<int, array{id:int, object:string}> */
+	private array $rows = [];
 
-    private RegisterMapper&MockObject $registerMapper;
+	private RegisterMapper&MockObject $registerMapper;
 
-    private SchemaMapper&MockObject $schemaMapper;
+	private SchemaMapper&MockObject $schemaMapper;
 
-    private MagicMapper&MockObject $magicMapper;
+	private MagicMapper&MockObject $magicMapper;
 
-    private IDBConnection&MockObject $db;
+	private IDBConnection&MockObject $db;
 
-    private ICrypto&MockObject $crypto;
+	private ICrypto&MockObject $crypto;
 
-    protected function setUp(): void
-    {
-        $this->rows = [
-            1 => ['id' => 1, 'object' => json_encode(['name' => 'Jan', 'bsn' => '123456789'])],
-            2 => ['id' => 2, 'object' => json_encode(['name' => 'Piet', 'bsn' => '987654321'])],
-        ];
+	protected function setUp(): void {
+		$this->rows = [
+			1 => ['id' => 1, 'object' => json_encode(['name' => 'Jan', 'bsn' => '123456789'])],
+			2 => ['id' => 2, 'object' => json_encode(['name' => 'Piet', 'bsn' => '987654321'])],
+		];
 
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->magicMapper = $this->createMock(MagicMapper::class);
-        $this->db = $this->createMock(IDBConnection::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->magicMapper = $this->createMock(MagicMapper::class);
+		$this->db = $this->createMock(IDBConnection::class);
 
-        $this->crypto = $this->createMock(ICrypto::class);
-        $this->crypto->method('encrypt')->willReturnCallback(
-            fn (string $plain): string => 'CIPHER('.$plain.')'
-        );
-    }
+		$this->crypto = $this->createMock(ICrypto::class);
+		$this->crypto->method('encrypt')->willReturnCallback(
+			fn (string $plain): string => 'CIPHER(' . $plain . ')'
+		);
+	}
 
-    private function makeSchema(int $id, array $properties): Schema
-    {
-        $schema = new Schema();
-        $ref = new \ReflectionClass($schema);
-        $idProp = $ref->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($schema, $id);
-        $schema->setSlug('test-schema');
-        $schema->setProperties($properties);
-        return $schema;
-    }
+	private function makeSchema(int $id, array $properties): Schema {
+		$schema = new Schema();
+		$ref = new \ReflectionClass($schema);
+		$idProp = $ref->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($schema, $id);
+		$schema->setSlug('test-schema');
+		$schema->setProperties($properties);
+		return $schema;
+	}
 
-    private function makeRegister(int $id, array $schemaIds): Register
-    {
-        $register = new Register();
-        $ref = new \ReflectionClass($register);
-        $idProp = $ref->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($register, $id);
-        $register->setSlug('test-register');
-        $register->setSchemas($schemaIds);
-        return $register;
-    }
+	private function makeRegister(int $id, array $schemaIds): Register {
+		$register = new Register();
+		$ref = new \ReflectionClass($register);
+		$idProp = $ref->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, $id);
+		$register->setSlug('test-register');
+		$register->setSchemas($schemaIds);
+		return $register;
+	}
 
-    private function buildDb(): IDBConnection&MockObject
-    {
-        $this->db->method('getQueryBuilder')->willReturnCallback(fn () => $this->buildQb());
-        return $this->db;
-    }
+	private function buildDb(): IDBConnection&MockObject {
+		$this->db->method('getQueryBuilder')->willReturnCallback(fn () => $this->buildQb());
+		return $this->db;
+	}
 
-    private function buildQb(): IQueryBuilder&MockObject
-    {
-        $expr = $this->createMock(IExpressionBuilder::class);
-        $expr->method('eq')->willReturn('id_eq');
-        $expr->method('isNotNull')->willReturn('col_not_null');
+	private function buildQb(): IQueryBuilder&MockObject {
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('id_eq');
+		$expr->method('isNotNull')->willReturn('col_not_null');
 
-        $qb = $this->createMock(IQueryBuilder::class);
-        $ctx = ['type' => null, 'set' => [], 'lastId' => null];
+		$qb = $this->createMock(IQueryBuilder::class);
+		$ctx = ['type' => null, 'set' => [], 'lastId' => null];
 
-        $qb->method('select')->willReturn($qb);
-        $qb->method('from')->willReturn($qb);
-        $qb->method('where')->willReturnCallback(function ($cond) use ($qb, &$ctx) {
-            if ($cond === 'col_not_null') {
-                $ctx['type'] = 'nullify';
-            }
+		$qb->method('select')->willReturn($qb);
+		$qb->method('from')->willReturn($qb);
+		$qb->method('where')->willReturnCallback(function ($cond) use ($qb, &$ctx) {
+			if ($cond === 'col_not_null') {
+				$ctx['type'] = 'nullify';
+			}
 
-            return $qb;
-        });
-        $qb->method('expr')->willReturn($expr);
+			return $qb;
+		});
+		$qb->method('expr')->willReturn($expr);
 
-        $qb->method('update')->willReturnCallback(function (string $table) use ($qb, &$ctx) {
-            if ($ctx['type'] !== 'nullify') {
-                $ctx['type'] = 'update';
-            }
+		$qb->method('update')->willReturnCallback(function (string $table) use ($qb, &$ctx) {
+			if ($ctx['type'] !== 'nullify') {
+				$ctx['type'] = 'update';
+			}
 
-            return $qb;
-        });
+			return $qb;
+		});
 
-        $qb->method('set')->willReturnCallback(function (string $col, mixed $val) use ($qb, &$ctx) {
-            $ctx['set'][$col] = $val;
-            if ($col !== 'object') {
-                // Nullify branch (legacy column) — no matching column in the test
-                // table, simulate the "unknown column" failure that is deliberately
-                // swallowed by the command.
-                throw new DbException('column does not exist');
-            }
+		$qb->method('set')->willReturnCallback(function (string $col, mixed $val) use ($qb, &$ctx) {
+			$ctx['set'][$col] = $val;
+			if ($col !== 'object') {
+				// Nullify branch (legacy column) — no matching column in the test
+				// table, simulate the "unknown column" failure that is deliberately
+				// swallowed by the command.
+				throw new DbException('column does not exist');
+			}
 
-            return $qb;
-        });
+			return $qb;
+		});
 
-        $qb->method('createNamedParameter')->willReturnCallback(
-            function (mixed $value) use (&$ctx) {
-                if (is_int($value) === true) {
-                    $ctx['lastId'] = $value;
-                }
+		$qb->method('createNamedParameter')->willReturnCallback(
+			function (mixed $value) use (&$ctx) {
+				if (is_int($value) === true) {
+					$ctx['lastId'] = $value;
+				}
 
-                return $value;
-            }
-        );
+				return $value;
+			}
+		);
 
-        $qb->method('executeQuery')->willReturnCallback(function () {
-            $remaining = array_values($this->rows);
-            $result = $this->createMock(\OCP\DB\IResult::class);
-            $result->method('fetch')->willReturnCallback(
-                function () use (&$remaining) {
-                    return (empty($remaining) === true) ? false : array_shift($remaining);
-                }
-            );
-            $result->method('closeCursor')->willReturn(true);
-            return $result;
-        });
+		$qb->method('executeQuery')->willReturnCallback(function () {
+			$remaining = array_values($this->rows);
+			$result = $this->createMock(\OCP\DB\IResult::class);
+			$result->method('fetch')->willReturnCallback(
+				function () use (&$remaining) {
+					return (empty($remaining) === true) ? false : array_shift($remaining);
+				}
+			);
+			$result->method('closeCursor')->willReturn(true);
+			return $result;
+		});
 
-        $qb->method('executeStatement')->willReturnCallback(function () use (&$ctx) {
-            if ($ctx['type'] === 'update' && $ctx['lastId'] !== null && isset($ctx['set']['object']) === true) {
-                $this->rows[$ctx['lastId']]['object'] = $ctx['set']['object'];
-                return 1;
-            }
+		$qb->method('executeStatement')->willReturnCallback(function () use (&$ctx) {
+			if ($ctx['type'] === 'update' && $ctx['lastId'] !== null && isset($ctx['set']['object']) === true) {
+				$this->rows[$ctx['lastId']]['object'] = $ctx['set']['object'];
+				return 1;
+			}
 
-            return 0;
-        });
+			return 0;
+		});
 
-        return $qb;
-    }
+		return $qb;
+	}
 
-    private function makeCommand(): EncryptFieldCommand
-    {
-        $logger = $this->createMock(LoggerInterface::class);
-        $fieldEncryptionHandler = new FieldEncryptionHandler($this->crypto, $logger);
+	private function makeCommand(): EncryptFieldCommand {
+		$logger = $this->createMock(LoggerInterface::class);
+		$fieldEncryptionHandler = new FieldEncryptionHandler($this->crypto, $logger);
 
-        return new EncryptFieldCommand(
-            registerMapper: $this->registerMapper,
-            schemaMapper: $this->schemaMapper,
-            magicMapper: $this->magicMapper,
-            fieldEncryptionHandler: $fieldEncryptionHandler,
-            db: $this->buildDb()
-        );
-    }
+		return new EncryptFieldCommand(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			magicMapper: $this->magicMapper,
+			fieldEncryptionHandler: $fieldEncryptionHandler,
+			db: $this->buildDb()
+		);
+	}
 
-    public function testPropertyOptionIsRequired(): void
-    {
-        $command = $this->makeCommand();
-        $tester  = new CommandTester($command);
-        $exitCode = $tester->execute([]);
+	public function testPropertyOptionIsRequired(): void {
+		$command = $this->makeCommand();
+		$tester = new CommandTester($command);
+		$exitCode = $tester->execute([]);
 
-        $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('--property is required', $tester->getDisplay());
-    }
+		$this->assertSame(1, $exitCode);
+		$this->assertStringContainsString('--property is required', $tester->getDisplay());
+	}
 
-    public function testSchemaNotFlaggingThePropertyIsSkipped(): void
-    {
-        $register = $this->makeRegister(1, [10]);
-        $schema   = $this->makeSchema(10, ['bsn' => ['type' => 'string']]); // NOT flagged encrypted
+	public function testSchemaNotFlaggingThePropertyIsSkipped(): void {
+		$register = $this->makeRegister(1, [10]);
+		$schema = $this->makeSchema(10, ['bsn' => ['type' => 'string']]); // NOT flagged encrypted
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->magicMapper->expects($this->never())->method('tableExistsForRegisterSchema');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->magicMapper->expects($this->never())->method('tableExistsForRegisterSchema');
 
-        $command = $this->makeCommand();
-        $tester  = new CommandTester($command);
-        $exitCode = $tester->execute(['--property' => 'bsn']);
+		$command = $this->makeCommand();
+		$tester = new CommandTester($command);
+		$exitCode = $tester->execute(['--property' => 'bsn']);
 
-        $this->assertSame(0, $exitCode);
-    }
+		$this->assertSame(0, $exitCode);
+	}
 
-    public function testEncryptsPlaintextValuesAndPersistsEnvelope(): void
-    {
-        $register = $this->makeRegister(1, [10]);
-        $schema   = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+	public function testEncryptsPlaintextValuesAndPersistsEnvelope(): void {
+		$register = $this->makeRegister(1, [10]);
+		$schema = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
-        $this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
+		$this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
 
-        $command = $this->makeCommand();
-        $tester  = new CommandTester($command);
-        $exitCode = $tester->execute(['--property' => 'bsn']);
+		$command = $this->makeCommand();
+		$tester = new CommandTester($command);
+		$exitCode = $tester->execute(['--property' => 'bsn']);
 
-        $this->assertSame(0, $exitCode);
-        $this->assertStringContainsString('scanned=2', $tester->getDisplay());
-        $this->assertStringContainsString('encrypted=2', $tester->getDisplay());
+		$this->assertSame(0, $exitCode);
+		$this->assertStringContainsString('scanned=2', $tester->getDisplay());
+		$this->assertStringContainsString('encrypted=2', $tester->getDisplay());
 
-        foreach ($this->rows as $row) {
-            $decoded = json_decode($row['object'], true);
-            $this->assertStringStartsWith(FieldEncryptionHandler::ENVELOPE_PREFIX, $decoded['bsn']);
-        }
-    }
+		foreach ($this->rows as $row) {
+			$decoded = json_decode($row['object'], true);
+			$this->assertStringStartsWith(FieldEncryptionHandler::ENVELOPE_PREFIX, $decoded['bsn']);
+		}
+	}
 
-    public function testDryRunDoesNotWrite(): void
-    {
-        $register = $this->makeRegister(1, [10]);
-        $schema   = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+	public function testDryRunDoesNotWrite(): void {
+		$register = $this->makeRegister(1, [10]);
+		$schema = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
-        $this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
+		$this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
 
-        $originalRows = $this->rows;
+		$originalRows = $this->rows;
 
-        $command = $this->makeCommand();
-        $tester  = new CommandTester($command);
-        $tester->execute(['--property' => 'bsn', '--dry-run' => true]);
+		$command = $this->makeCommand();
+		$tester = new CommandTester($command);
+		$tester->execute(['--property' => 'bsn', '--dry-run' => true]);
 
-        $this->assertSame($originalRows, $this->rows, 'Dry run must not write to the store');
-    }
+		$this->assertSame($originalRows, $this->rows, 'Dry run must not write to the store');
+	}
 
-    public function testReRunIsIdempotentAndSkipsAlreadyEncryptedRows(): void
-    {
-        $register = $this->makeRegister(1, [10]);
-        $schema   = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+	public function testReRunIsIdempotentAndSkipsAlreadyEncryptedRows(): void {
+		$register = $this->makeRegister(1, [10]);
+		$schema = $this->makeSchema(10, ['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
-        $this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
+		$this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(true);
+		$this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_10');
 
-        $command = $this->makeCommand();
+		$command = $this->makeCommand();
 
-        $first = new CommandTester($command);
-        $first->execute(['--property' => 'bsn']);
-        $this->assertStringContainsString('encrypted=2', $first->getDisplay());
+		$first = new CommandTester($command);
+		$first->execute(['--property' => 'bsn']);
+		$this->assertStringContainsString('encrypted=2', $first->getDisplay());
 
-        $second = new CommandTester($command);
-        $second->execute(['--property' => 'bsn']);
-        $this->assertStringContainsString('encrypted=0', $second->getDisplay(), 'Second run must not re-encrypt');
-    }
+		$second = new CommandTester($command);
+		$second->execute(['--property' => 'bsn']);
+		$this->assertStringContainsString('encrypted=0', $second->getDisplay(), 'Second run must not re-encrypt');
+	}
 }

@@ -28,214 +28,169 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for SchemasToolProvider.
  */
-class SchemasToolProviderTest extends TestCase
-{
+class SchemasToolProviderTest extends TestCase {
 
-    /** @var SchemaMapper&MockObject */
-    private $schemaMapper;
+	/** @var SchemaMapper&MockObject */
+	private $schemaMapper;
 
-    private SchemasToolProvider $provider;
+	private SchemasToolProvider $provider;
 
+	protected function setUp(): void {
+		parent::setUp();
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->provider = new SchemasToolProvider($this->schemaMapper);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->provider     = new SchemasToolProvider($this->schemaMapper);
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Build a mock Schema whose jsonSerialize() returns $data.
+	 *
+	 * @param array<string, mixed> $data Serialized payload
+	 *
+	 * @return Schema&MockObject
+	 */
+	private function mockSchema(array $data): Schema {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('jsonSerialize')->willReturn($data);
+		return $schema;
+	}//end mockSchema()
 
+	// ── descriptor surface ─────────────────────────────────────────
 
-    /**
-     * Build a mock Schema whose jsonSerialize() returns $data.
-     *
-     * @param array<string, mixed> $data Serialized payload
-     *
-     * @return Schema&MockObject
-     */
-    private function mockSchema(array $data): Schema
-    {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('jsonSerialize')->willReturn($data);
-        return $schema;
+	public function testGetAppIdIsOpenregister(): void {
+		$this->assertSame('openregister', $this->provider->getAppId());
 
-    }//end mockSchema()
+	}//end testGetAppIdIsOpenregister()
 
+	public function testGetToolsReturnsOneNamespacedDescriptor(): void {
+		$tools = $this->provider->getTools();
 
-    // ── descriptor surface ─────────────────────────────────────────
+		$this->assertCount(1, $tools);
+		$this->assertSame('openregister.schemas', $tools[0]['id']);
+		$this->assertSame(SchemasToolProvider::TOOL_ID, $tools[0]['id']);
+		$this->assertNotEmpty($tools[0]['description']);
+		$this->assertSame('object', $tools[0]['inputSchema']['type']);
+		$this->assertArrayHasKey('action', $tools[0]['inputSchema']['properties']);
+		$this->assertSame(['action'], $tools[0]['inputSchema']['required']);
 
+	}//end testGetToolsReturnsOneNamespacedDescriptor()
 
-    public function testGetAppIdIsOpenregister(): void
-    {
-        $this->assertSame('openregister', $this->provider->getAppId());
+	// ── list ───────────────────────────────────────────────────────
 
-    }//end testGetAppIdIsOpenregister()
+	public function testListReturnsSerializedSchemas(): void {
+		$this->schemaMapper->expects($this->once())
+			->method('findAll')
+			->with(limit: null, offset: null)
+			->willReturn([$this->mockSchema(['id' => 1]), $this->mockSchema(['id' => 2])]);
 
+		$this->assertSame([['id' => 1], ['id' => 2]], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list']));
 
-    public function testGetToolsReturnsOneNamespacedDescriptor(): void
-    {
-        $tools = $this->provider->getTools();
+	}//end testListReturnsSerializedSchemas()
 
-        $this->assertCount(1, $tools);
-        $this->assertSame('openregister.schemas', $tools[0]['id']);
-        $this->assertSame(SchemasToolProvider::TOOL_ID, $tools[0]['id']);
-        $this->assertNotEmpty($tools[0]['description']);
-        $this->assertSame('object', $tools[0]['inputSchema']['type']);
-        $this->assertArrayHasKey('action', $tools[0]['inputSchema']['properties']);
-        $this->assertSame(['action'], $tools[0]['inputSchema']['required']);
+	public function testListPassesLimitAndOffset(): void {
+		$this->schemaMapper->expects($this->once())->method('findAll')->with(limit: 3, offset: 6)->willReturn([]);
 
-    }//end testGetToolsReturnsOneNamespacedDescriptor()
+		$this->assertSame([], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list', 'limit' => 3, 'offset' => 6]));
 
+	}//end testListPassesLimitAndOffset()
 
-    // ── list ───────────────────────────────────────────────────────
+	public function testListReturnsEmptyArrayWhenNoSchemas(): void {
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->assertSame([], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list']));
 
+	}//end testListReturnsEmptyArrayWhenNoSchemas()
 
-    public function testListReturnsSerializedSchemas(): void
-    {
-        $this->schemaMapper->expects($this->once())
-            ->method('findAll')
-            ->with(limit: null, offset: null)
-            ->willReturn([$this->mockSchema(['id' => 1]), $this->mockSchema(['id' => 2])]);
+	// ── get ────────────────────────────────────────────────────────
 
-        $this->assertSame([['id' => 1], ['id' => 2]], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list']));
+	public function testGetReturnsSerializedSchema(): void {
+		$this->schemaMapper->expects($this->once())->method('find')->with(11)->willReturn($this->mockSchema(['id' => 11]));
 
-    }//end testListReturnsSerializedSchemas()
+		$this->assertSame(['id' => 11], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'get', 'id' => 11]));
 
+	}//end testGetReturnsSerializedSchema()
 
-    public function testListPassesLimitAndOffset(): void
-    {
-        $this->schemaMapper->expects($this->once())->method('findAll')->with(limit: 3, offset: 6)->willReturn([]);
+	public function testGetRequiresId(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required parameter: id');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'get']);
 
-        $this->assertSame([], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list', 'limit' => 3, 'offset' => 6]));
+	}//end testGetRequiresId()
 
-    }//end testListPassesLimitAndOffset()
+	// ── create ─────────────────────────────────────────────────────
 
+	public function testCreateReturnsSerializedSchema(): void {
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->with(object: ['title' => 'S'])
+			->willReturn($this->mockSchema(['id' => 12, 'title' => 'S']));
 
-    public function testListReturnsEmptyArrayWhenNoSchemas(): void
-    {
-        $this->schemaMapper->method('findAll')->willReturn([]);
-        $this->assertSame([], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'list']));
+		$this->assertSame(['id' => 12, 'title' => 'S'], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'create', 'data' => ['title' => 'S']]));
 
-    }//end testListReturnsEmptyArrayWhenNoSchemas()
+	}//end testCreateReturnsSerializedSchema()
 
+	public function testCreateRequiresData(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required parameter: data');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'create']);
 
-    // ── get ────────────────────────────────────────────────────────
+	}//end testCreateRequiresData()
 
+	// ── update ─────────────────────────────────────────────────────
 
-    public function testGetReturnsSerializedSchema(): void
-    {
-        $this->schemaMapper->expects($this->once())->method('find')->with(11)->willReturn($this->mockSchema(['id' => 11]));
+	public function testUpdateReturnsSerializedSchema(): void {
+		$this->schemaMapper->expects($this->once())
+			->method('updateFromArray')
+			->with(id: 5, object: ['title' => 'Edited'])
+			->willReturn($this->mockSchema(['id' => 5, 'title' => 'Edited']));
 
-        $this->assertSame(['id' => 11], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'get', 'id' => 11]));
+		$this->assertSame(['id' => 5, 'title' => 'Edited'], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited']]));
 
-    }//end testGetReturnsSerializedSchema()
+	}//end testUpdateReturnsSerializedSchema()
 
+	public function testUpdateRequiresId(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required parameter: id');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'data' => []]);
 
-    public function testGetRequiresId(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing required parameter: id');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'get']);
+	}//end testUpdateRequiresId()
 
-    }//end testGetRequiresId()
+	public function testUpdateRequiresData(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required parameter: data');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5]);
 
+	}//end testUpdateRequiresData()
 
-    // ── create ─────────────────────────────────────────────────────
+	// ── delete ─────────────────────────────────────────────────────
 
+	public function testDeleteFindsThenDeletesAndReturnsConfirmation(): void {
+		$schema = $this->mockSchema(['id' => 8]);
+		$this->schemaMapper->expects($this->once())->method('find')->with(8)->willReturn($schema);
+		$this->schemaMapper->expects($this->once())->method('delete')->with($schema);
 
-    public function testCreateReturnsSerializedSchema(): void
-    {
-        $this->schemaMapper->expects($this->once())
-            ->method('createFromArray')
-            ->with(object: ['title' => 'S'])
-            ->willReturn($this->mockSchema(['id' => 12, 'title' => 'S']));
+		$this->assertSame(['deleted' => true, 'id' => 8], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 8]));
 
-        $this->assertSame(['id' => 12, 'title' => 'S'], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'create', 'data' => ['title' => 'S']]));
+	}//end testDeleteFindsThenDeletesAndReturnsConfirmation()
 
-    }//end testCreateReturnsSerializedSchema()
+	public function testDeleteRequiresId(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Missing required parameter: id');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete']);
 
+	}//end testDeleteRequiresId()
 
-    public function testCreateRequiresData(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing required parameter: data');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'create']);
+	// ── unknown / missing action ───────────────────────────────────
 
-    }//end testCreateRequiresData()
+	public function testUnknownActionThrows(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unknown action: bogus');
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'bogus']);
 
+	}//end testUnknownActionThrows()
 
-    // ── update ─────────────────────────────────────────────────────
+	public function testMissingActionThrows(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->provider->invokeTool(SchemasToolProvider::TOOL_ID, []);
 
-
-    public function testUpdateReturnsSerializedSchema(): void
-    {
-        $this->schemaMapper->expects($this->once())
-            ->method('updateFromArray')
-            ->with(id: 5, object: ['title' => 'Edited'])
-            ->willReturn($this->mockSchema(['id' => 5, 'title' => 'Edited']));
-
-        $this->assertSame(['id' => 5, 'title' => 'Edited'], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited']]));
-
-    }//end testUpdateReturnsSerializedSchema()
-
-
-    public function testUpdateRequiresId(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing required parameter: id');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'data' => []]);
-
-    }//end testUpdateRequiresId()
-
-
-    public function testUpdateRequiresData(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing required parameter: data');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5]);
-
-    }//end testUpdateRequiresData()
-
-
-    // ── delete ─────────────────────────────────────────────────────
-
-
-    public function testDeleteFindsThenDeletesAndReturnsConfirmation(): void
-    {
-        $schema = $this->mockSchema(['id' => 8]);
-        $this->schemaMapper->expects($this->once())->method('find')->with(8)->willReturn($schema);
-        $this->schemaMapper->expects($this->once())->method('delete')->with($schema);
-
-        $this->assertSame(['deleted' => true, 'id' => 8], $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 8]));
-
-    }//end testDeleteFindsThenDeletesAndReturnsConfirmation()
-
-
-    public function testDeleteRequiresId(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing required parameter: id');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete']);
-
-    }//end testDeleteRequiresId()
-
-
-    // ── unknown / missing action ───────────────────────────────────
-
-
-    public function testUnknownActionThrows(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown action: bogus');
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'bogus']);
-
-    }//end testUnknownActionThrows()
-
-
-    public function testMissingActionThrows(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->provider->invokeTool(SchemasToolProvider::TOOL_ID, []);
-
-    }//end testMissingActionThrows()
+	}//end testMissingActionThrows()
 }//end class

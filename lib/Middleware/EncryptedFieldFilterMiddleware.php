@@ -41,56 +41,54 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Middleware
  */
-class EncryptedFieldFilterMiddleware extends Middleware
-{
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface $logger The app logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class EncryptedFieldFilterMiddleware extends Middleware {
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger The app logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Map EncryptedFieldFilterException onto a 400 Bad Request response.
-     *
-     * @param Controller $controller The controller that was executing.
-     * @param string     $methodName The controller method that was executing.
-     * @param Exception  $exception  The exception that was thrown.
-     *
-     * @return Response The 400 response for an encrypted-field filter attempt.
-     *
-     * @throws Exception Rethrows every exception that is not an EncryptedFieldFilterException.
-     *
-     * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
-     */
-    public function afterException(Controller $controller, string $methodName, Exception $exception): Response
-    {
-        if ($exception instanceof EncryptedFieldFilterException === false) {
-            throw $exception;
-        }
+	/**
+	 * Map EncryptedFieldFilterException onto a 400 Bad Request response.
+	 *
+	 * @param Controller $controller The controller that was executing.
+	 * @param string $methodName The controller method that was executing.
+	 * @param Exception $exception The exception that was thrown.
+	 *
+	 * @return Response The 400 response for an encrypted-field filter attempt.
+	 *
+	 * @throws Exception Rethrows every exception that is not an EncryptedFieldFilterException.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 */
+	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
+		if ($exception instanceof EncryptedFieldFilterException === false) {
+			throw $exception;
+		}
 
-        $this->logger->info(
-            sprintf(
-                '[EncryptedFieldFilterMiddleware] rejected filter on encrypted property "%s" in %s::%s',
-                $exception->getProperty(),
-                $controller::class,
-                $methodName
-            ),
-            ['file' => __FILE__, 'line' => __LINE__]
-        );
+		$this->logger->info(
+			sprintf(
+				'[EncryptedFieldFilterMiddleware] rejected filter on encrypted property "%s" in %s::%s',
+				$exception->getProperty(),
+				$controller::class,
+				$methodName
+			),
+			['file' => __FILE__, 'line' => __LINE__]
+		);
 
-        return new JSONResponse(
-            data: [
-                'error'    => 'encrypted-field-not-filterable',
-                'property' => $exception->getProperty(),
-                'message'  => $exception->getMessage(),
-            ],
-            statusCode: 400
-        );
-    }//end afterException()
+		return new JSONResponse(
+			data: [
+				'error' => 'encrypted-field-not-filterable',
+				'property' => $exception->getProperty(),
+				'message' => $exception->getMessage(),
+			],
+			statusCode: 400
+		);
+	}//end afterException()
 }//end class

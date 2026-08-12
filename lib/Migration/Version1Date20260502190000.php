@@ -34,78 +34,75 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the cross-channel notification read-state table.
  */
-class Version1Date20260502190000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260502190000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_notification_readstate') === true) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_notification_readstate') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_notification_readstate');
+		$table = $schema->createTable(tableName: 'openregister_notification_readstate');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'user_id',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 64,
-                'comment' => 'NC user UID who marked the notification read',
-            ]
-        );
+		$table->addColumn(
+			name: 'user_id',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 64,
+				'comment' => 'NC user UID who marked the notification read',
+			]
+		);
 
-        $table->addColumn(
-            name: 'notification_id',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 128,
-                'comment' => 'Notification identifier (uuid / NC notification id / channel-specific token)',
-            ]
-        );
+		$table->addColumn(
+			name: 'notification_id',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 128,
+				'comment' => 'Notification identifier (uuid / NC notification id / channel-specific token)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'read_at',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => true,
-                'comment' => 'Timestamp when the notification was marked read',
-            ]
-        );
+		$table->addColumn(
+			name: 'read_at',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => true,
+				'comment' => 'Timestamp when the notification was marked read',
+			]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
-        // Per-(user, notification) uniqueness so markRead is idempotent at the DB layer.
-        $table->addUniqueIndex(
-            columnNames: ['user_id', 'notification_id'],
-            indexName: 'idx_or_readstate_uid_nid'
-        );
-        $table->addIndex(columnNames: ['user_id'], indexName: 'idx_or_readstate_user_id');
+		$table->setPrimaryKey(columnNames: ['id']);
+		// Per-(user, notification) uniqueness so markRead is idempotent at the DB layer.
+		$table->addUniqueIndex(
+			columnNames: ['user_id', 'notification_id'],
+			indexName: 'idx_or_readstate_uid_nid'
+		);
+		$table->addIndex(columnNames: ['user_id'], indexName: 'idx_or_readstate_user_id');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

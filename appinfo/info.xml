@@ -44,6 +44,11 @@ Vrij en open source onder de EUPL-licentie.
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
+    <documentation>
+        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
+        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
+        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
+    </documentation>
     <category>organization</category>
     <category>tools</category>
     <category>search</category>
@@ -54,12 +59,6 @@ Vrij en open source onder de EUPL-licentie.
     <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-dashboard.png</screenshot>
     <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-registers.png</screenshot>
     <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-objects.png</screenshot>
-
-    <documentation>
-        <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
-        <admin>https://conduction.gitbook.io/openregister-nextcloud/</admin>
-        <developer>https://conduction.gitbook.io/openregister-nextcloud/</developer>
-    </documentation>
 
     <dependencies>
         <php min-version="8.3" min-int-size="64"/>
@@ -118,6 +117,43 @@ Vrij en open source onder de EUPL-licentie.
         <nextcloud min-version="32" max-version="34"/>
     </dependencies>
 
+	<background-jobs>
+		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
+		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
+		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
+		<job>OCA\OpenRegister\Cron\SyncConfigurationsJob</job>
+		<job>OCA\OpenRegister\Cron\SyncDataJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
+		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\Cron\FlowRunWorker</job>
+		<job>OCA\OpenRegister\Cron\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
+		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
+	</background-jobs>
+
 	<repair-steps>
 		<post-migration>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -162,60 +198,6 @@ Vrij en open source onder de EUPL-licentie.
 		</install>
 	</repair-steps>
 
-	<background-jobs>
-		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
-		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
-		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
-		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
-		<job>OCA\OpenRegister\Cron\SyncConfigurationsJob</job>
-		<job>OCA\OpenRegister\Cron\SyncDataJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
-		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
-		<job>OCA\OpenRegister\Cron\FlowRunWorker</job>
-		<job>OCA\OpenRegister\Cron\FlowScheduleWorker</job>
-		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
-		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
-	</background-jobs>
-
-    <navigations>
-        <navigation>
-            <id>openregister</id>
-            <name>Register</name>
-            <route>openregister.dashboard.page</route>
-            <icon>app.svg</icon>
-            <type>link</type>
-        </navigation>
-    </navigations>
-
-	<settings>
-		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
-		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
-		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
-		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
-	</settings>
-
 	<commands>
 		<!-- migrate-storage command triggers circular DI during occ bootstrap.
 		     Disabled until that's untangled. -->
@@ -249,18 +231,20 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ContextChatReindexCommand</command>
 	</commands>
 
-	<notification>
-		<service>OCA\OpenRegister\Notification\Notifier</service>
-	</notification>
+	<settings>
+		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
+		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
+		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
+		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
+	</settings>
 
-	<contactsmenu>
-		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
-	</contactsmenu>
+	<!-- The notifier is registered in PHP:
+	     IRegistrationContext::registerNotifierService(AnnotationNotifier::class)
+	     in lib/AppInfo/Application.php. There is no <notification> element in
+	     the App Store schema and Nextcloud's InfoParser never read one, so the
+	     declaration that stood here registered nothing. -->
 
 	<activity>
-		<providers>
-			<provider>OCA\OpenRegister\Activity\Provider</provider>
-		</providers>
 		<settings>
 			<setting>OCA\OpenRegister\Activity\Setting\ObjectSetting</setting>
 			<setting>OCA\OpenRegister\Activity\Setting\RegisterSetting</setting>
@@ -269,5 +253,22 @@ Vrij en open source onder de EUPL-licentie.
 		<filters>
 			<filter>OCA\OpenRegister\Activity\Filter</filter>
 		</filters>
+		<providers>
+			<provider>OCA\OpenRegister\Activity\Provider</provider>
+		</providers>
 	</activity>
+
+    <navigations>
+        <navigation>
+            <id>openregister</id>
+            <name>Register</name>
+            <route>openregister.dashboard.page</route>
+            <icon>app.svg</icon>
+            <type>link</type>
+        </navigation>
+    </navigations>
+
+	<contactsmenu>
+		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
+	</contactsmenu>
 </info>

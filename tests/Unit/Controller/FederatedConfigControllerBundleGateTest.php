@@ -41,100 +41,96 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
  */
-class FederatedConfigControllerBundleGateTest extends TestCase
-{
+class FederatedConfigControllerBundleGateTest extends TestCase {
 
-    /**
-     * The federation engine, mocked.
-     *
-     * @var FederatedConfigService&MockObject
-     */
-    private FederatedConfigService&MockObject $service;
+	/**
+	 * The federation engine, mocked.
+	 *
+	 * @var FederatedConfigService&MockObject
+	 */
+	private FederatedConfigService&MockObject $service;
 
-    /**
-     * The publish/install gate, mocked.
-     *
-     * @var FederatedConfigAccess&MockObject
-     */
-    private FederatedConfigAccess&MockObject $access;
+	/**
+	 * The publish/install gate, mocked.
+	 *
+	 * @var FederatedConfigAccess&MockObject
+	 */
+	private FederatedConfigAccess&MockObject $access;
 
-    /**
-     * The request, mocked.
-     *
-     * @var IRequest&MockObject
-     */
-    private IRequest&MockObject $request;
+	/**
+	 * The request, mocked.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest&MockObject $request;
 
-    /**
-     * The controller under test.
-     *
-     * @var FederatedConfigController
-     */
-    private FederatedConfigController $controller;
+	/**
+	 * The controller under test.
+	 *
+	 * @var FederatedConfigController
+	 */
+	private FederatedConfigController $controller;
 
-    /**
-     * Build the controller over mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build the controller over mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->service = $this->createMock(FederatedConfigService::class);
-        $this->access  = $this->createMock(FederatedConfigAccess::class);
-        $this->request = $this->createMock(IRequest::class);
+		$this->service = $this->createMock(FederatedConfigService::class);
+		$this->access = $this->createMock(FederatedConfigAccess::class);
+		$this->request = $this->createMock(IRequest::class);
 
-        $this->controller = new FederatedConfigController(
-            'openregister',
-            $this->request,
-            $this->service,
-            $this->access,
-            $this->createMock(IUserSession::class),
-            $this->createMock(IConfig::class),
-            $this->createMock(IGroupManager::class)
-        );
+		$this->controller = new FederatedConfigController(
+			'openregister',
+			$this->request,
+			$this->service,
+			$this->access,
+			$this->createMock(IUserSession::class),
+			$this->createMock(IConfig::class),
+			$this->createMock(IGroupManager::class)
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * THE SECURITY PROPERTY. A caller the publish gate refuses gets a 403 and
-     * NO export — the serialiser is never reached, so nothing is packaged and
-     * then discarded.
-     *
-     * @return void
-     */
-    public function testACallerWhoMayNotPublishCannotBundle(): void
-    {
-        $this->access->method('canPublish')->willReturn(false);
-        $this->service->expects($this->never())->method('bundle');
-        $this->request->method('getParam')->willReturn('openregister.flows');
+	/**
+	 * THE SECURITY PROPERTY. A caller the publish gate refuses gets a 403 and
+	 * NO export — the serialiser is never reached, so nothing is packaged and
+	 * then discarded.
+	 *
+	 * @return void
+	 */
+	public function testACallerWhoMayNotPublishCannotBundle(): void {
+		$this->access->method('canPublish')->willReturn(false);
+		$this->service->expects($this->never())->method('bundle');
+		$this->request->method('getParam')->willReturn('openregister.flows');
 
-        $response = $this->controller->bundle();
+		$response = $this->controller->bundle();
 
-        $this->assertSame(403, $response->getStatus());
+		$this->assertSame(403, $response->getStatus());
 
-    }//end testACallerWhoMayNotPublishCannotBundle()
+	}//end testACallerWhoMayNotPublishCannotBundle()
 
-    /**
-     * The positive control: a caller the gate allows still gets the bundle.
-     * Without this, the refusal above is satisfied by an endpoint that refuses
-     * everyone.
-     *
-     * @return void
-     */
-    public function testACallerWhoMayPublishStillGetsTheBundle(): void
-    {
-        $this->access->method('canPublish')->willReturn(true);
-        $this->service->expects($this->once())
-            ->method('bundle')
-            ->willReturn(['type' => 'openregister.flows', 'flows' => []]);
-        $this->request->method('getParam')->willReturn('openregister.flows');
+	/**
+	 * The positive control: a caller the gate allows still gets the bundle.
+	 * Without this, the refusal above is satisfied by an endpoint that refuses
+	 * everyone.
+	 *
+	 * @return void
+	 */
+	public function testACallerWhoMayPublishStillGetsTheBundle(): void {
+		$this->access->method('canPublish')->willReturn(true);
+		$this->service->expects($this->once())
+			->method('bundle')
+			->willReturn(['type' => 'openregister.flows', 'flows' => []]);
+		$this->request->method('getParam')->willReturn('openregister.flows');
 
-        $response = $this->controller->bundle();
+		$response = $this->controller->bundle();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertSame('openregister.flows', $response->getData()['type']);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('openregister.flows', $response->getData()['type']);
 
-    }//end testACallerWhoMayPublishStillGetsTheBundle()
+	}//end testACallerWhoMayPublishStillGetsTheBundle()
 }//end class

@@ -43,88 +43,86 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Middleware
  */
-class ObjectSourceErrorMiddleware extends Middleware
-{
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface $logger The app logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class ObjectSourceErrorMiddleware extends Middleware {
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger The app logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Map DbalObjectSourceException onto its declared HTTP status.
-     *
-     * The exception's message is non-sensitive by contract (the provider never
-     * embeds credentials or SQL in it), so it is safe to return to the client.
-     *
-     * @param Controller $controller The controller that was executing.
-     * @param string     $methodName The controller method that was executing.
-     * @param Exception  $exception  The exception that was thrown.
-     *
-     * @return Response The 502/503 response for external-database failures.
-     *
-     * @throws Exception Rethrows every exception that is not a DbalObjectSourceException.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function afterException(Controller $controller, string $methodName, Exception $exception): Response
-    {
-        // Sanitized write failures (constraint violations etc., dbal-virtual-
-        // registers-crud): render the carried 4xx/5xx status; log the wrapped
-        // driver exception server-side.
-        if ($exception instanceof DbalWriteException === true) {
-            $this->logger->warning(
-                sprintf(
-                    '[ObjectSourceErrorMiddleware] external database write failed (%d) in %s::%s: %s',
-                    $exception->getStatusCode(),
-                    $controller::class,
-                    $methodName,
-                    $exception->getMessage()
-                ),
-                [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $exception,
-                ]
-            );
+	/**
+	 * Map DbalObjectSourceException onto its declared HTTP status.
+	 *
+	 * The exception's message is non-sensitive by contract (the provider never
+	 * embeds credentials or SQL in it), so it is safe to return to the client.
+	 *
+	 * @param Controller $controller The controller that was executing.
+	 * @param string $methodName The controller method that was executing.
+	 * @param Exception $exception The exception that was thrown.
+	 *
+	 * @return Response The 502/503 response for external-database failures.
+	 *
+	 * @throws Exception Rethrows every exception that is not a DbalObjectSourceException.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
+		// Sanitized write failures (constraint violations etc., dbal-virtual-
+		// registers-crud): render the carried 4xx/5xx status; log the wrapped
+		// driver exception server-side.
+		if ($exception instanceof DbalWriteException === true) {
+			$this->logger->warning(
+				sprintf(
+					'[ObjectSourceErrorMiddleware] external database write failed (%d) in %s::%s: %s',
+					$exception->getStatusCode(),
+					$controller::class,
+					$methodName,
+					$exception->getMessage()
+				),
+				[
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $exception,
+				]
+			);
 
-            return new JSONResponse(
-                data: ['error' => $exception->getMessage()],
-                statusCode: $exception->getStatusCode()
-            );
-        }//end if
+			return new JSONResponse(
+				data: ['error' => $exception->getMessage()],
+				statusCode: $exception->getStatusCode()
+			);
+		}//end if
 
-        if ($exception instanceof DbalObjectSourceException === false) {
-            throw $exception;
-        }
+		if ($exception instanceof DbalObjectSourceException === false) {
+			throw $exception;
+		}
 
-        $this->logger->warning(
-            sprintf(
-                '[ObjectSourceErrorMiddleware] external database read failed (%d) in %s::%s: %s',
-                $exception->getStatusCode(),
-                $controller::class,
-                $methodName,
-                $exception->getMessage()
-            ),
-            [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                // The underlying DBAL error (never sent to the client) — without
-                // it the server log carries only the sanitized message and the
-                // actual SQL failure is undiagnosable.
-                'exception' => $exception,
-            ]
-        );
+		$this->logger->warning(
+			sprintf(
+				'[ObjectSourceErrorMiddleware] external database read failed (%d) in %s::%s: %s',
+				$exception->getStatusCode(),
+				$controller::class,
+				$methodName,
+				$exception->getMessage()
+			),
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				// The underlying DBAL error (never sent to the client) — without
+				// it the server log carries only the sanitized message and the
+				// actual SQL failure is undiagnosable.
+				'exception' => $exception,
+			]
+		);
 
-        return new JSONResponse(
-            data: ['error' => $exception->getMessage()],
-            statusCode: $exception->getStatusCode()
-        );
-    }//end afterException()
+		return new JSONResponse(
+			data: ['error' => $exception->getMessage()],
+			statusCode: $exception->getStatusCode()
+		);
+	}//end afterException()
 }//end class

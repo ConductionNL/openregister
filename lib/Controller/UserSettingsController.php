@@ -37,242 +37,237 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class UserSettingsController extends Controller
-{
+class UserSettingsController extends Controller {
 
-    /**
-     * GitHub service instance.
-     *
-     * @var GitHubHandler The GitHub service instance.
-     */
-    private GitHubHandler $gitHubService;
+	/**
+	 * GitHub service instance.
+	 *
+	 * @var GitHubHandler The GitHub service instance.
+	 */
+	private GitHubHandler $gitHubService;
 
-    /**
-     * User session instance.
-     *
-     * @var IUserSession The user session instance.
-     */
-    private IUserSession $userSession;
+	/**
+	 * User session instance.
+	 *
+	 * @var IUserSession The user session instance.
+	 */
+	private IUserSession $userSession;
 
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface The logger instance.
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Logger instance.
+	 *
+	 * @var LoggerInterface The logger instance.
+	 */
+	private LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * @param string          $appName       The app name
-     * @param IRequest        $request       The request object
-     * @param GitHubHandler   $gitHubService GitHub service
-     * @param IUserSession    $userSession   User session
-     * @param LoggerInterface $logger        Logger
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        GitHubHandler $gitHubService,
-        IUserSession $userSession,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+	/**
+	 * Constructor
+	 *
+	 * @param string $appName The app name
+	 * @param IRequest $request The request object
+	 * @param GitHubHandler $gitHubService GitHub service
+	 * @param IUserSession $userSession User session
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		GitHubHandler $gitHubService,
+		IUserSession $userSession,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-        $this->gitHubService = $gitHubService;
-        $this->userSession   = $userSession;
-        $this->logger        = $logger;
-    }//end __construct()
+		$this->gitHubService = $gitHubService;
+		$this->userSession = $userSession;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * Get current GitHub token status (without exposing the token).
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing GitHub token status
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|401|500,
-     *     array{error?: 'Failed to get token status'|'User not authenticated',
-     *     hasToken?: bool, isValid?: bool,
-     *     message?: 'No GitHub token configured'|'Token is invalid or expired'|
-     *     'Token is valid'}, array<never, never>>
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    public function getGitHubTokenStatus(): JSONResponse
-    {
-        try {
-            $user = $this->userSession->getUser();
-            if ($user === null) {
-                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
-            }
+	/**
+	 * Get current GitHub token status (without exposing the token).
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response containing GitHub token status
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|401|500,
+	 *     array{error?: 'Failed to get token status'|'User not authenticated',
+	 *     hasToken?: bool, isValid?: bool,
+	 *     message?: 'No GitHub token configured'|'Token is invalid or expired'|
+	 *     'Token is valid'}, array<never, never>>
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function getGitHubTokenStatus(): JSONResponse {
+		try {
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+			}
 
-            $token = $this->gitHubService->getUserToken($user->getUID());
+			$token = $this->gitHubService->getUserToken($user->getUID());
 
-            if ($token === null) {
-                return new JSONResponse(
-                    data: [
-                        'hasToken' => false,
-                        'isValid'  => false,
-                        'message'  => 'No GitHub token configured',
-                    ],
-                    statusCode: 200
-                );
-            }
+			if ($token === null) {
+				return new JSONResponse(
+					data: [
+						'hasToken' => false,
+						'isValid' => false,
+						'message' => 'No GitHub token configured',
+					],
+					statusCode: 200
+				);
+			}
 
-            // Validate the token.
-            $this->gitHubService->setUserToken(token: $token, userId: $user->getUID());
-            $isValid = $this->gitHubService->validateToken(userId: $user->getUID());
+			// Validate the token.
+			$this->gitHubService->setUserToken(token: $token, userId: $user->getUID());
+			$isValid = $this->gitHubService->validateToken(userId: $user->getUID());
 
-            return new JSONResponse(
-                data: [
-                    'hasToken' => true,
-                    'isValid'  => $isValid,
-                    'message'  => $this->getTokenValidationMessage(isValid: $isValid),
-                ],
-                statusCode: 200
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[UserSettingsController] Failed to get GitHub token status: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+			return new JSONResponse(
+				data: [
+					'hasToken' => true,
+					'isValid' => $isValid,
+					'message' => $this->getTokenValidationMessage(isValid: $isValid),
+				],
+				statusCode: 200
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[UserSettingsController] Failed to get GitHub token status: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-            return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
-        }//end try
-    }//end getGitHubTokenStatus()
+			return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
+		}//end try
+	}//end getGitHubTokenStatus()
 
-    /**
-     * Set GitHub personal access token for the current user.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response containing result of token save operation
-     *
-     * @psalm-return JSONResponse<200|400|401|500,
-     *     array{error?: string, success?: true,
-     *     message?: 'GitHub token saved successfully'},
-     *     array<never, never>>
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    public function setGitHubToken(): JSONResponse
-    {
-        try {
-            $user = $this->userSession->getUser();
-            if ($user === null) {
-                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
-            }
+	/**
+	 * Set GitHub personal access token for the current user.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response containing result of token save operation
+	 *
+	 * @psalm-return JSONResponse<200|400|401|500,
+	 *     array{error?: string, success?: true,
+	 *     message?: 'GitHub token saved successfully'},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function setGitHubToken(): JSONResponse {
+		try {
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+			}
 
-            $data  = $this->request->getParams();
-            $token = $data['token'] ?? null;
+			$data = $this->request->getParams();
+			$token = $data['token'] ?? null;
 
-            if ($token === null || trim($token) === '') {
-                return new JSONResponse(data: ['error' => 'Token is required'], statusCode: 400);
-            }
+			if ($token === null || trim($token) === '') {
+				return new JSONResponse(data: ['error' => 'Token is required'], statusCode: 400);
+			}
 
-            // Validate the token before saving.
-            $this->gitHubService->setUserToken(token: $token, userId: $user->getUID());
-            if ($this->gitHubService->validateToken(userId: $user->getUID()) === false) {
-                return new JSONResponse(data: ['error' => 'Invalid GitHub token'], statusCode: 400);
-            }
+			// Validate the token before saving.
+			$this->gitHubService->setUserToken(token: $token, userId: $user->getUID());
+			if ($this->gitHubService->validateToken(userId: $user->getUID()) === false) {
+				return new JSONResponse(data: ['error' => 'Invalid GitHub token'], statusCode: 400);
+			}
 
-            // Save the token (it's already saved by setUserToken).
-            $this->logger->info(
-                message: "[UserSettingsController] GitHub token set for user: {$user->getUID()}",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+			// Save the token (it's already saved by setUserToken).
+			$this->logger->info(
+				message: "[UserSettingsController] GitHub token set for user: {$user->getUID()}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'message' => 'GitHub token saved successfully',
-                ],
-                statusCode: 200
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[UserSettingsController] Failed to set GitHub token: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'message' => 'GitHub token saved successfully',
+				],
+				statusCode: 200
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[UserSettingsController] Failed to set GitHub token: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-            return new JSONResponse(data: ['error' => 'Failed to save token: '.$e->getMessage()], statusCode: 500);
-        }//end try
-    }//end setGitHubToken()
+			return new JSONResponse(data: ['error' => 'Failed to save token: ' . $e->getMessage()], statusCode: 500);
+		}//end try
+	}//end setGitHubToken()
 
-    /**
-     * Remove GitHub personal access token for the current user.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Success or error message
-     *
-     * @psalm-return JSONResponse<
-     *     200|401|500,
-     *     array{
-     *         error?: 'Failed to remove token'|'User not authenticated',
-     *         success?: true,
-     *         message?: 'GitHub token removed successfully'
-     *     },
-     *     array<never, never>
-     * >
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    public function removeGitHubToken(): JSONResponse
-    {
-        try {
-            $user = $this->userSession->getUser();
-            if ($user === null) {
-                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
-            }
+	/**
+	 * Remove GitHub personal access token for the current user.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse Success or error message
+	 *
+	 * @psalm-return JSONResponse<
+	 *     200|401|500,
+	 *     array{
+	 *         error?: 'Failed to remove token'|'User not authenticated',
+	 *         success?: true,
+	 *         message?: 'GitHub token removed successfully'
+	 *     },
+	 *     array<never, never>
+	 * >
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function removeGitHubToken(): JSONResponse {
+		try {
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+			}
 
-            // Clear the token.
-            $this->gitHubService->setUserToken(token: null, userId: $user->getUID());
+			// Clear the token.
+			$this->gitHubService->setUserToken(token: null, userId: $user->getUID());
 
-            $this->logger->info(
-                message: "[UserSettingsController] GitHub token removed for user: {$user->getUID()}",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+			$this->logger->info(
+				message: "[UserSettingsController] GitHub token removed for user: {$user->getUID()}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'message' => 'GitHub token removed successfully',
-                ],
-                statusCode: 200
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[UserSettingsController] Failed to remove GitHub token: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'message' => 'GitHub token removed successfully',
+				],
+				statusCode: 200
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[UserSettingsController] Failed to remove GitHub token: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 
-            return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
-        }//end try
-    }//end removeGitHubToken()
+			return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
+		}//end try
+	}//end removeGitHubToken()
 
-    /**
-     * Get token validation message
-     *
-     * @param bool $isValid Whether token is valid
-     *
-     * @return string Validation message
-     *
-     * @psalm-return 'Token is invalid or expired'|'Token is valid'
-     */
-    private function getTokenValidationMessage(bool $isValid): string
-    {
-        if ($isValid === true) {
-            return 'Token is valid';
-        }
+	/**
+	 * Get token validation message
+	 *
+	 * @param bool $isValid Whether token is valid
+	 *
+	 * @return string Validation message
+	 *
+	 * @psalm-return 'Token is invalid or expired'|'Token is valid'
+	 */
+	private function getTokenValidationMessage(bool $isValid): string {
+		if ($isValid === true) {
+			return 'Token is valid';
+		}
 
-        return 'Token is invalid or expired';
-    }//end getTokenValidationMessage()
+		return 'Token is invalid or expired';
+	}//end getTokenValidationMessage()
 }//end class

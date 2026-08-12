@@ -33,378 +33,359 @@ use PHPUnit\Framework\TestCase;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator
  */
-class TimeseriesRequestValidatorTest extends TestCase
-{
+class TimeseriesRequestValidatorTest extends TestCase {
 
-    private TimeseriesRequestValidator $validator;
+	private TimeseriesRequestValidator $validator;
 
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->validator = new TimeseriesRequestValidator();
-    }//end setUp()
+	/**
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->validator = new TimeseriesRequestValidator();
+	}//end setUp()
 
-    /**
-     * A schema mock that returns a fixed property set.
-     *
-     * @param array<string, array<string, mixed>> $properties Property definitions keyed by name.
-     *
-     * @return Schema The configured schema mock.
-     */
-    private function schemaWith(array $properties): Schema
-    {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getProperties')->willReturn($properties);
-        return $schema;
-    }//end schemaWith()
+	/**
+	 * A schema mock that returns a fixed property set.
+	 *
+	 * @param array<string, array<string, mixed>> $properties Property definitions keyed by name.
+	 *
+	 * @return Schema The configured schema mock.
+	 */
+	private function schemaWith(array $properties): Schema {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn($properties);
+		return $schema;
+	}//end schemaWith()
 
-    /**
-     * Categorical groupBy: just a field. AggregationQuery.groupBy is
-     * set, dateBucket is null.
-     *
-     * @return void
-     */
-    public function testCategoricalGroupByOnDeclaredFieldPasses(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * Categorical groupBy: just a field. AggregationQuery.groupBy is
+	 * set, dateBucket is null.
+	 *
+	 * @return void
+	 */
+	public function testCategoricalGroupByOnDeclaredFieldPasses(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $query = $this->validator->validate(
-            input: ['field' => 'status'],
-            schema: $schema
-        );
+		$query = $this->validator->validate(
+			input: ['field' => 'status'],
+			schema: $schema
+		);
 
-        $this->assertSame('count', $query->metric);
-        $this->assertSame('status', $query->getGroupByField());
-        $this->assertFalse($query->hasDateBucket());
-    }//end testCategoricalGroupByOnDeclaredFieldPasses()
+		$this->assertSame('count', $query->metric);
+		$this->assertSame('status', $query->getGroupByField());
+		$this->assertFalse($query->hasDateBucket());
+	}//end testCategoricalGroupByOnDeclaredFieldPasses()
 
-    /**
-     * Time-bucket groupBy: dateBucket is set, groupBy is null.
-     *
-     * @return void
-     */
-    public function testTimeBucketDayPasses(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'created' => ['type' => 'string', 'format' => 'date-time'],
-            ]
-        );
+	/**
+	 * Time-bucket groupBy: dateBucket is set, groupBy is null.
+	 *
+	 * @return void
+	 */
+	public function testTimeBucketDayPasses(): void {
+		$schema = $this->schemaWith(
+			[
+				'created' => ['type' => 'string', 'format' => 'date-time'],
+			]
+		);
 
-        $query = $this->validator->validate(
-            input: [
-                'field'    => 'created',
-                'interval' => 'DAY',
-                'from'     => '2026-05-01T00:00:00Z',
-                'to'       => '2026-05-22T00:00:00Z',
-            ],
-            schema: $schema
-        );
+		$query = $this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'DAY',
+				'from' => '2026-05-01T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+			],
+			schema: $schema
+		);
 
-        $this->assertTrue($query->hasDateBucket());
-        $this->assertSame('day', $query->dateBucket['gap']);
-        $this->assertNull($query->groupBy);
-    }//end testTimeBucketDayPasses()
+		$this->assertTrue($query->hasDateBucket());
+		$this->assertSame('day', $query->dateBucket['gap']);
+		$this->assertNull($query->groupBy);
+	}//end testTimeBucketDayPasses()
 
-    /**
-     * @return void
-     */
-    public function testEmptyFieldIsRejected(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * @return void
+	 */
+	public function testEmptyFieldIsRejected(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`field` is required');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('`field` is required');
 
-        $this->validator->validate(input: ['field' => ''], schema: $schema);
-    }//end testEmptyFieldIsRejected()
+		$this->validator->validate(input: ['field' => ''], schema: $schema);
+	}//end testEmptyFieldIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testUnknownFieldIsRejected(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * @return void
+	 */
+	public function testUnknownFieldIsRejected(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('__totally_made_up');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('__totally_made_up');
 
-        $this->validator->validate(
-            input: ['field' => '__totally_made_up'],
-            schema: $schema
-        );
-    }//end testUnknownFieldIsRejected()
+		$this->validator->validate(
+			input: ['field' => '__totally_made_up'],
+			schema: $schema
+		);
+	}//end testUnknownFieldIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testMagicMetadataFieldIsAllowed(): void
-    {
-        $schema = $this->schemaWith([]);
+	/**
+	 * @return void
+	 */
+	public function testMagicMetadataFieldIsAllowed(): void {
+		$schema = $this->schemaWith([]);
 
-        $query = $this->validator->validate(
-            input: [
-                'field'    => '_created',
-                'interval' => 'DAY',
-                'from'     => '2026-05-01T00:00:00Z',
-                'to'       => '2026-05-22T00:00:00Z',
-            ],
-            schema: $schema
-        );
+		$query = $this->validator->validate(
+			input: [
+				'field' => '_created',
+				'interval' => 'DAY',
+				'from' => '2026-05-01T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+			],
+			schema: $schema
+		);
 
-        $this->assertTrue($query->hasDateBucket());
-    }//end testMagicMetadataFieldIsAllowed()
+		$this->assertTrue($query->hasDateBucket());
+	}//end testMagicMetadataFieldIsAllowed()
 
-    /**
-     * @return void
-     */
-    public function testSubDayIntervalOnDateOnlyFieldIsRejected(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'meetingDate' => ['type' => 'string', 'format' => 'date'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testSubDayIntervalOnDateOnlyFieldIsRejected(): void {
+		$schema = $this->schemaWith(
+			[
+				'meetingDate' => ['type' => 'string', 'format' => 'date'],
+			]
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('sub-day interval');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('sub-day interval');
 
-        $this->validator->validate(
-            input: [
-                'field'    => 'meetingDate',
-                'interval' => 'HOUR',
-                'from'     => '2026-05-21T00:00:00Z',
-                'to'       => '2026-05-22T00:00:00Z',
-            ],
-            schema: $schema
-        );
-    }//end testSubDayIntervalOnDateOnlyFieldIsRejected()
+		$this->validator->validate(
+			input: [
+				'field' => 'meetingDate',
+				'interval' => 'HOUR',
+				'from' => '2026-05-21T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+			],
+			schema: $schema
+		);
+	}//end testSubDayIntervalOnDateOnlyFieldIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testIntervalWithoutBoundsIsRejected(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'created' => ['type' => 'string', 'format' => 'date-time'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testIntervalWithoutBoundsIsRejected(): void {
+		$schema = $this->schemaWith(
+			[
+				'created' => ['type' => 'string', 'format' => 'date-time'],
+			]
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`from` and `to` are required');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('`from` and `to` are required');
 
-        $this->validator->validate(
-            input: ['field' => 'created', 'interval' => 'DAY'],
-            schema: $schema
-        );
-    }//end testIntervalWithoutBoundsIsRejected()
+		$this->validator->validate(
+			input: ['field' => 'created', 'interval' => 'DAY'],
+			schema: $schema
+		);
+	}//end testIntervalWithoutBoundsIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testUnparseableBoundsAreRejected(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'created' => ['type' => 'string', 'format' => 'date-time'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testUnparseableBoundsAreRejected(): void {
+		$schema = $this->schemaWith(
+			[
+				'created' => ['type' => 'string', 'format' => 'date-time'],
+			]
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('parseable ISO-8601');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('parseable ISO-8601');
 
-        $this->validator->validate(
-            input: [
-                'field'    => 'created',
-                'interval' => 'DAY',
-                'from'     => 'not-a-date',
-                'to'       => 'also-not-a-date',
-            ],
-            schema: $schema
-        );
-    }//end testUnparseableBoundsAreRejected()
+		$this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'DAY',
+				'from' => 'not-a-date',
+				'to' => 'also-not-a-date',
+			],
+			schema: $schema
+		);
+	}//end testUnparseableBoundsAreRejected()
 
-    /**
-     * @return void
-     */
-    public function testUnknownIntervalIsRejected(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'created' => ['type' => 'string', 'format' => 'date-time'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testUnknownIntervalIsRejected(): void {
+		$schema = $this->schemaWith(
+			[
+				'created' => ['type' => 'string', 'format' => 'date-time'],
+			]
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`interval` MUST be one of');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('`interval` MUST be one of');
 
-        $this->validator->validate(
-            input: [
-                'field'    => 'created',
-                'interval' => 'CENTURY',
-                'from'     => '2026-01-01T00:00:00Z',
-                'to'       => '2026-12-31T00:00:00Z',
-            ],
-            schema: $schema
-        );
-    }//end testUnknownIntervalIsRejected()
+		$this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'CENTURY',
+				'from' => '2026-01-01T00:00:00Z',
+				'to' => '2026-12-31T00:00:00Z',
+			],
+			schema: $schema
+		);
+	}//end testUnknownIntervalIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testNonCountMetricWithoutMetricFieldIsRejected(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'status'   => ['type' => 'string'],
-                'duration' => ['type' => 'number'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testNonCountMetricWithoutMetricFieldIsRejected(): void {
+		$schema = $this->schemaWith(
+			[
+				'status' => ['type' => 'string'],
+				'duration' => ['type' => 'number'],
+			]
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`metricField` is required');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('`metricField` is required');
 
-        $this->validator->validate(
-            input: ['field' => 'status', 'metric' => 'sum'],
-            schema: $schema
-        );
-    }//end testNonCountMetricWithoutMetricFieldIsRejected()
+		$this->validator->validate(
+			input: ['field' => 'status', 'metric' => 'sum'],
+			schema: $schema
+		);
+	}//end testNonCountMetricWithoutMetricFieldIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testNonCountMetricWithUnknownMetricFieldIsRejected(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * @return void
+	 */
+	public function testNonCountMetricWithUnknownMetricFieldIsRejected(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('not a declared property');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('not a declared property');
 
-        $this->validator->validate(
-            input: [
-                'field'       => 'status',
-                'metric'      => 'sum',
-                'metricField' => '__unknown',
-            ],
-            schema: $schema
-        );
-    }//end testNonCountMetricWithUnknownMetricFieldIsRejected()
+		$this->validator->validate(
+			input: [
+				'field' => 'status',
+				'metric' => 'sum',
+				'metricField' => '__unknown',
+			],
+			schema: $schema
+		);
+	}//end testNonCountMetricWithUnknownMetricFieldIsRejected()
 
-    /**
-     * @return void
-     */
-    public function testSumOverDeclaredFieldPasses(): void
-    {
-        $schema = $this->schemaWith(
-            [
-                'status'   => ['type' => 'string'],
-                'duration' => ['type' => 'number'],
-            ]
-        );
+	/**
+	 * @return void
+	 */
+	public function testSumOverDeclaredFieldPasses(): void {
+		$schema = $this->schemaWith(
+			[
+				'status' => ['type' => 'string'],
+				'duration' => ['type' => 'number'],
+			]
+		);
 
-        $query = $this->validator->validate(
-            input: [
-                'field'       => 'status',
-                'metric'      => 'sum',
-                'metricField' => 'duration',
-            ],
-            schema: $schema
-        );
+		$query = $this->validator->validate(
+			input: [
+				'field' => 'status',
+				'metric' => 'sum',
+				'metricField' => 'duration',
+			],
+			schema: $schema
+		);
 
-        $this->assertSame('sum', $query->metric);
-        $this->assertSame('duration', $query->field);
-        $this->assertSame('status', $query->getGroupByField());
-    }//end testSumOverDeclaredFieldPasses()
+		$this->assertSame('sum', $query->metric);
+		$this->assertSame('duration', $query->field);
+		$this->assertSame('status', $query->getGroupByField());
+	}//end testSumOverDeclaredFieldPasses()
 
-    // -----------------------------------------------------------------------
-    // Cumulative running total (REQ-AGG-103).
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Cumulative running total (REQ-AGG-103).
+	// -----------------------------------------------------------------------
 
-    /**
-     * @return void
-     */
-    public function testCumulativeTrueWithIntervalPasses(): void
-    {
-        $schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
+	/**
+	 * @return void
+	 */
+	public function testCumulativeTrueWithIntervalPasses(): void {
+		$schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
 
-        $query = $this->validator->validate(
-            input: [
-                'field'      => 'created',
-                'interval'   => 'DAY',
-                'from'       => '2026-05-01T00:00:00Z',
-                'to'         => '2026-05-22T00:00:00Z',
-                'cumulative' => 'true',
-            ],
-            schema: $schema
-        );
+		$query = $this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'DAY',
+				'from' => '2026-05-01T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+				'cumulative' => 'true',
+			],
+			schema: $schema
+		);
 
-        $this->assertTrue($query->isCumulative());
+		$this->assertTrue($query->isCumulative());
 
-    }//end testCumulativeTrueWithIntervalPasses()
+	}//end testCumulativeTrueWithIntervalPasses()
 
-    /**
-     * @return void
-     */
-    public function testCumulativeAcceptsBooleanAndStringOneAsTruthy(): void
-    {
-        $schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
+	/**
+	 * @return void
+	 */
+	public function testCumulativeAcceptsBooleanAndStringOneAsTruthy(): void {
+		$schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
 
-        $withBool = $this->validator->validate(
-            input: [
-                'field'      => 'created',
-                'interval'   => 'DAY',
-                'from'       => '2026-05-01T00:00:00Z',
-                'to'         => '2026-05-22T00:00:00Z',
-                'cumulative' => true,
-            ],
-            schema: $schema
-        );
-        $withOne = $this->validator->validate(
-            input: [
-                'field'      => 'created',
-                'interval'   => 'DAY',
-                'from'       => '2026-05-01T00:00:00Z',
-                'to'         => '2026-05-22T00:00:00Z',
-                'cumulative' => '1',
-            ],
-            schema: $schema
-        );
+		$withBool = $this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'DAY',
+				'from' => '2026-05-01T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+				'cumulative' => true,
+			],
+			schema: $schema
+		);
+		$withOne = $this->validator->validate(
+			input: [
+				'field' => 'created',
+				'interval' => 'DAY',
+				'from' => '2026-05-01T00:00:00Z',
+				'to' => '2026-05-22T00:00:00Z',
+				'cumulative' => '1',
+			],
+			schema: $schema
+		);
 
-        $this->assertTrue($withBool->isCumulative());
-        $this->assertTrue($withOne->isCumulative());
+		$this->assertTrue($withBool->isCumulative());
+		$this->assertTrue($withOne->isCumulative());
 
-    }//end testCumulativeAcceptsBooleanAndStringOneAsTruthy()
+	}//end testCumulativeAcceptsBooleanAndStringOneAsTruthy()
 
-    /**
-     * @return void
-     */
-    public function testCumulativeDefaultsToFalseWhenAbsent(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * @return void
+	 */
+	public function testCumulativeDefaultsToFalseWhenAbsent(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $query = $this->validator->validate(input: ['field' => 'status'], schema: $schema);
+		$query = $this->validator->validate(input: ['field' => 'status'], schema: $schema);
 
-        $this->assertFalse($query->isCumulative());
+		$this->assertFalse($query->isCumulative());
 
-    }//end testCumulativeDefaultsToFalseWhenAbsent()
+	}//end testCumulativeDefaultsToFalseWhenAbsent()
 
-    /**
-     * @return void
-     */
-    public function testCumulativeWithoutIntervalIsRejected(): void
-    {
-        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+	/**
+	 * @return void
+	 */
+	public function testCumulativeWithoutIntervalIsRejected(): void {
+		$schema = $this->schemaWith(['status' => ['type' => 'string']]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`cumulative` requires `interval`');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('`cumulative` requires `interval`');
 
-        $this->validator->validate(
-            input: ['field' => 'status', 'cumulative' => 'true'],
-            schema: $schema
-        );
+		$this->validator->validate(
+			input: ['field' => 'status', 'cumulative' => 'true'],
+			schema: $schema
+		);
 
-    }//end testCumulativeWithoutIntervalIsRejected()
+	}//end testCumulativeWithoutIntervalIsRejected()
 }//end class

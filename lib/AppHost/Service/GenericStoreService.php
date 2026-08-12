@@ -61,310 +61,295 @@ use Throwable;
  *
  * @spec openspec/specs/apphost-store-plane/spec.md
  */
-class GenericStoreService
-{
-    /**
-     * Outcome: the request succeeded.
-     */
-    public const OUTCOME_OK = 'ok';
+class GenericStoreService {
+	/**
+	 * Outcome: the request succeeded.
+	 */
+	public const OUTCOME_OK = 'ok';
 
-    /**
-     * Outcome: no registry configured — no network call was made.
-     */
-    public const OUTCOME_NOT_CONFIGURED = 'not_configured';
+	/**
+	 * Outcome: no registry configured — no network call was made.
+	 */
+	public const OUTCOME_NOT_CONFIGURED = 'not_configured';
 
-    /**
-     * Outcome: registry unreachable / timed out / non-2xx / redirected.
-     */
-    public const OUTCOME_UNREACHABLE = 'store_unreachable';
+	/**
+	 * Outcome: registry unreachable / timed out / non-2xx / redirected.
+	 */
+	public const OUTCOME_UNREACHABLE = 'store_unreachable';
 
-    /**
-     * Outcome: registry returned an unparseable / unexpected body.
-     */
-    public const OUTCOME_INVALID = 'store_invalid_response';
+	/**
+	 * Outcome: registry returned an unparseable / unexpected body.
+	 */
+	public const OUTCOME_INVALID = 'store_invalid_response';
 
-    /**
-     * Connect + request timeout (seconds) for every remote fetch.
-     */
-    private const TIMEOUT = 10;
+	/**
+	 * Connect + request timeout (seconds) for every remote fetch.
+	 */
+	private const TIMEOUT = 10;
 
-    /**
-     * Maximum cards returned by a single search.
-     */
-    private const SEARCH_LIMIT = 50;
+	/**
+	 * Maximum cards returned by a single search.
+	 */
+	private const SEARCH_LIMIT = 50;
 
-    /**
-     * Constructor.
-     *
-     * @param IClientService  $clientService Nextcloud HTTP client factory.
-     * @param IAppConfig      $appConfig     App config store (registry url / token / register).
-     * @param LoggerInterface $logger        PSR logger — server-side diagnostics only.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IClientService $clientService,
-        private readonly IAppConfig $appConfig,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IClientService $clientService Nextcloud HTTP client factory.
+	 * @param IAppConfig $appConfig App config store (registry url / token / register).
+	 * @param LoggerInterface $logger PSR logger — server-side diagnostics only.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IClientService $clientService,
+		private readonly IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Whether a remote registry is configured for this store (non-empty base URL).
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     *
-     * @return bool
-     *
-     * @spec openspec/specs/apphost-store-plane/spec.md
-     */
-    public function isConfigured(StoreDescriptor $descriptor): bool
-    {
-        return trim($this->registryUrl(descriptor: $descriptor)) !== '';
+	/**
+	 * Whether a remote registry is configured for this store (non-empty base URL).
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	public function isConfigured(StoreDescriptor $descriptor): bool {
+		return trim($this->registryUrl(descriptor: $descriptor)) !== '';
+	}//end isConfigured()
 
-    }//end isConfigured()
+	/**
+	 * Search the remote store.
+	 *
+	 * Returns `not_configured` with an empty card list and makes NO network
+	 * call when no registry is set — the ADR-080 Decision 4 fallback that lets
+	 * a store page render the app's built-in items instead.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string|null $query Optional free-text search term.
+	 * @param string|null $kind Optional `kind` discriminator filter (ADR-080 Decision 5).
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+		if ($this->isConfigured(descriptor: $descriptor) === false) {
+			return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
+		}
 
-    /**
-     * Search the remote store.
-     *
-     * Returns `not_configured` with an empty card list and makes NO network
-     * call when no registry is set — the ADR-080 Decision 4 fallback that lets
-     * a store page render the app's built-in items instead.
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     * @param string|null     $query      Optional free-text search term.
-     * @param string|null     $kind       Optional `kind` discriminator filter (ADR-080 Decision 5).
-     *
-     * @return array{outcome: string, cards: array<int, array<string, mixed>>}
-     *
-     * @spec openspec/specs/apphost-store-plane/spec.md
-     */
-    public function search(StoreDescriptor $descriptor, ?string $query=null, ?string $kind=null): array
-    {
-        if ($this->isConfigured(descriptor: $descriptor) === false) {
-            return ['outcome' => self::OUTCOME_NOT_CONFIGURED, 'cards' => []];
-        }
+		$params = ['_limit' => self::SEARCH_LIMIT];
+		if ($query !== null && trim($query) !== '') {
+			$params['_search'] = trim($query);
+		}
 
-        $params = ['_limit' => self::SEARCH_LIMIT];
-        if ($query !== null && trim($query) !== '') {
-            $params['_search'] = trim($query);
-        }
+		if ($kind !== null && trim($kind) !== '') {
+			$params['kind'] = trim($kind);
+		}
 
-        if ($kind !== null && trim($kind) !== '') {
-            $params['kind'] = trim($kind);
-        }
+		$result = $this->fetch(descriptor: $descriptor, params: $params);
+		if ($result['outcome'] !== self::OUTCOME_OK) {
+			return ['outcome' => $result['outcome'], 'cards' => []];
+		}
 
-        $result = $this->fetch(descriptor: $descriptor, params: $params);
-        if ($result['outcome'] !== self::OUTCOME_OK) {
-            return ['outcome' => $result['outcome'], 'cards' => []];
-        }
+		$cards = [];
+		foreach ($result['results'] as $object) {
+			if (is_array($object) === true) {
+				$cards[] = $this->normaliseCard(descriptor: $descriptor, object: $object);
+			}
+		}
 
-        $cards = [];
-        foreach ($result['results'] as $object) {
-            if (is_array($object) === true) {
-                $cards[] = $this->normaliseCard(descriptor: $descriptor, object: $object);
-            }
-        }
+		return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
+	}//end search()
 
-        return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
+	/**
+	 * Resolve a single remote item by slug, returning its FULL payload for the
+	 * calling app's install action.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string $slug The item slug.
+	 *
+	 * @return array<string, mixed>|null The full remote object, or null when unresolved / on error.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
+		if ($this->isConfigured(descriptor: $descriptor) === false) {
+			return null;
+		}
 
-    }//end search()
+		$result = $this->fetch(descriptor: $descriptor, params: ['slug' => $slug, '_limit' => 1]);
+		if ($result['outcome'] !== self::OUTCOME_OK) {
+			return null;
+		}
 
-    /**
-     * Resolve a single remote item by slug, returning its FULL payload for the
-     * calling app's install action.
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     * @param string          $slug       The item slug.
-     *
-     * @return array<string, mixed>|null The full remote object, or null when unresolved / on error.
-     *
-     * @spec openspec/specs/apphost-store-plane/spec.md
-     */
-    public function resolve(StoreDescriptor $descriptor, string $slug): ?array
-    {
-        if ($this->isConfigured(descriptor: $descriptor) === false) {
-            return null;
-        }
+		foreach ($result['results'] as $object) {
+			// Compare the slug the registry actually returned rather than
+			// trusting the filter: a registry that ignores an unknown query
+			// param would otherwise hand back an arbitrary first row.
+			if (is_array($object) === true && (string)($object['slug'] ?? '') === $slug) {
+				return $object;
+			}
+		}
 
-        $result = $this->fetch(descriptor: $descriptor, params: ['slug' => $slug, '_limit' => 1]);
-        if ($result['outcome'] !== self::OUTCOME_OK) {
-            return null;
-        }
+		return null;
+	}//end resolve()
 
-        foreach ($result['results'] as $object) {
-            // Compare the slug the registry actually returned rather than
-            // trusting the filter: a registry that ignores an unknown query
-            // param would otherwise hand back an arbitrary first row.
-            if (is_array($object) === true && (string) ($object['slug'] ?? '') === $slug) {
-                return $object;
-            }
-        }
+	/**
+	 * Perform the SSRF-guarded, redirect-refusing GET against the remote
+	 * store's objects API.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $params Query params merged into the request.
+	 *
+	 * @return array{outcome: string, results: array<int, mixed>}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is
+	 * static upstream, and calling it directly is the point of moving this client
+	 * into OpenRegister — the previous app-local copy reached it through a dynamic
+	 * class-string with a weaker fallback (ADR-080 Context).
+	 */
+	private function fetch(StoreDescriptor $descriptor, array $params): array {
+		try {
+			$url = $this->buildUrl(descriptor: $descriptor);
+			SecurityService::assertSafeFetchUrl($url);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'AppHost store (' . $descriptor->appId . '): rejected unsafe/invalid registry URL: ' . $e->getMessage()
+			);
+			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
+		}
 
-        return null;
+		$options = [
+			'timeout' => self::TIMEOUT,
+			'connect_timeout' => self::TIMEOUT,
+			'query' => $params,
+			'allow_redirects' => false,
+		];
 
-    }//end resolve()
+		$token = trim($this->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
+		if ($token !== '') {
+			$options['headers'] = ['Authorization' => 'Bearer ' . $token];
+		}
 
-    /**
-     * Perform the SSRF-guarded, redirect-refusing GET against the remote
-     * store's objects API.
-     *
-     * @param StoreDescriptor      $descriptor The calling app's store parameters.
-     * @param array<string, mixed> $params     Query params merged into the request.
-     *
-     * @return array{outcome: string, results: array<int, mixed>}
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is
-     * static upstream, and calling it directly is the point of moving this client
-     * into OpenRegister — the previous app-local copy reached it through a dynamic
-     * class-string with a weaker fallback (ADR-080 Context).
-     */
-    private function fetch(StoreDescriptor $descriptor, array $params): array
-    {
-        try {
-            $url = $this->buildUrl(descriptor: $descriptor);
-            SecurityService::assertSafeFetchUrl($url);
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'AppHost store ('.$descriptor->appId.'): rejected unsafe/invalid registry URL: '.$e->getMessage()
-            );
-            return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
-        }
+		try {
+			$response = $this->clientService->newClient()->get($url, $options);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'AppHost store (' . $descriptor->appId . '): registry fetch failed: ' . $e->getMessage()
+			);
+			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
+		}
 
-        $options = [
-            'timeout'         => self::TIMEOUT,
-            'connect_timeout' => self::TIMEOUT,
-            'query'           => $params,
-            'allow_redirects' => false,
-        ];
+		$status = $response->getStatusCode();
+		if ($status < 200 || $status >= 300) {
+			$this->logger->warning(
+				'AppHost store (' . $descriptor->appId . '): registry returned HTTP ' . $status
+			);
+			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
+		}
 
-        $token = trim($this->appConfig->getValueString($descriptor->appId, 'registry_token', ''));
-        if ($token !== '') {
-            $options['headers'] = ['Authorization' => 'Bearer '.$token];
-        }
+		return $this->decodeBody(descriptor: $descriptor, body: (string)$response->getBody());
+	}//end fetch()
 
-        try {
-            $response = $this->clientService->newClient()->get($url, $options);
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                'AppHost store ('.$descriptor->appId.'): registry fetch failed: '.$e->getMessage()
-            );
-            return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
-        }
+	/**
+	 * Decode a registry response body into a result list.
+	 *
+	 * Split out of fetch() so neither method carries the whole guard chain:
+	 * an unparseable body is a DIFFERENT outcome from an unreachable registry,
+	 * and collapsing the two would make a misconfigured store look offline.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string $body The raw response body.
+	 *
+	 * @return array{outcome: string, results: array<int, mixed>}
+	 */
+	private function decodeBody(StoreDescriptor $descriptor, string $body): array {
+		$decoded = json_decode($body, true);
+		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
+			$this->logger->warning(
+				'AppHost store (' . $descriptor->appId . '): registry returned an unparseable body'
+			);
+			return ['outcome' => self::OUTCOME_INVALID, 'results' => []];
+		}
 
-        $status = $response->getStatusCode();
-        if ($status < 200 || $status >= 300) {
-            $this->logger->warning(
-                'AppHost store ('.$descriptor->appId.'): registry returned HTTP '.$status
-            );
-            return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
-        }
+		$results = ($decoded['results'] ?? null);
+		if (is_array($results) === true) {
+			return ['outcome' => self::OUTCOME_OK, 'results' => $results];
+		}
 
-        return $this->decodeBody(descriptor: $descriptor, body: (string) $response->getBody());
+		// Some OpenRegister responses are a bare list; accept that too.
+		// A non-list decode is treated as no results rather than passed through:
+		// callers iterate this, and handing them an associative array would
+		// iterate its VALUES as if they were records.
+		$results = [];
+		if (array_is_list($decoded) === true) {
+			$results = $decoded;
+		}
 
-    }//end fetch()
+		return [
+			'outcome' => self::OUTCOME_OK,
+			'results' => $results,
+		];
 
-    /**
-     * Decode a registry response body into a result list.
-     *
-     * Split out of fetch() so neither method carries the whole guard chain:
-     * an unparseable body is a DIFFERENT outcome from an unreachable registry,
-     * and collapsing the two would make a misconfigured store look offline.
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     * @param string          $body       The raw response body.
-     *
-     * @return array{outcome: string, results: array<int, mixed>}
-     */
-    private function decodeBody(StoreDescriptor $descriptor, string $body): array
-    {
-        $decoded = json_decode($body, true);
-        if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
-            $this->logger->warning(
-                'AppHost store ('.$descriptor->appId.'): registry returned an unparseable body'
-            );
-            return ['outcome' => self::OUTCOME_INVALID, 'results' => []];
-        }
+	}//end decodeBody()
 
-        $results = ($decoded['results'] ?? null);
-        if (is_array($results) === true) {
-            return ['outcome' => self::OUTCOME_OK, 'results' => $results];
-        }
+	/**
+	 * Build the remote objects-API URL for this store's schema.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return string
+	 */
+	private function buildUrl(StoreDescriptor $descriptor): string {
+		$base = rtrim(trim($this->registryUrl(descriptor: $descriptor)), '/');
+		$register = trim(
+			$this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
+		);
+		if ($register === '') {
+			$register = $descriptor->defaultRegister;
+		}
 
-        // Some OpenRegister responses are a bare list; accept that too.
-        // A non-list decode is treated as no results rather than passed through:
-        // callers iterate this, and handing them an associative array would
-        // iterate its VALUES as if they were records.
-        $results = [];
-        if (array_is_list($decoded) === true) {
-            $results = $decoded;
-        }
+		return $base
+			. '/index.php/apps/openregister/api/objects/'
+			. rawurlencode($register) . '/'
+			. rawurlencode($descriptor->schema);
 
-        return [
-            'outcome' => self::OUTCOME_OK,
-            'results' => $results,
-        ];
+	}//end buildUrl()
 
-    }//end decodeBody()
+	/**
+	 * Flatten a remote object to a search card using the descriptor's field
+	 * map. Never carries the install payload, and never a credential.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $object The remote object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function normaliseCard(StoreDescriptor $descriptor, array $object): array {
+		$card = [];
+		foreach ($descriptor->cardFields as $field => $property) {
+			$card[$field] = (string)($object[$property] ?? '');
+		}
 
-    /**
-     * Build the remote objects-API URL for this store's schema.
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     *
-     * @return string
-     */
-    private function buildUrl(StoreDescriptor $descriptor): string
-    {
-        $base     = rtrim(trim($this->registryUrl(descriptor: $descriptor)), '/');
-        $register = trim(
-            $this->appConfig->getValueString($descriptor->appId, 'registry_register', $descriptor->defaultRegister)
-        );
-        if ($register === '') {
-            $register = $descriptor->defaultRegister;
-        }
+		// `kind` drives the store page's quick-filters (ADR-080 Decision 5) and
+		// is always present so the frontend can group without a null check.
+		$card['kind'] = (string)($object['kind'] ?? '');
 
-        return $base
-            .'/index.php/apps/openregister/api/objects/'
-            .rawurlencode($register).'/'
-            .rawurlencode($descriptor->schema);
+		return $card;
+	}//end normaliseCard()
 
-    }//end buildUrl()
-
-    /**
-     * Flatten a remote object to a search card using the descriptor's field
-     * map. Never carries the install payload, and never a credential.
-     *
-     * @param StoreDescriptor      $descriptor The calling app's store parameters.
-     * @param array<string, mixed> $object     The remote object.
-     *
-     * @return array<string, mixed>
-     */
-    private function normaliseCard(StoreDescriptor $descriptor, array $object): array
-    {
-        $card = [];
-        foreach ($descriptor->cardFields as $field => $property) {
-            $card[$field] = (string) ($object[$property] ?? '');
-        }
-
-        // `kind` drives the store page's quick-filters (ADR-080 Decision 5) and
-        // is always present so the frontend can group without a null check.
-        $card['kind'] = (string) ($object['kind'] ?? '');
-
-        return $card;
-
-    }//end normaliseCard()
-
-    /**
-     * The configured registry base URL for this store.
-     *
-     * @param StoreDescriptor $descriptor The calling app's store parameters.
-     *
-     * @return string
-     */
-    private function registryUrl(StoreDescriptor $descriptor): string
-    {
-        return $this->appConfig->getValueString($descriptor->appId, 'registry_url', '');
-
-    }//end registryUrl()
+	/**
+	 * The configured registry base URL for this store.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 *
+	 * @return string
+	 */
+	private function registryUrl(StoreDescriptor $descriptor): string {
+		return $this->appConfig->getValueString($descriptor->appId, 'registry_url', '');
+	}//end registryUrl()
 }//end class

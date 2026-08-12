@@ -26,37 +26,70 @@ declare(strict_types=1);
 // any version of the OCP\IConfig interface without declaration mismatches.
 // -----------------------------------------------------------------
 if (class_exists('OC_FakeConfig') === false) {
-    /**
-     * Minimal OCP\IConfig implementation for unit tests.
-     */
-    class OC_FakeConfig
-    {
-        /** @param mixed $default @return mixed */
-        public function getSystemValue($key, $default = '') { return $default; }
-        public function getSystemValueBool(string $key, bool $default = false): bool { return $default; }
-        public function getSystemValueInt(string $key, int $default = 0): int { return $default; }
-        public function getSystemValueString(string $key, string $default = ''): string { return $default; }
-        /** @param mixed $default @return mixed */
-        public function getFilteredSystemValue($key, $default = '') { return $default; }
-        /** @param mixed $value */
-        public function setSystemValue($key, $value): void {}
-        public function setSystemValues(array $configs): void {}
-        public function deleteSystemValue($key): void {}
-        public function getAppKeys($appName): array { return []; }
-        public function setAppValue($appName, $key, $value): void {}
-        public function getAppValue($appName, $key, $default = ''): string { return (string)$default; }
-        public function deleteAppValue($appName, $key): void {}
-        public function deleteAppValues($appName): void {}
-        public function setUserValue($userId, $appName, $key, $value, $preCondition = null): void {}
-        public function getUserValue($userId, $appName, $key, $default = ''): string { return (string)$default; }
-        public function getUserValueForUsers($appName, $key, $userIds): array { return []; }
-        public function getUserKeys($userId, $appName): array { return []; }
-        public function getAllUserValues(string $userId): array { return []; }
-        public function deleteUserValue($userId, $appName, $key): void {}
-        public function deleteAllUserValues($userId): void {}
-        public function deleteAppFromAllUsers($appName): void {}
-        public function getUsersForUserValue($appName, $key, $value): array { return []; }
-    }
+	/**
+	 * Minimal OCP\IConfig implementation for unit tests.
+	 */
+	class OC_FakeConfig {
+		/** @param mixed $default @return mixed */
+		public function getSystemValue($key, $default = '') {
+			return $default;
+		}
+		public function getSystemValueBool(string $key, bool $default = false): bool {
+			return $default;
+		}
+		public function getSystemValueInt(string $key, int $default = 0): int {
+			return $default;
+		}
+		public function getSystemValueString(string $key, string $default = ''): string {
+			return $default;
+		}
+		/** @param mixed $default @return mixed */
+		public function getFilteredSystemValue($key, $default = '') {
+			return $default;
+		}
+		/** @param mixed $value */
+		public function setSystemValue($key, $value): void {
+		}
+		public function setSystemValues(array $configs): void {
+		}
+		public function deleteSystemValue($key): void {
+		}
+		public function getAppKeys($appName): array {
+			return [];
+		}
+		public function setAppValue($appName, $key, $value): void {
+		}
+		public function getAppValue($appName, $key, $default = ''): string {
+			return (string)$default;
+		}
+		public function deleteAppValue($appName, $key): void {
+		}
+		public function deleteAppValues($appName): void {
+		}
+		public function setUserValue($userId, $appName, $key, $value, $preCondition = null): void {
+		}
+		public function getUserValue($userId, $appName, $key, $default = ''): string {
+			return (string)$default;
+		}
+		public function getUserValueForUsers($appName, $key, $userIds): array {
+			return [];
+		}
+		public function getUserKeys($userId, $appName): array {
+			return [];
+		}
+		public function getAllUserValues(string $userId): array {
+			return [];
+		}
+		public function deleteUserValue($userId, $appName, $key): void {
+		}
+		public function deleteAllUserValues($userId): void {
+		}
+		public function deleteAppFromAllUsers($appName): void {
+		}
+		public function getUsersForUserValue($appName, $key, $value): array {
+			return [];
+		}
+	}
 }//end if
 
 // -----------------------------------------------------------------
@@ -77,9 +110,9 @@ if (class_exists('OC_FakeConfig') === false) {
 // (the pre-fix layout) meant a real NC bootstrap satisfied that guard and
 // silently left `OC_FakeServer` undefined — "Class OC_FakeServer not found".
 if (class_exists('OC_FakeServer') === false) {
-    // We have to declare this in the global namespace without a namespace block.
-    // eval() makes that possible even when this file is parsed under strict_types.
-    eval('
+	// We have to declare this in the global namespace without a namespace block.
+	// eval() makes that possible even when this file is parsed under strict_types.
+	eval('
     /**
      * Minimal OC stub for PHPUnit in bare php:8.3-cli.
      */
@@ -123,9 +156,9 @@ if (class_exists('OC_FakeServer') === false) {
 }//end if
 
 if (class_exists(\OC::class) === false) {
-    // We have to declare this in the global namespace without a namespace block.
-    // eval() makes that possible even when this file is parsed under strict_types.
-    eval('
+	// We have to declare this in the global namespace without a namespace block.
+	// eval() makes that possible even when this file is parsed under strict_types.
+	eval('
     class OC {
         public static OC_FakeServer $server;
         /** @var bool CLI mode flag (false in unit tests) */
@@ -190,7 +223,7 @@ if (class_exists(\OC::class) === false) {
 // Used by OCP\Files\IRootFolder (which extends Folder AND Emitter).
 // -----------------------------------------------------------------
 if (interface_exists(\OC\Hooks\Emitter::class) === false) {
-    eval('namespace OC\Hooks;
+	eval('namespace OC\Hooks;
     interface Emitter {
         public function listen(string $scope, string $method, \Closure $callback): void;
         public function removeListener(?string $scope = null, ?string $method = null, ?\Closure $callback = null): void;
@@ -201,7 +234,7 @@ if (interface_exists(\OC\Hooks\Emitter::class) === false) {
 // OC\Files\View  (used in type-hints in several OCP interfaces)
 // -----------------------------------------------------------------
 if (class_exists(\OC\Files\View::class) === false) {
-    eval('namespace OC\Files;
+	eval('namespace OC\Files;
     class View {
         public function __construct(string $root = "") {}
     }');
@@ -211,11 +244,11 @@ if (class_exists(\OC\Files\View::class) === false) {
 // OC\Files\Node\NonExistingFile / NonExistingFolder
 // -----------------------------------------------------------------
 if (class_exists(\OC\Files\Node\NonExistingFile::class) === false) {
-    eval('namespace OC\Files\Node;
+	eval('namespace OC\Files\Node;
     class NonExistingFile {}');
 }//end if
 if (class_exists(\OC\Files\Node\NonExistingFolder::class) === false) {
-    eval('namespace OC\Files\Node;
+	eval('namespace OC\Files\Node;
     class NonExistingFolder {}');
 }//end if
 
@@ -223,7 +256,7 @@ if (class_exists(\OC\Files\Node\NonExistingFolder::class) === false) {
 // OC\ServerContainer  (referenced by some OCP interfaces/methods)
 // -----------------------------------------------------------------
 if (class_exists(\OC\ServerContainer::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class ServerContainer {}');
 }//end if
 
@@ -231,7 +264,7 @@ if (class_exists(\OC\ServerContainer::class) === false) {
 // OC\SystemConfig
 // -----------------------------------------------------------------
 if (class_exists(\OC\SystemConfig::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class SystemConfig {}');
 }//end if
 
@@ -239,7 +272,7 @@ if (class_exists(\OC\SystemConfig::class) === false) {
 // OC\Tags
 // -----------------------------------------------------------------
 if (class_exists(\OC\Tags::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class Tags {}');
 }//end if
 
@@ -247,14 +280,14 @@ if (class_exists(\OC\Tags::class) === false) {
 // OC\User\Backend / NoUserException
 // -----------------------------------------------------------------
 if (interface_exists(\OC\User\Backend::class) === false
-    && class_exists(\OC\User\Backend::class) === false
+	&& class_exists(\OC\User\Backend::class) === false
 ) {
-    eval('namespace OC\User;
+	eval('namespace OC\User;
     interface Backend {}');
 }//end if
 
 if (class_exists(\OC\User\NoUserException::class) === false) {
-    eval('namespace OC\User;
+	eval('namespace OC\User;
     class NoUserException extends \RuntimeException {}');
 }//end if
 
@@ -262,7 +295,7 @@ if (class_exists(\OC\User\NoUserException::class) === false) {
 // OC\Authentication\Token\IToken
 // -----------------------------------------------------------------
 if (interface_exists(\OC\Authentication\Token\IToken::class) === false) {
-    eval('namespace OC\Authentication\Token;
+	eval('namespace OC\Authentication\Token;
     interface IToken {}');
 }//end if
 
@@ -270,7 +303,7 @@ if (interface_exists(\OC\Authentication\Token\IToken::class) === false) {
 // OC\AppFramework\Http\Request
 // -----------------------------------------------------------------
 if (class_exists(\OC\AppFramework\Http\Request::class) === false) {
-    eval('namespace OC\AppFramework\Http;
+	eval('namespace OC\AppFramework\Http;
     class Request {}');
 }//end if
 
@@ -278,7 +311,7 @@ if (class_exists(\OC\AppFramework\Http\Request::class) === false) {
 // OC\AppFramework\Middleware\Security\Exceptions\NotAdminException
 // -----------------------------------------------------------------
 if (class_exists(\OC\AppFramework\Middleware\Security\Exceptions\NotAdminException::class) === false) {
-    eval('namespace OC\AppFramework\Middleware\Security\Exceptions;
+	eval('namespace OC\AppFramework\Middleware\Security\Exceptions;
     class NotAdminException extends \RuntimeException {}');
 }//end if
 
@@ -286,7 +319,7 @@ if (class_exists(\OC\AppFramework\Middleware\Security\Exceptions\NotAdminExcepti
 // OC\AppFramework\Middleware\Security\Exceptions\SecurityException
 // -----------------------------------------------------------------
 if (class_exists(\OC\AppFramework\Middleware\Security\Exceptions\SecurityException::class) === false) {
-    eval('namespace OC\AppFramework\Middleware\Security\Exceptions;
+	eval('namespace OC\AppFramework\Middleware\Security\Exceptions;
     class SecurityException extends \RuntimeException {}');
 }//end if
 
@@ -294,7 +327,7 @@ if (class_exists(\OC\AppFramework\Middleware\Security\Exceptions\SecurityExcepti
 // OC\AppFramework\Routing\RouteConfig
 // -----------------------------------------------------------------
 if (class_exists(\OC\AppFramework\Routing\RouteConfig::class) === false) {
-    eval('namespace OC\AppFramework\Routing;
+	eval('namespace OC\AppFramework\Routing;
     class RouteConfig {}');
 }//end if
 
@@ -302,11 +335,11 @@ if (class_exists(\OC\AppFramework\Routing\RouteConfig::class) === false) {
 // OC\AppScriptDependency / OC\AppScriptSort
 // -----------------------------------------------------------------
 if (class_exists(\OC\AppScriptDependency::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class AppScriptDependency {}');
 }//end if
 if (class_exists(\OC\AppScriptSort::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class AppScriptSort {}');
 }//end if
 
@@ -314,7 +347,7 @@ if (class_exists(\OC\AppScriptSort::class) === false) {
 // OC\DB\Exceptions\DbalException
 // -----------------------------------------------------------------
 if (class_exists(\OC\DB\Exceptions\DbalException::class) === false) {
-    eval('namespace OC\DB\Exceptions;
+	eval('namespace OC\DB\Exceptions;
     class DbalException extends \RuntimeException {}');
 }//end if
 
@@ -322,11 +355,11 @@ if (class_exists(\OC\DB\Exceptions\DbalException::class) === false) {
 // OC\DB\QueryBuilder\Sharded\*
 // -----------------------------------------------------------------
 if (class_exists(\OC\DB\QueryBuilder\Sharded\CrossShardMoveHelper::class) === false) {
-    eval('namespace OC\DB\QueryBuilder\Sharded;
+	eval('namespace OC\DB\QueryBuilder\Sharded;
     class CrossShardMoveHelper {}');
 }//end if
 if (class_exists(\OC\DB\QueryBuilder\Sharded\ShardDefinition::class) === false) {
-    eval('namespace OC\DB\QueryBuilder\Sharded;
+	eval('namespace OC\DB\QueryBuilder\Sharded;
     class ShardDefinition {}');
 }//end if
 
@@ -334,11 +367,11 @@ if (class_exists(\OC\DB\QueryBuilder\Sharded\ShardDefinition::class) === false) 
 // OC\Encryption\Exceptions\*
 // -----------------------------------------------------------------
 if (class_exists(\OC\Encryption\Exceptions\ModuleAlreadyExistsException::class) === false) {
-    eval('namespace OC\Encryption\Exceptions;
+	eval('namespace OC\Encryption\Exceptions;
     class ModuleAlreadyExistsException extends \RuntimeException {}');
 }//end if
 if (class_exists(\OC\Encryption\Exceptions\ModuleDoesNotExistsException::class) === false) {
-    eval('namespace OC\Encryption\Exceptions;
+	eval('namespace OC\Encryption\Exceptions;
     class ModuleDoesNotExistsException extends \RuntimeException {}');
 }//end if
 
@@ -346,7 +379,7 @@ if (class_exists(\OC\Encryption\Exceptions\ModuleDoesNotExistsException::class) 
 // OC\FullTextSearch\Model\IndexDocument
 // -----------------------------------------------------------------
 if (class_exists(\OC\FullTextSearch\Model\IndexDocument::class) === false) {
-    eval('namespace OC\FullTextSearch\Model;
+	eval('namespace OC\FullTextSearch\Model;
     class IndexDocument {}');
 }//end if
 
@@ -354,7 +387,7 @@ if (class_exists(\OC\FullTextSearch\Model\IndexDocument::class) === false) {
 // OC\Route\Router
 // -----------------------------------------------------------------
 if (class_exists(\OC\Route\Router::class) === false) {
-    eval('namespace OC\Route;
+	eval('namespace OC\Route;
     class Router {}');
 }//end if
 
@@ -362,23 +395,23 @@ if (class_exists(\OC\Route\Router::class) === false) {
 // OC\Security\*
 // -----------------------------------------------------------------
 if (class_exists(\OC\Security\CSP\ContentSecurityPolicyManager::class) === false) {
-    eval('namespace OC\Security\CSP;
+	eval('namespace OC\Security\CSP;
     class ContentSecurityPolicyManager {}');
 }//end if
 if (class_exists(\OC\Security\CSRF\CsrfTokenManager::class) === false) {
-    eval('namespace OC\Security\CSRF;
+	eval('namespace OC\Security\CSRF;
     class CsrfTokenManager {}');
 }//end if
 if (class_exists(\OC\Security\FeaturePolicy\FeaturePolicyManager::class) === false) {
-    eval('namespace OC\Security\FeaturePolicy;
+	eval('namespace OC\Security\FeaturePolicy;
     class FeaturePolicyManager {}');
 }//end if
 if (class_exists(\OC\Security\RateLimiting\Exception\RateLimitExceededException::class) === false) {
-    eval('namespace OC\Security\RateLimiting\Exception;
+	eval('namespace OC\Security\RateLimiting\Exception;
     class RateLimitExceededException extends \RuntimeException {}');
 }//end if
 if (class_exists(\OC\Security\RateLimiting\Limiter::class) === false) {
-    eval('namespace OC\Security\RateLimiting;
+	eval('namespace OC\Security\RateLimiting;
     class Limiter {}');
 }//end if
 
@@ -386,7 +419,7 @@ if (class_exists(\OC\Security\RateLimiting\Limiter::class) === false) {
 // OC\Share20\Exception\ProviderException
 // -----------------------------------------------------------------
 if (class_exists(\OC\Share20\Exception\ProviderException::class) === false) {
-    eval('namespace OC\Share20\Exception;
+	eval('namespace OC\Share20\Exception;
     class ProviderException extends \RuntimeException {}');
 }//end if
 
@@ -394,7 +427,7 @@ if (class_exists(\OC\Share20\Exception\ProviderException::class) === false) {
 // OC\Streamer
 // -----------------------------------------------------------------
 if (class_exists(\OC\Streamer::class) === false) {
-    eval('namespace OC;
+	eval('namespace OC;
     class Streamer {}');
 }//end if
 
@@ -402,7 +435,7 @@ if (class_exists(\OC\Streamer::class) === false) {
 // OC\Core\ResponseDefinitions
 // -----------------------------------------------------------------
 if (class_exists(\OC\Core\ResponseDefinitions::class) === false) {
-    eval('namespace OC\Core;
+	eval('namespace OC\Core;
     class ResponseDefinitions {}');
 }//end if
 
@@ -410,7 +443,7 @@ if (class_exists(\OC\Core\ResponseDefinitions::class) === false) {
 // OC\Files\AppData\Factory  (used in CacheSettingsControllerTest)
 // -----------------------------------------------------------------
 if (class_exists(\OC\Files\AppData\Factory::class) === false) {
-    eval('namespace OC\Files\AppData;
+	eval('namespace OC\Files\AppData;
     class Factory {
         public function get(string $app): ?\OCP\Files\IAppData { return null; }
     }');
@@ -422,7 +455,7 @@ if (class_exists(\OC\Files\AppData\Factory::class) === false) {
 // an empty class body is sufficient.
 // -----------------------------------------------------------------
 if (class_exists(\OCA\DAV\CalDAV\CalDavBackend::class) === false) {
-    eval('namespace OCA\DAV\CalDAV;
+	eval('namespace OCA\DAV\CalDAV;
     class CalDavBackend {
         public function getCalendarsForUser(string $principal): array { return []; }
         public function createCalendar(string $principal, string $name, array $properties): int { return 0; }
@@ -435,7 +468,7 @@ if (class_exists(\OCA\DAV\CalDAV\CalDavBackend::class) === false) {
 }//end if
 
 if (class_exists(\OCA\DAV\CardDAV\CardDavBackend::class) === false) {
-    eval('namespace OCA\DAV\CardDAV;
+	eval('namespace OCA\DAV\CardDAV;
     class CardDavBackend {
         public function getAddressBooksForUser(string $principal): array { return []; }
         public function createAddressBook(string $principal, string $name, array $properties): int { return 0; }

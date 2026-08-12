@@ -30,59 +30,55 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an object is reverted to a previous state
  */
-class ObjectRevertedEvent extends Event
-{
+class ObjectRevertedEvent extends Event {
 
-    /**
-     * The reverted object entity
-     *
-     * @var ObjectEntity The object that has been reverted
-     */
-    private ObjectEntity $object;
+	/**
+	 * The reverted object entity
+	 *
+	 * @var ObjectEntity The object that has been reverted
+	 */
+	private ObjectEntity $object;
 
-    /**
-     * The reversion point reference
-     *
-     * @var DateTime|string|null The point in time or audit ID reverted to
-     */
-    private $until;
+	/**
+	 * The reversion point reference
+	 *
+	 * @var DateTime|string|null The point in time or audit ID reverted to
+	 */
+	private $until;
 
-    /**
-     * Constructor for ObjectRevertedEvent
-     *
-     * @param ObjectEntity         $object The reverted object
-     * @param DateTime|string|null $until  The point in time or audit ID reverted to
-     *
-     * @return void
-     */
-    public function __construct(ObjectEntity $object, $until=null)
-    {
-        parent::__construct();
-        $this->object = $object;
-        $this->until  = $until;
-    }//end __construct()
+	/**
+	 * Constructor for ObjectRevertedEvent
+	 *
+	 * @param ObjectEntity $object The reverted object
+	 * @param DateTime|string|null $until The point in time or audit ID reverted to
+	 *
+	 * @return void
+	 */
+	public function __construct(ObjectEntity $object, $until = null) {
+		parent::__construct();
+		$this->object = $object;
+		$this->until = $until;
+	}//end __construct()
 
-    /**
-     * Get the reverted object entity
-     *
-     * @return ObjectEntity The object that has been reverted
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getObject(): ObjectEntity
-    {
-        return $this->object;
-    }//end getObject()
+	/**
+	 * Get the reverted object entity
+	 *
+	 * @return ObjectEntity The object that has been reverted
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getObject(): ObjectEntity {
+		return $this->object;
+	}//end getObject()
 
-    /**
-     * Get the reversion point
-     *
-     * @return DateTime|string|null The point in time or audit ID reverted to
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getRevertPoint()
-    {
-        return $this->until;
-    }//end getRevertPoint()
+	/**
+	 * Get the reversion point
+	 *
+	 * @return DateTime|string|null The point in time or audit ID reverted to
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getRevertPoint() {
+		return $this->until;
+	}//end getRevertPoint()
 }//end class

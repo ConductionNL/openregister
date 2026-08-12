@@ -38,116 +38,114 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\BackgroundJob
  */
-class TenantUsageSyncJob extends TimedJob
-{
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory       $time               Time factory
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param TenantUsageMapper  $tenantUsageMapper  Usage mapper
-     * @param LoggerInterface    $logger             Logger
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly OrganisationMapper $organisationMapper,
-        private readonly TenantUsageMapper $tenantUsageMapper,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        // Run every 5 minutes.
-        $this->setInterval(seconds: 300);
-    }//end __construct()
+class TenantUsageSyncJob extends TimedJob {
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly OrganisationMapper $organisationMapper,
+		private readonly TenantUsageMapper $tenantUsageMapper,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		// Run every 5 minutes.
+		$this->setInterval(seconds: 300);
+	}//end __construct()
 
-    /**
-     * Execute the background job: flush APCu counters to database.
-     *
-     * @param mixed $argument Job argument (unused)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     * @SuppressWarnings(PHPMD.UndefinedVariable)
-     *
-     * @spec openspec/specs/tenant-quotas/spec.md#requirement-usage-counters-must-be-persisted-via-background-job
-     * @spec openspec/specs/tenant-quotas/spec.md
-     */
-    protected function run(mixed $argument): void
-    {
-        if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
-            return;
-        }
+	/**
+	 * Execute the background job: flush APCu counters to database.
+	 *
+	 * @param mixed $argument Job argument (unused)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 * @SuppressWarnings(PHPMD.UndefinedVariable)
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md#requirement-usage-counters-must-be-persisted-via-background-job
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	protected function run(mixed $argument): void {
+		if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
+			return;
+		}
 
-        $this->logger->debug('[TenantUsageSyncJob] Starting usage sync');
+		$this->logger->debug('[TenantUsageSyncJob] Starting usage sync');
 
-        try {
-            $organisations = $this->organisationMapper->findAll(
-                filters: ['status' => TenantLifecycleService::STATUS_ACTIVE]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                '[TenantUsageSyncJob] Failed to query active organisations',
-                ['error' => $e->getMessage()]
-            );
-            return;
-        }
+		try {
+			$organisations = $this->organisationMapper->findAll(
+				filters: ['status' => TenantLifecycleService::STATUS_ACTIVE]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'[TenantUsageSyncJob] Failed to query active organisations',
+				['error' => $e->getMessage()]
+			);
+			return;
+		}
 
-        $hourBucket = (new DateTime())->format('YmdH');
-        $period     = DateTime::createFromFormat('YmdH', $hourBucket);
-        if ($period === false) {
-            return;
-        }
+		$hourBucket = (new DateTime())->format('YmdH');
+		$period = DateTime::createFromFormat('YmdH', $hourBucket);
+		if ($period === false) {
+			return;
+		}
 
-        $period->setTime((int) $period->format('H'), 0, 0);
-        $syncedCount = 0;
+		$period->setTime((int)$period->format('H'), 0, 0);
+		$syncedCount = 0;
 
-        foreach ($organisations as $organisation) {
-            $orgUuid = $organisation->getUuid();
-            if ($orgUuid === null) {
-                continue;
-            }
+		foreach ($organisations as $organisation) {
+			$orgUuid = $organisation->getUuid();
+			if ($orgUuid === null) {
+				continue;
+			}
 
-            $requestKey   = "or_quota_{$orgUuid}_{$hourBucket}";
-            $bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
+			$requestKey = "or_quota_{$orgUuid}_{$hourBucket}";
+			$bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
 
-            $rawRequest   = apcu_fetch($requestKey, $reqSuccess);
-            $requestCount = 0;
-            if ($reqSuccess === true) {
-                $requestCount = (int) $rawRequest;
-            }
+			$rawRequest = apcu_fetch($requestKey, $reqSuccess);
+			$requestCount = 0;
+			if ($reqSuccess === true) {
+				$requestCount = (int)$rawRequest;
+			}
 
-            $rawBandwidth   = apcu_fetch($bandwidthKey, $bwSuccess);
-            $bandwidthBytes = 0;
-            if ($bwSuccess === true) {
-                $bandwidthBytes = (int) $rawBandwidth;
-            }
+			$rawBandwidth = apcu_fetch($bandwidthKey, $bwSuccess);
+			$bandwidthBytes = 0;
+			if ($bwSuccess === true) {
+				$bandwidthBytes = (int)$rawBandwidth;
+			}
 
-            if ($requestCount === 0 && $bandwidthBytes === 0) {
-                continue;
-            }
+			if ($requestCount === 0 && $bandwidthBytes === 0) {
+				continue;
+			}
 
-            try {
-                $this->tenantUsageMapper->upsertUsage(
-                    $orgUuid,
-                    $period,
-                    (int) $requestCount,
-                    (int) $bandwidthBytes,
-                    0
-                );
-                $syncedCount++;
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    '[TenantUsageSyncJob] Failed to sync usage for organisation',
-                    ['uuid' => $orgUuid, 'error' => $e->getMessage()]
-                );
-            }
-        }//end foreach
+			try {
+				$this->tenantUsageMapper->upsertUsage(
+					$orgUuid,
+					$period,
+					(int)$requestCount,
+					(int)$bandwidthBytes,
+					0
+				);
+				$syncedCount++;
+			} catch (\Exception $e) {
+				$this->logger->error(
+					'[TenantUsageSyncJob] Failed to sync usage for organisation',
+					['uuid' => $orgUuid, 'error' => $e->getMessage()]
+				);
+			}
+		}//end foreach
 
-        $this->logger->debug(
-            '[TenantUsageSyncJob] Completed, synced '.$syncedCount.' organisations'
-        );
-    }//end run()
+		$this->logger->debug(
+			'[TenantUsageSyncJob] Completed, synced ' . $syncedCount . ' organisations'
+		);
+	}//end run()
 }//end class

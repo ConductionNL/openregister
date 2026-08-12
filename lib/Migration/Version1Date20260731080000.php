@@ -57,55 +57,52 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the `openregister_flow_state` table.
  */
-class Version1Date20260731080000 extends SimpleMigrationStep
-{
+class Version1Date20260731080000 extends SimpleMigrationStep {
 
-    /**
-     * The table holding per-flow state that survives between runs.
-     *
-     * @var string
-     */
-    private const TABLE = 'openregister_flow_state';
+	/**
+	 * The table holding per-flow state that survives between runs.
+	 *
+	 * @var string
+	 */
+	private const TABLE = 'openregister_flow_state';
 
-    /**
-     * Create the table when it does not exist yet.
-     *
-     * @param IOutput                   $output        Migration output.
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema accessor.
-     * @param array                     $options       Migration options.
-     *
-     * @return null|ISchemaWrapper The modified schema, or null when unchanged.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-            @var ISchemaWrapper $schema
-        */
+	/**
+	 * Create the table when it does not exist yet.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema accessor.
+	 * @param array $options Migration options.
+	 *
+	 * @return null|ISchemaWrapper The modified schema, or null when unchanged.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+			@var ISchemaWrapper $schema
+		*/
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(self::TABLE) === true) {
-            return null;
-        }
+		if ($schema->hasTable(self::TABLE) === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(self::TABLE);
+		$table = $schema->createTable(self::TABLE);
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-        $table->addColumn('flow_id', Types::STRING, ['notnull' => true, 'length' => 64]);
-        // The state itself. TEXT rather than a typed column set: what a flow
-        // needs to remember is the flow author's business, and a schema here
-        // would have to be migrated every time one of them needed a new field.
-        $table->addColumn('state', Types::TEXT, ['notnull' => false]);
-        $table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+		$table->addColumn('flow_id', Types::STRING, ['notnull' => true, 'length' => 64]);
+		// The state itself. TEXT rather than a typed column set: what a flow
+		// needs to remember is the flow author's business, and a schema here
+		// would have to be migrated every time one of them needed a new field.
+		$table->addColumn('state', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('updated', Types::DATETIME, ['notnull' => false]);
 
-        $table->setPrimaryKey(['id']);
+		$table->setPrimaryKey(['id']);
 
-        // UNIQUE, not just indexed. One state row per flow is what allows a
-        // claim to be settled by the database instead of by a read-then-write
-        // in PHP — see OR#2212 for what the latter costs.
-        $table->addUniqueIndex(['flow_id'], 'or_flowstate_flow_uq');
+		// UNIQUE, not just indexed. One state row per flow is what allows a
+		// claim to be settled by the database instead of by a read-then-write
+		// in PHP — see OR#2212 for what the latter costs.
+		$table->addUniqueIndex(['flow_id'], 'or_flowstate_flow_uq');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

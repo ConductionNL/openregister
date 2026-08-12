@@ -53,123 +53,117 @@ use OCP\IUserSession;
  *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectLockedEvent|ObjectUnlockedEvent|ObjectRevertedEvent|ObjectTransitionedEvent>
  */
-class FlowTriggerListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowTriggerService $triggers    Queues the runs.
-     * @param IUserSession       $userSession The acting user, for attribution.
-     */
-    public function __construct(
-        private readonly FlowTriggerService $triggers,
-        private readonly IUserSession $userSession
-    ) {
+class FlowTriggerListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param IUserSession $userSession The acting user, for attribution.
+	 */
+	public function __construct(
+		private readonly FlowTriggerService $triggers,
+		private readonly IUserSession $userSession,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Translate an object event into a trigger.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        $eventId = $this->eventIdFor(event: $event);
-        if ($eventId === null) {
-            return;
-        }
+	/**
+	 * Translate an object event into a trigger.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	public function handle(Event $event): void {
+		$eventId = $this->eventIdFor(event: $event);
+		if ($eventId === null) {
+			return;
+		}
 
-        $object = $event->getObject();
-        $user   = null;
-        if ($this->userSession->getUser() !== null) {
-            $user = $this->userSession->getUser()->getUID();
-        }
+		$object = $event->getObject();
+		$user = null;
+		if ($this->userSession->getUser() !== null) {
+			$user = $this->userSession->getUser()->getUID();
+		}
 
-        $this->triggers->fire(
-            event: $eventId,
-            subject: [
-                'uuid'     => (string) $object->getUuid(),
-                'register' => (string) $object->getRegister(),
-                'schema'   => (string) $object->getSchema(),
-            ],
-            user: $user,
-            context: $this->contextFor(event: $event)
-        );
+		$this->triggers->fire(
+			event: $eventId,
+			subject: [
+				'uuid' => (string)$object->getUuid(),
+				'register' => (string)$object->getRegister(),
+				'schema' => (string)$object->getSchema(),
+			],
+			user: $user,
+			context: $this->contextFor(event: $event)
+		);
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Extra run context an event carries beyond the object it is about.
-     *
-     * A state change is the one lifecycle event that is *about* a change rather
-     * than a moment: which action ran and the places it moved between are what a
-     * flow wired to "an object changes state" needs to branch on, so they are
-     * put on the run context where the flow's conditions can read them. Every
-     * other lifecycle event adds nothing beyond its subject.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return array<string, string> The extra context, empty for most events.
-     */
-    private function contextFor(Event $event): array
-    {
-        if ($event instanceof ObjectTransitionedEvent) {
-            return [
-                'action' => $event->getAction(),
-                'from'   => $event->getFrom(),
-                'to'     => $event->getTo(),
-            ];
-        }
+	/**
+	 * Extra run context an event carries beyond the object it is about.
+	 *
+	 * A state change is the one lifecycle event that is *about* a change rather
+	 * than a moment: which action ran and the places it moved between are what a
+	 * flow wired to "an object changes state" needs to branch on, so they are
+	 * put on the run context where the flow's conditions can read them. Every
+	 * other lifecycle event adds nothing beyond its subject.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array<string, string> The extra context, empty for most events.
+	 */
+	private function contextFor(Event $event): array {
+		if ($event instanceof ObjectTransitionedEvent) {
+			return [
+				'action' => $event->getAction(),
+				'from' => $event->getFrom(),
+				'to' => $event->getTo(),
+			];
+		}
 
-        return [];
+		return [];
+	}//end contextFor()
 
-    }//end contextFor()
+	/**
+	 * Map an event class to the trigger id flows are wired to.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return string|null The trigger id, or null when this is not an object event.
+	 *
+	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	private function eventIdFor(Event $event): ?string {
+		if ($event instanceof ObjectCreatedEvent) {
+			return 'object.created';
+		}
 
-    /**
-     * Map an event class to the trigger id flows are wired to.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return string|null The trigger id, or null when this is not an object event.
-     *
-     * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
-     */
-    private function eventIdFor(Event $event): ?string
-    {
-        if ($event instanceof ObjectCreatedEvent) {
-            return 'object.created';
-        }
+		if ($event instanceof ObjectUpdatedEvent) {
+			return 'object.updated';
+		}
 
-        if ($event instanceof ObjectUpdatedEvent) {
-            return 'object.updated';
-        }
+		if ($event instanceof ObjectDeletedEvent) {
+			return 'object.deleted';
+		}
 
-        if ($event instanceof ObjectDeletedEvent) {
-            return 'object.deleted';
-        }
+		if ($event instanceof ObjectLockedEvent) {
+			return 'object.locked';
+		}
 
-        if ($event instanceof ObjectLockedEvent) {
-            return 'object.locked';
-        }
+		if ($event instanceof ObjectUnlockedEvent) {
+			return 'object.unlocked';
+		}
 
-        if ($event instanceof ObjectUnlockedEvent) {
-            return 'object.unlocked';
-        }
+		if ($event instanceof ObjectRevertedEvent) {
+			return 'object.reverted';
+		}
 
-        if ($event instanceof ObjectRevertedEvent) {
-            return 'object.reverted';
-        }
+		if ($event instanceof ObjectTransitionedEvent) {
+			return 'object.transitioned';
+		}
 
-        if ($event instanceof ObjectTransitionedEvent) {
-            return 'object.transitioned';
-        }
-
-        return null;
-
-    }//end eventIdFor()
+		return null;
+	}//end eventIdFor()
 }//end class

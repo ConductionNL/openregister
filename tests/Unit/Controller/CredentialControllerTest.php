@@ -52,289 +52,279 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
  */
-class CredentialControllerTest extends TestCase
-{
-    /**
-     * The github catalogue entry used across the happy-path tests.
-     *
-     * @return array<string, mixed>
-     */
-    private function githubProvider(): array
-    {
-        return [
-            'identifier' => 'github',
-            'baseUrl'    => 'https://api.github.com',
-            'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
-            'allowRules' => [
-                ['method' => 'GET', 'pathPattern' => '/repos/*'],
-            ],
-        ];
-    }//end githubProvider()
+class CredentialControllerTest extends TestCase {
+	/**
+	 * The github catalogue entry used across the happy-path tests.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function githubProvider(): array {
+		return [
+			'identifier' => 'github',
+			'baseUrl' => 'https://api.github.com',
+			'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
+			'allowRules' => [
+				['method' => 'GET', 'pathPattern' => '/repos/*'],
+			],
+		];
+	}//end githubProvider()
 
-    /**
-     * Build a CredentialController whose broker is a REAL CredentialBrokerService wired
-     * with mocked collaborators. The controller and the broker share one IUserSession
-     * mock so the owner guard evaluates against the session user on the session path.
-     *
-     * @param string|null          $sessionUid  The session user's UID, or null for anonymous.
-     * @param string               $ownerUid    The credential owner's UID.
-     * @param array<string, mixed> $credData    The credential object's property bag.
-     * @param array<string,mixed>|null $provider The catalogue provider entry, or null.
-     * @param string|null          $secret      The stored secret, or null.
-     * @param bool                 $clientThrows Whether the outbound client throws (upstream failure).
-     * @param array<string, mixed> $params      The request body params (appId, method, path, headers, body).
-     *
-     * @return CredentialController The wired controller.
-     */
-    private function makeController(
-        ?string $sessionUid,
-        string $ownerUid,
-        array $credData,
-        ?array $provider,
-        ?string $secret,
-        bool $clientThrows,
-        array $params
-    ): CredentialController {
-        // Shared session — feeds BOTH the controller's currentUid() and the broker's owner guard.
-        $session = $this->createMock(IUserSession::class);
-        if ($sessionUid === null) {
-            $session->method('getUser')->willReturn(null);
-        } else {
-            $user = $this->createMock(IUser::class);
-            $user->method('getUID')->willReturn($sessionUid);
-            $session->method('getUser')->willReturn($user);
-        }
+	/**
+	 * Build a CredentialController whose broker is a REAL CredentialBrokerService wired
+	 * with mocked collaborators. The controller and the broker share one IUserSession
+	 * mock so the owner guard evaluates against the session user on the session path.
+	 *
+	 * @param string|null $sessionUid The session user's UID, or null for anonymous.
+	 * @param string $ownerUid The credential owner's UID.
+	 * @param array<string, mixed> $credData The credential object's property bag.
+	 * @param array<string,mixed>|null $provider The catalogue provider entry, or null.
+	 * @param string|null $secret The stored secret, or null.
+	 * @param bool $clientThrows Whether the outbound client throws (upstream failure).
+	 * @param array<string, mixed> $params The request body params (appId, method, path, headers, body).
+	 *
+	 * @return CredentialController The wired controller.
+	 */
+	private function makeController(
+		?string $sessionUid,
+		string $ownerUid,
+		array $credData,
+		?array $provider,
+		?string $secret,
+		bool $clientThrows,
+		array $params,
+	): CredentialController {
+		// Shared session — feeds BOTH the controller's currentUid() and the broker's owner guard.
+		$session = $this->createMock(IUserSession::class);
+		if ($sessionUid === null) {
+			$session->method('getUser')->willReturn(null);
+		} else {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($sessionUid);
+			$session->method('getUser')->willReturn($user);
+		}
 
-        // A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors.
-        $entity = new ObjectEntity();
-        $entity->setOwner($ownerUid);
-        $entity->setObject($credData);
+		// A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors.
+		$entity = new ObjectEntity();
+		$entity->setOwner($ownerUid);
+		$entity->setObject($credData);
 
-        $objectService = $this->createMock(ObjectService::class);
-        $objectService->method('find')->willReturn($entity);
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($entity);
 
-        $catalogue = $this->createMock(ProviderCatalogue::class);
-        $catalogue->method('get')->willReturn($provider);
+		$catalogue = $this->createMock(ProviderCatalogue::class);
+		$catalogue->method('get')->willReturn($provider);
 
-        $store = $this->createMock(CredentialStore::class);
-        $store->method('get')->willReturn($secret);
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('get')->willReturn($secret);
 
-        $client = $this->createMock(IClient::class);
-        if ($clientThrows === true) {
-            $client->method('request')->willThrowException(new RuntimeException('boom'));
-        } else {
-            $response = $this->createMock(IResponse::class);
-            $response->method('getStatusCode')->willReturn(200);
-            $response->method('getHeaders')->willReturn(['Content-Type' => ['application/json']]);
-            $response->method('getBody')->willReturn('{"full_name":"Conduction/openregister"}');
-            $client->method('request')->willReturn($response);
-        }
+		$client = $this->createMock(IClient::class);
+		if ($clientThrows === true) {
+			$client->method('request')->willThrowException(new RuntimeException('boom'));
+		} else {
+			$response = $this->createMock(IResponse::class);
+			$response->method('getStatusCode')->willReturn(200);
+			$response->method('getHeaders')->willReturn(['Content-Type' => ['application/json']]);
+			$response->method('getBody')->willReturn('{"full_name":"Conduction/openregister"}');
+			$client->method('request')->willReturn($response);
+		}
 
-        $clientService = $this->createMock(IClientService::class);
-        $clientService->method('newClient')->willReturn($client);
+		$clientService = $this->createMock(IClientService::class);
+		$clientService->method('newClient')->willReturn($client);
 
-        $broker = new CredentialBrokerService(
-            $objectService,
-            $store,
-            $catalogue,
-            $session,
-            $clientService,
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(OrganisationService::class)
-        );
+		$broker = new CredentialBrokerService(
+			$objectService,
+			$store,
+			$catalogue,
+			$session,
+			$clientService,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(OrganisationService::class)
+		);
 
-        $request = $this->createMock(IRequest::class);
-        $request->method('getParam')->willReturnCallback(
-            static function (string $key, $default = null) use ($params) {
-                return array_key_exists($key, $params) ? $params[$key] : $default;
-            }
-        );
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use ($params) {
+				return array_key_exists($key, $params) ? $params[$key] : $default;
+			}
+		);
 
-        return new CredentialController(
-            'openregister',
-            $request,
-            $session,
-            $this->createMock(IGroupManager::class),
-            $objectService,
-            $store,
-            $catalogue,
-            $broker,
-            $this->createMock(CredentialAppTokenService::class),
-            $this->createMock(OrganisationService::class),
-            new SharePrincipalDeriver()
-        );
-    }//end makeController()
+		return new CredentialController(
+			'openregister',
+			$request,
+			$session,
+			$this->createMock(IGroupManager::class),
+			$objectService,
+			$store,
+			$catalogue,
+			$broker,
+			$this->createMock(CredentialAppTokenService::class),
+			$this->createMock(OrganisationService::class),
+			new SharePrincipalDeriver()
+		);
+	}//end makeController()
 
-    /**
-     * Owner + allowed app + allowed method/path → returns the broker result.
-     */
-    public function testSessionOwnerAllowedAppReturnsBrokerResult(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * Owner + allowed app + allowed method/path → returns the broker result.
+	 */
+	public function testSessionOwnerAllowedAppReturnsBrokerResult(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
-        $data     = $response->getData();
+		$response = $controller->sessionBrokerRequest('cred-1');
+		$data = $response->getData();
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(200, $data['status']);
-        $this->assertStringContainsString('full_name', $data['body']);
-    }//end testSessionOwnerAllowedAppReturnsBrokerResult()
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(200, $data['status']);
+		$this->assertStringContainsString('full_name', $data['body']);
+	}//end testSessionOwnerAllowedAppReturnsBrokerResult()
 
-    /**
-     * Not the owner → owner IDOR guard denies → 403 (proves the session identity feeds the guard).
-     */
-    public function testNonOwnerRejectedByOwnerGuard(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'bob',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * Not the owner → owner IDOR guard denies → 403 (proves the session identity feeds the guard).
+	 */
+	public function testNonOwnerRejectedByOwnerGuard(): void {
+		$controller = $this->makeController(
+			'alice',
+			'bob',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['message' => 'Request not permitted'], $response->getData());
-    }//end testNonOwnerRejectedByOwnerGuard()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['message' => 'Request not permitted'], $response->getData());
+	}//end testNonOwnerRejectedByOwnerGuard()
 
-    /**
-     * appId not in allowedApps → allowed-app guard denies → 403.
-     */
-    public function testAppNotAllowedRejected(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['someoneelse']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * appId not in allowedApps → allowed-app guard denies → 403.
+	 */
+	public function testAppNotAllowedRejected(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['someoneelse']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['message' => 'Request not permitted'], $response->getData());
-    }//end testAppNotAllowedRejected()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['message' => 'Request not permitted'], $response->getData());
+	}//end testAppNotAllowedRejected()
 
-    /**
-     * Empty appId in the body → 403 before the broker is ever consulted.
-     */
-    public function testEmptyAppIdRejected(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            ['appId' => '', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * Empty appId in the body → 403 before the broker is ever consulted.
+	 */
+	public function testEmptyAppIdRejected(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			['appId' => '', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['message' => 'Request not permitted'], $response->getData());
-    }//end testEmptyAppIdRejected()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['message' => 'Request not permitted'], $response->getData());
+	}//end testEmptyAppIdRejected()
 
-    /**
-     * Disallowed method/path → allow-rule guard denies → 403.
-     */
-    public function testDisallowedMethodPathRejected(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            // DELETE is not in the github allow-rules.
-            ['appId' => 'hermiq', 'method' => 'DELETE', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * Disallowed method/path → allow-rule guard denies → 403.
+	 */
+	public function testDisallowedMethodPathRejected(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			// DELETE is not in the github allow-rules.
+			['appId' => 'hermiq', 'method' => 'DELETE', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $this->assertSame(['message' => 'Request not permitted'], $response->getData());
-    }//end testDisallowedMethodPathRejected()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame(['message' => 'Request not permitted'], $response->getData());
+	}//end testDisallowedMethodPathRejected()
 
-    /**
-     * No session user → 401 before the broker is ever consulted.
-     */
-    public function testNoSessionRejected(): void
-    {
-        $controller = $this->makeController(
-            null,
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            false,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * No session user → 401 before the broker is ever consulted.
+	 */
+	public function testNoSessionRejected(): void {
+		$controller = $this->makeController(
+			null,
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			false,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-        $this->assertSame(['message' => 'Unauthorized'], $response->getData());
-    }//end testNoSessionRejected()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['message' => 'Unauthorized'], $response->getData());
+	}//end testNoSessionRejected()
 
-    /**
-     * Transport-level upstream failure → broker throws CredentialUpstreamException → 502.
-     */
-    public function testUpstreamFailureMapsTo502(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123',
-            true,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * Transport-level upstream failure → broker throws CredentialUpstreamException → 502.
+	 */
+	public function testUpstreamFailureMapsTo502(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123',
+			true,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
+		$response = $controller->sessionBrokerRequest('cred-1');
 
-        $this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
-        $this->assertSame(['message' => 'Upstream request failed'], $response->getData());
-    }//end testUpstreamFailureMapsTo502()
+		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame(['message' => 'Upstream request failed'], $response->getData());
+	}//end testUpstreamFailureMapsTo502()
 
-    /**
-     * The stored secret never appears in any response body (happy path).
-     */
-    public function testSecretNeverAppearsInResponse(): void
-    {
-        $controller = $this->makeController(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SUPERSECRETTOKEN',
-            false,
-            ['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
-        );
+	/**
+	 * The stored secret never appears in any response body (happy path).
+	 */
+	public function testSecretNeverAppearsInResponse(): void {
+		$controller = $this->makeController(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SUPERSECRETTOKEN',
+			false,
+			['appId' => 'hermiq', 'method' => 'GET', 'path' => '/repos/Conduction/openregister']
+		);
 
-        $response = $controller->sessionBrokerRequest('cred-1');
-        $encoded  = json_encode($response->getData());
+		$response = $controller->sessionBrokerRequest('cred-1');
+		$encoded = json_encode($response->getData());
 
-        $this->assertIsString($encoded);
-        $this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
-    }//end testSecretNeverAppearsInResponse()
+		$this->assertIsString($encoded);
+		$this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
+	}//end testSecretNeverAppearsInResponse()
 }//end class

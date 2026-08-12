@@ -45,90 +45,87 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.4
  */
-class DeferredEntryObjectResolver
-{
-    /**
-     * Wire the object lookup.
-     *
-     * @param ObjectService   $objectService Object lookup service.
-     * @param LoggerInterface $logger        PSR logger.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class DeferredEntryObjectResolver {
+	/**
+	 * Wire the object lookup.
+	 *
+	 * @param ObjectService $objectService Object lookup service.
+	 * @param LoggerInterface $logger PSR logger.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Re-fetch the current object for a job entry.
-     *
-     * @param array<string, mixed> $entry Entry carrying `uuid`, `register`, `schema`.
-     *
-     * @return ObjectEntity|null Current entity, or null when the entry is
-     *                           malformed, the object no longer exists, or it
-     *                           has been soft-deleted (stale no-op signal).
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function resolve(array $entry): ?ObjectEntity
-    {
-        $uuid = $this->nonEmptyString(value: ($entry['uuid'] ?? null));
-        if ($uuid === null) {
-            return null;
-        }
+	/**
+	 * Re-fetch the current object for a job entry.
+	 *
+	 * @param array<string, mixed> $entry Entry carrying `uuid`, `register`, `schema`.
+	 *
+	 * @return ObjectEntity|null Current entity, or null when the entry is
+	 *                           malformed, the object no longer exists, or it
+	 *                           has been soft-deleted (stale no-op signal).
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function resolve(array $entry): ?ObjectEntity {
+		$uuid = $this->nonEmptyString(value: ($entry['uuid'] ?? null));
+		if ($uuid === null) {
+			return null;
+		}
 
-        try {
-            $object = $this->objectService->find(
-                id: $uuid,
-                register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
-                schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
-                _rbac: false,
-                _multitenancy: false,
-                _render: false
-            );
-        } catch (\Throwable $e) {
-            $this->logger->info(
-                message: '[DeferredEntryObjectResolver] Object no longer resolvable — stale entry skipped',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return null;
-        }//end try
+		try {
+			$object = $this->objectService->find(
+				id: $uuid,
+				register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
+				schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
+				_rbac: false,
+				_multitenancy: false,
+				_render: false
+			);
+		} catch (\Throwable $e) {
+			$this->logger->info(
+				message: '[DeferredEntryObjectResolver] Object no longer resolvable — stale entry skipped',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}//end try
 
-        if ($object === null) {
-            return null;
-        }
+		if ($object === null) {
+			return null;
+		}
 
-        // Soft-deleted objects are stale for deferred side effects: the
-        // delete path already ran its inline cleanup (e.g. translation
-        // purge) and re-projecting/notifying would resurrect state.
-        $deleted = ($object->getDeleted() ?? []);
-        if (count($deleted) > 0) {
-            return null;
-        }
+		// Soft-deleted objects are stale for deferred side effects: the
+		// delete path already ran its inline cleanup (e.g. translation
+		// purge) and re-projecting/notifying would resurrect state.
+		$deleted = ($object->getDeleted() ?? []);
+		if (count($deleted) > 0) {
+			return null;
+		}
 
-        return $object;
-    }//end resolve()
+		return $object;
+	}//end resolve()
 
-    /**
-     * Normalise a raw entry field to a non-empty string or null.
-     *
-     * @param mixed $value Raw entry value.
-     *
-     * @return string|null Non-empty string, or null for anything else.
-     */
-    private function nonEmptyString(mixed $value): ?string
-    {
-        if (is_string($value) === true && $value !== '') {
-            return $value;
-        }
+	/**
+	 * Normalise a raw entry field to a non-empty string or null.
+	 *
+	 * @param mixed $value Raw entry value.
+	 *
+	 * @return string|null Non-empty string, or null for anything else.
+	 */
+	private function nonEmptyString(mixed $value): ?string {
+		if (is_string($value) === true && $value !== '') {
+			return $value;
+		}
 
-        return null;
-    }//end nonEmptyString()
+		return null;
+	}//end nonEmptyString()
 }//end class

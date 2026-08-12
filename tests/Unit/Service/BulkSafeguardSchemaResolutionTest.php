@@ -54,184 +54,176 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  */
-class BulkSafeguardSchemaResolutionTest extends TestCase
-{
+class BulkSafeguardSchemaResolutionTest extends TestCase {
 
-    /**
-     * The schema store, mocked.
-     *
-     * @var SchemaMapper&MockObject
-     */
-    private SchemaMapper&MockObject $schemaMapper;
+	/**
+	 * The schema store, mocked.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper&MockObject $schemaMapper;
 
-    /**
-     * The per-row RBAC gate, mocked.
-     *
-     * @var PermissionHandler&MockObject
-     */
-    private PermissionHandler&MockObject $permissionHandler;
+	/**
+	 * The per-row RBAC gate, mocked.
+	 *
+	 * @var PermissionHandler&MockObject
+	 */
+	private PermissionHandler&MockObject $permissionHandler;
 
-    /**
-     * The service under test.
-     *
-     * @var SaveObjects
-     */
-    private SaveObjects $service;
+	/**
+	 * The service under test.
+	 *
+	 * @var SaveObjects
+	 */
+	private SaveObjects $service;
 
-    /**
-     * Build the service over mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build the service over mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        // The schema cache is STATIC, so a schema cached by an earlier test in
-        // the same process would resolve here and the throw would never happen.
-        SaveObjects::clearSchemaCache();
+		// The schema cache is STATIC, so a schema cached by an earlier test in
+		// the same process would resolve here and the throw would never happen.
+		SaveObjects::clearSchemaCache();
 
-        $this->schemaMapper      = $this->createMock(SchemaMapper::class);
-        $this->permissionHandler = $this->createMock(PermissionHandler::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
-        $this->service = new SaveObjects(
-            $this->createMock(MagicMapper::class),
-            $this->schemaMapper,
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SaveObject::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(OrganisationService::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(IGroupManager::class),
-            $this->permissionHandler,
-            $this->createMock(ValidateObject::class),
-            $this->createMock(IEventDispatcher::class),
-            $this->createMock(AuditTrailMapper::class)
-        );
+		$this->service = new SaveObjects(
+			$this->createMock(MagicMapper::class),
+			$this->schemaMapper,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SaveObject::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IGroupManager::class),
+			$this->permissionHandler,
+			$this->createMock(ValidateObject::class),
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(AuditTrailMapper::class)
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Invoke the private safeguard and return `[passedRows, result]`.
-     *
-     * @param array               $objects The raw rows.
-     * @param Schema|string|int|null $schema  The call-level schema argument.
-     *
-     * @return array{0: array, 1: array} The rows that passed, and the accumulator.
-     */
-    private function runSafeguards(array $objects, Schema|string|int|null $schema): array
-    {
-        $result = [
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => ['invalid' => 0, 'errors' => 0],
-        ];
+	/**
+	 * Invoke the private safeguard and return `[passedRows, result]`.
+	 *
+	 * @param array $objects The raw rows.
+	 * @param Schema|string|int|null $schema The call-level schema argument.
+	 *
+	 * @return array{0: array, 1: array} The rows that passed, and the accumulator.
+	 */
+	private function runSafeguards(array $objects, Schema|string|int|null $schema): array {
+		$result = [
+			'invalid' => [],
+			'errors' => [],
+			'statistics' => ['invalid' => 0, 'errors' => 0],
+		];
 
-        $method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-        $method->setAccessible(true);
+		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
+		$method->setAccessible(true);
 
-        $passed = $method->invokeArgs(
-            $this->service,
-            [$objects, null, $schema, true, false, &$result]
-        );
+		$passed = $method->invokeArgs(
+			$this->service,
+			[$objects, null, $schema, true, false, &$result]
+		);
 
-        return [$passed, $result];
+		return [$passed, $result];
+	}//end runSafeguards()
 
-    }//end runSafeguards()
+	/**
+	 * THE SECURITY PROPERTY. A schema the caller named but that cannot be
+	 * loaded means the RBAC gate could not run — so the row is REFUSED, not
+	 * waved through.
+	 *
+	 * Both halves are asserted: the row must not reach the writer, and the
+	 * permission check must not have silently been skipped-and-forgotten.
+	 *
+	 * @return void
+	 */
+	public function testARowIsRefusedWhenItsNamedSchemaCannotBeResolved(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new \RuntimeException('transient database failure'));
 
-    /**
-     * THE SECURITY PROPERTY. A schema the caller named but that cannot be
-     * loaded means the RBAC gate could not run — so the row is REFUSED, not
-     * waved through.
-     *
-     * Both halves are asserted: the row must not reach the writer, and the
-     * permission check must not have silently been skipped-and-forgotten.
-     *
-     * @return void
-     */
-    public function testARowIsRefusedWhenItsNamedSchemaCannotBeResolved(): void
-    {
-        $this->schemaMapper->method('find')
-            ->willThrowException(new \RuntimeException('transient database failure'));
+		// The gate never gets the chance to run — that is exactly the problem
+		// being fixed, so the refusal must come from the safeguard itself.
+		$this->permissionHandler->expects($this->never())->method('hasPermission');
 
-        // The gate never gets the chance to run — that is exactly the problem
-        // being fixed, so the refusal must come from the safeguard itself.
-        $this->permissionHandler->expects($this->never())->method('hasPermission');
+		[$passed, $result] = $this->runSafeguards([['title' => 'smuggled']], 'zaak');
 
-        [$passed, $result] = $this->runSafeguards([['title' => 'smuggled']], 'zaak');
+		$this->assertSame([], $passed, 'a row whose permissions could not be checked must not be written');
+		$this->assertSame(1, $result['statistics']['invalid']);
+		$this->assertStringContainsString(
+			'Schema could not be resolved',
+			$result['invalid'][0]['error']
+		);
 
-        $this->assertSame([], $passed, 'a row whose permissions could not be checked must not be written');
-        $this->assertSame(1, $result['statistics']['invalid']);
-        $this->assertStringContainsString(
-            'Schema could not be resolved',
-            $result['invalid'][0]['error']
-        );
+	}//end testARowIsRefusedWhenItsNamedSchemaCannotBeResolved()
 
-    }//end testARowIsRefusedWhenItsNamedSchemaCannotBeResolved()
+	/**
+	 * The positive control on the OTHER side of the same branch: a genuine
+	 * mixed-schema batch (the caller named no schema at all) still passes its
+	 * rows through to the downstream prep, which is where a malformed row gets
+	 * its proper "invalid" shape. Without this, the refusal above is equally
+	 * satisfied by rejecting everything schema-less.
+	 *
+	 * @return void
+	 */
+	public function testAMixedSchemaBatchIsStillPassedThrough(): void {
+		$this->schemaMapper->expects($this->never())->method('find');
 
-    /**
-     * The positive control on the OTHER side of the same branch: a genuine
-     * mixed-schema batch (the caller named no schema at all) still passes its
-     * rows through to the downstream prep, which is where a malformed row gets
-     * its proper "invalid" shape. Without this, the refusal above is equally
-     * satisfied by rejecting everything schema-less.
-     *
-     * @return void
-     */
-    public function testAMixedSchemaBatchIsStillPassedThrough(): void
-    {
-        $this->schemaMapper->expects($this->never())->method('find');
+		[$passed, $result] = $this->runSafeguards([['title' => 'mixed']], null);
 
-        [$passed, $result] = $this->runSafeguards([['title' => 'mixed']], null);
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
 
-        $this->assertCount(1, $passed);
-        $this->assertSame(0, $result['statistics']['invalid']);
+	}//end testAMixedSchemaBatchIsStillPassedThrough()
 
-    }//end testAMixedSchemaBatchIsStillPassedThrough()
+	/**
+	 * And the ordinary path is untouched: a schema that DOES resolve reaches
+	 * the per-row RBAC gate, and a row the gate allows is written.
+	 *
+	 * @return void
+	 */
+	public function testAResolvableSchemaStillReachesTheRbacGate(): void {
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setSlug('zaak');
 
-    /**
-     * And the ordinary path is untouched: a schema that DOES resolve reaches
-     * the per-row RBAC gate, and a row the gate allows is written.
-     *
-     * @return void
-     */
-    public function testAResolvableSchemaStillReachesTheRbacGate(): void
-    {
-        $schema = new Schema();
-        $schema->setId(7);
-        $schema->setSlug('zaak');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->permissionHandler->expects($this->once())
+			->method('hasPermission')
+			->willReturn(true);
 
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->permissionHandler->expects($this->once())
-            ->method('hasPermission')
-            ->willReturn(true);
+		[$passed, $result] = $this->runSafeguards([['title' => 'legitimate']], 'zaak');
 
-        [$passed, $result] = $this->runSafeguards([['title' => 'legitimate']], 'zaak');
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
 
-        $this->assertCount(1, $passed);
-        $this->assertSame(0, $result['statistics']['invalid']);
+	}//end testAResolvableSchemaStillReachesTheRbacGate()
 
-    }//end testAResolvableSchemaStillReachesTheRbacGate()
+	/**
+	 * The gate is still the gate: a resolvable schema whose permission check
+	 * says no rejects the row.
+	 *
+	 * @return void
+	 */
+	public function testAResolvableSchemaStillRefusesADeniedRow(): void {
+		$schema = new Schema();
+		$schema->setId(8);
+		$schema->setSlug('zaak');
 
-    /**
-     * The gate is still the gate: a resolvable schema whose permission check
-     * says no rejects the row.
-     *
-     * @return void
-     */
-    public function testAResolvableSchemaStillRefusesADeniedRow(): void
-    {
-        $schema = new Schema();
-        $schema->setId(8);
-        $schema->setSlug('zaak');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->permissionHandler->method('hasPermission')->willReturn(false);
 
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->permissionHandler->method('hasPermission')->willReturn(false);
+		[$passed, $result] = $this->runSafeguards([['title' => 'denied']], 'zaak');
 
-        [$passed, $result] = $this->runSafeguards([['title' => 'denied']], 'zaak');
+		$this->assertSame([], $passed);
+		$this->assertSame(1, $result['statistics']['invalid']);
 
-        $this->assertSame([], $passed);
-        $this->assertSame(1, $result['statistics']['invalid']);
-
-    }//end testAResolvableSchemaStillRefusesADeniedRow()
+	}//end testAResolvableSchemaStillRefusesADeniedRow()
 }//end class

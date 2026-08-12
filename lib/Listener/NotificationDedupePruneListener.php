@@ -40,44 +40,42 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<ObjectDeletedEvent>
  */
-final class NotificationDedupePruneListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param NotificationDedupeStateMapper $mapper Per-object dedup state mapper.
-     * @param LoggerInterface               $logger PSR logger.
-     */
-    public function __construct(
-        private readonly NotificationDedupeStateMapper $mapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+final class NotificationDedupePruneListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param NotificationDedupeStateMapper $mapper Per-object dedup state mapper.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		private readonly NotificationDedupeStateMapper $mapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle the event by deleting every dedup row tied to the object UUID.
-     *
-     * @param Event $event Dispatched event.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ObjectDeletedEvent) === false) {
-            return;
-        }
+	/**
+	 * Handle the event by deleting every dedup row tied to the object UUID.
+	 *
+	 * @param Event $event Dispatched event.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ObjectDeletedEvent) === false) {
+			return;
+		}
 
-        try {
-            $uuid = (string) $event->getObject()->getUuid();
-            if ($uuid === '') {
-                return;
-            }
+		try {
+			$uuid = (string)$event->getObject()->getUuid();
+			if ($uuid === '') {
+				return;
+			}
 
-            $this->mapper->deleteByObject(objectUuid: $uuid);
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                sprintf('[NotificationDedupePruneListener] prune skipped: %s', $e->getMessage())
-            );
-        }
-    }//end handle()
+			$this->mapper->deleteByObject(objectUuid: $uuid);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[NotificationDedupePruneListener] prune skipped: %s', $e->getMessage())
+			);
+		}
+	}//end handle()
 }//end class

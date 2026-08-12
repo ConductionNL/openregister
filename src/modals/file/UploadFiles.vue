@@ -645,10 +645,6 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	opacity: 0.4;
 }
 
-.success {
-	color: green;
-}
-
 .folderLink {
 	display: flex;
 	align-items: center;
@@ -746,7 +742,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	min-width: calc(var(--min-size)* 2);
+	min-width: calc(var(--min-size) * 2);
 	max-width: 300px;
 }
 

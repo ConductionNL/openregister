@@ -29,195 +29,183 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for EvidenceHarvestService.
  */
-class EvidenceHarvestServiceTest extends TestCase
-{
+class EvidenceHarvestServiceTest extends TestCase {
 
-    /**
-     * Build a fake provider yielding fixed items.
-     *
-     * @param string        $sourceId The provider source id.
-     * @param EvidenceItem[] $items    Items to harvest.
-     * @param bool          $enabled  Whether the provider is enabled.
-     *
-     * @return EvidenceSourceProvider
-     */
-    private function provider(string $sourceId, array $items, bool $enabled=true): EvidenceSourceProvider
-    {
-        return new class($sourceId, $items, $enabled) implements EvidenceSourceProvider {
+	/**
+	 * Build a fake provider yielding fixed items.
+	 *
+	 * @param string $sourceId The provider source id.
+	 * @param EvidenceItem[] $items Items to harvest.
+	 * @param bool $enabled Whether the provider is enabled.
+	 *
+	 * @return EvidenceSourceProvider
+	 */
+	private function provider(string $sourceId, array $items, bool $enabled = true): EvidenceSourceProvider {
+		return new class($sourceId, $items, $enabled) implements EvidenceSourceProvider {
+			/**
+			 * Constructor.
+			 *
+			 * @param string $sourceId Source id.
+			 * @param EvidenceItem[] $items Items.
+			 * @param bool $enabled Enabled flag.
+			 */
+			public function __construct(
+				private string $sourceId,
+				private array $items,
+				private bool $enabled,
+			) {
+			}
 
-            /**
-             * Constructor.
-             *
-             * @param string         $sourceId Source id.
-             * @param EvidenceItem[] $items    Items.
-             * @param bool           $enabled  Enabled flag.
-             */
-            public function __construct(
-                private string $sourceId,
-                private array $items,
-                private bool $enabled
-            ) {
-            }
+			public function getSourceId(): string {
+				return $this->sourceId;
+			}
 
-            public function getSourceId(): string
-            {
-                return $this->sourceId;
-            }
+			public function isEnabled(): bool {
+				return $this->enabled;
+			}
 
-            public function isEnabled(): bool
-            {
-                return $this->enabled;
-            }
+			public function harvest(string $caseUuid, array $case): array {
+				return $this->items;
+			}
+		};
 
-            public function harvest(string $caseUuid, array $case): array
-            {
-                return $this->items;
-            }
-        };
+	}//end provider()
 
-    }//end provider()
+	/**
+	 * A case entity carrying an existing evidence sub-collection.
+	 *
+	 * @param array<int, array<string, mixed>> $evidence Existing evidence rows.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function caseEntity(array $evidence = []): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid('00000000-0000-0000-0000-000000000000');
+		$object->setObject(['subjectId' => 'subject@example.org', 'evidence' => $evidence]);
+		return $object;
+	}//end caseEntity()
 
-    /**
-     * A case entity carrying an existing evidence sub-collection.
-     *
-     * @param array<int, array<string, mixed>> $evidence Existing evidence rows.
-     *
-     * @return ObjectEntity
-     */
-    private function caseEntity(array $evidence=[]): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('00000000-0000-0000-0000-000000000000');
-        $object->setObject(['subjectId' => 'subject@example.org', 'evidence' => $evidence]);
-        return $object;
+	/**
+	 * Harvested items are stored with source, hash and status.
+	 *
+	 * @return void
+	 */
+	public function testHarvestStoresItemsWithSourceHashStatus(): void {
+		$case = $this->caseEntity();
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('load')->willReturn($case);
 
-    }//end caseEntity()
+		$savedData = null;
+		$accessor->expects($this->once())
+			->method('save')
+			->willReturnCallback(
+				function ($c, $data) use (&$savedData, $case) {
+					$savedData = $data;
+					return $case;
+				}
+			);
 
-    /**
-     * Harvested items are stored with source, hash and status.
-     *
-     * @return void
-     */
-    public function testHarvestStoresItemsWithSourceHashStatus(): void
-    {
-        $case     = $this->caseEntity();
-        $accessor = $this->createMock(CaseObjectAccessor::class);
-        $accessor->method('load')->willReturn($case);
+		$registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
+		$registry->withProviders(
+			[
+				$this->provider(
+					'or-objects',
+					[new EvidenceItem('or-objects', 'sha256:aaa', EvidenceItem::STATUS_COLLECTED)]
+				),
+			]
+		);
 
-        $savedData = null;
-        $accessor->expects($this->once())
-            ->method('save')
-            ->willReturnCallback(
-                function ($c, $data) use (&$savedData, $case) {
-                    $savedData = $data;
-                    return $case;
-                }
-            );
+		$service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
+		$result = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
 
-        $registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
-        $registry->withProviders(
-            [
-                $this->provider(
-                    'or-objects',
-                    [new EvidenceItem('or-objects', 'sha256:aaa', EvidenceItem::STATUS_COLLECTED)]
-                ),
-            ]
-        );
+		$this->assertSame(1, $result['appended']);
+		$this->assertNotNull($savedData);
+		$this->assertCount(1, $savedData['evidence']);
+		$this->assertSame('or-objects', $savedData['evidence'][0]['sourceId']);
+		$this->assertSame('sha256:aaa', $savedData['evidence'][0]['contentHash']);
+		$this->assertSame(EvidenceItem::STATUS_COLLECTED, $savedData['evidence'][0]['status']);
 
-        $service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
-        $result  = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
+	}//end testHarvestStoresItemsWithSourceHashStatus()
 
-        $this->assertSame(1, $result['appended']);
-        $this->assertNotNull($savedData);
-        $this->assertCount(1, $savedData['evidence']);
-        $this->assertSame('or-objects', $savedData['evidence'][0]['sourceId']);
-        $this->assertSame('sha256:aaa', $savedData['evidence'][0]['contentHash']);
-        $this->assertSame(EvidenceItem::STATUS_COLLECTED, $savedData['evidence'][0]['status']);
+	/**
+	 * Re-running a harvest with an already-present contentHash does not
+	 * duplicate; nothing is saved.
+	 *
+	 * @return void
+	 */
+	public function testReHarvestDoesNotDuplicate(): void {
+		$case = $this->caseEntity([['sourceId' => 'or-objects', 'contentHash' => 'sha256:aaa', 'status' => 'collected']]);
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('load')->willReturn($case);
+		// No append → no save.
+		$accessor->expects($this->never())->method('save');
 
-    }//end testHarvestStoresItemsWithSourceHashStatus()
+		$registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
+		$registry->withProviders(
+			[
+				$this->provider(
+					'or-objects',
+					[new EvidenceItem('or-objects', 'sha256:aaa', EvidenceItem::STATUS_COLLECTED)]
+				),
+			]
+		);
 
-    /**
-     * Re-running a harvest with an already-present contentHash does not
-     * duplicate; nothing is saved.
-     *
-     * @return void
-     */
-    public function testReHarvestDoesNotDuplicate(): void
-    {
-        $case     = $this->caseEntity([['sourceId' => 'or-objects', 'contentHash' => 'sha256:aaa', 'status' => 'collected']]);
-        $accessor = $this->createMock(CaseObjectAccessor::class);
-        $accessor->method('load')->willReturn($case);
-        // No append → no save.
-        $accessor->expects($this->never())->method('save');
+		$service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
+		$result = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
 
-        $registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
-        $registry->withProviders(
-            [
-                $this->provider(
-                    'or-objects',
-                    [new EvidenceItem('or-objects', 'sha256:aaa', EvidenceItem::STATUS_COLLECTED)]
-                ),
-            ]
-        );
+		$this->assertSame(0, $result['appended']);
+		$this->assertSame(1, $result['skipped']);
 
-        $service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
-        $result  = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
+	}//end testReHarvestDoesNotDuplicate()
 
-        $this->assertSame(0, $result['appended']);
-        $this->assertSame(1, $result['skipped']);
+	/**
+	 * An unregistered source contributes nothing (empty registry → no items).
+	 *
+	 * @return void
+	 */
+	public function testUnregisteredSourceContributesNothing(): void {
+		$case = $this->caseEntity();
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('load')->willReturn($case);
+		$accessor->expects($this->never())->method('save');
 
-    }//end testReHarvestDoesNotDuplicate()
+		$registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
 
-    /**
-     * An unregistered source contributes nothing (empty registry → no items).
-     *
-     * @return void
-     */
-    public function testUnregisteredSourceContributesNothing(): void
-    {
-        $case     = $this->caseEntity();
-        $accessor = $this->createMock(CaseObjectAccessor::class);
-        $accessor->method('load')->willReturn($case);
-        $accessor->expects($this->never())->method('save');
+		$service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
+		$result = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
 
-        $registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
+		$this->assertSame(0, $result['appended']);
+		$this->assertSame([], $result['providers']);
 
-        $service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
-        $result  = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
+	}//end testUnregisteredSourceContributesNothing()
 
-        $this->assertSame(0, $result['appended']);
-        $this->assertSame([], $result['providers']);
+	/**
+	 * A disabled provider is skipped.
+	 *
+	 * @return void
+	 */
+	public function testDisabledProviderSkipped(): void {
+		$case = $this->caseEntity();
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('load')->willReturn($case);
+		$accessor->expects($this->never())->method('save');
 
-    }//end testUnregisteredSourceContributesNothing()
+		$registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
+		$registry->withProviders(
+			[
+				$this->provider(
+					'disabled-src',
+					[new EvidenceItem('disabled-src', 'sha256:zzz')],
+					false
+				),
+			]
+		);
 
-    /**
-     * A disabled provider is skipped.
-     *
-     * @return void
-     */
-    public function testDisabledProviderSkipped(): void
-    {
-        $case     = $this->caseEntity();
-        $accessor = $this->createMock(CaseObjectAccessor::class);
-        $accessor->method('load')->willReturn($case);
-        $accessor->expects($this->never())->method('save');
+		$service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
+		$result = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
 
-        $registry = new EvidenceSourceRegistry($this->createMock(LoggerInterface::class));
-        $registry->withProviders(
-            [
-                $this->provider(
-                    'disabled-src',
-                    [new EvidenceItem('disabled-src', 'sha256:zzz')],
-                    false
-                ),
-            ]
-        );
+		$this->assertSame(0, $result['appended']);
+		$this->assertNotContains('disabled-src', $result['providers']);
 
-        $service = new EvidenceHarvestService($registry, $accessor, $this->createMock(LoggerInterface::class));
-        $result  = $service->harvest(caseUuid: '00000000-0000-0000-0000-000000000000');
-
-        $this->assertSame(0, $result['appended']);
-        $this->assertNotContains('disabled-src', $result['providers']);
-
-    }//end testDisabledProviderSkipped()
+	}//end testDisabledProviderSkipped()
 }//end class

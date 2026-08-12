@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use DateTimeZone;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -48,115 +47,111 @@ use Throwable;
  *   3. `DateTimeInterface` instance → `DateTimeImmutable` of the same instant
  *   4. parse failure / unsupported type → `null` (with debug log)
  */
-class DateTimeNormalizer
-{
+class DateTimeNormalizer {
 
-    /**
-     * MySQL/MariaDB datetime format.
-     *
-     * @var string
-     */
-    public const DATABASE_FORMAT = 'Y-m-d H:i:s';
+	/**
+	 * MySQL/MariaDB datetime format.
+	 *
+	 * @var string
+	 */
+	public const DATABASE_FORMAT = 'Y-m-d H:i:s';
 
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface $logger Logger for debug-level notices on parse failures.
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger Logger for debug-level notices on parse failures.
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Normalise user-supplied input to `DateTimeImmutable` or `null`.
-     *
-     * @param mixed $value Value to normalise (string, null, DateTimeInterface, or anything else).
-     *
-     * @return DateTimeImmutable|null A `DateTimeImmutable` when parseable, otherwise `null`.
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/specs/datetime-input-handling/spec.md
-     */
-    public function normalize(mixed $value): ?DateTimeImmutable
-    {
-        if ($value === null) {
-            return null;
-        }
+	/**
+	 * Normalise user-supplied input to `DateTimeImmutable` or `null`.
+	 *
+	 * @param mixed $value Value to normalise (string, null, DateTimeInterface, or anything else).
+	 *
+	 * @return DateTimeImmutable|null A `DateTimeImmutable` when parseable, otherwise `null`.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/specs/datetime-input-handling/spec.md
+	 */
+	public function normalize(mixed $value): ?DateTimeImmutable {
+		if ($value === null) {
+			return null;
+		}
 
-        if ($value instanceof DateTimeImmutable === true) {
-            return $value;
-        }
+		if ($value instanceof DateTimeImmutable === true) {
+			return $value;
+		}
 
-        if ($value instanceof DateTimeInterface === true) {
-            return DateTimeImmutable::createFromInterface($value);
-        }
+		if ($value instanceof DateTimeInterface === true) {
+			return DateTimeImmutable::createFromInterface($value);
+		}
 
-        if (is_string($value) === false) {
-            $this->logger->debug(
-                message: '[DateTimeNormalizer] Non-string, non-DateTime input rejected',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'type' => get_debug_type($value)]
-            );
-            return null;
-        }
+		if (is_string($value) === false) {
+			$this->logger->debug(
+				message: '[DateTimeNormalizer] Non-string, non-DateTime input rejected',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => get_debug_type($value)]
+			);
+			return null;
+		}
 
-        $trimmed = trim($value);
-        if ($trimmed === '') {
-            return null;
-        }
+		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
 
-        try {
-            return new DateTimeImmutable($trimmed);
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                message: '[DateTimeNormalizer] Unparseable datetime string',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'value' => $trimmed,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return null;
-        }
-    }//end normalize()
+		try {
+			return new DateTimeImmutable($trimmed);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				message: '[DateTimeNormalizer] Unparseable datetime string',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'value' => $trimmed,
+					'error' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+	}//end normalize()
 
-    /**
-     * Format user-supplied input as a database datetime string.
-     *
-     * @param mixed $value Value to normalise and format.
-     *
-     * @return string|null `Y-m-d H:i:s`-formatted string, or `null` for empty/invalid input.
-     *
-     * @spec openspec/specs/datetime-input-handling/spec.md
-     */
-    public function formatForDatabase(mixed $value): ?string
-    {
-        $datetime = $this->normalize(value: $value);
-        if ($datetime === null) {
-            return null;
-        }
+	/**
+	 * Format user-supplied input as a database datetime string.
+	 *
+	 * @param mixed $value Value to normalise and format.
+	 *
+	 * @return string|null `Y-m-d H:i:s`-formatted string, or `null` for empty/invalid input.
+	 *
+	 * @spec openspec/specs/datetime-input-handling/spec.md
+	 */
+	public function formatForDatabase(mixed $value): ?string {
+		$datetime = $this->normalize(value: $value);
+		if ($datetime === null) {
+			return null;
+		}
 
-        return $datetime->format(self::DATABASE_FORMAT);
-    }//end formatForDatabase()
+		return $datetime->format(self::DATABASE_FORMAT);
+	}//end formatForDatabase()
 
-    /**
-     * Format user-supplied input as an ISO 8601 string with timezone offset.
-     *
-     * @param mixed $value Value to normalise and format.
-     *
-     * @return string|null ISO 8601 string with offset, or `null` for empty/invalid input.
-     *
-     * @spec openspec/specs/datetime-input-handling/spec.md
-     */
-    public function formatForIso8601(mixed $value): ?string
-    {
-        $datetime = $this->normalize(value: $value);
-        if ($datetime === null) {
-            return null;
-        }
+	/**
+	 * Format user-supplied input as an ISO 8601 string with timezone offset.
+	 *
+	 * @param mixed $value Value to normalise and format.
+	 *
+	 * @return string|null ISO 8601 string with offset, or `null` for empty/invalid input.
+	 *
+	 * @spec openspec/specs/datetime-input-handling/spec.md
+	 */
+	public function formatForIso8601(mixed $value): ?string {
+		$datetime = $this->normalize(value: $value);
+		if ($datetime === null) {
+			return null;
+		}
 
-        return $datetime->format(DateTimeInterface::ATOM);
-    }//end formatForIso8601()
+		return $datetime->format(DateTimeInterface::ATOM);
+	}//end formatForIso8601()
 }//end class

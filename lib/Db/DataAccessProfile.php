@@ -44,122 +44,118 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class DataAccessProfile extends Entity implements JsonSerializable
-{
+class DataAccessProfile extends Entity implements JsonSerializable {
 
-    /**
-     * UUID.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * UUID.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Name.
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * Name.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * Description.
-     *
-     * @var string|null
-     */
-    protected ?string $description = null;
+	/**
+	 * Description.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $description = null;
 
-    /**
-     * Permissions.
-     *
-     * @var array|null
-     */
-    protected ?array $permissions = [];
+	/**
+	 * Permissions.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $permissions = [];
 
-    /**
-     * Created timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Created timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Updated timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Updated timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'permissions', type: 'json');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'permissions', type: 'json');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return (array|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, permissions: array|null,
-     *     created: null|string, updated: null|string}
-     */
-    public function jsonSerialize(): array
-    {
-        $created = null;
-        if ($this->created !== null) {
-            $created = $this->created->format('c');
-        }
+	/**
+	 * JSON serialization.
+	 *
+	 * @return (array|int|null|string)[]
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, name: null|string,
+	 *     description: null|string, permissions: array|null,
+	 *     created: null|string, updated: null|string}
+	 */
+	public function jsonSerialize(): array {
+		$created = null;
+		if ($this->created !== null) {
+			$created = $this->created->format('c');
+		}
 
-        $updated = null;
-        if ($this->updated !== null) {
-            $updated = $this->updated->format('c');
-        }
+		$updated = null;
+		if ($this->updated !== null) {
+			$updated = $this->updated->format('c');
+		}
 
-        return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'permissions' => $this->permissions,
-            'created'     => $created,
-            'updated'     => $updated,
-        ];
-    }//end jsonSerialize()
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'description' => $this->description,
+			'permissions' => $this->permissions,
+			'created' => $created,
+			'updated' => $updated,
+		];
+	}//end jsonSerialize()
 
-    /**
-     * String representation of the data access profile
-     *
-     * This magic method is required for proper entity handling in Nextcloud
-     * when the framework needs to convert the object to a string.
-     *
-     * @return string String representation of the data access profile
-     */
-    public function __toString(): string
-    {
-        // Return the name if available, otherwise return a descriptive string.
-        if ($this->name !== null && $this->name !== '') {
-            return $this->name;
-        }
+	/**
+	 * String representation of the data access profile
+	 *
+	 * This magic method is required for proper entity handling in Nextcloud
+	 * when the framework needs to convert the object to a string.
+	 *
+	 * @return string String representation of the data access profile
+	 */
+	public function __toString(): string {
+		// Return the name if available, otherwise return a descriptive string.
+		if ($this->name !== null && $this->name !== '') {
+			return $this->name;
+		}
 
-        // Fallback to UUID if available.
-        if ($this->uuid !== null && $this->uuid !== '') {
-            return $this->uuid;
-        }
+		// Fallback to UUID if available.
+		if ($this->uuid !== null && $this->uuid !== '') {
+			return $this->uuid;
+		}
 
-        // Fallback to ID if available.
-        if ($this->id !== null) {
-            return 'DataAccessProfile #'.$this->id;
-        }
+		// Fallback to ID if available.
+		if ($this->id !== null) {
+			return 'DataAccessProfile #' . $this->id;
+		}
 
-        // Final fallback.
-        return 'Data Access Profile';
-    }//end __toString()
+		// Final fallback.
+		return 'Data Access Profile';
+	}//end __toString()
 }//end class

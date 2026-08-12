@@ -79,6 +79,7 @@ export default {
 	width: 100%;
 	border-collapse: collapse;
 }
+
 .hook-table th, .hook-table td {
 	padding: 8px;
 	text-align: left;

@@ -30,32 +30,30 @@ use DateTime;
 /**
  * Render a resolved dashboard as a single HTML document.
  */
-class HtmlReportWriter
-{
-    /**
-     * Render the HTML.
-     *
-     * @param array<string, mixed>                               $dashboard       Dashboard payload.
-     * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
-     *
-     * @return string Rendered HTML bytes.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-3
-     */
-    public function write(array $dashboard, array $resolvedWidgets): string
-    {
-        $title       = $this->escape(value: (string) ($dashboard['titel'] ?? 'Dashboard'));
-        $description = $this->escape(value: (string) ($dashboard['beschrijving'] ?? ''));
-        $generated   = (new DateTime())->format(DateTime::ATOM);
+class HtmlReportWriter {
+	/**
+	 * Render the HTML.
+	 *
+	 * @param array<string, mixed> $dashboard Dashboard payload.
+	 * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
+	 *
+	 * @return string Rendered HTML bytes.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-3
+	 */
+	public function write(array $dashboard, array $resolvedWidgets): string {
+		$title = $this->escape(value: (string)($dashboard['titel'] ?? 'Dashboard'));
+		$description = $this->escape(value: (string)($dashboard['beschrijving'] ?? ''));
+		$generated = (new DateTime())->format(DateTime::ATOM);
 
-        $widgetsHtml = '';
-        foreach ($resolvedWidgets as $entry) {
-            $widgetsHtml .= $this->renderWidget(widget: $entry['widget'], data: $entry['data']);
-        }
+		$widgetsHtml = '';
+		foreach ($resolvedWidgets as $entry) {
+			$widgetsHtml .= $this->renderWidget(widget: $entry['widget'], data: $entry['data']);
+		}
 
-        $css = $this->css();
+		$css = $this->css();
 
-        return <<<HTML
+		return <<<HTML
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -76,33 +74,32 @@ class HtmlReportWriter
 </html>
 HTML;
 
-    }//end write()
+	}//end write()
 
-    /**
-     * Render a single widget card.
-     *
-     * @param array<string, mixed>      $widget Widget descriptor.
-     * @param array<string, mixed>|null $data   Resolved widget data.
-     *
-     * @return string
-     */
-    private function renderWidget(array $widget, ?array $data): string
-    {
-        $title    = $this->escape(value: (string) ($widget['title'] ?? ''));
-        $subtitle = $this->escape(value: (string) ($widget['subtitle'] ?? ''));
-        $type     = (string) ($widget['type'] ?? 'kpi');
+	/**
+	 * Render a single widget card.
+	 *
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 * @param array<string, mixed>|null $data Resolved widget data.
+	 *
+	 * @return string
+	 */
+	private function renderWidget(array $widget, ?array $data): string {
+		$title = $this->escape(value: (string)($widget['title'] ?? ''));
+		$subtitle = $this->escape(value: (string)($widget['subtitle'] ?? ''));
+		$type = (string)($widget['type'] ?? 'kpi');
 
-        $bodyHtml = '<p class="widget-error">No data available — the data source did not resolve.</p>';
-        if ($data !== null) {
-            $bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
-        }
+		$bodyHtml = '<p class="widget-error">No data available — the data source did not resolve.</p>';
+		if ($data !== null) {
+			$bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
+		}
 
-        $subtitleBlock = '';
-        if ($subtitle !== '') {
-            $subtitleBlock = "<p class=\"widget-subtitle\">{$subtitle}</p>";
-        }
+		$subtitleBlock = '';
+		if ($subtitle !== '') {
+			$subtitleBlock = "<p class=\"widget-subtitle\">{$subtitle}</p>";
+		}
 
-        return <<<HTML
+		return <<<HTML
 <section class="widget widget-{$this->escape(value: $type)}">
 <header class="widget-header">
 <h2>{$title}</h2>
@@ -112,115 +109,107 @@ HTML;
 </section>
 HTML;
 
-    }//end renderWidget()
+	}//end renderWidget()
 
-    /**
-     * Render the widget body based on type + data shape.
-     *
-     * @param array<string, mixed> $widget Widget descriptor.
-     * @param array<string, mixed> $data   Resolved data.
-     * @param string               $type   Widget type.
-     *
-     * @return string HTML.
-     */
-    private function renderBody(array $widget, array $data, string $type): string
-    {
-        $valueField = (string) ($widget['options']['valueField'] ?? 'value');
+	/**
+	 * Render the widget body based on type + data shape.
+	 *
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 * @param array<string, mixed> $data Resolved data.
+	 * @param string $type Widget type.
+	 *
+	 * @return string HTML.
+	 */
+	private function renderBody(array $widget, array $data, string $type): string {
+		$valueField = (string)($widget['options']['valueField'] ?? 'value');
 
-        // Group-based widgets.
-        $groups = ($data['groups'] ?? null);
-        if (is_array($groups) === true && $groups !== []) {
-            return $this->renderGroupTable(groups: $groups, valueField: $valueField);
-        }
+		// Group-based widgets.
+		$groups = ($data['groups'] ?? null);
+		if (is_array($groups) === true && $groups !== []) {
+			return $this->renderGroupTable(groups: $groups, valueField: $valueField);
+		}
 
-        // Scalar value — render headline.
-        $headline = $this->extractHeadline(data: $data, valueField: $valueField);
-        if ($type === 'stats') {
-            return $this->renderStatsBlock(data: $data);
-        }
+		// Scalar value — render headline.
+		$headline = $this->extractHeadline(data: $data, valueField: $valueField);
+		if ($type === 'stats') {
+			return $this->renderStatsBlock(data: $data);
+		}
 
-        return '<div class="widget-headline">'.$this->escape(value: $headline).'</div>';
+		return '<div class="widget-headline">' . $this->escape(value: $headline) . '</div>';
+	}//end renderBody()
 
-    }//end renderBody()
+	/**
+	 * Render an HTML table of group key/value rows.
+	 *
+	 * @param array<int, array<string, mixed>> $groups Rows.
+	 * @param string $valueField Which value field to read.
+	 *
+	 * @return string
+	 */
+	private function renderGroupTable(array $groups, string $valueField): string {
+		$rows = '';
+		foreach ($groups as $group) {
+			$key = $this->escape(value: (string)($group['key'] ?? $group['label'] ?? ''));
+			$value = $group[$valueField] ?? $group['value'] ?? $group['count'] ?? '';
+			$rows .= '<tr><td>' . $key . '</td><td class="num">' . $this->escape(value: (string)$value) . '</td></tr>';
+		}
 
-    /**
-     * Render an HTML table of group key/value rows.
-     *
-     * @param array<int, array<string, mixed>> $groups     Rows.
-     * @param string                           $valueField Which value field to read.
-     *
-     * @return string
-     */
-    private function renderGroupTable(array $groups, string $valueField): string
-    {
-        $rows = '';
-        foreach ($groups as $group) {
-            $key   = $this->escape(value: (string) ($group['key'] ?? $group['label'] ?? ''));
-            $value = $group[$valueField] ?? $group['value'] ?? $group['count'] ?? '';
-            $rows .= '<tr><td>'.$key.'</td><td class="num">'.$this->escape(value: (string) $value).'</td></tr>';
-        }
-
-        return <<<HTML
+		return <<<HTML
 <table class="widget-table">
 <thead><tr><th>Key</th><th class="num">Value</th></tr></thead>
 <tbody>{$rows}</tbody>
 </table>
 HTML;
 
-    }//end renderGroupTable()
+	}//end renderGroupTable()
 
-    /**
-     * Render a stats block — definition list of metric/value rows.
-     *
-     * @param array<string, mixed> $data Resolved data.
-     *
-     * @return string
-     */
-    private function renderStatsBlock(array $data): string
-    {
-        $rows = '';
-        foreach (['name', 'metric', 'value', 'count', 'sum', 'avg', 'min', 'max', 'count_distinct'] as $key) {
-            if (array_key_exists($key, $data) === true && $data[$key] !== null) {
-                $rows .= '<dt>'.$this->escape(value: $key).'</dt><dd>'.$this->escape(value: (string) $data[$key]).'</dd>';
-            }
-        }
+	/**
+	 * Render a stats block — definition list of metric/value rows.
+	 *
+	 * @param array<string, mixed> $data Resolved data.
+	 *
+	 * @return string
+	 */
+	private function renderStatsBlock(array $data): string {
+		$rows = '';
+		foreach (['name', 'metric', 'value', 'count', 'sum', 'avg', 'min', 'max', 'count_distinct'] as $key) {
+			if (array_key_exists($key, $data) === true && $data[$key] !== null) {
+				$rows .= '<dt>' . $this->escape(value: $key) . '</dt><dd>' . $this->escape(value: (string)$data[$key]) . '</dd>';
+			}
+		}
 
-        if ($rows === '') {
-            return '<p class="widget-empty">No metric values</p>';
-        }
+		if ($rows === '') {
+			return '<p class="widget-empty">No metric values</p>';
+		}
 
-        return '<dl class="widget-stats">'.$rows.'</dl>';
+		return '<dl class="widget-stats">' . $rows . '</dl>';
+	}//end renderStatsBlock()
 
-    }//end renderStatsBlock()
+	/**
+	 * Pull the headline value out of an aggregation result.
+	 *
+	 * @param array<string, mixed> $data Resolved data.
+	 * @param string $valueField Preferred field.
+	 *
+	 * @return string Stringified headline.
+	 */
+	private function extractHeadline(array $data, string $valueField): string {
+		foreach ([$valueField, 'value', 'count', 'sum', 'avg', 'min', 'max'] as $key) {
+			if (array_key_exists($key, $data) === true && $data[$key] !== null) {
+				return (string)$data[$key];
+			}
+		}
 
-    /**
-     * Pull the headline value out of an aggregation result.
-     *
-     * @param array<string, mixed> $data       Resolved data.
-     * @param string               $valueField Preferred field.
-     *
-     * @return string Stringified headline.
-     */
-    private function extractHeadline(array $data, string $valueField): string
-    {
-        foreach ([$valueField, 'value', 'count', 'sum', 'avg', 'min', 'max'] as $key) {
-            if (array_key_exists($key, $data) === true && $data[$key] !== null) {
-                return (string) $data[$key];
-            }
-        }
+		return '—';
+	}//end extractHeadline()
 
-        return '—';
-
-    }//end extractHeadline()
-
-    /**
-     * Inline stylesheet — print-friendly + WCAG-AA contrast.
-     *
-     * @return string CSS source.
-     */
-    private function css(): string
-    {
-        return <<<CSS
+	/**
+	 * Inline stylesheet — print-friendly + WCAG-AA contrast.
+	 *
+	 * @return string CSS source.
+	 */
+	private function css(): string {
+		return <<<CSS
 * { box-sizing: border-box; }
 body {
     font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -267,18 +256,16 @@ body {
 }
 CSS;
 
-    }//end css()
+	}//end css()
 
-    /**
-     * HTML-escape helper.
-     *
-     * @param string $value Raw value.
-     *
-     * @return string Escaped.
-     */
-    private function escape(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-    }//end escape()
+	/**
+	 * HTML-escape helper.
+	 *
+	 * @param string $value Raw value.
+	 *
+	 * @return string Escaped.
+	 */
+	private function escape(string $value): string {
+		return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	}//end escape()
 }//end class

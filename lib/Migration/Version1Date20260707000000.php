@@ -44,42 +44,39 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class Version1Date20260707000000 extends SimpleMigrationStep
-{
-    /**
-     * Add the audit-trail register/schema/created composite index.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/enhanced-audit-trail/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260707000000 extends SimpleMigrationStep {
+	/**
+	 * Add the audit-trail register/schema/created composite index.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_audit_trails') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_audit_trails') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_audit_trails');
+		$table = $schema->getTable('openregister_audit_trails');
 
-        if ($table->hasIndex('idx_audit_register_schema') === true) {
-            return null;
-        }
+		if ($table->hasIndex('idx_audit_register_schema') === true) {
+			return null;
+		}
 
-        $table->addIndex(['register', 'schema', 'created'], 'idx_audit_register_schema');
+		$table->addIndex(['register', 'schema', 'created'], 'idx_audit_register_schema');
 
-        $output->info('Added idx_audit_register_schema on openregister_audit_trails (register, schema, created)');
+		$output->info('Added idx_audit_register_schema on openregister_audit_trails (register, schema, created)');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

@@ -44,266 +44,247 @@ use Psr\Log\LoggerInterface;
 /**
  * DsarDpiaDetectionJobTest.
  */
-class DsarDpiaDetectionJobTest extends TestCase
-{
+class DsarDpiaDetectionJobTest extends TestCase {
 
-    private IAppConfig&MockObject $appConfig;
+	private IAppConfig&MockObject $appConfig;
 
-    private ObjectService&MockObject $objectService;
+	private ObjectService&MockObject $objectService;
 
-    private DsarPolicyPackResolver&MockObject $packResolver;
+	private DsarPolicyPackResolver&MockObject $packResolver;
 
-    private AuditTrailMapper&MockObject $auditTrailMapper;
+	private AuditTrailMapper&MockObject $auditTrailMapper;
 
-    private DsarDpiaDetectionJob $job;
+	private DsarDpiaDetectionJob $job;
 
+	protected function setUp(): void {
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->packResolver = $this->createMock(DsarPolicyPackResolver::class);
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 
-    protected function setUp(): void
-    {
-        $this->appConfig        = $this->createMock(IAppConfig::class);
-        $this->objectService    = $this->createMock(ObjectService::class);
-        $this->packResolver     = $this->createMock(DsarPolicyPackResolver::class);
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		// Default: enabled + interval defaults.
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = '') => $default
+		);
 
-        // Default: enabled + interval defaults.
-        $this->appConfig->method('getValueString')->willReturnCallback(
-            static fn(string $app, string $key, string $default='') => $default
-        );
+		$this->job = new DsarDpiaDetectionJob(
+			time: $this->createMock(ITimeFactory::class),
+			appConfig: $this->appConfig,
+			objectService: $this->objectService,
+			packResolver: $this->packResolver,
+			detectionService: new DpiaPatternDetectionService(),
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 
-        $this->job = new DsarDpiaDetectionJob(
-            time: $this->createMock(ITimeFactory::class),
-            appConfig: $this->appConfig,
-            objectService: $this->objectService,
-            packResolver: $this->packResolver,
-            detectionService: new DpiaPatternDetectionService(),
-            auditTrailMapper: $this->auditTrailMapper,
-            logger: $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Threshold crossing: unflagged members get an audited dpiaRequired=true
+	 * write whose context names rule / group key / window / count; flagged
+	 * members are never re-written.
+	 *
+	 * @return void
+	 */
+	public function testThresholdCrossingFlagsUnflaggedCasesWithAudit(): void {
+		$this->wirePack(
+			dpiaDetection: [
+				'threshold' => 3,
+				'windowDays' => 30,
+				'groupBy' => ['type'],
+			]
+		);
+		$this->wireCases(
+			[
+				$this->renderedCase(uuid: 'a', flagged: false),
+				$this->renderedCase(uuid: 'b', flagged: false),
+				$this->renderedCase(uuid: 'c', flagged: true),
+			]
+		);
 
+		$savedFlags = [];
+		$this->objectService->method('find')->willReturnCallback(
+			function ($id, $extend = [], $files = false) {
+				$entity = new ObjectEntity();
+				$entity->setUuid((string)$id);
+				$entity->setObject(
+					[
+						'type' => 'access',
+						'dpiaRequired' => false,
+					]
+				);
+				return $entity;
+			}
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedFlags) {
+				$savedFlags[(string)$uuid] = $object['dpiaRequired'];
+				$saved = new ObjectEntity();
+				$saved->setUuid((string)$uuid);
+				return $saved;
+			}
+		);
 
-    /**
-     * Threshold crossing: unflagged members get an audited dpiaRequired=true
-     * write whose context names rule / group key / window / count; flagged
-     * members are never re-written.
-     *
-     * @return void
-     */
-    public function testThresholdCrossingFlagsUnflaggedCasesWithAudit(): void
-    {
-        $this->wirePack(
-            dpiaDetection: [
-                'threshold'  => 3,
-                'windowDays' => 30,
-                'groupBy'    => ['type'],
-            ]
-        );
-        $this->wireCases(
-            [
-                $this->renderedCase(uuid: 'a', flagged: false),
-                $this->renderedCase(uuid: 'b', flagged: false),
-                $this->renderedCase(uuid: 'c', flagged: true),
-            ]
-        );
+		$auditContexts = [];
+		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context = []) use (&$auditContexts) {
+				$auditContexts[(string)$object->getUuid()] = [
+					'action' => $action,
+					'context' => $context,
+				];
+				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
+			}
+		);
 
-        $savedFlags = [];
-        $this->objectService->method('find')->willReturnCallback(
-            function ($id, $extend=[], $files=false) {
-                $entity = new ObjectEntity();
-                $entity->setUuid((string) $id);
-                $entity->setObject(
-                    [
-                        'type'         => 'access',
-                        'dpiaRequired' => false,
-                    ]
-                );
-                return $entity;
-            }
-        );
-        $this->objectService->method('saveObject')->willReturnCallback(
-            static function ($object, $extend=[], $register=null, $schema=null, $uuid=null) use (&$savedFlags) {
-                $savedFlags[(string) $uuid] = $object['dpiaRequired'];
-                $saved = new ObjectEntity();
-                $saved->setUuid((string) $uuid);
-                return $saved;
-            }
-        );
+		$this->runJob();
 
-        $auditContexts = [];
-        $this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
-            function (ObjectEntity $object, string $action, array $context=[]) use (&$auditContexts) {
-                $auditContexts[(string) $object->getUuid()] = [
-                    'action'  => $action,
-                    'context' => $context,
-                ];
-                return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
-            }
-        );
+		// Only the two unflagged cases were written + audited.
+		$this->assertEqualsCanonicalizing(['a', 'b'], array_keys($savedFlags));
+		$this->assertSame([true, true], array_values($savedFlags));
+		$this->assertSame(DsarDpiaDetectionJob::AUDIT_ACTION, $auditContexts['a']['action']);
+		$this->assertSame('dpia-pattern-detection', $auditContexts['a']['context']['rule']);
+		$this->assertSame('type=access', $auditContexts['a']['context']['groupKey']);
+		$this->assertSame(30, $auditContexts['a']['context']['windowDays']);
+		$this->assertSame(3, $auditContexts['a']['context']['count']);
 
-        $this->runJob();
+	}//end testThresholdCrossingFlagsUnflaggedCasesWithAudit()
 
-        // Only the two unflagged cases were written + audited.
-        $this->assertEqualsCanonicalizing(['a', 'b'], array_keys($savedFlags));
-        $this->assertSame([true, true], array_values($savedFlags));
-        $this->assertSame(DsarDpiaDetectionJob::AUDIT_ACTION, $auditContexts['a']['action']);
-        $this->assertSame('dpia-pattern-detection', $auditContexts['a']['context']['rule']);
-        $this->assertSame('type=access', $auditContexts['a']['context']['groupKey']);
-        $this->assertSame(30, $auditContexts['a']['context']['windowDays']);
-        $this->assertSame(3, $auditContexts['a']['context']['count']);
+	/**
+	 * Re-run over a fully-flagged group: no write, no audit (idempotent),
+	 * and the manual flag is never cleared (ratchet).
+	 *
+	 * @return void
+	 */
+	public function testReRunOverFlaggedGroupIsNoOp(): void {
+		$this->wirePack(
+			dpiaDetection: [
+				'threshold' => 2,
+				'windowDays' => 30,
+				'groupBy' => ['type'],
+			]
+		);
+		$this->wireCases(
+			[
+				$this->renderedCase(uuid: 'a', flagged: true),
+				$this->renderedCase(uuid: 'b', flagged: true),
+			]
+		);
 
-    }//end testThresholdCrossingFlagsUnflaggedCasesWithAudit()
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
 
+		$this->runJob();
 
-    /**
-     * Re-run over a fully-flagged group: no write, no audit (idempotent),
-     * and the manual flag is never cleared (ratchet).
-     *
-     * @return void
-     */
-    public function testReRunOverFlaggedGroupIsNoOp(): void
-    {
-        $this->wirePack(
-            dpiaDetection: [
-                'threshold'  => 2,
-                'windowDays' => 30,
-                'groupBy'    => ['type'],
-            ]
-        );
-        $this->wireCases(
-            [
-                $this->renderedCase(uuid: 'a', flagged: true),
-                $this->renderedCase(uuid: 'b', flagged: true),
-            ]
-        );
+	}//end testReRunOverFlaggedGroupIsNoOp()
 
-        $this->objectService->expects($this->never())->method('saveObject');
-        $this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+	/**
+	 * Fail-safe: no resolvable pack, or a pack without a dpiaDetection
+	 * block, produces no writes, audits, or notifications.
+	 *
+	 * @return void
+	 */
+	public function testNoPackOrNoBlockIsFailSafe(): void {
+		$this->packResolver->method('activePackForCase')->willReturn(null);
+		$this->wireCases(
+			[
+				$this->renderedCase(uuid: 'a', flagged: false),
+				$this->renderedCase(uuid: 'b', flagged: false),
+				$this->renderedCase(uuid: 'c', flagged: false),
+			]
+		);
 
-        $this->runJob();
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
 
-    }//end testReRunOverFlaggedGroupIsNoOp()
+		$this->runJob();
 
+	}//end testNoPackOrNoBlockIsFailSafe()
 
-    /**
-     * Fail-safe: no resolvable pack, or a pack without a dpiaDetection
-     * block, produces no writes, audits, or notifications.
-     *
-     * @return void
-     */
-    public function testNoPackOrNoBlockIsFailSafe(): void
-    {
-        $this->packResolver->method('activePackForCase')->willReturn(null);
-        $this->wireCases(
-            [
-                $this->renderedCase(uuid: 'a', flagged: false),
-                $this->renderedCase(uuid: 'b', flagged: false),
-                $this->renderedCase(uuid: 'c', flagged: false),
-            ]
-        );
+	/**
+	 * The enabled toggle short-circuits the whole run.
+	 *
+	 * @return void
+	 */
+	public function testDisabledToggleSkipsRun(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('false');
 
-        $this->objectService->expects($this->never())->method('saveObject');
-        $this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$job = new DsarDpiaDetectionJob(
+			time: $this->createMock(ITimeFactory::class),
+			appConfig: $appConfig,
+			objectService: $this->objectService,
+			packResolver: $this->packResolver,
+			detectionService: new DpiaPatternDetectionService(),
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 
-        $this->runJob();
+		$this->objectService->expects($this->never())->method('findAll');
 
-    }//end testNoPackOrNoBlockIsFailSafe()
+		$method = new \ReflectionMethod($job, 'run');
+		$method->setAccessible(true);
+		$method->invoke($job, null);
 
+	}//end testDisabledToggleSkipsRun()
 
-    /**
-     * The enabled toggle short-circuits the whole run.
-     *
-     * @return void
-     */
-    public function testDisabledToggleSkipsRun(): void
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn('false');
+	/**
+	 * Invoke the protected run() (repo TimedJob test convention).
+	 *
+	 * @return void
+	 */
+	private function runJob(): void {
+		$method = new \ReflectionMethod($this->job, 'run');
+		$method->setAccessible(true);
+		$method->invoke($this->job, null);
 
-        $job = new DsarDpiaDetectionJob(
-            time: $this->createMock(ITimeFactory::class),
-            appConfig: $appConfig,
-            objectService: $this->objectService,
-            packResolver: $this->packResolver,
-            detectionService: new DpiaPatternDetectionService(),
-            auditTrailMapper: $this->auditTrailMapper,
-            logger: $this->createMock(LoggerInterface::class),
-        );
+	}//end runJob()
 
-        $this->objectService->expects($this->never())->method('findAll');
+	/**
+	 * Wire the pack resolver with a pack carrying the given detection block.
+	 *
+	 * @param array<string, mixed> $dpiaDetection The dpiaDetection block.
+	 *
+	 * @return void
+	 */
+	private function wirePack(array $dpiaDetection): void {
+		$this->packResolver->method('activePackForCase')->willReturn(
+			[
+				'jurisdiction' => 'default',
+				'dpiaDetection' => $dpiaDetection,
+			]
+		);
 
-        $method = new \ReflectionMethod($job, 'run');
-        $method->setAccessible(true);
-        $method->invoke($job, null);
+	}//end wirePack()
 
-    }//end testDisabledToggleSkipsRun()
+	/**
+	 * Wire the rendered case rows the job enumerates.
+	 *
+	 * @param array<int, array<string, mixed>> $cases The rendered rows.
+	 *
+	 * @return void
+	 */
+	private function wireCases(array $cases): void {
+		$this->objectService->method('findAll')->willReturn($cases);
 
+	}//end wireCases()
 
-    /**
-     * Invoke the protected run() (repo TimedJob test convention).
-     *
-     * @return void
-     */
-    private function runJob(): void
-    {
-        $method = new \ReflectionMethod($this->job, 'run');
-        $method->setAccessible(true);
-        $method->invoke($this->job, null);
+	/**
+	 * A rendered case row (same type, recent receivedAt).
+	 *
+	 * @param string $uuid The case uuid.
+	 * @param bool $flagged Whether dpiaRequired is already true.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function renderedCase(string $uuid, bool $flagged): array {
+		return [
+			'id' => $uuid,
+			'@self' => ['uuid' => $uuid],
+			'jurisdiction' => 'default',
+			'type' => 'access',
+			'receivedAt' => (new \DateTimeImmutable('-2 days'))->format(DATE_ATOM),
+			'dpiaRequired' => $flagged,
+		];
 
-    }//end runJob()
-
-
-    /**
-     * Wire the pack resolver with a pack carrying the given detection block.
-     *
-     * @param array<string, mixed> $dpiaDetection The dpiaDetection block.
-     *
-     * @return void
-     */
-    private function wirePack(array $dpiaDetection): void
-    {
-        $this->packResolver->method('activePackForCase')->willReturn(
-            [
-                'jurisdiction'  => 'default',
-                'dpiaDetection' => $dpiaDetection,
-            ]
-        );
-
-    }//end wirePack()
-
-
-    /**
-     * Wire the rendered case rows the job enumerates.
-     *
-     * @param array<int, array<string, mixed>> $cases The rendered rows.
-     *
-     * @return void
-     */
-    private function wireCases(array $cases): void
-    {
-        $this->objectService->method('findAll')->willReturn($cases);
-
-    }//end wireCases()
-
-
-    /**
-     * A rendered case row (same type, recent receivedAt).
-     *
-     * @param string $uuid    The case uuid.
-     * @param bool   $flagged Whether dpiaRequired is already true.
-     *
-     * @return array<string, mixed>
-     */
-    private function renderedCase(string $uuid, bool $flagged): array
-    {
-        return [
-            'id'           => $uuid,
-            '@self'        => ['uuid' => $uuid],
-            'jurisdiction' => 'default',
-            'type'         => 'access',
-            'receivedAt'   => (new \DateTimeImmutable('-2 days'))->format(DATE_ATOM),
-            'dpiaRequired' => $flagged,
-        ];
-
-    }//end renderedCase()
+	}//end renderedCase()
 }//end class

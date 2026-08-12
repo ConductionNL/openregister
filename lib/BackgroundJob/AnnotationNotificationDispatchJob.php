@@ -55,134 +55,131 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.2
  */
-class AnnotationNotificationDispatchJob extends ActorForwardedJob
-{
-    /**
-     * Wire the dispatcher on top of the actor plumbing.
-     *
-     * @param ITimeFactory                     $time         Time factory for the parent job class.
-     * @param IUserSession                     $userSession  Session to impersonate on / restore.
-     * @param IUserManager                     $userManager  Resolver for the captured user id.
-     * @param OrganisationService              $organisation Active-organisation resolver.
-     * @param LoggerInterface                  $logger       PSR logger.
-     * @param DeferredEntryObjectResolver      $resolver     Stale-safe entry re-fetch.
-     * @param AnnotationNotificationDispatcher $dispatcher   Notification dispatcher doing the real work.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IUserSession $userSession,
-        IUserManager $userManager,
-        OrganisationService $organisation,
-        LoggerInterface $logger,
-        private readonly DeferredEntryObjectResolver $resolver,
-        private readonly AnnotationNotificationDispatcher $dispatcher
-    ) {
-        parent::__construct(
-            time: $time,
-            userSession: $userSession,
-            userManager: $userManager,
-            organisation: $organisation,
-            logger: $logger
-        );
-    }//end __construct()
+class AnnotationNotificationDispatchJob extends ActorForwardedJob {
+	/**
+	 * Wire the dispatcher on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher doing the real work.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		OrganisationService $organisation,
+		LoggerInterface $logger,
+		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly AnnotationNotificationDispatcher $dispatcher,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $userSession,
+			userManager: $userManager,
+			organisation: $organisation,
+			logger: $logger
+		);
+	}//end __construct()
 
-    /**
-     * Replay the inline listener's dispatch calls for every live entry.
-     *
-     * Per-entry failures are logged and do not abort the chunk.
-     *
-     * @param DeferredListenerContext $context The captured dispatch-time context.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    protected function runDeferred(DeferredListenerContext $context): void
-    {
-        foreach ($context->getEntries() as $entry) {
-            $object = $this->resolver->resolve(entry: $entry);
-            if ($object === null) {
-                continue;
-            }
+	/**
+	 * Replay the inline listener's dispatch calls for every live entry.
+	 *
+	 * Per-entry failures are logged and do not abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$object = $this->resolver->resolve(entry: $entry);
+			if ($object === null) {
+				continue;
+			}
 
-            try {
-                $this->dispatchEntry(entry: $entry, object: $object);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
-                    context: [
-                        'file'    => __FILE__,
-                        'line'    => __LINE__,
-                        'uuid'    => ($entry['uuid'] ?? null),
-                        'trigger' => ($entry['trigger'] ?? null),
-                        'error'   => $e->getMessage(),
-                    ]
-                );
-            }
-        }//end foreach
-    }//end runDeferred()
+			try {
+				$this->dispatchEntry(entry: $entry, object: $object);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => ($entry['uuid'] ?? null),
+						'trigger' => ($entry['trigger'] ?? null),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end runDeferred()
 
-    /**
-     * Mirror the inline AnnotationNotificationListener dispatch semantics.
-     *
-     * - `created`    → dispatch('created').
-     * - `transition` → dispatch('transition', {action, from, to}).
-     * - `updated`    → dispatch('updated', old/new context when a snapshot
-     *   exists) followed by dispatch('calculatedChange', same context) —
-     *   exactly the pair the inline listener fired.
-     *
-     * @param array<string, mixed> $entry  The job entry.
-     * @param ObjectEntity         $object The re-fetched current object.
-     *
-     * @return void
-     */
-    private function dispatchEntry(array $entry, ObjectEntity $object): void
-    {
-        $trigger = (string) ($entry['trigger'] ?? '');
+	/**
+	 * Mirror the inline AnnotationNotificationListener dispatch semantics.
+	 *
+	 * - `created`    → dispatch('created').
+	 * - `transition` → dispatch('transition', {action, from, to}).
+	 * - `updated`    → dispatch('updated', old/new context when a snapshot
+	 *   exists) followed by dispatch('calculatedChange', same context) —
+	 *   exactly the pair the inline listener fired.
+	 *
+	 * @param array<string, mixed> $entry The job entry.
+	 * @param ObjectEntity $object The re-fetched current object.
+	 *
+	 * @return void
+	 */
+	private function dispatchEntry(array $entry, ObjectEntity $object): void {
+		$trigger = (string)($entry['trigger'] ?? '');
 
-        if ($trigger === 'created') {
-            $this->dispatcher->dispatch(object: $object, trigger: 'created');
-            return;
-        }
+		if ($trigger === 'created') {
+			$this->dispatcher->dispatch(object: $object, trigger: 'created');
+			return;
+		}
 
-        if ($trigger === 'transition') {
-            $this->dispatcher->dispatch(
-                object: $object,
-                trigger: 'transition',
-                context: [
-                    'action' => (string) ($entry['action'] ?? ''),
-                    'from'   => (string) ($entry['from'] ?? ''),
-                    'to'     => (string) ($entry['to'] ?? ''),
-                ]
-            );
-            return;
-        }
+		if ($trigger === 'transition') {
+			$this->dispatcher->dispatch(
+				object: $object,
+				trigger: 'transition',
+				context: [
+					'action' => (string)($entry['action'] ?? ''),
+					'from' => (string)($entry['from'] ?? ''),
+					'to' => (string)($entry['to'] ?? ''),
+				]
+			);
+			return;
+		}
 
-        if ($trigger === 'updated') {
-            $oldData = ($entry['oldData'] ?? null);
+		if ($trigger === 'updated') {
+			$oldData = ($entry['oldData'] ?? null);
 
-            $updatedContext = [];
-            if (is_array($oldData) === true) {
-                $updatedContext = [
-                    '_newData' => ($object->getObject() ?? []),
-                    '_oldData' => $oldData,
-                ];
-            }
+			$updatedContext = [];
+			if (is_array($oldData) === true) {
+				$updatedContext = [
+					'_newData' => ($object->getObject() ?? []),
+					'_oldData' => $oldData,
+				];
+			}
 
-            $this->dispatcher->dispatch(object: $object, trigger: 'updated', context: $updatedContext);
+			$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: $updatedContext);
 
-            if (is_array($oldData) === true) {
-                $this->dispatcher->dispatch(
-                    object: $object,
-                    trigger: 'calculatedChange',
-                    context: [
-                        '_newData' => ($object->getObject() ?? []),
-                        '_oldData' => $oldData,
-                    ]
-                );
-            }
-        }//end if
-    }//end dispatchEntry()
+			if (is_array($oldData) === true) {
+				$this->dispatcher->dispatch(
+					object: $object,
+					trigger: 'calculatedChange',
+					context: [
+						'_newData' => ($object->getObject() ?? []),
+						'_oldData' => $oldData,
+					]
+				);
+			}
+		}//end if
+	}//end dispatchEntry()
 }//end class

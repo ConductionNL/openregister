@@ -34,36 +34,35 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Contract for performing a flow step's side effect.
  */
-interface FlowStepDispatcher
-{
-    /**
-     * Perform one step: items in, items out.
-     *
-     * The data channel is a LIST of items ({@see FlowItems}), not a single
-     * object. A step that acts per record acts once per item and returns one
-     * item per result; a step that filters returns fewer items than it got, and
-     * an empty list legitimately ends that branch's data.
-     *
-     * `$context` is run-level metadata (who triggered it, the run id, the
-     * subject) — not the data channel. Putting records there instead of in the
-     * returned items is the mistake this contract exists to prevent: context is
-     * shared by the whole run, so anything written there stops being per-record
-     * the moment a step fans out.
-     *
-     * Throwing is meaningful: the engine reads the step's `onError` policy to
-     * decide whether to stop, continue, or dead-letter. Swallowing an error here
-     * defeats that policy and produces a run that reports success while doing
-     * nothing — the exact failure mode that made OpenRegister's bulk saves write
-     * zero audits.
-     *
-     * @param array $step    The step configuration (the edge that carried it).
-     * @param array $items   The input items for this step.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The output items. Normalised by the engine, so returning a
-     *               single item or a bare record is accepted.
-     *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-     */
-    public function dispatch(array $step, array $items, array $context): array;
+interface FlowStepDispatcher {
+	/**
+	 * Perform one step: items in, items out.
+	 *
+	 * The data channel is a LIST of items ({@see FlowItems}), not a single
+	 * object. A step that acts per record acts once per item and returns one
+	 * item per result; a step that filters returns fewer items than it got, and
+	 * an empty list legitimately ends that branch's data.
+	 *
+	 * `$context` is run-level metadata (who triggered it, the run id, the
+	 * subject) — not the data channel. Putting records there instead of in the
+	 * returned items is the mistake this contract exists to prevent: context is
+	 * shared by the whole run, so anything written there stops being per-record
+	 * the moment a step fans out.
+	 *
+	 * Throwing is meaningful: the engine reads the step's `onError` policy to
+	 * decide whether to stop, continue, or dead-letter. Swallowing an error here
+	 * defeats that policy and produces a run that reports success while doing
+	 * nothing — the exact failure mode that made OpenRegister's bulk saves write
+	 * zero audits.
+	 *
+	 * @param array $step The step configuration (the edge that carried it).
+	 * @param array $items The input items for this step.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The output items. Normalised by the engine, so returning a
+	 *               single item or a bare record is accepted.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public function dispatch(array $step, array $items, array $context): array;
 }//end interface

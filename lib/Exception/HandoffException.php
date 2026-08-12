@@ -37,61 +37,57 @@ namespace OCA\OpenRegister\Exception;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: Graceful degradation when no provider implements the kind)
  */
-class HandoffException extends \RuntimeException
-{
+class HandoffException extends \RuntimeException {
 
-    /**
-     * The source schema declares no handoff with the requested id (404-class).
-     *
-     * @var string
-     */
-    public const NOT_DECLARED = 'handoff-not-declared';
+	/**
+	 * The source schema declares no handoff with the requested id (404-class).
+	 *
+	 * @var string
+	 */
+	public const NOT_DECLARED = 'handoff-not-declared';
 
-    /**
-     * No installed schema provides the target kind (hide mode; 409-class,
-     * never a 5xx).
-     *
-     * @var string
-     */
-    public const PROVIDER_UNAVAILABLE = 'handoff-provider-unavailable';
+	/**
+	 * No installed schema provides the target kind (hide mode; 409-class,
+	 * never a 5xx).
+	 *
+	 * @var string
+	 */
+	public const PROVIDER_UNAVAILABLE = 'handoff-provider-unavailable';
 
-    /**
-     * Machine-readable error code (one of the class constants).
-     *
-     * @var string
-     */
-    private string $errorCode;
+	/**
+	 * Machine-readable error code (one of the class constants).
+	 *
+	 * @var string
+	 */
+	private string $errorCode;
 
-    /**
-     * Constructor.
-     *
-     * @param string          $errorCode One of the class constants.
-     * @param string          $message   Human-readable explanation.
-     * @param \Throwable|null $previous  Optional wrapped throwable.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Scenario: No provider installed, hide mode)
-     */
-    public function __construct(string $errorCode, string $message, ?\Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-        $this->errorCode = $errorCode;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $errorCode One of the class constants.
+	 * @param string $message Human-readable explanation.
+	 * @param \Throwable|null $previous Optional wrapped throwable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Scenario: No provider installed, hide mode)
+	 */
+	public function __construct(string $errorCode, string $message, ?\Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+		$this->errorCode = $errorCode;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The machine-readable error code.
-     *
-     * @return string One of the class constants.
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Scenario: No provider installed, hide mode)
-     */
-    public function getErrorCode(): string
-    {
-        return $this->errorCode;
-
-    }//end getErrorCode()
+	/**
+	 * The machine-readable error code.
+	 *
+	 * @return string One of the class constants.
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Scenario: No provider installed, hide mode)
+	 */
+	public function getErrorCode(): string {
+		return $this->errorCode;
+	}//end getErrorCode()
 }//end class

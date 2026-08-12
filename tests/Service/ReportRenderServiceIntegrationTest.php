@@ -40,233 +40,223 @@ use PHPUnit\Framework\TestCase;
  *
  * @group DB
  */
-class ReportRenderServiceIntegrationTest extends TestCase
-{
+class ReportRenderServiceIntegrationTest extends TestCase {
 
-    /**
-     * Renderer under test.
-     *
-     * @var ReportRenderService
-     */
-    private ReportRenderService $service;
+	/**
+	 * Renderer under test.
+	 *
+	 * @var ReportRenderService
+	 */
+	private ReportRenderService $service;
 
-    /**
-     * Resolve the renderer from the DI container.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->service = \OC::$server->get(ReportRenderService::class);
+	/**
+	 * Resolve the renderer from the DI container.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->service = \OC::$server->get(ReportRenderService::class);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * XLSX output: bytes start with the ZIP header and MIME matches.
-     *
-     * @return void
-     */
-    public function testRenderXlsxProducesValidWorkbook(): void
-    {
-        $rendered = $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'xlsx'
-        );
+	/**
+	 * XLSX output: bytes start with the ZIP header and MIME matches.
+	 *
+	 * @return void
+	 */
+	public function testRenderXlsxProducesValidWorkbook(): void {
+		$rendered = $this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'xlsx'
+		);
 
-        $this->assertSame(
-            expected: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            actual: $rendered['mime']
-        );
-        $this->assertStringEndsWith(suffix: '.xlsx', string: $rendered['filename']);
-        // XLSX is a ZIP container — first 2 bytes are PK.
-        $this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
+		$this->assertSame(
+			expected: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			actual: $rendered['mime']
+		);
+		$this->assertStringEndsWith(suffix: '.xlsx', string: $rendered['filename']);
+		// XLSX is a ZIP container — first 2 bytes are PK.
+		$this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
 
-    }//end testRenderXlsxProducesValidWorkbook()
+	}//end testRenderXlsxProducesValidWorkbook()
 
-    /**
-     * ODS output: bytes start with the ZIP header and MIME matches.
-     *
-     * @return void
-     */
-    public function testRenderOdsProducesValidWorkbook(): void
-    {
-        $rendered = $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'ods'
-        );
+	/**
+	 * ODS output: bytes start with the ZIP header and MIME matches.
+	 *
+	 * @return void
+	 */
+	public function testRenderOdsProducesValidWorkbook(): void {
+		$rendered = $this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'ods'
+		);
 
-        $this->assertSame(
-            expected: 'application/vnd.oasis.opendocument.spreadsheet',
-            actual: $rendered['mime']
-        );
-        $this->assertStringEndsWith(suffix: '.ods', string: $rendered['filename']);
-        // ODS is also a ZIP container.
-        $this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
+		$this->assertSame(
+			expected: 'application/vnd.oasis.opendocument.spreadsheet',
+			actual: $rendered['mime']
+		);
+		$this->assertStringEndsWith(suffix: '.ods', string: $rendered['filename']);
+		// ODS is also a ZIP container.
+		$this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
 
-    }//end testRenderOdsProducesValidWorkbook()
+	}//end testRenderOdsProducesValidWorkbook()
 
-    /**
-     * CSV output: emits one section per sheet with a `# Sheet:` header.
-     *
-     * @return void
-     */
-    public function testRenderCsvIncludesEachSheetAsSection(): void
-    {
-        $rendered = $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'csv'
-        );
+	/**
+	 * CSV output: emits one section per sheet with a `# Sheet:` header.
+	 *
+	 * @return void
+	 */
+	public function testRenderCsvIncludesEachSheetAsSection(): void {
+		$rendered = $this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'csv'
+		);
 
-        $this->assertStringContainsString(needle: 'text/csv', haystack: $rendered['mime']);
-        $this->assertStringEndsWith(suffix: '.csv', string: $rendered['filename']);
-        // CSV writer emits a `# Sheet: Overview` header before the
-        // overview-sheet rows + one section per widget sheet.
-        $this->assertStringContainsString(needle: '# Sheet: Overview', haystack: $rendered['bytes']);
+		$this->assertStringContainsString(needle: 'text/csv', haystack: $rendered['mime']);
+		$this->assertStringEndsWith(suffix: '.csv', string: $rendered['filename']);
+		// CSV writer emits a `# Sheet: Overview` header before the
+		// overview-sheet rows + one section per widget sheet.
+		$this->assertStringContainsString(needle: '# Sheet: Overview', haystack: $rendered['bytes']);
 
-    }//end testRenderCsvIncludesEachSheetAsSection()
+	}//end testRenderCsvIncludesEachSheetAsSection()
 
-    /**
-     * HTML output: well-formed document with print stylesheet baked in.
-     *
-     * @return void
-     */
-    public function testRenderHtmlProducesPrintableDocument(): void
-    {
-        $rendered = $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'html'
-        );
+	/**
+	 * HTML output: well-formed document with print stylesheet baked in.
+	 *
+	 * @return void
+	 */
+	public function testRenderHtmlProducesPrintableDocument(): void {
+		$rendered = $this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'html'
+		);
 
-        $this->assertStringStartsWith(prefix: 'text/html', string: $rendered['mime']);
-        $this->assertStringStartsWith(prefix: '<!DOCTYPE html>', string: $rendered['bytes']);
-        $this->assertStringContainsString(needle: 'phpunit-rapportage', haystack: $rendered['bytes']);
-        // Print stylesheet baked in.
-        $this->assertStringContainsString(needle: '@media print', haystack: $rendered['bytes']);
+		$this->assertStringStartsWith(prefix: 'text/html', string: $rendered['mime']);
+		$this->assertStringStartsWith(prefix: '<!DOCTYPE html>', string: $rendered['bytes']);
+		$this->assertStringContainsString(needle: 'phpunit-rapportage', haystack: $rendered['bytes']);
+		// Print stylesheet baked in.
+		$this->assertStringContainsString(needle: '@media print', haystack: $rendered['bytes']);
 
-    }//end testRenderHtmlProducesPrintableDocument()
+	}//end testRenderHtmlProducesPrintableDocument()
 
-    /**
-     * PDF output: bytes start with the `%PDF-` magic header and MIME
-     * matches.
-     *
-     * @return void
-     */
-    public function testRenderPdfProducesPdfDocument(): void
-    {
-        $rendered = $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'pdf'
-        );
+	/**
+	 * PDF output: bytes start with the `%PDF-` magic header and MIME
+	 * matches.
+	 *
+	 * @return void
+	 */
+	public function testRenderPdfProducesPdfDocument(): void {
+		$rendered = $this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'pdf'
+		);
 
-        $this->assertSame(expected: 'application/pdf', actual: $rendered['mime']);
-        $this->assertStringEndsWith(suffix: '.pdf', string: $rendered['filename']);
-        // PDF files start with the `%PDF-` signature.
-        $this->assertSame(expected: '%PDF-', actual: substr($rendered['bytes'], 0, 5));
+		$this->assertSame(expected: 'application/pdf', actual: $rendered['mime']);
+		$this->assertStringEndsWith(suffix: '.pdf', string: $rendered['filename']);
+		// PDF files start with the `%PDF-` signature.
+		$this->assertSame(expected: '%PDF-', actual: substr($rendered['bytes'], 0, 5));
 
-    }//end testRenderPdfProducesPdfDocument()
+	}//end testRenderPdfProducesPdfDocument()
 
-    /**
-     * Unsupported formats raise InvalidArgumentException (422 in the
-     * controller).
-     *
-     * @return void
-     */
-    public function testRenderRejectsUnsupportedFormat(): void
-    {
-        $this->expectException(exception: InvalidArgumentException::class);
-        $this->expectExceptionMessage(message: 'Unsupported render format');
+	/**
+	 * Unsupported formats raise InvalidArgumentException (422 in the
+	 * controller).
+	 *
+	 * @return void
+	 */
+	public function testRenderRejectsUnsupportedFormat(): void {
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'Unsupported render format');
 
-        $this->service->render(
-            dashboard: $this->makeDashboardFixture(),
-            format: 'docx'
-        );
+		$this->service->render(
+			dashboard: $this->makeDashboardFixture(),
+			format: 'docx'
+		);
 
-    }//end testRenderRejectsUnsupportedFormat()
+	}//end testRenderRejectsUnsupportedFormat()
 
-    /**
-     * A widget whose data-source can't resolve renders an inline error
-     * envelope rather than aborting the whole render.
-     *
-     * @return void
-     */
-    public function testRenderHandlesUnresolvableWidgetGracefully(): void
-    {
-        $dashboard = [
-            'titel'   => 'phpunit-rapportage-broken',
-            'widgets' => [
-                [
-                    'type'       => 'kpi',
-                    'title'      => 'Bogus',
-                    'dataSource' => [
-                        'mode'        => 'aggregation',
-                        'register'    => 'phpunit-no-such-register',
-                        'schema'      => 'phpunit-no-such-schema',
-                        'aggregation' => 'phpunit-no-such-agg',
-                    ],
-                ],
-            ],
-        ];
+	/**
+	 * A widget whose data-source can't resolve renders an inline error
+	 * envelope rather than aborting the whole render.
+	 *
+	 * @return void
+	 */
+	public function testRenderHandlesUnresolvableWidgetGracefully(): void {
+		$dashboard = [
+			'titel' => 'phpunit-rapportage-broken',
+			'widgets' => [
+				[
+					'type' => 'kpi',
+					'title' => 'Bogus',
+					'dataSource' => [
+						'mode' => 'aggregation',
+						'register' => 'phpunit-no-such-register',
+						'schema' => 'phpunit-no-such-schema',
+						'aggregation' => 'phpunit-no-such-agg',
+					],
+				],
+			],
+		];
 
-        $rendered = $this->service->render(dashboard: $dashboard, format: 'html');
+		$rendered = $this->service->render(dashboard: $dashboard, format: 'html');
 
-        // The widget renders its inline error envelope rather than the
-        // whole render aborting.
-        $this->assertStringContainsString(needle: 'No data available', haystack: $rendered['bytes']);
+		// The widget renders its inline error envelope rather than the
+		// whole render aborting.
+		$this->assertStringContainsString(needle: 'No data available', haystack: $rendered['bytes']);
 
-    }//end testRenderHandlesUnresolvableWidgetGracefully()
+	}//end testRenderHandlesUnresolvableWidgetGracefully()
 
-    /**
-     * Build a dashboard payload pointing at decidesk's existing
-     * action-item aggregation declarations. The aggregation runner
-     * runs against real Postgres data; we don't seed anything here
-     * because the dev env already has the action-item schema with
-     * its `x-openregister-aggregations` annotation.
-     *
-     * @return array<string, mixed>
-     */
-    private function makeDashboardFixture(): array
-    {
-        return [
-            'titel'        => 'phpunit-rapportage-fixture',
-            'beschrijving' => 'Phase 2 render fixture covering the three widget shapes.',
-            'category'     => 'operational',
-            'layout'       => ['cols' => 3],
-            'widgets'      => [
-                [
-                    'type'       => 'kpi',
-                    'title'      => 'Open',
-                    'dataSource' => [
-                        'mode'        => 'aggregation',
-                        'register'    => 'decidesk',
-                        'schema'      => 'action-item',
-                        'aggregation' => 'totalOpen',
-                    ],
-                    'options'    => ['valueField' => 'value'],
-                ],
-                [
-                    'type'       => 'chart',
-                    'title'      => 'By status',
-                    'dataSource' => [
-                        'mode'        => 'aggregation',
-                        'register'    => 'decidesk',
-                        'schema'      => 'action-item',
-                        'aggregation' => 'byStatus',
-                    ],
-                    'options'    => ['chartType' => 'bar', 'valueField' => 'value'],
-                ],
-                [
-                    'type'       => 'stats',
-                    'title'      => 'Avg days to close',
-                    'dataSource' => [
-                        'mode'        => 'aggregation',
-                        'register'    => 'decidesk',
-                        'schema'      => 'action-item',
-                        'aggregation' => 'avgDaysToClose',
-                    ],
-                ],
-            ],
-        ];
+	/**
+	 * Build a dashboard payload pointing at decidesk's existing
+	 * action-item aggregation declarations. The aggregation runner
+	 * runs against real Postgres data; we don't seed anything here
+	 * because the dev env already has the action-item schema with
+	 * its `x-openregister-aggregations` annotation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function makeDashboardFixture(): array {
+		return [
+			'titel' => 'phpunit-rapportage-fixture',
+			'beschrijving' => 'Phase 2 render fixture covering the three widget shapes.',
+			'category' => 'operational',
+			'layout' => ['cols' => 3],
+			'widgets' => [
+				[
+					'type' => 'kpi',
+					'title' => 'Open',
+					'dataSource' => [
+						'mode' => 'aggregation',
+						'register' => 'decidesk',
+						'schema' => 'action-item',
+						'aggregation' => 'totalOpen',
+					],
+					'options' => ['valueField' => 'value'],
+				],
+				[
+					'type' => 'chart',
+					'title' => 'By status',
+					'dataSource' => [
+						'mode' => 'aggregation',
+						'register' => 'decidesk',
+						'schema' => 'action-item',
+						'aggregation' => 'byStatus',
+					],
+					'options' => ['chartType' => 'bar', 'valueField' => 'value'],
+				],
+				[
+					'type' => 'stats',
+					'title' => 'Avg days to close',
+					'dataSource' => [
+						'mode' => 'aggregation',
+						'register' => 'decidesk',
+						'schema' => 'action-item',
+						'aggregation' => 'avgDaysToClose',
+					],
+				],
+			],
+		];
 
-    }//end makeDashboardFixture()
+	}//end makeDashboardFixture()
 }//end class

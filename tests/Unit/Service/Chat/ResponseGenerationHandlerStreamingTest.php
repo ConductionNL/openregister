@@ -40,203 +40,182 @@ use ReflectionClass;
  * them without spinning up the full generateResponse() pipeline (which
  * requires SettingsService config wiring + LLPhant instantiation).
  */
-class TestableResponseGenerationHandler extends ResponseGenerationHandler
-{
+class TestableResponseGenerationHandler extends ResponseGenerationHandler {
 
-    public function invokeChatPublic(
-        OllamaChat $chat,
-        array $messageHistory,
-        ?StreamYieldChannel $channel,
-        string $provider
-    ): string {
-        $reflection = new ReflectionClass(parent::class);
-        $method     = $reflection->getMethod('invokeChat');
-        $method->setAccessible(true);
+	public function invokeChatPublic(
+		OllamaChat $chat,
+		array $messageHistory,
+		?StreamYieldChannel $channel,
+		string $provider,
+	): string {
+		$reflection = new ReflectionClass(parent::class);
+		$method = $reflection->getMethod('invokeChat');
+		$method->setAccessible(true);
 
-        return (string) $method->invoke($this, $chat, $messageHistory, $channel, $provider);
-    }//end invokeChatPublic()
+		return (string)$method->invoke($this, $chat, $messageHistory, $channel, $provider);
+	}//end invokeChatPublic()
 }//end class
 
-class ResponseGenerationHandlerStreamingTest extends TestCase
-{
+class ResponseGenerationHandlerStreamingTest extends TestCase {
 
-    private function makeHandler(): TestableResponseGenerationHandler
-    {
-        $settings    = $this->createMock(SettingsService::class);
-        $toolHandler = $this->createMock(ToolManagementHandler::class);
-        $logger      = $this->createMock(LoggerInterface::class);
+	private function makeHandler(): TestableResponseGenerationHandler {
+		$settings = $this->createMock(SettingsService::class);
+		$toolHandler = $this->createMock(ToolManagementHandler::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        return new TestableResponseGenerationHandler(
-            settingsService: $settings,
-            toolHandler: $toolHandler,
-            logger: $logger
-        );
-    }//end makeHandler()
+		return new TestableResponseGenerationHandler(
+			settingsService: $settings,
+			toolHandler: $toolHandler,
+			logger: $logger
+		);
+	}//end makeHandler()
 
-    /**
-     * §2.2 + §2.6 — five token deltas arrive via the PSR-7 stream, the
-     * channel fires onToken once per network chunk, and the assembled
-     * return string concatenates them all.
-     *
-     * Note: PSR-7's byte-oriented `read()` MAY batch multiple LLPhant
-     * generator yields into a single read (Guzzle's PumpStream pumps
-     * until the requested length is satisfied). In production each HTTP
-     * chunk usually maps 1:1 to a `read()` call. The contract guarantee
-     * is "one token frame per network chunk", not "one frame per token";
-     * the widget concatenates either way. This test asserts on
-     * assembled-text correctness + at-least-one chunk emit.
-     */
-    public function testStreamingChatEmitsTokensAndAssemblesFullText(): void
-    {
-        $deltas = ['Hel', 'lo', ' ', 'wor', 'ld'];
+	/**
+	 * §2.2 + §2.6 — five token deltas arrive via the PSR-7 stream, the
+	 * channel fires onToken once per network chunk, and the assembled
+	 * return string concatenates them all.
+	 *
+	 * Note: PSR-7's byte-oriented `read()` MAY batch multiple LLPhant
+	 * generator yields into a single read (Guzzle's PumpStream pumps
+	 * until the requested length is satisfied). In production each HTTP
+	 * chunk usually maps 1:1 to a `read()` call. The contract guarantee
+	 * is "one token frame per network chunk", not "one frame per token";
+	 * the widget concatenates either way. This test asserts on
+	 * assembled-text correctness + at-least-one chunk emit.
+	 */
+	public function testStreamingChatEmitsTokensAndAssemblesFullText(): void {
+		$deltas = ['Hel', 'lo', ' ', 'wor', 'ld'];
 
-        // Build a stream stub whose read() returns each delta on a separate
-        // call (mimicking the per-chunk read pattern the production code
-        // sees against a real HTTP-streamed response).
-        $stream = new class($deltas) implements StreamInterface
-        {
+		// Build a stream stub whose read() returns each delta on a separate
+		// call (mimicking the per-chunk read pattern the production code
+		// sees against a real HTTP-streamed response).
+		$stream = new class($deltas) implements StreamInterface {
 
-            private int $index = 0;
+			private int $index = 0;
 
-            public function __construct(private array $chunks)
-            {
-            }
+			public function __construct(
+				private array $chunks,
+			) {
+			}
 
-            public function read($length): string
-            {
-                if ($this->index >= count($this->chunks)) {
-                    return '';
-                }
+			public function read($length): string {
+				if ($this->index >= count($this->chunks)) {
+					return '';
+				}
 
-                return $this->chunks[$this->index++];
-            }
+				return $this->chunks[$this->index++];
+			}
 
-            public function eof(): bool
-            {
-                return $this->index >= count($this->chunks);
-            }
+			public function eof(): bool {
+				return $this->index >= count($this->chunks);
+			}
 
-            // Unused PSR-7 surface — keep the implementation minimal.
-            public function __toString(): string
-            {
-                return implode('', $this->chunks);
-            }
-            public function close(): void
-            {
-            }
-            public function detach()
-            {
-                return null;
-            }
-            public function getSize(): ?int
-            {
-                return null;
-            }
-            public function tell(): int
-            {
-                return $this->index;
-            }
-            public function isSeekable(): bool
-            {
-                return false;
-            }
-            public function seek($offset, $whence=SEEK_SET): void
-            {
-            }
-            public function rewind(): void
-            {
-                $this->index = 0;
-            }
-            public function isWritable(): bool
-            {
-                return false;
-            }
-            public function write($string): int
-            {
-                return 0;
-            }
-            public function isReadable(): bool
-            {
-                return true;
-            }
-            public function getContents(): string
-            {
-                return implode('', array_slice($this->chunks, $this->index));
-            }
-            public function getMetadata($key=null)
-            {
-                return null;
-            }
-        };
+			// Unused PSR-7 surface — keep the implementation minimal.
+			public function __toString(): string {
+				return implode('', $this->chunks);
+			}
+			public function close(): void {
+			}
+			public function detach() {
+				return null;
+			}
+			public function getSize(): ?int {
+				return null;
+			}
+			public function tell(): int {
+				return $this->index;
+			}
+			public function isSeekable(): bool {
+				return false;
+			}
+			public function seek($offset, $whence = SEEK_SET): void {
+			}
+			public function rewind(): void {
+				$this->index = 0;
+			}
+			public function isWritable(): bool {
+				return false;
+			}
+			public function write($string): int {
+				return 0;
+			}
+			public function isReadable(): bool {
+				return true;
+			}
+			public function getContents(): string {
+				return implode('', array_slice($this->chunks, $this->index));
+			}
+			public function getMetadata($key = null) {
+				return null;
+			}
+		};
 
-        $chat = $this->createMock(OllamaChat::class);
-        $chat->method('generateChatStream')->willReturn($stream);
+		$chat = $this->createMock(OllamaChat::class);
+		$chat->method('generateChatStream')->willReturn($stream);
 
-        $channel  = new StreamYieldChannel();
-        $captured = [];
-        $channel->onToken(static function (string $delta) use (&$captured): void {
-            $captured[] = $delta;
-        });
+		$channel = new StreamYieldChannel();
+		$captured = [];
+		$channel->onToken(static function (string $delta) use (&$captured): void {
+			$captured[] = $delta;
+		});
 
-        $handler   = $this->makeHandler();
-        $assembled = $handler->invokeChatPublic(
-            chat: $chat,
-            messageHistory: [],
-            channel: $channel,
-            provider: 'ollama'
-        );
+		$handler = $this->makeHandler();
+		$assembled = $handler->invokeChatPublic(
+			chat: $chat,
+			messageHistory: [],
+			channel: $channel,
+			provider: 'ollama'
+		);
 
-        $this->assertSame($deltas, $captured, 'channel onToken fires once per network chunk');
-        $this->assertSame('Hello world', $assembled, 'assembled string concatenates all chunks');
-    }//end testStreamingChatEmitsTokensAndAssemblesFullText()
+		$this->assertSame($deltas, $captured, 'channel onToken fires once per network chunk');
+		$this->assertSame('Hello world', $assembled, 'assembled string concatenates all chunks');
+	}//end testStreamingChatEmitsTokensAndAssemblesFullText()
 
-    /**
-     * §2.3 — MissingFeatureException on the streaming surface degrades to
-     * the blocking generateChat() call. Zero tokens are emitted.
-     */
-    public function testMissingFeatureExceptionDegradesToBlockingCall(): void
-    {
-        $chat = $this->createMock(OllamaChat::class);
-        $chat->method('generateChatStream')
-            ->willThrowException(new MissingFeatureException('streaming not enabled'));
-        $chat->method('generateChat')->willReturn('blocking answer');
+	/**
+	 * §2.3 — MissingFeatureException on the streaming surface degrades to
+	 * the blocking generateChat() call. Zero tokens are emitted.
+	 */
+	public function testMissingFeatureExceptionDegradesToBlockingCall(): void {
+		$chat = $this->createMock(OllamaChat::class);
+		$chat->method('generateChatStream')
+			->willThrowException(new MissingFeatureException('streaming not enabled'));
+		$chat->method('generateChat')->willReturn('blocking answer');
 
-        $channel  = new StreamYieldChannel();
-        $captured = [];
-        $channel->onToken(static function (string $delta) use (&$captured): void {
-            $captured[] = $delta;
-        });
+		$channel = new StreamYieldChannel();
+		$captured = [];
+		$channel->onToken(static function (string $delta) use (&$captured): void {
+			$captured[] = $delta;
+		});
 
-        $handler = $this->makeHandler();
-        $result  = $handler->invokeChatPublic(
-            chat: $chat,
-            messageHistory: [],
-            channel: $channel,
-            provider: 'ollama'
-        );
+		$handler = $this->makeHandler();
+		$result = $handler->invokeChatPublic(
+			chat: $chat,
+			messageHistory: [],
+			channel: $channel,
+			provider: 'ollama'
+		);
 
-        $this->assertSame('blocking answer', $result, 'degrades to the blocking generateChat() call');
-        $this->assertCount(0, $captured, 'no token frames must be emitted on the degraded path');
-    }//end testMissingFeatureExceptionDegradesToBlockingCall()
+		$this->assertSame('blocking answer', $result, 'degrades to the blocking generateChat() call');
+		$this->assertCount(0, $captured, 'no token frames must be emitted on the degraded path');
+	}//end testMissingFeatureExceptionDegradesToBlockingCall()
 
-    /**
-     * §2.5 — null channel always uses the blocking call (load-bearing for
-     * POST /api/chat/send).
-     */
-    public function testNullChannelAlwaysUsesBlockingCall(): void
-    {
-        $chat = $this->createMock(OllamaChat::class);
-        $chat->expects($this->never())->method('generateChatStream');
-        $chat->method('generateChat')->willReturn('blocking answer');
+	/**
+	 * §2.5 — null channel always uses the blocking call (load-bearing for
+	 * POST /api/chat/send).
+	 */
+	public function testNullChannelAlwaysUsesBlockingCall(): void {
+		$chat = $this->createMock(OllamaChat::class);
+		$chat->expects($this->never())->method('generateChatStream');
+		$chat->method('generateChat')->willReturn('blocking answer');
 
-        $handler = $this->makeHandler();
-        $result  = $handler->invokeChatPublic(
-            chat: $chat,
-            messageHistory: [],
-            channel: null,
-            provider: 'ollama'
-        );
+		$handler = $this->makeHandler();
+		$result = $handler->invokeChatPublic(
+			chat: $chat,
+			messageHistory: [],
+			channel: null,
+			provider: 'ollama'
+		);
 
-        $this->assertSame('blocking answer', $result);
-    }//end testNullChannelAlwaysUsesBlockingCall()
+		$this->assertSame('blocking answer', $result);
+	}//end testNullChannelAlwaysUsesBlockingCall()
 }//end class

@@ -37,76 +37,71 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
-class MigrationPackMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_migration_packs', entityClass: MigrationPack::class);
-    }//end __construct()
+class MigrationPackMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_migration_packs', entityClass: MigrationPack::class);
+	}//end __construct()
 
-    /**
-     * Find a migration pack by numeric id.
-     *
-     * @param int $id The migration pack id.
-     *
-     * @return MigrationPack
-     *
-     * @throws DoesNotExistException When no row matches.
-     *
-     * @spec openspec/specs/migration-mapping-packs/spec.md
-     */
-    public function find(int $id): MigrationPack
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Find a migration pack by numeric id.
+	 *
+	 * @param int $id The migration pack id.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function find(int $id): MigrationPack {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity(query: $qb);
-    }//end find()
+		return $this->findEntity(query: $qb);
+	}//end find()
 
-    /**
-     * Find a migration pack by its pack-document slug (`packSlug`, i.e. the
-     * definition's own `id` field). This is the lookup used by the import
-     * endpoint's `packId` request parameter.
-     *
-     * @param string $packSlug The pack document's own `id`.
-     *
-     * @return MigrationPack
-     *
-     * @throws DoesNotExistException When no row matches.
-     *
-     * @spec openspec/specs/migration-mapping-packs/spec.md
-     */
-    public function findByPackSlug(string $packSlug): MigrationPack
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('pack_slug', $qb->createNamedParameter($packSlug)));
+	/**
+	 * Find a migration pack by its pack-document slug (`packSlug`, i.e. the
+	 * definition's own `id` field). This is the lookup used by the import
+	 * endpoint's `packId` request parameter.
+	 *
+	 * @param string $packSlug The pack document's own `id`.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function findByPackSlug(string $packSlug): MigrationPack {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('pack_slug', $qb->createNamedParameter($packSlug)));
 
-        return $this->findEntity(query: $qb);
-    }//end findByPackSlug()
+		return $this->findEntity(query: $qb);
+	}//end findByPackSlug()
 
-    /**
-     * Find every migration pack.
-     *
-     * @return MigrationPack[]
-     *
-     * @spec openspec/specs/migration-mapping-packs/spec.md
-     */
-    public function findAll(): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->orderBy('id', 'ASC');
+	/**
+	 * Find every migration pack.
+	 *
+	 * @return MigrationPack[]
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function findAll(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('id', 'ASC');
 
-        return $this->findEntities(query: $qb);
-    }//end findAll()
+		return $this->findEntities(query: $qb);
+	}//end findAll()
 }//end class

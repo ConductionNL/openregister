@@ -29,26 +29,25 @@ namespace OCA\OpenRegister\AppHost\Observability;
 /**
  * One metric-source executor.
  */
-interface MetricSourceInterface
-{
-    /**
-     * The source kind this executor handles (MetricDescriptor::KINDS).
-     *
-     * @return string
-     *
-     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
-     */
-    public function kind(): string;
+interface MetricSourceInterface {
+	/**
+	 * The source kind this executor handles (MetricDescriptor::KINDS).
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
+	 */
+	public function kind(): string;
 
-    /**
-     * Execute the descriptor for the given app and return its samples.
-     *
-     * @param string           $appId      Calling app id.
-     * @param MetricDescriptor $descriptor The metric descriptor.
-     *
-     * @return MetricSample[] One or more metric families (usually one).
-     *
-     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
-     */
-    public function collect(string $appId, MetricDescriptor $descriptor): array;
+	/**
+	 * Execute the descriptor for the given app and return its samples.
+	 *
+	 * @param string $appId Calling app id.
+	 * @param MetricDescriptor $descriptor The metric descriptor.
+	 *
+	 * @return MetricSample[] One or more metric families (usually one).
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.2
+	 */
+	public function collect(string $appId, MetricDescriptor $descriptor): array;
 }//end interface

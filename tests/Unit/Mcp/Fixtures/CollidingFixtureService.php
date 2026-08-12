@@ -33,18 +33,16 @@ use OCA\OpenRegister\Mcp\Attribute\McpTool;
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Mcp\Fixtures
  */
-class CollidingFixtureService
-{
+class CollidingFixtureService {
 
-    /**
-     * Deliberately named to collide with a schema-derived `{schema}.{verb}`
-     * id (`lead.search`) once namespaced under an app id.
-     *
-     * @return array<int, mixed>
-     */
-    #[McpTool(name: 'lead.search')]
-    public function search(): array
-    {
-        return [];
-    }//end search()
+	/**
+	 * Deliberately named to collide with a schema-derived `{schema}.{verb}`
+	 * id (`lead.search`) once namespaced under an app id.
+	 *
+	 * @return array<int, mixed>
+	 */
+	#[McpTool(name: 'lead.search')]
+	public function search(): array {
+		return [];
+	}//end search()
 }//end class

@@ -31,94 +31,87 @@ use GraphQL\Utils\Utils;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class EmailType extends ScalarType
-{
+class EmailType extends ScalarType {
 
-    /**
-     * The name of this scalar type.
-     *
-     * @var string
-     */
-    public string $name = 'Email';
+	/**
+	 * The name of this scalar type.
+	 *
+	 * @var string
+	 */
+	public string $name = 'Email';
 
-    /**
-     * The description of this scalar type.
-     *
-     * @var string|null
-     */
-    public ?string $description = 'RFC 5321 email address string.';
+	/**
+	 * The description of this scalar type.
+	 *
+	 * @var string|null
+	 */
+	public ?string $description = 'RFC 5321 email address string.';
 
-    /**
-     * Serializes an email value to string.
-     *
-     * @param mixed $value The value to serialize
-     *
-     * @return string The email string
-     *
-     * @throws Error If the value is not a string
-     *
-     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-     */
-    public function serialize(mixed $value): string
-    {
-        if (is_string($value) === false) {
-            throw new Error(
-                'Email cannot represent non-string value: '.Utils::printSafe($value)
-            );
-        }
+	/**
+	 * Serializes an email value to string.
+	 *
+	 * @param mixed $value The value to serialize
+	 *
+	 * @return string The email string
+	 *
+	 * @throws Error If the value is not a string
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function serialize(mixed $value): string {
+		if (is_string($value) === false) {
+			throw new Error(
+				'Email cannot represent non-string value: ' . Utils::printSafe($value)
+			);
+		}
 
-        return $value;
+		return $value;
+	}//end serialize()
 
-    }//end serialize()
+	/**
+	 * Parses a value from client input.
+	 *
+	 * @param mixed $value The value to parse
+	 *
+	 * @return string The validated email string
+	 *
+	 * @throws Error If the value is not a valid email
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function parseValue(mixed $value): string {
+		if (is_string($value) === false) {
+			throw new Error(
+				'Email cannot represent non-string value: ' . Utils::printSafe($value)
+			);
+		}
 
-    /**
-     * Parses a value from client input.
-     *
-     * @param mixed $value The value to parse
-     *
-     * @return string The validated email string
-     *
-     * @throws Error If the value is not a valid email
-     *
-     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-     */
-    public function parseValue(mixed $value): string
-    {
-        if (is_string($value) === false) {
-            throw new Error(
-                'Email cannot represent non-string value: '.Utils::printSafe($value)
-            );
-        }
+		if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+			throw new Error(
+				'Email cannot represent invalid email value: ' . $value
+			);
+		}
 
-        if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
-            throw new Error(
-                'Email cannot represent invalid email value: '.$value
-            );
-        }
+		return $value;
+	}//end parseValue()
 
-        return $value;
+	/**
+	 * Parses a literal AST value.
+	 *
+	 * @param \GraphQL\Language\AST\Node $valueNode The AST node
+	 * @param array|null $variables Variables map
+	 *
+	 * @return string The parsed value
+	 *
+	 * @throws Error If the node is not a string
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): string {
+		if ($valueNode instanceof StringValueNode === false) {
+			throw new Error('Email cannot represent non-string value', $valueNode);
+		}
 
-    }//end parseValue()
-
-    /**
-     * Parses a literal AST value.
-     *
-     * @param \GraphQL\Language\AST\Node $valueNode The AST node
-     * @param array|null                 $variables Variables map
-     *
-     * @return string The parsed value
-     *
-     * @throws Error If the node is not a string
-     *
-     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-     */
-    public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): string
-    {
-        if ($valueNode instanceof StringValueNode === false) {
-            throw new Error('Email cannot represent non-string value', $valueNode);
-        }
-
-        return $this->parseValue(value: $valueNode->value);
-
-    }//end parseLiteral()
+		return $this->parseValue(value: $valueNode->value);
+	}//end parseLiteral()
 }//end class

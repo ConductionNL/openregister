@@ -37,84 +37,75 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  */
-final class EndNodeTest extends TestCase
-{
+final class EndNodeTest extends TestCase {
 
-    /**
-     * The node under test.
-     *
-     * @var EndNode
-     */
-    private EndNode $node;
+	/**
+	 * The node under test.
+	 *
+	 * @var EndNode
+	 */
+	private EndNode $node;
 
+	/**
+	 * Build the node with stub collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
 
-    /**
-     * Build the node with stub collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $l10n = $this->createMock(originalClassName: IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
+		$this->node = new EndNode($l10n, $this->createMock(originalClassName: IURLGenerator::class));
 
-        $this->node = new EndNode($l10n, $this->createMock(originalClassName: IURLGenerator::class));
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * An end node that received items ends the run, as an error when configured so.
+	 *
+	 * The guard test below is only meaningful next to this one: a node that
+	 * stopped ending anything at all would pass that test and be useless.
+	 *
+	 * @return void
+	 */
+	public function testAnEndWithItemsEndsTheRun(): void {
+		$this->expectException(FlowStop::class);
+		$this->expectExceptionMessage('the tip moved');
 
+		$this->node->execute([['json' => ['a' => 1]]], ['error' => true, 'message' => 'the tip moved'], []);
 
-    /**
-     * An end node that received items ends the run, as an error when configured so.
-     *
-     * The guard test below is only meaningful next to this one: a node that
-     * stopped ending anything at all would pass that test and be useless.
-     *
-     * @return void
-     */
-    public function testAnEndWithItemsEndsTheRun(): void
-    {
-        $this->expectException(FlowStop::class);
-        $this->expectExceptionMessage('the tip moved');
+	}//end testAnEndWithItemsEndsTheRun()
 
-        $this->node->execute([['json' => ['a' => 1]]], ['error' => true, 'message' => 'the tip moved'], []);
+	/**
+	 * An end node on a branch the router did NOT choose passes through.
+	 *
+	 * Measured on hydra's commit-by-API flow before this: every step through
+	 * `move-ref` completed and the branch ref genuinely moved on GitHub, while
+	 * the run reported `failed` with "the branch tip moved while the commit was
+	 * being built" — the opposite of what happened, and precisely the failure
+	 * the rail exists to report. A caller reading the run status would roll back
+	 * a commit that was correct.
+	 *
+	 * @return void
+	 */
+	public function testAnEndOnAnUntakenBranchDoesNotEndTheRun(): void {
+		$out = $this->node->execute([], ['error' => true, 'message' => 'the tip moved'], []);
 
-    }//end testAnEndWithItemsEndsTheRun()
+		$this->assertSame([], $out);
 
+	}//end testAnEndOnAnUntakenBranchDoesNotEndTheRun()
 
-    /**
-     * An end node on a branch the router did NOT choose passes through.
-     *
-     * Measured on hydra's commit-by-API flow before this: every step through
-     * `move-ref` completed and the branch ref genuinely moved on GitHub, while
-     * the run reported `failed` with "the branch tip moved while the commit was
-     * being built" — the opposite of what happened, and precisely the failure
-     * the rail exists to report. A caller reading the run status would roll back
-     * a commit that was correct.
-     *
-     * @return void
-     */
-    public function testAnEndOnAnUntakenBranchDoesNotEndTheRun(): void
-    {
-        $out = $this->node->execute([], ['error' => true, 'message' => 'the tip moved'], []);
+	/**
+	 * The same holds for a clean (non-error) end.
+	 *
+	 * A clean end on an untaken branch is quieter but no less wrong: it ends
+	 * the run early, so every step after the router never runs.
+	 *
+	 * @return void
+	 */
+	public function testACleanEndOnAnUntakenBranchAlsoPassesThrough(): void {
+		$out = $this->node->execute([], ['error' => false, 'message' => 'nothing to do'], []);
 
-        $this->assertSame([], $out);
+		$this->assertSame([], $out);
 
-    }//end testAnEndOnAnUntakenBranchDoesNotEndTheRun()
-
-
-    /**
-     * The same holds for a clean (non-error) end.
-     *
-     * A clean end on an untaken branch is quieter but no less wrong: it ends
-     * the run early, so every step after the router never runs.
-     *
-     * @return void
-     */
-    public function testACleanEndOnAnUntakenBranchAlsoPassesThrough(): void
-    {
-        $out = $this->node->execute([], ['error' => false, 'message' => 'nothing to do'], []);
-
-        $this->assertSame([], $out);
-
-    }//end testACleanEndOnAnUntakenBranchAlsoPassesThrough()
+	}//end testACleanEndOnAnUntakenBranchAlsoPassesThrough()
 }//end class

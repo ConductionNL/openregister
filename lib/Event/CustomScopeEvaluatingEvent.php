@@ -51,147 +51,137 @@ use OCP\EventDispatcher\Event;
  * evaluated against the RBAC rule chain. Listeners MAY contribute a
  * verdict via `allow()` / `deny()`.
  */
-class CustomScopeEvaluatingEvent extends Event
-{
+class CustomScopeEvaluatingEvent extends Event {
 
-    /**
-     * Resolved verdict, or null when no listener has voted yet.
-     *
-     * @var boolean|null
-     */
-    private ?bool $verdict = null;
+	/**
+	 * Resolved verdict, or null when no listener has voted yet.
+	 *
+	 * @var boolean|null
+	 */
+	private ?bool $verdict = null;
 
-    /**
-     * Constructor.
-     *
-     * @param Schema            $schema     Schema being checked.
-     * @param string            $action     Custom (non-canonical) action verb.
-     * @param string|null       $userId     User ID, or null for anonymous.
-     * @param string[]          $userGroups User's group memberships at evaluation time.
-     * @param ObjectEntity|null $object     Object the action is targeting (optional).
-     */
-    public function __construct(
-        private readonly Schema $schema,
-        private readonly string $action,
-        private readonly ?string $userId,
-        private readonly array $userGroups,
-        private readonly ?ObjectEntity $object=null
-    ) {
-        parent::__construct();
+	/**
+	 * Constructor.
+	 *
+	 * @param Schema $schema Schema being checked.
+	 * @param string $action Custom (non-canonical) action verb.
+	 * @param string|null $userId User ID, or null for anonymous.
+	 * @param string[] $userGroups User's group memberships at evaluation time.
+	 * @param ObjectEntity|null $object Object the action is targeting (optional).
+	 */
+	public function __construct(
+		private readonly Schema $schema,
+		private readonly string $action,
+		private readonly ?string $userId,
+		private readonly array $userGroups,
+		private readonly ?ObjectEntity $object = null,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Schema being checked.
-     *
-     * @return Schema The schema involved in this evaluation.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getSchema(): Schema
-    {
-        return $this->schema;
-    }//end getSchema()
+	/**
+	 * Schema being checked.
+	 *
+	 * @return Schema The schema involved in this evaluation.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getSchema(): Schema {
+		return $this->schema;
+	}//end getSchema()
 
-    /**
-     * The custom action verb being evaluated.
-     *
-     * @return string The custom action verb.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getAction(): string
-    {
-        return $this->action;
-    }//end getAction()
+	/**
+	 * The custom action verb being evaluated.
+	 *
+	 * @return string The custom action verb.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getAction(): string {
+		return $this->action;
+	}//end getAction()
 
-    /**
-     * User ID under evaluation (null for anonymous requests).
-     *
-     * @return string|null The user ID, or null when anonymous.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getUserId(): ?string
-    {
-        return $this->userId;
-    }//end getUserId()
+	/**
+	 * User ID under evaluation (null for anonymous requests).
+	 *
+	 * @return string|null The user ID, or null when anonymous.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getUserId(): ?string {
+		return $this->userId;
+	}//end getUserId()
 
-    /**
-     * Group memberships of the user at evaluation time.
-     *
-     * @return string[]
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getUserGroups(): array
-    {
-        return $this->userGroups;
-    }//end getUserGroups()
+	/**
+	 * Group memberships of the user at evaluation time.
+	 *
+	 * @return string[]
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getUserGroups(): array {
+		return $this->userGroups;
+	}//end getUserGroups()
 
-    /**
-     * Object the action is targeting, when one is supplied.
-     *
-     * @return ObjectEntity|null Target object, or null when none was supplied.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getObject(): ?ObjectEntity
-    {
-        return $this->object;
-    }//end getObject()
+	/**
+	 * Object the action is targeting, when one is supplied.
+	 *
+	 * @return ObjectEntity|null Target object, or null when none was supplied.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getObject(): ?ObjectEntity {
+		return $this->object;
+	}//end getObject()
 
-    /**
-     * Vote allow. The first listener to call this OR `deny()` wins;
-     * subsequent calls are ignored so the verdict order remains
-     * deterministic regardless of listener registration order.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function allow(): void
-    {
-        if ($this->verdict === null) {
-            $this->verdict = true;
-        }
-    }//end allow()
+	/**
+	 * Vote allow. The first listener to call this OR `deny()` wins;
+	 * subsequent calls are ignored so the verdict order remains
+	 * deterministic regardless of listener registration order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function allow(): void {
+		if ($this->verdict === null) {
+			$this->verdict = true;
+		}
+	}//end allow()
 
-    /**
-     * Vote deny. See `allow()` for verdict-order semantics.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function deny(): void
-    {
-        if ($this->verdict === null) {
-            $this->verdict = false;
-        }
-    }//end deny()
+	/**
+	 * Vote deny. See `allow()` for verdict-order semantics.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function deny(): void {
+		if ($this->verdict === null) {
+			$this->verdict = false;
+		}
+	}//end deny()
 
-    /**
-     * Resolved verdict, or null when no listener voted.
-     *
-     * @return bool|null The verdict, or null when no listener has voted.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function getVerdict(): ?bool
-    {
-        return $this->verdict;
-    }//end getVerdict()
+	/**
+	 * Resolved verdict, or null when no listener voted.
+	 *
+	 * @return bool|null The verdict, or null when no listener has voted.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function getVerdict(): ?bool {
+		return $this->verdict;
+	}//end getVerdict()
 
-    /**
-     * Whether any listener has cast a verdict.
-     *
-     * @return bool True when at least one listener has voted.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-     */
-    public function hasVerdict(): bool
-    {
-        return $this->verdict !== null;
-    }//end hasVerdict()
+	/**
+	 * Whether any listener has cast a verdict.
+	 *
+	 * @return bool True when at least one listener has voted.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
+	 */
+	public function hasVerdict(): bool {
+		return $this->verdict !== null;
+	}//end hasVerdict()
 }//end class

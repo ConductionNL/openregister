@@ -42,92 +42,90 @@ use RuntimeException;
 /**
  * Field-level redaction write path (distinct from erase pseudonymise).
  */
-class RedactionWriteService
-{
+class RedactionWriteService {
 
-    /**
-     * Marker distinguishing a redaction record from an erase pseudonymise.
-     *
-     * @var string
-     */
-    public const RECORD_TYPE = 'redaction';
+	/**
+	 * Marker distinguishing a redaction record from an erase pseudonymise.
+	 *
+	 * @var string
+	 */
+	public const RECORD_TYPE = 'redaction';
 
-    /**
-     * Constructor.
-     *
-     * @param CaseObjectAccessor $accessor RBAC-scoped, audited case load/save.
-     */
-    public function __construct(
-        private readonly CaseObjectAccessor $accessor
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param CaseObjectAccessor $accessor RBAC-scoped, audited case load/save.
+	 */
+	public function __construct(
+		private readonly CaseObjectAccessor $accessor,
+	) {
+	}//end __construct()
 
-    /**
-     * Apply a field-level redaction to a case field.
-     *
-     * Captures the field's current value as `before`, sets the redacted `after`
-     * value on the case field, and appends a `redactions` entry recording
-     * `field` / `before` / `after` / `ground`. Persists once (audited). It does
-     * NOT call the erase pseudonymise path.
-     *
-     * @param string $caseUuid The case object uuid.
-     * @param string $field    The case field being redacted.
-     * @param string $after    The redacted replacement value.
-     * @param string $ground   The generic ground key the redaction was applied under.
-     *
-     * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
-     *
-     * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
-     */
-    public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array
-    {
-        $case = $this->accessor->load(caseUuid: $caseUuid);
-        if ($case === null) {
-            throw new RuntimeException(
-                message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
-            );
-        }
+	/**
+	 * Apply a field-level redaction to a case field.
+	 *
+	 * Captures the field's current value as `before`, sets the redacted `after`
+	 * value on the case field, and appends a `redactions` entry recording
+	 * `field` / `before` / `after` / `ground`. Persists once (audited). It does
+	 * NOT call the erase pseudonymise path.
+	 *
+	 * @param string $caseUuid The case object uuid.
+	 * @param string $field The case field being redacted.
+	 * @param string $after The redacted replacement value.
+	 * @param string $ground The generic ground key the redaction was applied under.
+	 *
+	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
+	 *
+	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
+	 */
+	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
+		$case = $this->accessor->load(caseUuid: $caseUuid);
+		if ($case === null) {
+			throw new RuntimeException(
+				message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
+			);
+		}
 
-        $data = $case->getObject();
+		$data = $case->getObject();
 
-        // Snapshot the original value before we overwrite it. This is a
-        // field-level capture on the case object — NOT the statutory erase
-        // pseudonymise across the subject's objects.
-        $before = '';
-        if (isset($data[$field]) === true && is_scalar($data[$field]) === true) {
-            $before = (string) $data[$field];
-        }
+		// Snapshot the original value before we overwrite it. This is a
+		// field-level capture on the case object — NOT the statutory erase
+		// pseudonymise across the subject's objects.
+		$before = '';
+		if (isset($data[$field]) === true && is_scalar($data[$field]) === true) {
+			$before = (string)$data[$field];
+		}
 
-        // Apply the redacted value to the case field.
-        $data[$field] = $after;
+		// Apply the redacted value to the case field.
+		$data[$field] = $after;
 
-        $entry = [
-            'field'      => $field,
-            'before'     => $before,
-            'after'      => $after,
-            'ground'     => $ground,
-            'recordType' => self::RECORD_TYPE,
-        ];
+		$entry = [
+			'field' => $field,
+			'before' => $before,
+			'after' => $after,
+			'ground' => $ground,
+			'recordType' => self::RECORD_TYPE,
+		];
 
-        $redactions = [];
-        if (isset($data['redactions']) === true && is_array($data['redactions']) === true) {
-            $redactions = array_values($data['redactions']);
-        }
+		$redactions = [];
+		if (isset($data['redactions']) === true && is_array($data['redactions']) === true) {
+			$redactions = array_values($data['redactions']);
+		}
 
-        $redactions[]       = $entry;
-        $data['redactions'] = $redactions;
+		$redactions[] = $entry;
+		$data['redactions'] = $redactions;
 
-        $this->accessor->save(case: $case, data: $data);
+		$this->accessor->save(case: $case, data: $data);
 
-        return [
-            'caseUuid'   => $caseUuid,
-            'field'      => $field,
-            'before'     => $before,
-            'after'      => $after,
-            'ground'     => $ground,
-            'recordType' => self::RECORD_TYPE,
-        ];
-    }//end applyRedaction()
+		return [
+			'caseUuid' => $caseUuid,
+			'field' => $field,
+			'before' => $before,
+			'after' => $after,
+			'ground' => $ground,
+			'recordType' => self::RECORD_TYPE,
+		];
+	}//end applyRedaction()
 }//end class

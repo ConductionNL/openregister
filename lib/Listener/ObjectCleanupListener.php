@@ -60,62 +60,60 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
  */
-class ObjectCleanupListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param ListenerDeferralService      $deferral Buffers the entry and enqueues the chunk job.
-     * @param ObjectRelationCleanupService $cleanup  Shared cleanup, used by the inline fallback.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
-     */
-    public function __construct(
-        private readonly ListenerDeferralService $deferral,
-        private readonly ObjectRelationCleanupService $cleanup
-    ) {
-    }//end __construct()
+class ObjectCleanupListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param ListenerDeferralService $deferral Buffers the entry and enqueues the chunk job.
+	 * @param ObjectRelationCleanupService $cleanup Shared cleanup, used by the inline fallback.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly ListenerDeferralService $deferral,
+		private readonly ObjectRelationCleanupService $cleanup,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle the ObjectDeletedEvent.
-     *
-     * Buffers the deleted object's identity for ObjectCleanupJob. The entry
-     * carries register and schema alongside the uuid so the job's re-create
-     * guard can target one magic table instead of a cross-table UUID scan.
-     *
-     * @param Event $event The event to handle
-     *
-     * @return void
-     *
-     * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ObjectDeletedEvent) === false) {
-            return;
-        }
+	/**
+	 * Handle the ObjectDeletedEvent.
+	 *
+	 * Buffers the deleted object's identity for ObjectCleanupJob. The entry
+	 * carries register and schema alongside the uuid so the job's re-create
+	 * guard can target one magic table instead of a cross-table UUID scan.
+	 *
+	 * @param Event $event The event to handle
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ObjectDeletedEvent) === false) {
+			return;
+		}
 
-        $object     = $event->getObject();
-        $objectUuid = (string) $object->getUuid();
-        if ($objectUuid === '') {
-            return;
-        }
+		$object = $event->getObject();
+		$objectUuid = (string)$object->getUuid();
+		if ($objectUuid === '') {
+			return;
+		}
 
-        if ($this->deferral->isDeferralEnabled() === false) {
-            $this->cleanup->cleanup(objectUuid: $objectUuid);
-            return;
-        }
+		if ($this->deferral->isDeferralEnabled() === false) {
+			$this->cleanup->cleanup(objectUuid: $objectUuid);
+			return;
+		}
 
-        $this->deferral->defer(
-            jobClass: ObjectCleanupJob::class,
-            entry: [
-                'uuid'     => $objectUuid,
-                'register' => (string) $object->getRegister(),
-                'schema'   => (string) $object->getSchema(),
-            ],
-            dedupeKey: $objectUuid
-        );
-    }//end handle()
+		$this->deferral->defer(
+			jobClass: ObjectCleanupJob::class,
+			entry: [
+				'uuid' => $objectUuid,
+				'register' => (string)$object->getRegister(),
+				'schema' => (string)$object->getSchema(),
+			],
+			dedupeKey: $objectUuid
+		);
+	}//end handle()
 }//end class

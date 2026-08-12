@@ -644,25 +644,30 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 }
+
 .viewHeader {
 	border-bottom: 1px solid var(--color-border);
 	padding-bottom: 12px;
 }
+
 .viewHeaderTitle {
 	display: flex;
 	align-items: center;
 	gap: 12px;
 }
+
 .viewHeaderTitleIndented {
 	margin: 0;
 	flex: 1;
 }
+
 .reportGrid {
 	display: grid;
 	grid-template-columns: repeat(var(--report-cols, 4), 1fr);
 	gap: 16px;
 	align-items: start;
 }
+
 .reportWidget {
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
@@ -672,6 +677,7 @@ export default {
 	display: flex;
 	flex-direction: column;
 }
+
 .reportWidgetHeader h3 {
 	margin: 0 0 4px 0;
 	font-size: 14px;
@@ -679,16 +685,19 @@ export default {
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
+
 .reportWidgetSubtitle {
 	margin: 0 0 12px 0;
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .reportWidgetBody {
 	flex: 1;
 	display: flex;
 	align-items: center;
 }
+
 .widgetLoading,
 .widgetError,
 .widgetUnknown {
@@ -700,59 +709,72 @@ export default {
 	color: var(--color-text-maxcontrast);
 	padding: 24px 0;
 }
+
 .widgetError {
 	color: var(--color-error);
 }
+
 .widgetKpi {
 	display: flex;
 	align-items: center;
 	gap: 12px;
 	width: 100%;
 }
+
 .widgetKpiIcon {
 	color: var(--color-primary);
 }
+
 .widgetKpiValue {
 	font-size: 32px;
 	font-weight: 700;
 	line-height: 1;
 }
+
 .widgetKpiLabel {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	margin-top: 4px;
 }
+
 .widgetTile {
 	width: 100%;
 	text-align: center;
 }
+
 .widgetTileValue {
 	font-size: 28px;
 	font-weight: 700;
 }
+
 .widgetTileLabel {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .widgetStats {
 	width: 100%;
 }
+
 .widgetStats dl {
 	margin: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
+
 .widgetStatsRow {
 	display: grid;
 	grid-template-columns: 1fr auto;
 	gap: 12px;
 }
+
 .widgetStats dt {
 	color: var(--color-text-maxcontrast);
 	font-size: 12px;
 	text-transform: capitalize;
 }
+
 .widgetStats dd {
 	margin: 0;
 	font-weight: 600;

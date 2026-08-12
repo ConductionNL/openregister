@@ -28,79 +28,67 @@ use ReflectionClass;
  * Unit tests for the McpTool attribute itself (construction only — schema
  * inference and discovery are exercised by AttributeToolScannerTest).
  */
-class McpToolTest extends TestCase
-{
+class McpToolTest extends TestCase {
 
-    public function testDefaultsAreBothNull(): void
-    {
-        $attribute = new McpTool();
+	public function testDefaultsAreBothNull(): void {
+		$attribute = new McpTool();
 
-        $this->assertNull($attribute->name);
-        $this->assertNull($attribute->description);
+		$this->assertNull($attribute->name);
+		$this->assertNull($attribute->description);
 
-    }//end testDefaultsAreBothNull()
+	}//end testDefaultsAreBothNull()
 
+	public function testExplicitValuesAreRetained(): void {
+		$attribute = new McpTool(name: 'createLead', description: 'Create a sales lead.');
 
-    public function testExplicitValuesAreRetained(): void
-    {
-        $attribute = new McpTool(name: 'createLead', description: 'Create a sales lead.');
+		$this->assertSame('createLead', $attribute->name);
+		$this->assertSame('Create a sales lead.', $attribute->description);
 
-        $this->assertSame('createLead', $attribute->name);
-        $this->assertSame('Create a sales lead.', $attribute->description);
+	}//end testExplicitValuesAreRetained()
 
-    }//end testExplicitValuesAreRetained()
+	public function testHintAndScopeParamsDefaultToNull(): void {
+		$attribute = new McpTool();
 
+		$this->assertNull($attribute->readOnlyHint);
+		$this->assertNull($attribute->destructiveHint);
+		$this->assertNull($attribute->idempotentHint);
+		$this->assertNull($attribute->scope);
 
-    public function testHintAndScopeParamsDefaultToNull(): void
-    {
-        $attribute = new McpTool();
+	}//end testHintAndScopeParamsDefaultToNull()
 
-        $this->assertNull($attribute->readOnlyHint);
-        $this->assertNull($attribute->destructiveHint);
-        $this->assertNull($attribute->idempotentHint);
-        $this->assertNull($attribute->scope);
+	public function testHintAndScopeParamsAreIndependentlySettable(): void {
+		$attribute = new McpTool(destructiveHint: true, scope: 'delete');
 
-    }//end testHintAndScopeParamsDefaultToNull()
+		$this->assertTrue($attribute->destructiveHint);
+		$this->assertSame('delete', $attribute->scope);
+		$this->assertNull($attribute->readOnlyHint);
+		$this->assertNull($attribute->idempotentHint);
 
+	}//end testHintAndScopeParamsAreIndependentlySettable()
 
-    public function testHintAndScopeParamsAreIndependentlySettable(): void
-    {
-        $attribute = new McpTool(destructiveHint: true, scope: 'delete');
+	public function testAllFourNewParamsAreRetained(): void {
+		$attribute = new McpTool(
+			readOnlyHint: false,
+			destructiveHint: true,
+			idempotentHint: false,
+			scope: 'create'
+		);
 
-        $this->assertTrue($attribute->destructiveHint);
-        $this->assertSame('delete', $attribute->scope);
-        $this->assertNull($attribute->readOnlyHint);
-        $this->assertNull($attribute->idempotentHint);
+		$this->assertFalse($attribute->readOnlyHint);
+		$this->assertTrue($attribute->destructiveHint);
+		$this->assertFalse($attribute->idempotentHint);
+		$this->assertSame('create', $attribute->scope);
 
-    }//end testHintAndScopeParamsAreIndependentlySettable()
+	}//end testAllFourNewParamsAreRetained()
 
+	public function testAttributeTargetsMethodsOnly(): void {
+		$reflection = new ReflectionClass(McpTool::class);
+		$attributes = $reflection->getAttributes(Attribute::class);
 
-    public function testAllFourNewParamsAreRetained(): void
-    {
-        $attribute = new McpTool(
-            readOnlyHint: false,
-            destructiveHint: true,
-            idempotentHint: false,
-            scope: 'create'
-        );
+		$this->assertNotEmpty($attributes, 'McpTool must itself carry a native #[Attribute(...)] declaration.');
 
-        $this->assertFalse($attribute->readOnlyHint);
-        $this->assertTrue($attribute->destructiveHint);
-        $this->assertFalse($attribute->idempotentHint);
-        $this->assertSame('create', $attribute->scope);
+		$instance = $attributes[0]->newInstance();
+		$this->assertSame(Attribute::TARGET_METHOD, $instance->flags);
 
-    }//end testAllFourNewParamsAreRetained()
-
-
-    public function testAttributeTargetsMethodsOnly(): void
-    {
-        $reflection = new ReflectionClass(McpTool::class);
-        $attributes = $reflection->getAttributes(Attribute::class);
-
-        $this->assertNotEmpty($attributes, 'McpTool must itself carry a native #[Attribute(...)] declaration.');
-
-        $instance = $attributes[0]->newInstance();
-        $this->assertSame(Attribute::TARGET_METHOD, $instance->flags);
-
-    }//end testAttributeTargetsMethodsOnly()
+	}//end testAttributeTargetsMethodsOnly()
 }//end class

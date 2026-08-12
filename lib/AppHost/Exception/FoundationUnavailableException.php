@@ -43,34 +43,32 @@ use Throwable;
  * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md
  *   — Requirement: Generic settings surface (Scenario: Foundation missing is explicit)
  */
-class FoundationUnavailableException extends RuntimeException
-{
-    /**
-     * Construct the foundation-unavailable exception with diagnostic context.
-     *
-     * @param string         $appId    The consuming (leaf) app id.
-     * @param string         $detail   Short operator-actionable detail (which service, why).
-     * @param Throwable|null $previous Previous exception in the chain.
-     */
-    public function __construct(
-        private readonly string $appId,
-        string $detail='OpenRegister is not installed or enabled.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(
-            message: sprintf('[AppHost:%s] OpenRegister foundation unavailable: %s', $appId, $detail),
-            code: 503,
-            previous: $previous
-        );
-    }//end __construct()
+class FoundationUnavailableException extends RuntimeException {
+	/**
+	 * Construct the foundation-unavailable exception with diagnostic context.
+	 *
+	 * @param string $appId The consuming (leaf) app id.
+	 * @param string $detail Short operator-actionable detail (which service, why).
+	 * @param Throwable|null $previous Previous exception in the chain.
+	 */
+	public function __construct(
+		private readonly string $appId,
+		string $detail = 'OpenRegister is not installed or enabled.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(
+			message: sprintf('[AppHost:%s] OpenRegister foundation unavailable: %s', $appId, $detail),
+			code: 503,
+			previous: $previous
+		);
+	}//end __construct()
 
-    /**
-     * Get the consuming app id the failure was raised for.
-     *
-     * @return string The leaf app id.
-     */
-    public function getAppId(): string
-    {
-        return $this->appId;
-    }//end getAppId()
+	/**
+	 * Get the consuming app id the failure was raised for.
+	 *
+	 * @return string The leaf app id.
+	 */
+	public function getAppId(): string {
+		return $this->appId;
+	}//end getAppId()
 }//end class

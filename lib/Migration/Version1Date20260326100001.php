@@ -30,47 +30,45 @@ use OCP\Migration\SimpleMigrationStep;
  * These entity-specific link tables are replaced by the generic linked entity metadata columns
  * (_mail, _contacts, _deck) on magic tables and entity tables.
  */
-class Version1Date20260326100001 extends SimpleMigrationStep
-{
-    /**
-     * Tables to drop.
-     */
-    private const TABLES_TO_DROP = [
-        'openregister_email_links',
-        'openregister_contact_links',
-        'openregister_deck_links',
-    ];
+class Version1Date20260326100001 extends SimpleMigrationStep {
+	/**
+	 * Tables to drop.
+	 */
+	private const TABLES_TO_DROP = [
+		'openregister_email_links',
+		'openregister_contact_links',
+		'openregister_deck_links',
+	];
 
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        foreach (self::TABLES_TO_DROP as $tableName) {
-            if ($schema->hasTable($tableName) === true) {
-                $schema->dropTable($tableName);
-                $output->info("Dropped $tableName (replaced by generic linked entity columns)");
-                $changed = true;
-            }
-        }
+		foreach (self::TABLES_TO_DROP as $tableName) {
+			if ($schema->hasTable($tableName) === true) {
+				$schema->dropTable($tableName);
+				$output->info("Dropped $tableName (replaced by generic linked entity columns)");
+				$changed = true;
+			}
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

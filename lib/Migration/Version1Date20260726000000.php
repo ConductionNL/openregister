@@ -58,52 +58,50 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
  */
-class Version1Date20260726000000 extends SimpleMigrationStep
-{
-    /**
-     * The (organisation, application, slug) unique index being retired.
-     *
-     * @var string
-     */
-    private const SCHEMAS_SLUG_UNIQUE_INDEX = 'schemas_org_app_slug_unique';
+class Version1Date20260726000000 extends SimpleMigrationStep {
+	/**
+	 * The (organisation, application, slug) unique index being retired.
+	 *
+	 * @var string
+	 */
+	private const SCHEMAS_SLUG_UNIQUE_INDEX = 'schemas_org_app_slug_unique';
 
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_schemas') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable('openregister_schemas') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable('openregister_schemas');
+		$table = $schema->getTable('openregister_schemas');
 
-        if ($table->hasIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX) === false) {
-            $output->info(self::SCHEMAS_SLUG_UNIQUE_INDEX.' already absent on openregister_schemas; nothing to do.');
-            return $schema;
-        }
+		if ($table->hasIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX) === false) {
+			$output->info(self::SCHEMAS_SLUG_UNIQUE_INDEX . ' already absent on openregister_schemas; nothing to do.');
+			return $schema;
+		}
 
-        $table->dropIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX);
-        $output->info(
-            'Dropped '.self::SCHEMAS_SLUG_UNIQUE_INDEX.' on openregister_schemas: '.
-            'schema slug uniqueness is now enforced per-register at the service layer '.
-            '(openspec/changes/per-register-schema-slug-uniqueness), not by a DB index.'
-        );
+		$table->dropIndex(self::SCHEMAS_SLUG_UNIQUE_INDEX);
+		$output->info(
+			'Dropped ' . self::SCHEMAS_SLUG_UNIQUE_INDEX . ' on openregister_schemas: '
+			. 'schema slug uniqueness is now enforced per-register at the service layer '
+			. '(openspec/changes/per-register-schema-slug-uniqueness), not by a DB index.'
+		);
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

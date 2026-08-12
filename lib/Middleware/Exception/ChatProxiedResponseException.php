@@ -49,38 +49,35 @@ use Throwable;
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware\Exception
  */
-class ChatProxiedResponseException extends Exception
-{
+class ChatProxiedResponseException extends Exception {
 
-    /**
-     * The response to hand back verbatim once caught by
-     * ChatCompatMiddleware::afterException().
-     *
-     * @var Response
-     */
-    private readonly Response $response;
+	/**
+	 * The response to hand back verbatim once caught by
+	 * ChatCompatMiddleware::afterException().
+	 *
+	 * @var Response
+	 */
+	private readonly Response $response;
 
-    /**
-     * Constructor.
-     *
-     * @param Response       $response The response to hand back verbatim.
-     * @param Throwable|null $previous Optional previous throwable (unused today, kept for the standard chain).
-     *
-     * @return void
-     */
-    public function __construct(Response $response, ?Throwable $previous=null)
-    {
-        parent::__construct(message: 'Chat request served by the hermiq compat proxy', code: 0, previous: $previous);
-        $this->response = $response;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param Response $response The response to hand back verbatim.
+	 * @param Throwable|null $previous Optional previous throwable (unused today, kept for the standard chain).
+	 *
+	 * @return void
+	 */
+	public function __construct(Response $response, ?Throwable $previous = null) {
+		parent::__construct(message: 'Chat request served by the hermiq compat proxy', code: 0, previous: $previous);
+		$this->response = $response;
+	}//end __construct()
 
-    /**
-     * Get the pre-built response.
-     *
-     * @return Response The response to return to the client.
-     */
-    public function getResponse(): Response
-    {
-        return $this->response;
-    }//end getResponse()
+	/**
+	 * Get the pre-built response.
+	 *
+	 * @return Response The response to return to the client.
+	 */
+	public function getResponse(): Response {
+		return $this->response;
+	}//end getResponse()
 }//end class

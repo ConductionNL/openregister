@@ -39,77 +39,67 @@ use Psr\Log\NullLogger;
 /**
  * Test class for the object-source error middleware.
  */
-class ObjectSourceErrorMiddlewareTest extends TestCase
-{
+class ObjectSourceErrorMiddlewareTest extends TestCase {
 
+	/**
+	 * Build the middleware under test.
+	 *
+	 * @return ObjectSourceErrorMiddleware The middleware.
+	 */
+	private function middleware(): ObjectSourceErrorMiddleware {
+		return new ObjectSourceErrorMiddleware(logger: new NullLogger());
+	}//end middleware()
 
-    /**
-     * Build the middleware under test.
-     *
-     * @return ObjectSourceErrorMiddleware The middleware.
-     */
-    private function middleware(): ObjectSourceErrorMiddleware
-    {
-        return new ObjectSourceErrorMiddleware(logger: new NullLogger());
-    }//end middleware()
+	/**
+	 * An unreachable external database maps to a request-level 503, not a 500.
+	 *
+	 * @return void
+	 */
+	public function testUnreachableDatabaseMapsTo503(): void {
+		$response = $this->middleware()->afterException(
+			controller: $this->createMock(Controller::class),
+			methodName: 'index',
+			exception: new DbalObjectSourceException('The external database is unreachable.', 503)
+		);
 
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(503, $response->getStatus());
+		$this->assertSame(
+			['error' => 'The external database is unreachable.'],
+			$response->getData()
+		);
+	}//end testUnreachableDatabaseMapsTo503()
 
-    /**
-     * An unreachable external database maps to a request-level 503, not a 500.
-     *
-     * @return void
-     */
-    public function testUnreachableDatabaseMapsTo503(): void
-    {
-        $response = $this->middleware()->afterException(
-            controller: $this->createMock(Controller::class),
-            methodName: 'index',
-            exception: new DbalObjectSourceException('The external database is unreachable.', 503)
-        );
+	/**
+	 * An upstream query error maps to a request-level 502.
+	 *
+	 * @return void
+	 */
+	public function testUpstreamErrorMapsTo502(): void {
+		$response = $this->middleware()->afterException(
+			controller: $this->createMock(Controller::class),
+			methodName: 'show',
+			exception: new DbalObjectSourceException('The external database returned an error.', 502)
+		);
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(503, $response->getStatus());
-        $this->assertSame(
-            ['error' => 'The external database is unreachable.'],
-            $response->getData()
-        );
-    }//end testUnreachableDatabaseMapsTo503()
+		$this->assertSame(502, $response->getStatus());
+	}//end testUpstreamErrorMapsTo502()
 
+	/**
+	 * Every other exception is rethrown untouched.
+	 *
+	 * @return void
+	 */
+	public function testUnrelatedExceptionIsRethrown(): void {
+		$original = new Exception('unrelated');
 
-    /**
-     * An upstream query error maps to a request-level 502.
-     *
-     * @return void
-     */
-    public function testUpstreamErrorMapsTo502(): void
-    {
-        $response = $this->middleware()->afterException(
-            controller: $this->createMock(Controller::class),
-            methodName: 'show',
-            exception: new DbalObjectSourceException('The external database returned an error.', 502)
-        );
+		$this->expectExceptionObject($original);
 
-        $this->assertSame(502, $response->getStatus());
-    }//end testUpstreamErrorMapsTo502()
-
-
-    /**
-     * Every other exception is rethrown untouched.
-     *
-     * @return void
-     */
-    public function testUnrelatedExceptionIsRethrown(): void
-    {
-        $original = new Exception('unrelated');
-
-        $this->expectExceptionObject($original);
-
-        $this->middleware()->afterException(
-            controller: $this->createMock(Controller::class),
-            methodName: 'index',
-            exception: $original
-        );
-    }//end testUnrelatedExceptionIsRethrown()
-
+		$this->middleware()->afterException(
+			controller: $this->createMock(Controller::class),
+			methodName: 'index',
+			exception: $original
+		);
+	}//end testUnrelatedExceptionIsRethrown()
 
 }//end class

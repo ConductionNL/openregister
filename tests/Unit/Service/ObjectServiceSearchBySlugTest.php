@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -55,7 +56,6 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -74,200 +74,190 @@ use Psr\Log\LoggerInterface;
  * Unit tests for ObjectService::searchObjectsBySlug — spec REQ
  * "ObjectService.searchObjectsBySlug resolves slugs at the slug-aware layer".
  */
-class ObjectServiceSearchBySlugTest extends TestCase
-{
+class ObjectServiceSearchBySlugTest extends TestCase {
 
-    /** @var QueryHandler&MockObject */
-    private QueryHandler $queryHandler;
+	/** @var QueryHandler&MockObject */
+	private QueryHandler $queryHandler;
 
-    /** @var RegisterMapper&MockObject */
-    private RegisterMapper $registerMapper;
+	/** @var RegisterMapper&MockObject */
+	private RegisterMapper $registerMapper;
 
-    /** @var SchemaMapper&MockObject */
-    private SchemaMapper $schemaMapper;
+	/** @var SchemaMapper&MockObject */
+	private SchemaMapper $schemaMapper;
 
-    private ObjectService $service;
+	private ObjectService $service;
 
+	/**
+	 * Build an ObjectService with every dependency mocked except the ones
+	 * the test directly exercises (RegisterMapper, SchemaMapper, QueryHandler).
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Build an ObjectService with every dependency mocked except the ones
-     * the test directly exercises (RegisterMapper, SchemaMapper, QueryHandler).
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->queryHandler = $this->createMock(QueryHandler::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-        $this->queryHandler   = $this->createMock(QueryHandler::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
+		$this->service = new ObjectService(
+			dataManipHandler:    $this->createMock(DataManipulationHandler::class),
+			deleteHandler:       $this->createMock(DeleteObject::class),
+			getHandler:          $this->createMock(GetObject::class),
+			permissionHandler:   $this->createMock(PermissionHandler::class),
+			renderHandler:       $this->createMock(RenderObject::class),
+			saveHandler:         $this->createMock(SaveObject::class),
+			saveObjectsHandler:  $this->createMock(SaveObjects::class),
+			searchQueryHandler:  $this->createMock(SearchQueryHandler::class),
+			validateHandler:     $this->createMock(ValidateObject::class),
+			lockHandler:         $this->createMock(LockHandler::class),
+			auditHandler:        $this->createMock(AuditHandler::class),
+			relationHandler:     $this->createMock(RelationHandler::class),
+			mergeHandler:        $this->createMock(MergeHandler::class),
+			facetHandler:        $this->createMock(FacetHandler::class),
+			metadataHandler:     $this->createMock(MetadataHandler::class),
+			perfOptHandler:      $this->createMock(PerformanceOptimizationHandler::class),
+			queryHandler:        $this->queryHandler,
+			revertHandler:       $this->createMock(RevertHandler::class),
+			utilityHandler:      $this->createMock(UtilityHandler::class),
+			validationHandler:   $this->createMock(ValidationHandler::class),
+			cascadingHandler:    $this->createMock(CascadingHandler::class),
+			migrationHandler:    $this->createMock(MigrationHandler::class),
+			registerMapper:      $this->registerMapper,
+			schemaMapper:        $this->schemaMapper,
+			viewMapper:          $this->createMock(ViewMapper::class),
+			objectMapper:        $this->createMock(MagicMapper::class),
+			fileService:         $this->createMock(FileService::class),
+			userSession:         $this->createMock(IUserSession::class),
+			searchTrailService:  $this->createMock(SearchTrailService::class),
+			groupManager:        $this->createMock(IGroupManager::class),
+			userManager:         $this->createMock(IUserManager::class),
+			organisationService: $this->createMock(OrganisationService::class),
+			logger:              $this->createMock(LoggerInterface::class),
+			cacheHandler:        $this->createMock(CacheHandler::class),
+			settingsService:     $this->createMock(SettingsService::class),
+			dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
+			container:           $this->createMock(IAppContainer::class),
+			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
+		);
 
-        $this->service = new ObjectService(
-            dataManipHandler:    $this->createMock(DataManipulationHandler::class),
-            deleteHandler:       $this->createMock(DeleteObject::class),
-            getHandler:          $this->createMock(GetObject::class),
-            permissionHandler:   $this->createMock(PermissionHandler::class),
-            renderHandler:       $this->createMock(RenderObject::class),
-            saveHandler:         $this->createMock(SaveObject::class),
-            saveObjectsHandler:  $this->createMock(SaveObjects::class),
-            searchQueryHandler:  $this->createMock(SearchQueryHandler::class),
-            validateHandler:     $this->createMock(ValidateObject::class),
-            lockHandler:         $this->createMock(LockHandler::class),
-            auditHandler:        $this->createMock(AuditHandler::class),
-            relationHandler:     $this->createMock(RelationHandler::class),
-            mergeHandler:        $this->createMock(MergeHandler::class),
-            facetHandler:        $this->createMock(FacetHandler::class),
-            metadataHandler:     $this->createMock(MetadataHandler::class),
-            perfOptHandler:      $this->createMock(PerformanceOptimizationHandler::class),
-            queryHandler:        $this->queryHandler,
-            revertHandler:       $this->createMock(RevertHandler::class),
-            utilityHandler:      $this->createMock(UtilityHandler::class),
-            validationHandler:   $this->createMock(ValidationHandler::class),
-            cascadingHandler:    $this->createMock(CascadingHandler::class),
-            migrationHandler:    $this->createMock(MigrationHandler::class),
-            registerMapper:      $this->registerMapper,
-            schemaMapper:        $this->schemaMapper,
-            viewMapper:          $this->createMock(ViewMapper::class),
-            objectMapper:        $this->createMock(MagicMapper::class),
-            fileService:         $this->createMock(FileService::class),
-            userSession:         $this->createMock(IUserSession::class),
-            searchTrailService:  $this->createMock(SearchTrailService::class),
-            groupManager:        $this->createMock(IGroupManager::class),
-            userManager:         $this->createMock(IUserManager::class),
-            organisationService: $this->createMock(OrganisationService::class),
-            logger:              $this->createMock(LoggerInterface::class),
-            cacheHandler:        $this->createMock(CacheHandler::class),
-            settingsService:     $this->createMock(SettingsService::class),
-            dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
-            container:           $this->createMock(IAppContainer::class),
-            objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * REQ: searchObjectsBySlug resolves both slugs and delegates to searchObjects
+	 * with numeric @self.register / @self.schema.
+	 *
+	 * Scenario: "Search by slug-pair" — the query handed to the QueryHandler
+	 * MUST contain the numeric IDs derived from the mappers, with extra
+	 * filter keys preserved at the top level.
+	 */
+	public function testSearchObjectsBySlugResolvesAndDelegates(): void {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSlug('openbuild');
 
+		$schema = new Schema();
+		$schema->setId(42);
+		$schema->setSlug('application');
 
-    /**
-     * REQ: searchObjectsBySlug resolves both slugs and delegates to searchObjects
-     * with numeric @self.register / @self.schema.
-     *
-     * Scenario: "Search by slug-pair" — the query handed to the QueryHandler
-     * MUST contain the numeric IDs derived from the mappers, with extra
-     * filter keys preserved at the top level.
-     */
-    public function testSearchObjectsBySlugResolvesAndDelegates(): void
-    {
-        $register = new Register();
-        $register->setId(7);
-        $register->setSlug('openbuild');
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo('openbuild'))
+			->willReturn($register);
 
-        $schema = new Schema();
-        $schema->setId(42);
-        $schema->setSlug('application');
+		$this->schemaMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo('application'))
+			->willReturn($schema);
 
-        $this->registerMapper
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo('openbuild'))
-            ->willReturn($register);
+		$this->queryHandler
+			->expects($this->once())
+			->method('searchObjects')
+			->with(
+				$this->callback(function (array $query): bool {
+					// Numeric IDs MUST land in @self, not slugs.
+					return ($query['@self']['register'] ?? null) === 7
+						&& ($query['@self']['schema'] ?? null) === 42
+						&& ($query['status'] ?? null) === 'published';
+				})
+			)
+			->willReturn([]);
 
-        $this->schemaMapper
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo('application'))
-            ->willReturn($schema);
+		$result = $this->service->searchObjectsBySlug(
+			'openbuild',
+			'application',
+			['status' => 'published']
+		);
 
-        $this->queryHandler
-            ->expects($this->once())
-            ->method('searchObjects')
-            ->with(
-                $this->callback(function (array $query): bool {
-                    // Numeric IDs MUST land in @self, not slugs.
-                    return ($query['@self']['register'] ?? null) === 7
-                        && ($query['@self']['schema'] ?? null) === 42
-                        && ($query['status'] ?? null) === 'published';
-                })
-            )
-            ->willReturn([]);
+		$this->assertSame([], $result);
 
-        $result = $this->service->searchObjectsBySlug(
-            'openbuild',
-            'application',
-            ['status' => 'published']
-        );
+	}//end testSearchObjectsBySlugResolvesAndDelegates()
 
-        $this->assertSame([], $result);
+	/**
+	 * REQ: Unknown register slug throws DoesNotExistException with a message
+	 * that identifies which slug failed.
+	 */
+	public function testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown(): void {
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo('ghost-register'))
+			->willThrowException(new DoesNotExistException('not found'));
 
-    }//end testSearchObjectsBySlugResolvesAndDelegates()
+		// The schema mapper must NOT be hit when the register lookup already failed.
+		$this->schemaMapper->expects($this->never())->method('find');
 
+		// The query handler MUST NOT be hit either.
+		$this->queryHandler->expects($this->never())->method('searchObjects');
 
-    /**
-     * REQ: Unknown register slug throws DoesNotExistException with a message
-     * that identifies which slug failed.
-     */
-    public function testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown(): void
-    {
-        $this->registerMapper
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo('ghost-register'))
-            ->willThrowException(new DoesNotExistException('not found'));
+		$this->expectException(DoesNotExistException::class);
+		$this->expectExceptionMessageMatches(
+			'/searchObjectsBySlug: register slug not found.*ghost-register/'
+		);
 
-        // The schema mapper must NOT be hit when the register lookup already failed.
-        $this->schemaMapper->expects($this->never())->method('find');
+		$this->service->searchObjectsBySlug(
+			'ghost-register',
+			'application',
+			[]
+		);
 
-        // The query handler MUST NOT be hit either.
-        $this->queryHandler->expects($this->never())->method('searchObjects');
+	}//end testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown()
 
-        $this->expectException(DoesNotExistException::class);
-        $this->expectExceptionMessageMatches(
-            '/searchObjectsBySlug: register slug not found.*ghost-register/'
-        );
+	/**
+	 * REQ: Unknown schema slug (with valid register) throws DoesNotExistException
+	 * identifying the schema slug — proves the exception chain rewraps the
+	 * underlying mapper exception so the caller can distinguish register-side
+	 * vs schema-side resolution failures.
+	 */
+	public function testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown(): void {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSlug('openbuild');
 
-        $this->service->searchObjectsBySlug(
-            'ghost-register',
-            'application',
-            []
-        );
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($register);
 
-    }//end testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown()
+		$this->schemaMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo('ghost-schema'))
+			->willThrowException(new DoesNotExistException('not found'));
 
+		$this->queryHandler->expects($this->never())->method('searchObjects');
 
-    /**
-     * REQ: Unknown schema slug (with valid register) throws DoesNotExistException
-     * identifying the schema slug — proves the exception chain rewraps the
-     * underlying mapper exception so the caller can distinguish register-side
-     * vs schema-side resolution failures.
-     */
-    public function testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown(): void
-    {
-        $register = new Register();
-        $register->setId(7);
-        $register->setSlug('openbuild');
+		$this->expectException(DoesNotExistException::class);
+		$this->expectExceptionMessageMatches(
+			'/searchObjectsBySlug: schema slug not found.*ghost-schema/'
+		);
 
-        $this->registerMapper
-            ->expects($this->once())
-            ->method('find')
-            ->willReturn($register);
+		$this->service->searchObjectsBySlug(
+			'openbuild',
+			'ghost-schema',
+			[]
+		);
 
-        $this->schemaMapper
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo('ghost-schema'))
-            ->willThrowException(new DoesNotExistException('not found'));
-
-        $this->queryHandler->expects($this->never())->method('searchObjects');
-
-        $this->expectException(DoesNotExistException::class);
-        $this->expectExceptionMessageMatches(
-            '/searchObjectsBySlug: schema slug not found.*ghost-schema/'
-        );
-
-        $this->service->searchObjectsBySlug(
-            'openbuild',
-            'ghost-schema',
-            []
-        );
-
-    }//end testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown()
-
+	}//end testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown()
 
 }//end class

@@ -48,68 +48,66 @@ use OCP\Migration\SimpleMigrationStep;
  *     API already published as null. No behavioural contract of its own —
  *     enforcement belongs to the tenant-quotas capability.
  */
-class Version1Date20260728000000 extends SimpleMigrationStep
-{
-    /**
-     * Table receiving the two new allocations.
-     *
-     * @var string
-     */
-    private const APPLICATIONS_TABLE = 'openregister_applications';
+class Version1Date20260728000000 extends SimpleMigrationStep {
+	/**
+	 * Table receiving the two new allocations.
+	 *
+	 * @var string
+	 */
+	private const APPLICATIONS_TABLE = 'openregister_applications';
 
-    /**
-     * New columns, keyed by column name, valued by their comment.
-     *
-     * @var array<string, string>
-     */
-    private const QUOTA_COLUMNS = [
-        'user_quota'  => 'Maximum number of users (NULL = unlimited)',
-        'group_quota' => 'Maximum number of groups (NULL = unlimited)',
-    ];
+	/**
+	 * New columns, keyed by column name, valued by their comment.
+	 *
+	 * @var array<string, string>
+	 */
+	private const QUOTA_COLUMNS = [
+		'user_quota' => 'Maximum number of users (NULL = unlimited)',
+		'group_quota' => 'Maximum number of groups (NULL = unlimited)',
+	];
 
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec exclude See class-level note — additive nullable quota columns only.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec exclude See class-level note — additive nullable quota columns only.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(self::APPLICATIONS_TABLE) === false) {
-            return $schema;
-        }
+		if ($schema->hasTable(self::APPLICATIONS_TABLE) === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable(self::APPLICATIONS_TABLE);
+		$table = $schema->getTable(self::APPLICATIONS_TABLE);
 
-        foreach (self::QUOTA_COLUMNS as $column => $comment) {
-            if ($table->hasColumn($column) === true) {
-                $output->info($column.' already present on '.self::APPLICATIONS_TABLE.'; nothing to do.');
-                continue;
-            }
+		foreach (self::QUOTA_COLUMNS as $column => $comment) {
+			if ($table->hasColumn($column) === true) {
+				$output->info($column . ' already present on ' . self::APPLICATIONS_TABLE . '; nothing to do.');
+				continue;
+			}
 
-            $table->addColumn(
-                $column,
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'comment' => $comment,
-                ]
-            );
+			$table->addColumn(
+				$column,
+				Types::INTEGER,
+				[
+					'notnull' => false,
+					'comment' => $comment,
+				]
+			);
 
-            $output->info('Added '.$column.' to '.self::APPLICATIONS_TABLE.' (NULL = unlimited).');
-        }
+			$output->info('Added ' . $column . ' to ' . self::APPLICATIONS_TABLE . ' (NULL = unlimited).');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

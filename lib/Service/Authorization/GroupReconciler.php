@@ -50,183 +50,177 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class GroupReconciler
-{
+class GroupReconciler {
 
-    /**
-     * App-config key prefix under which each app's declared group list is stored
-     * by {@see \OCA\OpenRegister\Service\Configuration\ImportHandler}.
-     *
-     * @var string
-     */
-    public const DECLARED_GROUPS_PREFIX = 'declared_groups_';
+	/**
+	 * App-config key prefix under which each app's declared group list is stored
+	 * by {@see \OCA\OpenRegister\Service\Configuration\ImportHandler}.
+	 *
+	 * @var string
+	 */
+	public const DECLARED_GROUPS_PREFIX = 'declared_groups_';
 
-    /**
-     * Constructor.
-     *
-     * @param RegisterMapper     $registerMapper Live register lookup.
-     * @param SchemaMapper       $schemaMapper   Live schema lookup.
-     * @param IAppConfig         $appConfig      Stores each app's declared group list.
-     * @param RbacGroupCollector $collector      Declared-group extraction.
-     * @param GroupProvisioner   $provisioner    Create-only group provisioning.
-     * @param LoggerInterface    $logger         PSR logger.
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IAppConfig $appConfig,
-        private readonly RbacGroupCollector $collector,
-        private readonly GroupProvisioner $provisioner,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param RegisterMapper $registerMapper Live register lookup.
+	 * @param SchemaMapper $schemaMapper Live schema lookup.
+	 * @param IAppConfig $appConfig Stores each app's declared group list.
+	 * @param RbacGroupCollector $collector Declared-group extraction.
+	 * @param GroupProvisioner $provisioner Create-only group provisioning.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly IAppConfig $appConfig,
+		private readonly RbacGroupCollector $collector,
+		private readonly GroupProvisioner $provisioner,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Run one reconciliation sweep.
-     *
-     * Never throws — this runs from a background job, where an exception would
-     * abort the whole tick and take unrelated work with it.
-     *
-     * @return array{declared: string[], created: string[]} What was declared and what was created.
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    public function reconcile(): array
-    {
-        try {
-            $declared = $this->collectDeclared();
-            if (empty($declared) === true) {
-                return [
-                    'declared' => [],
-                    'created'  => [],
-                ];
-            }
+	/**
+	 * Run one reconciliation sweep.
+	 *
+	 * Never throws — this runs from a background job, where an exception would
+	 * abort the whole tick and take unrelated work with it.
+	 *
+	 * @return array{declared: string[], created: string[]} What was declared and what was created.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function reconcile(): array {
+		try {
+			$declared = $this->collectDeclared();
+			if (empty($declared) === true) {
+				return [
+					'declared' => [],
+					'created' => [],
+				];
+			}
 
-            $result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
+			$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
 
-            return [
-                'declared' => $declared,
-                'created'  => $result['created'],
-            ];
-        } catch (Throwable $e) {
-            $this->logger->error(
-                message: '[GroupReconciler] sweep failed: '.$e->getMessage(),
-                context: ['exception' => $e]
-            );
+			return [
+				'declared' => $declared,
+				'created' => $result['created'],
+			];
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[GroupReconciler] sweep failed: ' . $e->getMessage(),
+				context: ['exception' => $e]
+			);
 
-            return [
-                'declared' => [],
-                'created'  => [],
-            ];
-        }//end try
-    }//end reconcile()
+			return [
+				'declared' => [],
+				'created' => [],
+			];
+		}//end try
+	}//end reconcile()
 
-    /**
-     * Collect every declared group id on the instance.
-     *
-     * Unions three sources: live register authorization, live schema (and
-     * property) authorization, and each app's stored declaration — the last of
-     * which carries authored scopes for groups no authorization block references
-     * yet.
-     *
-     * Public because the declared set is what the inventory surface reports on:
-     * "which groups does this instance depend on, and does anyone belong to
-     * them" is unanswerable without it.
-     *
-     * @return string[] Provisionable group ids.
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    public function collectDeclared(): array
-    {
-        $groups = array_merge(
-            $this->fromLiveRegisters(),
-            $this->fromLiveSchemas(),
-            $this->fromStoredDeclarations()
-        );
+	/**
+	 * Collect every declared group id on the instance.
+	 *
+	 * Unions three sources: live register authorization, live schema (and
+	 * property) authorization, and each app's stored declaration — the last of
+	 * which carries authored scopes for groups no authorization block references
+	 * yet.
+	 *
+	 * Public because the declared set is what the inventory surface reports on:
+	 * "which groups does this instance depend on, and does anyone belong to
+	 * them" is unanswerable without it.
+	 *
+	 * @return string[] Provisionable group ids.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function collectDeclared(): array {
+		$groups = array_merge(
+			$this->fromLiveRegisters(),
+			$this->fromLiveSchemas(),
+			$this->fromStoredDeclarations()
+		);
 
-        return $this->collector->provisionable(groups: $groups);
-    }//end collectDeclared()
+		return $this->collector->provisionable(groups: $groups);
+	}//end collectDeclared()
 
-    /**
-     * Collect groups from every register's authorization block.
-     *
-     * RBAC and multi-tenancy filtering are explicitly DISABLED. This runs from
-     * cron with no logged-in user and no active organisation, and a filtered
-     * `findAll()` would hand back a short list — or an empty one — making the
-     * sweep report a clean pass over registers it never read.
-     *
-     * @return string[] Group ids (unfiltered).
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    private function fromLiveRegisters(): array
-    {
-        $groups = [];
-        foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-            $groups = array_merge(
-                $groups,
-                $this->collector->fromAuthorizationBlock(authorization: $register->getAuthorization())
-            );
-        }
+	/**
+	 * Collect groups from every register's authorization block.
+	 *
+	 * RBAC and multi-tenancy filtering are explicitly DISABLED. This runs from
+	 * cron with no logged-in user and no active organisation, and a filtered
+	 * `findAll()` would hand back a short list — or an empty one — making the
+	 * sweep report a clean pass over registers it never read.
+	 *
+	 * @return string[] Group ids (unfiltered).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function fromLiveRegisters(): array {
+		$groups = [];
+		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			$groups = array_merge(
+				$groups,
+				$this->collector->fromAuthorizationBlock(authorization: $register->getAuthorization())
+			);
+		}
 
-        return $groups;
-    }//end fromLiveRegisters()
+		return $groups;
+	}//end fromLiveRegisters()
 
-    /**
-     * Collect groups from every schema's authorization block and property rules.
-     *
-     * RBAC and multi-tenancy filtering are disabled for the same reason as
-     * {@see self::fromLiveRegisters()}.
-     *
-     * @return string[] Group ids (unfiltered).
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    private function fromLiveSchemas(): array
-    {
-        $groups = [];
-        foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
-            $groups = array_merge(
-                $groups,
-                $this->collector->fromSchemaDefinition(
-                    schemaDefinition: [
-                        'authorization' => $schema->getAuthorization(),
-                        'properties'    => $schema->getProperties(),
-                    ]
-                )
-            );
-        }
+	/**
+	 * Collect groups from every schema's authorization block and property rules.
+	 *
+	 * RBAC and multi-tenancy filtering are disabled for the same reason as
+	 * {@see self::fromLiveRegisters()}.
+	 *
+	 * @return string[] Group ids (unfiltered).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function fromLiveSchemas(): array {
+		$groups = [];
+		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
+			$groups = array_merge(
+				$groups,
+				$this->collector->fromSchemaDefinition(
+					schemaDefinition: [
+						'authorization' => $schema->getAuthorization(),
+						'properties' => $schema->getProperties(),
+					]
+				)
+			);
+		}
 
-        return $groups;
-    }//end fromLiveSchemas()
+		return $groups;
+	}//end fromLiveSchemas()
 
-    /**
-     * Collect groups from each app's stored declaration.
-     *
-     * Covers authored scopes and virtual OpenBuild apps, whose declaration is
-     * never readable from disk.
-     *
-     * @return string[] Group ids (unfiltered).
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    private function fromStoredDeclarations(): array
-    {
-        $groups = [];
-        foreach ($this->appConfig->getKeys('openregister') as $key) {
-            if (str_starts_with($key, self::DECLARED_GROUPS_PREFIX) === false) {
-                continue;
-            }
+	/**
+	 * Collect groups from each app's stored declaration.
+	 *
+	 * Covers authored scopes and virtual OpenBuild apps, whose declaration is
+	 * never readable from disk.
+	 *
+	 * @return string[] Group ids (unfiltered).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function fromStoredDeclarations(): array {
+		$groups = [];
+		foreach ($this->appConfig->getKeys('openregister') as $key) {
+			if (str_starts_with($key, self::DECLARED_GROUPS_PREFIX) === false) {
+				continue;
+			}
 
-            $stored = json_decode($this->appConfig->getValueString('openregister', $key, '[]'), true);
-            if (is_array($stored) === false) {
-                continue;
-            }
+			$stored = json_decode($this->appConfig->getValueString('openregister', $key, '[]'), true);
+			if (is_array($stored) === false) {
+				continue;
+			}
 
-            $groups = array_merge($groups, $stored);
-        }
+			$groups = array_merge($groups, $stored);
+		}
 
-        return $groups;
-    }//end fromStoredDeclarations()
+		return $groups;
+	}//end fromStoredDeclarations()
 }//end class

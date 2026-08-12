@@ -43,89 +43,87 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<ApprovalStepCompletedEvent>
  */
-class ApprovalChainAdvanceListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SchemaMapper     $schemaMapper     Schema lookup mapper.
-     * @param TransitionEngine $transitionEngine Engine used to apply the declared transition.
-     * @param LoggerInterface  $logger           Logger for fail-soft diagnostics.
-     */
-    public function __construct(
-        private readonly SchemaMapper $schemaMapper,
-        private readonly TransitionEngine $transitionEngine,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class ApprovalChainAdvanceListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param TransitionEngine $transitionEngine Engine used to apply the declared transition.
+	 * @param LoggerInterface $logger Logger for fail-soft diagnostics.
+	 */
+	public function __construct(
+		private readonly SchemaMapper $schemaMapper,
+		private readonly TransitionEngine $transitionEngine,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Advance the gated transition when the completed chain declares it.
-     *
-     * @param Event $event Inbound dispatcher event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ApprovalStepCompletedEvent) === false) {
-            return;
-        }
+	/**
+	 * Advance the gated transition when the completed chain declares it.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ApprovalStepCompletedEvent) === false) {
+			return;
+		}
 
-        $chain    = $event->getChain();
-        $schemaId = $chain->getSchemaId();
-        if ($schemaId === null) {
-            return;
-        }
+		$chain = $event->getChain();
+		$schemaId = $chain->getSchemaId();
+		if ($schemaId === null) {
+			return;
+		}
 
-        try {
-            $schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-        } catch (\Throwable $e) {
-            return;
-        }
+		try {
+			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return;
+		}
 
-        if (($schema instanceof Schema) === false) {
-            return;
-        }
+		if (($schema instanceof Schema) === false) {
+			return;
+		}
 
-        $config = ($schema->getConfiguration() ?? []);
-        $chains = ($config['x-openregister-approval-chains'] ?? null);
-        if (is_array($chains) === false) {
-            return;
-        }
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config['x-openregister-approval-chains'] ?? null);
+		if (is_array($chains) === false) {
+			return;
+		}
 
-        $entry = ($chains[(string) $chain->getName()] ?? null);
-        if (is_array($entry) === false) {
-            return;
-        }
+		$entry = ($chains[(string)$chain->getName()] ?? null);
+		if (is_array($entry) === false) {
+			return;
+		}
 
-        if (($entry['onApprove'] ?? null) !== 'advanceTransition') {
-            return;
-        }
+		if (($entry['onApprove'] ?? null) !== 'advanceTransition') {
+			return;
+		}
 
-        $action     = (string) ($entry['transition'] ?? '');
-        $objectUuid = $event->getObjectUuid();
-        if ($action === '' || $objectUuid === '') {
-            return;
-        }
+		$action = (string)($entry['transition'] ?? '');
+		$objectUuid = $event->getObjectUuid();
+		if ($action === '' || $objectUuid === '') {
+			return;
+		}
 
-        try {
-            $this->transitionEngine->transition(objectId: $objectUuid, action: $action);
-        } catch (\Throwable $e) {
-            // Fail-soft: the chain is correctly `approved` regardless. A failed
-            // auto-advance leaves the object at its pre-gate state; the gate
-            // listener will allow a subsequent manual transition attempt since
-            // every provisioned step is already approved.
-            $this->logger->warning(
-                sprintf(
-                    '[ApprovalChainAdvanceListener] auto-advance "%s" for object %s failed: %s',
-                    $action,
-                    $objectUuid,
-                    $e->getMessage()
-                )
-            );
-        }
-    }//end handle()
+		try {
+			$this->transitionEngine->transition(objectId: $objectUuid, action: $action);
+		} catch (\Throwable $e) {
+			// Fail-soft: the chain is correctly `approved` regardless. A failed
+			// auto-advance leaves the object at its pre-gate state; the gate
+			// listener will allow a subsequent manual transition attempt since
+			// every provisioned step is already approved.
+			$this->logger->warning(
+				sprintf(
+					'[ApprovalChainAdvanceListener] auto-advance "%s" for object %s failed: %s',
+					$action,
+					$objectUuid,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end handle()
 }//end class

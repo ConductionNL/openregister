@@ -48,40 +48,37 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class Version1Date20260812100000 extends SimpleMigrationStep
-{
-    /**
-     * Add the comment column.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260812100000 extends SimpleMigrationStep {
+	/**
+	 * Add the comment column.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_flows') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_flows') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_flows');
+		$table = $schema->getTable('openregister_flows');
 
-        if ($table->hasColumn('comment') === true) {
-            return null;
-        }
+		if ($table->hasColumn('comment') === true) {
+			return null;
+		}
 
-        $table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
+		$table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

@@ -54,28 +54,26 @@ use OCP\Util;
  *
  * @spec openspec/changes/universal-shared-integration-registry/tasks.md
  */
-class IntegrationGlobalScriptListener implements IEventListener
-{
-    /**
-     * Handle the template-rendered event by injecting the bootstrap script.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addInitScript is a
-     *     Nextcloud framework static helper with no injectable DI equivalent;
-     *     the NC AppFramework does not expose addInitScript via any interface.
-     *
-     * @spec openspec/changes/universal-shared-integration-registry/tasks.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof BeforeTemplateRenderedEvent) === false) {
-            return;
-        }
+class IntegrationGlobalScriptListener implements IEventListener {
+	/**
+	 * Handle the template-rendered event by injecting the bootstrap script.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addInitScript is a
+	 *     Nextcloud framework static helper with no injectable DI equivalent;
+	 *     the NC AppFramework does not expose addInitScript via any interface.
+	 *
+	 * @spec openspec/changes/universal-shared-integration-registry/tasks.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof BeforeTemplateRenderedEvent) === false) {
+			return;
+		}
 
-        Util::addInitScript('openregister', 'openregister-integration-global');
+		Util::addInitScript('openregister', 'openregister-integration-global');
 
-    }//end handle()
+	}//end handle()
 }//end class

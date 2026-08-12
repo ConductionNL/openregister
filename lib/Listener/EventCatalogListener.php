@@ -55,87 +55,84 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  */
-class EventCatalogListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowTriggerService $triggers Queues an engine run per wired flow.
-     */
-    public function __construct(
-        private readonly FlowTriggerService $triggers
-    ) {
-    }//end __construct()
+class EventCatalogListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowTriggerService $triggers Queues an engine run per wired flow.
+	 */
+	public function __construct(
+		private readonly FlowTriggerService $triggers,
+	) {
+	}//end __construct()
 
-    /**
-     * Map a catalog event to its trigger id and run the object's flows.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectCreatedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.created');
-            return;
-        }
+	/**
+	 * Map a catalog event to its trigger id and run the object's flows.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.created');
+			return;
+		}
 
-        if ($event instanceof ObjectUpdatedEvent) {
-            $this->dispatch(object: $event->getNewObject(), trigger: 'object.updated');
-            return;
-        }
+		if ($event instanceof ObjectUpdatedEvent) {
+			$this->dispatch(object: $event->getNewObject(), trigger: 'object.updated');
+			return;
+		}
 
-        if ($event instanceof ObjectDeletedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.deleted');
-            return;
-        }
+		if ($event instanceof ObjectDeletedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.deleted');
+			return;
+		}
 
-        if ($event instanceof ObjectLockedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.locked');
-            return;
-        }
+		if ($event instanceof ObjectLockedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.locked');
+			return;
+		}
 
-        if ($event instanceof ObjectUnlockedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.unlocked');
-            return;
-        }
+		if ($event instanceof ObjectUnlockedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.unlocked');
+			return;
+		}
 
-        if ($event instanceof ObjectRevertedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.reverted');
-            return;
-        }
+		if ($event instanceof ObjectRevertedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.reverted');
+			return;
+		}
 
-        if ($event instanceof ObjectTransitionedEvent) {
-            $this->dispatch(object: $event->getObject(), trigger: 'object.transitioned');
-            return;
-        }
-    }//end handle()
+		if ($event instanceof ObjectTransitionedEvent) {
+			$this->dispatch(object: $event->getObject(), trigger: 'object.transitioned');
+			return;
+		}
+	}//end handle()
 
-    /**
-     * Run flows for an object, guarding against a null payload.
-     *
-     * @param ObjectEntity|null $object  The object the event carried.
-     * @param string            $trigger The catalog trigger id.
-     *
-     * @return void
-     */
-    private function dispatch(?ObjectEntity $object, string $trigger): void
-    {
-        if ($object === null) {
-            return;
-        }
+	/**
+	 * Run flows for an object, guarding against a null payload.
+	 *
+	 * @param ObjectEntity|null $object The object the event carried.
+	 * @param string $trigger The catalog trigger id.
+	 *
+	 * @return void
+	 */
+	private function dispatch(?ObjectEntity $object, string $trigger): void {
+		if ($object === null) {
+			return;
+		}
 
-        // Queue an engine run per wired flow, rather than executing an action
-        // list inline. A catalog event fires inside somebody's save, so the
-        // trigger records intent and returns; the worker does the walking.
-        $this->triggers->fire(
-            event: $trigger,
-            subject: [
-                'uuid'     => $object->getUuid(),
-                'register' => (string) $object->getRegister(),
-                'schema'   => (string) $object->getSchema(),
-            ]
-        );
-    }//end dispatch()
+		// Queue an engine run per wired flow, rather than executing an action
+		// list inline. A catalog event fires inside somebody's save, so the
+		// trigger records intent and returns; the worker does the walking.
+		$this->triggers->fire(
+			event: $trigger,
+			subject: [
+				'uuid' => $object->getUuid(),
+				'register' => (string)$object->getRegister(),
+				'schema' => (string)$object->getSchema(),
+			]
+		);
+	}//end dispatch()
 }//end class

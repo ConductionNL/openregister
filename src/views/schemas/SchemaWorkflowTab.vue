@@ -134,5 +134,6 @@ export default {
 
 <style scoped>
 .schema-workflow-tab { padding: 20px; }
+
 .tab-section { margin-bottom: 24px; }
 </style>

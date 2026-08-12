@@ -29,39 +29,36 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an object is unlocked
  */
-class ObjectUnlockedEvent extends Event
-{
+class ObjectUnlockedEvent extends Event {
 
-    /**
-     * The unlocked object entity
-     *
-     * @var ObjectEntity The object that has been unlocked
-     */
-    private ObjectEntity $object;
+	/**
+	 * The unlocked object entity
+	 *
+	 * @var ObjectEntity The object that has been unlocked
+	 */
+	private ObjectEntity $object;
 
-    /**
-     * Constructor for ObjectUnlockedEvent
-     *
-     * @param ObjectEntity $object The object that has been unlocked
-     *
-     * @return void
-     */
-    public function __construct(ObjectEntity $object)
-    {
-        parent::__construct();
-        $this->object = $object;
-    }//end __construct()
+	/**
+	 * Constructor for ObjectUnlockedEvent
+	 *
+	 * @param ObjectEntity $object The object that has been unlocked
+	 *
+	 * @return void
+	 */
+	public function __construct(ObjectEntity $object) {
+		parent::__construct();
+		$this->object = $object;
+	}//end __construct()
 
-    /**
-     * Get the unlocked object entity
-     *
-     * @return ObjectEntity The object that has been unlocked
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-3
-     */
-    public function getObject(): ObjectEntity
-    {
-        return $this->object;
-    }//end getObject()
+	/**
+	 * Get the unlocked object entity
+	 *
+	 * @return ObjectEntity The object that has been unlocked
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-3
+	 */
+	public function getObject(): ObjectEntity {
+		return $this->object;
+	}//end getObject()
 }//end class

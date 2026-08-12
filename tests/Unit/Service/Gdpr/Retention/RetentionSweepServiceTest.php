@@ -30,148 +30,139 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for RetentionSweepService.
  */
-class RetentionSweepServiceTest extends TestCase
-{
+class RetentionSweepServiceTest extends TestCase {
 
-    /**
-     * Fixed "now" for deterministic window comparisons.
-     *
-     * @var int
-     */
-    private int $now = 1751500000;
+	/**
+	 * Fixed "now" for deterministic window comparisons.
+	 *
+	 * @var int
+	 */
+	private int $now = 1751500000;
 
-    /**
-     * Build a case entity with a given uuid + retainUntil + subjectId.
-     *
-     * @param string $uuid        Case uuid.
-     * @param string $retainUntil ISO-8601 retain-until stamp (or '' for none).
-     * @param string $subjectId   Subject id.
-     *
-     * @return ObjectEntity
-     */
-    private function caseEntity(string $uuid, string $retainUntil, string $subjectId='s@example.org'): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid($uuid);
-        $object->setObject(['subjectId' => $subjectId, 'retainUntil' => $retainUntil]);
-        return $object;
+	/**
+	 * Build a case entity with a given uuid + retainUntil + subjectId.
+	 *
+	 * @param string $uuid Case uuid.
+	 * @param string $retainUntil ISO-8601 retain-until stamp (or '' for none).
+	 * @param string $subjectId Subject id.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function caseEntity(string $uuid, string $retainUntil, string $subjectId = 's@example.org'): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setObject(['subjectId' => $subjectId, 'retainUntil' => $retainUntil]);
+		return $object;
+	}//end caseEntity()
 
-    }//end caseEntity()
+	/**
+	 * Build the SUT with a fixed clock and the supplied cases + hold verdicts.
+	 *
+	 * @param ObjectEntity[] $cases Case entities to sweep.
+	 * @param callable $holdResolver fn(ObjectEntity):bool legal-hold verdict.
+	 * @param RetentionService|null $retentionMock Optional pre-built retention mock.
+	 *
+	 * @return array{0: RetentionSweepService, 1: \PHPUnit\Framework\MockObject\MockObject}
+	 */
+	private function build(array $cases, callable $holdResolver): array {
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('findAllCaseEntities')->willReturn($cases);
 
-    /**
-     * Build the SUT with a fixed clock and the supplied cases + hold verdicts.
-     *
-     * @param ObjectEntity[]      $cases         Case entities to sweep.
-     * @param callable            $holdResolver  fn(ObjectEntity):bool legal-hold verdict.
-     * @param RetentionService|null $retentionMock Optional pre-built retention mock.
-     *
-     * @return array{0: RetentionSweepService, 1: \PHPUnit\Framework\MockObject\MockObject}
-     */
-    private function build(array $cases, callable $holdResolver): array
-    {
-        $accessor = $this->createMock(CaseObjectAccessor::class);
-        $accessor->method('findAllCaseEntities')->willReturn($cases);
+		$retention = $this->createMock(RetentionService::class);
+		$retention->method('hasActiveLegalHold')->willReturnCallback($holdResolver);
+		$retention->method('validateNotImmutable')->willReturn(null);
 
-        $retention = $this->createMock(RetentionService::class);
-        $retention->method('hasActiveLegalHold')->willReturnCallback($holdResolver);
-        $retention->method('validateNotImmutable')->willReturn(null);
+		$dsr = $this->createMock(DataSubjectRequestService::class);
 
-        $dsr = $this->createMock(DataSubjectRequestService::class);
+		$time = $this->createMock(ITimeFactory::class);
+		$time->method('getTime')->willReturn($this->now);
 
-        $time = $this->createMock(ITimeFactory::class);
-        $time->method('getTime')->willReturn($this->now);
+		$service = new RetentionSweepService(
+			$accessor,
+			$retention,
+			$dsr,
+			$time,
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $service = new RetentionSweepService(
-            $accessor,
-            $retention,
-            $dsr,
-            $time,
-            $this->createMock(LoggerInterface::class)
-        );
+		return [$service, $accessor, $dsr];
+	}//end build()
 
-        return [$service, $accessor, $dsr];
+	/**
+	 * An expired, non-held case is scrubbed (erase pseudonymise) + deleted.
+	 *
+	 * @return void
+	 */
+	public function testExpiredCaseIsScrubbedAndDeleted(): void {
+		$expired = $this->caseEntity('case-expired', '2020-01-01T00:00:00+00:00');
+		[$service, $accessor, $dsr] = $this->build([$expired], static fn (): bool => false);
 
-    }//end build()
+		$dsr->expects($this->once())
+			->method('erase')
+			->with('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+			->willReturn([]);
 
-    /**
-     * An expired, non-held case is scrubbed (erase pseudonymise) + deleted.
-     *
-     * @return void
-     */
-    public function testExpiredCaseIsScrubbedAndDeleted(): void
-    {
-        $expired = $this->caseEntity('case-expired', '2020-01-01T00:00:00+00:00');
-        [$service, $accessor, $dsr] = $this->build([$expired], static fn(): bool => false);
+		$accessor->expects($this->once())
+			->method('deleteForSweep')
+			->with('case-expired')
+			->willReturn(true);
 
-        $dsr->expects($this->once())
-            ->method('erase')
-            ->with('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
-            ->willReturn([]);
+		$summary = $service->runSweep(dryRun: false);
+		$this->assertSame(['case-expired'], $summary['purged']);
 
-        $accessor->expects($this->once())
-            ->method('deleteForSweep')
-            ->with('case-expired')
-            ->willReturn(true);
+	}//end testExpiredCaseIsScrubbedAndDeleted()
 
-        $summary = $service->runSweep(dryRun: false);
-        $this->assertSame(['case-expired'], $summary['purged']);
+	/**
+	 * A case still within its window is untouched.
+	 *
+	 * @return void
+	 */
+	public function testWithinWindowUntouched(): void {
+		$future = $this->caseEntity('case-future', '2099-01-01T00:00:00+00:00');
+		[$service, $accessor, $dsr] = $this->build([$future], static fn (): bool => false);
 
-    }//end testExpiredCaseIsScrubbedAndDeleted()
+		$dsr->expects($this->never())->method('erase');
+		$accessor->expects($this->never())->method('deleteForSweep');
 
-    /**
-     * A case still within its window is untouched.
-     *
-     * @return void
-     */
-    public function testWithinWindowUntouched(): void
-    {
-        $future = $this->caseEntity('case-future', '2099-01-01T00:00:00+00:00');
-        [$service, $accessor, $dsr] = $this->build([$future], static fn(): bool => false);
+		$summary = $service->runSweep(dryRun: false);
+		$this->assertSame([], $summary['purged']);
+		$this->assertSame(1, $summary['withinWindow']);
 
-        $dsr->expects($this->never())->method('erase');
-        $accessor->expects($this->never())->method('deleteForSweep');
+	}//end testWithinWindowUntouched()
 
-        $summary = $service->runSweep(dryRun: false);
-        $this->assertSame([], $summary['purged']);
-        $this->assertSame(1, $summary['withinWindow']);
+	/**
+	 * Dry-run reports the expired case without destroying anything.
+	 *
+	 * @return void
+	 */
+	public function testDryRunReportsWithoutDestroying(): void {
+		$expired = $this->caseEntity('case-expired', '2020-01-01T00:00:00+00:00');
+		[$service, $accessor, $dsr] = $this->build([$expired], static fn (): bool => false);
 
-    }//end testWithinWindowUntouched()
+		$dsr->expects($this->never())->method('erase');
+		$accessor->expects($this->never())->method('deleteForSweep');
 
-    /**
-     * Dry-run reports the expired case without destroying anything.
-     *
-     * @return void
-     */
-    public function testDryRunReportsWithoutDestroying(): void
-    {
-        $expired = $this->caseEntity('case-expired', '2020-01-01T00:00:00+00:00');
-        [$service, $accessor, $dsr] = $this->build([$expired], static fn(): bool => false);
+		$summary = $service->runSweep(dryRun: true);
+		$this->assertTrue($summary['dryRun']);
+		$this->assertSame(['case-expired'], $summary['purged']);
 
-        $dsr->expects($this->never())->method('erase');
-        $accessor->expects($this->never())->method('deleteForSweep');
+	}//end testDryRunReportsWithoutDestroying()
 
-        $summary = $service->runSweep(dryRun: true);
-        $this->assertTrue($summary['dryRun']);
-        $this->assertSame(['case-expired'], $summary['purged']);
+	/**
+	 * An expired case under an active legal hold is skipped intact.
+	 *
+	 * @return void
+	 */
+	public function testExpiredButHeldCaseSkipped(): void {
+		$held = $this->caseEntity('case-held', '2020-01-01T00:00:00+00:00');
+		[$service, $accessor, $dsr] = $this->build([$held], static fn (): bool => true);
 
-    }//end testDryRunReportsWithoutDestroying()
+		$dsr->expects($this->never())->method('erase');
+		$accessor->expects($this->never())->method('deleteForSweep');
 
-    /**
-     * An expired case under an active legal hold is skipped intact.
-     *
-     * @return void
-     */
-    public function testExpiredButHeldCaseSkipped(): void
-    {
-        $held = $this->caseEntity('case-held', '2020-01-01T00:00:00+00:00');
-        [$service, $accessor, $dsr] = $this->build([$held], static fn(): bool => true);
+		$summary = $service->runSweep(dryRun: false);
+		$this->assertSame(['case-held'], $summary['skippedHeld']);
+		$this->assertSame([], $summary['purged']);
 
-        $dsr->expects($this->never())->method('erase');
-        $accessor->expects($this->never())->method('deleteForSweep');
-
-        $summary = $service->runSweep(dryRun: false);
-        $this->assertSame(['case-held'], $summary['skippedHeld']);
-        $this->assertSame([], $summary['purged']);
-
-    }//end testExpiredButHeldCaseSkipped()
+	}//end testExpiredButHeldCaseSkipped()
 }//end class

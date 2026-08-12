@@ -25,127 +25,118 @@ use PHPUnit\Framework\TestCase;
 /**
  * Test class for DataSubjectDeadline.
  */
-class DataSubjectDeadlineTest extends TestCase
-{
+class DataSubjectDeadlineTest extends TestCase {
 
-    /**
-     * Subject under test.
-     *
-     * @var DataSubjectDeadline
-     */
-    private DataSubjectDeadline $deadline;
+	/**
+	 * Subject under test.
+	 *
+	 * @var DataSubjectDeadline
+	 */
+	private DataSubjectDeadline $deadline;
 
-    /**
-     * Set up the SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->deadline = new DataSubjectDeadline();
+	/**
+	 * Set up the SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->deadline = new DataSubjectDeadline();
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * The base due date is exactly one month after receipt.
-     *
-     * @return void
-     */
-    public function testComputeDueAtAddsOneMonth(): void
-    {
-        $received = new DateTimeImmutable('2026-01-10T09:00:00+00:00');
-        $due      = $this->deadline->computeDueAt($received);
+	/**
+	 * The base due date is exactly one month after receipt.
+	 *
+	 * @return void
+	 */
+	public function testComputeDueAtAddsOneMonth(): void {
+		$received = new DateTimeImmutable('2026-01-10T09:00:00+00:00');
+		$due = $this->deadline->computeDueAt($received);
 
-        $this->assertSame('2026-02-10T09:00:00+00:00', $due->format('c'));
+		$this->assertSame('2026-02-10T09:00:00+00:00', $due->format('c'));
 
-    }//end testComputeDueAtAddsOneMonth()
+	}//end testComputeDueAtAddsOneMonth()
 
-    /**
-     * Month arithmetic follows the civil calendar (31 Jan + 1M = Feb 28/29).
-     *
-     * @return void
-     */
-    public function testComputeDueAtMonthEndRollsOver(): void
-    {
-        $received = new DateTimeImmutable('2026-01-31T00:00:00+00:00');
-        $due      = $this->deadline->computeDueAt($received);
+	/**
+	 * Month arithmetic follows the civil calendar (31 Jan + 1M = Feb 28/29).
+	 *
+	 * @return void
+	 */
+	public function testComputeDueAtMonthEndRollsOver(): void {
+		$received = new DateTimeImmutable('2026-01-31T00:00:00+00:00');
+		$due = $this->deadline->computeDueAt($received);
 
-        // 2026 is not a leap year — 31 Jan + 1 month normalises into March.
-        $this->assertSame('2026-03-03T00:00:00+00:00', $due->format('c'));
+		// 2026 is not a leap year — 31 Jan + 1 month normalises into March.
+		$this->assertSame('2026-03-03T00:00:00+00:00', $due->format('c'));
 
-    }//end testComputeDueAtMonthEndRollsOver()
+	}//end testComputeDueAtMonthEndRollsOver()
 
-    /**
-     * A single extension adds two months to the base due date.
-     *
-     * @return void
-     */
-    public function testExtendAddsTwoMonthsToBaseDueDate(): void
-    {
-        $received = new DateTimeImmutable('2026-01-10T09:00:00+00:00');
-        $due      = $this->deadline->computeDueAt($received);
-        $extended = $this->deadline->extend($due);
+	/**
+	 * A single extension adds two months to the base due date.
+	 *
+	 * @return void
+	 */
+	public function testExtendAddsTwoMonthsToBaseDueDate(): void {
+		$received = new DateTimeImmutable('2026-01-10T09:00:00+00:00');
+		$due = $this->deadline->computeDueAt($received);
+		$extended = $this->deadline->extend($due);
 
-        // Base = 10 Feb; extended = 10 Apr (base + 2 months), NOT anchored on now.
-        $this->assertSame('2026-04-10T09:00:00+00:00', $extended->format('c'));
+		// Base = 10 Feb; extended = 10 Apr (base + 2 months), NOT anchored on now.
+		$this->assertSame('2026-04-10T09:00:00+00:00', $extended->format('c'));
 
-    }//end testExtendAddsTwoMonthsToBaseDueDate()
+	}//end testExtendAddsTwoMonthsToBaseDueDate()
 
-    /**
-     * Overdue is true when the reference time is at/after the deadline.
-     *
-     * @return void
-     */
-    public function testIsOverdueWhenReferenceIsPastDeadline(): void
-    {
-        $deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
-        $now        = new DateTimeImmutable('2026-02-11T09:00:00+00:00');
+	/**
+	 * Overdue is true when the reference time is at/after the deadline.
+	 *
+	 * @return void
+	 */
+	public function testIsOverdueWhenReferenceIsPastDeadline(): void {
+		$deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
+		$now = new DateTimeImmutable('2026-02-11T09:00:00+00:00');
 
-        $this->assertTrue($this->deadline->isOverdue($deadlineAt, $now));
+		$this->assertTrue($this->deadline->isOverdue($deadlineAt, $now));
 
-    }//end testIsOverdueWhenReferenceIsPastDeadline()
+	}//end testIsOverdueWhenReferenceIsPastDeadline()
 
-    /**
-     * Overdue is true exactly at the deadline boundary (at-or-after).
-     *
-     * @return void
-     */
-    public function testIsOverdueAtExactBoundary(): void
-    {
-        $deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
+	/**
+	 * Overdue is true exactly at the deadline boundary (at-or-after).
+	 *
+	 * @return void
+	 */
+	public function testIsOverdueAtExactBoundary(): void {
+		$deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
 
-        $this->assertTrue($this->deadline->isOverdue($deadlineAt, $deadlineAt));
+		$this->assertTrue($this->deadline->isOverdue($deadlineAt, $deadlineAt));
 
-    }//end testIsOverdueAtExactBoundary()
+	}//end testIsOverdueAtExactBoundary()
 
-    /**
-     * Not overdue when the deadline is still in the future.
-     *
-     * @return void
-     */
-    public function testIsNotOverdueWhenDeadlineInFuture(): void
-    {
-        $deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
-        $now        = new DateTimeImmutable('2026-02-01T09:00:00+00:00');
+	/**
+	 * Not overdue when the deadline is still in the future.
+	 *
+	 * @return void
+	 */
+	public function testIsNotOverdueWhenDeadlineInFuture(): void {
+		$deadlineAt = new DateTimeImmutable('2026-02-10T09:00:00+00:00');
+		$now = new DateTimeImmutable('2026-02-01T09:00:00+00:00');
 
-        $this->assertFalse($this->deadline->isOverdue($deadlineAt, $now));
+		$this->assertFalse($this->deadline->isOverdue($deadlineAt, $now));
 
-    }//end testIsNotOverdueWhenDeadlineInFuture()
+	}//end testIsNotOverdueWhenDeadlineInFuture()
 
-    /**
-     * Days remaining is positive before, negative after the deadline.
-     *
-     * @return void
-     */
-    public function testDaysRemaining(): void
-    {
-        $deadlineAt = new DateTimeImmutable('2026-02-10T00:00:00+00:00');
+	/**
+	 * Days remaining is positive before, negative after the deadline.
+	 *
+	 * @return void
+	 */
+	public function testDaysRemaining(): void {
+		$deadlineAt = new DateTimeImmutable('2026-02-10T00:00:00+00:00');
 
-        $before = new DateTimeImmutable('2026-02-01T00:00:00+00:00');
-        $this->assertSame(9, $this->deadline->daysRemaining($deadlineAt, $before));
+		$before = new DateTimeImmutable('2026-02-01T00:00:00+00:00');
+		$this->assertSame(9, $this->deadline->daysRemaining($deadlineAt, $before));
 
-        $after = new DateTimeImmutable('2026-02-13T00:00:00+00:00');
-        $this->assertSame(-3, $this->deadline->daysRemaining($deadlineAt, $after));
+		$after = new DateTimeImmutable('2026-02-13T00:00:00+00:00');
+		$this->assertSame(-3, $this->deadline->daysRemaining($deadlineAt, $after));
 
-    }//end testDaysRemaining()
+	}//end testDaysRemaining()
 }//end class

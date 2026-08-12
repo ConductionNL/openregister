@@ -30,59 +30,55 @@ namespace OCA\OpenRegister\Service\Sync;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class SourceFetcherRegistry
-{
+class SourceFetcherRegistry {
 
-    /**
-     * Registered fetchers.
-     *
-     * @var list<SourceFetcherInterface>
-     */
-    private array $fetchers = [];
+	/**
+	 * Registered fetchers.
+	 *
+	 * @var list<SourceFetcherInterface>
+	 */
+	private array $fetchers = [];
 
-    /**
-     * Constructor.
-     *
-     * @param iterable<SourceFetcherInterface> $fetchers Initial fetchers (DI-provided)
-     */
-    public function __construct(iterable $fetchers=[])
-    {
-        foreach ($fetchers as $fetcher) {
-            $this->register(fetcher: $fetcher);
-        }
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param iterable<SourceFetcherInterface> $fetchers Initial fetchers (DI-provided)
+	 */
+	public function __construct(iterable $fetchers = []) {
+		foreach ($fetchers as $fetcher) {
+			$this->register(fetcher: $fetcher);
+		}
+	}//end __construct()
 
-    /**
-     * Register a fetcher.
-     *
-     * @param SourceFetcherInterface $fetcher The fetcher
-     *
-     * @return void
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function register(SourceFetcherInterface $fetcher): void
-    {
-        $this->fetchers[] = $fetcher;
-    }//end register()
+	/**
+	 * Register a fetcher.
+	 *
+	 * @param SourceFetcherInterface $fetcher The fetcher
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function register(SourceFetcherInterface $fetcher): void {
+		$this->fetchers[] = $fetcher;
+	}//end register()
 
-    /**
-     * Get a fetcher for the given source type.
-     *
-     * @param string $type The source type
-     *
-     * @return SourceFetcherInterface|null The first supporting fetcher, or null
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function get(string $type): ?SourceFetcherInterface
-    {
-        foreach ($this->fetchers as $fetcher) {
-            if ($fetcher->supports($type) === true) {
-                return $fetcher;
-            }
-        }
+	/**
+	 * Get a fetcher for the given source type.
+	 *
+	 * @param string $type The source type
+	 *
+	 * @return SourceFetcherInterface|null The first supporting fetcher, or null
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function get(string $type): ?SourceFetcherInterface {
+		foreach ($this->fetchers as $fetcher) {
+			if ($fetcher->supports($type) === true) {
+				return $fetcher;
+			}
+		}
 
-        return null;
-    }//end get()
+		return null;
+	}//end get()
 }//end class

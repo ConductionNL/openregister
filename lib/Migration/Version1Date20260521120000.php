@@ -51,245 +51,230 @@ use Throwable;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20260521120000 extends SimpleMigrationStep
-{
+class Version1Date20260521120000 extends SimpleMigrationStep {
 
-    /**
-     * Database connection.
-     *
-     * @var IDBConnection
-     */
-    private IDBConnection $connection;
+	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $connection;
 
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $connection Database connection
-     */
-    public function __construct(IDBConnection $connection)
-    {
-        $this->connection = $connection;
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $connection Database connection
+	 */
+	public function __construct(IDBConnection $connection) {
+		$this->connection = $connection;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * No schema changes — repair runs in postSchemaChange where raw
-     * DDL against dynamic tables is allowed.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Always null — no schema diff
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        return null;
+	/**
+	 * No schema changes — repair runs in postSchemaChange where raw
+	 * DDL against dynamic tables is allowed.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Always null — no schema diff
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		return null;
+	}//end changeSchema()
 
-    }//end changeSchema()
+	/**
+	 * Drop the bare `_uuid` index on every `oc_openregister_table_*` table.
+	 *
+	 * Idempotent: skips tables that don't have the index.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$isPostgres = ($this->connection->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES);
 
-    /**
-     * Drop the bare `_uuid` index on every `oc_openregister_table_*` table.
-     *
-     * Idempotent: skips tables that don't have the index.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $isPostgres = ($this->connection->getDatabaseProvider() === IDBConnection::PLATFORM_POSTGRES);
+		$affectedTables = $this->findAffectedTables(isPostgres: $isPostgres);
 
-        $affectedTables = $this->findAffectedTables(isPostgres: $isPostgres);
+		if (\count($affectedTables) === 0) {
+			$output->info(message: 'No dynamic openregister tables have the bare `_uuid` index — nothing to repair.');
+			return;
+		}
 
-        if (\count($affectedTables) === 0) {
-            $output->info(message: 'No dynamic openregister tables have the bare `_uuid` index — nothing to repair.');
-            return;
-        }
+		$dropped = $this->dropBareUuidIndexes(
+			output: $output,
+			affectedTables: $affectedTables,
+			isPostgres: $isPostgres
+		);
 
-        $dropped = $this->dropBareUuidIndexes(
-            output: $output,
-            affectedTables: $affectedTables,
-            isPostgres: $isPostgres
-        );
+		$output->info(
+			message: sprintf(
+				'Dropped bare `_uuid` index on %d of %d dynamic openregister table(s).',
+				$dropped,
+				\count($affectedTables)
+			)
+		);
 
-        $output->info(
-            message: sprintf(
-                'Dropped bare `_uuid` index on %d of %d dynamic openregister table(s).',
-                $dropped,
-                \count($affectedTables)
-            )
-        );
+	}//end postSchemaChange()
 
-    }//end postSchemaChange()
+	/**
+	 * Dispatch the platform-specific drop of the bare `_uuid` index.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param string[] $affectedTables Tables carrying a bare `_uuid` index
+	 * @param bool $isPostgres Whether the platform is PostgreSQL
+	 *
+	 * @return int Number of indexes actually dropped
+	 */
+	private function dropBareUuidIndexes(IOutput $output, array $affectedTables, bool $isPostgres): int {
+		if ($isPostgres === true) {
+			return $this->dropBareUuidIndexesPostgres(output: $output, affectedTables: $affectedTables);
+		}
 
-    /**
-     * Dispatch the platform-specific drop of the bare `_uuid` index.
-     *
-     * @param IOutput  $output         Output for the migration process
-     * @param string[] $affectedTables Tables carrying a bare `_uuid` index
-     * @param bool     $isPostgres     Whether the platform is PostgreSQL
-     *
-     * @return int Number of indexes actually dropped
-     */
-    private function dropBareUuidIndexes(IOutput $output, array $affectedTables, bool $isPostgres): int
-    {
-        if ($isPostgres === true) {
-            return $this->dropBareUuidIndexesPostgres(output: $output, affectedTables: $affectedTables);
-        }
+		return $this->dropBareUuidIndexesMysql(output: $output, affectedTables: $affectedTables);
+	}//end dropBareUuidIndexes()
 
-        return $this->dropBareUuidIndexesMysql(output: $output, affectedTables: $affectedTables);
-
-    }//end dropBareUuidIndexes()
-
-    /**
-     * Drop the bare `_uuid` index on PostgreSQL.
-     *
-     * PostgreSQL index names are schema-scoped, not table-scoped — so each
-     * per-table bare `_uuid` index has a unique fully-qualified identifier (the
-     * auto-naming would have suffixed numbers if it ever collided). We can't
-     * safely drop by bare name across the schema; instead drop per-table via
-     * the table's own metadata.
-     *
-     * @param IOutput  $output         Output for the migration process
-     * @param string[] $affectedTables Tables carrying a bare `_uuid` index
-     *
-     * @return int Number of indexes actually dropped
-     */
-    private function dropBareUuidIndexesPostgres(IOutput $output, array $affectedTables): int
-    {
-        $dropped = 0;
-        foreach ($affectedTables as $tableName) {
-            try {
-                // Look up indexes on this table named `_uuid` and drop each by full name.
-                $sql  = "SELECT indexname
+	/**
+	 * Drop the bare `_uuid` index on PostgreSQL.
+	 *
+	 * PostgreSQL index names are schema-scoped, not table-scoped — so each
+	 * per-table bare `_uuid` index has a unique fully-qualified identifier (the
+	 * auto-naming would have suffixed numbers if it ever collided). We can't
+	 * safely drop by bare name across the schema; instead drop per-table via
+	 * the table's own metadata.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param string[] $affectedTables Tables carrying a bare `_uuid` index
+	 *
+	 * @return int Number of indexes actually dropped
+	 */
+	private function dropBareUuidIndexesPostgres(IOutput $output, array $affectedTables): int {
+		$dropped = 0;
+		foreach ($affectedTables as $tableName) {
+			try {
+				// Look up indexes on this table named `_uuid` and drop each by full name.
+				$sql = "SELECT indexname
                         FROM pg_indexes
                         WHERE tablename = ?
                           AND indexname LIKE '\\_uuid%' ESCAPE '\\'";
-                $rows = $this->connection->executeQuery($sql, [$tableName])->fetchAll();
-                foreach ($rows as $row) {
-                    $indexName = (string) $row['indexname'];
-                    // Be conservative: only drop indexes whose name is exactly `_uuid`
-                    // or the bare-name suffixed variants Postgres emits on collision.
-                    if (preg_match('/^_uuid(\d+)?$/', $indexName) === 1) {
-                        $this->connection->executeStatement(
-                            sprintf('DROP INDEX IF EXISTS "%s"', $indexName)
-                        );
-                        $dropped++;
-                    }
-                }
-            } catch (Throwable $e) {
-                $output->warning(
-                    message: sprintf(
-                        'Failed to drop bare `_uuid` index on `%s`: %s',
-                        $tableName,
-                        $e->getMessage()
-                    )
-                );
-            }//end try
-        }//end foreach
+				$rows = $this->connection->executeQuery($sql, [$tableName])->fetchAll();
+				foreach ($rows as $row) {
+					$indexName = (string)$row['indexname'];
+					// Be conservative: only drop indexes whose name is exactly `_uuid`
+					// or the bare-name suffixed variants Postgres emits on collision.
+					if (preg_match('/^_uuid(\d+)?$/', $indexName) === 1) {
+						$this->connection->executeStatement(
+							sprintf('DROP INDEX IF EXISTS "%s"', $indexName)
+						);
+						$dropped++;
+					}
+				}
+			} catch (Throwable $e) {
+				$output->warning(
+					message: sprintf(
+						'Failed to drop bare `_uuid` index on `%s`: %s',
+						$tableName,
+						$e->getMessage()
+					)
+				);
+			}//end try
+		}//end foreach
 
-        return $dropped;
+		return $dropped;
+	}//end dropBareUuidIndexesPostgres()
 
-    }//end dropBareUuidIndexesPostgres()
+	/**
+	 * Drop the bare `_uuid` index on MySQL/MariaDB.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param string[] $affectedTables Tables carrying a bare `_uuid` index
+	 *
+	 * @return int Number of indexes actually dropped
+	 */
+	private function dropBareUuidIndexesMysql(IOutput $output, array $affectedTables): int {
+		$dropped = 0;
+		foreach ($affectedTables as $tableName) {
+			try {
+				$this->connection->executeStatement(
+					sprintf('ALTER TABLE `%s` DROP INDEX `_uuid`', $tableName)
+				);
+				$dropped++;
+			} catch (Throwable $e) {
+				$output->warning(
+					message: sprintf(
+						'Failed to drop bare `_uuid` index on `%s`: %s',
+						$tableName,
+						$e->getMessage()
+					)
+				);
+			}//end try
+		}//end foreach
 
-    /**
-     * Drop the bare `_uuid` index on MySQL/MariaDB.
-     *
-     * @param IOutput  $output         Output for the migration process
-     * @param string[] $affectedTables Tables carrying a bare `_uuid` index
-     *
-     * @return int Number of indexes actually dropped
-     */
-    private function dropBareUuidIndexesMysql(IOutput $output, array $affectedTables): int
-    {
-        $dropped = 0;
-        foreach ($affectedTables as $tableName) {
-            try {
-                $this->connection->executeStatement(
-                    sprintf('ALTER TABLE `%s` DROP INDEX `_uuid`', $tableName)
-                );
-                $dropped++;
-            } catch (Throwable $e) {
-                $output->warning(
-                    message: sprintf(
-                        'Failed to drop bare `_uuid` index on `%s`: %s',
-                        $tableName,
-                        $e->getMessage()
-                    )
-                );
-            }//end try
-        }//end foreach
+		return $dropped;
+	}//end dropBareUuidIndexesMysql()
 
-        return $dropped;
+	/**
+	 * Find every `oc_openregister_table_*` table that has an index literally
+	 * named `_uuid`. Returns the unprefixed table names that MySQL/MariaDB
+	 * expect in `ALTER TABLE`, i.e. including the `oc_` prefix.
+	 *
+	 * @param bool $isPostgres Whether the platform is PostgreSQL
+	 *
+	 * @return string[] List of fully-qualified table names to repair
+	 */
+	private function findAffectedTables(bool $isPostgres): array {
+		$tableNames = [];
 
-    }//end dropBareUuidIndexesMysql()
+		try {
+			foreach ($this->queryTablesWithBareUuidIndex(isPostgres: $isPostgres) as $row) {
+				$name = $row['tablename'] ?? $row['TABLE_NAME'] ?? null;
+				if ($name !== null) {
+					$tableNames[] = (string)$name;
+				}
+			}
+		} catch (Throwable $e) {
+			// If introspection fails (unsupported platform, permission issue),
+			// surface no tables and let the caller log the no-op message.
+			return [];
+		}//end try
 
-    /**
-     * Find every `oc_openregister_table_*` table that has an index literally
-     * named `_uuid`. Returns the unprefixed table names that MySQL/MariaDB
-     * expect in `ALTER TABLE`, i.e. including the `oc_` prefix.
-     *
-     * @param bool $isPostgres Whether the platform is PostgreSQL
-     *
-     * @return string[] List of fully-qualified table names to repair
-     */
-    private function findAffectedTables(bool $isPostgres): array
-    {
-        $tableNames = [];
+		return $tableNames;
+	}//end findAffectedTables()
 
-        try {
-            foreach ($this->queryTablesWithBareUuidIndex(isPostgres: $isPostgres) as $row) {
-                $name = $row['tablename'] ?? $row['TABLE_NAME'] ?? null;
-                if ($name !== null) {
-                    $tableNames[] = (string) $name;
-                }
-            }
-        } catch (Throwable $e) {
-            // If introspection fails (unsupported platform, permission issue),
-            // surface no tables and let the caller log the no-op message.
-            return [];
-        }//end try
-
-        return $tableNames;
-
-    }//end findAffectedTables()
-
-    /**
-     * Run the platform-specific introspection query for tables carrying a bare
-     * `_uuid` index.
-     *
-     * @param bool $isPostgres Whether the platform is PostgreSQL
-     *
-     * @return array<array-key, array<string, mixed>> Raw result rows
-     */
-    private function queryTablesWithBareUuidIndex(bool $isPostgres): array
-    {
-        if ($isPostgres === true) {
-            // Mirror the LIKE pattern used in dropBareUuidIndexesPostgres so a
-            // table whose bare index ended up as `_uuid1` (Postgres'
-            // on-collision auto-suffix) is still surfaced for repair. The
-            // downstream drop step re-filters with a strict `^_uuid(\d+)?$`
-            // regex.
-            $sql = "SELECT tablename
+	/**
+	 * Run the platform-specific introspection query for tables carrying a bare
+	 * `_uuid` index.
+	 *
+	 * @param bool $isPostgres Whether the platform is PostgreSQL
+	 *
+	 * @return array<array-key, array<string, mixed>> Raw result rows
+	 */
+	private function queryTablesWithBareUuidIndex(bool $isPostgres): array {
+		if ($isPostgres === true) {
+			// Mirror the LIKE pattern used in dropBareUuidIndexesPostgres so a
+			// table whose bare index ended up as `_uuid1` (Postgres'
+			// on-collision auto-suffix) is still surfaced for repair. The
+			// downstream drop step re-filters with a strict `^_uuid(\d+)?$`
+			// regex.
+			$sql = "SELECT tablename
                     FROM pg_indexes
                     WHERE indexname LIKE '\\_uuid%' ESCAPE '\\'
                       AND tablename LIKE 'oc_openregister_table_%'";
 
-            return $this->connection->executeQuery($sql)->fetchAll();
-        }
+			return $this->connection->executeQuery($sql)->fetchAll();
+		}
 
-        $sql = 'SELECT TABLE_NAME
+		$sql = 'SELECT TABLE_NAME
                 FROM INFORMATION_SCHEMA.STATISTICS
                 WHERE TABLE_SCHEMA = DATABASE()
                   AND INDEX_NAME = ?
                   AND TABLE_NAME LIKE ?
                 GROUP BY TABLE_NAME';
 
-        return $this->connection->executeQuery($sql, ['_uuid', 'oc_openregister_table_%'])->fetchAll();
-
-    }//end queryTablesWithBareUuidIndex()
+		return $this->connection->executeQuery($sql, ['_uuid', 'oc_openregister_table_%'])->fetchAll();
+	}//end queryTablesWithBareUuidIndex()
 }//end class

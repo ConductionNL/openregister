@@ -31,167 +31,159 @@ use Symfony\Component\Uid\Uuid;
  *
  * @extends QBMapper<ApprovalChain>
  */
-class ApprovalChainMapper extends QBMapper
-{
-    /**
-     * Constructor for ApprovalChainMapper.
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(
-            db: $db,
-            tableName: 'openregister_approval_chains',
-            entityClass: ApprovalChain::class
-        );
-    }//end __construct()
+class ApprovalChainMapper extends QBMapper {
+	/**
+	 * Constructor for ApprovalChainMapper.
+	 *
+	 * @param IDBConnection $db Database connection
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(
+			db: $db,
+			tableName: 'openregister_approval_chains',
+			entityClass: ApprovalChain::class
+		);
+	}//end __construct()
 
-    /**
-     * Find an approval chain by ID.
-     *
-     * @param int $id Chain ID
-     *
-     * @return ApprovalChain
-     */
-    public function find(int $id): ApprovalChain
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find an approval chain by ID.
+	 *
+	 * @param int $id Chain ID
+	 *
+	 * @return ApprovalChain
+	 */
+	public function find(int $id): ApprovalChain {
+		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->eq('id', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_INT))
-            );
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq('id', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_INT))
+			);
 
-        return $this->findEntity(query: $qb);
-    }//end find()
+		return $this->findEntity(query: $qb);
+	}//end find()
 
-    /**
-     * Find all approval chains.
-     *
-     * @param int|null $limit  Maximum results
-     * @param int|null $offset Offset for pagination
-     *
-     * @return array<int, ApprovalChain>
-     */
-    public function findAll(?int $limit=null, ?int $offset=null): array
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find all approval chains.
+	 *
+	 * @param int|null $limit Maximum results
+	 * @param int|null $offset Offset for pagination
+	 *
+	 * @return array<int, ApprovalChain>
+	 */
+	public function findAll(?int $limit = null, ?int $offset = null): array {
+		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->orderBy('name', 'ASC');
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('name', 'ASC');
 
-        if ($limit !== null) {
-            $qb->setMaxResults($limit);
-        }
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
 
-        if ($offset !== null) {
-            $qb->setFirstResult($offset);
-        }
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
 
-        return $this->findEntities(query: $qb);
-    }//end findAll()
+		return $this->findEntities(query: $qb);
+	}//end findAll()
 
-    /**
-     * Find approval chains by schema ID.
-     *
-     * @param int $schemaId Schema ID
-     *
-     * @return array<int, ApprovalChain>
-     */
-    public function findBySchema(int $schemaId): array
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find approval chains by schema ID.
+	 *
+	 * @param int $schemaId Schema ID
+	 *
+	 * @return array<int, ApprovalChain>
+	 */
+	public function findBySchema(int $schemaId): array {
+		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->eq(
-                    'schema_id',
-                    $qb->createNamedParameter(value: $schemaId, type: IQueryBuilder::PARAM_INT)
-                )
-            )
-            ->orderBy('name', 'ASC');
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'schema_id',
+					$qb->createNamedParameter(value: $schemaId, type: IQueryBuilder::PARAM_INT)
+				)
+			)
+			->orderBy('name', 'ASC');
 
-        return $this->findEntities(query: $qb);
-    }//end findBySchema()
+		return $this->findEntities(query: $qb);
+	}//end findBySchema()
 
-    /**
-     * Find the chain provisioned for a schema under a given declarative chain
-     * key (the `x-openregister-approval-chains` entry name, stored as `name`).
-     *
-     * @param int    $schemaId Schema ID.
-     * @param string $name     Chain key / name.
-     *
-     * @return ApprovalChain|null The matching chain, or null when none exists yet.
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain
-    {
-        $qb = $this->db->getQueryBuilder();
+	/**
+	 * Find the chain provisioned for a schema under a given declarative chain
+	 * key (the `x-openregister-approval-chains` entry name, stored as `name`).
+	 *
+	 * @param int $schemaId Schema ID.
+	 * @param string $name Chain key / name.
+	 *
+	 * @return ApprovalChain|null The matching chain, or null when none exists yet.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain {
+		$qb = $this->db->getQueryBuilder();
 
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->eq(
-                    'schema_id',
-                    $qb->createNamedParameter(value: $schemaId, type: IQueryBuilder::PARAM_INT)
-                )
-            )
-            ->andWhere(
-                $qb->expr()->eq('name', $qb->createNamedParameter($name))
-            )
-            ->setMaxResults(1);
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->eq(
+					'schema_id',
+					$qb->createNamedParameter(value: $schemaId, type: IQueryBuilder::PARAM_INT)
+				)
+			)
+			->andWhere(
+				$qb->expr()->eq('name', $qb->createNamedParameter($name))
+			)
+			->setMaxResults(1);
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end findBySchemaAndName()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end findBySchemaAndName()
 
-    /**
-     * Create an approval chain from an array.
-     *
-     * @param array<string, mixed> $data Chain data
-     *
-     * @return ApprovalChain
-     */
-    public function createFromArray(array $data): ApprovalChain
-    {
-        $chain = new ApprovalChain();
-        $chain->hydrate($data);
+	/**
+	 * Create an approval chain from an array.
+	 *
+	 * @param array<string, mixed> $data Chain data
+	 *
+	 * @return ApprovalChain
+	 */
+	public function createFromArray(array $data): ApprovalChain {
+		$chain = new ApprovalChain();
+		$chain->hydrate($data);
 
-        if ($chain->getUuid() === null) {
-            $chain->setUuid(Uuid::v4()->toRfc4122());
-        }
+		if ($chain->getUuid() === null) {
+			$chain->setUuid(Uuid::v4()->toRfc4122());
+		}
 
-        $now = new DateTime();
-        $chain->setCreated($now);
-        $chain->setUpdated($now);
+		$now = new DateTime();
+		$chain->setCreated($now);
+		$chain->setUpdated($now);
 
-        return $this->insert(entity: $chain);
-    }//end createFromArray()
+		return $this->insert(entity: $chain);
+	}//end createFromArray()
 
-    /**
-     * Update an approval chain from an array.
-     *
-     * @param int                  $id   Chain ID
-     * @param array<string, mixed> $data Updated data
-     *
-     * @return ApprovalChain
-     */
-    public function updateFromArray(int $id, array $data): ApprovalChain
-    {
-        $chain = $this->find(id: $id);
-        $chain->hydrate($data);
-        $chain->setUpdated(new DateTime());
+	/**
+	 * Update an approval chain from an array.
+	 *
+	 * @param int $id Chain ID
+	 * @param array<string, mixed> $data Updated data
+	 *
+	 * @return ApprovalChain
+	 */
+	public function updateFromArray(int $id, array $data): ApprovalChain {
+		$chain = $this->find(id: $id);
+		$chain->hydrate($data);
+		$chain->setUpdated(new DateTime());
 
-        return $this->update(entity: $chain);
-    }//end updateFromArray()
+		return $this->update(entity: $chain);
+	}//end updateFromArray()
 }//end class

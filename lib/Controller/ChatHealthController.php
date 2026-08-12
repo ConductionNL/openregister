@@ -53,100 +53,98 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class ChatHealthController extends Controller
-{
+class ChatHealthController extends Controller {
 
-    /**
-     * Settings service for LLM configuration lookup.
-     *
-     * @var SettingsService
-     */
-    private readonly SettingsService $settingsService;
+	/**
+	 * Settings service for LLM configuration lookup.
+	 *
+	 * @var SettingsService
+	 */
+	private readonly SettingsService $settingsService;
 
-    /**
-     * Logger.
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * @param string          $appName         Application name
-     * @param IRequest        $request         HTTP request object
-     * @param SettingsService $settingsService Settings service for LLM config
-     * @param LoggerInterface $logger          Logger for surfacing config errors
-     *
-     * @return void
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        SettingsService $settingsService,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-        $this->settingsService = $settingsService;
-        $this->logger          = $logger;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param string $appName Application name
+	 * @param IRequest $request HTTP request object
+	 * @param SettingsService $settingsService Settings service for LLM config
+	 * @param LoggerInterface $logger Logger for surfacing config errors
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		SettingsService $settingsService,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+		$this->settingsService = $settingsService;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * Health probe for the AI chat backend
-     *
-     * Returns 200 when a chat provider is configured, 503 otherwise.
-     * Annotated as PublicPage so the widget can probe without authentication.
-     *
-     * @PublicPage
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse 200 or 503 JSON response
-     *
-     * @spec openspec/specs/chat-ai/spec.md
-     */
-    #[PublicPage]
-    #[NoCSRFRequired]
-    public function health(): JSONResponse
-    {
-        try {
-            $llmConfig    = $this->settingsService->getLLMSettingsOnly();
-            $chatProvider = $llmConfig['chatProvider'] ?? null;
+	/**
+	 * Health probe for the AI chat backend
+	 *
+	 * Returns 200 when a chat provider is configured, 503 otherwise.
+	 * Annotated as PublicPage so the widget can probe without authentication.
+	 *
+	 * @PublicPage
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse 200 or 503 JSON response
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	public function health(): JSONResponse {
+		try {
+			$llmConfig = $this->settingsService->getLLMSettingsOnly();
+			$chatProvider = $llmConfig['chatProvider'] ?? null;
 
-            if (empty($chatProvider) === true) {
-                return new JSONResponse(
-                    data: ['status' => 'no_provider'],
-                    statusCode: 503
-                );
-            }
+			if (empty($chatProvider) === true) {
+				return new JSONResponse(
+					data: ['status' => 'no_provider'],
+					statusCode: 503
+				);
+			}
 
-            return new JSONResponse(
-                data: [
-                    'status'       => 'ok',
-                    'capabilities' => ['chat', 'stream'],
-                ],
-                statusCode: 200
-            );
-        } catch (\Throwable $e) {
-            // Distinguish "configuration service failed" from "no provider
-            // configured". Returning 'no_provider' for both made it
-            // impossible to tell a fresh instance (genuinely unconfigured)
-            // from a broken config service (deserialisation, DB connectivity
-            // etc.). Operators need that signal; the widget can still treat
-            // any non-200 as "no AI" without branching.
-            $this->logger->warning(
-                message: '[ChatHealthController] Health probe failed reading LLM settings',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e,
-                    'error'     => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(
-                data: ['status' => 'config_error'],
-                statusCode: 503
-            );
-        }//end try
-    }//end health()
+			return new JSONResponse(
+				data: [
+					'status' => 'ok',
+					'capabilities' => ['chat', 'stream'],
+				],
+				statusCode: 200
+			);
+		} catch (\Throwable $e) {
+			// Distinguish "configuration service failed" from "no provider
+			// configured". Returning 'no_provider' for both made it
+			// impossible to tell a fresh instance (genuinely unconfigured)
+			// from a broken config service (deserialisation, DB connectivity
+			// etc.). Operators need that signal; the widget can still treat
+			// any non-200 as "no AI" without branching.
+			$this->logger->warning(
+				message: '[ChatHealthController] Health probe failed reading LLM settings',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $e,
+					'error' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				data: ['status' => 'config_error'],
+				statusCode: 503
+			);
+		}//end try
+	}//end health()
 }//end class

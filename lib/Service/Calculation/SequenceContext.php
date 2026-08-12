@@ -37,37 +37,35 @@ use OCA\OpenRegister\Service\SequenceService;
 /**
  * Authorises (and scopes) sequence consumption for a single save.
  */
-final class SequenceContext
-{
-    /**
-     * Wire the reservation service and the register/schema scope.
-     *
-     * @param SequenceService $service    Atomic sequence reservation service.
-     * @param int             $registerId The register the sequence is scoped to.
-     * @param int             $schemaId   The schema the sequence is scoped to.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly SequenceService $service,
-        private readonly int $registerId,
-        private readonly int $schemaId
-    ) {
-    }//end __construct()
+final class SequenceContext {
+	/**
+	 * Wire the reservation service and the register/schema scope.
+	 *
+	 * @param SequenceService $service Atomic sequence reservation service.
+	 * @param int $registerId The register the sequence is scoped to.
+	 * @param int $schemaId The schema the sequence is scoped to.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly SequenceService $service,
+		private readonly int $registerId,
+		private readonly int $schemaId,
+	) {
+	}//end __construct()
 
-    /**
-     * Atomically reserve the next number for the given scope key.
-     *
-     * @param string $scopeKey The scope discriminator (e.g. "2026", "2026-06" or "" for global).
-     *
-     * @return int The reserved, never-reused running number.
-     */
-    public function reserveNext(string $scopeKey): int
-    {
-        return $this->service->reserveNext(
-            registerId: $this->registerId,
-            schemaId: $this->schemaId,
-            scopeKey: $scopeKey
-        );
-    }//end reserveNext()
+	/**
+	 * Atomically reserve the next number for the given scope key.
+	 *
+	 * @param string $scopeKey The scope discriminator (e.g. "2026", "2026-06" or "" for global).
+	 *
+	 * @return int The reserved, never-reused running number.
+	 */
+	public function reserveNext(string $scopeKey): int {
+		return $this->service->reserveNext(
+			registerId: $this->registerId,
+			schemaId: $this->schemaId,
+			scopeKey: $scopeKey
+		);
+	}//end reserveNext()
 }//end class

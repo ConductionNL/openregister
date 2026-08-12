@@ -29,6 +29,5 @@ namespace OCA\OpenRegister\Service\Handler;
  *
  * @package OCA\OpenRegister\Service\Handler
  */
-class AgentHandler
-{
+class AgentHandler {
 }//end class

@@ -55,49 +55,47 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
-class Version1Date20260714100000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/migration-mapping-packs/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260714100000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_migration_packs') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_migration_packs') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_migration_packs');
+		$table = $schema->createTable('openregister_migration_packs');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('pack_slug', Types::STRING, ['notnull' => true, 'length' => 128]);
-        $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('source_format', Types::STRING, ['notnull' => true, 'length' => 16]);
-        $table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 32]);
-        $table->addColumn('definition', Types::TEXT, ['notnull' => true]);
-        $table->addColumn('builtin', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-        $table->addColumn('owner', Types::STRING, ['notnull' => false, 'length' => 64]);
-        $table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
-        $table->addColumn('updated_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('pack_slug', Types::STRING, ['notnull' => true, 'length' => 128]);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('source_format', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 32]);
+		$table->addColumn('definition', Types::TEXT, ['notnull' => true]);
+		$table->addColumn('builtin', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+		$table->addColumn('owner', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('updated_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['pack_slug'], 'idx_or_migration_pack_slug');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['pack_slug'], 'idx_or_migration_pack_slug');
 
-        $output->info('Created openregister_migration_packs table');
+		$output->info('Created openregister_migration_packs table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

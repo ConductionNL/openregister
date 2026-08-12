@@ -22,471 +22,430 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\IDBConnection;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
-class ReferentialIntegrityServiceCoverageTest extends TestCase
-{
-    private ReferentialIntegrityService $service;
-    private SchemaMapper|MockObject $schemaMapper;
-    private RegisterMapper|MockObject $registerMapper;
-    private MagicMapper|MockObject $objectMapper;
-    private AuditTrailMapper|MockObject $auditTrailMapper;
-    private LoggerInterface|MockObject $logger;
-
-    protected function setUp(): void
-    {
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->objectMapper = $this->createMock(MagicMapper::class);
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-
-        $this->service = new ReferentialIntegrityService(
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->objectMapper,
-            $this->auditTrailMapper,
-            $this->logger,
-            $this->createMock(IDBConnection::class),
-            $this->createNullCacheFactory()
-        );
-    }
-
-    /**
-     * Build a cache factory whose cache never reports a hit.
-     *
-     * @return \OCP\ICacheFactory
-     */
-    private function createNullCacheFactory(): \OCP\ICacheFactory
-    {
-        $factory = $this->createMock(\OCP\ICacheFactory::class);
-        $factory->method('createDistributed')
-            ->willReturn($this->createMock(\OCP\ICache::class));
-
-        return $factory;
-    }
-
-    private function invokeMethod(object $obj, string $method, array $args = []): mixed
-    {
-        $ref = new ReflectionClass($obj);
-        $m = $ref->getMethod($method);
-        $m->setAccessible(true);
-        return $m->invokeArgs($obj, $args);
-    }
-
-    private function setProperty(object $obj, string $prop, mixed $value): void
-    {
-        $ref = new ReflectionClass($obj);
-        $p = $ref->getProperty($prop);
-        $p->setAccessible(true);
-        $p->setValue($obj, $value);
-    }
-
-    // =========================================================================
-    // isValidOnDeleteAction
-    // =========================================================================
-
-    public function testIsValidOnDeleteActionCascade(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-    }
-
-    public function testIsValidOnDeleteActionRestrict(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-    }
-
-    public function testIsValidOnDeleteActionSetNull(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-    }
-
-    public function testIsValidOnDeleteActionSetDefault(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-    }
-
-    public function testIsValidOnDeleteActionNoAction(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-    }
-
-    public function testIsValidOnDeleteActionCaseInsensitive(): void
-    {
-        $this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-    }
-
-    public function testIsValidOnDeleteActionInvalid(): void
-    {
-        $this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
-    }
-
-    // =========================================================================
-    // extractOnDelete
-    // =========================================================================
-
-    public function testExtractOnDeletePresent(): void
-    {
-        $result = $this->invokeMethod($this->service, 'extractOnDelete', [
-            ['onDelete' => 'cascade'],
-        ]);
-
-        $this->assertSame('CASCADE', $result);
-    }
-
-    public function testExtractOnDeleteMissing(): void
-    {
-        $result = $this->invokeMethod($this->service, 'extractOnDelete', [
-            ['type' => 'string'],
-        ]);
-
-        $this->assertNull($result);
-    }
-
-    // =========================================================================
-    // extractTargetRef
-    // =========================================================================
-
-    public function testExtractTargetRefDirect(): void
-    {
-        $result = $this->invokeMethod($this->service, 'extractTargetRef', [
-            ['$ref' => 'my-schema'],
-        ]);
-
-        $this->assertSame('my-schema', $result);
-    }
-
-    public function testExtractTargetRefArrayItems(): void
-    {
-        $result = $this->invokeMethod($this->service, 'extractTargetRef', [
-            ['type' => 'array', 'items' => ['$ref' => 'other-schema']],
-        ]);
-
-        $this->assertSame('other-schema', $result);
-    }
-
-    public function testExtractTargetRefNone(): void
-    {
-        $result = $this->invokeMethod($this->service, 'extractTargetRef', [
-            ['type' => 'string'],
-        ]);
-
-        $this->assertNull($result);
-    }
-
-    // =========================================================================
-    // resolveSchemaRef
-    // =========================================================================
-
-    public function testResolveSchemaRefById(): void
-    {
-        $schema = new Schema();
-        $schema->setId(42);
-        $schema->setUuid('uuid-42');
-
-        $result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
-            '42',
-            [$schema],
-        ]);
-
-        $this->assertSame('42', $result);
-    }
-
-    public function testResolveSchemaRefBySlug(): void
-    {
-        $schema = new Schema();
-        $schema->setId(10);
-        $schema->setUuid('uuid-10');
-        $schema->setSlug('my-schema');
-
-        $result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
-            'my-schema',
-            [$schema],
-        ]);
-
-        $this->assertSame('10', $result);
-    }
-
-    public function testResolveSchemaRefByUuid(): void
-    {
-        $schema = new Schema();
-        $schema->setId(5);
-        $schema->setUuid('abc-def-123');
-
-        $result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
-            'abc-def-123',
-            [$schema],
-        ]);
-
-        $this->assertSame('5', $result);
-    }
+class ReferentialIntegrityServiceCoverageTest extends TestCase {
+	private ReferentialIntegrityService $service;
+	private SchemaMapper|MockObject $schemaMapper;
+	private RegisterMapper|MockObject $registerMapper;
+	private MagicMapper|MockObject $objectMapper;
+	private AuditTrailMapper|MockObject $auditTrailMapper;
+	private LoggerInterface|MockObject $logger;
+
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->objectMapper = $this->createMock(MagicMapper::class);
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+		$this->service = new ReferentialIntegrityService(
+			$this->schemaMapper,
+			$this->registerMapper,
+			$this->objectMapper,
+			$this->auditTrailMapper,
+			$this->logger,
+			$this->createMock(IDBConnection::class),
+			$this->createNullCacheFactory()
+		);
+	}
+
+	/**
+	 * Build a cache factory whose cache never reports a hit.
+	 *
+	 * @return \OCP\ICacheFactory
+	 */
+	private function createNullCacheFactory(): \OCP\ICacheFactory {
+		$factory = $this->createMock(\OCP\ICacheFactory::class);
+		$factory->method('createDistributed')
+			->willReturn($this->createMock(\OCP\ICache::class));
+
+		return $factory;
+	}
+
+	private function invokeMethod(object $obj, string $method, array $args = []): mixed {
+		$ref = new ReflectionClass($obj);
+		$m = $ref->getMethod($method);
+		$m->setAccessible(true);
+		return $m->invokeArgs($obj, $args);
+	}
+
+	private function setProperty(object $obj, string $prop, mixed $value): void {
+		$ref = new ReflectionClass($obj);
+		$p = $ref->getProperty($prop);
+		$p->setAccessible(true);
+		$p->setValue($obj, $value);
+	}
+
+	// =========================================================================
+	// isValidOnDeleteAction
+	// =========================================================================
+
+	public function testIsValidOnDeleteActionCascade(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
+	}
+
+	public function testIsValidOnDeleteActionRestrict(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
+	}
+
+	public function testIsValidOnDeleteActionSetNull(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
+	}
+
+	public function testIsValidOnDeleteActionSetDefault(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
+	}
+
+	public function testIsValidOnDeleteActionNoAction(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
+	}
+
+	public function testIsValidOnDeleteActionCaseInsensitive(): void {
+		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
+	}
+
+	public function testIsValidOnDeleteActionInvalid(): void {
+		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
+	}
+
+	// =========================================================================
+	// extractOnDelete
+	// =========================================================================
+
+	public function testExtractOnDeletePresent(): void {
+		$result = $this->invokeMethod($this->service, 'extractOnDelete', [
+			['onDelete' => 'cascade'],
+		]);
+
+		$this->assertSame('CASCADE', $result);
+	}
+
+	public function testExtractOnDeleteMissing(): void {
+		$result = $this->invokeMethod($this->service, 'extractOnDelete', [
+			['type' => 'string'],
+		]);
+
+		$this->assertNull($result);
+	}
+
+	// =========================================================================
+	// extractTargetRef
+	// =========================================================================
+
+	public function testExtractTargetRefDirect(): void {
+		$result = $this->invokeMethod($this->service, 'extractTargetRef', [
+			['$ref' => 'my-schema'],
+		]);
+
+		$this->assertSame('my-schema', $result);
+	}
 
-    public function testResolveSchemaRefByPathBasename(): void
-    {
-        $schema = new Schema();
-        $schema->setId(7);
-        $schema->setUuid('uuid-7');
+	public function testExtractTargetRefArrayItems(): void {
+		$result = $this->invokeMethod($this->service, 'extractTargetRef', [
+			['type' => 'array', 'items' => ['$ref' => 'other-schema']],
+		]);
+
+		$this->assertSame('other-schema', $result);
+	}
 
-        $result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
-            '/schemas/uuid-7',
-            [$schema],
-        ]);
+	public function testExtractTargetRefNone(): void {
+		$result = $this->invokeMethod($this->service, 'extractTargetRef', [
+			['type' => 'string'],
+		]);
 
-        $this->assertSame('7', $result);
-    }
+		$this->assertNull($result);
+	}
 
-    public function testResolveSchemaRefNotFound(): void
-    {
-        $schema = new Schema();
-        $schema->setId(1);
-        $schema->setUuid('uuid-1');
+	// =========================================================================
+	// resolveSchemaRef
+	// =========================================================================
 
-        $result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
-            'nonexistent',
-            [$schema],
-        ]);
+	public function testResolveSchemaRefById(): void {
+		$schema = new Schema();
+		$schema->setId(42);
+		$schema->setUuid('uuid-42');
 
-        $this->assertNull($result);
-    }
+		$result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
+			'42',
+			[$schema],
+		]);
 
-    // =========================================================================
-    // isRequiredProperty
-    // =========================================================================
+		$this->assertSame('42', $result);
+	}
 
-    public function testIsRequiredPropertyTrue(): void
-    {
-        $schema = new Schema();
-        $schema->setRequired(['name', 'email']);
+	public function testResolveSchemaRefBySlug(): void {
+		$schema = new Schema();
+		$schema->setId(10);
+		$schema->setUuid('uuid-10');
+		$schema->setSlug('my-schema');
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+		$result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
+			'my-schema',
+			[$schema],
+		]);
 
-        $result = $this->invokeMethod($this->service, 'isRequiredProperty', ['1', 'name']);
+		$this->assertSame('10', $result);
+	}
 
-        $this->assertTrue($result);
-    }
+	public function testResolveSchemaRefByUuid(): void {
+		$schema = new Schema();
+		$schema->setId(5);
+		$schema->setUuid('abc-def-123');
 
-    public function testIsRequiredPropertyFalse(): void
-    {
-        $schema = new Schema();
-        $schema->setRequired(['name']);
+		$result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
+			'abc-def-123',
+			[$schema],
+		]);
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+		$this->assertSame('5', $result);
+	}
 
-        $result = $this->invokeMethod($this->service, 'isRequiredProperty', ['1', 'optional_field']);
+	public function testResolveSchemaRefByPathBasename(): void {
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setUuid('uuid-7');
 
-        $this->assertFalse($result);
-    }
+		$result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
+			'/schemas/uuid-7',
+			[$schema],
+		]);
 
-    public function testIsRequiredPropertySchemaNotCached(): void
-    {
-        $this->setProperty($this->service, 'schemaCache', []);
+		$this->assertSame('7', $result);
+	}
 
-        $result = $this->invokeMethod($this->service, 'isRequiredProperty', ['999', 'name']);
+	public function testResolveSchemaRefNotFound(): void {
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setUuid('uuid-1');
 
-        $this->assertFalse($result);
-    }
+		$result = $this->invokeMethod($this->service, 'resolveSchemaRef', [
+			'nonexistent',
+			[$schema],
+		]);
 
-    // =========================================================================
-    // getDefaultValue
-    // =========================================================================
+		$this->assertNull($result);
+	}
 
-    public function testGetDefaultValuePresent(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties([
-            'status' => ['type' => 'string', 'default' => 'active'],
-        ]);
+	// =========================================================================
+	// isRequiredProperty
+	// =========================================================================
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+	public function testIsRequiredPropertyTrue(): void {
+		$schema = new Schema();
+		$schema->setRequired(['name', 'email']);
 
-        $result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'status']);
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-        $this->assertSame('active', $result);
-    }
+		$result = $this->invokeMethod($this->service, 'isRequiredProperty', ['1', 'name']);
 
-    public function testGetDefaultValueMissing(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties([
-            'status' => ['type' => 'string'],
-        ]);
+		$this->assertTrue($result);
+	}
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+	public function testIsRequiredPropertyFalse(): void {
+		$schema = new Schema();
+		$schema->setRequired(['name']);
 
-        $result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'status']);
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-        $this->assertNull($result);
-    }
+		$result = $this->invokeMethod($this->service, 'isRequiredProperty', ['1', 'optional_field']);
 
-    public function testGetDefaultValueSchemaNotCached(): void
-    {
-        $this->setProperty($this->service, 'schemaCache', []);
+		$this->assertFalse($result);
+	}
 
-        $result = $this->invokeMethod($this->service, 'getDefaultValue', ['999', 'field']);
+	public function testIsRequiredPropertySchemaNotCached(): void {
+		$this->setProperty($this->service, 'schemaCache', []);
 
-        $this->assertNull($result);
-    }
+		$result = $this->invokeMethod($this->service, 'isRequiredProperty', ['999', 'name']);
 
-    public function testGetDefaultValuePropertyNotFound(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties(['name' => ['type' => 'string']]);
+		$this->assertFalse($result);
+	}
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+	// =========================================================================
+	// getDefaultValue
+	// =========================================================================
 
-        $result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'nonexistent']);
+	public function testGetDefaultValuePresent(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'status' => ['type' => 'string', 'default' => 'active'],
+		]);
 
-        $this->assertNull($result);
-    }
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-    public function testGetDefaultValueNullProperties(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties(null);
+		$result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'status']);
 
-        $this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
+		$this->assertSame('active', $result);
+	}
 
-        $result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'field']);
+	public function testGetDefaultValueMissing(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'status' => ['type' => 'string'],
+		]);
 
-        $this->assertNull($result);
-    }
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-    // =========================================================================
-    // canDelete — no schema on object
-    // =========================================================================
+		$result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'status']);
 
-    public function testCanDeleteNoSchema(): void
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('test-uuid');
+		$this->assertNull($result);
+	}
 
-        // Set up empty relation index
-        $this->setProperty($this->service, 'relationIndex', []);
+	public function testGetDefaultValueSchemaNotCached(): void {
+		$this->setProperty($this->service, 'schemaCache', []);
 
-        $result = $this->service->canDelete($object);
+		$result = $this->invokeMethod($this->service, 'getDefaultValue', ['999', 'field']);
 
-        $this->assertTrue($result->deletable);
-        $this->assertEmpty($result->blockers);
-    }
+		$this->assertNull($result);
+	}
 
-    // =========================================================================
-    // canDelete — schema not in relation index
-    // =========================================================================
+	public function testGetDefaultValuePropertyNotFound(): void {
+		$schema = new Schema();
+		$schema->setProperties(['name' => ['type' => 'string']]);
 
-    public function testCanDeleteSchemaNotInIndex(): void
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('test-uuid');
-        $object->setSchema('5');
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-        $this->setProperty($this->service, 'relationIndex', [
-            '10' => [['sourceSchemaId' => '3', 'property' => 'ref']],
-        ]);
+		$result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'nonexistent']);
 
-        $result = $this->service->canDelete($object);
+		$this->assertNull($result);
+	}
 
-        $this->assertTrue($result->deletable);
-    }
+	public function testGetDefaultValueNullProperties(): void {
+		$schema = new Schema();
+		$schema->setProperties(null);
 
-    // =========================================================================
-    // hasIncomingOnDeleteReferences
-    // =========================================================================
+		$this->setProperty($this->service, 'schemaCache', ['1' => $schema]);
 
-    public function testHasIncomingOnDeleteReferencesTrue(): void
-    {
-        $this->setProperty($this->service, 'relationIndex', [
-            '5' => [['sourceSchemaId' => '3']],
-        ]);
+		$result = $this->invokeMethod($this->service, 'getDefaultValue', ['1', 'field']);
 
-        $this->assertTrue($this->service->hasIncomingOnDeleteReferences('5'));
-    }
+		$this->assertNull($result);
+	}
 
-    public function testHasIncomingOnDeleteReferencesFalse(): void
-    {
-        $this->setProperty($this->service, 'relationIndex', [
-            '5' => [['sourceSchemaId' => '3']],
-        ]);
+	// =========================================================================
+	// canDelete — no schema on object
+	// =========================================================================
 
-        $this->assertFalse($this->service->hasIncomingOnDeleteReferences('99'));
-    }
+	public function testCanDeleteNoSchema(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('test-uuid');
 
-    // =========================================================================
-    // logRestrictBlock
-    // =========================================================================
+		// Set up empty relation index
+		$this->setProperty($this->service, 'relationIndex', []);
 
-    public function testLogRestrictBlock(): void
-    {
-        $analysis = new DeletionAnalysis(
-            deletable: false,
-            blockers: [
-                ['schema' => '1', 'property' => 'ref_field', 'objectUuid' => 'blocker-1'],
-                ['schema' => '1', 'property' => 'ref_field', 'objectUuid' => 'blocker-2'],
-                ['schema' => '2', 'property' => 'other_ref', 'objectUuid' => 'blocker-3'],
-            ]
-        );
+		$result = $this->service->canDelete($object);
 
-        $this->auditTrailMapper->expects($this->once())->method('insert');
+		$this->assertTrue($result->deletable);
+		$this->assertEmpty($result->blockers);
+	}
 
-        $this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
-    }
+	// =========================================================================
+	// canDelete — schema not in relation index
+	// =========================================================================
 
-    public function testLogRestrictBlockWithEmptyBlockers(): void
-    {
-        $analysis = new DeletionAnalysis(deletable: true, blockers: []);
+	public function testCanDeleteSchemaNotInIndex(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('test-uuid');
+		$object->setSchema('5');
 
-        $this->auditTrailMapper->expects($this->once())->method('insert');
+		$this->setProperty($this->service, 'relationIndex', [
+			'10' => [['sourceSchemaId' => '3', 'property' => 'ref']],
+		]);
 
-        $this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
-    }
+		$result = $this->service->canDelete($object);
 
-    // =========================================================================
-    // applyDeletionActions — empty analysis
-    // =========================================================================
+		$this->assertTrue($result->deletable);
+	}
 
-    public function testApplyDeletionActionsEmptyAnalysis(): void
-    {
-        $analysis = DeletionAnalysis::empty();
+	// =========================================================================
+	// hasIncomingOnDeleteReferences
+	// =========================================================================
 
-        // Should not call any mapper methods
-        $this->objectMapper->expects($this->never())->method('findAcrossAllSources');
-        $this->objectMapper->expects($this->never())->method('deleteObjects');
+	public function testHasIncomingOnDeleteReferencesTrue(): void {
+		$this->setProperty($this->service, 'relationIndex', [
+			'5' => [['sourceSchemaId' => '3']],
+		]);
 
-        $this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
-    }
+		$this->assertTrue($this->service->hasIncomingOnDeleteReferences('5'));
+	}
 
-    // =========================================================================
-    // logIntegrityAction — exception handling
-    // =========================================================================
+	public function testHasIncomingOnDeleteReferencesFalse(): void {
+		$this->setProperty($this->service, 'relationIndex', [
+			'5' => [['sourceSchemaId' => '3']],
+		]);
 
-    public function testLogIntegrityActionExceptionIsSwallowed(): void
-    {
-        $this->auditTrailMapper->method('insert')
-            ->willThrowException(new Exception('DB insert failed'));
+		$this->assertFalse($this->service->hasIncomingOnDeleteReferences('99'));
+	}
 
-        $this->logger->expects($this->once())->method('warning');
+	// =========================================================================
+	// logRestrictBlock
+	// =========================================================================
 
-        // Call logRestrictBlock which calls logIntegrityAction internally
-        $analysis = new DeletionAnalysis(deletable: false, blockers: [
-            ['schema' => '1', 'property' => 'ref'],
-        ]);
+	public function testLogRestrictBlock(): void {
+		$analysis = new DeletionAnalysis(
+			deletable: false,
+			blockers: [
+				['schema' => '1', 'property' => 'ref_field', 'objectUuid' => 'blocker-1'],
+				['schema' => '1', 'property' => 'ref_field', 'objectUuid' => 'blocker-2'],
+				['schema' => '2', 'property' => 'other_ref', 'objectUuid' => 'blocker-3'],
+			]
+		);
 
-        // Should not throw
-        $this->service->logRestrictBlock('uuid', '1', $analysis, 'admin');
-    }
+		$this->auditTrailMapper->expects($this->once())->method('insert');
+
+		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+	}
+
+	public function testLogRestrictBlockWithEmptyBlockers(): void {
+		$analysis = new DeletionAnalysis(deletable: true, blockers: []);
+
+		$this->auditTrailMapper->expects($this->once())->method('insert');
+
+		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+	}
+
+	// =========================================================================
+	// applyDeletionActions — empty analysis
+	// =========================================================================
+
+	public function testApplyDeletionActionsEmptyAnalysis(): void {
+		$analysis = DeletionAnalysis::empty();
+
+		// Should not call any mapper methods
+		$this->objectMapper->expects($this->never())->method('findAcrossAllSources');
+		$this->objectMapper->expects($this->never())->method('deleteObjects');
+
+		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+	}
+
+	// =========================================================================
+	// logIntegrityAction — exception handling
+	// =========================================================================
+
+	public function testLogIntegrityActionExceptionIsSwallowed(): void {
+		$this->auditTrailMapper->method('insert')
+			->willThrowException(new Exception('DB insert failed'));
+
+		$this->logger->expects($this->once())->method('warning');
+
+		// Call logRestrictBlock which calls logIntegrityAction internally
+		$analysis = new DeletionAnalysis(deletable: false, blockers: [
+			['schema' => '1', 'property' => 'ref'],
+		]);
+
+		// Should not throw
+		$this->service->logRestrictBlock('uuid', '1', $analysis, 'admin');
+	}
 }

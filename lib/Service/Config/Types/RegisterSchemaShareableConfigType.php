@@ -41,111 +41,102 @@ use UnexpectedValueException;
 /**
  * Serialises and installs registers (with their schemas) through the engine.
  */
-class RegisterSchemaShareableConfigType implements IShareableConfigType
-{
-    /**
-     * Constructor.
-     *
-     * @param RegisterService      $registerService Loads the register to share.
-     * @param ConfigurationService $configService   Exports and imports the bundle.
-     */
-    public function __construct(
-        private readonly RegisterService $registerService,
-        private readonly ConfigurationService $configService
-    ) {
+class RegisterSchemaShareableConfigType implements IShareableConfigType {
+	/**
+	 * Constructor.
+	 *
+	 * @param RegisterService $registerService Loads the register to share.
+	 * @param ConfigurationService $configService Exports and imports the bundle.
+	 */
+	public function __construct(
+		private readonly RegisterService $registerService,
+		private readonly ConfigurationService $configService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The type id.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return 'openregister.registers';
+	/**
+	 * The type id.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return 'openregister.registers';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * The display name.
+	 *
+	 * @return string The name.
+	 */
+	public function getDisplayName(): string {
+		return 'Registers & schemas';
+	}//end getDisplayName()
 
-    /**
-     * The display name.
-     *
-     * @return string The name.
-     */
-    public function getDisplayName(): string
-    {
-        return 'Registers & schemas';
+	/**
+	 * The discovery topic.
+	 *
+	 * @return string The topic.
+	 */
+	public function getTopic(): string {
+		return 'openregister-register';
+	}//end getTopic()
 
-    }//end getDisplayName()
+	/**
+	 * Package a register (and its schemas) into a portable bundle.
+	 *
+	 * `$selection` is `{register: id|slug, includeObjects?: bool}`. The bundle is
+	 * the slug-keyed OpenAPI document the ConfigurationService already produces —
+	 * portable and instance-independent by construction.
+	 *
+	 * @param array $selection `{register, includeObjects?}`.
+	 *
+	 * @return array The exported configuration bundle.
+	 *
+	 * @throws UnexpectedValueException When no register is named or found.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function serialise(array $selection): array {
+		$ref = trim((string)($selection['register'] ?? ''));
+		if ($ref === '') {
+			throw new UnexpectedValueException('Sharing registers needs a register.');
+		}
 
-    /**
-     * The discovery topic.
-     *
-     * @return string The topic.
-     */
-    public function getTopic(): string
-    {
-        return 'openregister-register';
+		try {
+			$register = $this->registerService->find(id: $ref);
+		} catch (Throwable $e) {
+			throw new UnexpectedValueException(sprintf('No register "%s".', $ref));
+		}
 
-    }//end getTopic()
+		return $this->configService->exportConfig(
+			input: $register,
+			includeObjects: (bool)($selection['includeObjects'] ?? false)
+		);
 
-    /**
-     * Package a register (and its schemas) into a portable bundle.
-     *
-     * `$selection` is `{register: id|slug, includeObjects?: bool}`. The bundle is
-     * the slug-keyed OpenAPI document the ConfigurationService already produces —
-     * portable and instance-independent by construction.
-     *
-     * @param array $selection `{register, includeObjects?}`.
-     *
-     * @return array The exported configuration bundle.
-     *
-     * @throws UnexpectedValueException When no register is named or found.
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function serialise(array $selection): array
-    {
-        $ref = trim((string) ($selection['register'] ?? ''));
-        if ($ref === '') {
-            throw new UnexpectedValueException('Sharing registers needs a register.');
-        }
+	}//end serialise()
 
-        try {
-            $register = $this->registerService->find(id: $ref);
-        } catch (Throwable $e) {
-            throw new UnexpectedValueException(sprintf('No register "%s".', $ref));
-        }
+	/**
+	 * Install a register bundle into this instance.
+	 *
+	 * Reuses the app-import path (idempotent, slug-matched, version-gated) — the
+	 * same one the shipped register descriptors use.
+	 *
+	 * @param array $bundle A configuration bundle produced by this type.
+	 *
+	 * @return array The import result (`{registers, schemas, ...}`).
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function deserialise(array $bundle): array {
+		$version = (string)($bundle['info']['version'] ?? '1.0.0');
 
-        return $this->configService->exportConfig(
-            input: $register,
-            includeObjects: (bool) ($selection['includeObjects'] ?? false)
-        );
+		return $this->configService->importFromApp(
+			appId: 'openregister',
+			data: $bundle,
+			version: $version,
+			force: false
+		);
 
-    }//end serialise()
-
-    /**
-     * Install a register bundle into this instance.
-     *
-     * Reuses the app-import path (idempotent, slug-matched, version-gated) — the
-     * same one the shipped register descriptors use.
-     *
-     * @param array $bundle A configuration bundle produced by this type.
-     *
-     * @return array The import result (`{registers, schemas, ...}`).
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function deserialise(array $bundle): array
-    {
-        $version = (string) ($bundle['info']['version'] ?? '1.0.0');
-
-        return $this->configService->importFromApp(
-            appId: 'openregister',
-            data: $bundle,
-            version: $version,
-            force: false
-        );
-
-    }//end deserialise()
+	}//end deserialise()
 }//end class

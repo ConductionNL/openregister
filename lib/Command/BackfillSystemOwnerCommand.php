@@ -46,230 +46,224 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class BackfillSystemOwnerCommand extends Command
-{
-    /**
-     * Wire the mappers and database connection used by the command.
-     *
-     * @param RegisterMapper $registerMapper Register lookup mapper.
-     * @param SchemaMapper   $schemaMapper   Schema lookup mapper.
-     * @param MagicMapper    $magicMapper    Magic table resolver.
-     * @param IDBConnection  $db             Database connection for native UPDATE.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly MagicMapper $magicMapper,
-        private readonly IDBConnection $db
-    ) {
-        parent::__construct();
-    }//end __construct()
+class BackfillSystemOwnerCommand extends Command {
+	/**
+	 * Wire the mappers and database connection used by the command.
+	 *
+	 * @param RegisterMapper $registerMapper Register lookup mapper.
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param MagicMapper $magicMapper Magic table resolver.
+	 * @param IDBConnection $db Database connection for native UPDATE.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	public function __construct(
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapper $magicMapper,
+		private readonly IDBConnection $db,
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Define command name, description, and options.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    protected function configure(): void
-    {
-        $this->setName(name: 'openregister:backfill-system-owner')
-            ->setDescription(
-                'Backfill _owner=\'__system__\' on magic-table rows with empty _owner (legacy rows from before #1645).'
-            )
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report counts without writing to the database')
-            ->addOption('register', null, InputOption::VALUE_REQUIRED, 'Limit to a single register (slug, uuid or id)')
-            ->addOption('schema', null, InputOption::VALUE_REQUIRED, 'Limit to a single schema (slug, uuid or id)');
-    }//end configure()
+	/**
+	 * Define command name, description, and options.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	protected function configure(): void {
+		$this->setName(name: 'openregister:backfill-system-owner')
+			->setDescription(
+				'Backfill _owner=\'__system__\' on magic-table rows with empty _owner (legacy rows from before #1645).'
+			)
+			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report counts without writing to the database')
+			->addOption('register', null, InputOption::VALUE_REQUIRED, 'Limit to a single register (slug, uuid or id)')
+			->addOption('schema', null, InputOption::VALUE_REQUIRED, 'Limit to a single schema (slug, uuid or id)');
+	}//end configure()
 
-    /**
-     * Iterate every magic table and backfill the system owner sentinel.
-     *
-     * @param InputInterface  $input  Console input.
-     * @param OutputInterface $output Console output stream.
-     *
-     * @return int Symfony command exit code.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $dryRun      = (bool) $input->getOption('dry-run');
-        $registerRef = $input->getOption('register');
-        $schemaRef   = $input->getOption('schema');
+	/**
+	 * Iterate every magic table and backfill the system owner sentinel.
+	 *
+	 * @param InputInterface $input Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int Symfony command exit code.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$dryRun = (bool)$input->getOption('dry-run');
+		$registerRef = $input->getOption('register');
+		$schemaRef = $input->getOption('schema');
 
-        try {
-            $registers = $this->resolveRegisters(registerRef: $registerRef);
-            $schemas   = $this->resolveSchemas(schemaRef: $schemaRef);
-        } catch (\Throwable $e) {
-            $output->writeln('<error>'.$e->getMessage().'</error>');
-            return Command::FAILURE;
-        }
+		try {
+			$registers = $this->resolveRegisters(registerRef: $registerRef);
+			$schemas = $this->resolveSchemas(schemaRef: $schemaRef);
+		} catch (\Throwable $e) {
+			$output->writeln('<error>' . $e->getMessage() . '</error>');
+			return Command::FAILURE;
+		}
 
-        if (count($registers) === 0 || count($schemas) === 0) {
-            $output->writeln('<comment>No registers or schemas resolved — nothing to do.</comment>');
-            return Command::SUCCESS;
-        }
+		if (count($registers) === 0 || count($schemas) === 0) {
+			$output->writeln('<comment>No registers or schemas resolved — nothing to do.</comment>');
+			return Command::SUCCESS;
+		}
 
-        $modeLabel = '';
-        if ($dryRun === true) {
-            $modeLabel = ' (dry run)';
-        }
+		$modeLabel = '';
+		if ($dryRun === true) {
+			$modeLabel = ' (dry run)';
+		}
 
-        $output->writeln(
-            sprintf(
-                '<info>Backfilling _owner=\'%s\' on rows with _owner=\'\'%s</info>',
-                OrganisationService::SYSTEM_USER_ID_DEFAULT,
-                $modeLabel
-            )
-        );
+		$output->writeln(
+			sprintf(
+				'<info>Backfilling _owner=\'%s\' on rows with _owner=\'\'%s</info>',
+				OrganisationService::SYSTEM_USER_ID_DEFAULT,
+				$modeLabel
+			)
+		);
 
-        $grandScanned  = 0;
-        $grandUpdated  = 0;
-        $tablesTouched = 0;
+		$grandScanned = 0;
+		$grandUpdated = 0;
+		$tablesTouched = 0;
 
-        $schemasById = [];
-        foreach ($schemas as $schema) {
-            $schemasById[(int) $schema->getId()] = $schema;
-        }
+		$schemasById = [];
+		foreach ($schemas as $schema) {
+			$schemasById[(int)$schema->getId()] = $schema;
+		}
 
-        foreach ($registers as $register) {
-            $allowedSchemaIds = $register->getSchemas();
-            foreach ($allowedSchemaIds as $allowedSchemaId) {
-                $allowedId = (int) $allowedSchemaId;
-                if (isset($schemasById[$allowedId]) === false) {
-                    continue;
-                }
+		foreach ($registers as $register) {
+			$allowedSchemaIds = $register->getSchemas();
+			foreach ($allowedSchemaIds as $allowedSchemaId) {
+				$allowedId = (int)$allowedSchemaId;
+				if (isset($schemasById[$allowedId]) === false) {
+					continue;
+				}
 
-                $schema = $schemasById[$allowedId];
+				$schema = $schemasById[$allowedId];
 
-                if ($this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
-                    continue;
-                }
+				if ($this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+					continue;
+				}
 
-                $tableName = $this->magicMapper->getTableNameForRegisterSchema(
-                    register: $register,
-                    schema: $schema
-                );
+				$tableName = $this->magicMapper->getTableNameForRegisterSchema(
+					register: $register,
+					schema: $schema
+				);
 
-                [$scanned, $updated] = $this->backfillTable(
-                    tableName: $tableName,
-                    dryRun: $dryRun
-                );
+				[$scanned, $updated] = $this->backfillTable(
+					tableName: $tableName,
+					dryRun: $dryRun
+				);
 
-                $grandScanned  += $scanned;
-                $grandUpdated  += $updated;
-                $tablesTouched += 1;
+				$grandScanned += $scanned;
+				$grandUpdated += $updated;
+				$tablesTouched += 1;
 
-                $output->writeln(
-                    sprintf(
-                        '  %s/%s (%s): scanned=%d updated=%d',
-                        $register->getSlug() ?? $register->getId(),
-                        $schema->getSlug() ?? $schema->getId(),
-                        $tableName,
-                        $scanned,
-                        $updated
-                    )
-                );
-            }//end foreach
-        }//end foreach
+				$output->writeln(
+					sprintf(
+						'  %s/%s (%s): scanned=%d updated=%d',
+						$register->getSlug() ?? $register->getId(),
+						$schema->getSlug() ?? $schema->getId(),
+						$tableName,
+						$scanned,
+						$updated
+					)
+				);
+			}//end foreach
+		}//end foreach
 
-        $summarySuffix = '';
-        if ($dryRun === true) {
-            $summarySuffix = ' (dry run — no writes performed)';
-        }
+		$summarySuffix = '';
+		if ($dryRun === true) {
+			$summarySuffix = ' (dry run — no writes performed)';
+		}
 
-        $output->writeln(
-            sprintf(
-                '<info>Done. Tables=%d scanned=%d updated=%d%s</info>',
-                $tablesTouched,
-                $grandScanned,
-                $grandUpdated,
-                $summarySuffix
-            )
-        );
+		$output->writeln(
+			sprintf(
+				'<info>Done. Tables=%d scanned=%d updated=%d%s</info>',
+				$tablesTouched,
+				$grandScanned,
+				$grandUpdated,
+				$summarySuffix
+			)
+		);
 
-        return Command::SUCCESS;
-    }//end execute()
+		return Command::SUCCESS;
+	}//end execute()
 
-    /**
-     * Resolve the list of registers to operate on.
-     *
-     * @param string|null $registerRef Optional register slug, uuid or id.
-     *
-     * @return Register[]
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    private function resolveRegisters(?string $registerRef): array
-    {
-        if ($registerRef !== null && $registerRef !== '') {
-            return [$this->registerMapper->find($registerRef, _multitenancy: false)];
-        }
+	/**
+	 * Resolve the list of registers to operate on.
+	 *
+	 * @param string|null $registerRef Optional register slug, uuid or id.
+	 *
+	 * @return Register[]
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	private function resolveRegisters(?string $registerRef): array {
+		if ($registerRef !== null && $registerRef !== '') {
+			return [$this->registerMapper->find($registerRef, _multitenancy: false)];
+		}
 
-        return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-    }//end resolveRegisters()
+		return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+	}//end resolveRegisters()
 
-    /**
-     * Resolve the list of schemas to operate on.
-     *
-     * @param string|null $schemaRef Optional schema slug, uuid or id.
-     *
-     * @return Schema[]
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    private function resolveSchemas(?string $schemaRef): array
-    {
-        if ($schemaRef !== null && $schemaRef !== '') {
-            return [$this->schemaMapper->find($schemaRef, _multitenancy: false)];
-        }
+	/**
+	 * Resolve the list of schemas to operate on.
+	 *
+	 * @param string|null $schemaRef Optional schema slug, uuid or id.
+	 *
+	 * @return Schema[]
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	private function resolveSchemas(?string $schemaRef): array {
+		if ($schemaRef !== null && $schemaRef !== '') {
+			return [$this->schemaMapper->find($schemaRef, _multitenancy: false)];
+		}
 
-        return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-    }//end resolveSchemas()
+		return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+	}//end resolveSchemas()
 
-    /**
-     * Count and (unless dry-run) update rows with empty `_owner` in a magic table.
-     *
-     * @param string $tableName Fully qualified magic table name (without `oc_` prefix).
-     * @param bool   $dryRun    When true, only count rows.
-     *
-     * @return array{0:int,1:int} Tuple of [scanned, updated].
-     *
-     * @spec openspec/specs/auth-system/spec.md
-     */
-    private function backfillTable(string $tableName, bool $dryRun): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*', 'cnt'))
-            ->from($tableName)
-            ->where($qb->expr()->eq('_owner', $qb->createNamedParameter('')));
+	/**
+	 * Count and (unless dry-run) update rows with empty `_owner` in a magic table.
+	 *
+	 * @param string $tableName Fully qualified magic table name (without `oc_` prefix).
+	 * @param bool $dryRun When true, only count rows.
+	 *
+	 * @return array{0:int,1:int} Tuple of [scanned, updated].
+	 *
+	 * @spec openspec/specs/auth-system/spec.md
+	 */
+	private function backfillTable(string $tableName, bool $dryRun): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'cnt'))
+			->from($tableName)
+			->where($qb->expr()->eq('_owner', $qb->createNamedParameter('')));
 
-        $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        $result->closeCursor();
-        $scanned = (int) ($row['cnt'] ?? 0);
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+		$scanned = (int)($row['cnt'] ?? 0);
 
-        if ($scanned === 0 || $dryRun === true) {
-            return [$scanned, 0];
-        }
+		if ($scanned === 0 || $dryRun === true) {
+			return [$scanned, 0];
+		}
 
-        $update = $this->db->getQueryBuilder();
-        $update->update($tableName)
-            ->set('_owner', $update->createNamedParameter(OrganisationService::SYSTEM_USER_ID_DEFAULT))
-            ->where($update->expr()->eq('_owner', $update->createNamedParameter('')));
+		$update = $this->db->getQueryBuilder();
+		$update->update($tableName)
+			->set('_owner', $update->createNamedParameter(OrganisationService::SYSTEM_USER_ID_DEFAULT))
+			->where($update->expr()->eq('_owner', $update->createNamedParameter('')));
 
-        $updated = (int) $update->executeStatement();
+		$updated = (int)$update->executeStatement();
 
-        return [$scanned, $updated];
-    }//end backfillTable()
+		return [$scanned, $updated];
+	}//end backfillTable()
 }//end class

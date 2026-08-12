@@ -42,118 +42,113 @@ use InvalidArgumentException;
  *   static-factory pattern; PHPMD's StaticAccess warning is a false
  *   positive for that pattern.
  */
-class GeoFilterParser
-{
-    /**
-     * Parse spatial filters out of a query-parameter array.
-     *
-     * Recognised keys:
-     *   - geo.bbox     — `west,south,east,north`
-     *   - geo.near     — `lon,lat` (requires geo.radius)
-     *   - geo.radius   — meters (requires geo.near)
-     *   - geo.property — optional property name to evaluate
-     *
-     * @param array $params HTTP query params.
-     *
-     * @return GeoFilter[]
-     *
-     * @throws InvalidArgumentException When `geo.near`/`geo.radius` are mismatched.
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
-     */
-    public function fromQueryParams(array $params): array
-    {
-        $filters  = [];
-        $property = null;
-        if (isset($params['geo.property']) === true) {
-            $property = (string) $params['geo.property'];
-        }
+class GeoFilterParser {
+	/**
+	 * Parse spatial filters out of a query-parameter array.
+	 *
+	 * Recognised keys:
+	 *   - geo.bbox     — `west,south,east,north`
+	 *   - geo.near     — `lon,lat` (requires geo.radius)
+	 *   - geo.radius   — meters (requires geo.near)
+	 *   - geo.property — optional property name to evaluate
+	 *
+	 * @param array $params HTTP query params.
+	 *
+	 * @return GeoFilter[]
+	 *
+	 * @throws InvalidArgumentException When `geo.near`/`geo.radius` are mismatched.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
+	 */
+	public function fromQueryParams(array $params): array {
+		$filters = [];
+		$property = null;
+		if (isset($params['geo.property']) === true) {
+			$property = (string)$params['geo.property'];
+		}
 
-        if (isset($params['geo.bbox']) === true && $params['geo.bbox'] !== '') {
-            $filters[] = GeoFilter::fromBbox(bbox: (string) $params['geo.bbox'], property: $property);
-        }
+		if (isset($params['geo.bbox']) === true && $params['geo.bbox'] !== '') {
+			$filters[] = GeoFilter::fromBbox(bbox: (string)$params['geo.bbox'], property: $property);
+		}
 
-        $hasNear   = (isset($params['geo.near']) === true && $params['geo.near'] !== '');
-        $hasRadius = (isset($params['geo.radius']) === true && $params['geo.radius'] !== '');
+		$hasNear = (isset($params['geo.near']) === true && $params['geo.near'] !== '');
+		$hasRadius = (isset($params['geo.radius']) === true && $params['geo.radius'] !== '');
 
-        if (($hasNear xor $hasRadius) === true) {
-            throw new InvalidArgumentException(
-                'geo.near and geo.radius MUST be used together — neither is meaningful alone'
-            );
-        }
+		if (($hasNear xor $hasRadius) === true) {
+			throw new InvalidArgumentException(
+				'geo.near and geo.radius MUST be used together — neither is meaningful alone'
+			);
+		}
 
-        if ($hasNear === true) {
-            $coords = array_map('trim', explode(',', (string) $params['geo.near']));
-            if (count($coords) !== 2) {
-                throw new InvalidArgumentException('geo.near MUST be `lon,lat` — exactly two values');
-            }
+		if ($hasNear === true) {
+			$coords = array_map('trim', explode(',', (string)$params['geo.near']));
+			if (count($coords) !== 2) {
+				throw new InvalidArgumentException('geo.near MUST be `lon,lat` — exactly two values');
+			}
 
-            $filters[] = GeoFilter::fromNearAndRadius(
-                lon: $coords[0],
-                lat: $coords[1],
-                radius: (string) $params['geo.radius'],
-                property: $property
-            );
-        }
+			$filters[] = GeoFilter::fromNearAndRadius(
+				lon: $coords[0],
+				lat: $coords[1],
+				radius: (string)$params['geo.radius'],
+				property: $property
+			);
+		}
 
-        return $filters;
+		return $filters;
+	}//end fromQueryParams()
 
-    }//end fromQueryParams()
+	/**
+	 * Parse a `POST /geo-search` JSON body into spatial filters.
+	 *
+	 * Body shape:
+	 *   {
+	 *     "geometry": { "within": <Geometry>, "intersects": <Geometry> },
+	 *     "property": "<name>"
+	 *   }
+	 *
+	 * @param array $body Decoded JSON body.
+	 *
+	 * @return GeoFilter[]
+	 *
+	 * @throws InvalidArgumentException When malformed.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
+	 */
+	public function fromGeoSearchBody(array $body): array {
+		$geometry = ($body['geometry'] ?? null);
+		if (is_array($geometry) === false) {
+			throw new InvalidArgumentException('geo-search body MUST include a geometry object');
+		}
 
-    /**
-     * Parse a `POST /geo-search` JSON body into spatial filters.
-     *
-     * Body shape:
-     *   {
-     *     "geometry": { "within": <Geometry>, "intersects": <Geometry> },
-     *     "property": "<name>"
-     *   }
-     *
-     * @param array $body Decoded JSON body.
-     *
-     * @return GeoFilter[]
-     *
-     * @throws InvalidArgumentException When malformed.
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
-     */
-    public function fromGeoSearchBody(array $body): array
-    {
-        $geometry = ($body['geometry'] ?? null);
-        if (is_array($geometry) === false) {
-            throw new InvalidArgumentException('geo-search body MUST include a geometry object');
-        }
+		$property = null;
+		if (isset($body['property']) === true) {
+			$property = (string)$body['property'];
+		}
 
-        $property = null;
-        if (isset($body['property']) === true) {
-            $property = (string) $body['property'];
-        }
+		$filters = [];
 
-        $filters = [];
+		if (isset($geometry['within']) === true) {
+			if (is_array($geometry['within']) === false) {
+				throw new InvalidArgumentException('geometry.within MUST be a GeoJSON geometry object');
+			}
 
-        if (isset($geometry['within']) === true) {
-            if (is_array($geometry['within']) === false) {
-                throw new InvalidArgumentException('geometry.within MUST be a GeoJSON geometry object');
-            }
+			$filters[] = GeoFilter::fromWithinGeometry(geometry: $geometry['within'], property: $property);
+		}
 
-            $filters[] = GeoFilter::fromWithinGeometry(geometry: $geometry['within'], property: $property);
-        }
+		if (isset($geometry['intersects']) === true) {
+			if (is_array($geometry['intersects']) === false) {
+				throw new InvalidArgumentException('geometry.intersects MUST be a GeoJSON geometry object');
+			}
 
-        if (isset($geometry['intersects']) === true) {
-            if (is_array($geometry['intersects']) === false) {
-                throw new InvalidArgumentException('geometry.intersects MUST be a GeoJSON geometry object');
-            }
+			$filters[] = GeoFilter::fromIntersectsGeometry(geometry: $geometry['intersects'], property: $property);
+		}
 
-            $filters[] = GeoFilter::fromIntersectsGeometry(geometry: $geometry['intersects'], property: $property);
-        }
+		if (count($filters) === 0) {
+			throw new InvalidArgumentException(
+				'geo-search body MUST include at least one of: geometry.within, geometry.intersects'
+			);
+		}
 
-        if (count($filters) === 0) {
-            throw new InvalidArgumentException(
-                'geo-search body MUST include at least one of: geometry.within, geometry.intersects'
-            );
-        }
-
-        return $filters;
-
-    }//end fromGeoSearchBody()
+		return $filters;
+	}//end fromGeoSearchBody()
 }//end class

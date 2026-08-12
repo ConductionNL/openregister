@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,50 +32,44 @@ use PHPUnit\Framework\TestCase;
  * That is exactly what `related-schema` did: it is the mode the docs describe and the
  * schema editor offers, and the write path had never heard of it.
  */
-class ObjectHandlingTest extends TestCase
-{
+class ObjectHandlingTest extends TestCase {
 
-    /**
-     * `related-schema` is the DOCUMENTED mode for a UUID reference — the one that was
-     * broken. `related-object` is the undocumented alias the code happened to support.
-     *
-     * @return void
-     */
-    public function testRelatingModesBothStoreAUuidReference(): void
-    {
-        $this->assertTrue(ObjectHandling::relates('related-schema'));
-        $this->assertTrue(ObjectHandling::relates('related-object'));
+	/**
+	 * `related-schema` is the DOCUMENTED mode for a UUID reference — the one that was
+	 * broken. `related-object` is the undocumented alias the code happened to support.
+	 *
+	 * @return void
+	 */
+	public function testRelatingModesBothStoreAUuidReference(): void {
+		$this->assertTrue(ObjectHandling::relates('related-schema'));
+		$this->assertTrue(ObjectHandling::relates('related-object'));
 
-    }//end testRelatingModesBothStoreAUuidReference()
+	}//end testRelatingModesBothStoreAUuidReference()
 
+	/**
+	 * Nesting modes embed the object; they must NOT get a UUID column.
+	 *
+	 * @return void
+	 */
+	public function testNestingModesDoNotRelate(): void {
+		$this->assertFalse(ObjectHandling::relates('nested-object'));
+		$this->assertFalse(ObjectHandling::relates('nested-schema'));
+		$this->assertFalse(ObjectHandling::relates('uri'));
 
-    /**
-     * Nesting modes embed the object; they must NOT get a UUID column.
-     *
-     * @return void
-     */
-    public function testNestingModesDoNotRelate(): void
-    {
-        $this->assertFalse(ObjectHandling::relates('nested-object'));
-        $this->assertFalse(ObjectHandling::relates('nested-schema'));
-        $this->assertFalse(ObjectHandling::relates('uri'));
+	}//end testNestingModesDoNotRelate()
 
-    }//end testNestingModesDoNotRelate()
+	/**
+	 * An unset or unknown handling must not be treated as relating — that would hand a
+	 * VARCHAR column to a property that stores a whole object.
+	 *
+	 * @return void
+	 */
+	public function testUnsetOrUnknownHandlingDoesNotRelate(): void {
+		$this->assertFalse(ObjectHandling::relates(null));
+		$this->assertFalse(ObjectHandling::relates(''));
+		$this->assertFalse(ObjectHandling::relates('cascade'));
+		$this->assertFalse(ObjectHandling::relates('Related-Schema'));
 
-
-    /**
-     * An unset or unknown handling must not be treated as relating — that would hand a
-     * VARCHAR column to a property that stores a whole object.
-     *
-     * @return void
-     */
-    public function testUnsetOrUnknownHandlingDoesNotRelate(): void
-    {
-        $this->assertFalse(ObjectHandling::relates(null));
-        $this->assertFalse(ObjectHandling::relates(''));
-        $this->assertFalse(ObjectHandling::relates('cascade'));
-        $this->assertFalse(ObjectHandling::relates('Related-Schema'));
-
-    }//end testUnsetOrUnknownHandlingDoesNotRelate()
+	}//end testUnsetOrUnknownHandlingDoesNotRelate()
 
 }//end class

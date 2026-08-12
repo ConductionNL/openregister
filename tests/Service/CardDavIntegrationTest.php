@@ -38,149 +38,140 @@ use PHPUnit\Framework\TestCase;
 /**
  * @group integration
  */
-class CardDavIntegrationTest extends TestCase
-{
+class CardDavIntegrationTest extends TestCase {
 
-    private const NC_BASE = 'http://localhost';
+	private const NC_BASE = 'http://localhost';
 
-    private const NC_USER = 'admin';
+	private const NC_USER = 'admin';
 
-    private const NC_PASS = 'admin';
+	private const NC_PASS = 'admin';
 
-    private string $contactUid;
+	private string $contactUid;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        if ($this->isNextcloudReachable() === false) {
-            $this->markTestSkipped(
-                'Nextcloud HTTP endpoint not reachable at '.self::NC_BASE.'. Start with: docker-compose up -d nextcloud'
-            );
-        }
+	protected function setUp(): void {
+		parent::setUp();
+		if ($this->isNextcloudReachable() === false) {
+			$this->markTestSkipped(
+				'Nextcloud HTTP endpoint not reachable at ' . self::NC_BASE . '. Start with: docker-compose up -d nextcloud'
+			);
+		}
 
-        $this->contactUid = 'phpunit-contact-'.bin2hex(random_bytes(8));
-    }//end setUp()
+		$this->contactUid = 'phpunit-contact-' . bin2hex(random_bytes(8));
+	}//end setUp()
 
-    protected function tearDown(): void
-    {
-        $this->httpRequest(
-            method: 'DELETE',
-            path: $this->contactPath(),
-            headers: [],
-            body: null
-        );
-        parent::tearDown();
-    }//end tearDown()
+	protected function tearDown(): void {
+		$this->httpRequest(
+			method: 'DELETE',
+			path: $this->contactPath(),
+			headers: [],
+			body: null
+		);
+		parent::tearDown();
+	}//end tearDown()
 
-    public function testCreateAndFetchContactViaCardDav(): void
-    {
-        $vcard = $this->buildVcard(uid: $this->contactUid, fullName: 'PHPUnit Contact');
+	public function testCreateAndFetchContactViaCardDav(): void {
+		$vcard = $this->buildVcard(uid: $this->contactUid, fullName: 'PHPUnit Contact');
 
-        [$putStatus] = $this->httpRequest(
-            method: 'PUT',
-            path: $this->contactPath(),
-            headers: ['Content-Type: text/vcard; charset=utf-8'],
-            body: $vcard
-        );
+		[$putStatus] = $this->httpRequest(
+			method: 'PUT',
+			path: $this->contactPath(),
+			headers: ['Content-Type: text/vcard; charset=utf-8'],
+			body: $vcard
+		);
 
-        $this->assertContains(
-            $putStatus,
-            [201, 204],
-            'CardDAV PUT MUST return 201 (created) or 204 (no content)'
-        );
+		$this->assertContains(
+			$putStatus,
+			[201, 204],
+			'CardDAV PUT MUST return 201 (created) or 204 (no content)'
+		);
 
-        [$getStatus, $getBody] = $this->httpRequest(
-            method: 'GET',
-            path: $this->contactPath(),
-            headers: [],
-            body: null
-        );
+		[$getStatus, $getBody] = $this->httpRequest(
+			method: 'GET',
+			path: $this->contactPath(),
+			headers: [],
+			body: null
+		);
 
-        $this->assertSame(200, $getStatus, 'CardDAV GET MUST return the freshly stored contact');
-        $this->assertStringContainsString('UID:'.$this->contactUid, (string) $getBody);
-        $this->assertStringContainsString('FN:PHPUnit Contact', (string) $getBody);
-    }//end testCreateAndFetchContactViaCardDav()
+		$this->assertSame(200, $getStatus, 'CardDAV GET MUST return the freshly stored contact');
+		$this->assertStringContainsString('UID:' . $this->contactUid, (string)$getBody);
+		$this->assertStringContainsString('FN:PHPUnit Contact', (string)$getBody);
+	}//end testCreateAndFetchContactViaCardDav()
 
-    public function testDeleteContactRemovesIt(): void
-    {
-        $vcard = $this->buildVcard(uid: $this->contactUid, fullName: 'PHPUnit Delete Target');
-        $this->httpRequest(
-            method: 'PUT',
-            path: $this->contactPath(),
-            headers: ['Content-Type: text/vcard; charset=utf-8'],
-            body: $vcard
-        );
+	public function testDeleteContactRemovesIt(): void {
+		$vcard = $this->buildVcard(uid: $this->contactUid, fullName: 'PHPUnit Delete Target');
+		$this->httpRequest(
+			method: 'PUT',
+			path: $this->contactPath(),
+			headers: ['Content-Type: text/vcard; charset=utf-8'],
+			body: $vcard
+		);
 
-        [$delStatus] = $this->httpRequest(
-            method: 'DELETE',
-            path: $this->contactPath(),
-            headers: [],
-            body: null
-        );
-        $this->assertContains(
-            $delStatus,
-            [200, 204],
-            'CardDAV DELETE MUST return 200 or 204'
-        );
+		[$delStatus] = $this->httpRequest(
+			method: 'DELETE',
+			path: $this->contactPath(),
+			headers: [],
+			body: null
+		);
+		$this->assertContains(
+			$delStatus,
+			[200, 204],
+			'CardDAV DELETE MUST return 200 or 204'
+		);
 
-        [$getStatus] = $this->httpRequest(
-            method: 'GET',
-            path: $this->contactPath(),
-            headers: [],
-            body: null
-        );
-        $this->assertSame(404, $getStatus, 'contact MUST be gone after DELETE');
-    }//end testDeleteContactRemovesIt()
+		[$getStatus] = $this->httpRequest(
+			method: 'GET',
+			path: $this->contactPath(),
+			headers: [],
+			body: null
+		);
+		$this->assertSame(404, $getStatus, 'contact MUST be gone after DELETE');
+	}//end testDeleteContactRemovesIt()
 
-    private function contactPath(): string
-    {
-        return '/remote.php/dav/addressbooks/users/'.self::NC_USER.'/contacts/'.$this->contactUid.'.vcf';
-    }//end contactPath()
+	private function contactPath(): string {
+		return '/remote.php/dav/addressbooks/users/' . self::NC_USER . '/contacts/' . $this->contactUid . '.vcf';
+	}//end contactPath()
 
-    private function buildVcard(string $uid, string $fullName): string
-    {
-        return "BEGIN:VCARD\r\n"."VERSION:3.0\r\n"."UID:$uid\r\n"."FN:$fullName\r\n"."N:".$fullName.";;;;\r\n"."EMAIL;TYPE=HOME:$uid@phpunit.test\r\n"."END:VCARD\r\n";
-    }//end buildVcard()
+	private function buildVcard(string $uid, string $fullName): string {
+		return "BEGIN:VCARD\r\n" . "VERSION:3.0\r\n" . "UID:$uid\r\n" . "FN:$fullName\r\n" . 'N:' . $fullName . ";;;;\r\n" . "EMAIL;TYPE=HOME:$uid@phpunit.test\r\n" . "END:VCARD\r\n";
+	}//end buildVcard()
 
-    private function isNextcloudReachable(): bool
-    {
-        [$status] = $this->httpRequest(
-            method: 'GET',
-            path: '/status.php',
-            headers: [],
-            body: null,
-            authenticated: false
-        );
-        return $status === 200;
-    }//end isNextcloudReachable()
+	private function isNextcloudReachable(): bool {
+		[$status] = $this->httpRequest(
+			method: 'GET',
+			path: '/status.php',
+			headers: [],
+			body: null,
+			authenticated: false
+		);
+		return $status === 200;
+	}//end isNextcloudReachable()
 
-    /**
-     * @param  string[] $headers
-     * @return array{0: int, 1: string|null}
-     */
-    private function httpRequest(string $method, string $path, array $headers, ?string $body, bool $authenticated=true): array
-    {
-        $ch = curl_init(self::NC_BASE.$path);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        if ($body !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        }
+	/**
+	 * @param string[] $headers
+	 * @return array{0: int, 1: string|null}
+	 */
+	private function httpRequest(string $method, string $path, array $headers, ?string $body, bool $authenticated = true): array {
+		$ch = curl_init(self::NC_BASE . $path);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		if ($body !== null) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+		}
 
-        if ($authenticated === true) {
-            curl_setopt($ch, CURLOPT_USERPWD, self::NC_USER.':'.self::NC_PASS);
-        }
+		if ($authenticated === true) {
+			curl_setopt($ch, CURLOPT_USERPWD, self::NC_USER . ':' . self::NC_PASS);
+		}
 
-        $response = curl_exec($ch);
-        $status   = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
+		$response = curl_exec($ch);
+		$status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+		curl_close($ch);
 
-        if ($response === false) {
-            return [0, null];
-        }
+		if ($response === false) {
+			return [0, null];
+		}
 
-        return [$status, (string) $response];
-    }//end httpRequest()
+		return [$status, (string)$response];
+	}//end httpRequest()
 }//end class

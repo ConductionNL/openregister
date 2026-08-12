@@ -51,58 +51,55 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @link https://www.OpenRegister.app
  */
-class Version1Date20250902150000 extends SimpleMigrationStep
-{
-    /**
-     * Add facets column to schemas table for performance optimization
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20250902150000 extends SimpleMigrationStep {
+	/**
+	 * Add facets column to schemas table for performance optimization
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
+	 * @param array $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_schemas') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_schemas') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_schemas');
+		$table = $schema->getTable('openregister_schemas');
 
-        // Add facets column for pre-computed facet configurations.
-        if ($table->hasColumn('facets') === false) {
-            $table->addColumn(
-                'facets',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'Pre-computed facetable field configurations for performance optimization',
-                ]
-            );
-            $output->info(message: 'Added facets column to openregister_schemas table for facet caching');
-        }
+		// Add facets column for pre-computed facet configurations.
+		if ($table->hasColumn('facets') === false) {
+			$table->addColumn(
+				'facets',
+				Types::JSON,
+				[
+					'notnull' => false,
+					'default' => null,
+					'comment' => 'Pre-computed facetable field configurations for performance optimization',
+				]
+			);
+			$output->info(message: 'Added facets column to openregister_schemas table for facet caching');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema changes to regenerate facets for existing schemas
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // Note: We'll regenerate facets via an OCC command rather than in migration.
-        // To avoid dependency injection issues during migration.
-        $message = 'Facets column added. Run `occ openregister:regenerate-facets` to populate facet data.';
-        $output->info($message);
-    }//end postSchemaChange()
+	/**
+	 * Post-schema changes to regenerate facets for existing schemas
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// Note: We'll regenerate facets via an OCC command rather than in migration.
+		// To avoid dependency injection issues during migration.
+		$message = 'Facets column added. Run `occ openregister:regenerate-facets` to populate facet data.';
+		$output->info($message);
+	}//end postSchemaChange()
 }//end class

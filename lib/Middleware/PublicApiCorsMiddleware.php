@@ -50,58 +50,56 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Middleware must reference NC framework types
  * (Middleware, Controller, Response, IRequest, IControllerMethodReflector) plus Throwable.
  */
-class PublicApiCorsMiddleware extends Middleware
-{
-    /**
-     * Constructor.
-     *
-     * @param IRequest                   $request   The current request
-     * @param IControllerMethodReflector $reflector Reflector for controller annotations
-     */
-    public function __construct(
-        private readonly IRequest $request,
-        private readonly IControllerMethodReflector $reflector
-    ) {
-    }//end __construct()
+class PublicApiCorsMiddleware extends Middleware {
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The current request
+	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
+	 */
+	public function __construct(
+		private readonly IRequest $request,
+		private readonly IControllerMethodReflector $reflector,
+	) {
+	}//end __construct()
 
-    /**
-     * Reflect the Origin on responses from public endpoints.
-     *
-     * Fails open: any error leaves the response unchanged (no CORS header) so a
-     * bug here can never turn a working same-origin call into a 500.
-     *
-     * @param Controller $controller The controller being dispatched
-     * @param string     $methodName The method being dispatched
-     * @param Response   $response   The outgoing response
-     *
-     * @return Response The response, with reflect-Origin CORS headers when public
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() consumes
-     * both $controller and $methodName via the interface; PHPMD misclassifies $controller as unused.
-     */
-    public function afterController(Controller $controller, string $methodName, Response $response): Response
-    {
-        try {
-            $origin = $this->request->getHeader('Origin');
-            if ($origin === '') {
-                return $response;
-            }
+	/**
+	 * Reflect the Origin on responses from public endpoints.
+	 *
+	 * Fails open: any error leaves the response unchanged (no CORS header) so a
+	 * bug here can never turn a working same-origin call into a 500.
+	 *
+	 * @param Controller $controller The controller being dispatched
+	 * @param string $methodName The method being dispatched
+	 * @param Response $response The outgoing response
+	 *
+	 * @return Response The response, with reflect-Origin CORS headers when public
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() consumes
+	 * both $controller and $methodName via the interface; PHPMD misclassifies $controller as unused.
+	 */
+	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		try {
+			$origin = $this->request->getHeader('Origin');
+			if ($origin === '') {
+				return $response;
+			}
 
-            $this->reflector->reflect($controller, $methodName);
-            if ($this->reflector->hasAnnotation('PublicPage') === false) {
-                return $response;
-            }
+			$this->reflector->reflect($controller, $methodName);
+			if ($this->reflector->hasAnnotation('PublicPage') === false) {
+				return $response;
+			}
 
-            // Never combine a reflected Origin with credentials — that pairing is
-            // the CSRF-read footgun the platform guards against elsewhere.
-            $response->addHeader('Access-Control-Allow-Origin', $origin);
-            $response->addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            $response->addHeader('Access-Control-Allow-Headers', 'Content-Type');
-        } catch (Throwable $e) {
-            // Fail open: leave the response untouched.
-            return $response;
-        }//end try
+			// Never combine a reflected Origin with credentials — that pairing is
+			// the CSRF-read footgun the platform guards against elsewhere.
+			$response->addHeader('Access-Control-Allow-Origin', $origin);
+			$response->addHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+			$response->addHeader('Access-Control-Allow-Headers', 'Content-Type');
+		} catch (Throwable $e) {
+			// Fail open: leave the response untouched.
+			return $response;
+		}//end try
 
-        return $response;
-    }//end afterController()
+		return $response;
+	}//end afterController()
 }//end class

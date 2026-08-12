@@ -42,119 +42,117 @@ use Throwable;
 /**
  * Harvests + dedups evidence onto a case.
  */
-class EvidenceHarvestService
-{
-    /**
-     * Constructor.
-     *
-     * @param EvidenceSourceRegistry $registry The provider registry (registered sources only).
-     * @param CaseObjectAccessor     $accessor RBAC-scoped, audited case load/save.
-     * @param LoggerInterface        $logger   Logger for per-source diagnostics.
-     */
-    public function __construct(
-        private readonly EvidenceSourceRegistry $registry,
-        private readonly CaseObjectAccessor $accessor,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class EvidenceHarvestService {
+	/**
+	 * Constructor.
+	 *
+	 * @param EvidenceSourceRegistry $registry The provider registry (registered sources only).
+	 * @param CaseObjectAccessor $accessor RBAC-scoped, audited case load/save.
+	 * @param LoggerInterface $logger Logger for per-source diagnostics.
+	 */
+	public function __construct(
+		private readonly EvidenceSourceRegistry $registry,
+		private readonly CaseObjectAccessor $accessor,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Harvest evidence for a case and persist deduplicated items onto it.
-     *
-     * Enumerates registered, enabled providers; asks each to harvest for the
-     * case; and appends any item whose `contentHash` is not already present on
-     * the case's `evidence` sub-collection. Items with an already-present hash
-     * are skipped (idempotent re-runs). The mutated case is saved once, audited.
-     *
-     * @param string $caseUuid The case object uuid.
-     *
-     * @return array{caseUuid: string, evaluated: int, appended: int, skipped: int, providers: array<int, string>}
-     *
-     * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Linear enumerate→dedup→append loop; per-provider/per-item guards.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Same loop; path count inflated by nested per-item guards.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
-     */
-    public function harvest(string $caseUuid): array
-    {
-        $case = $this->accessor->load(caseUuid: $caseUuid);
-        if ($case === null) {
-            throw new RuntimeException(
-                message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
-            );
-        }
+	/**
+	 * Harvest evidence for a case and persist deduplicated items onto it.
+	 *
+	 * Enumerates registered, enabled providers; asks each to harvest for the
+	 * case; and appends any item whose `contentHash` is not already present on
+	 * the case's `evidence` sub-collection. Items with an already-present hash
+	 * are skipped (idempotent re-runs). The mutated case is saved once, audited.
+	 *
+	 * @param string $caseUuid The case object uuid.
+	 *
+	 * @return array{caseUuid: string, evaluated: int, appended: int, skipped: int, providers: array<int, string>}
+	 *
+	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Linear enumerate→dedup→append loop; per-provider/per-item guards.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same loop; path count inflated by nested per-item guards.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 */
+	public function harvest(string $caseUuid): array {
+		$case = $this->accessor->load(caseUuid: $caseUuid);
+		if ($case === null) {
+			throw new RuntimeException(
+				message: sprintf('Case "%s" not found or not authorised.', $caseUuid)
+			);
+		}
 
-        $data     = $case->getObject();
-        $evidence = [];
-        if (isset($data['evidence']) === true && is_array($data['evidence']) === true) {
-            $evidence = array_values($data['evidence']);
-        }
+		$data = $case->getObject();
+		$evidence = [];
+		if (isset($data['evidence']) === true && is_array($data['evidence']) === true) {
+			$evidence = array_values($data['evidence']);
+		}
 
-        // Index existing content hashes so re-runs never duplicate an item.
-        $seenHashes = [];
-        foreach ($evidence as $existing) {
-            if (is_array($existing) === true && isset($existing['contentHash']) === true) {
-                $seenHashes[(string) $existing['contentHash']] = true;
-            }
-        }
+		// Index existing content hashes so re-runs never duplicate an item.
+		$seenHashes = [];
+		foreach ($evidence as $existing) {
+			if (is_array($existing) === true && isset($existing['contentHash']) === true) {
+				$seenHashes[(string)$existing['contentHash']] = true;
+			}
+		}
 
-        $evaluated   = 0;
-        $appended    = 0;
-        $skipped     = 0;
-        $providerIds = [];
+		$evaluated = 0;
+		$appended = 0;
+		$skipped = 0;
+		$providerIds = [];
 
-        foreach ($this->registry->list() as $provider) {
-            if ($provider->isEnabled() === false) {
-                continue;
-            }
+		foreach ($this->registry->list() as $provider) {
+			if ($provider->isEnabled() === false) {
+				continue;
+			}
 
-            $providerIds[] = $provider->getSourceId();
+			$providerIds[] = $provider->getSourceId();
 
-            try {
-                $items = $provider->harvest(caseUuid: $caseUuid, case: $data);
-            } catch (Throwable $e) {
-                // A failing source is visible + re-runnable: it contributes no
-                // items this pass, but does not abort the whole harvest.
-                $this->logger->warning(
-                    message: sprintf(
-                        '[EvidenceHarvestService] provider "%s" failed for case "%s": %s',
-                        $provider->getSourceId(),
-                        $caseUuid,
-                        $e->getMessage()
-                    )
-                );
-                continue;
-            }
+			try {
+				$items = $provider->harvest(caseUuid: $caseUuid, case: $data);
+			} catch (Throwable $e) {
+				// A failing source is visible + re-runnable: it contributes no
+				// items this pass, but does not abort the whole harvest.
+				$this->logger->warning(
+					message: sprintf(
+						'[EvidenceHarvestService] provider "%s" failed for case "%s": %s',
+						$provider->getSourceId(),
+						$caseUuid,
+						$e->getMessage()
+					)
+				);
+				continue;
+			}
 
-            foreach ($items as $item) {
-                $evaluated++;
-                $hash = $item->getContentHash();
+			foreach ($items as $item) {
+				$evaluated++;
+				$hash = $item->getContentHash();
 
-                if ($hash === '' || isset($seenHashes[$hash]) === true) {
-                    $skipped++;
-                    continue;
-                }
+				if ($hash === '' || isset($seenHashes[$hash]) === true) {
+					$skipped++;
+					continue;
+				}
 
-                $seenHashes[$hash] = true;
-                $evidence[]        = $item->toEvidenceRecord();
-                $appended++;
-            }//end foreach
-        }//end foreach
+				$seenHashes[$hash] = true;
+				$evidence[] = $item->toEvidenceRecord();
+				$appended++;
+			}//end foreach
+		}//end foreach
 
-        // Persist once (a single audited write) only when something changed.
-        if ($appended > 0) {
-            $data['evidence'] = $evidence;
-            $this->accessor->save(case: $case, data: $data);
-        }
+		// Persist once (a single audited write) only when something changed.
+		if ($appended > 0) {
+			$data['evidence'] = $evidence;
+			$this->accessor->save(case: $case, data: $data);
+		}
 
-        return [
-            'caseUuid'  => $caseUuid,
-            'evaluated' => $evaluated,
-            'appended'  => $appended,
-            'skipped'   => $skipped,
-            'providers' => $providerIds,
-        ];
-    }//end harvest()
+		return [
+			'caseUuid' => $caseUuid,
+			'evaluated' => $evaluated,
+			'appended' => $appended,
+			'skipped' => $skipped,
+			'providers' => $providerIds,
+		];
+	}//end harvest()
 }//end class

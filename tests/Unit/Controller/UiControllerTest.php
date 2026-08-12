@@ -10,61 +10,57 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class UiControllerTest extends TestCase
-{
-    private UiController $controller;
-    private IRequest&MockObject $request;
+class UiControllerTest extends TestCase {
+	private UiController $controller;
+	private IRequest&MockObject $request;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
+		$this->request = $this->createMock(IRequest::class);
 
-        $this->controller = new UiController(
-            'openregister',
-            $this->request
-        );
-    }
+		$this->controller = new UiController(
+			'openregister',
+			$this->request
+		);
+	}
 
-    /**
-     * @dataProvider spaRouteProvider
-     */
-    public function testSpaRoutesReturnTemplateResponse(string $method): void
-    {
-        $result = $this->controller->$method();
+	/**
+	 * @dataProvider spaRouteProvider
+	 */
+	public function testSpaRoutesReturnTemplateResponse(string $method): void {
+		$result = $this->controller->$method();
 
-        $this->assertInstanceOf(TemplateResponse::class, $result);
-        $this->assertEquals('index', $result->getTemplateName());
-    }
+		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertEquals('index', $result->getTemplateName());
+	}
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function spaRouteProvider(): array
-    {
-        return [
-            'registers'        => ['registers'],
-            'registersDetails' => ['registersDetails'],
-            'schemas'          => ['schemas'],
-            'schemasDetails'   => ['schemasDetails'],
-            'sources'          => ['sources'],
-            'organisation'     => ['organisation'],
-            'objects'          => ['objects'],
-            'tables'           => ['tables'],
-            // NOTE: 'chat' removed — UiController never had a chat() SPA
-            // route; `chat#*` in appinfo/routes.php are API-only endpoints
-            // (ChatController), not a TemplateResponse page.
-            'configurations'   => ['configurations'],
-            'deleted'          => ['deleted'],
-            'auditTrail'       => ['auditTrail'],
-            'searchTrail'      => ['searchTrail'],
-            'webhooks'         => ['webhooks'],
-            'webhooksLogs'     => ['webhooksLogs'],
-            'entities'         => ['entities'],
-            'entitiesDetails'  => ['entitiesDetails'],
-            'endpoints'        => ['endpoints'],
-            'endpointLogs'     => ['endpointLogs'],
-        ];
-    }
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function spaRouteProvider(): array {
+		return [
+			'registers' => ['registers'],
+			'registersDetails' => ['registersDetails'],
+			'schemas' => ['schemas'],
+			'schemasDetails' => ['schemasDetails'],
+			'sources' => ['sources'],
+			'organisation' => ['organisation'],
+			'objects' => ['objects'],
+			'tables' => ['tables'],
+			// NOTE: 'chat' removed — UiController never had a chat() SPA
+			// route; `chat#*` in appinfo/routes.php are API-only endpoints
+			// (ChatController), not a TemplateResponse page.
+			'configurations' => ['configurations'],
+			'deleted' => ['deleted'],
+			'auditTrail' => ['auditTrail'],
+			'searchTrail' => ['searchTrail'],
+			'webhooks' => ['webhooks'],
+			'webhooksLogs' => ['webhooksLogs'],
+			'entities' => ['entities'],
+			'entitiesDetails' => ['entitiesDetails'],
+			'endpoints' => ['endpoints'],
+			'endpointLogs' => ['endpointLogs'],
+		];
+	}
 }

@@ -42,218 +42,204 @@ use PHPUnit\Framework\TestCase;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
-class ActivityLinksControllerTest extends TestCase
-{
+class ActivityLinksControllerTest extends TestCase {
 
-    /**
-     * HTTP request mock.
-     *
-     * @var IRequest&MockObject
-     */
-    private IRequest&MockObject $request;
+	/**
+	 * HTTP request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest&MockObject $request;
 
-    /**
-     * Activity filter service mock.
-     *
-     * @var ActivityFilterService&MockObject
-     */
-    private ActivityFilterService&MockObject $filterService;
+	/**
+	 * Activity filter service mock.
+	 *
+	 * @var ActivityFilterService&MockObject
+	 */
+	private ActivityFilterService&MockObject $filterService;
 
-    /**
-     * Object service mock.
-     *
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * Object service mock.
+	 *
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
 
-    /**
-     * Controller under test.
-     *
-     * @var ActivityLinksController
-     */
-    private ActivityLinksController $controller;
+	/**
+	 * Controller under test.
+	 *
+	 * @var ActivityLinksController
+	 */
+	private ActivityLinksController $controller;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request       = $this->createMock(IRequest::class);
-        $this->filterService = $this->createMock(ActivityFilterService::class);
-        $this->objectService = $this->createMock(ObjectService::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->filterService = $this->createMock(ActivityFilterService::class);
+		$this->objectService = $this->createMock(ObjectService::class);
 
-        $this->controller = new ActivityLinksController(
-            'openregister',
-            $this->request,
-            $this->filterService,
-            $this->objectService,
-        );
-    }//end setUp()
+		$this->controller = new ActivityLinksController(
+			'openregister',
+			$this->request,
+			$this->filterService,
+			$this->objectService,
+		);
+	}//end setUp()
 
-    private function mockObject(string $uuid='test-uuid-1234'): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid($uuid);
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')->willReturnSelf();
-        $this->objectService->method('getObject')->willReturn($object);
-        return $object;
-    }//end mockObject()
+	private function mockObject(string $uuid = 'test-uuid-1234'): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willReturn($object);
+		return $object;
+	}//end mockObject()
 
-    public function testIndexReturns501WhenActivityUnavailable(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(false);
+	public function testIndexReturns501WhenActivityUnavailable(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(false);
 
-        $response = $this->controller->index('reg', 'sch', 'obj');
+		$response = $this->controller->index('reg', 'sch', 'obj');
 
-        $this->assertSame(501, $response->getStatus());
-        $this->assertSame('APP_NOT_AVAILABLE', $response->getData()['code']);
-    }//end testIndexReturns501WhenActivityUnavailable()
+		$this->assertSame(501, $response->getStatus());
+		$this->assertSame('APP_NOT_AVAILABLE', $response->getData()['code']);
+	}//end testIndexReturns501WhenActivityUnavailable()
 
-    public function testIndexReturns404WhenObjectMissing(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')->willReturnSelf();
-        $this->objectService->method('getObject')->willReturn(null);
+	public function testIndexReturns404WhenObjectMissing(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willReturn(null);
 
-        $response = $this->controller->index('reg', 'sch', 'missing');
+		$response = $this->controller->index('reg', 'sch', 'missing');
 
-        $this->assertSame(404, $response->getStatus());
-    }//end testIndexReturns404WhenObjectMissing()
+		$this->assertSame(404, $response->getStatus());
+	}//end testIndexReturns404WhenObjectMissing()
 
-    public function testIndexReturnsResultsWithCursorPagination(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, $default=null) {
-                return match ($key) {
-                    'limit'  => 10,
-                    'cursor' => null,
-                    default  => $default,
-                };
-            }
-        );
-        $this->filterService->method('getActivityEntries')->willReturn(
-            [
-                'results'    => [
-                    [
-                        'id'        => '7',
-                        'type'      => 'files',
-                        'timestamp' => 1779002000,
-                        'actor_id'  => 'alice',
-                    ],
-                ],
-                'total'      => 1,
-                'nextCursor' => null,
-            ]
-        );
+	public function testIndexReturnsResultsWithCursorPagination(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				return match ($key) {
+					'limit' => 10,
+					'cursor' => null,
+					default => $default,
+				};
+			}
+		);
+		$this->filterService->method('getActivityEntries')->willReturn(
+			[
+				'results' => [
+					[
+						'id' => '7',
+						'type' => 'files',
+						'timestamp' => 1779002000,
+						'actor_id' => 'alice',
+					],
+				],
+				'total' => 1,
+				'nextCursor' => null,
+			]
+		);
 
-        $response = $this->controller->index('reg', 'sch', 'obj');
-        $data     = $response->getData();
+		$response = $this->controller->index('reg', 'sch', 'obj');
+		$data = $response->getData();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertCount(1, $data['results']);
-        $this->assertSame('7', $data['results'][0]['id']);
-        $this->assertSame(1, $data['total']);
-        $this->assertNull($data['nextCursor']);
-    }//end testIndexReturnsResultsWithCursorPagination()
+		$this->assertSame(200, $response->getStatus());
+		$this->assertCount(1, $data['results']);
+		$this->assertSame('7', $data['results'][0]['id']);
+		$this->assertSame(1, $data['total']);
+		$this->assertNull($data['nextCursor']);
+	}//end testIndexReturnsResultsWithCursorPagination()
 
-    public function testIndexReturns500OnUnexpectedException(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturn(null);
-        $this->filterService->method('getActivityEntries')->willThrowException(
-            new Exception('DB failure')
-        );
+	public function testIndexReturns500OnUnexpectedException(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn(null);
+		$this->filterService->method('getActivityEntries')->willThrowException(
+			new Exception('DB failure')
+		);
 
-        $response = $this->controller->index('reg', 'sch', 'obj');
+		$response = $this->controller->index('reg', 'sch', 'obj');
 
-        $this->assertSame(500, $response->getStatus());
-    }//end testIndexReturns500OnUnexpectedException()
+		$this->assertSame(500, $response->getStatus());
+	}//end testIndexReturns500OnUnexpectedException()
 
-    public function testTypesReturns501WhenActivityUnavailable(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(false);
+	public function testTypesReturns501WhenActivityUnavailable(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(false);
 
-        $response = $this->controller->types();
+		$response = $this->controller->types();
 
-        $this->assertSame(501, $response->getStatus());
-    }//end testTypesReturns501WhenActivityUnavailable()
+		$this->assertSame(501, $response->getStatus());
+	}//end testTypesReturns501WhenActivityUnavailable()
 
-    public function testTypesReturns400WhenObjectParamMalformed(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->request->method('getParam')->willReturn('bad/format');
+	public function testTypesReturns400WhenObjectParamMalformed(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->request->method('getParam')->willReturn('bad/format');
 
-        $response = $this->controller->types();
+		$response = $this->controller->types();
 
-        $this->assertSame(400, $response->getStatus());
-    }//end testTypesReturns400WhenObjectParamMalformed()
+		$this->assertSame(400, $response->getStatus());
+	}//end testTypesReturns400WhenObjectParamMalformed()
 
-    public function testTypesReturnsDistinctValues(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturn('reg/sch/obj');
-        $this->filterService->method('getActivityTypes')->willReturn(['files', 'comments']);
+	public function testTypesReturnsDistinctValues(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn('reg/sch/obj');
+		$this->filterService->method('getActivityTypes')->willReturn(['files', 'comments']);
 
-        $response = $this->controller->types();
-        $data     = $response->getData();
+		$response = $this->controller->types();
+		$data = $response->getData();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertSame(['files', 'comments'], $data['results']);
-        $this->assertSame(2, $data['total']);
-    }//end testTypesReturnsDistinctValues()
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['files', 'comments'], $data['results']);
+		$this->assertSame(2, $data['total']);
+	}//end testTypesReturnsDistinctValues()
 
-    public function testActorsReturns501WhenActivityUnavailable(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(false);
+	public function testActorsReturns501WhenActivityUnavailable(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(false);
 
-        $response = $this->controller->actors();
+		$response = $this->controller->actors();
 
-        $this->assertSame(501, $response->getStatus());
-    }//end testActorsReturns501WhenActivityUnavailable()
+		$this->assertSame(501, $response->getStatus());
+	}//end testActorsReturns501WhenActivityUnavailable()
 
-    public function testActorsReturns400WhenObjectParamMalformed(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->request->method('getParam')->willReturn('');
+	public function testActorsReturns400WhenObjectParamMalformed(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->request->method('getParam')->willReturn('');
 
-        $response = $this->controller->actors();
+		$response = $this->controller->actors();
 
-        $this->assertSame(400, $response->getStatus());
-    }//end testActorsReturns400WhenObjectParamMalformed()
+		$this->assertSame(400, $response->getStatus());
+	}//end testActorsReturns400WhenObjectParamMalformed()
 
-    public function testActorsReturnsDistinctUsers(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturn('reg/sch/obj');
-        $this->filterService->method('getActivityActors')->willReturn(['alice', 'bob']);
+	public function testActorsReturnsDistinctUsers(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn('reg/sch/obj');
+		$this->filterService->method('getActivityActors')->willReturn(['alice', 'bob']);
 
-        $response = $this->controller->actors();
-        $data     = $response->getData();
+		$response = $this->controller->actors();
+		$data = $response->getData();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertSame(['alice', 'bob'], $data['results']);
-        $this->assertSame(2, $data['total']);
-    }//end testActorsReturnsDistinctUsers()
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['alice', 'bob'], $data['results']);
+		$this->assertSame(2, $data['total']);
+	}//end testActorsReturnsDistinctUsers()
 
-    public function testTypesReturns404WhenObjectNotFound(): void
-    {
-        $this->filterService->method('isActivityAvailable')->willReturn(true);
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')->willReturnSelf();
-        $this->objectService->method('getObject')->willThrowException(new DoesNotExistException('Not found'));
-        $this->request->method('getParam')->willReturn('reg/sch/missing');
+	public function testTypesReturns404WhenObjectNotFound(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willThrowException(new DoesNotExistException('Not found'));
+		$this->request->method('getParam')->willReturn('reg/sch/missing');
 
-        $response = $this->controller->types();
+		$response = $this->controller->types();
 
-        $this->assertSame(404, $response->getStatus());
-    }//end testTypesReturns404WhenObjectNotFound()
+		$this->assertSame(404, $response->getStatus());
+	}//end testTypesReturns404WhenObjectNotFound()
 }//end class

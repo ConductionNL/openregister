@@ -45,83 +45,80 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
  */
-class GenerateVapidKeys extends Command
-{
+class GenerateVapidKeys extends Command {
 
-    /**
-     * App id used for IAppConfig writes.
-     *
-     * @var string
-     */
-    private const APP_ID = 'openregister';
+	/**
+	 * App id used for IAppConfig writes.
+	 *
+	 * @var string
+	 */
+	private const APP_ID = 'openregister';
 
-    /**
-     * Wire the command against app config.
-     *
-     * @param IAppConfig $appConfig App-config writer for the keypair.
-     */
-    public function __construct(
-        private readonly IAppConfig $appConfig,
-    ) {
-        parent::__construct();
+	/**
+	 * Wire the command against app config.
+	 *
+	 * @param IAppConfig $appConfig App-config writer for the keypair.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Define the command name + options.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
-     */
-    protected function configure(): void
-    {
-        $this->setName(name: 'openregister:web-push:generate-vapid')
-            ->setDescription('Generate and store the VAPID keypair used to sign Web Push payloads.')
-            ->addOption(
-                'force',
-                'f',
-                InputOption::VALUE_NONE,
-                'Rotate the keypair even when one already exists (existing subscriptions will be re-keyed on next subscribe).'
-            );
+	/**
+	 * Define the command name + options.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 */
+	protected function configure(): void {
+		$this->setName(name: 'openregister:web-push:generate-vapid')
+			->setDescription('Generate and store the VAPID keypair used to sign Web Push payloads.')
+			->addOption(
+				'force',
+				'f',
+				InputOption::VALUE_NONE,
+				'Rotate the keypair even when one already exists (existing subscriptions will be re-keyed on next subscribe).'
+			);
 
-    }//end configure()
+	}//end configure()
 
-    /**
-     * Generate the keypair and persist it to app config.
-     *
-     * @param InputInterface  $input  Console input.
-     * @param OutputInterface $output Console output stream.
-     *
-     * @return int Symfony command exit code.
-     *
-     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $force    = (bool) $input->getOption('force');
-        $existing = $this->appConfig->getValueString(self::APP_ID, WebPushService::VAPID_PUBLIC_KEY, '');
+	/**
+	 * Generate the keypair and persist it to app config.
+	 *
+	 * @param InputInterface $input Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int Symfony command exit code.
+	 *
+	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$force = (bool)$input->getOption('force');
+		$existing = $this->appConfig->getValueString(self::APP_ID, WebPushService::VAPID_PUBLIC_KEY, '');
 
-        if ($existing !== '' && $force === false) {
-            $output->writeln('<comment>A VAPID keypair already exists. Re-run with --force to rotate it.</comment>');
-            $output->writeln(sprintf('<info>Public key:</info> %s', $existing));
-            return Command::SUCCESS;
-        }
+		if ($existing !== '' && $force === false) {
+			$output->writeln('<comment>A VAPID keypair already exists. Re-run with --force to rotate it.</comment>');
+			$output->writeln(sprintf('<info>Public key:</info> %s', $existing));
+			return Command::SUCCESS;
+		}
 
-        try {
-            $keys = VAPID::createVapidKeys();
-        } catch (\Throwable $e) {
-            $output->writeln(sprintf('<error>Failed to generate VAPID keypair: %s</error>', $e->getMessage()));
-            return Command::FAILURE;
-        }
+		try {
+			$keys = VAPID::createVapidKeys();
+		} catch (\Throwable $e) {
+			$output->writeln(sprintf('<error>Failed to generate VAPID keypair: %s</error>', $e->getMessage()));
+			return Command::FAILURE;
+		}
 
-        $this->appConfig->setValueString(self::APP_ID, WebPushService::VAPID_PUBLIC_KEY, (string) $keys['publicKey']);
-        $this->appConfig->setValueString(self::APP_ID, WebPushService::VAPID_PRIVATE_KEY, (string) $keys['privateKey'], false, true);
+		$this->appConfig->setValueString(self::APP_ID, WebPushService::VAPID_PUBLIC_KEY, (string)$keys['publicKey']);
+		$this->appConfig->setValueString(self::APP_ID, WebPushService::VAPID_PRIVATE_KEY, (string)$keys['privateKey'], false, true);
 
-        $output->writeln('<info>VAPID keypair generated and stored in app config.</info>');
-        $output->writeln(sprintf('<info>Public key:</info> %s', (string) $keys['publicKey']));
-        $output->writeln('<comment>The private key is stored as a sensitive app value and is never printed.</comment>');
+		$output->writeln('<info>VAPID keypair generated and stored in app config.</info>');
+		$output->writeln(sprintf('<info>Public key:</info> %s', (string)$keys['publicKey']));
+		$output->writeln('<comment>The private key is stored as a sensitive app value and is never printed.</comment>');
 
-        return Command::SUCCESS;
-    }//end execute()
+		return Command::SUCCESS;
+	}//end execute()
 }//end class

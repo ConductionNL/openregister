@@ -33,71 +33,69 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
  *
  * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
  */
-final class ScheduleManifest
-{
-    /**
-     * Constructor.
-     *
-     * @param string               $applicationId The owning application identifier (app id or OR object uuid).
-     * @param ScheduleDescriptor[] $schedules     Parsed, structurally-valid schedules.
-     * @param string[]             $diagnostics   Rejected-entry diagnostics (never thrown).
-     */
-    public function __construct(
-        public readonly string $applicationId,
-        public readonly array $schedules,
-        public readonly array $diagnostics=[]
-    ) {
-    }//end __construct()
+final class ScheduleManifest {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $applicationId The owning application identifier (app id or OR object uuid).
+	 * @param ScheduleDescriptor[] $schedules Parsed, structurally-valid schedules.
+	 * @param string[] $diagnostics Rejected-entry diagnostics (never thrown).
+	 */
+	public function __construct(
+		public readonly string $applicationId,
+		public readonly array $schedules,
+		public readonly array $diagnostics = [],
+	) {
+	}//end __construct()
 
-    /**
-     * Build a schedule manifest from a decoded application manifest.
-     *
-     * Each `schedules[]` entry is validated structurally by
-     * {@see ScheduleDescriptor::fromArray}; a `cron` entry is additionally
-     * checked for parseability via the evaluator when one is supplied. Rejected
-     * entries are collected into diagnostics and omitted from `$schedules`.
-     *
-     * @param string                     $applicationId The owning application identifier.
-     * @param array<string, mixed>       $manifest      The decoded manifest.
-     * @param CronScheduleEvaluator|null $cron          Cron evaluator (rejects unparseable cron when supplied).
-     *
-     * @return self
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
-     */
-    public static function fromManifest(string $applicationId, array $manifest, ?CronScheduleEvaluator $cron=null): self
-    {
-        $raw = $manifest['schedules'] ?? null;
-        if (is_array($raw) === false) {
-            return new self(applicationId: $applicationId, schedules: [], diagnostics: []);
-        }
+	/**
+	 * Build a schedule manifest from a decoded application manifest.
+	 *
+	 * Each `schedules[]` entry is validated structurally by
+	 * {@see ScheduleDescriptor::fromArray}; a `cron` entry is additionally
+	 * checked for parseability via the evaluator when one is supplied. Rejected
+	 * entries are collected into diagnostics and omitted from `$schedules`.
+	 *
+	 * @param string $applicationId The owning application identifier.
+	 * @param array<string, mixed> $manifest The decoded manifest.
+	 * @param CronScheduleEvaluator|null $cron Cron evaluator (rejects unparseable cron when supplied).
+	 *
+	 * @return self
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 */
+	public static function fromManifest(string $applicationId, array $manifest, ?CronScheduleEvaluator $cron = null): self {
+		$raw = $manifest['schedules'] ?? null;
+		if (is_array($raw) === false) {
+			return new self(applicationId: $applicationId, schedules: [], diagnostics: []);
+		}
 
-        $schedules   = [];
-        $diagnostics = [];
+		$schedules = [];
+		$diagnostics = [];
 
-        foreach ($raw as $index => $entry) {
-            if (is_array($entry) === false) {
-                $diagnostics[] = sprintf('Schedule #%d is not an object.', (int) $index);
-                continue;
-            }
+		foreach ($raw as $index => $entry) {
+			if (is_array($entry) === false) {
+				$diagnostics[] = sprintf('Schedule #%d is not an object.', (int)$index);
+				continue;
+			}
 
-            try {
-                $descriptor = ScheduleDescriptor::fromArray(raw: $entry, index: (int) $index);
-            } catch (ScheduleValidationException $e) {
-                $diagnostics[] = $e->getMessage();
-                continue;
-            }
+			try {
+				$descriptor = ScheduleDescriptor::fromArray(raw: $entry, index: (int)$index);
+			} catch (ScheduleValidationException $e) {
+				$diagnostics[] = $e->getMessage();
+				continue;
+			}
 
-            if ($descriptor->isCron() === true && $cron !== null && $cron->isValid((string) $descriptor->cron) === false) {
-                $diagnostics[] = sprintf('Schedule "%s" has an unparseable cron expression.', $descriptor->id);
-                continue;
-            }
+			if ($descriptor->isCron() === true && $cron !== null && $cron->isValid((string)$descriptor->cron) === false) {
+				$diagnostics[] = sprintf('Schedule "%s" has an unparseable cron expression.', $descriptor->id);
+				continue;
+			}
 
-            $schedules[] = $descriptor;
-        }//end foreach
+			$schedules[] = $descriptor;
+		}//end foreach
 
-        return new self(applicationId: $applicationId, schedules: $schedules, diagnostics: $diagnostics);
-    }//end fromManifest()
+		return new self(applicationId: $applicationId, schedules: $schedules, diagnostics: $diagnostics);
+	}//end fromManifest()
 }//end class

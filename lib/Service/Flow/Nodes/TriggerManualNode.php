@@ -42,136 +42,120 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow when someone runs it.
  */
-class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The node type.
-     *
-     * @return string The id.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getId(): string
-    {
-        return 'openregister.trigger-manual';
+	/**
+	 * The node type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getId(): string {
+		return 'openregister.trigger-manual';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('When someone runs it');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('When someone runs it');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Start the flow on demand. Says "a person starts this" out loud, which a flow with no trigger at all cannot.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/play.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Start the flow on demand. Says "a person starts this" out loud, which a flow with no trigger at all cannot.');
+	/**
+	 * Starting a flow grants no privilege of its own.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * A manual trigger takes no configuration.
+	 *
+	 * Naming the vocabulary as EMPTY is not the same as saying nothing: an
+	 * empty list lets the preflight report a key written here in another
+	 * node's dialect, which would otherwise be stored, ignored, and reported as
+	 * a healthy step.
+	 *
+	 * @return array<int, string> The accepted config keys — none.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function configKeys(): array {
+		return [];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/play.svg');
+	/**
+	 * Nothing to require.
+	 *
+	 * @param array $config The node configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function validateConfig(array $config): void {
 
-    }//end getIcon()
+	}//end validateConfig()
 
-    /**
-     * Starting a flow grants no privilege of its own.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-
-    }//end isAvailableForScope()
-
-    /**
-     * A manual trigger takes no configuration.
-     *
-     * Naming the vocabulary as EMPTY is not the same as saying nothing: an
-     * empty list lets the preflight report a key written here in another
-     * node's dialect, which would otherwise be stored, ignored, and reported as
-     * a healthy step.
-     *
-     * @return array<int, string> The accepted config keys — none.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function configKeys(): array
-    {
-        return [];
-
-    }//end configKeys()
-
-    /**
-     * Nothing to require.
-     *
-     * @param array $config The node configuration.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function validateConfig(array $config): void
-    {
-
-    }//end validateConfig()
-
-    /**
-     * A trigger is an entry point, not work.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The node configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        return $items;
-
-    }//end execute()
+	/**
+	 * A trigger is an entry point, not work.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The node configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		return $items;
+	}//end execute()
 }//end class

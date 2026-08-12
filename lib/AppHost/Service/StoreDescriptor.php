@@ -34,35 +34,34 @@ namespace OCA\OpenRegister\AppHost\Service;
  *
  * @spec openspec/specs/apphost-store-plane/spec.md
  */
-final class StoreDescriptor
-{
-    /**
-     * Constructor.
-     *
-     * @param string                $appId           App whose IAppConfig holds the registry connection
-     *                                               (`registry_url`, `registry_token`, `registry_register`).
-     * @param string                $schema          Remote schema slug exposed by the registry
-     *                                               (e.g. "application-template", "catalog_item").
-     * @param string                $defaultRegister Remote register segment used when
-     *                                               `registry_register` is unset/empty.
-     * @param array<string, string> $cardFields      Card field name => remote object property. Drives
-     *                                               normalisation; a missing property yields an empty
-     *                                               string rather than a missing key, so the frontend
-     *                                               never has to null-check a card.
-     *
-     * @return void
-     */
-    public function __construct(
-        public readonly string $appId,
-        public readonly string $schema,
-        public readonly string $defaultRegister,
-        public readonly array $cardFields=[
-            'slug'        => 'slug',
-            'title'       => 'title',
-            'description' => 'description',
-            'category'    => 'category',
-            'version'     => 'version',
-        ],
-    ) {
-    }//end __construct()
+final class StoreDescriptor {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appId App whose IAppConfig holds the registry connection
+	 *                      (`registry_url`, `registry_token`, `registry_register`).
+	 * @param string $schema Remote schema slug exposed by the registry
+	 *                       (e.g. "application-template", "catalog_item").
+	 * @param string $defaultRegister Remote register segment used when
+	 *                                `registry_register` is unset/empty.
+	 * @param array<string, string> $cardFields Card field name => remote object property. Drives
+	 *                                          normalisation; a missing property yields an empty
+	 *                                          string rather than a missing key, so the frontend
+	 *                                          never has to null-check a card.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		public readonly string $appId,
+		public readonly string $schema,
+		public readonly string $defaultRegister,
+		public readonly array $cardFields = [
+			'slug' => 'slug',
+			'title' => 'title',
+			'description' => 'description',
+			'category' => 'category',
+			'version' => 'version',
+		],
+	) {
+	}//end __construct()
 }//end class

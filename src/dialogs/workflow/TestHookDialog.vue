@@ -93,12 +93,20 @@ export default {
 
 <style scoped>
 .test-hook-dialog { padding: 16px; }
+
 .warning-text { color: var(--color-warning); font-weight: bold; }
+
 .json-editor { width: 100%; font-family: monospace; padding: 8px; }
+
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin: 12px 0; }
+
 .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+
 .status-approved { background: var(--color-success); color: white; }
+
 .status-modified { background: var(--color-warning); color: white; }
+
 .status-rejected, .status-error { background: var(--color-error); color: white; }
+
 .dry-run-note { font-style: italic; color: var(--color-text-lighter); margin-top: 8px; }
 </style>

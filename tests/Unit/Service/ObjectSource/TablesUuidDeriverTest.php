@@ -34,53 +34,49 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Test class for TablesUuidDeriver.
  */
-class TablesUuidDeriverTest extends TestCase
-{
+class TablesUuidDeriverTest extends TestCase {
 
-    /**
-     * The derivation is deterministic and produces a valid UUID.
-     *
-     * @return void
-     */
-    public function testDerivationIsDeterministicAndValid(): void
-    {
-        $deriver = new TablesUuidDeriver();
+	/**
+	 * The derivation is deterministic and produces a valid UUID.
+	 *
+	 * @return void
+	 */
+	public function testDerivationIsDeterministicAndValid(): void {
+		$deriver = new TablesUuidDeriver();
 
-        $first  = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
-        $second = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
+		$first = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
+		$second = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
 
-        $this->assertSame($first, $second);
-        $this->assertTrue(Uuid::isValid($first));
-    }//end testDerivationIsDeterministicAndValid()
+		$this->assertSame($first, $second);
+		$this->assertTrue(Uuid::isValid($first));
+	}//end testDerivationIsDeterministicAndValid()
 
-    /**
-     * Different table/row pairs derive to different uuids.
-     *
-     * @return void
-     */
-    public function testDifferentInputsDeriveDifferently(): void
-    {
-        $deriver = new TablesUuidDeriver();
+	/**
+	 * Different table/row pairs derive to different uuids.
+	 *
+	 * @return void
+	 */
+	public function testDifferentInputsDeriveDifferently(): void {
+		$deriver = new TablesUuidDeriver();
 
-        $a = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
-        $b = $deriver->deriveObjectUuid(tableId: 7, rowId: 43);
-        $c = $deriver->deriveObjectUuid(tableId: 8, rowId: 42);
+		$a = $deriver->deriveObjectUuid(tableId: 7, rowId: 42);
+		$b = $deriver->deriveObjectUuid(tableId: 7, rowId: 43);
+		$c = $deriver->deriveObjectUuid(tableId: 8, rowId: 42);
 
-        $this->assertNotSame($a, $b);
-        $this->assertNotSame($a, $c);
-    }//end testDifferentInputsDeriveDifferently()
+		$this->assertNotSame($a, $b);
+		$this->assertNotSame($a, $c);
+	}//end testDifferentInputsDeriveDifferently()
 
-    /**
-     * looksLikeUuid() distinguishes uuids from numeric row ids.
-     *
-     * @return void
-     */
-    public function testLooksLikeUuid(): void
-    {
-        $deriver = new TablesUuidDeriver();
+	/**
+	 * looksLikeUuid() distinguishes uuids from numeric row ids.
+	 *
+	 * @return void
+	 */
+	public function testLooksLikeUuid(): void {
+		$deriver = new TablesUuidDeriver();
 
-        $this->assertTrue($deriver->looksLikeUuid($deriver->deriveObjectUuid(tableId: 1, rowId: 1)));
-        $this->assertFalse($deriver->looksLikeUuid('42'));
-        $this->assertFalse($deriver->looksLikeUuid('not-a-uuid'));
-    }//end testLooksLikeUuid()
+		$this->assertTrue($deriver->looksLikeUuid($deriver->deriveObjectUuid(tableId: 1, rowId: 1)));
+		$this->assertFalse($deriver->looksLikeUuid('42'));
+		$this->assertFalse($deriver->looksLikeUuid('not-a-uuid'));
+	}//end testLooksLikeUuid()
 }//end class

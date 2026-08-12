@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an application is deleted.
  */
-class ApplicationDeletedEvent extends Event
-{
+class ApplicationDeletedEvent extends Event {
 
-    /**
-     * The deleted application.
-     *
-     * @var Application The application that was deleted.
-     */
-    private Application $application;
+	/**
+	 * The deleted application.
+	 *
+	 * @var Application The application that was deleted.
+	 */
+	private Application $application;
 
-    /**
-     * Constructor for ApplicationDeletedEvent.
-     *
-     * @param Application $application The application that was deleted.
-     *
-     * @return void
-     */
-    public function __construct(Application $application)
-    {
-        parent::__construct();
-        $this->application = $application;
-    }//end __construct()
+	/**
+	 * Constructor for ApplicationDeletedEvent.
+	 *
+	 * @param Application $application The application that was deleted.
+	 *
+	 * @return void
+	 */
+	public function __construct(Application $application) {
+		parent::__construct();
+		$this->application = $application;
+	}//end __construct()
 
-    /**
-     * Get the deleted application.
-     *
-     * @return Application The application that was deleted.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getApplication(): Application
-    {
-        return $this->application;
-    }//end getApplication()
+	/**
+	 * Get the deleted application.
+	 *
+	 * @return Application The application that was deleted.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getApplication(): Application {
+		return $this->application;
+	}//end getApplication()
 }//end class

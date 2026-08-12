@@ -56,49 +56,47 @@ use RuntimeException;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowDeadEnd extends RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param array<int, string> $nodeIds The offending node ids, in document order.
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    public function __construct(private readonly array $nodeIds=[])
-    {
-        $subject = sprintf('nodes "%s" have', implode(separator: '", "', array: $nodeIds));
-        $pronoun = 'them';
+class FlowDeadEnd extends RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, string> $nodeIds The offending node ids, in document order.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function __construct(
+		private readonly array $nodeIds = [],
+	) {
+		$subject = sprintf('nodes "%s" have', implode(separator: '", "', array: $nodeIds));
+		$pronoun = 'them';
 
-        if (count($nodeIds) === 1) {
-            $subject = sprintf('node "%s" has', $nodeIds[0]);
-            $pronoun = 'it';
-        }
+		if (count($nodeIds) === 1) {
+			$subject = sprintf('node "%s" has', $nodeIds[0]);
+			$pronoun = 'it';
+		}
 
-        parent::__construct(
-            message: sprintf(
-                'This flow is not runnable: %s no outgoing edge and does not end the flow, so a run '
-                .'would stop there and still be reported as completed. Connect %s, give %s a terminal '
-                .'step type, or mark %s "exit": true if stopping there is deliberate.',
-                $subject,
-                $pronoun,
-                $pronoun,
-                $pronoun
-            )
-        );
+		parent::__construct(
+			message: sprintf(
+				'This flow is not runnable: %s no outgoing edge and does not end the flow, so a run '
+				. 'would stop there and still be reported as completed. Connect %s, give %s a terminal '
+				. 'step type, or mark %s "exit": true if stopping there is deliberate.',
+				$subject,
+				$pronoun,
+				$pronoun,
+				$pronoun
+			)
+		);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The nodes that caused the refusal.
-     *
-     * @return array<int, string> The node ids.
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    public function getNodeIds(): array
-    {
-        return $this->nodeIds;
-
-    }//end getNodeIds()
+	/**
+	 * The nodes that caused the refusal.
+	 *
+	 * @return array<int, string> The node ids.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function getNodeIds(): array {
+		return $this->nodeIds;
+	}//end getNodeIds()
 }//end class

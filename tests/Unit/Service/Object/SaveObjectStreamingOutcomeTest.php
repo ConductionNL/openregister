@@ -45,162 +45,154 @@ use ReflectionProperty;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  */
-class SaveObjectStreamingOutcomeTest extends TestCase
-{
+class SaveObjectStreamingOutcomeTest extends TestCase {
 
-    /**
-     * A SaveObject whose `saveObject()` is stubbed to publish a given verdict.
-     *
-     * @param array<int, string|null> $verdicts One verdict per row, in order;
-     *                                          null leaves the slot unset so the
-     *                                          fallback path is exercised.
-     *
-     * @return SaveObject The instrumented handler.
-     */
-    private function handlerYielding(array $verdicts): SaveObject
-    {
-        // A partial mock does not run the real constructor, which is what makes
-        // this reachable without the twenty collaborators a real SaveObject
-        // needs. The loop under test touches only the status object, the
-        // reference cache and this one method.
-        $handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
+	/**
+	 * A SaveObject whose `saveObject()` is stubbed to publish a given verdict.
+	 *
+	 * @param array<int, string|null> $verdicts One verdict per row, in order;
+	 *                                          null leaves the slot unset so the
+	 *                                          fallback path is exercised.
+	 *
+	 * @return SaveObject The instrumented handler.
+	 */
+	private function handlerYielding(array $verdicts): SaveObject {
+		// A partial mock does not run the real constructor, which is what makes
+		// this reachable without the twenty collaborators a real SaveObject
+		// needs. The loop under test touches only the status object, the
+		// reference cache and this one method.
+		$handler = $this->createPartialMock(SaveObject::class, ['saveObject']);
 
-        $slot = new ReflectionProperty(SaveObject::class, 'lastSaveOutcome');
-        $slot->setAccessible(true);
+		$slot = new ReflectionProperty(SaveObject::class, 'lastSaveOutcome');
+		$slot->setAccessible(true);
 
-        $call = 0;
-        $handler->method('saveObject')->willReturnCallback(
-            function () use ($handler, $slot, $verdicts, &$call): ObjectEntity {
-                $verdict = ($verdicts[$call] ?? null);
-                $call++;
+		$call = 0;
+		$handler->method('saveObject')->willReturnCallback(
+			function () use ($handler, $slot, $verdicts, &$call): ObjectEntity {
+				$verdict = ($verdicts[$call] ?? null);
+				$call++;
 
-                // The real terminal paths write the slot at the END of the save;
-                // the stub does the same so the loop sees it exactly as it would
-                // in production.
-                if ($verdict !== null) {
-                    $slot->setValue($handler, $verdict);
-                }
+				// The real terminal paths write the slot at the END of the save;
+				// the stub does the same so the loop sees it exactly as it would
+				// in production.
+				if ($verdict !== null) {
+					$slot->setValue($handler, $verdict);
+				}
 
-                $entity = new ObjectEntity();
-                $entity->setUuid('uuid-'.$call);
+				$entity = new ObjectEntity();
+				$entity->setUuid('uuid-' . $call);
 
-                return $entity;
-            }
-        );
+				return $entity;
+			}
+		);
 
-        return $handler;
+		return $handler;
+	}//end handlerYielding()
 
-    }//end handlerYielding()
+	/**
+	 * THE MISSING BRANCH. A row the save path resolved as `unchanged` lands in
+	 * the unchanged bucket — the first production caller
+	 * `BatchOperationStatus::recordUnchanged()` has ever had.
+	 *
+	 * @return void
+	 */
+	public function testAnUnchangedRowIsRecordedAsUnchanged(): void {
+		$handler = $this->handlerYielding(verdicts: ['unchanged']);
 
-    /**
-     * THE MISSING BRANCH. A row the save path resolved as `unchanged` lands in
-     * the unchanged bucket — the first production caller
-     * `BatchOperationStatus::recordUnchanged()` has ever had.
-     *
-     * @return void
-     */
-    public function testAnUnchangedRowIsRecordedAsUnchanged(): void
-    {
-        $handler = $this->handlerYielding(verdicts: ['unchanged']);
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['id' => 'uuid-1', 'title' => 'same as stored']]
+		);
 
-        $status = $handler->saveObjectsStreaming(
-            register: 1,
-            schema: 1,
-            rows: [['id' => 'uuid-1', 'title' => 'same as stored']]
-        );
+		$this->assertSame(['uuid-1'], $status->getUnchanged());
+		$this->assertSame([], $status->getUpdated());
+		$this->assertSame([], $status->getCreated());
 
-        $this->assertSame(['uuid-1'], $status->getUnchanged());
-        $this->assertSame([], $status->getUpdated());
-        $this->assertSame([], $status->getCreated());
+	}//end testAnUnchangedRowIsRecordedAsUnchanged()
 
-    }//end testAnUnchangedRowIsRecordedAsUnchanged()
+	/**
+	 * THE MISREPORT the old heuristic produced: a row that SUPPLIES a uuid for
+	 * an object that does not exist yet is a create. Shape-of-input said
+	 * "update"; the save path says "created", and the save path is right.
+	 *
+	 * @return void
+	 */
+	public function testARowSupplyingAUuidForANewObjectIsRecordedAsCreated(): void {
+		$handler = $this->handlerYielding(verdicts: ['created']);
 
-    /**
-     * THE MISREPORT the old heuristic produced: a row that SUPPLIES a uuid for
-     * an object that does not exist yet is a create. Shape-of-input said
-     * "update"; the save path says "created", and the save path is right.
-     *
-     * @return void
-     */
-    public function testARowSupplyingAUuidForANewObjectIsRecordedAsCreated(): void
-    {
-        $handler = $this->handlerYielding(verdicts: ['created']);
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['id' => 'client-chosen-uuid', 'title' => 'brand new']]
+		);
 
-        $status = $handler->saveObjectsStreaming(
-            register: 1,
-            schema: 1,
-            rows: [['id' => 'client-chosen-uuid', 'title' => 'brand new']]
-        );
+		$this->assertSame(['uuid-1'], $status->getCreated());
+		$this->assertSame([], $status->getUpdated());
 
-        $this->assertSame(['uuid-1'], $status->getCreated());
-        $this->assertSame([], $status->getUpdated());
+	}//end testARowSupplyingAUuidForANewObjectIsRecordedAsCreated()
 
-    }//end testARowSupplyingAUuidForANewObjectIsRecordedAsCreated()
+	/**
+	 * The positive control for the update bucket, so the two tests above are not
+	 * satisfied by a loop that never records an update at all.
+	 *
+	 * @return void
+	 */
+	public function testAGenuineUpdateIsStillRecordedAsUpdated(): void {
+		$handler = $this->handlerYielding(verdicts: ['updated']);
 
-    /**
-     * The positive control for the update bucket, so the two tests above are not
-     * satisfied by a loop that never records an update at all.
-     *
-     * @return void
-     */
-    public function testAGenuineUpdateIsStillRecordedAsUpdated(): void
-    {
-        $handler = $this->handlerYielding(verdicts: ['updated']);
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['id' => 'uuid-1', 'title' => 'changed']]
+		);
 
-        $status = $handler->saveObjectsStreaming(
-            register: 1,
-            schema: 1,
-            rows: [['id' => 'uuid-1', 'title' => 'changed']]
-        );
+		$this->assertSame(['uuid-1'], $status->getUpdated());
+		$this->assertSame([], $status->getUnchanged());
 
-        $this->assertSame(['uuid-1'], $status->getUpdated());
-        $this->assertSame([], $status->getUnchanged());
+	}//end testAGenuineUpdateIsStillRecordedAsUpdated()
 
-    }//end testAGenuineUpdateIsStillRecordedAsUpdated()
+	/**
+	 * All three buckets in one batch. A per-row slot that leaked between
+	 * iterations would show up here as three identical verdicts.
+	 *
+	 * @return void
+	 */
+	public function testEachRowIsClassifiedIndependently(): void {
+		$handler = $this->handlerYielding(verdicts: ['created', 'unchanged', 'updated']);
 
-    /**
-     * All three buckets in one batch. A per-row slot that leaked between
-     * iterations would show up here as three identical verdicts.
-     *
-     * @return void
-     */
-    public function testEachRowIsClassifiedIndependently(): void
-    {
-        $handler = $this->handlerYielding(verdicts: ['created', 'unchanged', 'updated']);
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['title' => 'a'], ['id' => 'b'], ['id' => 'c']]
+		);
 
-        $status = $handler->saveObjectsStreaming(
-            register: 1,
-            schema: 1,
-            rows: [['title' => 'a'], ['id' => 'b'], ['id' => 'c']]
-        );
+		$this->assertSame(['uuid-1'], $status->getCreated());
+		$this->assertSame(['uuid-2'], $status->getUnchanged());
+		$this->assertSame(['uuid-3'], $status->getUpdated());
 
-        $this->assertSame(['uuid-1'], $status->getCreated());
-        $this->assertSame(['uuid-2'], $status->getUnchanged());
-        $this->assertSame(['uuid-3'], $status->getUpdated());
+	}//end testEachRowIsClassifiedIndependently()
 
-    }//end testEachRowIsClassifiedIndependently()
+	/**
+	 * THE STALE-SLOT GUARD. Row 1 publishes `unchanged`; row 2 publishes
+	 * nothing. Row 2 must fall back to a verdict derived from ITS OWN input
+	 * (it carries a uuid, so `updated`) rather than inheriting row 1's answer.
+	 * Remove the `lastSaveOutcome = null` reset at the top of the loop and this
+	 * is the test that goes red.
+	 *
+	 * @return void
+	 */
+	public function testAnUnsetVerdictFallsBackInsteadOfInheritingThePreviousRow(): void {
+		$handler = $this->handlerYielding(verdicts: ['unchanged', null]);
 
-    /**
-     * THE STALE-SLOT GUARD. Row 1 publishes `unchanged`; row 2 publishes
-     * nothing. Row 2 must fall back to a verdict derived from ITS OWN input
-     * (it carries a uuid, so `updated`) rather than inheriting row 1's answer.
-     * Remove the `lastSaveOutcome = null` reset at the top of the loop and this
-     * is the test that goes red.
-     *
-     * @return void
-     */
-    public function testAnUnsetVerdictFallsBackInsteadOfInheritingThePreviousRow(): void
-    {
-        $handler = $this->handlerYielding(verdicts: ['unchanged', null]);
+		$status = $handler->saveObjectsStreaming(
+			register: 1,
+			schema: 1,
+			rows: [['id' => 'a'], ['id' => 'b']]
+		);
 
-        $status = $handler->saveObjectsStreaming(
-            register: 1,
-            schema: 1,
-            rows: [['id' => 'a'], ['id' => 'b']]
-        );
+		$this->assertSame(['uuid-1'], $status->getUnchanged());
+		$this->assertSame(['uuid-2'], $status->getUpdated());
 
-        $this->assertSame(['uuid-1'], $status->getUnchanged());
-        $this->assertSame(['uuid-2'], $status->getUpdated());
-
-    }//end testAnUnsetVerdictFallsBackInsteadOfInheritingThePreviousRow()
+	}//end testAnUnsetVerdictFallsBackInsteadOfInheritingThePreviousRow()
 }//end class

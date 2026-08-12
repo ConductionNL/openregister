@@ -33,32 +33,30 @@ use OCP\AppFramework\Http;
  *
  * @package OCA\OpenRegister\Middleware
  */
-class AuthRateLimitExceededException extends Exception
-{
-    /**
-     * Constructor
-     *
-     * @param string $message      The error message
-     * @param int    $lockoutUntil Unix timestamp the lockout expires at (0 if unknown)
-     *
-     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
-     */
-    public function __construct(
-        string $message,
-        private readonly int $lockoutUntil=0
-    ) {
-        parent::__construct(message: $message, code: Http::STATUS_TOO_MANY_REQUESTS);
-    }//end __construct()
+class AuthRateLimitExceededException extends Exception {
+	/**
+	 * Constructor
+	 *
+	 * @param string $message The error message
+	 * @param int $lockoutUntil Unix timestamp the lockout expires at (0 if unknown)
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function __construct(
+		string $message,
+		private readonly int $lockoutUntil = 0,
+	) {
+		parent::__construct(message: $message, code: Http::STATUS_TOO_MANY_REQUESTS);
+	}//end __construct()
 
-    /**
-     * Get the Unix timestamp the lockout expires at.
-     *
-     * @return int The lockout expiry timestamp, or 0 when unknown
-     *
-     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
-     */
-    public function getLockoutUntil(): int
-    {
-        return $this->lockoutUntil;
-    }//end getLockoutUntil()
+	/**
+	 * Get the Unix timestamp the lockout expires at.
+	 *
+	 * @return int The lockout expiry timestamp, or 0 when unknown
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function getLockoutUntil(): int {
+		return $this->lockoutUntil;
+	}//end getLockoutUntil()
 }//end class

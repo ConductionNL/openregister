@@ -48,125 +48,117 @@ use OCP\WorkflowEngine\IRuleMatcher;
 /**
  * Exposes OpenRegister objects to the native Nextcloud Flow rule engine.
  */
-class RegisterObjectEntity implements IEntity
-{
+class RegisterObjectEntity implements IEntity {
 
-    /**
-     * The object carried by the event currently being matched.
-     *
-     * @var ObjectEntity|null
-     */
-    private ?ObjectEntity $object = null;
+	/**
+	 * The object carried by the event currently being matched.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $object = null;
 
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n         Translations for display strings.
-     * @param IURLGenerator $urlGenerator Resolves the entity icon path.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urlGenerator,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations for display strings.
+	 * @param IURLGenerator $urlGenerator Resolves the entity icon path.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urlGenerator,
+	) {
+	}//end __construct()
 
-    /**
-     * Display name in the Flow rule builder.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return $this->l10n->t('OpenRegister object');
-    }//end getName()
+	/**
+	 * Display name in the Flow rule builder.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return $this->l10n->t('OpenRegister object');
+	}//end getName()
 
-    /**
-     * Entity icon.
-     *
-     * @return string
-     */
-    public function getIcon(): string
-    {
-        return $this->urlGenerator->imagePath('core', 'categories/files.svg');
-    }//end getIcon()
+	/**
+	 * Entity icon.
+	 *
+	 * @return string
+	 */
+	public function getIcon(): string {
+		return $this->urlGenerator->imagePath('core', 'categories/files.svg');
+	}//end getIcon()
 
-    /**
-     * The events an admin may build a rule on. Names are OpenRegister's own
-     * dispatched lifecycle event classes, which the engine subscribes to.
-     *
-     * @return array<int, GenericEntityEvent>
-     */
-    public function getEvents(): array
-    {
-        return [
-            new GenericEntityEvent($this->l10n->t('OpenRegister object created'), ObjectCreatedEvent::class),
-            new GenericEntityEvent($this->l10n->t('OpenRegister object updated'), ObjectUpdatedEvent::class),
-            new GenericEntityEvent($this->l10n->t('OpenRegister object deleted'), ObjectDeletedEvent::class),
-        ];
-    }//end getEvents()
+	/**
+	 * The events an admin may build a rule on. Names are OpenRegister's own
+	 * dispatched lifecycle event classes, which the engine subscribes to.
+	 *
+	 * @return array<int, GenericEntityEvent>
+	 */
+	public function getEvents(): array {
+		return [
+			new GenericEntityEvent($this->l10n->t('OpenRegister object created'), ObjectCreatedEvent::class),
+			new GenericEntityEvent($this->l10n->t('OpenRegister object updated'), ObjectUpdatedEvent::class),
+			new GenericEntityEvent($this->l10n->t('OpenRegister object deleted'), ObjectDeletedEvent::class),
+		];
+	}//end getEvents()
 
-    /**
-     * Stash the object subject so operations and checks can resolve it.
-     *
-     * @param IRuleMatcher $ruleMatcher The matcher for the current event.
-     * @param string       $eventName   The dispatched event class name.
-     * @param Event        $event       The dispatched event.
-     *
-     * @return void
-     */
-    public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void
-    {
-        $object = $this->objectFromEvent(event: $event);
-        if ($object === null) {
-            return;
-        }
+	/**
+	 * Stash the object subject so operations and checks can resolve it.
+	 *
+	 * @param IRuleMatcher $ruleMatcher The matcher for the current event.
+	 * @param string $eventName The dispatched event class name.
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 */
+	public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void {
+		$object = $this->objectFromEvent(event: $event);
+		if ($object === null) {
+			return;
+		}
 
-        $this->object = $object;
-        $ruleMatcher->setEntitySubject($this, $object);
-    }//end prepareRuleMatcher()
+		$this->object = $object;
+		$ruleMatcher->setEntitySubject($this, $object);
+	}//end prepareRuleMatcher()
 
-    /**
-     * Whether the given user may see/run rules for this entity instance.
-     *
-     * OpenRegister objects are governed by register/organisation RBAC rather
-     * than per-user file ownership; rule scoping is handled at the Flow layer,
-     * so this entity is legitimate for any authenticated rule owner.
-     *
-     * @param string $userId The rule owner's user id.
-     *
-     * @return bool
-     */
-    public function isLegitimatedForUserId(string $userId): bool
-    {
-        return true;
-    }//end isLegitimatedForUserId()
+	/**
+	 * Whether the given user may see/run rules for this entity instance.
+	 *
+	 * OpenRegister objects are governed by register/organisation RBAC rather
+	 * than per-user file ownership; rule scoping is handled at the Flow layer,
+	 * so this entity is legitimate for any authenticated rule owner.
+	 *
+	 * @param string $userId The rule owner's user id.
+	 *
+	 * @return bool
+	 */
+	public function isLegitimatedForUserId(string $userId): bool {
+		return true;
+	}//end isLegitimatedForUserId()
 
-    /**
-     * The object carried by the current event, if any (used by the operation).
-     *
-     * @return ObjectEntity|null
-     */
-    public function getObject(): ?ObjectEntity
-    {
-        return $this->object;
-    }//end getObject()
+	/**
+	 * The object carried by the current event, if any (used by the operation).
+	 *
+	 * @return ObjectEntity|null
+	 */
+	public function getObject(): ?ObjectEntity {
+		return $this->object;
+	}//end getObject()
 
-    /**
-     * Resolve the OpenRegister object from a lifecycle event.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return ObjectEntity|null
-     */
-    private function objectFromEvent(Event $event): ?ObjectEntity
-    {
-        if ($event instanceof ObjectCreatedEvent
-            || $event instanceof ObjectUpdatedEvent
-            || $event instanceof ObjectDeletedEvent
-        ) {
-            return $event->getObject();
-        }
+	/**
+	 * Resolve the OpenRegister object from a lifecycle event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function objectFromEvent(Event $event): ?ObjectEntity {
+		if ($event instanceof ObjectCreatedEvent
+			|| $event instanceof ObjectUpdatedEvent
+			|| $event instanceof ObjectDeletedEvent
+		) {
+			return $event->getObject();
+		}
 
-        return null;
-    }//end objectFromEvent()
+		return null;
+	}//end objectFromEvent()
 }//end class

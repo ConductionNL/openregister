@@ -57,76 +57,73 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class Version1Date20260614100000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260614100000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_sources') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_sources') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_sources');
+		$table = $schema->getTable('openregister_sources');
 
-        // Sync-pipeline columns, in declaration order. Driven from a spec list
-        // so this method carries one branch per concern rather than one per
-        // column (fourteen independent ifs put NPath complexity at 131072 and
-        // cyclomatic complexity at 18).
-        $newColumns = [
-            ['sync_enabled', Types::BOOLEAN, ['notnull' => true, 'default' => false]],
-            ['sync_schedule', Types::STRING, ['notnull' => false, 'length' => 64]],
-            ['sync_interval', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
-            ['last_sync_date', Types::DATETIME, ['notnull' => false]],
-            ['last_sync_status', Types::STRING, ['notnull' => false, 'length' => 16]],
-            ['last_sync_token', Types::STRING, ['notnull' => false, 'length' => 255]],
-            ['auth_type', Types::STRING, ['notnull' => false, 'length' => 32]],
-            ['auth_config', Types::TEXT, ['notnull' => false]],
-            ['mapping_id', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
-            ['target_register', Types::STRING, ['notnull' => false, 'length' => 255]],
-            ['target_schema', Types::STRING, ['notnull' => false, 'length' => 255]],
-            ['conflict_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
-            ['delete_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
-            ['batch_size', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
-        ];
+		// Sync-pipeline columns, in declaration order. Driven from a spec list
+		// so this method carries one branch per concern rather than one per
+		// column (fourteen independent ifs put NPath complexity at 131072 and
+		// cyclomatic complexity at 18).
+		$newColumns = [
+			['sync_enabled', Types::BOOLEAN, ['notnull' => true, 'default' => false]],
+			['sync_schedule', Types::STRING, ['notnull' => false, 'length' => 64]],
+			['sync_interval', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+			['last_sync_date', Types::DATETIME, ['notnull' => false]],
+			['last_sync_status', Types::STRING, ['notnull' => false, 'length' => 16]],
+			['last_sync_token', Types::STRING, ['notnull' => false, 'length' => 255]],
+			['auth_type', Types::STRING, ['notnull' => false, 'length' => 32]],
+			['auth_config', Types::TEXT, ['notnull' => false]],
+			['mapping_id', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+			['target_register', Types::STRING, ['notnull' => false, 'length' => 255]],
+			['target_schema', Types::STRING, ['notnull' => false, 'length' => 255]],
+			['conflict_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
+			['delete_strategy', Types::STRING, ['notnull' => false, 'length' => 16]],
+			['batch_size', Types::INTEGER, ['notnull' => false, 'unsigned' => true]],
+		];
 
-        $changed = false;
+		$changed = false;
 
-        foreach ($newColumns as [$columnName, $columnType, $columnOptions]) {
-            if ($table->hasColumn($columnName) === true) {
-                continue;
-            }
+		foreach ($newColumns as [$columnName, $columnType, $columnOptions]) {
+			if ($table->hasColumn($columnName) === true) {
+				continue;
+			}
 
-            $table->addColumn($columnName, $columnType, $columnOptions);
-            $changed = true;
-        }
+			$table->addColumn($columnName, $columnType, $columnOptions);
+			$changed = true;
+		}
 
-        if ($table->hasIndex('sources_sync_enabled_idx') === false) {
-            $table->addIndex(['sync_enabled'], 'sources_sync_enabled_idx');
-            $changed = true;
-        }
+		if ($table->hasIndex('sources_sync_enabled_idx') === false) {
+			$table->addIndex(['sync_enabled'], 'sources_sync_enabled_idx');
+			$changed = true;
+		}
 
-        if ($changed === true) {
-            $output->info('Added data-sync columns to openregister_sources table');
-            return $schema;
-        }
+		if ($changed === true) {
+			$output->info('Added data-sync columns to openregister_sources table');
+			return $schema;
+		}
 
-        return null;
-
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

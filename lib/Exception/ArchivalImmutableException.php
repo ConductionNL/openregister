@@ -55,82 +55,78 @@ use Throwable;
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
  */
-class ArchivalImmutableException extends \Exception
-{
+class ArchivalImmutableException extends \Exception {
 
-    /**
-     * The schema slug or identifier that triggered this exception.
-     *
-     * @var string
-     */
-    private readonly string $schemaIdentifier;
+	/**
+	 * The schema slug or identifier that triggered this exception.
+	 *
+	 * @var string
+	 */
+	private readonly string $schemaIdentifier;
 
-    /**
-     * The blocked operation name (always 'delete' in v1, reserved for future ops).
-     *
-     * @var string
-     */
-    private readonly string $operation;
+	/**
+	 * The blocked operation name (always 'delete' in v1, reserved for future ops).
+	 *
+	 * @var string
+	 */
+	private readonly string $operation;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $schemaIdentifier The schema slug, UUID, or ID.
-     * @param string         $operation        The blocked operation name (e.g. 'delete').
-     * @param Throwable|null $previous         Previous exception.
-     */
-    public function __construct(
-        string $schemaIdentifier,
-        string $operation='delete',
-        ?Throwable $previous=null
-    ) {
-        $this->schemaIdentifier = $schemaIdentifier;
-        $this->operation        = $operation;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $schemaIdentifier The schema slug, UUID, or ID.
+	 * @param string $operation The blocked operation name (e.g. 'delete').
+	 * @param Throwable|null $previous Previous exception.
+	 */
+	public function __construct(
+		string $schemaIdentifier,
+		string $operation = 'delete',
+		?Throwable $previous = null,
+	) {
+		$this->schemaIdentifier = $schemaIdentifier;
+		$this->operation = $operation;
 
-        $message = sprintf(
-            'SCHEMA_ARCHIVAL_IMMUTABLE: Schema "%s" declares x-openregister-archival; '
-            .'user-driven %s operations are not permitted. Rows expire automatically '
-            .'via the ArchivalRetentionTask cron.',
-            $schemaIdentifier,
-            $operation
-        );
+		$message = sprintf(
+			'SCHEMA_ARCHIVAL_IMMUTABLE: Schema "%s" declares x-openregister-archival; '
+			. 'user-driven %s operations are not permitted. Rows expire automatically '
+			. 'via the ArchivalRetentionTask cron.',
+			$schemaIdentifier,
+			$operation
+		);
 
-        parent::__construct(message: $message, code: 403, previous: $previous);
+		parent::__construct(message: $message, code: 403, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the schema identifier that triggered this exception.
-     *
-     * @return string The schema slug, UUID, or ID.
-     *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
-     */
-    public function getSchemaIdentifier(): string
-    {
-        return $this->schemaIdentifier;
+	/**
+	 * Get the schema identifier that triggered this exception.
+	 *
+	 * @return string The schema slug, UUID, or ID.
+	 *
+	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+	 */
+	public function getSchemaIdentifier(): string {
+		return $this->schemaIdentifier;
+	}//end getSchemaIdentifier()
 
-    }//end getSchemaIdentifier()
+	/**
+	 * Build the structured JSON error body for HTTP 403 responses.
+	 *
+	 * @return array{error: string, message: string, schema: string, operation: string, hint: string}
+	 *
+	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
+	 */
+	public function toResponseBody(): array {
+		return [
+			'error' => 'SCHEMA_ARCHIVAL_IMMUTABLE',
+			'message' => $this->getMessage(),
+			'schema' => $this->schemaIdentifier,
+			'operation' => $this->operation,
+			'hint' => 'Rows on archival schemas are removed automatically by '
+				. 'OCA\\OpenRegister\\Cron\\ArchivalRetentionTask when they pass their '
+				. 'effective retention. To force-delete, drop x-openregister-archival '
+				. 'from the schema definition first.',
+		];
 
-    /**
-     * Build the structured JSON error body for HTTP 403 responses.
-     *
-     * @return array{error: string, message: string, schema: string, operation: string, hint: string}
-     *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-3
-     */
-    public function toResponseBody(): array
-    {
-        return [
-            'error'     => 'SCHEMA_ARCHIVAL_IMMUTABLE',
-            'message'   => $this->getMessage(),
-            'schema'    => $this->schemaIdentifier,
-            'operation' => $this->operation,
-            'hint'      => 'Rows on archival schemas are removed automatically by '
-                .'OCA\\OpenRegister\\Cron\\ArchivalRetentionTask when they pass their '
-                .'effective retention. To force-delete, drop x-openregister-archival '
-                .'from the schema definition first.',
-        ];
-
-    }//end toResponseBody()
+	}//end toResponseBody()
 }//end class

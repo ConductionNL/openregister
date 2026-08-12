@@ -17,33 +17,29 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class AnonymisationLogMapperTest extends TestCase
-{
-    private IDBConnection&MockObject $db;
-    private AnonymisationLogMapper $mapper;
+class AnonymisationLogMapperTest extends TestCase {
+	private IDBConnection&MockObject $db;
+	private AnonymisationLogMapper $mapper;
 
-    protected function setUp(): void
-    {
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->mapper = new AnonymisationLogMapper($this->db);
-    }
+	protected function setUp(): void {
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->mapper = new AnonymisationLogMapper($this->db);
+	}
 
-    public function testMapperRegistersCorrectTableAndEntityClass(): void
-    {
-        $this->assertSame('openregister_anonymisation_log', $this->mapper->getTableName());
-    }
+	public function testMapperRegistersCorrectTableAndEntityClass(): void {
+		$this->assertSame('openregister_anonymisation_log', $this->mapper->getTableName());
+	}
 
-    public function testInsertSetsCreatedTimestamp(): void
-    {
-        $entity = new AnonymisationLog();
+	public function testInsertSetsCreatedTimestamp(): void {
+		$entity = new AnonymisationLog();
 
-        // Insert flow is delegated to the parent QBMapper, which requires a
-        // real DB. We exercise only the entity preparation step.
-        $reflection = new \ReflectionClass(AnonymisationLogMapper::class);
-        $insertMethod = $reflection->getMethod('insert');
-        $this->assertTrue($insertMethod->isPublic());
+		// Insert flow is delegated to the parent QBMapper, which requires a
+		// real DB. We exercise only the entity preparation step.
+		$reflection = new \ReflectionClass(AnonymisationLogMapper::class);
+		$insertMethod = $reflection->getMethod('insert');
+		$this->assertTrue($insertMethod->isPublic());
 
-        $entity->setFileId(7);
-        $this->assertSame(7, $entity->getFileId());
-    }
+		$entity->setFileId(7);
+		$this->assertSame(7, $entity->getFileId());
+	}
 }

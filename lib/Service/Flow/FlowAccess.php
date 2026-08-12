@@ -47,76 +47,69 @@ use OCP\IUserSession;
 /**
  * The flow endpoints' authorisation questions, in one place.
  */
-class FlowAccess
-{
-    /**
-     * Constructor.
-     *
-     * @param IUserSession                  $userSession  Resolves the calling user.
-     * @param IGroupManager                 $groupManager Answers whether that user is an administrator.
-     * @param OpenRegisterActionAuthService $actionAuth   The flow action-rights matrix.
-     */
-    public function __construct(
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
-        private readonly OpenRegisterActionAuthService $actionAuth
-    ) {
+class FlowAccess {
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserSession $userSession Resolves the calling user.
+	 * @param IGroupManager $groupManager Answers whether that user is an administrator.
+	 * @param OpenRegisterActionAuthService $actionAuth The flow action-rights matrix.
+	 */
+	public function __construct(
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+		private readonly OpenRegisterActionAuthService $actionAuth,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The calling user, or null when there is no session.
-     *
-     * Returned rather than folded into `may()` so the caller can still tell an
-     * anonymous request (401) apart from an authenticated one that was refused
-     * (403). Collapsing the two would answer "forbidden" to a caller whose real
-     * problem is that they are not signed in.
-     *
-     * @return IUser|null The calling user, or null.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
-     */
-    public function currentUser(): ?IUser
-    {
-        return $this->userSession->getUser();
+	/**
+	 * The calling user, or null when there is no session.
+	 *
+	 * Returned rather than folded into `may()` so the caller can still tell an
+	 * anonymous request (401) apart from an authenticated one that was refused
+	 * (403). Collapsing the two would answer "forbidden" to a caller whose real
+	 * problem is that they are not signed in.
+	 *
+	 * @return IUser|null The calling user, or null.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 */
+	public function currentUser(): ?IUser {
+		return $this->userSession->getUser();
+	}//end currentUser()
 
-    }//end currentUser()
+	/**
+	 * Whether a user holds a named flow right.
+	 *
+	 * @param IUser $user The acting user.
+	 * @param string $action The right's name.
+	 *
+	 * @return boolean Whether the right is held.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 */
+	public function may(IUser $user, string $action): bool {
+		return $this->actionAuth->can(user: $user, action: $action);
+	}//end may()
 
-    /**
-     * Whether a user holds a named flow right.
-     *
-     * @param IUser  $user   The acting user.
-     * @param string $action The right's name.
-     *
-     * @return boolean Whether the right is held.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
-     */
-    public function may(IUser $user, string $action): bool
-    {
-        return $this->actionAuth->can(user: $user, action: $action);
+	/**
+	 * Whether the calling user is a Nextcloud administrator.
+	 *
+	 * Fails CLOSED: an unresolvable session answers false, so a caller whose
+	 * identity cannot be established gets the reduced palette rather than the
+	 * administrator's.
+	 *
+	 * @return boolean Whether the caller is an administrator.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 */
+	public function callerIsAdmin(): bool {
+		$user = $this->currentUser();
+		if ($user === null) {
+			return false;
+		}
 
-    }//end may()
-
-    /**
-     * Whether the calling user is a Nextcloud administrator.
-     *
-     * Fails CLOSED: an unresolvable session answers false, so a caller whose
-     * identity cannot be established gets the reduced palette rather than the
-     * administrator's.
-     *
-     * @return boolean Whether the caller is an administrator.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
-     */
-    public function callerIsAdmin(): bool
-    {
-        $user = $this->currentUser();
-        if ($user === null) {
-            return false;
-        }
-
-        return $this->groupManager->isAdmin($user->getUID());
-
-    }//end callerIsAdmin()
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end callerIsAdmin()
 }//end class

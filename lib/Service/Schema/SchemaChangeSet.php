@@ -38,135 +38,122 @@ use JsonSerializable;
  *
  * @phpstan-type Change array{property: string, kind: string, old?: mixed, new?: mixed}
  */
-final class SchemaChangeSet implements JsonSerializable
-{
+final class SchemaChangeSet implements JsonSerializable {
 
-    /**
-     * Classification: no definition change at all (metadata-only save).
-     *
-     * @var string
-     */
-    public const CLASS_NONE = 'none';
+	/**
+	 * Classification: no definition change at all (metadata-only save).
+	 *
+	 * @var string
+	 */
+	public const CLASS_NONE = 'none';
 
-    /**
-     * Classification: additive / relaxing change, safe for existing data.
-     *
-     * @var string
-     */
-    public const CLASS_COMPATIBLE = 'compatible';
+	/**
+	 * Classification: additive / relaxing change, safe for existing data.
+	 *
+	 * @var string
+	 */
+	public const CLASS_COMPATIBLE = 'compatible';
 
-    /**
-     * Classification: removes/renames/tightens — may invalidate existing data.
-     *
-     * @var string
-     */
-    public const CLASS_BREAKING = 'breaking';
+	/**
+	 * Classification: removes/renames/tightens — may invalidate existing data.
+	 *
+	 * @var string
+	 */
+	public const CLASS_BREAKING = 'breaking';
 
-    /**
-     * The typed list of changes.
-     *
-     * @var array<int, array<string, mixed>>
-     */
-    private array $changes;
+	/**
+	 * The typed list of changes.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $changes;
 
-    /**
-     * The overall classification.
-     *
-     * @var string
-     */
-    private string $classification;
+	/**
+	 * The overall classification.
+	 *
+	 * @var string
+	 */
+	private string $classification;
 
-    /**
-     * The derived version bump level (`major` | `minor` | `patch` | `none`).
-     *
-     * @var string
-     */
-    private string $bump;
+	/**
+	 * The derived version bump level (`major` | `minor` | `patch` | `none`).
+	 *
+	 * @var string
+	 */
+	private string $bump;
 
-    /**
-     * Constructor.
-     *
-     * @param array<int, array<string, mixed>> $changes        Typed change list.
-     * @param string                           $classification One of the CLASS_* constants.
-     * @param string                           $bump           One of major|minor|patch|none.
-     */
-    public function __construct(array $changes, string $classification, string $bump)
-    {
-        $this->changes        = array_values($changes);
-        $this->classification = $classification;
-        $this->bump           = $bump;
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, array<string, mixed>> $changes Typed change list.
+	 * @param string $classification One of the CLASS_* constants.
+	 * @param string $bump One of major|minor|patch|none.
+	 */
+	public function __construct(array $changes, string $classification, string $bump) {
+		$this->changes = array_values($changes);
+		$this->classification = $classification;
+		$this->bump = $bump;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the typed change list.
-     *
-     * @return array<int, array<string, mixed>> The changes.
-     */
-    public function getChanges(): array
-    {
-        return $this->changes;
+	/**
+	 * Get the typed change list.
+	 *
+	 * @return array<int, array<string, mixed>> The changes.
+	 */
+	public function getChanges(): array {
+		return $this->changes;
+	}//end getChanges()
 
-    }//end getChanges()
+	/**
+	 * Get the classification.
+	 *
+	 * @return string The classification (CLASS_* constant).
+	 */
+	public function getClassification(): string {
+		return $this->classification;
+	}//end getClassification()
 
-    /**
-     * Get the classification.
-     *
-     * @return string The classification (CLASS_* constant).
-     */
-    public function getClassification(): string
-    {
-        return $this->classification;
+	/**
+	 * Get the derived semantic-version bump level.
+	 *
+	 * @return string One of major|minor|patch|none.
+	 */
+	public function getBump(): string {
+		return $this->bump;
+	}//end getBump()
 
-    }//end getClassification()
+	/**
+	 * Whether the change set is classified breaking.
+	 *
+	 * @return bool True when breaking.
+	 */
+	public function isBreaking(): bool {
+		return $this->classification === self::CLASS_BREAKING;
+	}//end isBreaking()
 
-    /**
-     * Get the derived semantic-version bump level.
-     *
-     * @return string One of major|minor|patch|none.
-     */
-    public function getBump(): string
-    {
-        return $this->bump;
+	/**
+	 * Whether there is any structural change at all.
+	 *
+	 * @return bool True when the definitions differ structurally.
+	 */
+	public function hasChanges(): bool {
+		return count($this->changes) > 0;
+	}//end hasChanges()
 
-    }//end getBump()
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array<string, mixed> The serialised change set.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'classification' => $this->classification,
+			'bump' => $this->bump,
+			'changes' => $this->changes,
+		];
 
-    /**
-     * Whether the change set is classified breaking.
-     *
-     * @return bool True when breaking.
-     */
-    public function isBreaking(): bool
-    {
-        return $this->classification === self::CLASS_BREAKING;
-
-    }//end isBreaking()
-
-    /**
-     * Whether there is any structural change at all.
-     *
-     * @return bool True when the definitions differ structurally.
-     */
-    public function hasChanges(): bool
-    {
-        return count($this->changes) > 0;
-
-    }//end hasChanges()
-
-    /**
-     * JSON serialisation.
-     *
-     * @return array<string, mixed> The serialised change set.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'classification' => $this->classification,
-            'bump'           => $this->bump,
-            'changes'        => $this->changes,
-        ];
-
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

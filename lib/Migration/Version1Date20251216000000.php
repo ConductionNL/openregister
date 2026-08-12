@@ -44,32 +44,30 @@ use OCP\Migration\SimpleMigrationStep;
  * @version GIT: <git_id>
  * @link    https://www.OpenRegister.app
  */
-class Version1Date20251216000000 extends SimpleMigrationStep
-{
-    /**
-     * Perform the migration.
-     *
-     * @param IOutput $output        The output interface for logging.
-     * @param Closure $schemaClosure Closure that returns the current schema.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The new schema or null if no changes.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251216000000 extends SimpleMigrationStep {
+	/**
+	 * Perform the migration.
+	 *
+	 * @param IOutput $output The output interface for logging.
+	 * @param Closure $schemaClosure Closure that returns the current schema.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The new schema or null if no changes.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Drop the authorization exceptions table if it exists.
-        if ($schema->hasTable('openregister_authorization_exceptions') === true) {
-            $schema->dropTable('openregister_authorization_exceptions');
-            $output->info('Dropped openregister_authorization_exceptions table');
-            return $schema;
-        }
+		// Drop the authorization exceptions table if it exists.
+		if ($schema->hasTable('openregister_authorization_exceptions') === true) {
+			$schema->dropTable('openregister_authorization_exceptions');
+			$output->info('Dropped openregister_authorization_exceptions table');
+			return $schema;
+		}
 
-        return null;
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

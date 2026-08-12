@@ -47,82 +47,79 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  */
-class TablesTableDeletedListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param TablesSchemaSyncService $syncService Schema retirement logic.
-     * @param LoggerInterface         $logger      Logger for diagnostics.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly TablesSchemaSyncService $syncService,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class TablesTableDeletedListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param TablesSchemaSyncService $syncService Schema retirement logic.
+	 * @param LoggerInterface $logger Logger for diagnostics.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly TablesSchemaSyncService $syncService,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle a Tables `TableDeletedEvent` by retiring the bound schema.
-     *
-     * @param Event $event The Tables table-deleted event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        $tableId = $this->tableIdFromEvent(event: $event);
-        if ($tableId === null) {
-            return;
-        }
+	/**
+	 * Handle a Tables `TableDeletedEvent` by retiring the bound schema.
+	 *
+	 * @param Event $event The Tables table-deleted event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function handle(Event $event): void {
+		$tableId = $this->tableIdFromEvent(event: $event);
+		if ($tableId === null) {
+			return;
+		}
 
-        try {
-            if ($this->syncService->retireByTableId(tableId: $tableId) === true) {
-                $this->logger->info('[ObjectSource:tables] retired virtual schema for deleted table '.$tableId);
-            }
-        } catch (Throwable $e) {
-            $this->logger->warning('[ObjectSource:tables] could not retire schema for table '.$tableId.': '.$e->getMessage());
-        }
-    }//end handle()
+		try {
+			if ($this->syncService->retireByTableId(tableId: $tableId) === true) {
+				$this->logger->info('[ObjectSource:tables] retired virtual schema for deleted table ' . $tableId);
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:tables] could not retire schema for table ' . $tableId . ': ' . $e->getMessage());
+		}
+	}//end handle()
 
-    /**
-     * Extract the deleted table's id from the event, tolerant of its shape.
-     *
-     * Tries `getTable()->getId()` then a direct `getTableId()`, each guarded so an
-     * unexpected event shape yields null rather than a fatal.
-     *
-     * @param object $event The event.
-     *
-     * @return int|null The table id, or null when unresolvable.
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    private function tableIdFromEvent(object $event): ?int
-    {
-        try {
-            $table = $event->getTable();
-            if (is_object($table) === true) {
-                $id = $table->getId();
-                if (is_scalar($id) === true) {
-                    return (int) $id;
-                }
-            }
-        } catch (Throwable $e) {
-            // Fall through to the flat getter.
-        }
+	/**
+	 * Extract the deleted table's id from the event, tolerant of its shape.
+	 *
+	 * Tries `getTable()->getId()` then a direct `getTableId()`, each guarded so an
+	 * unexpected event shape yields null rather than a fatal.
+	 *
+	 * @param object $event The event.
+	 *
+	 * @return int|null The table id, or null when unresolvable.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function tableIdFromEvent(object $event): ?int {
+		try {
+			$table = $event->getTable();
+			if (is_object($table) === true) {
+				$id = $table->getId();
+				if (is_scalar($id) === true) {
+					return (int)$id;
+				}
+			}
+		} catch (Throwable $e) {
+			// Fall through to the flat getter.
+		}
 
-        try {
-            $id = $event->getTableId();
-            if (is_scalar($id) === true) {
-                return (int) $id;
-            }
-        } catch (Throwable $e) {
-            return null;
-        }
+		try {
+			$id = $event->getTableId();
+			if (is_scalar($id) === true) {
+				return (int)$id;
+			}
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        return null;
-    }//end tableIdFromEvent()
+		return null;
+	}//end tableIdFromEvent()
 }//end class

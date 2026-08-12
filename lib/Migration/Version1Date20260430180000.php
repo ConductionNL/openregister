@@ -34,78 +34,75 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds disambiguating columns to entity_relations.
  */
-class Version1Date20260430180000 extends SimpleMigrationStep
-{
-    /**
-     * Add register_id + schema_id + object_uuid + indexes when missing.
-     *
-     * @param IOutput $output        Migration output sink.
-     * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array   $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260430180000 extends SimpleMigrationStep {
+	/**
+	 * Add register_id + schema_id + object_uuid + indexes when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_entity_relations') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable(tableName: 'openregister_entity_relations') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_entity_relations');
+		$table = $schema->getTable(tableName: 'openregister_entity_relations');
 
-        if ($table->hasColumn(name: 'register_id') === false) {
-            $table->addColumn(
-                name: 'register_id',
-                typeName: Types::STRING,
-                options: ['notnull' => false, 'length' => 64]
-            );
-        }
+		if ($table->hasColumn(name: 'register_id') === false) {
+			$table->addColumn(
+				name: 'register_id',
+				typeName: Types::STRING,
+				options: ['notnull' => false, 'length' => 64]
+			);
+		}
 
-        if ($table->hasColumn(name: 'schema_id') === false) {
-            $table->addColumn(
-                name: 'schema_id',
-                typeName: Types::STRING,
-                options: ['notnull' => false, 'length' => 64]
-            );
-        }
+		if ($table->hasColumn(name: 'schema_id') === false) {
+			$table->addColumn(
+				name: 'schema_id',
+				typeName: Types::STRING,
+				options: ['notnull' => false, 'length' => 64]
+			);
+		}
 
-        if ($table->hasColumn(name: 'object_uuid') === false) {
-            $table->addColumn(
-                name: 'object_uuid',
-                typeName: Types::STRING,
-                options: ['notnull' => false, 'length' => 64]
-            );
-        }
+		if ($table->hasColumn(name: 'object_uuid') === false) {
+			$table->addColumn(
+				name: 'object_uuid',
+				typeName: Types::STRING,
+				options: ['notnull' => false, 'length' => 64]
+			);
+		}
 
-        if ($table->hasIndex(name: 'idx_relations_register_schema') === false) {
-            $table->addIndex(
-                columnNames: ['register_id', 'schema_id'],
-                indexName: 'idx_relations_register_schema'
-            );
-        }
+		if ($table->hasIndex(name: 'idx_relations_register_schema') === false) {
+			$table->addIndex(
+				columnNames: ['register_id', 'schema_id'],
+				indexName: 'idx_relations_register_schema'
+			);
+		}
 
-        if ($table->hasIndex(name: 'idx_relations_object_uuid') === false) {
-            $table->addIndex(
-                columnNames: ['object_uuid'],
-                indexName: 'idx_relations_object_uuid'
-            );
-        }
+		if ($table->hasIndex(name: 'idx_relations_object_uuid') === false) {
+			$table->addIndex(
+				columnNames: ['object_uuid'],
+				indexName: 'idx_relations_object_uuid'
+			);
+		}
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

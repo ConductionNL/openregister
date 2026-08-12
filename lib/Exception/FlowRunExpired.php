@@ -34,7 +34,6 @@ use RuntimeException;
 /**
  * Thrown at a checkpoint once the run's deadline has passed.
  */
-class FlowRunExpired extends RuntimeException
-{
+class FlowRunExpired extends RuntimeException {
 
 }//end class

@@ -28,38 +28,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an action is deleted
  */
-class ActionDeletedEvent extends Event
-{
+class ActionDeletedEvent extends Event {
 
-    /**
-     * The action
-     *
-     * @var Action The action entity
-     */
-    private Action $action;
+	/**
+	 * The action
+	 *
+	 * @var Action The action entity
+	 */
+	private Action $action;
 
-    /**
-     * Constructor for ActionDeletedEvent
-     *
-     * @param Action $action The action entity
-     *
-     * @return void
-     */
-    public function __construct(Action $action)
-    {
-        parent::__construct();
-        $this->action = $action;
-    }//end __construct()
+	/**
+	 * Constructor for ActionDeletedEvent
+	 *
+	 * @param Action $action The action entity
+	 *
+	 * @return void
+	 */
+	public function __construct(Action $action) {
+		parent::__construct();
+		$this->action = $action;
+	}//end __construct()
 
-    /**
-     * Get the action
-     *
-     * @return Action The action entity
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getAction(): Action
-    {
-        return $this->action;
-    }//end getAction()
+	/**
+	 * Get the action
+	 *
+	 * @return Action The action entity
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getAction(): Action {
+		return $this->action;
+	}//end getAction()
 }//end class

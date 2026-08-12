@@ -52,114 +52,110 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Tier-2 map-links table — create-or-extend.
  */
-class Version1Date20260525190000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260525190000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable('openregister_map_links') === false) {
-            $this->createMapLinksTable(schema: $schema, output: $output);
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_map_links') === false) {
+			$this->createMapLinksTable(schema: $schema, output: $output);
+			$changed = true;
+		}
 
-        if ($schema->hasTable('openregister_map_links') === true
-            && $this->extendMapLinksTable(schema: $schema, output: $output) === true
-        ) {
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_map_links') === true
+			&& $this->extendMapLinksTable(schema: $schema, output: $output) === true
+		) {
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Create the openregister_map_links table at the Tier-2 shape.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createMapLinksTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $table = $schema->createTable('openregister_map_links');
+	/**
+	 * Create the openregister_map_links table at the Tier-2 shape.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createMapLinksTable(ISchemaWrapper $schema, IOutput $output): void {
+		$table = $schema->createTable('openregister_map_links');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('favorite_id', Types::INTEGER, ['notnull' => true]);
-        $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('category', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-        $table->addColumn('lat', Types::FLOAT, ['notnull' => true]);
-        $table->addColumn('lng', Types::FLOAT, ['notnull' => true]);
-        $table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
-        $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('favorite_id', Types::INTEGER, ['notnull' => true]);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('category', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
+		$table->addColumn('lat', Types::FLOAT, ['notnull' => true]);
+		$table->addColumn('lng', Types::FLOAT, ['notnull' => true]);
+		$table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
+		$table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['object_uuid', 'favorite_id'], 'idx_map_object_fav');
-        $table->addIndex(['object_uuid'], 'idx_map_object');
-        $table->addIndex(['register_id'], 'idx_map_register');
-        $table->addIndex(['schema_id'], 'idx_map_schema');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['object_uuid', 'favorite_id'], 'idx_map_object_fav');
+		$table->addIndex(['object_uuid'], 'idx_map_object');
+		$table->addIndex(['register_id'], 'idx_map_register');
+		$table->addIndex(['schema_id'], 'idx_map_schema');
 
-        $output->info('Created openregister_map_links table (Tier-2 schema)');
-    }//end createMapLinksTable()
+		$output->info('Created openregister_map_links table (Tier-2 schema)');
+	}//end createMapLinksTable()
 
-    /**
-     * Add any missing Tier-2 columns to an existing map_links table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return bool True when a column was added.
-     */
-    private function extendMapLinksTable(ISchemaWrapper $schema, IOutput $output): bool
-    {
-        $table   = $schema->getTable('openregister_map_links');
-        $changed = false;
+	/**
+	 * Add any missing Tier-2 columns to an existing map_links table.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return bool True when a column was added.
+	 */
+	private function extendMapLinksTable(ISchemaWrapper $schema, IOutput $output): bool {
+		$table = $schema->getTable('openregister_map_links');
+		$changed = false;
 
-        if ($table->hasColumn('schema_id') === false) {
-            $table->addColumn(
-                'schema_id',
-                Types::BIGINT,
-                ['notnull' => false, 'unsigned' => true, 'default' => null]
-            );
-            $table->addIndex(['schema_id'], 'idx_map_schema');
-            $output->info('Added schema_id column to openregister_map_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('schema_id') === false) {
+			$table->addColumn(
+				'schema_id',
+				Types::BIGINT,
+				['notnull' => false, 'unsigned' => true, 'default' => null]
+			);
+			$table->addIndex(['schema_id'], 'idx_map_schema');
+			$output->info('Added schema_id column to openregister_map_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('category') === false) {
-            $table->addColumn('category', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-            $output->info('Added category column to openregister_map_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('category') === false) {
+			$table->addColumn('category', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
+			$output->info('Added category column to openregister_map_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('comment') === false) {
-            $table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
-            $output->info('Added comment column to openregister_map_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('comment') === false) {
+			$table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
+			$output->info('Added comment column to openregister_map_links');
+			$changed = true;
+		}
 
-        return $changed;
-    }//end extendMapLinksTable()
+		return $changed;
+	}//end extendMapLinksTable()
 }//end class

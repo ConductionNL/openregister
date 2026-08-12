@@ -31,61 +31,57 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
  */
-class ConfigurationUpdatedEvent extends Event
-{
+class ConfigurationUpdatedEvent extends Event {
 
-    /**
-     * The updated configuration state.
-     *
-     * @var Configuration The configuration after update.
-     */
-    private Configuration $newConfiguration;
+	/**
+	 * The updated configuration state.
+	 *
+	 * @var Configuration The configuration after update.
+	 */
+	private Configuration $newConfiguration;
 
-    /**
-     * The previous configuration state.
-     *
-     * @var Configuration The configuration before update.
-     */
-    private Configuration $oldConfiguration;
+	/**
+	 * The previous configuration state.
+	 *
+	 * @var Configuration The configuration before update.
+	 */
+	private Configuration $oldConfiguration;
 
-    /**
-     * Constructor for ConfigurationUpdatedEvent.
-     *
-     * @param Configuration $newConfiguration The configuration after update.
-     * @param Configuration $oldConfiguration The configuration before update.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function __construct(Configuration $newConfiguration, Configuration $oldConfiguration)
-    {
-        parent::__construct();
-        $this->newConfiguration = $newConfiguration;
-        $this->oldConfiguration = $oldConfiguration;
-    }//end __construct()
+	/**
+	 * Constructor for ConfigurationUpdatedEvent.
+	 *
+	 * @param Configuration $newConfiguration The configuration after update.
+	 * @param Configuration $oldConfiguration The configuration before update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(Configuration $newConfiguration, Configuration $oldConfiguration) {
+		parent::__construct();
+		$this->newConfiguration = $newConfiguration;
+		$this->oldConfiguration = $oldConfiguration;
+	}//end __construct()
 
-    /**
-     * Get the updated configuration.
-     *
-     * @return Configuration The configuration after update.
-     *
-     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
-     */
-    public function getNewConfiguration(): Configuration
-    {
-        return $this->newConfiguration;
-    }//end getNewConfiguration()
+	/**
+	 * Get the updated configuration.
+	 *
+	 * @return Configuration The configuration after update.
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 */
+	public function getNewConfiguration(): Configuration {
+		return $this->newConfiguration;
+	}//end getNewConfiguration()
 
-    /**
-     * Get the original configuration.
-     *
-     * @return Configuration The configuration before update.
-     *
-     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
-     */
-    public function getOldConfiguration(): Configuration
-    {
-        return $this->oldConfiguration;
-    }//end getOldConfiguration()
+	/**
+	 * Get the original configuration.
+	 *
+	 * @return Configuration The configuration before update.
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 */
+	public function getOldConfiguration(): Configuration {
+		return $this->oldConfiguration;
+	}//end getOldConfiguration()
 }//end class

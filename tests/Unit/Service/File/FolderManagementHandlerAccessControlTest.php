@@ -30,7 +30,6 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
-use OCP\Files\Node;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -41,392 +40,356 @@ use Psr\Log\LoggerInterface;
 /**
  * Unit tests for `@self.folder` access-control on `createObjectFolderById()`.
  */
-class FolderManagementHandlerAccessControlTest extends TestCase
-{
-
-    /**
-     * @var IRootFolder&MockObject
-     */
-    private IRootFolder $rootFolder;
-
-    /**
-     * @var MagicMapper&MockObject
-     */
-    private MagicMapper $objectEntityMapper;
-
-    /**
-     * @var RegisterMapper&MockObject
-     */
-    private RegisterMapper $registerMapper;
-
-    /**
-     * @var IUserSession&MockObject
-     */
-    private IUserSession $userSession;
-
-    /**
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager $groupManager;
-
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface $logger;
-
-    /**
-     * @var AuditTrailMapper&MockObject
-     */
-    private AuditTrailMapper $auditTrailMapper;
-
-    private FolderManagementHandler $handler;
-
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->rootFolder         = $this->createMock(IRootFolder::class);
-        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
-        $this->registerMapper     = $this->createMock(RegisterMapper::class);
-        $this->userSession        = $this->createMock(IUserSession::class);
-        $this->groupManager       = $this->createMock(IGroupManager::class);
-        $this->logger             = $this->createMock(LoggerInterface::class);
-        $this->auditTrailMapper   = $this->createMock(AuditTrailMapper::class);
-
-        $this->handler = new FolderManagementHandler(
-            rootFolder: $this->rootFolder,
-            objectEntityMapper: $this->objectEntityMapper,
-            registerMapper: $this->registerMapper,
-            userSession: $this->userSession,
-            groupManager: $this->groupManager,
-            logger: $this->logger,
-            auditTrailMapper: $this->auditTrailMapper
-        );
-
-    }//end setUp()
-
-
-    /**
-     * Build an ObjectEntity with the given folder property.
-     *
-     * @param string|null $folder Folder property to set (numeric ID, legacy path, null).
-     *
-     * @return ObjectEntity
-     */
-    private function makeObjectEntity(?string $folder): ObjectEntity
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('uuid-test-1');
-        $entity->setRegister('1');
-        $entity->setSchema('1');
-        if ($folder !== null) {
-            $entity->setFolder($folder);
-        }
-
-        return $entity;
-
-    }//end makeObjectEntity()
-
-
-    /**
-     * Mock a user with the given UID and have the session return them.
-     *
-     * @param string $uid User identifier.
-     *
-     * @return IUser&MockObject
-     */
-    private function mockSessionUser(string $uid): IUser
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        return $user;
+class FolderManagementHandlerAccessControlTest extends TestCase {
+
+	/**
+	 * @var IRootFolder&MockObject
+	 */
+	private IRootFolder $rootFolder;
+
+	/**
+	 * @var MagicMapper&MockObject
+	 */
+	private MagicMapper $objectEntityMapper;
+
+	/**
+	 * @var RegisterMapper&MockObject
+	 */
+	private RegisterMapper $registerMapper;
+
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession $userSession;
+
+	/**
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager $groupManager;
+
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * @var AuditTrailMapper&MockObject
+	 */
+	private AuditTrailMapper $auditTrailMapper;
+
+	private FolderManagementHandler $handler;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+
+		$this->handler = new FolderManagementHandler(
+			rootFolder: $this->rootFolder,
+			objectEntityMapper: $this->objectEntityMapper,
+			registerMapper: $this->registerMapper,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			logger: $this->logger,
+			auditTrailMapper: $this->auditTrailMapper
+		);
+
+	}//end setUp()
+
+	/**
+	 * Build an ObjectEntity with the given folder property.
+	 *
+	 * @param string|null $folder Folder property to set (numeric ID, legacy path, null).
+	 *
+	 * @return ObjectEntity
+	 */
+	private function makeObjectEntity(?string $folder): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('uuid-test-1');
+		$entity->setRegister('1');
+		$entity->setSchema('1');
+		if ($folder !== null) {
+			$entity->setFolder($folder);
+		}
+
+		return $entity;
+	}//end makeObjectEntity()
+
+	/**
+	 * Mock a user with the given UID and have the session return them.
+	 *
+	 * @param string $uid User identifier.
+	 *
+	 * @return IUser&MockObject
+	 */
+	private function mockSessionUser(string $uid): IUser {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		return $user;
+	}//end mockSessionUser()
+
+	/**
+	 * Wire `$this->rootFolder->getUserFolder('alice')` to return a mock that
+	 * resolves `getById($folderId)` to the given list of nodes.
+	 *
+	 * @param string $uid UID whose user folder is being mocked.
+	 * @param int $folderId ID being looked up.
+	 * @param array $nodes Nodes to return from `getById()`.
+	 *
+	 * @return void
+	 */
+	private function mockUserFolderLookup(string $uid, int $folderId, array $nodes): void {
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->with($folderId)->willReturn($nodes);
+		$this->rootFolder->method('getUserFolder')->with($uid)->willReturn($userFolder);
 
-    }//end mockSessionUser()
+	}//end mockUserFolderLookup()
 
+	/**
+	 * (a) Owned folder bind succeeds.
+	 */
+	public function testOwnedFolderBindSucceeds(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-    /**
-     * Wire `$this->rootFolder->getUserFolder('alice')` to return a mock that
-     * resolves `getById($folderId)` to the given list of nodes.
-     *
-     * @param string $uid       UID whose user folder is being mocked.
-     * @param int    $folderId  ID being looked up.
-     * @param array  $nodes     Nodes to return from `getById()`.
-     *
-     * @return void
-     */
-    private function mockUserFolderLookup(string $uid, int $folderId, array $nodes): void
-    {
-        $userFolder = $this->createMock(Folder::class);
-        $userFolder->method('getById')->with($folderId)->willReturn($nodes);
-        $this->rootFolder->method('getUserFolder')->with($uid)->willReturn($userFolder);
+		$folder = $this->createMock(Folder::class);
+		$folder->method('isReadable')->willReturn(true);
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 42, nodes: [$folder]);
 
-    }//end mockUserFolderLookup()
+		$entity = $this->makeObjectEntity(folder: '42');
 
+		$result = $this->handler->createObjectFolderById(objectEntity: $entity);
 
-    /**
-     * (a) Owned folder bind succeeds.
-     */
-    public function testOwnedFolderBindSucceeds(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+		$this->assertSame($folder, $result);
 
-        $folder = $this->createMock(Folder::class);
-        $folder->method('isReadable')->willReturn(true);
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 42, nodes: [$folder]);
+	}//end testOwnedFolderBindSucceeds()
 
-        $entity = $this->makeObjectEntity(folder: '42');
+	/**
+	 * (b) Shared-readable folder bind succeeds.
+	 */
+	public function testSharedReadableFolderBindSucceeds(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-        $result = $this->handler->createObjectFolderById(objectEntity: $entity);
+		$shared = $this->createMock(Folder::class);
+		$shared->method('isReadable')->willReturn(true);
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 50, nodes: [$shared]);
 
-        $this->assertSame($folder, $result);
+		$result = $this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '50')
+		);
 
-    }//end testOwnedFolderBindSucceeds()
+		$this->assertSame($shared, $result);
 
+	}//end testSharedReadableFolderBindSucceeds()
 
-    /**
-     * (b) Shared-readable folder bind succeeds.
-     */
-    public function testSharedReadableFolderBindSucceeds(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+	/**
+	 * (c) Unshared cross-user folder bind throws and writes audit.
+	 */
+	public function testCrossUserFolderBindThrows(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-        $shared = $this->createMock(Folder::class);
-        $shared->method('isReadable')->willReturn(true);
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 50, nodes: [$shared]);
+		// Bob's folder is not present in alice's user-folder lookup → empty result.
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 99, nodes: []);
 
-        $result = $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '50')
-        );
+		$this->auditTrailMapper->expects($this->once())
+			->method('insert')
+			->with($this->isInstanceOf(AuditTrail::class));
 
-        $this->assertSame($shared, $result);
+		$this->expectException(FolderAccessDeniedException::class);
 
-    }//end testSharedReadableFolderBindSucceeds()
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '99')
+		);
 
+	}//end testCrossUserFolderBindThrows()
 
-    /**
-     * (c) Unshared cross-user folder bind throws and writes audit.
-     */
-    public function testCrossUserFolderBindThrows(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+	/**
+	 * (d) Non-existent numeric ID throws.
+	 */
+	public function testNonExistentIdThrows(): void {
+		$this->mockSessionUser(uid: 'alice');
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 999999, nodes: []);
 
-        // Bob's folder is not present in alice's user-folder lookup → empty result.
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 99, nodes: []);
+		$this->expectException(FolderAccessDeniedException::class);
 
-        $this->auditTrailMapper->expects($this->once())
-            ->method('insert')
-            ->with($this->isInstanceOf(AuditTrail::class));
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '999999')
+		);
 
-        $this->expectException(FolderAccessDeniedException::class);
+	}//end testNonExistentIdThrows()
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '99')
-        );
+	/**
+	 * (e) File-ID (not folder) throws.
+	 */
+	public function testFileIdInsteadOfFolderIdThrows(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-    }//end testCrossUserFolderBindThrows()
+		$file = $this->createMock(File::class);
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 51, nodes: [$file]);
 
+		$this->expectException(FolderAccessDeniedException::class);
 
-    /**
-     * (d) Non-existent numeric ID throws.
-     */
-    public function testNonExistentIdThrows(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 999999, nodes: []);
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '51')
+		);
 
-        $this->expectException(FolderAccessDeniedException::class);
+	}//end testFileIdInsteadOfFolderIdThrows()
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '999999')
-        );
+	/**
+	 * (f) Trashed (non-readable) folder throws.
+	 */
+	public function testTrashedFolderThrows(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-    }//end testNonExistentIdThrows()
+		$trashed = $this->createMock(Folder::class);
+		$trashed->method('isReadable')->willReturn(false);
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 77, nodes: [$trashed]);
 
+		$this->expectException(FolderAccessDeniedException::class);
 
-    /**
-     * (e) File-ID (not folder) throws.
-     */
-    public function testFileIdInsteadOfFolderIdThrows(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '77')
+		);
 
-        $file = $this->createMock(File::class);
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 51, nodes: [$file]);
+	}//end testTrashedFolderThrows()
 
-        $this->expectException(FolderAccessDeniedException::class);
+	/**
+	 * (i) Explicit `$currentUser` overrides the session user.
+	 *
+	 * `bob` is the explicit acting user; the session is `alice`. The check
+	 * MUST go through `bob`'s user-folder lookup, not `alice`'s.
+	 */
+	public function testExplicitCurrentUserOverridesSession(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '51')
-        );
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
 
-    }//end testFileIdInsteadOfFolderIdThrows()
+		$folder = $this->createMock(Folder::class);
+		$folder->method('isReadable')->willReturn(true);
+		$this->mockUserFolderLookup(uid: 'bob', folderId: 42, nodes: [$folder]);
 
+		$result = $this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '42'),
+			currentUser: $bob
+		);
 
-    /**
-     * (f) Trashed (non-readable) folder throws.
-     */
-    public function testTrashedFolderThrows(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+		$this->assertSame($folder, $result);
 
-        $trashed = $this->createMock(Folder::class);
-        $trashed->method('isReadable')->willReturn(false);
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 77, nodes: [$trashed]);
+	}//end testExplicitCurrentUserOverridesSession()
 
-        $this->expectException(FolderAccessDeniedException::class);
+	/**
+	 * Default-deny invariant — an unexpected exception during user-folder lookup
+	 * must NOT fail-open. A generic RuntimeException from `getUserFolder()`
+	 * (e.g. mount issue, DB hiccup) is translated into `FolderAccessDeniedException`.
+	 */
+	public function testLookupExceptionDeniesByDefault(): void {
+		$this->mockSessionUser(uid: 'alice');
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '77')
-        );
+		$this->rootFolder->method('getUserFolder')
+			->with('alice')
+			->willThrowException(new \RuntimeException('mount unavailable'));
 
-    }//end testTrashedFolderThrows()
+		$this->auditTrailMapper->expects($this->once())->method('insert');
+		$this->expectException(FolderAccessDeniedException::class);
 
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '42')
+		);
 
-    /**
-     * (i) Explicit `$currentUser` overrides the session user.
-     *
-     * `bob` is the explicit acting user; the session is `alice`. The check
-     * MUST go through `bob`'s user-folder lookup, not `alice`'s.
-     */
-    public function testExplicitCurrentUserOverridesSession(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+	}//end testLookupExceptionDeniesByDefault()
 
-        $bob = $this->createMock(IUser::class);
-        $bob->method('getUID')->willReturn('bob');
+	/**
+	 * No-IUser context (no session user, no explicit arg) is denied per default-deny.
+	 */
+	public function testNoActingUserDenies(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $folder = $this->createMock(Folder::class);
-        $folder->method('isReadable')->willReturn(true);
-        $this->mockUserFolderLookup(uid: 'bob', folderId: 42, nodes: [$folder]);
+		$this->auditTrailMapper->expects($this->once())->method('insert');
+		$this->expectException(FolderAccessDeniedException::class);
 
-        $result = $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '42'),
-            currentUser: $bob
-        );
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '42')
+		);
 
-        $this->assertSame($folder, $result);
+	}//end testNoActingUserDenies()
 
-    }//end testExplicitCurrentUserOverridesSession()
+	/**
+	 * (g) Empty folder property → access check is skipped (no audit, no denial).
+	 *
+	 * The auto-create branch downstream may still throw something else due to
+	 * unmocked register lookup, but the access-control check itself MUST NOT
+	 * fire — verified by asserting `auditTrailMapper::insert` is never called.
+	 */
+	public function testEmptyFolderSkipsAccessCheck(): void {
+		$this->mockSessionUser(uid: 'alice');
 
+		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-    /**
-     * Default-deny invariant — an unexpected exception during user-folder lookup
-     * must NOT fail-open. A generic RuntimeException from `getUserFolder()`
-     * (e.g. mount issue, DB hiccup) is translated into `FolderAccessDeniedException`.
-     */
-    public function testLookupExceptionDeniesByDefault(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+		$entity = $this->makeObjectEntity(folder: null);
 
-        $this->rootFolder->method('getUserFolder')
-            ->with('alice')
-            ->willThrowException(new \RuntimeException('mount unavailable'));
+		try {
+			$this->handler->createObjectFolderById(objectEntity: $entity);
+		} catch (FolderAccessDeniedException $e) {
+			$this->fail('Empty folder property must not trigger FolderAccessDeniedException');
+		} catch (\Throwable $e) {
+			// Auto-create path will fail downstream (unmocked register lookup); that's fine.
+			// The point of this test is the access-control check did NOT run.
+		}
 
-        $this->auditTrailMapper->expects($this->once())->method('insert');
-        $this->expectException(FolderAccessDeniedException::class);
+		// Reach this assertion only if no FolderAccessDeniedException was thrown.
+		$this->addToAssertionCount(1);
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '42')
-        );
+	}//end testEmptyFolderSkipsAccessCheck()
 
-    }//end testLookupExceptionDeniesByDefault()
+	/**
+	 * (h) Legacy non-numeric folder property → access check is skipped.
+	 */
+	public function testLegacyNonNumericFolderSkipsAccessCheck(): void {
+		$this->mockSessionUser(uid: 'alice');
 
+		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-    /**
-     * No-IUser context (no session user, no explicit arg) is denied per default-deny.
-     */
-    public function testNoActingUserDenies(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+		$entity = $this->makeObjectEntity(folder: 'legacy/path/string');
 
-        $this->auditTrailMapper->expects($this->once())->method('insert');
-        $this->expectException(FolderAccessDeniedException::class);
+		try {
+			$this->handler->createObjectFolderById(objectEntity: $entity);
+		} catch (FolderAccessDeniedException $e) {
+			$this->fail('Legacy non-numeric folder must not trigger FolderAccessDeniedException');
+		} catch (\Throwable $e) {
+			// Auto-create downstream may fail; that's outside this test's scope.
+		}
 
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '42')
-        );
+		$this->addToAssertionCount(1);
 
-    }//end testNoActingUserDenies()
+	}//end testLegacyNonNumericFolderSkipsAccessCheck()
 
+	/**
+	 * (j) Audit-trail entry is written on denial — and a mapper failure does
+	 * NOT swallow the denial.
+	 */
+	public function testAuditFailureDoesNotSwallowDenial(): void {
+		$this->mockSessionUser(uid: 'alice');
+		$this->mockUserFolderLookup(uid: 'alice', folderId: 99, nodes: []);
 
-    /**
-     * (g) Empty folder property → access check is skipped (no audit, no denial).
-     *
-     * The auto-create branch downstream may still throw something else due to
-     * unmocked register lookup, but the access-control check itself MUST NOT
-     * fire — verified by asserting `auditTrailMapper::insert` is never called.
-     */
-    public function testEmptyFolderSkipsAccessCheck(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
+		// Mapper insert blows up — must not stop the denial from propagating.
+		$this->auditTrailMapper->method('insert')
+			->willThrowException(new Exception('audit table down'));
+		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-        $this->auditTrailMapper->expects($this->never())->method('insert');
+		$this->expectException(FolderAccessDeniedException::class);
 
-        $entity = $this->makeObjectEntity(folder: null);
+		$this->handler->createObjectFolderById(
+			objectEntity: $this->makeObjectEntity(folder: '99')
+		);
 
-        try {
-            $this->handler->createObjectFolderById(objectEntity: $entity);
-        } catch (FolderAccessDeniedException $e) {
-            $this->fail('Empty folder property must not trigger FolderAccessDeniedException');
-        } catch (\Throwable $e) {
-            // Auto-create path will fail downstream (unmocked register lookup); that's fine.
-            // The point of this test is the access-control check did NOT run.
-        }
-
-        // Reach this assertion only if no FolderAccessDeniedException was thrown.
-        $this->addToAssertionCount(1);
-
-    }//end testEmptyFolderSkipsAccessCheck()
-
-
-    /**
-     * (h) Legacy non-numeric folder property → access check is skipped.
-     */
-    public function testLegacyNonNumericFolderSkipsAccessCheck(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
-
-        $this->auditTrailMapper->expects($this->never())->method('insert');
-
-        $entity = $this->makeObjectEntity(folder: 'legacy/path/string');
-
-        try {
-            $this->handler->createObjectFolderById(objectEntity: $entity);
-        } catch (FolderAccessDeniedException $e) {
-            $this->fail('Legacy non-numeric folder must not trigger FolderAccessDeniedException');
-        } catch (\Throwable $e) {
-            // Auto-create downstream may fail; that's outside this test's scope.
-        }
-
-        $this->addToAssertionCount(1);
-
-    }//end testLegacyNonNumericFolderSkipsAccessCheck()
-
-
-    /**
-     * (j) Audit-trail entry is written on denial — and a mapper failure does
-     * NOT swallow the denial.
-     */
-    public function testAuditFailureDoesNotSwallowDenial(): void
-    {
-        $this->mockSessionUser(uid: 'alice');
-        $this->mockUserFolderLookup(uid: 'alice', folderId: 99, nodes: []);
-
-        // Mapper insert blows up — must not stop the denial from propagating.
-        $this->auditTrailMapper->method('insert')
-            ->willThrowException(new Exception('audit table down'));
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
-        $this->expectException(FolderAccessDeniedException::class);
-
-        $this->handler->createObjectFolderById(
-            objectEntity: $this->makeObjectEntity(folder: '99')
-        );
-
-    }//end testAuditFailureDoesNotSwallowDenial()
-
+	}//end testAuditFailureDoesNotSwallowDenial()
 
 }//end class

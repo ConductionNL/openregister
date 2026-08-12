@@ -41,143 +41,130 @@ use Psr\Log\LoggerInterface;
 /**
  * TransferControllerTest.
  */
-class TransferControllerTest extends TestCase
-{
+class TransferControllerTest extends TestCase {
 
-    private TransferRecordService&MockObject $recordService;
+	private TransferRecordService&MockObject $recordService;
 
-    private IJobList&MockObject $jobList;
+	private IJobList&MockObject $jobList;
 
-    private IRequest&MockObject $request;
+	private IRequest&MockObject $request;
 
-    private TransferController $controller;
+	private TransferController $controller;
 
+	protected function setUp(): void {
+		$this->recordService = $this->createMock(TransferRecordService::class);
+		$this->jobList = $this->createMock(IJobList::class);
+		$this->request = $this->createMock(IRequest::class);
 
-    protected function setUp(): void
-    {
-        $this->recordService = $this->createMock(TransferRecordService::class);
-        $this->jobList       = $this->createMock(IJobList::class);
-        $this->request       = $this->createMock(IRequest::class);
+		$this->controller = new TransferController(
+			'openregister',
+			$this->request,
+			$this->recordService,
+			$this->jobList,
+			$this->createMock(LoggerInterface::class),
+		);
 
-        $this->controller = new TransferController(
-            'openregister',
-            $this->request,
-            $this->recordService,
-            $this->jobList,
-            $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Index returns the persisted transfer lists with a total.
+	 *
+	 * @return void
+	 */
+	public function testIndexReturnsPersistedLists(): void {
+		$lists = [['uuid' => 'a'], ['uuid' => 'b']];
+		$this->recordService->method('listTransferLists')->willReturn($lists);
 
+		$response = $this->controller->index();
 
-    /**
-     * Index returns the persisted transfer lists with a total.
-     *
-     * @return void
-     */
-    public function testIndexReturnsPersistedLists(): void
-    {
-        $lists = [['uuid' => 'a'], ['uuid' => 'b']];
-        $this->recordService->method('listTransferLists')->willReturn($lists);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['results' => $lists, 'total' => 2], $response->getData());
 
-        $response = $this->controller->index();
+	}//end testIndexReturnsPersistedLists()
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(['results' => $lists, 'total' => 2], $response->getData());
+	/**
+	 * Show returns a persisted list, or 404 when absent.
+	 *
+	 * @return void
+	 */
+	public function testShow(): void {
+		$this->recordService->method('loadTransferList')->willReturnMap(
+			[
+				['t1', ['uuid' => 't1', 'status' => 'approved']],
+				['ghost', null],
+			]
+		);
 
-    }//end testIndexReturnsPersistedLists()
+		$ok = $this->controller->show('t1');
+		$this->assertSame(Http::STATUS_OK, $ok->getStatus());
+		$this->assertSame('t1', $ok->getData()['uuid']);
 
+		$missing = $this->controller->show('ghost');
+		$this->assertSame(Http::STATUS_NOT_FOUND, $missing->getStatus());
 
-    /**
-     * Show returns a persisted list, or 404 when absent.
-     *
-     * @return void
-     */
-    public function testShow(): void
-    {
-        $this->recordService->method('loadTransferList')->willReturnMap(
-            [
-                ['t1', ['uuid' => 't1', 'status' => 'approved']],
-                ['ghost', null],
-            ]
-        );
+	}//end testShow()
 
-        $ok = $this->controller->show('t1');
-        $this->assertSame(Http::STATUS_OK, $ok->getStatus());
-        $this->assertSame('t1', $ok->getData()['uuid']);
+	/**
+	 * Create dispatches TransferExecutionJob for an approved list (202).
+	 *
+	 * @return void
+	 */
+	public function testCreateDispatchesApprovedTransfer(): void {
+		$this->request->method('getParams')->willReturn(['transferListUuid' => 't1']);
+		$this->recordService->method('loadTransferList')->willReturn(
+			['uuid' => 't1', 'status' => TransferListService::STATUS_APPROVED]
+		);
 
-        $missing = $this->controller->show('ghost');
-        $this->assertSame(Http::STATUS_NOT_FOUND, $missing->getStatus());
+		$dispatched = null;
+		$this->jobList->expects($this->once())->method('add')->willReturnCallback(
+			function ($job, $argument) use (&$dispatched): void {
+				$dispatched = ['job' => $job, 'argument' => $argument];
+			}
+		);
 
-    }//end testShow()
+		$response = $this->controller->create();
 
+		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+		$this->assertSame(TransferExecutionJob::class, $dispatched['job']);
+		$this->assertSame('t1', $dispatched['argument']['transferListId']);
+		$this->assertSame(1, $dispatched['argument']['attempt']);
 
-    /**
-     * Create dispatches TransferExecutionJob for an approved list (202).
-     *
-     * @return void
-     */
-    public function testCreateDispatchesApprovedTransfer(): void
-    {
-        $this->request->method('getParams')->willReturn(['transferListUuid' => 't1']);
-        $this->recordService->method('loadTransferList')->willReturn(
-            ['uuid' => 't1', 'status' => TransferListService::STATUS_APPROVED]
-        );
+	}//end testCreateDispatchesApprovedTransfer()
 
-        $dispatched = null;
-        $this->jobList->expects($this->once())->method('add')->willReturnCallback(
-            function ($job, $argument) use (&$dispatched): void {
-                $dispatched = ['job' => $job, 'argument' => $argument];
-            }
-        );
+	/**
+	 * Create refuses a non-approved list (409) and dispatches nothing.
+	 *
+	 * @return void
+	 */
+	public function testCreateRefusesNonApprovedList(): void {
+		$this->request->method('getParams')->willReturn(['transferListUuid' => 't1']);
+		$this->recordService->method('loadTransferList')->willReturn(
+			['uuid' => 't1', 'status' => TransferListService::STATUS_IN_REVIEW]
+		);
 
-        $response = $this->controller->create();
+		$this->jobList->expects($this->never())->method('add');
 
-        $this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
-        $this->assertSame(TransferExecutionJob::class, $dispatched['job']);
-        $this->assertSame('t1', $dispatched['argument']['transferListId']);
-        $this->assertSame(1, $dispatched['argument']['attempt']);
+		$response = $this->controller->create();
 
-    }//end testCreateDispatchesApprovedTransfer()
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
 
+	}//end testCreateRefusesNonApprovedList()
 
-    /**
-     * Create refuses a non-approved list (409) and dispatches nothing.
-     *
-     * @return void
-     */
-    public function testCreateRefusesNonApprovedList(): void
-    {
-        $this->request->method('getParams')->willReturn(['transferListUuid' => 't1']);
-        $this->recordService->method('loadTransferList')->willReturn(
-            ['uuid' => 't1', 'status' => TransferListService::STATUS_IN_REVIEW]
-        );
+	/**
+	 * Create validates the required uuid and 404s an unknown list.
+	 *
+	 * @return void
+	 */
+	public function testCreateValidatesInput(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$bad = $this->controller->create();
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $bad->getStatus());
 
-        $this->jobList->expects($this->never())->method('add');
+		$this->setUp();
+		$this->request->method('getParams')->willReturn(['transferListUuid' => 'ghost']);
+		$this->recordService->method('loadTransferList')->willReturn(null);
+		$missing = $this->controller->create();
+		$this->assertSame(Http::STATUS_NOT_FOUND, $missing->getStatus());
 
-        $response = $this->controller->create();
-
-        $this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
-
-    }//end testCreateRefusesNonApprovedList()
-
-
-    /**
-     * Create validates the required uuid and 404s an unknown list.
-     *
-     * @return void
-     */
-    public function testCreateValidatesInput(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $bad = $this->controller->create();
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $bad->getStatus());
-
-        $this->setUp();
-        $this->request->method('getParams')->willReturn(['transferListUuid' => 'ghost']);
-        $this->recordService->method('loadTransferList')->willReturn(null);
-        $missing = $this->controller->create();
-        $this->assertSame(Http::STATUS_NOT_FOUND, $missing->getStatus());
-
-    }//end testCreateValidatesInput()
+	}//end testCreateValidatesInput()
 }//end class

@@ -38,358 +38,322 @@ use Psr\Log\LoggerInterface;
 /**
  * RegisterSerializerTest.
  */
-class RegisterSerializerTest extends TestCase
-{
+class RegisterSerializerTest extends TestCase {
 
-    private SchemaMapper&MockObject $schemaMapper;
+	private SchemaMapper&MockObject $schemaMapper;
 
-    private LoggerInterface&MockObject $logger;
+	private LoggerInterface&MockObject $logger;
 
-    private RegisterSerializer $serializer;
+	private RegisterSerializer $serializer;
 
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-    protected function setUp(): void
-    {
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+		$this->serializer = new RegisterSerializer(
+			schemaMapper: $this->schemaMapper,
+			logger: $this->logger,
+		);
 
-        $this->serializer = new RegisterSerializer(
-            schemaMapper: $this->schemaMapper,
-            logger: $this->logger,
-        );
+	}//end setUp()
 
-    }//end setUp()
+	public function testNoExtendKeepsSchemasAsIds(): void {
+		$register = $this->makeRegister(7, [10, 20]);
 
+		$this->schemaMapper->expects($this->never())->method('find');
 
-    public function testNoExtendKeepsSchemasAsIds(): void
-    {
-        $register = $this->makeRegister(7, [10, 20]);
+		$result = $this->serializer->serialize($register);
 
-        $this->schemaMapper->expects($this->never())->method('find');
+		$this->assertSame([10, 20], $result['schemas']);
 
-        $result = $this->serializer->serialize($register);
+	}//end testNoExtendKeepsSchemasAsIds()
 
-        $this->assertSame([10, 20], $result['schemas']);
+	public function testExtendSchemasReplacesIdsWithObjects(): void {
+		$register = $this->makeRegister(7, [10, 20]);
+		$schema10 = $this->makeSchema(10, 'foo');
+		$schema20 = $this->makeSchema(20, 'bar');
 
-    }//end testNoExtendKeepsSchemasAsIds()
+		// The serializer calls find() with NAMED args (id:, _multitenancy:),
+		// so PHPUnit records only the supplied arguments — a positional
+		// willReturnMap never matches. Dispatch on the id instead.
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10, $schema20) {
+				return ($id === 10) ? $schema10 : $schema20;
+			}
+		);
 
+		$result = $this->serializer->serialize($register, ['schemas']);
 
-    public function testExtendSchemasReplacesIdsWithObjects(): void
-    {
-        $register = $this->makeRegister(7, [10, 20]);
-        $schema10 = $this->makeSchema(10, 'foo');
-        $schema20 = $this->makeSchema(20, 'bar');
+		$this->assertCount(2, $result['schemas']);
+		$this->assertSame(10, $result['schemas'][0]['id']);
+		$this->assertSame(20, $result['schemas'][1]['id']);
 
-        // The serializer calls find() with NAMED args (id:, _multitenancy:),
-        // so PHPUnit records only the supplied arguments — a positional
-        // willReturnMap never matches. Dispatch on the id instead.
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10, $schema20) {
-                return ($id === 10) ? $schema10 : $schema20;
-            }
-        );
+	}//end testExtendSchemasReplacesIdsWithObjects()
 
-        $result = $this->serializer->serialize($register, ['schemas']);
+	public function testOrphanIdIsRetainedAtOriginalPosition(): void {
+		$register = $this->makeRegister(7, [10, 999, 20]);
+		$schema10 = $this->makeSchema(10, 'foo');
+		$schema20 = $this->makeSchema(20, 'bar');
 
-        $this->assertCount(2, $result['schemas']);
-        $this->assertSame(10, $result['schemas'][0]['id']);
-        $this->assertSame(20, $result['schemas'][1]['id']);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10, $schema20) {
+				if ($id === 10) {
+					return $schema10;
+				}
 
-    }//end testExtendSchemasReplacesIdsWithObjects()
+				if ($id === 20) {
+					return $schema20;
+				}
 
+				throw new DoesNotExistException('schema not found');
+			}
+		);
 
-    public function testOrphanIdIsRetainedAtOriginalPosition(): void
-    {
-        $register = $this->makeRegister(7, [10, 999, 20]);
-        $schema10 = $this->makeSchema(10, 'foo');
-        $schema20 = $this->makeSchema(20, 'bar');
+		$this->logger->expects($this->once())->method('warning');
 
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10, $schema20) {
-                if ($id === 10) {
-                    return $schema10;
-                }
+		$result = $this->serializer->serialize($register, ['schemas']);
 
-                if ($id === 20) {
-                    return $schema20;
-                }
+		$this->assertIsArray($result['schemas'][0]);
+		$this->assertSame(999, $result['schemas'][1]);
+		$this->assertIsArray($result['schemas'][2]);
 
-                throw new DoesNotExistException('schema not found');
-            }
-        );
+	}//end testOrphanIdIsRetainedAtOriginalPosition()
 
-        $this->logger->expects($this->once())->method('warning');
+	public function testOrphanStringIdRetainsItsType(): void {
+		$register = $this->makeRegister(7, ['uuid-abc-123', 20]);
+		$schema20 = $this->makeSchema(20, 'bar');
 
-        $result = $this->serializer->serialize($register, ['schemas']);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema20) {
+				if ($id === 20) {
+					return $schema20;
+				}
 
-        $this->assertIsArray($result['schemas'][0]);
-        $this->assertSame(999, $result['schemas'][1]);
-        $this->assertIsArray($result['schemas'][2]);
+				throw new DoesNotExistException('schema not found');
+			}
+		);
 
-    }//end testOrphanIdIsRetainedAtOriginalPosition()
+		$result = $this->serializer->serialize($register, ['schemas']);
 
+		$this->assertSame('uuid-abc-123', $result['schemas'][0]);
+		$this->assertIsArray($result['schemas'][1]);
 
-    public function testOrphanStringIdRetainsItsType(): void
-    {
-        $register = $this->makeRegister(7, ['uuid-abc-123', 20]);
-        $schema20 = $this->makeSchema(20, 'bar');
+	}//end testOrphanStringIdRetainsItsType()
 
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema20) {
-                if ($id === 20) {
-                    return $schema20;
-                }
+	public function testStatsExtendAttachesPerSchemaTotals(): void {
+		$register = $this->makeRegister(7, [10, 20]);
+		$schema10 = $this->makeSchema(10, 'foo');
+		$schema20 = $this->makeSchema(20, 'bar');
 
-                throw new DoesNotExistException('schema not found');
-            }
-        );
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10, $schema20) {
+				if ($id === 10) {
+					return $schema10;
+				}
 
-        $result = $this->serializer->serialize($register, ['schemas']);
+				return $schema20;
+			}
+		);
 
-        $this->assertSame('uuid-abc-123', $result['schemas'][0]);
-        $this->assertIsArray($result['schemas'][1]);
+		$stats = [
+			10 => ['total' => 5],
+			20 => ['total' => 0],
+		];
 
-    }//end testOrphanStringIdRetainsItsType()
+		$result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
 
+		$this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
+		$this->assertSame(0, $result['schemas'][1]['stats']['objects']['total']);
 
-    public function testStatsExtendAttachesPerSchemaTotals(): void
-    {
-        $register = $this->makeRegister(7, [10, 20]);
-        $schema10 = $this->makeSchema(10, 'foo');
-        $schema20 = $this->makeSchema(20, 'bar');
+	}//end testStatsExtendAttachesPerSchemaTotals()
 
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10, $schema20) {
-                if ($id === 10) {
-                    return $schema10;
-                }
+	public function testStatsAreNotAttachedToOrphanIds(): void {
+		$register = $this->makeRegister(7, [10, 999]);
+		$schema10 = $this->makeSchema(10, 'foo');
 
-                return $schema20;
-            }
-        );
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10) {
+				if ($id === 10) {
+					return $schema10;
+				}
 
-        $stats = [
-            10 => ['total' => 5],
-            20 => ['total' => 0],
-        ];
+				throw new DoesNotExistException('schema not found');
+			}
+		);
 
-        $result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
+		$stats = [10 => ['total' => 5]];
+		$result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
 
-        $this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
-        $this->assertSame(0, $result['schemas'][1]['stats']['objects']['total']);
+		$this->assertIsArray($result['schemas'][0]);
+		$this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
+		// Orphan stays a bare ID with no stats.
+		$this->assertSame(999, $result['schemas'][1]);
 
-    }//end testStatsExtendAttachesPerSchemaTotals()
+	}//end testStatsAreNotAttachedToOrphanIds()
 
+	public function testStatsAloneHasNoEffectOnSchemas(): void {
+		$register = $this->makeRegister(7, [10, 20]);
 
-    public function testStatsAreNotAttachedToOrphanIds(): void
-    {
-        $register = $this->makeRegister(7, [10, 999]);
-        $schema10 = $this->makeSchema(10, 'foo');
+		$this->schemaMapper->expects($this->never())->method('find');
 
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10) {
-                if ($id === 10) {
-                    return $schema10;
-                }
+		$result = $this->serializer->serialize($register, ['@self.stats']);
 
-                throw new DoesNotExistException('schema not found');
-            }
-        );
+		$this->assertSame([10, 20], $result['schemas']);
 
-        $stats  = [10 => ['total' => 5]];
-        $result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
+	}//end testStatsAloneHasNoEffectOnSchemas()
 
-        $this->assertIsArray($result['schemas'][0]);
-        $this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
-        // Orphan stays a bare ID with no stats.
-        $this->assertSame(999, $result['schemas'][1]);
+	public function testUnknownExtendKeyIsIgnoredSilently(): void {
+		$register = $this->makeRegister(7, [10]);
+		$schema10 = $this->makeSchema(10, 'foo');
 
-    }//end testStatsAreNotAttachedToOrphanIds()
+		$this->schemaMapper->method('find')->willReturn($schema10);
+		$this->logger->expects($this->never())->method('warning');
 
+		$result = $this->serializer->serialize($register, ['schemas', 'nonexistent-key']);
 
-    public function testStatsAloneHasNoEffectOnSchemas(): void
-    {
-        $register = $this->makeRegister(7, [10, 20]);
+		$this->assertCount(1, $result['schemas']);
+		$this->assertIsArray($result['schemas'][0]);
 
-        $this->schemaMapper->expects($this->never())->method('find');
+	}//end testUnknownExtendKeyIsIgnoredSilently()
 
-        $result = $this->serializer->serialize($register, ['@self.stats']);
+	public function testEmptySchemasArrayResultsInEmptyOutput(): void {
+		$register = $this->makeRegister(7, []);
 
-        $this->assertSame([10, 20], $result['schemas']);
+		$this->schemaMapper->expects($this->never())->method('find');
 
-    }//end testStatsAloneHasNoEffectOnSchemas()
+		$result = $this->serializer->serialize($register, ['schemas']);
 
+		$this->assertSame([], $result['schemas']);
 
-    public function testUnknownExtendKeyIsIgnoredSilently(): void
-    {
-        $register = $this->makeRegister(7, [10]);
-        $schema10 = $this->makeSchema(10, 'foo');
+	}//end testEmptySchemasArrayResultsInEmptyOutput()
 
-        $this->schemaMapper->method('find')->willReturn($schema10);
-        $this->logger->expects($this->never())->method('warning');
+	public function testEntityJsonSerializeRemainsIdOnly(): void {
+		$register = $this->makeRegister(7, [10, 20]);
 
-        $result = $this->serializer->serialize($register, ['schemas', 'nonexistent-key']);
+		$raw = $register->jsonSerialize();
 
-        $this->assertCount(1, $result['schemas']);
-        $this->assertIsArray($result['schemas'][0]);
+		$this->assertSame([10, 20], $raw['schemas']);
 
-    }//end testUnknownExtendKeyIsIgnoredSilently()
+	}//end testEntityJsonSerializeRemainsIdOnly()
 
+	public function testSerializeManyDelegatesPerRegister(): void {
+		$registerA = $this->makeRegister(1, [10]);
+		$registerB = $this->makeRegister(2, [20]);
+		$schema10 = $this->makeSchema(10, 'foo');
+		$schema20 = $this->makeSchema(20, 'bar');
 
-    public function testEmptySchemasArrayResultsInEmptyOutput(): void
-    {
-        $register = $this->makeRegister(7, []);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10, $schema20) {
+				if ($id === 10) {
+					return $schema10;
+				}
 
-        $this->schemaMapper->expects($this->never())->method('find');
+				return $schema20;
+			}
+		);
 
-        $result = $this->serializer->serialize($register, ['schemas']);
+		$stats = [
+			1 => [10 => ['total' => 3]],
+			2 => [20 => ['total' => 0]],
+		];
 
-        $this->assertSame([], $result['schemas']);
+		$result = $this->serializer->serializeMany([$registerA, $registerB], ['schemas', '@self.stats'], $stats);
 
-    }//end testEmptySchemasArrayResultsInEmptyOutput()
+		$this->assertCount(2, $result);
+		$this->assertSame(3, $result[0]['schemas'][0]['stats']['objects']['total']);
+		$this->assertSame(0, $result[1]['schemas'][0]['stats']['objects']['total']);
 
+	}//end testSerializeManyDelegatesPerRegister()
 
-    public function testEntityJsonSerializeRemainsIdOnly(): void
-    {
-        $register = $this->makeRegister(7, [10, 20]);
+	private function makeRegister(int $id, array $schemas): Register {
+		$register = new Register();
+		$register->setId($id);
+		$register->setSchemas($schemas);
+		return $register;
+	}//end makeRegister()
 
-        $raw = $register->jsonSerialize();
+	private function makeSchema(int $id, string $slug): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug($slug);
+		return $schema;
+	}//end makeSchema()
 
-        $this->assertSame([10, 20], $raw['schemas']);
+	/**
+	 * Registers share schemas, and serializeMany() expands the schemas of EVERY register.
+	 * Each schema used to be re-fetched once per register that referenced it — and
+	 * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
+	 * id = ?`, which no index covers. On a dev instance (76 registers, 1,231 schemas) that
+	 * was the hottest query in the request; `GET /api/registers?_extend[]=schemas&
+	 * _extend[]=@self.stats` took 76 seconds.
+	 *
+	 * @return void
+	 */
+	public function testSchemasSharedAcrossRegistersAreFetchedOnce(): void {
+		// Three registers, all referencing the same two schemas.
+		$registers = [
+			$this->makeRegister(1, [10, 20]),
+			$this->makeRegister(2, [10, 20]),
+			$this->makeRegister(3, [10, 20]),
+		];
 
-    }//end testEntityJsonSerializeRemainsIdOnly()
+		$schema10 = $this->makeSchema(10, 'foo');
+		$schema20 = $this->makeSchema(20, 'bar');
 
+		$fetched = [];
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10, $schema20, &$fetched) {
+				$fetched[] = $id;
+				return ($id === 10) ? $schema10 : $schema20;
+			}
+		);
 
-    public function testSerializeManyDelegatesPerRegister(): void
-    {
-        $registerA = $this->makeRegister(1, [10]);
-        $registerB = $this->makeRegister(2, [20]);
-        $schema10  = $this->makeSchema(10, 'foo');
-        $schema20  = $this->makeSchema(20, 'bar');
+		$result = $this->serializer->serializeMany($registers, ['schemas']);
 
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10, $schema20) {
-                if ($id === 10) {
-                    return $schema10;
-                }
+		// Six references, two distinct schemas → two reads, not six.
+		$this->assertSame([10, 20], $fetched);
 
-                return $schema20;
-            }
-        );
+		// ...and every register still gets both schemas expanded.
+		$this->assertCount(3, $result);
+		foreach ($result as $register) {
+			$this->assertCount(2, $register['schemas']);
+			$this->assertSame(10, $register['schemas'][0]['id']);
+			$this->assertSame(20, $register['schemas'][1]['id']);
+		}
 
-        $stats = [
-            1 => [10 => ['total' => 3]],
-            2 => [20 => ['total' => 0]],
-        ];
+	}//end testSchemasSharedAcrossRegistersAreFetchedOnce()
 
-        $result = $this->serializer->serializeMany([$registerA, $registerB], ['schemas', '@self.stats'], $stats);
+	/**
+	 * The cache must not swallow a miss: an orphan id still has to throw out of the mapper
+	 * so expandSchemas() can retain it in place, and it must not be cached as a "hit".
+	 *
+	 * @return void
+	 */
+	public function testOrphanIdIsStillRetainedWhenSchemasAreCached(): void {
+		$registers = [
+			$this->makeRegister(1, [10, 999]),
+			$this->makeRegister(2, [10, 999]),
+		];
 
-        $this->assertCount(2, $result);
-        $this->assertSame(3, $result[0]['schemas'][0]['stats']['objects']['total']);
-        $this->assertSame(0, $result[1]['schemas'][0]['stats']['objects']['total']);
+		$schema10 = $this->makeSchema(10, 'foo');
 
-    }//end testSerializeManyDelegatesPerRegister()
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) use ($schema10) {
+				if ($id === 10) {
+					return $schema10;
+				}
 
+				throw new DoesNotExistException('schema not found');
+			}
+		);
 
-    private function makeRegister(int $id, array $schemas): Register
-    {
-        $register = new Register();
-        $register->setId($id);
-        $register->setSchemas($schemas);
-        return $register;
+		$result = $this->serializer->serializeMany($registers, ['schemas']);
 
-    }//end makeRegister()
+		foreach ($result as $register) {
+			$this->assertSame(10, $register['schemas'][0]['id']);
+			$this->assertSame(999, $register['schemas'][1]);
+		}
 
-
-    private function makeSchema(int $id, string $slug): Schema
-    {
-        $schema = new Schema();
-        $schema->setId($id);
-        $schema->setSlug($slug);
-        return $schema;
-
-    }//end makeSchema()
-
-
-    /**
-     * Registers share schemas, and serializeMany() expands the schemas of EVERY register.
-     * Each schema used to be re-fetched once per register that referenced it — and
-     * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
-     * id = ?`, which no index covers. On a dev instance (76 registers, 1,231 schemas) that
-     * was the hottest query in the request; `GET /api/registers?_extend[]=schemas&
-     * _extend[]=@self.stats` took 76 seconds.
-     *
-     * @return void
-     */
-    public function testSchemasSharedAcrossRegistersAreFetchedOnce(): void
-    {
-        // Three registers, all referencing the same two schemas.
-        $registers = [
-            $this->makeRegister(1, [10, 20]),
-            $this->makeRegister(2, [10, 20]),
-            $this->makeRegister(3, [10, 20]),
-        ];
-
-        $schema10 = $this->makeSchema(10, 'foo');
-        $schema20 = $this->makeSchema(20, 'bar');
-
-        $fetched = [];
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10, $schema20, &$fetched) {
-                $fetched[] = $id;
-                return ($id === 10) ? $schema10 : $schema20;
-            }
-        );
-
-        $result = $this->serializer->serializeMany($registers, ['schemas']);
-
-        // Six references, two distinct schemas → two reads, not six.
-        $this->assertSame([10, 20], $fetched);
-
-        // ...and every register still gets both schemas expanded.
-        $this->assertCount(3, $result);
-        foreach ($result as $register) {
-            $this->assertCount(2, $register['schemas']);
-            $this->assertSame(10, $register['schemas'][0]['id']);
-            $this->assertSame(20, $register['schemas'][1]['id']);
-        }
-
-    }//end testSchemasSharedAcrossRegistersAreFetchedOnce()
-
-
-    /**
-     * The cache must not swallow a miss: an orphan id still has to throw out of the mapper
-     * so expandSchemas() can retain it in place, and it must not be cached as a "hit".
-     *
-     * @return void
-     */
-    public function testOrphanIdIsStillRetainedWhenSchemasAreCached(): void
-    {
-        $registers = [
-            $this->makeRegister(1, [10, 999]),
-            $this->makeRegister(2, [10, 999]),
-        ];
-
-        $schema10 = $this->makeSchema(10, 'foo');
-
-        $this->schemaMapper->method('find')->willReturnCallback(
-            function ($id) use ($schema10) {
-                if ($id === 10) {
-                    return $schema10;
-                }
-
-                throw new DoesNotExistException('schema not found');
-            }
-        );
-
-        $result = $this->serializer->serializeMany($registers, ['schemas']);
-
-        foreach ($result as $register) {
-            $this->assertSame(10, $register['schemas'][0]['id']);
-            $this->assertSame(999, $register['schemas'][1]);
-        }
-
-    }//end testOrphanIdIsStillRetainedWhenSchemasAreCached()
-
+	}//end testOrphanIdIsStillRetainedWhenSchemasAreCached()
 
 }//end class

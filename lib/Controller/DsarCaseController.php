@@ -60,490 +60,478 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Transport controller wiring the case-engine services + object store.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor-injected case-engine collaborators + framework appName/request.
  */
-class DsarCaseController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                    $appName           The app name.
-     * @param IRequest                  $request           The request.
-     * @param ObjectService             $objectService     RBAC + tenant scoped object store (case creation).
-     * @param CaseObjectAccessor        $accessor          RBAC-scoped case load helper.
-     * @param CaseAccessControl         $accessControl     Case-level access-control check (fail closed).
-     * @param TransitionEngine          $transitionEngine  Lifecycle transition driver (runs the guard on save).
-     * @param EvidenceHarvestService    $harvestService    Evidence-collection service.
-     * @param RedactionWriteService     $redactionService  Field-level redaction write path.
-     * @param ExportBundleService       $bundleService     Export-bundle + dossier service.
-     * @param IUserSession              $userSession       Current caller (anonymous rejection).
-     * @param DsarPolicyPackResolver    $packResolver      Resolves the case's active pack seam selectors.
-     * @param IdentityVerifyRegistry    $identityRegistry  Identity-verify seam registry (pack-selector-driven, fail-closed).
-     * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ObjectService $objectService,
-        private readonly CaseObjectAccessor $accessor,
-        private readonly CaseAccessControl $accessControl,
-        private readonly TransitionEngine $transitionEngine,
-        private readonly EvidenceHarvestService $harvestService,
-        private readonly RedactionWriteService $redactionService,
-        private readonly ExportBundleService $bundleService,
-        private readonly IUserSession $userSession,
-        private readonly DsarPolicyPackResolver $packResolver,
-        private readonly IdentityVerifyRegistry $identityRegistry,
-        private readonly RegulatorEscalateRegistry $regulatorRegistry
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class DsarCaseController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app name.
+	 * @param IRequest $request The request.
+	 * @param ObjectService $objectService RBAC + tenant scoped object store (case creation).
+	 * @param CaseObjectAccessor $accessor RBAC-scoped case load helper.
+	 * @param CaseAccessControl $accessControl Case-level access-control check (fail closed).
+	 * @param TransitionEngine $transitionEngine Lifecycle transition driver (runs the guard on save).
+	 * @param EvidenceHarvestService $harvestService Evidence-collection service.
+	 * @param RedactionWriteService $redactionService Field-level redaction write path.
+	 * @param ExportBundleService $bundleService Export-bundle + dossier service.
+	 * @param IUserSession $userSession Current caller (anonymous rejection).
+	 * @param DsarPolicyPackResolver $packResolver Resolves the case's active pack seam selectors.
+	 * @param IdentityVerifyRegistry $identityRegistry Identity-verify seam registry (pack-selector-driven, fail-closed).
+	 * @param RegulatorEscalateRegistry $regulatorRegistry Regulator-escalate seam registry (pack-selector-driven, fail-closed).
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ObjectService $objectService,
+		private readonly CaseObjectAccessor $accessor,
+		private readonly CaseAccessControl $accessControl,
+		private readonly TransitionEngine $transitionEngine,
+		private readonly EvidenceHarvestService $harvestService,
+		private readonly RedactionWriteService $redactionService,
+		private readonly ExportBundleService $bundleService,
+		private readonly IUserSession $userSession,
+		private readonly DsarPolicyPackResolver $packResolver,
+		private readonly IdentityVerifyRegistry $identityRegistry,
+		private readonly RegulatorEscalateRegistry $regulatorRegistry,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * POST /api/gdpr/cases — create a data-subject-request case.
-     *
-     * The body is persisted through ObjectService (RBAC + multitenancy) under
-     * the case register/schema. There is no pre-existing object to case-scope
-     * here; object RBAC on the write governs creation.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
-     */
-    public function create(): JSONResponse
-    {
-        $denied = $this->requireAuthenticated();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * POST /api/gdpr/cases — create a data-subject-request case.
+	 *
+	 * The body is persisted through ObjectService (RBAC + multitenancy) under
+	 * the case register/schema. There is no pre-existing object to case-scope
+	 * here; object RBAC on the write governs creation.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 */
+	public function create(): JSONResponse {
+		$denied = $this->requireAuthenticated();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        $body = (array) $this->request->getParams();
-        // Strip framework-injected keys so only the case payload is saved.
-        unset($body['_route']);
+		$body = (array)$this->request->getParams();
+		// Strip framework-injected keys so only the case payload is saved.
+		unset($body['_route']);
 
-        try {
-            $saved = $this->objectService->saveObject(
-                object: $body,
-                register: CaseObjectAccessor::REGISTER_SLUG,
-                schema: CaseObjectAccessor::SCHEMA_SLUG,
-                _rbac: true,
-                _multitenancy: true
-            );
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$saved = $this->objectService->saveObject(
+				object: $body,
+				register: CaseObjectAccessor::REGISTER_SLUG,
+				schema: CaseObjectAccessor::SCHEMA_SLUG,
+				_rbac: true,
+				_multitenancy: true
+			);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
-    }//end create()
+		return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
+	}//end create()
 
-    /**
-     * POST /api/gdpr/cases/{id}/transition — run a declared lifecycle transition.
-     *
-     * The `action` param names the transition (e.g. `assign`, `collectEvidence`,
-     * `draftDenial`, `finaliseDenial`). `finaliseDenial` passes through the
-     * denial-finalise guard on save. Case-scoped + object-RBAC gated.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
-     */
-    public function transition(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/transition — run a declared lifecycle transition.
+	 *
+	 * The `action` param names the transition (e.g. `assign`, `collectEvidence`,
+	 * `draftDenial`, `finaliseDenial`). `finaliseDenial` passes through the
+	 * denial-finalise guard on save. Case-scoped + object-RBAC gated.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 */
+	public function transition(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        $action = (string) ($this->request->getParam(key: 'action') ?? '');
-        if ($action === '') {
-            return new JSONResponse(
-                data: ['error' => 'A transition "action" is required.'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		$action = (string)($this->request->getParam(key: 'action') ?? '');
+		if ($action === '') {
+			return new JSONResponse(
+				data: ['error' => 'A transition "action" is required.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            $saved = $this->transitionEngine->transition(objectId: $id, action: $action);
-        } catch (Throwable $e) {
-            // Guard denial / illegal transition surface as 403.
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_FORBIDDEN
-            );
-        }
+		try {
+			$saved = $this->transitionEngine->transition(objectId: $id, action: $action);
+		} catch (Throwable $e) {
+			// Guard denial / illegal transition surface as 403.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
 
-        return new JSONResponse(data: $saved->jsonSerialize());
-    }//end transition()
+		return new JSONResponse(data: $saved->jsonSerialize());
+	}//end transition()
 
-    /**
-     * POST /api/gdpr/cases/{id}/evidence — trigger evidence harvest for a case.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
-     */
-    public function evidence(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/evidence — trigger evidence harvest for a case.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 */
+	public function evidence(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        try {
-            $result = $this->harvestService->harvest(caseUuid: $id);
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$result = $this->harvestService->harvest(caseUuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result);
-    }//end evidence()
+		return new JSONResponse(data: $result);
+	}//end evidence()
 
-    /**
-     * POST /api/gdpr/cases/{id}/redactions — apply a field-level redaction.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
-     */
-    public function redact(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/redactions — apply a field-level redaction.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
+	 */
+	public function redact(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        $field  = (string) ($this->request->getParam(key: 'field') ?? '');
-        $after  = (string) ($this->request->getParam(key: 'after') ?? '');
-        $ground = (string) ($this->request->getParam(key: 'ground') ?? '');
-        if ($field === '' || $ground === '') {
-            return new JSONResponse(
-                data: ['error' => 'Both "field" and "ground" are required.'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		$field = (string)($this->request->getParam(key: 'field') ?? '');
+		$after = (string)($this->request->getParam(key: 'after') ?? '');
+		$ground = (string)($this->request->getParam(key: 'ground') ?? '');
+		if ($field === '' || $ground === '') {
+			return new JSONResponse(
+				data: ['error' => 'Both "field" and "ground" are required.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            $result = $this->redactionService->applyRedaction(
-                caseUuid: $id,
-                field: $field,
-                after: $after,
-                ground: $ground
-            );
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$result = $this->redactionService->applyRedaction(
+				caseUuid: $id,
+				field: $field,
+				after: $after,
+				ground: $ground
+			);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result);
-    }//end redact()
+		return new JSONResponse(data: $result);
+	}//end redact()
 
-    /**
-     * POST /api/gdpr/cases/{id}/bundle — generate the signed export bundle.
-     *
-     * Returns the bundle metadata + a one-time download token (not the bytes).
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function generateBundle(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/bundle — generate the signed export bundle.
+	 *
+	 * Returns the bundle metadata + a one-time download token (not the bytes).
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function generateBundle(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        try {
-            $result = $this->bundleService->generate(caseUuid: $id);
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$result = $this->bundleService->generate(caseUuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);
-    }//end generateBundle()
+		return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);
+	}//end generateBundle()
 
-    /**
-     * GET /api/gdpr/cases/{id}/bundle/download — one-time secure download.
-     *
-     * Requires the one-time `token` param; the token is burned on first success
-     * so a replay is refused. Authenticated + case-scoped (never `@PublicPage`).
-     * `@NoCSRFRequired` because this is a browser navigation download that
-     * cannot carry a CSRF token — auth + case scope + one-time token remain.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return DataDownloadResponse|JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function downloadBundle(string $id)
-    {
-        $denied = $this->requireAuthenticated();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * GET /api/gdpr/cases/{id}/bundle/download — one-time secure download.
+	 *
+	 * Requires the one-time `token` param; the token is burned on first success
+	 * so a replay is refused. Authenticated + case-scoped (never `@PublicPage`).
+	 * `@NoCSRFRequired` because this is a browser navigation download that
+	 * cannot carry a CSRF token — auth + case scope + one-time token remain.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function downloadBundle(string $id) {
+		$denied = $this->requireAuthenticated();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        // Case-scope the download: the token is bound to this case AND the
-        // caller must pass the case-level access control.
-        $case = $this->accessor->load(caseUuid: $id);
-        if ($case === null || $this->accessControl->mayAct(case: $case->getObject()) === false) {
-            return new JSONResponse(
-                data: ['error' => 'Not found or not authorised.'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }
+		// Case-scope the download: the token is bound to this case AND the
+		// caller must pass the case-level access control.
+		$case = $this->accessor->load(caseUuid: $id);
+		if ($case === null || $this->accessControl->mayAct(case: $case->getObject()) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Not found or not authorised.'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
 
-        $token  = (string) ($this->request->getParam(key: 'token') ?? '');
-        $bundle = $this->bundleService->download(caseUuid: $id, token: $token);
-        if ($bundle === null) {
-            return new JSONResponse(
-                data: ['error' => 'Invalid, expired, or already-used download token.'],
-                statusCode: Http::STATUS_FORBIDDEN
-            );
-        }
+		$token = (string)($this->request->getParam(key: 'token') ?? '');
+		$bundle = $this->bundleService->download(caseUuid: $id, token: $token);
+		if ($bundle === null) {
+			return new JSONResponse(
+				data: ['error' => 'Invalid, expired, or already-used download token.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
 
-        return new DataDownloadResponse(
-            $bundle->getBytes(),
-            'dsar-case-'.$id.'.pdf',
-            $bundle->getMimeType()
-        );
-    }//end downloadBundle()
+		return new DataDownloadResponse(
+			$bundle->getBytes(),
+			'dsar-case-' . $id . '.pdf',
+			$bundle->getMimeType()
+		);
+	}//end downloadBundle()
 
-    /**
-     * GET /api/gdpr/cases/{id}/dossier — assemble the regulator dossier.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function dossier(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * GET /api/gdpr/cases/{id}/dossier — assemble the regulator dossier.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function dossier(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        try {
-            $result = $this->bundleService->assembleRegulatorDossier(caseUuid: $id);
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$result = $this->bundleService->assembleRegulatorDossier(caseUuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result);
-    }//end dossier()
+		return new JSONResponse(data: $result);
+	}//end dossier()
 
-    /**
-     * POST /api/gdpr/cases/{id}/verify-identity — verify the data-subject's
-     * identity via the pack-selected identity-verify seam provider.
-     *
-     * Resolves the provider named by the case's active `dsarPolicyPack`
-     * `identityVerifyProvider` selector through {@see IdentityVerifyRegistry}
-     * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
-     * unset/unknown selector resolves to the OR default that returns `needs-more`
-     * (never `verified`), so a missing provider can never pass identity
-     * verification (ADR-005 / CWE-863). The three-state result is recorded on the
-     * case and returned to the caller so the case flow can drive its transition.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
-     */
-    public function identityVerify(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/verify-identity — verify the data-subject's
+	 * identity via the pack-selected identity-verify seam provider.
+	 *
+	 * Resolves the provider named by the case's active `dsarPolicyPack`
+	 * `identityVerifyProvider` selector through {@see IdentityVerifyRegistry}
+	 * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
+	 * unset/unknown selector resolves to the OR default that returns `needs-more`
+	 * (never `verified`), so a missing provider can never pass identity
+	 * verification (ADR-005 / CWE-863). The three-state result is recorded on the
+	 * case and returned to the caller so the case flow can drive its transition.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 */
+	public function identityVerify(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        $case = $this->accessor->load(caseUuid: $id);
-        if ($case === null) {
-            return new JSONResponse(
-                data: ['error' => 'Not found or not authorised.'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }
+		$case = $this->accessor->load(caseUuid: $id);
+		if ($case === null) {
+			return new JSONResponse(
+				data: ['error' => 'Not found or not authorised.'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
 
-        $data = $case->getObject();
+		$data = $case->getObject();
 
-        // Resolve the provider from the active pack selector through the
-        // registry — never a hardcoded provider. resolve() ALWAYS returns a
-        // provider (the fail-closed default when unset/unknown), so there is no
-        // null branch to (mis)treat as "verified".
-        $selectorId = $this->packResolver->identityVerifyProviderId(case: $data);
-        $provider   = $this->identityRegistry->resolve(selectorId: $selectorId);
-        $result     = $provider->verify(caseUuid: $id, case: $data);
+		// Resolve the provider from the active pack selector through the
+		// registry — never a hardcoded provider. resolve() ALWAYS returns a
+		// provider (the fail-closed default when unset/unknown), so there is no
+		// null branch to (mis)treat as "verified".
+		$selectorId = $this->packResolver->identityVerifyProviderId(case: $data);
+		$provider = $this->identityRegistry->resolve(selectorId: $selectorId);
+		$result = $provider->verify(caseUuid: $id, case: $data);
 
-        // Record the three-state outcome on the case (audited via the accessor).
-        $data['identityVerification'] = $result->toArray();
-        try {
-            $this->accessor->save(case: $case, data: $data);
-        } catch (Throwable $e) {
-            // Persisting the record failed, but the verification DECISION stands
-            // — surface it as a 400 rather than pretend the case verified.
-            return new JSONResponse(
-                data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		// Record the three-state outcome on the case (audited via the accessor).
+		$data['identityVerification'] = $result->toArray();
+		try {
+			$this->accessor->save(case: $case, data: $data);
+		} catch (Throwable $e) {
+			// Persisting the record failed, but the verification DECISION stands
+			// — surface it as a 400 rather than pretend the case verified.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result->toArray());
-    }//end identityVerify()
+		return new JSONResponse(data: $result->toArray());
+	}//end identityVerify()
 
-    /**
-     * POST /api/gdpr/cases/{id}/escalate — escalate the case to a supervisory
-     * authority via the pack-selected regulator-escalate seam provider.
-     *
-     * Resolves the provider named by the case's active `dsarPolicyPack`
-     * `regulatorEscalateProvider` selector through {@see RegulatorEscalateRegistry}
-     * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
-     * unset/unknown selector resolves to the OR default that REFUSES (never a
-     * silent success), so a case is never recorded as escalated when the seam is
-     * unbound (ADR-005 / CWE-863). Only an `escalated` outcome writes the
-     * `regulatorReference` that the dossier/denial-finalise gate reads.
-     *
-     * @param string $id The case uuid.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
-     */
-    public function escalate(string $id): JSONResponse
-    {
-        $guard = $this->guardCase(caseUuid: $id);
-        if ($guard !== null) {
-            return $guard;
-        }
+	/**
+	 * POST /api/gdpr/cases/{id}/escalate — escalate the case to a supervisory
+	 * authority via the pack-selected regulator-escalate seam provider.
+	 *
+	 * Resolves the provider named by the case's active `dsarPolicyPack`
+	 * `regulatorEscalateProvider` selector through {@see RegulatorEscalateRegistry}
+	 * (never a hardcoded provider) and runs it. Resolution is FAIL-CLOSED: an
+	 * unset/unknown selector resolves to the OR default that REFUSES (never a
+	 * silent success), so a case is never recorded as escalated when the seam is
+	 * unbound (ADR-005 / CWE-863). Only an `escalated` outcome writes the
+	 * `regulatorReference` that the dossier/denial-finalise gate reads.
+	 *
+	 * @param string $id The case uuid.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 */
+	public function escalate(string $id): JSONResponse {
+		$guard = $this->guardCase(caseUuid: $id);
+		if ($guard !== null) {
+			return $guard;
+		}
 
-        $case = $this->accessor->load(caseUuid: $id);
-        if ($case === null) {
-            return new JSONResponse(
-                data: ['error' => 'Not found or not authorised.'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }
+		$case = $this->accessor->load(caseUuid: $id);
+		if ($case === null) {
+			return new JSONResponse(
+				data: ['error' => 'Not found or not authorised.'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
 
-        $data = $case->getObject();
+		$data = $case->getObject();
 
-        $selectorId = $this->packResolver->regulatorEscalateProviderId(case: $data);
-        $provider   = $this->regulatorRegistry->resolve(selectorId: $selectorId);
-        $result     = $provider->escalate(caseUuid: $id, case: $data);
+		$selectorId = $this->packResolver->regulatorEscalateProviderId(case: $data);
+		$provider = $this->regulatorRegistry->resolve(selectorId: $selectorId);
+		$result = $provider->escalate(caseUuid: $id, case: $data);
 
-        // Record the outcome. Only a positive escalation writes the
-        // regulatorReference the denial-finalise gate + dossier consume — a
-        // refusal MUST NOT mint or claim a reference.
-        $data['regulatorEscalation'] = $result->toArray();
-        if ($result->isEscalated() === true && $result->getReference() !== '') {
-            $data['regulatorReference'] = $result->getReference();
-        }
+		// Record the outcome. Only a positive escalation writes the
+		// regulatorReference the denial-finalise gate + dossier consume — a
+		// refusal MUST NOT mint or claim a reference.
+		$data['regulatorEscalation'] = $result->toArray();
+		if ($result->isEscalated() === true && $result->getReference() !== '') {
+			$data['regulatorReference'] = $result->getReference();
+		}
 
-        try {
-            $this->accessor->save(case: $case, data: $data);
-        } catch (Throwable $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$this->accessor->save(case: $case, data: $data);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        return new JSONResponse(data: $result->toArray());
-    }//end escalate()
+		return new JSONResponse(data: $result->toArray());
+	}//end escalate()
 
-    /**
-     * Reject anonymous callers before any case is read or written.
-     *
-     * @return JSONResponse|null A 401 response when unauthenticated, else null.
-     */
-    private function requireAuthenticated(): ?JSONResponse
-    {
-        if ($this->userSession->getUser() === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required.'],
-                statusCode: Http::STATUS_UNAUTHORIZED
-            );
-        }
+	/**
+	 * Reject anonymous callers before any case is read or written.
+	 *
+	 * @return JSONResponse|null A 401 response when unauthenticated, else null.
+	 */
+	private function requireAuthenticated(): ?JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required.'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
 
-        return null;
-    }//end requireAuthenticated()
+		return null;
+	}//end requireAuthenticated()
 
-    /**
-     * Per-object RBAC + case-level access guard shared by every acting method.
-     *
-     * Loads the case under the caller's object RBAC (null when absent OR
-     * unauthorised — no enumeration oracle) and then applies the case-level
-     * access-control check (handler-scopes-own + officer-override, fail closed).
-     * Returns a response to short-circuit on denial, or null to proceed.
-     *
-     * @param string $caseUuid The case uuid from the route.
-     *
-     * @return JSONResponse|null Denial response, or null when the caller may act.
-     */
-    private function guardCase(string $caseUuid): ?JSONResponse
-    {
-        $denied = $this->requireAuthenticated();
-        if ($denied !== null) {
-            return $denied;
-        }
+	/**
+	 * Per-object RBAC + case-level access guard shared by every acting method.
+	 *
+	 * Loads the case under the caller's object RBAC (null when absent OR
+	 * unauthorised — no enumeration oracle) and then applies the case-level
+	 * access-control check (handler-scopes-own + officer-override, fail closed).
+	 * Returns a response to short-circuit on denial, or null to proceed.
+	 *
+	 * @param string $caseUuid The case uuid from the route.
+	 *
+	 * @return JSONResponse|null Denial response, or null when the caller may act.
+	 */
+	private function guardCase(string $caseUuid): ?JSONResponse {
+		$denied = $this->requireAuthenticated();
+		if ($denied !== null) {
+			return $denied;
+		}
 
-        $case = $this->accessor->load(caseUuid: $caseUuid);
-        if ($case === null) {
-            // Absent OR object-RBAC-denied — indistinguishable (no oracle).
-            return new JSONResponse(
-                data: ['error' => 'Not found or not authorised.'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }
+		$case = $this->accessor->load(caseUuid: $caseUuid);
+		if ($case === null) {
+			// Absent OR object-RBAC-denied — indistinguishable (no oracle).
+			return new JSONResponse(
+				data: ['error' => 'Not found or not authorised.'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
 
-        if ($this->accessControl->mayAct(case: $case->getObject()) === false) {
-            return new JSONResponse(
-                data: ['error' => 'You are not authorised to act on this case.'],
-                statusCode: Http::STATUS_FORBIDDEN
-            );
-        }
+		if ($this->accessControl->mayAct(case: $case->getObject()) === false) {
+			return new JSONResponse(
+				data: ['error' => 'You are not authorised to act on this case.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
 
-        return null;
-    }//end guardCase()
+		return null;
+	}//end guardCase()
 }//end class

@@ -24,81 +24,76 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use DateTime;
 use Exception;
-use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCP\BackgroundJob\QueuedJob;
+use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
 
 /**
  * Queued job for placing legal holds on all objects in a schema.
  */
-class BulkLegalHoldJob extends QueuedJob
-{
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory $time Time factory
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function __construct(ITimeFactory $time)
-    {
-        parent::__construct(time: $time);
-    }//end __construct()
+class BulkLegalHoldJob extends QueuedJob {
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function __construct(ITimeFactory $time) {
+		parent::__construct(time: $time);
+	}//end __construct()
 
-    /**
-     * Execute the bulk legal hold operation.
-     *
-     * @param mixed $argument Job arguments with schemaId, reason, userId
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    protected function run($argument): void
-    {
-        $logger = \OC::$server->get(LoggerInterface::class);
+	/**
+	 * Execute the bulk legal hold operation.
+	 *
+	 * @param mixed $argument Job arguments with schemaId, reason, userId
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	protected function run($argument): void {
+		$logger = \OC::$server->get(LoggerInterface::class);
 
-        $schemaId = $argument['schemaId'] ?? null;
-        $reason   = $argument['reason'] ?? '';
+		$schemaId = $argument['schemaId'] ?? null;
+		$reason = $argument['reason'] ?? '';
 
-        if ($schemaId === null) {
-            $logger->error('[BulkLegalHoldJob] No schemaId provided');
-            return;
-        }
+		if ($schemaId === null) {
+			$logger->error('[BulkLegalHoldJob] No schemaId provided');
+			return;
+		}
 
-        $logger->info('[BulkLegalHoldJob] Placing legal holds on schema: '.$schemaId);
+		$logger->info('[BulkLegalHoldJob] Placing legal holds on schema: ' . $schemaId);
 
-        try {
-            $retentionService = \OC::$server->get(RetentionService::class);
-            $objectMapper     = \OC::$server->get(MagicMapper::class);
+		try {
+			$retentionService = \OC::$server->get(RetentionService::class);
+			$objectMapper = \OC::$server->get(MagicMapper::class);
 
-            $objects = $objectMapper->findAll(
-                filters: [],
-                schema: $schemaId,
-                _rbac: false,
-                _multitenancy: false
-            );
+			$objects = $objectMapper->findAll(
+				filters: [],
+				schema: $schemaId,
+				_rbac: false,
+				_multitenancy: false
+			);
 
-            $count = 0;
+			$count = 0;
 
-            foreach ($objects as $object) {
-                $retentionService->placeLegalHold($object, $reason);
-                $objectMapper->update($object);
-                $count++;
-            }
+			foreach ($objects as $object) {
+				$retentionService->placeLegalHold($object, $reason);
+				$objectMapper->update($object);
+				$count++;
+			}
 
-            if ($count > 0) {
-                $logger->info('[BulkLegalHoldJob] Placed legal holds on '.$count.' objects');
-            }
-        } catch (Exception $e) {
-            $logger->error('[BulkLegalHoldJob] Error: '.$e->getMessage(), ['exception' => $e]);
-        }//end try
-    }//end run()
+			if ($count > 0) {
+				$logger->info('[BulkLegalHoldJob] Placed legal holds on ' . $count . ' objects');
+			}
+		} catch (Exception $e) {
+			$logger->error('[BulkLegalHoldJob] Error: ' . $e->getMessage(), ['exception' => $e]);
+		}//end try
+	}//end run()
 }//end class

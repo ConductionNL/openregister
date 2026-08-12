@@ -56,7 +56,10 @@ export default {
 
 <style scoped>
 .detail-list { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
+
 .detail-list dt { font-weight: bold; }
+
 .section { margin-top: 12px; }
+
 .section pre { background: var(--color-background-dark); padding: 8px; border-radius: 4px; overflow: auto; }
 </style>

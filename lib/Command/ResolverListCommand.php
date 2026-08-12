@@ -41,71 +41,67 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * @spec openspec/specs/register-resolver-service/spec.md
  */
-class ResolverListCommand extends Command
-{
-    /**
-     * Wire the command against the resolver service.
-     *
-     * @param RegisterResolverService $resolverService Resolver used for enumeration.
-     */
-    public function __construct(
-        private readonly RegisterResolverService $resolverService,
-    ) {
-        parent::__construct();
+class ResolverListCommand extends Command {
+	/**
+	 * Wire the command against the resolver service.
+	 *
+	 * @param RegisterResolverService $resolverService Resolver used for enumeration.
+	 */
+	public function __construct(
+		private readonly RegisterResolverService $resolverService,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Define command name + the required `app-id` argument.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/register-resolver-service/spec.md
-     *   (Phase 3 — Convention check + diagnostics: console command surface)
-     */
-    protected function configure(): void
-    {
-        $this->setName(name: 'openregister:resolver:list')
-            ->setDescription(
-                'List every `<context>_register` / `<context>_schema` IAppConfig key for the given Conduction app.'
-            )
-            ->addArgument(
-                'app-id',
-                InputArgument::REQUIRED,
-                'The consumer app id (e.g. opencatalogi, pipelinq, docudesk).'
-            );
+	/**
+	 * Define command name + the required `app-id` argument.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-resolver-service/spec.md
+	 *   (Phase 3 — Convention check + diagnostics: console command surface)
+	 */
+	protected function configure(): void {
+		$this->setName(name: 'openregister:resolver:list')
+			->setDescription(
+				'List every `<context>_register` / `<context>_schema` IAppConfig key for the given Conduction app.'
+			)
+			->addArgument(
+				'app-id',
+				InputArgument::REQUIRED,
+				'The consumer app id (e.g. opencatalogi, pipelinq, docudesk).'
+			);
 
-    }//end configure()
+	}//end configure()
 
-    /**
-     * Print the resolver-key inventory.
-     *
-     * @param InputInterface  $input  Console input.
-     * @param OutputInterface $output Console output stream.
-     *
-     * @return int Symfony command exit code.
-     *
-     * @spec openspec/specs/register-resolver-service/spec.md
-     *   (Requirement: enumerateAppConfigs — driven via this CLI for admin diagnostics)
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $appId = (string) $input->getArgument('app-id');
-        $map   = $this->resolverService->enumerateAppConfigs($appId);
+	/**
+	 * Print the resolver-key inventory.
+	 *
+	 * @param InputInterface $input Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int Symfony command exit code.
+	 *
+	 * @spec openspec/specs/register-resolver-service/spec.md
+	 *   (Requirement: enumerateAppConfigs — driven via this CLI for admin diagnostics)
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$appId = (string)$input->getArgument('app-id');
+		$map = $this->resolverService->enumerateAppConfigs($appId);
 
-        if ($map === []) {
-            $output->writeln(
-                sprintf('<comment>No resolver-shaped config keys set for app "%s".</comment>', $appId)
-            );
-            return Command::SUCCESS;
-        }
+		if ($map === []) {
+			$output->writeln(
+				sprintf('<comment>No resolver-shaped config keys set for app "%s".</comment>', $appId)
+			);
+			return Command::SUCCESS;
+		}
 
-        $output->writeln(sprintf('<info>Resolver keys for app "%s":</info>', $appId));
-        foreach ($map as $key => $value) {
-            $output->writeln(sprintf('  <info>%s</info> = %s', $key, $value));
-        }
+		$output->writeln(sprintf('<info>Resolver keys for app "%s":</info>', $appId));
+		foreach ($map as $key => $value) {
+			$output->writeln(sprintf('  <info>%s</info> = %s', $key, $value));
+		}
 
-        return Command::SUCCESS;
-
-    }//end execute()
+		return Command::SUCCESS;
+	}//end execute()
 }//end class

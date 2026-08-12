@@ -51,187 +51,176 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
  */
-class AuditQueryController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string            $appName           The app id.
-     * @param IRequest          $request           The request object.
-     * @param AuditQueryService $auditQueryService Cross-schema audit-entry query service.
-     * @param IUserSession      $userSession       Active user session for the admin gate.
-     * @param IGroupManager     $groupManager      Group manager for the admin gate.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly AuditQueryService $auditQueryService,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class AuditQueryController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app id.
+	 * @param IRequest $request The request object.
+	 * @param AuditQueryService $auditQueryService Cross-schema audit-entry query service.
+	 * @param IUserSession $userSession Active user session for the admin gate.
+	 * @param IGroupManager $groupManager Group manager for the admin gate.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly AuditQueryService $auditQueryService,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Gate every action on this controller on NC-admin membership.
-     *
-     * @return JSONResponse|null 401 when anonymous, 403 when non-admin, null when allowed.
-     */
-    private function requireAdmin(): ?JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required'],
-                statusCode: 401
-            );
-        }
+	/**
+	 * Gate every action on this controller on NC-admin membership.
+	 *
+	 * @return JSONResponse|null 401 when anonymous, 403 when non-admin, null when allowed.
+	 */
+	private function requireAdmin(): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required'],
+				statusCode: 401
+			);
+		}
 
-        if ($this->groupManager->isAdmin($user->getUID()) === false) {
-            return new JSONResponse(
-                data: ['error' => 'Forbidden: this endpoint is admin-only'],
-                statusCode: 403
-            );
-        }
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Forbidden: this endpoint is admin-only'],
+				statusCode: 403
+			);
+		}
 
-        return null;
+		return null;
+	}//end requireAdmin()
 
-    }//end requireAdmin()
+	/**
+	 * Extract the audit-query filters from the request.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function extractFilters(): array {
+		$filters = [];
+		foreach (['registerId', 'schemaId', 'objectId', 'app', 'timestampStart', 'timestampEnd', 'sort'] as $key) {
+			$value = $this->request->getParam($key);
+			if ($value !== null && $value !== '') {
+				$filters[$key] = $value;
+			}
+		}
 
-    /**
-     * Extract the audit-query filters from the request.
-     *
-     * @return array<string, mixed>
-     */
-    private function extractFilters(): array
-    {
-        $filters = [];
-        foreach (['registerId', 'schemaId', 'objectId', 'app', 'timestampStart', 'timestampEnd', 'sort'] as $key) {
-            $value = $this->request->getParam($key);
-            if ($value !== null && $value !== '') {
-                $filters[$key] = $value;
-            }
-        }
+		return $filters;
+	}//end extractFilters()
 
-        return $filters;
+	/**
+	 * `GET /api/v2/audit` — query audit-entry objects across all apps/schemas.
+	 *
+	 * @return JSONResponse Response shaped `{entries, total, limit, offset}`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
+	 */
+	public function query(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-    }//end extractFilters()
+		$filters = $this->extractFilters();
+		$limit = (int)$this->request->getParam('limit', '50');
+		$offset = (int)$this->request->getParam('offset', '0');
 
-    /**
-     * `GET /api/v2/audit` — query audit-entry objects across all apps/schemas.
-     *
-     * @return JSONResponse Response shaped `{entries, total, limit, offset}`.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
-     */
-    public function query(): JSONResponse
-    {
-        $denial = $this->requireAdmin();
-        if ($denial !== null) {
-            return $denial;
-        }
+		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
 
-        $filters = $this->extractFilters();
-        $limit   = (int) $this->request->getParam('limit', '50');
-        $offset  = (int) $this->request->getParam('offset', '0');
+		return new JSONResponse(data: $result);
+	}//end query()
 
-        $result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+	/**
+	 * `GET /api/v2/audit/export` — export the same query as CSV (default) or JSON.
+	 *
+	 * @return JSONResponse|DataDownloadResponse CSV download, or JSON body when `?format=json`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
+	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.1
+	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.2
+	 */
+	public function export(): JSONResponse|DataDownloadResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
 
-        return new JSONResponse(data: $result);
+		$filters = $this->extractFilters();
+		$format = (string)$this->request->getParam('format', 'csv');
+		// Export defaults to the maximum page size (still clamped by the
+		// service to [1, 200]) so a single call carries as much of the
+		// filtered result set as the clamp allows.
+		$limit = (int)$this->request->getParam('limit', '200');
+		$offset = (int)$this->request->getParam('offset', '0');
 
-    }//end query()
+		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$entries = $result['entries'];
 
-    /**
-     * `GET /api/v2/audit/export` — export the same query as CSV (default) or JSON.
-     *
-     * @return JSONResponse|DataDownloadResponse CSV download, or JSON body when `?format=json`.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
-     * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.1
-     * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.2
-     */
-    public function export(): JSONResponse|DataDownloadResponse
-    {
-        $denial = $this->requireAdmin();
-        if ($denial !== null) {
-            return $denial;
-        }
+		if (strtolower($format) === 'json') {
+			return new JSONResponse(
+				data: [
+					'entries' => $entries,
+					'total' => $result['total'],
+					'limit' => $result['limit'],
+					'offset' => $result['offset'],
+				]
+			);
+		}
 
-        $filters = $this->extractFilters();
-        $format  = (string) $this->request->getParam('format', 'csv');
-        // Export defaults to the maximum page size (still clamped by the
-        // service to [1, 200]) so a single call carries as much of the
-        // filtered result set as the clamp allows.
-        $limit  = (int) $this->request->getParam('limit', '200');
-        $offset = (int) $this->request->getParam('offset', '0');
+		$csv = $this->buildCsvFromAuditEntries(entries: $entries);
+		$filename = sprintf('audit-export_%s.csv', (new DateTime())->format('Y-m-d_His'));
 
-        $result  = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
-        $entries = $result['entries'];
+		return new DataDownloadResponse($csv, $filename, 'text/csv');
+	}//end export()
 
-        if (strtolower($format) === 'json') {
-            return new JSONResponse(
-                data: [
-                    'entries' => $entries,
-                    'total'   => $result['total'],
-                    'limit'   => $result['limit'],
-                    'offset'  => $result['offset'],
-                ]
-            );
-        }
+	/**
+	 * Flatten audit entries into a CSV string.
+	 *
+	 * Columns: id, registerId, schemaId, objectId, data (JSON), created, userId.
+	 *
+	 * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryService::query().
+	 *
+	 * @return string The CSV document (including header row).
+	 *
+	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.1
+	 */
+	private function buildCsvFromAuditEntries(array $entries): string {
+		$handle = fopen('php://temp', 'r+');
 
-        $csv      = $this->buildCsvFromAuditEntries(entries: $entries);
-        $filename = sprintf('audit-export_%s.csv', (new DateTime())->format('Y-m-d_His'));
+		fputcsv($handle, ['id', 'registerId', 'schemaId', 'objectId', 'data', 'created', 'userId']);
 
-        return new DataDownloadResponse($csv, $filename, 'text/csv');
+		foreach ($entries as $entry) {
+			fputcsv(
+				$handle,
+				[
+					($entry['id'] ?? ''),
+					($entry['registerId'] ?? ''),
+					($entry['schemaId'] ?? ''),
+					($entry['objectId'] ?? ''),
+					json_encode($entry['data'] ?? []),
+					($entry['created'] ?? ''),
+					($entry['userId'] ?? ''),
+				]
+			);
+		}
 
-    }//end export()
+		rewind($handle);
+		$csv = stream_get_contents($handle);
+		fclose($handle);
 
-    /**
-     * Flatten audit entries into a CSV string.
-     *
-     * Columns: id, registerId, schemaId, objectId, data (JSON), created, userId.
-     *
-     * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryService::query().
-     *
-     * @return string The CSV document (including header row).
-     *
-     * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-3.1
-     */
-    private function buildCsvFromAuditEntries(array $entries): string
-    {
-        $handle = fopen('php://temp', 'r+');
+		if ($csv === false) {
+			return '';
+		}
 
-        fputcsv($handle, ['id', 'registerId', 'schemaId', 'objectId', 'data', 'created', 'userId']);
-
-        foreach ($entries as $entry) {
-            fputcsv(
-                $handle,
-                [
-                    ($entry['id'] ?? ''),
-                    ($entry['registerId'] ?? ''),
-                    ($entry['schemaId'] ?? ''),
-                    ($entry['objectId'] ?? ''),
-                    json_encode($entry['data'] ?? []),
-                    ($entry['created'] ?? ''),
-                    ($entry['userId'] ?? ''),
-                ]
-            );
-        }
-
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-
-        if ($csv === false) {
-            return '';
-        }
-
-        return $csv;
-
-    }//end buildCsvFromAuditEntries()
+		return $csv;
+	}//end buildCsvFromAuditEntries()
 }//end class

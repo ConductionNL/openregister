@@ -51,150 +51,141 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  */
-class PermissionHandlerAuthorizationCacheTest extends TestCase
-{
+class PermissionHandlerAuthorizationCacheTest extends TestCase {
 
-    /**
-     * The handler under test, built over mocked collaborators.
-     *
-     * @var PermissionHandler
-     */
-    private PermissionHandler $handler;
+	/**
+	 * The handler under test, built over mocked collaborators.
+	 *
+	 * @var PermissionHandler
+	 */
+	private PermissionHandler $handler;
 
-    /**
-     * Build a handler whose only real state is the two per-request memos.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build a handler whose only real state is the two per-request memos.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueBool')->willReturn(true);
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturn(true);
 
-        $this->handler = new PermissionHandler(
-            $this->createMock(IUserSession::class),
-            $this->createMock(IUserManager::class),
-            $this->createMock(IGroupManager::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(MagicMapper::class),
-            $this->createMock(ConditionMatcher::class),
-            $appConfig,
-            new NullLogger(),
-            $this->createMock(ContainerInterface::class)
-        );
+		$this->handler = new PermissionHandler(
+			$this->createMock(IUserSession::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(MagicMapper::class),
+			$this->createMock(ConditionMatcher::class),
+			$appConfig,
+			new NullLogger(),
+			$this->createMock(ContainerInterface::class)
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A schema whose authorization block pins inheritFromPublic explicitly.
-     *
-     * @param boolean $inherit The pinned value.
-     *
-     * @return Schema The schema.
-     */
-    private function schemaPinning(bool $inherit): Schema
-    {
-        $schema = new Schema();
-        $schema->setId(7);
-        $schema->setAuthorization(['inheritFromPublic' => $inherit]);
+	/**
+	 * A schema whose authorization block pins inheritFromPublic explicitly.
+	 *
+	 * @param boolean $inherit The pinned value.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function schemaPinning(bool $inherit): Schema {
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setAuthorization(['inheritFromPublic' => $inherit]);
 
-        return $schema;
+		return $schema;
+	}//end schemaPinning()
 
-    }//end schemaPinning()
+	/**
+	 * The positive control: the schema-level flag is what gets read. Without
+	 * this, every assertion below could be satisfied by a resolver that always
+	 * answers the same thing.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaLevelFlagIsWhatGetsResolved(): void {
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
 
-    /**
-     * The positive control: the schema-level flag is what gets read. Without
-     * this, every assertion below could be satisfied by a resolver that always
-     * answers the same thing.
-     *
-     * @return void
-     */
-    public function testTheSchemaLevelFlagIsWhatGetsResolved(): void
-    {
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
+		$this->handler->clearInheritFromPublicCache();
 
-        $this->handler->clearInheritFromPublicCache();
+		$this->assertFalse($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
 
-        $this->assertFalse($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
+	}//end testTheSchemaLevelFlagIsWhatGetsResolved()
 
-    }//end testTheSchemaLevelFlagIsWhatGetsResolved()
+	/**
+	 * THE HAZARD, stated as an executable fact. Read once, tighten the policy,
+	 * read again inside the same request: the memo answers with the verdict from
+	 * BEFORE the change. This asserts the wrong answer deliberately — it is the
+	 * behaviour that makes the evictor necessary, and if a future change makes
+	 * the memo schema-content-aware this test goes red and should be deleted
+	 * along with the eviction it justifies.
+	 *
+	 * @return void
+	 */
+	public function testASecondReadAfterAPolicyChangeServesTheSTALEVerdict(): void {
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
 
-    /**
-     * THE HAZARD, stated as an executable fact. Read once, tighten the policy,
-     * read again inside the same request: the memo answers with the verdict from
-     * BEFORE the change. This asserts the wrong answer deliberately — it is the
-     * behaviour that makes the evictor necessary, and if a future change makes
-     * the memo schema-content-aware this test goes red and should be deleted
-     * along with the eviction it justifies.
-     *
-     * @return void
-     */
-    public function testASecondReadAfterAPolicyChangeServesTheSTALEVerdict(): void
-    {
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
+		// Same schema id, authorization now tightened to deny the inheritance.
+		$tightened = $this->schemaPinning(inherit: false);
 
-        // Same schema id, authorization now tightened to deny the inheritance.
-        $tightened = $this->schemaPinning(inherit: false);
+		$this->assertTrue(
+			$this->handler->resolveInheritFromPublic(schema: $tightened),
+			'The memo keys on schema id alone, so it serves the pre-change verdict. '
+			. 'This is the stale grant AuthorizationCacheInvalidationListener exists to prevent.'
+		);
 
-        $this->assertTrue(
-            $this->handler->resolveInheritFromPublic(schema: $tightened),
-            'The memo keys on schema id alone, so it serves the pre-change verdict. '
-            .'This is the stale grant AuthorizationCacheInvalidationListener exists to prevent.'
-        );
+	}//end testASecondReadAfterAPolicyChangeServesTheSTALEVerdict()
 
-    }//end testASecondReadAfterAPolicyChangeServesTheSTALEVerdict()
+	/**
+	 * THE FIX. Evicting that schema's entry — what the listener does on
+	 * SchemaUpdatedEvent — makes the next read see the tightened policy.
+	 *
+	 * @return void
+	 */
+	public function testEvictingTheSchemaEntryMakesTheNextReadSeeTheNewPolicy(): void {
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
 
-    /**
-     * THE FIX. Evicting that schema's entry — what the listener does on
-     * SchemaUpdatedEvent — makes the next read see the tightened policy.
-     *
-     * @return void
-     */
-    public function testEvictingTheSchemaEntryMakesTheNextReadSeeTheNewPolicy(): void
-    {
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
+		$this->handler->clearInheritFromPublicCache(schemaId: 7);
 
-        $this->handler->clearInheritFromPublicCache(schemaId: 7);
+		$this->assertFalse(
+			$this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)),
+			'After eviction the resolver must re-read the schema rather than answer from the memo.'
+		);
 
-        $this->assertFalse(
-            $this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)),
-            'After eviction the resolver must re-read the schema rather than answer from the memo.'
-        );
+	}//end testEvictingTheSchemaEntryMakesTheNextReadSeeTheNewPolicy()
 
-    }//end testEvictingTheSchemaEntryMakesTheNextReadSeeTheNewPolicy()
+	/**
+	 * Evicting a DIFFERENT schema must not clear this one — otherwise the
+	 * targeted eviction is indistinguishable from clearing everything and the
+	 * `$schemaId` argument is decorative.
+	 *
+	 * @return void
+	 */
+	public function testEvictingAnotherSchemaLeavesThisOneMemoised(): void {
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
 
-    /**
-     * Evicting a DIFFERENT schema must not clear this one — otherwise the
-     * targeted eviction is indistinguishable from clearing everything and the
-     * `$schemaId` argument is decorative.
-     *
-     * @return void
-     */
-    public function testEvictingAnotherSchemaLeavesThisOneMemoised(): void
-    {
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
+		$this->handler->clearInheritFromPublicCache(schemaId: 999);
 
-        $this->handler->clearInheritFromPublicCache(schemaId: 999);
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
 
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
+	}//end testEvictingAnotherSchemaLeavesThisOneMemoised()
 
-    }//end testEvictingAnotherSchemaLeavesThisOneMemoised()
+	/**
+	 * A null id clears the whole map — the fail-safe path the listener uses for
+	 * register events and for a schema that carries no id.
+	 *
+	 * @return void
+	 */
+	public function testANullSchemaIdClearsEveryEntry(): void {
+		$this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
 
-    /**
-     * A null id clears the whole map — the fail-safe path the listener uses for
-     * register events and for a schema that carries no id.
-     *
-     * @return void
-     */
-    public function testANullSchemaIdClearsEveryEntry(): void
-    {
-        $this->assertTrue($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: true)));
+		$this->handler->clearInheritFromPublicCache(schemaId: null);
 
-        $this->handler->clearInheritFromPublicCache(schemaId: null);
+		$this->assertFalse($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
 
-        $this->assertFalse($this->handler->resolveInheritFromPublic(schema: $this->schemaPinning(inherit: false)));
-
-    }//end testANullSchemaIdClearsEveryEntry()
+	}//end testANullSchemaIdClearsEveryEntry()
 }//end class

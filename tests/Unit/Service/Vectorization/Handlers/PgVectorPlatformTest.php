@@ -28,98 +28,89 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class PgVectorPlatformTest extends TestCase
-{
-    private IDBConnection&MockObject $db;
-    private LoggerInterface&MockObject $logger;
+class PgVectorPlatformTest extends TestCase {
+	private IDBConnection&MockObject $db;
+	private LoggerInterface&MockObject $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->db     = $this->createMock(IDBConnection::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-    }//end setUp()
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+	}//end setUp()
 
-    public function testIsPostgresTrueOnPostgreSqlPlatform(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+	public function testIsPostgresTrueOnPostgreSqlPlatform(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertTrue($helper->isPostgres());
-    }//end testIsPostgresTrueOnPostgreSqlPlatform()
+		$this->assertTrue($helper->isPostgres());
+	}//end testIsPostgresTrueOnPostgreSqlPlatform()
 
-    public function testIsPostgresFalseOnMariaDbPlatform(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
+	public function testIsPostgresFalseOnMariaDbPlatform(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertFalse($helper->isPostgres());
-    }//end testIsPostgresFalseOnMariaDbPlatform()
+		$this->assertFalse($helper->isPostgres());
+	}//end testIsPostgresFalseOnMariaDbPlatform()
 
-    public function testGetVectorColumnDimensionNullOnNonPostgres(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
-        $this->db->expects($this->never())->method('executeQuery');
+	public function testGetVectorColumnDimensionNullOnNonPostgres(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
+		$this->db->expects($this->never())->method('executeQuery');
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertNull($helper->getVectorColumnDimension());
-    }//end testGetVectorColumnDimensionNullOnNonPostgres()
+		$this->assertNull($helper->getVectorColumnDimension());
+	}//end testGetVectorColumnDimensionNullOnNonPostgres()
 
-    public function testGetVectorColumnDimensionReadsAtttypmodAndCaches(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+	public function testGetVectorColumnDimensionReadsAtttypmodAndCaches(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
 
-        $result = $this->createMock(IResult::class);
-        $result->method('fetchOne')->willReturn(768);
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchOne')->willReturn(768);
 
-        // Cached after the first lookup: exactly one catalog query.
-        $this->db->expects($this->once())
-            ->method('executeQuery')
-            ->with($this->stringContains('pg_attribute'))
-            ->willReturn($result);
+		// Cached after the first lookup: exactly one catalog query.
+		$this->db->expects($this->once())
+			->method('executeQuery')
+			->with($this->stringContains('pg_attribute'))
+			->willReturn($result);
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertSame(768, $helper->getVectorColumnDimension());
-        $this->assertSame(768, $helper->getVectorColumnDimension());
-    }//end testGetVectorColumnDimensionReadsAtttypmodAndCaches()
+		$this->assertSame(768, $helper->getVectorColumnDimension());
+		$this->assertSame(768, $helper->getVectorColumnDimension());
+	}//end testGetVectorColumnDimensionReadsAtttypmodAndCaches()
 
-    public function testGetVectorColumnDimensionNullWhenColumnMissing(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+	public function testGetVectorColumnDimensionNullWhenColumnMissing(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
 
-        // regclass lookup throws when the table/column doesn't exist.
-        $this->db->method('executeQuery')
-            ->willThrowException(new \Exception('relation does not exist'));
+		// regclass lookup throws when the table/column doesn't exist.
+		$this->db->method('executeQuery')
+			->willThrowException(new \Exception('relation does not exist'));
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertNull($helper->getVectorColumnDimension());
-    }//end testGetVectorColumnDimensionNullWhenColumnMissing()
+		$this->assertNull($helper->getVectorColumnDimension());
+	}//end testGetVectorColumnDimensionNullWhenColumnMissing()
 
-    public function testGetVectorColumnDimensionNullOnNonPositiveTypmod(): void
-    {
-        $this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+	public function testGetVectorColumnDimensionNullOnNonPositiveTypmod(): void {
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
 
-        $result = $this->createMock(IResult::class);
-        $result->method('fetchOne')->willReturn(false);
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchOne')->willReturn(false);
 
-        $this->db->method('executeQuery')->willReturn($result);
+		$this->db->method('executeQuery')->willReturn($result);
 
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertNull($helper->getVectorColumnDimension());
-    }//end testGetVectorColumnDimensionNullOnNonPositiveTypmod()
+		$this->assertNull($helper->getVectorColumnDimension());
+	}//end testGetVectorColumnDimensionNullOnNonPositiveTypmod()
 
-    public function testFormatVectorProducesPgvectorLiteral(): void
-    {
-        $helper = new PgVectorPlatform($this->db, $this->logger);
+	public function testFormatVectorProducesPgvectorLiteral(): void {
+		$helper = new PgVectorPlatform($this->db, $this->logger);
 
-        $this->assertSame('[0.5,-0.25,1]', $helper->formatVector([0.5, -0.25, 1.0]));
-        $this->assertSame('[]', $helper->formatVector([]));
-    }//end testFormatVectorProducesPgvectorLiteral()
+		$this->assertSame('[0.5,-0.25,1]', $helper->formatVector([0.5, -0.25, 1.0]));
+		$this->assertSame('[]', $helper->formatVector([]));
+	}//end testFormatVectorProducesPgvectorLiteral()
 }//end class

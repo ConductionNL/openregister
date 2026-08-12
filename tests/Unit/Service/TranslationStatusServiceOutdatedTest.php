@@ -25,47 +25,44 @@ use PHPUnit\Framework\TestCase;
 /**
  * Verifies the outdated-flip contract.
  */
-class TranslationStatusServiceOutdatedTest extends TestCase
-{
+class TranslationStatusServiceOutdatedTest extends TestCase {
 
-    /**
-     * Happy path: mapper is asked to flip derived rows; the returned count
-     * bubbles up.
-     */
-    public function testFlipsDerivedRowsAndReturnsCount(): void
-    {
-        $mapper = $this->createMock(TranslationMapper::class);
-        $mapper->expects($this->once())
-            ->method('markDerivedOutdated')
-            ->with('obj-uuid', 'title', 'nl')
-            ->willReturn(3);
+	/**
+	 * Happy path: mapper is asked to flip derived rows; the returned count
+	 * bubbles up.
+	 */
+	public function testFlipsDerivedRowsAndReturnsCount(): void {
+		$mapper = $this->createMock(TranslationMapper::class);
+		$mapper->expects($this->once())
+			->method('markDerivedOutdated')
+			->with('obj-uuid', 'title', 'nl')
+			->willReturn(3);
 
-        $service = new TranslationStatusService(
-            $mapper,
-            $this->createMock(TranslationHandler::class),
-            $this->createMock(IUserSession::class)
-        );
+		$service = new TranslationStatusService(
+			$mapper,
+			$this->createMock(TranslationHandler::class),
+			$this->createMock(IUserSession::class)
+		);
 
-        $count = $service->markDerivedTranslationsOutdated('obj-uuid', 'title', 'nl');
-        $this->assertSame(3, $count);
-    }//end testFlipsDerivedRowsAndReturnsCount()
+		$count = $service->markDerivedTranslationsOutdated('obj-uuid', 'title', 'nl');
+		$this->assertSame(3, $count);
+	}//end testFlipsDerivedRowsAndReturnsCount()
 
-    /**
-     * Empty inputs short-circuit to 0 without touching the mapper.
-     */
-    public function testEmptyArgumentsReturnZero(): void
-    {
-        $mapper = $this->createMock(TranslationMapper::class);
-        $mapper->expects($this->never())->method('markDerivedOutdated');
+	/**
+	 * Empty inputs short-circuit to 0 without touching the mapper.
+	 */
+	public function testEmptyArgumentsReturnZero(): void {
+		$mapper = $this->createMock(TranslationMapper::class);
+		$mapper->expects($this->never())->method('markDerivedOutdated');
 
-        $service = new TranslationStatusService(
-            $mapper,
-            $this->createMock(TranslationHandler::class),
-            $this->createMock(IUserSession::class)
-        );
+		$service = new TranslationStatusService(
+			$mapper,
+			$this->createMock(TranslationHandler::class),
+			$this->createMock(IUserSession::class)
+		);
 
-        $this->assertSame(0, $service->markDerivedTranslationsOutdated('', 'title', 'nl'));
-        $this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', '', 'nl'));
-        $this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', 'title', ''));
-    }//end testEmptyArgumentsReturnZero()
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated('', 'title', 'nl'));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', '', 'nl'));
+		$this->assertSame(0, $service->markDerivedTranslationsOutdated('uuid', 'title', ''));
+	}//end testEmptyArgumentsReturnZero()
 }//end class

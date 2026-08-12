@@ -38,87 +38,82 @@ namespace OCA\OpenRegister\Service\Authorization;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DeclaredGroupInventoryService
-{
+class DeclaredGroupInventoryService {
 
+	/**
+	 * Constructor.
+	 *
+	 * @param GroupReconciler $reconciler Supplies the declared group set.
+	 * @param GroupProvisioner $provisioner Supplies each group's live membership state.
+	 */
+	public function __construct(
+		private readonly GroupReconciler $reconciler,
+		private readonly GroupProvisioner $provisioner,
+	) {
+	}//end __construct()
 
-    /**
-     * Constructor.
-     *
-     * @param GroupReconciler  $reconciler  Supplies the declared group set.
-     * @param GroupProvisioner $provisioner Supplies each group's live membership state.
-     */
-    public function __construct(
-        private readonly GroupReconciler $reconciler,
-        private readonly GroupProvisioner $provisioner
-    ) {
-    }//end __construct()
+	/**
+	 * Build the declared-group inventory.
+	 *
+	 * `members` is null where the group backend cannot report a count
+	 * ({@see \OCP\IGroup::count()} returns `int|bool`). Such a row is NOT
+	 * counted as empty — reporting an uncountable backend as zero members would
+	 * raise the exact false alarm this surface exists to prevent.
+	 *
+	 * @return array{
+	 *     groups: array<int, array{group: string, exists: bool, members: int|null, grantsNobody: bool}>,
+	 *     declared: int,
+	 *     missing: int,
+	 *     empty: int,
+	 *     unknown: int
+	 * } The per-group rows plus the counts a caller would otherwise recompute.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function inventory(): array {
+		$declared = $this->reconciler->collectDeclared();
+		$liveState = $this->provisioner->inventory(groups: $declared);
 
+		$rows = [];
+		$missing = 0;
+		$empty = 0;
+		$unknown = 0;
 
-    /**
-     * Build the declared-group inventory.
-     *
-     * `members` is null where the group backend cannot report a count
-     * ({@see \OCP\IGroup::count()} returns `int|bool`). Such a row is NOT
-     * counted as empty — reporting an uncountable backend as zero members would
-     * raise the exact false alarm this surface exists to prevent.
-     *
-     * @return array{
-     *     groups: array<int, array{group: string, exists: bool, members: int|null, grantsNobody: bool}>,
-     *     declared: int,
-     *     missing: int,
-     *     empty: int,
-     *     unknown: int
-     * } The per-group rows plus the counts a caller would otherwise recompute.
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    public function inventory(): array
-    {
-        $declared  = $this->reconciler->collectDeclared();
-        $liveState = $this->provisioner->inventory(groups: $declared);
+		foreach ($declared as $group) {
+			$state = ($liveState[$group] ?? [
+				'exists' => false,
+				'members' => null,
+			]);
+			$exists = ($state['exists'] === true);
+			$members = $state['members'];
 
-        $rows    = [];
-        $missing = 0;
-        $empty   = 0;
-        $unknown = 0;
+			// A group grants nobody anything when it is absent, or present with a
+			// KNOWN zero membership. An unknown count is explicitly not that case.
+			$grantsNobody = ($exists === false || $members === 0);
 
-        foreach ($declared as $group) {
-            $state   = ($liveState[$group] ?? [
-                'exists'  => false,
-                'members' => null,
-            ]);
-            $exists  = ($state['exists'] === true);
-            $members = $state['members'];
+			if ($exists === false) {
+				$missing++;
+			} elseif ($members === null) {
+				$unknown++;
+			} elseif ($members === 0) {
+				$empty++;
+			}
 
-            // A group grants nobody anything when it is absent, or present with a
-            // KNOWN zero membership. An unknown count is explicitly not that case.
-            $grantsNobody = ($exists === false || $members === 0);
+			$rows[] = [
+				'group' => $group,
+				'exists' => $exists,
+				'members' => $members,
+				'grantsNobody' => $grantsNobody,
+			];
+		}//end foreach
 
-            if ($exists === false) {
-                $missing++;
-            } else if ($members === null) {
-                $unknown++;
-            } else if ($members === 0) {
-                $empty++;
-            }
-
-            $rows[] = [
-                'group'        => $group,
-                'exists'       => $exists,
-                'members'      => $members,
-                'grantsNobody' => $grantsNobody,
-            ];
-        }//end foreach
-
-        return [
-            'groups'   => $rows,
-            'declared' => count($declared),
-            'missing'  => $missing,
-            'empty'    => $empty,
-            'unknown'  => $unknown,
-        ];
-    }//end inventory()
-
+		return [
+			'groups' => $rows,
+			'declared' => count($declared),
+			'missing' => $missing,
+			'empty' => $empty,
+			'unknown' => $unknown,
+		];
+	}//end inventory()
 
 }//end class

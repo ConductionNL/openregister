@@ -75,35 +75,34 @@ use Attribute;
  * @package  OCA\OpenRegister\Mcp\Attribute
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-final class McpTool
-{
-    /**
-     * Constructor.
-     *
-     * @param string|null $name            Local tool name; defaults to the method name when null.
-     * @param string|null $description     LLM-facing description; defaults to the docblock summary when null.
-     * @param bool|null   $readOnlyHint    Optional MCP 2025-11-25 annotation hint; one of
-     *                                     {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
-     *                                     Omitted (null) when the author does not declare it — never inferred.
-     * @param bool|null   $destructiveHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
-     * @param bool|null   $idempotentHint  Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
-     * @param string|null $scope           Optional advisory scope; when set, MUST be one of
-     *                                     {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}
-     *                                     (validated by {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} at
-     *                                     scan time, not here). Omitted (null) when not declared.
-     *
-     * @spec openspec/specs/ai-mcp/spec.md
-     *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
-     * @spec openspec/specs/ai-mcp/spec.md
-     *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
-     */
-    public function __construct(
-        public readonly ?string $name=null,
-        public readonly ?string $description=null,
-        public readonly ?bool $readOnlyHint=null,
-        public readonly ?bool $destructiveHint=null,
-        public readonly ?bool $idempotentHint=null,
-        public readonly ?string $scope=null,
-    ) {
-    }//end __construct()
+final class McpTool {
+	/**
+	 * Constructor.
+	 *
+	 * @param string|null $name Local tool name; defaults to the method name when null.
+	 * @param string|null $description LLM-facing description; defaults to the docblock summary when null.
+	 * @param bool|null $readOnlyHint Optional MCP 2025-11-25 annotation hint; one of
+	 *                                {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
+	 *                                Omitted (null) when the author does not declare it — never inferred.
+	 * @param bool|null $destructiveHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
+	 * @param bool|null $idempotentHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
+	 * @param string|null $scope Optional advisory scope; when set, MUST be one of
+	 *                           {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}
+	 *                           (validated by {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} at
+	 *                           scan time, not here). Omitted (null) when not declared.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
+	 */
+	public function __construct(
+		public readonly ?string $name = null,
+		public readonly ?string $description = null,
+		public readonly ?bool $readOnlyHint = null,
+		public readonly ?bool $destructiveHint = null,
+		public readonly ?bool $idempotentHint = null,
+		public readonly ?string $scope = null,
+	) {
+	}//end __construct()
 }//end class

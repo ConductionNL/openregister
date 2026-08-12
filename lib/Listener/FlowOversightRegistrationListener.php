@@ -38,34 +38,33 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-class FlowOversightRegistrationListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param KillSwitchCheck $killSwitch The instance-wide flow kill switch.
-     */
-    public function __construct(private readonly KillSwitchCheck $killSwitch)
-    {
+class FlowOversightRegistrationListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param KillSwitchCheck $killSwitch The instance-wide flow kill switch.
+	 */
+	public function __construct(
+		private readonly KillSwitchCheck $killSwitch,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Register the built-ins.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof RegisterFlowOversightEvent) === false) {
-            return;
-        }
+	/**
+	 * Register the built-ins.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof RegisterFlowOversightEvent) === false) {
+			return;
+		}
 
-        $event->registerCheck(check: $this->killSwitch);
+		$event->registerCheck(check: $this->killSwitch);
 
-    }//end handle()
+	}//end handle()
 }//end class

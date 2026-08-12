@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Lightweight bootstrap for EML parser unit tests.
  *
@@ -22,6 +23,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // Stub minimal OCP interfaces that EmlParser tests reference as mocks.
 // This avoids requiring the full Nextcloud bootstrap.
 if (interface_exists('\OCP\Files\File') === false) {
-    // Dynamically create the interface stub so PHPUnit can createMock() it.
-    eval('namespace OCP\Files; interface Node {} interface File extends Node { public function getContent(): string; public function getId(): int; public function getName(): string; }');
+	// Dynamically create the interface stub so PHPUnit can createMock() it.
+	eval('namespace OCP\Files; interface Node {} interface File extends Node { public function getContent(): string; public function getId(): int; public function getName(): string; }');
 }

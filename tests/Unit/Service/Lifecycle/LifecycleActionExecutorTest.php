@@ -41,148 +41,140 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor
  */
-class LifecycleActionExecutorTest extends TestCase
-{
-    private LifecycleActionRegistry&MockObject $registry;
-    private LifecycleActionExecutor $executor;
+class LifecycleActionExecutorTest extends TestCase {
+	private LifecycleActionRegistry&MockObject $registry;
+	private LifecycleActionExecutor $executor;
 
-    protected function setUp(): void
-    {
-        $this->registry = $this->createMock(LifecycleActionRegistry::class);
-        $logger         = $this->createMock(LoggerInterface::class);
-        $this->executor = new LifecycleActionExecutor($this->registry, $logger);
-    }//end setUp()
+	protected function setUp(): void {
+		$this->registry = $this->createMock(LifecycleActionRegistry::class);
+		$logger = $this->createMock(LoggerInterface::class);
+		$this->executor = new LifecycleActionExecutor($this->registry, $logger);
+	}//end setUp()
 
-    /**
-     * A declared action runs and its self-mutation is applied to the payload.
-     */
-    public function testActionRunsAndMutationIsThreaded(): void
-    {
-        $this->registry->method('resolve')->with('set-fields')->willReturn(new SetFieldsAction());
+	/**
+	 * A declared action runs and its self-mutation is applied to the payload.
+	 */
+	public function testActionRunsAndMutationIsThreaded(): void {
+		$this->registry->method('resolve')->with('set-fields')->willReturn(new SetFieldsAction());
 
-        $actions = [
-            [
-                'action'           => 'set-fields',
-                'actionParameters' => ['submittedAt' => 'stamp'],
-            ],
-        ];
+		$actions = [
+			[
+				'action' => 'set-fields',
+				'actionParameters' => ['submittedAt' => 'stamp'],
+			],
+		];
 
-        $result = $this->executor->run(
-            actions: $actions,
-            objectData: ['status' => 'submitted'],
-            previousData: ['status' => 'draft'],
-            transition: 'submit'
-        );
+		$result = $this->executor->run(
+			actions: $actions,
+			objectData: ['status' => 'submitted'],
+			previousData: ['status' => 'draft'],
+			transition: 'submit'
+		);
 
-        $this->assertSame('stamp', $result['submittedAt']);
-    }//end testActionRunsAndMutationIsThreaded()
+		$this->assertSame('stamp', $result['submittedAt']);
+	}//end testActionRunsAndMutationIsThreaded()
 
-    /**
-     * A `condition` that does not hold skips the action — the handler is never
-     * resolved.
-     */
-    public function testConditionFalseSkipsAction(): void
-    {
-        $this->registry->expects($this->never())->method('resolve');
+	/**
+	 * A `condition` that does not hold skips the action — the handler is never
+	 * resolved.
+	 */
+	public function testConditionFalseSkipsAction(): void {
+		$this->registry->expects($this->never())->method('resolve');
 
-        $actions = [
-            [
-                'action'    => 'emit-event',
-                'condition' => "@self.settlementMode == 'reimbursable'",
-            ],
-        ];
+		$actions = [
+			[
+				'action' => 'emit-event',
+				'condition' => "@self.settlementMode == 'reimbursable'",
+			],
+		];
 
-        $result = $this->executor->run(
-            actions: $actions,
-            objectData: ['settlementMode' => 'passthrough'],
-            previousData: [],
-            transition: 'post'
-        );
+		$result = $this->executor->run(
+			actions: $actions,
+			objectData: ['settlementMode' => 'passthrough'],
+			previousData: [],
+			transition: 'post'
+		);
 
-        $this->assertSame(['settlementMode' => 'passthrough'], $result);
-    }//end testConditionFalseSkipsAction()
+		$this->assertSame(['settlementMode' => 'passthrough'], $result);
+	}//end testConditionFalseSkipsAction()
 
-    /**
-     * A `@previous`-scoped condition that holds runs the action.
-     */
-    public function testPreviousConditionTrueRunsAction(): void
-    {
-        $handler = $this->createMock(LifecycleActionInterface::class);
-        $handler->expects($this->once())->method('execute')->willReturnArgument(0);
-        $this->registry->method('resolve')->with('create-offset-move')->willReturn($handler);
+	/**
+	 * A `@previous`-scoped condition that holds runs the action.
+	 */
+	public function testPreviousConditionTrueRunsAction(): void {
+		$handler = $this->createMock(LifecycleActionInterface::class);
+		$handler->expects($this->once())->method('execute')->willReturnArgument(0);
+		$this->registry->method('resolve')->with('create-offset-move')->willReturn($handler);
 
-        $actions = [
-            [
-                'action'    => 'create-offset-move',
-                'condition' => "@previous.lifecycleState == 'posted'",
-            ],
-        ];
+		$actions = [
+			[
+				'action' => 'create-offset-move',
+				'condition' => "@previous.lifecycleState == 'posted'",
+			],
+		];
 
-        $this->executor->run(
-            actions: $actions,
-            objectData: ['lifecycleState' => 'cancelled'],
-            previousData: ['lifecycleState' => 'posted'],
-            transition: 'cancel'
-        );
-    }//end testPreviousConditionTrueRunsAction()
+		$this->executor->run(
+			actions: $actions,
+			objectData: ['lifecycleState' => 'cancelled'],
+			previousData: ['lifecycleState' => 'posted'],
+			transition: 'cancel'
+		);
+	}//end testPreviousConditionTrueRunsAction()
 
-    /**
-     * FAIL LOUD: an unparseable condition throws rather than silently skipping.
-     */
-    public function testUnparseableConditionFailsLoudly(): void
-    {
-        $actions = [
-            [
-                'action'    => 'set-fields',
-                'condition' => 'amount > 500 and something weird',
-            ],
-        ];
+	/**
+	 * FAIL LOUD: an unparseable condition throws rather than silently skipping.
+	 */
+	public function testUnparseableConditionFailsLoudly(): void {
+		$actions = [
+			[
+				'action' => 'set-fields',
+				'condition' => 'amount > 500 and something weird',
+			],
+		];
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('is not a supported expression');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('is not a supported expression');
 
-        $this->executor->run(
-            actions: $actions,
-            objectData: [],
-            previousData: [],
-            transition: 'submit'
-        );
-    }//end testUnparseableConditionFailsLoudly()
+		$this->executor->run(
+			actions: $actions,
+			objectData: [],
+			previousData: [],
+			transition: 'submit'
+		);
+	}//end testUnparseableConditionFailsLoudly()
 
-    /**
-     * A missing handler propagates the registry's fail-loud exception out of the
-     * executor.
-     */
-    public function testMissingHandlerPropagates(): void
-    {
-        $this->registry->method('resolve')->willThrowException(
-            new RuntimeException('Lifecycle action "ghost" is declared but no handler is registered.')
-        );
+	/**
+	 * A missing handler propagates the registry's fail-loud exception out of the
+	 * executor.
+	 */
+	public function testMissingHandlerPropagates(): void {
+		$this->registry->method('resolve')->willThrowException(
+			new RuntimeException('Lifecycle action "ghost" is declared but no handler is registered.')
+		);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('no handler is registered');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('no handler is registered');
 
-        $this->executor->run(
-            actions: [['action' => 'ghost']],
-            objectData: [],
-            previousData: [],
-            transition: 'submit'
-        );
-    }//end testMissingHandlerPropagates()
+		$this->executor->run(
+			actions: [['action' => 'ghost']],
+			objectData: [],
+			previousData: [],
+			transition: 'submit'
+		);
+	}//end testMissingHandlerPropagates()
 
-    /**
-     * A malformed action (missing `action` name) fails loudly.
-     */
-    public function testActionWithoutNameFailsLoudly(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('without an "action" name');
+	/**
+	 * A malformed action (missing `action` name) fails loudly.
+	 */
+	public function testActionWithoutNameFailsLoudly(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('without an "action" name');
 
-        $this->executor->run(
-            actions: [['actionParameters' => ['x' => 1]]],
-            objectData: [],
-            previousData: [],
-            transition: 'submit'
-        );
-    }//end testActionWithoutNameFailsLoudly()
+		$this->executor->run(
+			actions: [['actionParameters' => ['x' => 1]]],
+			objectData: [],
+			previousData: [],
+			transition: 'submit'
+		);
+	}//end testActionWithoutNameFailsLoudly()
 }//end class

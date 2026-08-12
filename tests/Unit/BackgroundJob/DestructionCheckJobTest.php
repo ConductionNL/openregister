@@ -24,39 +24,35 @@ use ReflectionClass;
 /**
  * Test class for DestructionCheckJob
  */
-class DestructionCheckJobTest extends TestCase
-{
-    private ITimeFactory&MockObject $timeFactory;
+class DestructionCheckJobTest extends TestCase {
+	private ITimeFactory&MockObject $timeFactory;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->timeFactory = $this->createMock(ITimeFactory::class);
-    }
+	protected function setUp(): void {
+		parent::setUp();
+		$this->timeFactory = $this->createMock(ITimeFactory::class);
+	}
 
-    /**
-     * Test that the job can be instantiated.
-     */
-    public function testConstructor(): void
-    {
-        // The job constructor calls getArchivalSettingsOnly() via \OC::$server.
-        // In unit tests without the full Nextcloud stack, we verify the class exists
-        // and has the expected methods.
-        $reflection = new ReflectionClass(DestructionCheckJob::class);
+	/**
+	 * Test that the job can be instantiated.
+	 */
+	public function testConstructor(): void {
+		// The job constructor calls getArchivalSettingsOnly() via \OC::$server.
+		// In unit tests without the full Nextcloud stack, we verify the class exists
+		// and has the expected methods.
+		$reflection = new ReflectionClass(DestructionCheckJob::class);
 
-        $this->assertTrue($reflection->isSubclassOf(\OCP\BackgroundJob\TimedJob::class));
-        $this->assertTrue($reflection->hasMethod('run'));
-    }
+		$this->assertTrue($reflection->isSubclassOf(\OCP\BackgroundJob\TimedJob::class));
+		$this->assertTrue($reflection->hasMethod('run'));
+	}
 
-    /**
-     * Test that DEFAULT_INTERVAL constant is 24 hours.
-     */
-    public function testDefaultInterval(): void
-    {
-        $reflection = new ReflectionClass(DestructionCheckJob::class);
-        $constants  = $reflection->getConstants();
+	/**
+	 * Test that DEFAULT_INTERVAL constant is 24 hours.
+	 */
+	public function testDefaultInterval(): void {
+		$reflection = new ReflectionClass(DestructionCheckJob::class);
+		$constants = $reflection->getConstants();
 
-        $this->assertArrayHasKey('DEFAULT_INTERVAL', $constants);
-        $this->assertEquals(86400, $constants['DEFAULT_INTERVAL']);
-    }
+		$this->assertArrayHasKey('DEFAULT_INTERVAL', $constants);
+		$this->assertEquals(86400, $constants['DEFAULT_INTERVAL']);
+	}
 }

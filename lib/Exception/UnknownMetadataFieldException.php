@@ -51,64 +51,61 @@ use Throwable;
  *
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
  */
-class UnknownMetadataFieldException extends Exception
-{
-    /**
-     * Constructor for UnknownMetadataFieldException.
-     *
-     * @param string         $field    The `@self` field name that could not be resolved.
-     * @param string[]       $known    The metadata column names that are filterable.
-     * @param int            $code     The error code (default: 400).
-     * @param Throwable|null $previous The previous exception that caused this one.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly string $field,
-        private readonly array $known=[],
-        int $code=400,
-        ?Throwable $previous=null
-    ) {
-        // Report the caller-facing names (no leading underscore), sorted, so the
-        // message is a usable correction rather than an internal column dump.
-        $names = array_map(
-            static fn (string $column): string => ltrim($column, '_'),
-            $known
-        );
-        sort($names);
+class UnknownMetadataFieldException extends Exception {
+	/**
+	 * Constructor for UnknownMetadataFieldException.
+	 *
+	 * @param string $field The `@self` field name that could not be resolved.
+	 * @param string[] $known The metadata column names that are filterable.
+	 * @param int $code The error code (default: 400).
+	 * @param Throwable|null $previous The previous exception that caused this one.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly string $field,
+		private readonly array $known = [],
+		int $code = 400,
+		?Throwable $previous = null,
+	) {
+		// Report the caller-facing names (no leading underscore), sorted, so the
+		// message is a usable correction rather than an internal column dump.
+		$names = array_map(
+			static fn (string $column): string => ltrim($column, '_'),
+			$known
+		);
+		sort($names);
 
-        parent::__construct(
-            message: sprintf(
-                'Unknown "@self" metadata field "%s". Filterable metadata fields are: %s.',
-                $field,
-                implode(', ', $names)
-            ),
-            code: $code,
-            previous: $previous
-        );
-    }//end __construct()
+		parent::__construct(
+			message: sprintf(
+				'Unknown "@self" metadata field "%s". Filterable metadata fields are: %s.',
+				$field,
+				implode(', ', $names)
+			),
+			code: $code,
+			previous: $previous
+		);
+	}//end __construct()
 
-    /**
-     * The `@self` field name that triggered this exception.
-     *
-     * @return string The field name.
-     *
-     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-     */
-    public function getField(): string
-    {
-        return $this->field;
-    }//end getField()
+	/**
+	 * The `@self` field name that triggered this exception.
+	 *
+	 * @return string The field name.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	public function getField(): string {
+		return $this->field;
+	}//end getField()
 
-    /**
-     * The metadata column names that are filterable.
-     *
-     * @return string[] The known metadata column names.
-     *
-     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-     */
-    public function getKnown(): array
-    {
-        return $this->known;
-    }//end getKnown()
+	/**
+	 * The metadata column names that are filterable.
+	 *
+	 * @return string[] The known metadata column names.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	public function getKnown(): array {
+		return $this->known;
+	}//end getKnown()
 }//end class

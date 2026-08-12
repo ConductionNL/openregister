@@ -31,305 +31,253 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-require_once __DIR__.'/Fixtures/AttributeFixtureService.php';
-require_once __DIR__.'/Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
+require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
 
 /**
  * Unit tests for AttributeToolScanner.
  */
-class AttributeToolScannerTest extends TestCase
-{
+class AttributeToolScannerTest extends TestCase {
 
-    /** @var LoggerInterface&MockObject */
-    private $logger;
+	/** @var LoggerInterface&MockObject */
+	private $logger;
 
-    private AttributeToolScanner $scanner;
+	private AttributeToolScanner $scanner;
 
+	protected function setUp(): void {
+		parent::setUp();
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->scanner = new AttributeToolScanner();
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->logger  = $this->createMock(LoggerInterface::class);
-        $this->scanner = new AttributeToolScanner();
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * @return array<string, array<string, mixed>> descriptor keyed by `name`
+	 */
+	private function scanFixture(): array {
+		$descriptors = $this->scanner->scanClass(
+			appId: 'pipelinq',
+			className: AttributeFixtureService::class,
+			logger: $this->logger
+		);
 
+		$byName = [];
+		foreach ($descriptors as $descriptor) {
+			$byName[$descriptor['name']] = $descriptor;
+		}
 
-    /**
-     * @return array<string, array<string, mixed>> descriptor keyed by `name`
-     */
-    private function scanFixture(): array
-    {
-        $descriptors = $this->scanner->scanClass(
-            appId: 'pipelinq',
-            className: AttributeFixtureService::class,
-            logger: $this->logger
-        );
+		return $byName;
+	}//end scanFixture()
 
-        $byName = [];
-        foreach ($descriptors as $descriptor) {
-            $byName[$descriptor['name']] = $descriptor;
-        }
+	// ── Discovery + id namespacing ───────────────────────────────────
 
-        return $byName;
+	public function testDiscoversOnlyPublicAttributedMethods(): void {
+		$descriptors = $this->scanFixture();
 
-    }//end scanFixture()
+		$this->assertArrayHasKey('createLead', $descriptors);
+		$this->assertArrayHasKey('logContactmoment', $descriptors);
+		$this->assertArrayHasKey('computeScore', $descriptors);
+		$this->assertArrayNotHasKey('internalOnly', $descriptors);
+		$this->assertCount(3, $descriptors);
 
+	}//end testDiscoversOnlyPublicAttributedMethods()
 
-    // ── Discovery + id namespacing ───────────────────────────────────
+	public function testBuildsNamespacedIdFromAppIdAndName(): void {
+		$descriptors = $this->scanFixture();
 
+		$this->assertSame('pipelinq.createLead', $descriptors['createLead']['id']);
+		$this->assertSame('pipelinq.logContactmoment', $descriptors['logContactmoment']['id']);
 
-    public function testDiscoversOnlyPublicAttributedMethods(): void
-    {
-        $descriptors = $this->scanFixture();
+	}//end testBuildsNamespacedIdFromAppIdAndName()
 
-        $this->assertArrayHasKey('createLead', $descriptors);
-        $this->assertArrayHasKey('logContactmoment', $descriptors);
-        $this->assertArrayHasKey('computeScore', $descriptors);
-        $this->assertArrayNotHasKey('internalOnly', $descriptors);
-        $this->assertCount(3, $descriptors);
+	public function testNonPublicAttributedMethodLogsWarning(): void {
+		$this->logger->expects($this->atLeastOnce())
+			->method('warning')
+			->with($this->stringContains('non-public'));
 
-    }//end testDiscoversOnlyPublicAttributedMethods()
+		$this->scanFixture();
 
+	}//end testNonPublicAttributedMethodLogsWarning()
 
-    public function testBuildsNamespacedIdFromAppIdAndName(): void
-    {
-        $descriptors = $this->scanFixture();
+	// ── Attribute defaults (REQ-ATTR-001) ────────────────────────────
 
-        $this->assertSame('pipelinq.createLead', $descriptors['createLead']['id']);
-        $this->assertSame('pipelinq.logContactmoment', $descriptors['logContactmoment']['id']);
+	public function testExplicitNameAndDescriptionAreUsed(): void {
+		$descriptors = $this->scanFixture();
 
-    }//end testBuildsNamespacedIdFromAppIdAndName()
+		$this->assertSame('createLead', $descriptors['createLead']['name']);
+		$this->assertSame('Create a sales lead from a contact moment.', $descriptors['createLead']['description']);
 
+	}//end testExplicitNameAndDescriptionAreUsed()
 
-    public function testNonPublicAttributedMethodLogsWarning(): void
-    {
-        $this->logger->expects($this->atLeastOnce())
-            ->method('warning')
-            ->with($this->stringContains('non-public'));
+	public function testDefaultsNameToMethodNameAndDescriptionToDocblockSummary(): void {
+		$descriptors = $this->scanFixture();
 
-        $this->scanFixture();
+		$this->assertSame('logContactmoment', $descriptors['logContactmoment']['name']);
+		$this->assertSame(
+			'Log a contact moment against a lead.',
+			$descriptors['logContactmoment']['description']
+		);
 
-    }//end testNonPublicAttributedMethodLogsWarning()
+	}//end testDefaultsNameToMethodNameAndDescriptionToDocblockSummary()
 
+	// ── inputSchema inference ────────────────────────────────────────
 
-    // ── Attribute defaults (REQ-ATTR-001) ────────────────────────────
+	public function testRequiredParamHasNoDefaultAndIsMarkedRequired(): void {
+		$descriptors = $this->scanFixture();
+		$inputSchema = $descriptors['createLead']['inputSchema'];
 
+		$this->assertSame('object', $inputSchema['type']);
+		$this->assertContains('email', $inputSchema['required']);
+		$this->assertSame('string', $inputSchema['properties']['email']['type']);
 
-    public function testExplicitNameAndDescriptionAreUsed(): void
-    {
-        $descriptors = $this->scanFixture();
+	}//end testRequiredParamHasNoDefaultAndIsMarkedRequired()
 
-        $this->assertSame('createLead', $descriptors['createLead']['name']);
-        $this->assertSame('Create a sales lead from a contact moment.', $descriptors['createLead']['description']);
+	public function testOptionalNullableAndDefaultedParamsAreNotRequired(): void {
+		$descriptors = $this->scanFixture();
+		$inputSchema = $descriptors['createLead']['inputSchema'];
 
-    }//end testExplicitNameAndDescriptionAreUsed()
+		$this->assertNotContains('company', $inputSchema['required']);
+		$this->assertNotContains('score', $inputSchema['required']);
+		$this->assertSame(['string', 'null'], $inputSchema['properties']['company']['type']);
+		$this->assertSame('integer', $inputSchema['properties']['score']['type']);
 
+	}//end testOptionalNullableAndDefaultedParamsAreNotRequired()
 
-    public function testDefaultsNameToMethodNameAndDescriptionToDocblockSummary(): void
-    {
-        $descriptors = $this->scanFixture();
+	public function testParamDocblockDescriptionsArePropagated(): void {
+		$descriptors = $this->scanFixture();
+		$inputSchema = $descriptors['createLead']['inputSchema'];
 
-        $this->assertSame('logContactmoment', $descriptors['logContactmoment']['name']);
-        $this->assertSame(
-            'Log a contact moment against a lead.',
-            $descriptors['logContactmoment']['description']
-        );
+		$this->assertSame("The contact's email address.", $inputSchema['properties']['email']['description']);
+		$this->assertSame('Optional company name.', $inputSchema['properties']['company']['description']);
 
-    }//end testDefaultsNameToMethodNameAndDescriptionToDocblockSummary()
+	}//end testParamDocblockDescriptionsArePropagated()
 
+	public function testSingleParamMinimalMethodInfersRequiredString(): void {
+		$descriptors = $this->scanFixture();
+		$inputSchema = $descriptors['logContactmoment']['inputSchema'];
 
-    // ── inputSchema inference ────────────────────────────────────────
+		$this->assertSame(['subject'], $inputSchema['required']);
+		$this->assertSame('string', $inputSchema['properties']['subject']['type']);
 
+	}//end testSingleParamMinimalMethodInfersRequiredString()
 
-    public function testRequiredParamHasNoDefaultAndIsMarkedRequired(): void
-    {
-        $descriptors = $this->scanFixture();
-        $inputSchema = $descriptors['createLead']['inputSchema'];
+	// ── outputSchema inference (best-effort) ─────────────────────────
 
-        $this->assertSame('object', $inputSchema['type']);
-        $this->assertContains('email', $inputSchema['required']);
-        $this->assertSame('string', $inputSchema['properties']['email']['type']);
+	public function testUntypedArrayReturnOmitsOutputSchema(): void {
+		$descriptors = $this->scanFixture();
 
-    }//end testRequiredParamHasNoDefaultAndIsMarkedRequired()
+		$this->assertArrayNotHasKey('outputSchema', $descriptors['createLead']);
+		$this->assertArrayNotHasKey('outputSchema', $descriptors['logContactmoment']);
 
+	}//end testUntypedArrayReturnOmitsOutputSchema()
 
-    public function testOptionalNullableAndDefaultedParamsAreNotRequired(): void
-    {
-        $descriptors = $this->scanFixture();
-        $inputSchema = $descriptors['createLead']['inputSchema'];
+	public function testScalarReturnTypeInfersOutputSchema(): void {
+		$descriptors = $this->scanFixture();
 
-        $this->assertNotContains('company', $inputSchema['required']);
-        $this->assertNotContains('score', $inputSchema['required']);
-        $this->assertSame(['string', 'null'], $inputSchema['properties']['company']['type']);
-        $this->assertSame('integer', $inputSchema['properties']['score']['type']);
+		$this->assertArrayHasKey('outputSchema', $descriptors['computeScore']);
+		$this->assertSame('integer', $descriptors['computeScore']['outputSchema']['type']);
 
-    }//end testOptionalNullableAndDefaultedParamsAreNotRequired()
+	}//end testScalarReturnTypeInfersOutputSchema()
 
+	// ── Invocation metadata (consumed by AttributeToolProvider) ──────
 
-    public function testParamDocblockDescriptionsArePropagated(): void
-    {
-        $descriptors = $this->scanFixture();
-        $inputSchema = $descriptors['createLead']['inputSchema'];
+	public function testDescriptorCarriesClassMethodAndParamNamesForInvocation(): void {
+		$descriptors = $this->scanFixture();
 
-        $this->assertSame("The contact's email address.", $inputSchema['properties']['email']['description']);
-        $this->assertSame('Optional company name.', $inputSchema['properties']['company']['description']);
+		$this->assertSame(AttributeFixtureService::class, $descriptors['createLead']['class']);
+		$this->assertSame('createLead', $descriptors['createLead']['method']);
+		$this->assertSame(['email', 'company', 'score'], $descriptors['createLead']['paramNames']);
 
-    }//end testParamDocblockDescriptionsArePropagated()
+	}//end testDescriptorCarriesClassMethodAndParamNamesForInvocation()
 
+	// ── Robustness ────────────────────────────────────────────────────
 
-    public function testSingleParamMinimalMethodInfersRequiredString(): void
-    {
-        $descriptors = $this->scanFixture();
-        $inputSchema = $descriptors['logContactmoment']['inputSchema'];
+	public function testUnknownClassLogsWarningAndReturnsEmpty(): void {
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('does not exist'));
 
-        $this->assertSame(['subject'], $inputSchema['required']);
-        $this->assertSame('string', $inputSchema['properties']['subject']['type']);
+		$descriptors = $this->scanner->scanClass(
+			appId: 'pipelinq',
+			className: 'OCA\\Pipelinq\\Service\\DoesNotExist',
+			logger: $this->logger
+		);
 
-    }//end testSingleParamMinimalMethodInfersRequiredString()
+		$this->assertSame([], $descriptors);
 
+	}//end testUnknownClassLogsWarningAndReturnsEmpty()
 
-    // ── outputSchema inference (best-effort) ─────────────────────────
+	public function testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames(): void {
+		$descriptors = $this->scanner->scanClasses(
+			appId: 'pipelinq',
+			classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class'],
+			logger: $this->logger
+		);
 
+		$names = array_column($descriptors, 'name');
+		$this->assertContains('createLead', $names);
+		$this->assertContains('computeScore', $names);
 
-    public function testUntypedArrayReturnOmitsOutputSchema(): void
-    {
-        $descriptors = $this->scanFixture();
+	}//end testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames()
 
-        $this->assertArrayNotHasKey('outputSchema', $descriptors['createLead']);
-        $this->assertArrayNotHasKey('outputSchema', $descriptors['logContactmoment']);
+	// ── Hint/scope forwarding (REQ-ATTR-005) ──────────────────────────
 
-    }//end testUntypedArrayReturnOmitsOutputSchema()
+	/**
+	 * @return array<string, array<string, mixed>> descriptor keyed by `name`
+	 */
+	private function scanHintScopeFixture(): array {
+		$descriptors = $this->scanner->scanClass(
+			appId: 'pipelinq',
+			className: HintScopeFixtureService::class,
+			logger: $this->logger
+		);
 
+		$byName = [];
+		foreach ($descriptors as $descriptor) {
+			$byName[$descriptor['name']] = $descriptor;
+		}
 
-    public function testScalarReturnTypeInfersOutputSchema(): void
-    {
-        $descriptors = $this->scanFixture();
+		return $byName;
+	}//end scanHintScopeFixture()
 
-        $this->assertArrayHasKey('outputSchema', $descriptors['computeScore']);
-        $this->assertSame('integer', $descriptors['computeScore']['outputSchema']['type']);
+	public function testDescriptorForwardsDeclaredHintsAndScope(): void {
+		$descriptors = $this->scanHintScopeFixture();
+		$descriptor = $descriptors['deleteLead'];
 
-    }//end testScalarReturnTypeInfersOutputSchema()
+		$this->assertFalse($descriptor['readOnlyHint']);
+		$this->assertTrue($descriptor['destructiveHint']);
+		$this->assertFalse($descriptor['idempotentHint']);
+		$this->assertSame('delete', $descriptor['scope']);
 
+	}//end testDescriptorForwardsDeclaredHintsAndScope()
 
-    // ── Invocation metadata (consumed by AttributeToolProvider) ──────
+	public function testUnannotatedHintsAndScopeStayOmittedNeverDefaulted(): void {
+		$descriptors = $this->scanHintScopeFixture();
+		$descriptor = $descriptors['getLead'];
 
+		$this->assertArrayNotHasKey('readOnlyHint', $descriptor);
+		$this->assertArrayNotHasKey('destructiveHint', $descriptor);
+		$this->assertArrayNotHasKey('idempotentHint', $descriptor);
+		$this->assertArrayNotHasKey('scope', $descriptor);
 
-    public function testDescriptorCarriesClassMethodAndParamNamesForInvocation(): void
-    {
-        $descriptors = $this->scanFixture();
+	}//end testUnannotatedHintsAndScopeStayOmittedNeverDefaulted()
 
-        $this->assertSame(AttributeFixtureService::class, $descriptors['createLead']['class']);
-        $this->assertSame('createLead', $descriptors['createLead']['method']);
-        $this->assertSame(['email', 'company', 'score'], $descriptors['createLead']['paramNames']);
+	public function testUnknownScopeIsRejectedAndLogged(): void {
+		$this->logger->expects($this->atLeastOnce())
+			->method('warning')
+			->with($this->stringContains('unrecognised `scope`'));
 
-    }//end testDescriptorCarriesClassMethodAndParamNamesForInvocation()
+		$descriptors = $this->scanHintScopeFixture();
 
+		$this->assertArrayNotHasKey('badScopeLead', $descriptors);
 
-    // ── Robustness ────────────────────────────────────────────────────
+	}//end testUnknownScopeIsRejectedAndLogged()
 
+	public function testUnknownScopeDoesNotSuppressSiblingValidTools(): void {
+		$descriptors = $this->scanHintScopeFixture();
 
-    public function testUnknownClassLogsWarningAndReturnsEmpty(): void
-    {
-        $this->logger->expects($this->once())
-            ->method('warning')
-            ->with($this->stringContains('does not exist'));
+		$this->assertArrayHasKey('deleteLead', $descriptors);
+		$this->assertArrayHasKey('getLead', $descriptors);
 
-        $descriptors = $this->scanner->scanClass(
-            appId: 'pipelinq',
-            className: 'OCA\\Pipelinq\\Service\\DoesNotExist',
-            logger: $this->logger
-        );
-
-        $this->assertSame([], $descriptors);
-
-    }//end testUnknownClassLogsWarningAndReturnsEmpty()
-
-
-    public function testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames(): void
-    {
-        $descriptors = $this->scanner->scanClasses(
-            appId: 'pipelinq',
-            classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class'],
-            logger: $this->logger
-        );
-
-        $names = array_column($descriptors, 'name');
-        $this->assertContains('createLead', $names);
-        $this->assertContains('computeScore', $names);
-
-    }//end testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames()
-
-
-    // ── Hint/scope forwarding (REQ-ATTR-005) ──────────────────────────
-
-
-    /**
-     * @return array<string, array<string, mixed>> descriptor keyed by `name`
-     */
-    private function scanHintScopeFixture(): array
-    {
-        $descriptors = $this->scanner->scanClass(
-            appId: 'pipelinq',
-            className: HintScopeFixtureService::class,
-            logger: $this->logger
-        );
-
-        $byName = [];
-        foreach ($descriptors as $descriptor) {
-            $byName[$descriptor['name']] = $descriptor;
-        }
-
-        return $byName;
-
-    }//end scanHintScopeFixture()
-
-
-    public function testDescriptorForwardsDeclaredHintsAndScope(): void
-    {
-        $descriptors = $this->scanHintScopeFixture();
-        $descriptor  = $descriptors['deleteLead'];
-
-        $this->assertFalse($descriptor['readOnlyHint']);
-        $this->assertTrue($descriptor['destructiveHint']);
-        $this->assertFalse($descriptor['idempotentHint']);
-        $this->assertSame('delete', $descriptor['scope']);
-
-    }//end testDescriptorForwardsDeclaredHintsAndScope()
-
-
-    public function testUnannotatedHintsAndScopeStayOmittedNeverDefaulted(): void
-    {
-        $descriptors = $this->scanHintScopeFixture();
-        $descriptor  = $descriptors['getLead'];
-
-        $this->assertArrayNotHasKey('readOnlyHint', $descriptor);
-        $this->assertArrayNotHasKey('destructiveHint', $descriptor);
-        $this->assertArrayNotHasKey('idempotentHint', $descriptor);
-        $this->assertArrayNotHasKey('scope', $descriptor);
-
-    }//end testUnannotatedHintsAndScopeStayOmittedNeverDefaulted()
-
-
-    public function testUnknownScopeIsRejectedAndLogged(): void
-    {
-        $this->logger->expects($this->atLeastOnce())
-            ->method('warning')
-            ->with($this->stringContains('unrecognised `scope`'));
-
-        $descriptors = $this->scanHintScopeFixture();
-
-        $this->assertArrayNotHasKey('badScopeLead', $descriptors);
-
-    }//end testUnknownScopeIsRejectedAndLogged()
-
-
-    public function testUnknownScopeDoesNotSuppressSiblingValidTools(): void
-    {
-        $descriptors = $this->scanHintScopeFixture();
-
-        $this->assertArrayHasKey('deleteLead', $descriptors);
-        $this->assertArrayHasKey('getLead', $descriptors);
-
-    }//end testUnknownScopeDoesNotSuppressSiblingValidTools()
+	}//end testUnknownScopeDoesNotSuppressSiblingValidTools()
 }//end class

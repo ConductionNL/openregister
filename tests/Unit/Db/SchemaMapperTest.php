@@ -22,52 +22,48 @@ use Psr\Log\LoggerInterface;
  * and require integration tests for meaningful coverage.
  * Here we verify construction wiring and the table name.
  */
-class SchemaMapperTest extends TestCase
-{
-    private IDBConnection&MockObject $db;
-    private IEventDispatcher&MockObject $eventDispatcher;
-    private PropertyValidatorHandler&MockObject $validator;
-    private OrganisationMapper&MockObject $organisationMapper;
-    private IUserSession&MockObject $userSession;
-    private IGroupManager&MockObject $groupManager;
-    private IAppConfig&MockObject $appConfig;
-    private LoggerInterface&MockObject $logger;
-    private SchemaMapper $mapper;
+class SchemaMapperTest extends TestCase {
+	private IDBConnection&MockObject $db;
+	private IEventDispatcher&MockObject $eventDispatcher;
+	private PropertyValidatorHandler&MockObject $validator;
+	private OrganisationMapper&MockObject $organisationMapper;
+	private IUserSession&MockObject $userSession;
+	private IGroupManager&MockObject $groupManager;
+	private IAppConfig&MockObject $appConfig;
+	private LoggerInterface&MockObject $logger;
+	private SchemaMapper $mapper;
 
-    protected function setUp(): void
-    {
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
-        $this->validator = $this->createMock(PropertyValidatorHandler::class);
-        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->validator = $this->createMock(PropertyValidatorHandler::class);
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->mapper = new SchemaMapper(
-            $this->db,
-            $this->eventDispatcher,
-            $this->validator,
-            $this->organisationMapper,
-            $this->userSession,
-            $this->groupManager,
-            $this->appConfig,
-            $this->logger
-        );
-    }
+		$this->mapper = new SchemaMapper(
+			$this->db,
+			$this->eventDispatcher,
+			$this->validator,
+			$this->organisationMapper,
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig,
+			$this->logger
+		);
+	}
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Construction
+	// -------------------------------------------------------------------------
 
-    public function testConstructorCreatesInstance(): void
-    {
-        $this->assertInstanceOf(SchemaMapper::class, $this->mapper);
-    }
+	public function testConstructorCreatesInstance(): void {
+		$this->assertInstanceOf(SchemaMapper::class, $this->mapper);
+	}
 
-    public function testGetTableNameReturnsCorrectValue(): void
-    {
-        $this->assertStringContainsString('openregister_schemas', $this->mapper->getTableName());
-    }
+	public function testGetTableNameReturnsCorrectValue(): void {
+		$this->assertStringContainsString('openregister_schemas', $this->mapper->getTableName());
+	}
 }

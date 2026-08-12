@@ -40,225 +40,212 @@ use Psr\Log\LoggerInterface;
 /**
  * Covers the dead-end warning and the refusal message built from it.
  */
-class FlowDeadEndTest extends TestCase
-{
-    /**
-     * Build a preflight whose registry answers `isEnd` from a fixed list.
-     *
-     * @param array<int, string> $stopping Types that end a path deliberately.
-     *
-     * @return FlowNodePreflight
-     */
-    private function preflight(array $stopping=[]): FlowNodePreflight
-    {
-        $registry = $this->createMock(FlowNodeRegistry::class);
-        $registry->method('get')->willReturn($this->createMock(IFlowNode::class));
-        $registry->method('isEnd')->willReturnCallback(
-            static fn (string $type): bool => in_array($type, $stopping, true)
-        );
+class FlowDeadEndTest extends TestCase {
+	/**
+	 * Build a preflight whose registry answers `isEnd` from a fixed list.
+	 *
+	 * @param array<int, string> $stopping Types that end a path deliberately.
+	 *
+	 * @return FlowNodePreflight
+	 */
+	private function preflight(array $stopping = []): FlowNodePreflight {
+		$registry = $this->createMock(FlowNodeRegistry::class);
+		$registry->method('get')->willReturn($this->createMock(IFlowNode::class));
+		$registry->method('isEnd')->willReturnCallback(
+			static fn (string $type): bool => in_array($type, $stopping, true)
+		);
 
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
 
-        return new FlowNodePreflight($registry, $appManager, $this->createMock(LoggerInterface::class));
+		return new FlowNodePreflight($registry, $appManager, $this->createMock(LoggerInterface::class));
+	}//end preflight()
 
-    }//end preflight()
+	/**
+	 * Only the dead-end warnings, so an unrelated finding cannot pass a count.
+	 *
+	 * @param array $report The preflight report.
+	 *
+	 * @return array<int, string> The offending node ids.
+	 */
+	private function deadEnds(array $report): array {
+		$ids = [];
+		foreach ($report['warnings'] as $warning) {
+			if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
+				$ids[] = $warning['step'];
+			}
+		}
 
-    /**
-     * Only the dead-end warnings, so an unrelated finding cannot pass a count.
-     *
-     * @param array $report The preflight report.
-     *
-     * @return array<int, string> The offending node ids.
-     */
-    private function deadEnds(array $report): array
-    {
-        $ids = [];
-        foreach ($report['warnings'] as $warning) {
-            if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
-                $ids[] = $warning['step'];
-            }
-        }
+		return $ids;
+	}//end deadEnds()
 
-        return $ids;
+	/**
+	 * A node whose token has nowhere to go is reported, by name.
+	 *
+	 * @return void
+	 */
+	public function testSinkNodeIsReported(): void {
+		$report = $this->preflight()->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'b', 'type' => 'openregister.set-fields'],
+				],
+				'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
+			]
+		);
 
-    }//end deadEnds()
+		$this->assertSame(['b'], $this->deadEnds($report));
+		$this->assertSame([], $report['blocking'], 'A dead end warns; it never blocks a save.');
 
-    /**
-     * A node whose token has nowhere to go is reported, by name.
-     *
-     * @return void
-     */
-    public function testSinkNodeIsReported(): void
-    {
-        $report = $this->preflight()->inspect(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'b', 'type' => 'openregister.set-fields'],
-                ],
-                'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
-            ]
-        );
+	}//end testSinkNodeIsReported()
 
-        $this->assertSame(['b'], $this->deadEnds($report));
-        $this->assertSame([], $report['blocking'], 'A dead end warns; it never blocks a save.');
+	/**
+	 * The positive control: the SAME graph, wired, reports nothing.
+	 *
+	 * Without this the test above proves only that the method returns a
+	 * non-empty list — which a check hardcoded to complain would also do.
+	 *
+	 * @return void
+	 */
+	public function testWiredGraphIsSilent(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'b', 'type' => 'openregister.end'],
+				],
+				'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
+			]
+		);
 
-    }//end testSinkNodeIsReported()
+		$this->assertSame([], $this->deadEnds($report));
 
-    /**
-     * The positive control: the SAME graph, wired, reports nothing.
-     *
-     * Without this the test above proves only that the method returns a
-     * non-empty list — which a check hardcoded to complain would also do.
-     *
-     * @return void
-     */
-    public function testWiredGraphIsSilent(): void
-    {
-        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'b', 'type' => 'openregister.end'],
-                ],
-                'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
-            ]
-        );
+	}//end testWiredGraphIsSilent()
 
-        $this->assertSame([], $this->deadEnds($report));
+	/**
+	 * A registered terminal TYPE ends a path without needing the flag.
+	 *
+	 * @return void
+	 */
+	public function testRegisteredEndTypeIsNotADeadEnd(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [['id' => 'only', 'type' => 'openregister.end']],
+				'edges' => [],
+			]
+		);
 
-    }//end testWiredGraphIsSilent()
+		$this->assertSame([], $this->deadEnds($report));
 
-    /**
-     * A registered terminal TYPE ends a path without needing the flag.
-     *
-     * @return void
-     */
-    public function testRegisteredEndTypeIsNotADeadEnd(): void
-    {
-        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
-            flow: [
-                'nodes' => [['id' => 'only', 'type' => 'openregister.end']],
-                'edges' => [],
-            ]
-        );
+	}//end testRegisteredEndTypeIsNotADeadEnd()
 
-        $this->assertSame([], $this->deadEnds($report));
+	/**
+	 * `exit: true` ends a path without the type being terminal.
+	 *
+	 * This is what a migrated flow needs: a sink whose step is an ordinary
+	 * action, which was a legitimate end of a path under the old reading.
+	 *
+	 * @return void
+	 */
+	public function testExitFlagIsHonouredForAnOrdinaryType(): void {
+		$report = $this->preflight()->inspect(
+			flow: [
+				'nodes' => [['id' => 'only', 'type' => 'openregister.set-fields', 'exit' => true]],
+				'edges' => [],
+			]
+		);
 
-    }//end testRegisteredEndTypeIsNotADeadEnd()
+		$this->assertSame([], $this->deadEnds($report));
 
-    /**
-     * `exit: true` ends a path without the type being terminal.
-     *
-     * This is what a migrated flow needs: a sink whose step is an ordinary
-     * action, which was a legitimate end of a path under the old reading.
-     *
-     * @return void
-     */
-    public function testExitFlagIsHonouredForAnOrdinaryType(): void
-    {
-        $report = $this->preflight()->inspect(
-            flow: [
-                'nodes' => [['id' => 'only', 'type' => 'openregister.set-fields', 'exit' => true]],
-                'edges' => [],
-            ]
-        );
+	}//end testExitFlagIsHonouredForAnOrdinaryType()
 
-        $this->assertSame([], $this->deadEnds($report));
+	/**
+	 * The two escapes are OR-ed, never AND-ed.
+	 *
+	 * A terminal type with no flag, and a flag with no terminal type, each
+	 * suffice on their own — proven by the two tests above. Here the inverse:
+	 * an ordinary type with no flag is NOT excused by the presence of a
+	 * terminal node elsewhere in the document.
+	 *
+	 * @return void
+	 */
+	public function testAnEndNodeElsewhereDoesNotExcuseASink(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'ends', 'type' => 'openregister.end'],
+					['id' => 'forgotten', 'type' => 'openregister.set-fields'],
+				],
+				'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'ends']],
+			]
+		);
 
-    }//end testExitFlagIsHonouredForAnOrdinaryType()
+		$this->assertSame(['forgotten'], $this->deadEnds($report));
 
-    /**
-     * The two escapes are OR-ed, never AND-ed.
-     *
-     * A terminal type with no flag, and a flag with no terminal type, each
-     * suffice on their own — proven by the two tests above. Here the inverse:
-     * an ordinary type with no flag is NOT excused by the presence of a
-     * terminal node elsewhere in the document.
-     *
-     * @return void
-     */
-    public function testAnEndNodeElsewhereDoesNotExcuseASink(): void
-    {
-        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'ends', 'type' => 'openregister.end'],
-                    ['id' => 'forgotten', 'type' => 'openregister.set-fields'],
-                ],
-                'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'ends']],
-            ]
-        );
+	}//end testAnEndNodeElsewhereDoesNotExcuseASink()
 
-        $this->assertSame(['forgotten'], $this->deadEnds($report));
+	/**
+	 * A typeless node is left to the builder, which refuses it by name.
+	 *
+	 * Two findings on one node for one defect is how a warning list becomes
+	 * noise, so this check stays out of the builder's way.
+	 *
+	 * @return void
+	 */
+	public function testTypelessNodeIsNotDoubleReported(): void {
+		$report = $this->preflight()->inspect(
+			flow: [
+				'nodes' => [['id' => 'a', 'type' => 'openregister.set-fields'], ['id' => 'b']],
+				'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
+			]
+		);
 
-    }//end testAnEndNodeElsewhereDoesNotExcuseASink()
+		$this->assertSame([], $this->deadEnds($report));
 
-    /**
-     * A typeless node is left to the builder, which refuses it by name.
-     *
-     * Two findings on one node for one defect is how a warning list becomes
-     * noise, so this check stays out of the builder's way.
-     *
-     * @return void
-     */
-    public function testTypelessNodeIsNotDoubleReported(): void
-    {
-        $report = $this->preflight()->inspect(
-            flow: [
-                'nodes' => [['id' => 'a', 'type' => 'openregister.set-fields'], ['id' => 'b']],
-                'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
-            ]
-        );
+	}//end testTypelessNodeIsNotDoubleReported()
 
-        $this->assertSame([], $this->deadEnds($report));
+	/**
+	 * A node with an outgoing edge is never a dead end, however many arrive.
+	 *
+	 * @return void
+	 */
+	public function testConvergingNodeWithAnExitIsFine(): void {
+		$report = $this->preflight(stopping: ['openregister.end'])->inspect(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'b', 'type' => 'openregister.set-fields'],
+					['id' => 'join', 'type' => 'openregister.set-fields'],
+					['id' => 'end', 'type' => 'openregister.end'],
+				],
+				'edges' => [
+					['id' => 'e1', 'from' => 'a', 'to' => 'join'],
+					['id' => 'e2', 'from' => 'b', 'to' => 'join'],
+					['id' => 'e3', 'from' => 'join', 'to' => 'end'],
+				],
+			]
+		);
 
-    }//end testTypelessNodeIsNotDoubleReported()
+		$this->assertSame([], $this->deadEnds($report));
 
-    /**
-     * A node with an outgoing edge is never a dead end, however many arrive.
-     *
-     * @return void
-     */
-    public function testConvergingNodeWithAnExitIsFine(): void
-    {
-        $report = $this->preflight(stopping: ['openregister.end'])->inspect(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'b', 'type' => 'openregister.set-fields'],
-                    ['id' => 'join', 'type' => 'openregister.set-fields'],
-                    ['id' => 'end', 'type' => 'openregister.end'],
-                ],
-                'edges' => [
-                    ['id' => 'e1', 'from' => 'a', 'to' => 'join'],
-                    ['id' => 'e2', 'from' => 'b', 'to' => 'join'],
-                    ['id' => 'e3', 'from' => 'join', 'to' => 'end'],
-                ],
-            ]
-        );
+	}//end testConvergingNodeWithAnExitIsFine()
 
-        $this->assertSame([], $this->deadEnds($report));
+	/**
+	 * The refusal names every offending node, so the author can act on it.
+	 *
+	 * @return void
+	 */
+	public function testRefusalMessageNamesTheNodes(): void {
+		$one = new FlowDeadEnd(nodeIds: ['forgotten']);
+		$this->assertStringContainsString('"forgotten"', $one->getMessage());
+		$this->assertStringContainsString('node "forgotten" has', $one->getMessage());
+		$this->assertSame(['forgotten'], $one->getNodeIds());
 
-    }//end testConvergingNodeWithAnExitIsFine()
+		$many = new FlowDeadEnd(nodeIds: ['a', 'b']);
+		$this->assertStringContainsString('"a", "b"', $many->getMessage());
+		$this->assertStringContainsString('have', $many->getMessage());
 
-    /**
-     * The refusal names every offending node, so the author can act on it.
-     *
-     * @return void
-     */
-    public function testRefusalMessageNamesTheNodes(): void
-    {
-        $one = new FlowDeadEnd(nodeIds: ['forgotten']);
-        $this->assertStringContainsString('"forgotten"', $one->getMessage());
-        $this->assertStringContainsString('node "forgotten" has', $one->getMessage());
-        $this->assertSame(['forgotten'], $one->getNodeIds());
-
-        $many = new FlowDeadEnd(nodeIds: ['a', 'b']);
-        $this->assertStringContainsString('"a", "b"', $many->getMessage());
-        $this->assertStringContainsString('have', $many->getMessage());
-
-    }//end testRefusalMessageNamesTheNodes()
+	}//end testRefusalMessageNamesTheNodes()
 }//end class

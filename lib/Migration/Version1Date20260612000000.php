@@ -51,46 +51,44 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_notification_dedupe table.
  */
-class Version1Date20260612000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260612000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_notification_dedupe') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_notification_dedupe') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_notification_dedupe');
+		$table = $schema->createTable('openregister_notification_dedupe');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('rule_key', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36, 'default' => '']);
-        $table->addColumn('fingerprint', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
-        $table->addColumn('dispatched_at', Types::DATETIME, ['notnull' => true]);
-        $table->addColumn('seen_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('rule_key', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36, 'default' => '']);
+		$table->addColumn('fingerprint', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
+		$table->addColumn('dispatched_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('seen_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['schema_id', 'rule_key', 'object_uuid'], 'idx_notifdedup_triple');
-        $table->addIndex(['object_uuid'], 'idx_notifdedup_object');
-        $table->addIndex(['seen_at'], 'idx_notifdedup_seen');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['schema_id', 'rule_key', 'object_uuid'], 'idx_notifdedup_triple');
+		$table->addIndex(['object_uuid'], 'idx_notifdedup_object');
+		$table->addIndex(['seen_at'], 'idx_notifdedup_seen');
 
-        $output->info('Created openregister_notification_dedupe table');
+		$output->info('Created openregister_notification_dedupe table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

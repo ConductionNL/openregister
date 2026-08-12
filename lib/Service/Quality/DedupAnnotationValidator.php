@@ -33,96 +33,93 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-5
  */
-class DedupAnnotationValidator
-{
-    /**
-     * Recognised match methods.
-     *
-     * @var array<int, string>
-     */
-    private const VALID_METHODS = ['exact', 'normalized', 'levenshtein'];
+class DedupAnnotationValidator {
+	/**
+	 * Recognised match methods.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VALID_METHODS = ['exact', 'normalized', 'levenshtein'];
 
-    /**
-     * Validate the `x-openregister-dedup` annotation in a schema shape.
-     *
-     * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-dedup`.
-     *
-     * @return array<int, array{code: string, message: string}> Errors; empty when valid.
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-5
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the annotation's
-     *   optional top-level fields (matchRules presence, threshold, blockingKeys) plus the
-     *   per-rule loop; each is a distinct, independently-testable guard.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat sequential guards.
-     */
-    public function validate(array $schema): array
-    {
-        $annotation = ($schema['x-openregister-dedup'] ?? null);
-        if ($annotation === null) {
-            return [];
-        }
+	/**
+	 * Validate the `x-openregister-dedup` annotation in a schema shape.
+	 *
+	 * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-dedup`.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-5
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the annotation's
+	 *   optional top-level fields (matchRules presence, threshold, blockingKeys) plus the
+	 *   per-rule loop; each is a distinct, independently-testable guard.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat sequential guards.
+	 */
+	public function validate(array $schema): array {
+		$annotation = ($schema['x-openregister-dedup'] ?? null);
+		if ($annotation === null) {
+			return [];
+		}
 
-        if (is_array($annotation) === false) {
-            return [['code' => 'dedup.not-object', 'message' => 'x-openregister-dedup must be an object.']];
-        }
+		if (is_array($annotation) === false) {
+			return [['code' => 'dedup.not-object', 'message' => 'x-openregister-dedup must be an object.']];
+		}
 
-        $matchRules = ($annotation['matchRules'] ?? null);
-        if (is_array($matchRules) === false || count($matchRules) === 0) {
-            return [['code' => 'dedup.no-rules', 'message' => 'x-openregister-dedup requires a non-empty "matchRules" array.']];
-        }
+		$matchRules = ($annotation['matchRules'] ?? null);
+		if (is_array($matchRules) === false || count($matchRules) === 0) {
+			return [['code' => 'dedup.no-rules', 'message' => 'x-openregister-dedup requires a non-empty "matchRules" array.']];
+		}
 
-        $errors = [];
-        foreach ($matchRules as $index => $rule) {
-            $errors = array_merge($errors, $this->validateRule(rule: $rule, index: (int) $index));
-        }
+		$errors = [];
+		foreach ($matchRules as $index => $rule) {
+			$errors = array_merge($errors, $this->validateRule(rule: $rule, index: (int)$index));
+		}
 
-        if (array_key_exists('threshold', $annotation) === true && is_numeric($annotation['threshold']) === false) {
-            $errors[] = ['code' => 'dedup.bad-threshold', 'message' => 'x-openregister-dedup "threshold" must be numeric.'];
-        }
+		if (array_key_exists('threshold', $annotation) === true && is_numeric($annotation['threshold']) === false) {
+			$errors[] = ['code' => 'dedup.bad-threshold', 'message' => 'x-openregister-dedup "threshold" must be numeric.'];
+		}
 
-        $blockingKeys = ($annotation['blockingKeys'] ?? null);
-        if ($blockingKeys !== null && is_array($blockingKeys) === false) {
-            $errors[] = ['code' => 'dedup.bad-blocking-keys', 'message' => 'x-openregister-dedup "blockingKeys" must be an array.'];
-        }
+		$blockingKeys = ($annotation['blockingKeys'] ?? null);
+		if ($blockingKeys !== null && is_array($blockingKeys) === false) {
+			$errors[] = ['code' => 'dedup.bad-blocking-keys', 'message' => 'x-openregister-dedup "blockingKeys" must be an array.'];
+		}
 
-        return $errors;
-    }//end validate()
+		return $errors;
+	}//end validate()
 
-    /**
-     * Validate a single match rule.
-     *
-     * @param mixed $rule  Rule definition.
-     * @param int   $index Position in matchRules (for messaging).
-     *
-     * @return array<int, array{code: string, message: string}>
-     */
-    private function validateRule($rule, int $index): array
-    {
-        if (is_array($rule) === false) {
-            return [['code' => 'dedup.rule-not-object', 'message' => sprintf('Match rule #%d must be an object.', $index)]];
-        }
+	/**
+	 * Validate a single match rule.
+	 *
+	 * @param mixed $rule Rule definition.
+	 * @param int $index Position in matchRules (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateRule($rule, int $index): array {
+		if (is_array($rule) === false) {
+			return [['code' => 'dedup.rule-not-object', 'message' => sprintf('Match rule #%d must be an object.', $index)]];
+		}
 
-        if ((string) ($rule['field'] ?? '') === '') {
-            return [['code' => 'dedup.missing-field', 'message' => sprintf('Match rule #%d requires a "field".', $index)]];
-        }
+		if ((string)($rule['field'] ?? '') === '') {
+			return [['code' => 'dedup.missing-field', 'message' => sprintf('Match rule #%d requires a "field".', $index)]];
+		}
 
-        $method = (string) ($rule['method'] ?? '');
-        if (in_array($method, self::VALID_METHODS, true) === false) {
-            $valid = implode(', ', self::VALID_METHODS);
-            return [
-                [
-                    'code'    => 'dedup.unknown-method',
-                    'message' => sprintf('Match rule #%d has unknown method "%s" (expected one of: %s).', $index, $method, $valid),
-                ],
-            ];
-        }
+		$method = (string)($rule['method'] ?? '');
+		if (in_array($method, self::VALID_METHODS, true) === false) {
+			$valid = implode(', ', self::VALID_METHODS);
+			return [
+				[
+					'code' => 'dedup.unknown-method',
+					'message' => sprintf('Match rule #%d has unknown method "%s" (expected one of: %s).', $index, $method, $valid),
+				],
+			];
+		}
 
-        $errors = [];
-        if (array_key_exists('weight', $rule) === true && is_numeric($rule['weight']) === false) {
-            $errors[] = ['code' => 'dedup.bad-weight', 'message' => sprintf('Match rule #%d "weight" must be numeric.', $index)];
-        }
+		$errors = [];
+		if (array_key_exists('weight', $rule) === true && is_numeric($rule['weight']) === false) {
+			$errors[] = ['code' => 'dedup.bad-weight', 'message' => sprintf('Match rule #%d "weight" must be numeric.', $index)];
+		}
 
-        return $errors;
-    }//end validateRule()
+		return $errors;
+	}//end validateRule()
 }//end class

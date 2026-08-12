@@ -47,32 +47,31 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Declares an editable form for a node type's configuration.
  */
-interface IFlowNodeConfigForm
-{
-    /**
-     * The fields this node's configuration is edited through.
-     *
-     * Each entry describes ONE key from `configKeys()`:
-     *
-     *   key         string  The config key it writes. MUST be one this node
-     *                       actually reads — a field over a key the node
-     *                       ignores looks like it works and changes nothing.
-     *   label       string  Translated, because it is shown to an operator.
-     *   type        string  `text`, `textarea`, `number`, `boolean`, `select`.
-     *   help        string  Optional. What the value means, not what it is.
-     *   required    bool    Optional. Whether the node needs it to run.
-     *   optionsFrom string  Optional. A REFERENCE the providing app resolves —
-     *                       e.g. its own sources or synchronizations. A URL,
-     *                       never inline options: a catalogue is fetched once
-     *                       and changes without the node being redeployed, and
-     *                       baking today's list into the node's declaration
-     *                       would freeze it there.
-     *
-     * A key with no field is still editable through the raw-JSON pane. That is
-     * deliberate: a partial form is more useful than none, and it lets a node
-     * describe the two fields worth guiding and leave the rest.
-     *
-     * @return array<int, array<string, mixed>> The field descriptions.
-     */
-    public function configForm(): array;
+interface IFlowNodeConfigForm {
+	/**
+	 * The fields this node's configuration is edited through.
+	 *
+	 * Each entry describes ONE key from `configKeys()`:
+	 *
+	 *   key         string  The config key it writes. MUST be one this node
+	 *                       actually reads — a field over a key the node
+	 *                       ignores looks like it works and changes nothing.
+	 *   label       string  Translated, because it is shown to an operator.
+	 *   type        string  `text`, `textarea`, `number`, `boolean`, `select`.
+	 *   help        string  Optional. What the value means, not what it is.
+	 *   required    bool    Optional. Whether the node needs it to run.
+	 *   optionsFrom string  Optional. A REFERENCE the providing app resolves —
+	 *                       e.g. its own sources or synchronizations. A URL,
+	 *                       never inline options: a catalogue is fetched once
+	 *                       and changes without the node being redeployed, and
+	 *                       baking today's list into the node's declaration
+	 *                       would freeze it there.
+	 *
+	 * A key with no field is still editable through the raw-JSON pane. That is
+	 * deliberate: a partial form is more useful than none, and it lets a node
+	 * describe the two fields worth guiding and leave the rest.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 */
+	public function configForm(): array;
 }//end interface

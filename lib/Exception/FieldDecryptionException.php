@@ -49,22 +49,21 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class FieldDecryptionException extends Exception
-{
-    /**
-     * Constructor for FieldDecryptionException
-     *
-     * @param string         $message  The error message describing the decryption failure.
-     * @param int            $code     The error code (default: 0).
-     * @param Throwable|null $previous The previous exception that caused this one.
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message,
-        int $code=0,
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+class FieldDecryptionException extends Exception {
+	/**
+	 * Constructor for FieldDecryptionException
+	 *
+	 * @param string $message The error message describing the decryption failure.
+	 * @param int $code The error code (default: 0).
+	 * @param Throwable|null $previous The previous exception that caused this one.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message,
+		int $code = 0,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 }//end class

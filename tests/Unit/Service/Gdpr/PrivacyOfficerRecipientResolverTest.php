@@ -39,110 +39,100 @@ use Psr\Log\LoggerInterface;
 /**
  * PrivacyOfficerRecipientResolverTest.
  */
-class PrivacyOfficerRecipientResolverTest extends TestCase
-{
+class PrivacyOfficerRecipientResolverTest extends TestCase {
 
-    private DsarPolicyPackResolver&MockObject $packResolver;
+	private DsarPolicyPackResolver&MockObject $packResolver;
 
-    private IGroupManager&MockObject $groupManager;
+	private IGroupManager&MockObject $groupManager;
 
-    private PrivacyOfficerRecipientResolver $resolver;
+	private PrivacyOfficerRecipientResolver $resolver;
 
+	protected function setUp(): void {
+		$this->packResolver = $this->createMock(DsarPolicyPackResolver::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
-    protected function setUp(): void
-    {
-        $this->packResolver = $this->createMock(DsarPolicyPackResolver::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
+		$this->resolver = new PrivacyOfficerRecipientResolver(
+			packResolver: $this->packResolver,
+			groupManager: $this->groupManager,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 
-        $this->resolver = new PrivacyOfficerRecipientResolver(
-            packResolver: $this->packResolver,
-            groupManager: $this->groupManager,
-            logger: $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * The pack's officer group expands to its members' uids.
+	 *
+	 * @return void
+	 */
+	public function testResolvesOfficerGroupMembers(): void {
+		$this->packResolver->method('activePackForCase')->willReturn(
+			['privacyOfficerGroup' => 'privacy-officers']
+		);
 
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
 
-    /**
-     * The pack's officer group expands to its members' uids.
-     *
-     * @return void
-     */
-    public function testResolvesOfficerGroupMembers(): void
-    {
-        $this->packResolver->method('activePackForCase')->willReturn(
-            ['privacyOfficerGroup' => 'privacy-officers']
-        );
+		$group = $this->createMock(IGroup::class);
+		$group->method('getUsers')->willReturn([$alice, $bob, $alice]);
+		$this->groupManager->method('get')->with('privacy-officers')->willReturn($group);
 
-        $alice = $this->createMock(IUser::class);
-        $alice->method('getUID')->willReturn('alice');
-        $bob = $this->createMock(IUser::class);
-        $bob->method('getUID')->willReturn('bob');
+		$uids = $this->resolver->resolve($this->case(), []);
 
-        $group = $this->createMock(IGroup::class);
-        $group->method('getUsers')->willReturn([$alice, $bob, $alice]);
-        $this->groupManager->method('get')->with('privacy-officers')->willReturn($group);
+		$this->assertEqualsCanonicalizing(['alice', 'bob'], $uids);
 
-        $uids = $this->resolver->resolve($this->case(), []);
+	}//end testResolvesOfficerGroupMembers()
 
-        $this->assertEqualsCanonicalizing(['alice', 'bob'], $uids);
+	/**
+	 * Fail-safe matrix: no pack / unset field / placeholder / unknown group
+	 * all resolve to zero officer recipients.
+	 *
+	 * @return void
+	 */
+	public function testFailSafeMatrix(): void {
+		// No pack resolves.
+		$this->packResolver->method('activePackForCase')->willReturn(null);
+		$this->assertSame([], $this->resolver->resolve($this->case(), []));
 
-    }//end testResolvesOfficerGroupMembers()
+		// Unset field.
+		$this->setUp();
+		$this->packResolver->method('activePackForCase')->willReturn(['jurisdiction' => 'default']);
+		$this->assertSame([], $this->resolver->resolve($this->case(), []));
 
+		// Placeholder value (seed convention).
+		$this->setUp();
+		$this->packResolver->method('activePackForCase')->willReturn(
+			['privacyOfficerGroup' => '<privacy-officer-group>']
+		);
+		$this->groupManager->expects($this->never())->method('get');
+		$this->assertSame([], $this->resolver->resolve($this->case(), []));
 
-    /**
-     * Fail-safe matrix: no pack / unset field / placeholder / unknown group
-     * all resolve to zero officer recipients.
-     *
-     * @return void
-     */
-    public function testFailSafeMatrix(): void
-    {
-        // No pack resolves.
-        $this->packResolver->method('activePackForCase')->willReturn(null);
-        $this->assertSame([], $this->resolver->resolve($this->case(), []));
+		// Unknown group.
+		$this->setUp();
+		$this->packResolver->method('activePackForCase')->willReturn(
+			['privacyOfficerGroup' => 'ghost-group']
+		);
+		$this->groupManager->method('get')->willReturn(null);
+		$this->assertSame([], $this->resolver->resolve($this->case(), []));
 
-        // Unset field.
-        $this->setUp();
-        $this->packResolver->method('activePackForCase')->willReturn(['jurisdiction' => 'default']);
-        $this->assertSame([], $this->resolver->resolve($this->case(), []));
+	}//end testFailSafeMatrix()
 
-        // Placeholder value (seed convention).
-        $this->setUp();
-        $this->packResolver->method('activePackForCase')->willReturn(
-            ['privacyOfficerGroup' => '<privacy-officer-group>']
-        );
-        $this->groupManager->expects($this->never())->method('get');
-        $this->assertSame([], $this->resolver->resolve($this->case(), []));
+	/**
+	 * A DSAR case entity.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function case(): ObjectEntity {
+		$case = new ObjectEntity();
+		$case->setUuid('case-1');
+		$case->setObject(
+			[
+				'jurisdiction' => 'default',
+				'subjectId' => 'subject@example.org',
+			]
+		);
 
-        // Unknown group.
-        $this->setUp();
-        $this->packResolver->method('activePackForCase')->willReturn(
-            ['privacyOfficerGroup' => 'ghost-group']
-        );
-        $this->groupManager->method('get')->willReturn(null);
-        $this->assertSame([], $this->resolver->resolve($this->case(), []));
-
-    }//end testFailSafeMatrix()
-
-
-    /**
-     * A DSAR case entity.
-     *
-     * @return ObjectEntity
-     */
-    private function case(): ObjectEntity
-    {
-        $case = new ObjectEntity();
-        $case->setUuid('case-1');
-        $case->setObject(
-            [
-                'jurisdiction' => 'default',
-                'subjectId'    => 'subject@example.org',
-            ]
-        );
-
-        return $case;
-
-    }//end case()
+		return $case;
+	}//end case()
 }//end class

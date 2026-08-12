@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Bootstrap file for PHPUnit tests
  *
@@ -49,33 +50,32 @@ require_once __DIR__ . '/../vendor/autoload.php';
  *
  * @return string|null Absolute path to the NC root, or null when not found.
  */
-function openregister_locate_nc_root(): ?string
-{
-    $explicit = getenv('OPENREGISTER_TEST_NC_ROOT');
-    if (is_string($explicit) === true && $explicit !== '' && is_file($explicit . '/lib/base.php') === true) {
-        return rtrim($explicit, '/');
-    }
+function openregister_locate_nc_root(): ?string {
+	$explicit = getenv('OPENREGISTER_TEST_NC_ROOT');
+	if (is_string($explicit) === true && $explicit !== '' && is_file($explicit . '/lib/base.php') === true) {
+		return rtrim($explicit, '/');
+	}
 
-    $dir = __DIR__;
-    for ($depth = 0; $depth < 8; $depth++) {
-        $dir = dirname($dir);
-        if ($dir === '/' || $dir === '' || $dir === '.') {
-            break;
-        }
+	$dir = __DIR__;
+	for ($depth = 0; $depth < 8; $depth++) {
+		$dir = dirname($dir);
+		if ($dir === '/' || $dir === '' || $dir === '.') {
+			break;
+		}
 
-        // Identify the NC source/install root by the sibling layout —
-        // `lib/base.php` plus the documented top-level dirs. Tolerates
-        // both the source-tree layout (with `tests/`) and a deployed
-        // install (without `tests/`).
-        if (is_file($dir . '/lib/base.php') === true
-            && is_dir($dir . '/apps') === true
-            && is_dir($dir . '/core') === true
-        ) {
-            return $dir;
-        }
-    }
+		// Identify the NC source/install root by the sibling layout —
+		// `lib/base.php` plus the documented top-level dirs. Tolerates
+		// both the source-tree layout (with `tests/`) and a deployed
+		// install (without `tests/`).
+		if (is_file($dir . '/lib/base.php') === true
+			&& is_dir($dir . '/apps') === true
+			&& is_dir($dir . '/core') === true
+		) {
+			return $dir;
+		}
+	}
 
-    return null;
+	return null;
 }
 
 // Bootstrap Nextcloud if not already done. Caller can opt out via
@@ -86,67 +86,67 @@ $skipNc = getenv('OPENREGISTER_TEST_SKIP_NC');
 $skipNc = is_string($skipNc) === true && filter_var($skipNc, FILTER_VALIDATE_BOOLEAN) === true;
 
 if ($skipNc === false && !defined('OC_CONSOLE')) {
-    $ncRoot = openregister_locate_nc_root();
+	$ncRoot = openregister_locate_nc_root();
 
-    if ($ncRoot !== null) {
-        try {
-            require_once $ncRoot . '/lib/base.php';
+	if ($ncRoot !== null) {
+		try {
+			require_once $ncRoot . '/lib/base.php';
 
-            // Source-tree only: NC's PHPUnit harness adds `Test\TestCase`
-            // and friends. Deployed installs don't ship the tests dir,
-            // so pull it in only when present.
-            if (is_file($ncRoot . '/tests/autoload.php') === true) {
-                require_once $ncRoot . '/tests/autoload.php';
-            }
+			// Source-tree only: NC's PHPUnit harness adds `Test\TestCase`
+			// and friends. Deployed installs don't ship the tests dir,
+			// so pull it in only when present.
+			if (is_file($ncRoot . '/tests/autoload.php') === true) {
+				require_once $ncRoot . '/tests/autoload.php';
+			}
 
-            // Load all enabled apps.
-            \OC_App::loadApps();
+			// Load all enabled apps.
+			\OC_App::loadApps();
 
-            // Load our specific app.
-            \OC_App::loadApp('openregister');
+			// Load our specific app.
+			\OC_App::loadApp('openregister');
 
-            // Clear hooks for testing.
-            OC_Hook::clear();
-        } catch (\Throwable $e) {
-            // The NC root we found exists but isn't installed (e.g. a
-            // bare server checkout used as the parent of multiple
-            // worktrees). Fall through to pure-unit mode rather than
-            // aborting the test run — the failing message above is
-            // less actionable than the bootstrap message below.
-            fwrite(
-                STDERR,
-                sprintf(
-                    "[openregister/tests/bootstrap] NC root at %s could not be initialised (%s).\n"
-                    . "  Falling through to composer autoload only — pure unit tests will run; container-bound tests will fail clearly.\n"
-                    . "  Set OPENREGISTER_TEST_SKIP_NC=1 to silence this and skip NC bootstrap entirely.\n",
-                    $ncRoot,
-                    $e->getMessage()
-                )
-            );
-        }
-    } else {
-        // No NC root in scope — pure unit tests still work via the
-        // composer autoloader already loaded above; tests that touch
-        // the container will fail with a clear "OC server not
-        // bootstrapped" error rather than the previous silent skip.
-        fwrite(
-            STDERR,
-            "[openregister/tests/bootstrap] Nextcloud root not found; running with composer autoload only.\n"
-            . "  Set OPENREGISTER_TEST_NC_ROOT to the NC server source root if you need integration/DB tests.\n"
-        );
+			// Clear hooks for testing.
+			OC_Hook::clear();
+		} catch (\Throwable $e) {
+			// The NC root we found exists but isn't installed (e.g. a
+			// bare server checkout used as the parent of multiple
+			// worktrees). Fall through to pure-unit mode rather than
+			// aborting the test run — the failing message above is
+			// less actionable than the bootstrap message below.
+			fwrite(
+				STDERR,
+				sprintf(
+					"[openregister/tests/bootstrap] NC root at %s could not be initialised (%s).\n"
+					. "  Falling through to composer autoload only — pure unit tests will run; container-bound tests will fail clearly.\n"
+					. "  Set OPENREGISTER_TEST_SKIP_NC=1 to silence this and skip NC bootstrap entirely.\n",
+					$ncRoot,
+					$e->getMessage()
+				)
+			);
+		}
+	} else {
+		// No NC root in scope — pure unit tests still work via the
+		// composer autoloader already loaded above; tests that touch
+		// the container will fail with a clear "OC server not
+		// bootstrapped" error rather than the previous silent skip.
+		fwrite(
+			STDERR,
+			"[openregister/tests/bootstrap] Nextcloud root not found; running with composer autoload only.\n"
+			. "  Set OPENREGISTER_TEST_NC_ROOT to the NC server source root if you need integration/DB tests.\n"
+		);
 
-        // Say it once, then silence any child process.
-        //
-        // A `@runInSeparateProcess` test re-runs this bootstrap in a forked
-        // PHPUnit worker, and ANY output from that worker corrupts the channel
-        // PHPUnit uses to read the child's result back — the test then fails
-        // with this very notice as its error message rather than on its own
-        // merits (BootstrapTest::testRegistrationIsLazyAndDoesNotAutoloadGenerics).
-        // The child inherits this process's environment, so setting the
-        // harness's existing skip switch here keeps the diagnostic for the human
-        // running the suite while making every forked worker quiet.
-        putenv('OPENREGISTER_TEST_SKIP_NC=1');
-    }
+		// Say it once, then silence any child process.
+		//
+		// A `@runInSeparateProcess` test re-runs this bootstrap in a forked
+		// PHPUnit worker, and ANY output from that worker corrupts the channel
+		// PHPUnit uses to read the child's result back — the test then fails
+		// with this very notice as its error message rather than on its own
+		// merits (BootstrapTest::testRegistrationIsLazyAndDoesNotAutoloadGenerics).
+		// The child inherits this process's environment, so setting the
+		// harness's existing skip switch here keeps the diagnostic for the human
+		// running the suite while making every forked worker quiet.
+		putenv('OPENREGISTER_TEST_SKIP_NC=1');
+	}
 }
 
 // Load minimal Doctrine DBAL stubs so nextcloud/ocp interface constants
@@ -185,10 +185,10 @@ require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
 // That is the 2026-07-12 outage. Static analysis does not need the mapping either:
 // PHPStan reads the stubs via `scanDirectories`, Psalm via `<extraFiles>`.
 if (interface_exists(\OCP\IUser::class) === false) {
-    $ocpLoader = new \Composer\Autoload\ClassLoader();
-    $ocpLoader->addPsr4('OCP\\', __DIR__ . '/../vendor/nextcloud/ocp/OCP/');
-    $ocpLoader->addPsr4('NCU\\', __DIR__ . '/../vendor/nextcloud/ocp/NCU/');
-    $ocpLoader->register();
+	$ocpLoader = new \Composer\Autoload\ClassLoader();
+	$ocpLoader->addPsr4('OCP\\', __DIR__ . '/../vendor/nextcloud/ocp/OCP/');
+	$ocpLoader->addPsr4('NCU\\', __DIR__ . '/../vendor/nextcloud/ocp/NCU/');
+	$ocpLoader->register();
 }
 
 // Load the Doriath contract stubs + test fixtures for the credential-broker

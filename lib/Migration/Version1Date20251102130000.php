@@ -36,57 +36,55 @@ use OCP\Migration\SimpleMigrationStep;
  * - Groups are stored as an array of group ID strings
  * - Empty array means all users have access
  */
-class Version1Date20251102130000 extends SimpleMigrationStep
-{
-    /**
-     * Add groups column to applications table
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null Updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251102130000 extends SimpleMigrationStep {
+	/**
+	 * Add groups column to applications table
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null Updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        $output->info(message: '🔧 Adding groups column to applications table...');
+		$output->info(message: '🔧 Adding groups column to applications table...');
 
-        if ($schema->hasTable('openregister_applications') === true) {
-            $table = $schema->getTable('openregister_applications');
+		if ($schema->hasTable('openregister_applications') === true) {
+			$table = $schema->getTable('openregister_applications');
 
-            // Add groups column if it doesn't exist.
-            if ($table->hasColumn('groups') === false) {
-                $table->addColumn(
-                    'groups',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Array of Nextcloud group IDs that have access to this application',
-                    ]
-                );
+			// Add groups column if it doesn't exist.
+			if ($table->hasColumn('groups') === false) {
+				$table->addColumn(
+					'groups',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => 'Array of Nextcloud group IDs that have access to this application',
+					]
+				);
 
-                $output->info(message: '✅ Added groups column to openregister_applications table');
-                $output->info('🎯 Applications now support:');
-                $output->info(message: '   • Group-based access control');
-                $output->info(message: '   • Restriction by Nextcloud group membership');
-                $output->info(message: '   • Empty array = all users have access');
+				$output->info(message: '✅ Added groups column to openregister_applications table');
+				$output->info('🎯 Applications now support:');
+				$output->info(message: '   • Group-based access control');
+				$output->info(message: '   • Restriction by Nextcloud group membership');
+				$output->info(message: '   • Empty array = all users have access');
 
-                return $schema;
-            }
+				return $schema;
+			}
 
-            $output->info(message: 'ℹ️  Groups column already exists, skipping...');
-            return null;
-        }//end if
+			$output->info(message: 'ℹ️  Groups column already exists, skipping...');
+			return null;
+		}//end if
 
-        $output->info(message: '⚠️  Applications table not found!');
+		$output->info(message: '⚠️  Applications table not found!');
 
-        return null;
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

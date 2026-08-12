@@ -27,78 +27,75 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Notification subscription row.
  *
- * @method void           setUserId(string $userId)
- * @method string|null    getUserId()
- * @method void           setRegisterId(?int $registerId)
- * @method int|null       getRegisterId()
- * @method void           setSchemaId(?int $schemaId)
- * @method int|null       getSchemaId()
- * @method void           setCreated(\DateTime $created)
+ * @method void setUserId(string $userId)
+ * @method string|null getUserId()
+ * @method void setRegisterId(?int $registerId)
+ * @method int|null getRegisterId()
+ * @method void setSchemaId(?int $schemaId)
+ * @method int|null getSchemaId()
+ * @method void setCreated(\DateTime $created)
  * @method \DateTime|null getCreated()
  *
  * @deprecated Superseded by override-only user-config notification preferences
  *             (NotificationPreferenceService). Rows are migrated by the
  *             MigrateNotificationSubscriptionsToUserConfig repair step.
  */
-class NotificationSubscription extends Entity
-{
+class NotificationSubscription extends Entity {
 
-    /**
-     * User UID owning this subscription.
-     *
-     * @var string|null
-     */
-    protected ?string $userId = null;
+	/**
+	 * User UID owning this subscription.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $userId = null;
 
-    /**
-     * Register identifier scope; null means any register.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * Register identifier scope; null means any register.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * Schema identifier scope; null means any schema in the register.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * Schema identifier scope; null means any schema in the register.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * Creation timestamp for the subscription row.
-     *
-     * @var \DateTime|null
-     */
-    protected ?\DateTime $created = null;
+	/**
+	 * Creation timestamp for the subscription row.
+	 *
+	 * @var \DateTime|null
+	 */
+	protected ?\DateTime $created = null;
 
-    /**
-     * Configure typed columns for the entity.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'userId', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'created', type: 'datetime');
+	/**
+	 * Configure typed columns for the entity.
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'userId', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'created', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Flat array shape for response embedding.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->getId(),
-            'userId'     => $this->getUserId(),
-            'registerId' => $this->getRegisterId(),
-            'schemaId'   => $this->getSchemaId(),
-            'created'    => ($this->getCreated()?->format(\DateTimeInterface::ATOM) ?? null),
-        ];
+	/**
+	 * Flat array shape for response embedding.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->getId(),
+			'userId' => $this->getUserId(),
+			'registerId' => $this->getRegisterId(),
+			'schemaId' => $this->getSchemaId(),
+			'created' => ($this->getCreated()?->format(\DateTimeInterface::ATOM) ?? null),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

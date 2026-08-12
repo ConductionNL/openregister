@@ -22,67 +22,60 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
 
-class SchemaEncryptedPropertiesTest extends TestCase
-{
-    public function testHasEncryptedPropertiesFalseByDefault(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties(['name' => ['type' => 'string']]);
+class SchemaEncryptedPropertiesTest extends TestCase {
+	public function testHasEncryptedPropertiesFalseByDefault(): void {
+		$schema = new Schema();
+		$schema->setProperties(['name' => ['type' => 'string']]);
 
-        $this->assertFalse($schema->hasEncryptedProperties());
-        $this->assertSame([], $schema->getEncryptedProperties());
-    }
+		$this->assertFalse($schema->hasEncryptedProperties());
+		$this->assertSame([], $schema->getEncryptedProperties());
+	}
 
-    public function testHasEncryptedPropertiesTrueWhenFlagged(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties([
-            'name' => ['type' => 'string'],
-            'bsn'  => ['type' => 'string', 'x-openregister-encrypted' => true],
-        ]);
+	public function testHasEncryptedPropertiesTrueWhenFlagged(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'name' => ['type' => 'string'],
+			'bsn' => ['type' => 'string', 'x-openregister-encrypted' => true],
+		]);
 
-        $this->assertTrue($schema->hasEncryptedProperties());
-        $this->assertSame(['bsn'], $schema->getEncryptedProperties());
-    }
+		$this->assertTrue($schema->hasEncryptedProperties());
+		$this->assertSame(['bsn'], $schema->getEncryptedProperties());
+	}
 
-    public function testGetEncryptedPropertiesReturnsAllFlaggedNames(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties([
-            'bsn'     => ['type' => 'string', 'x-openregister-encrypted' => true],
-            'medical' => ['type' => 'string', 'x-openregister-encrypted' => true],
-            'name'    => ['type' => 'string'],
-        ]);
+	public function testGetEncryptedPropertiesReturnsAllFlaggedNames(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'bsn' => ['type' => 'string', 'x-openregister-encrypted' => true],
+			'medical' => ['type' => 'string', 'x-openregister-encrypted' => true],
+			'name' => ['type' => 'string'],
+		]);
 
-        $this->assertSame(['bsn', 'medical'], $schema->getEncryptedProperties());
-    }
+		$this->assertSame(['bsn', 'medical'], $schema->getEncryptedProperties());
+	}
 
-    public function testFlagMustBeExactlyTrue(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties([
-            'bsn' => ['type' => 'string', 'x-openregister-encrypted' => 'true'],
-        ]);
+	public function testFlagMustBeExactlyTrue(): void {
+		$schema = new Schema();
+		$schema->setProperties([
+			'bsn' => ['type' => 'string', 'x-openregister-encrypted' => 'true'],
+		]);
 
-        $this->assertFalse(
-            $schema->hasEncryptedProperties(),
-            'A truthy-but-not-boolean-true value must not flag the property (matches writeOnly convention)'
-        );
-    }
+		$this->assertFalse(
+			$schema->hasEncryptedProperties(),
+			'A truthy-but-not-boolean-true value must not flag the property (matches writeOnly convention)'
+		);
+	}
 
-    public function testEmptyPropertiesReturnsFalseAndEmptyArray(): void
-    {
-        $schema = new Schema();
+	public function testEmptyPropertiesReturnsFalseAndEmptyArray(): void {
+		$schema = new Schema();
 
-        $this->assertFalse($schema->hasEncryptedProperties());
-        $this->assertSame([], $schema->getEncryptedProperties());
-    }
+		$this->assertFalse($schema->hasEncryptedProperties());
+		$this->assertSame([], $schema->getEncryptedProperties());
+	}
 
-    public function testNonArrayPropertyConfigIsIgnored(): void
-    {
-        $schema = new Schema();
-        $schema->setProperties(['weird' => 'not-an-array']);
+	public function testNonArrayPropertyConfigIsIgnored(): void {
+		$schema = new Schema();
+		$schema->setProperties(['weird' => 'not-an-array']);
 
-        $this->assertFalse($schema->hasEncryptedProperties());
-    }
+		$this->assertFalse($schema->hasEncryptedProperties());
+	}
 }

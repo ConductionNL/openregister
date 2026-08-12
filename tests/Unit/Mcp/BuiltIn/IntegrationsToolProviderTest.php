@@ -35,292 +35,271 @@ use Psr\Log\NullLogger;
 /**
  * In-memory provider stub recording delegated calls.
  */
-class _McpStubProvider extends AbstractIntegrationProvider
-{
+class _McpStubProvider extends AbstractIntegrationProvider {
 
-    public array $listCalled   = [];
-    public array $getCalled    = [];
-    public array $createCalled = [];
+	public array $listCalled = [];
+	public array $getCalled = [];
+	public array $createCalled = [];
 
-    public function __construct(
-        private string $id = 'files',
-        private ?string $requiredApp = 'files',
-        private string $storage = 'magic-column',
-        private bool $enabled = true,
-    ) {
-    }//end __construct()
+	public function __construct(
+		private string $id = 'files',
+		private ?string $requiredApp = 'files',
+		private string $storage = 'magic-column',
+		private bool $enabled = true,
+	) {
+	}//end __construct()
 
-    public function getId(): string
-    {
-        return $this->id;
-    }//end getId()
+	public function getId(): string {
+		return $this->id;
+	}//end getId()
 
-    public function getLabel(): string
-    {
-        return ucfirst($this->id);
-    }//end getLabel()
+	public function getLabel(): string {
+		return ucfirst($this->id);
+	}//end getLabel()
 
-    public function getIcon(): string
-    {
-        return 'Paperclip';
-    }//end getIcon()
+	public function getIcon(): string {
+		return 'Paperclip';
+	}//end getIcon()
 
-    public function getRequiredApp(): ?string
-    {
-        return $this->requiredApp;
-    }//end getRequiredApp()
+	public function getRequiredApp(): ?string {
+		return $this->requiredApp;
+	}//end getRequiredApp()
 
-    public function getStorageStrategy(): string
-    {
-        return $this->storage;
-    }//end getStorageStrategy()
+	public function getStorageStrategy(): string {
+		return $this->storage;
+	}//end getStorageStrategy()
 
-    public function isEnabled(): bool
-    {
-        return $this->enabled;
-    }//end isEnabled()
+	public function isEnabled(): bool {
+		return $this->enabled;
+	}//end isEnabled()
 
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
-    {
-        $this->listCalled = compact('register', 'schema', 'objectId', 'filters');
-        return [['id' => 'a'], ['id' => 'b']];
-    }//end list()
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
+		return [['id' => 'a'], ['id' => 'b']];
+	}//end list()
 
-    public function get(string $register, string $schema, string $objectId, string $entityId): array
-    {
-        $this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
-        return ['id' => $entityId, 'name' => 'thing'];
-    }//end get()
+	public function get(string $register, string $schema, string $objectId, string $entityId): array {
+		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
+		return ['id' => $entityId, 'name' => 'thing'];
+	}//end get()
 
-    public function create(string $register, string $schema, string $objectId, array $payload): array
-    {
-        $this->createCalled = compact('register', 'schema', 'objectId', 'payload');
-        return ['id' => 'new-id'];
-    }//end create()
+	public function create(string $register, string $schema, string $objectId, array $payload): array {
+		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
+		return ['id' => 'new-id'];
+	}//end create()
 }//end class
 
 /**
  * Unit tests for IntegrationsToolProvider.
  */
-class IntegrationsToolProviderTest extends TestCase
-{
+class IntegrationsToolProviderTest extends TestCase {
 
-    /**
-     * Build a provider over a registry seeded with the given providers.
-     *
-     * @param array<int, AbstractIntegrationProvider> $providers Providers.
-     *
-     * @return IntegrationsToolProvider
-     */
-    private function build(array $providers): IntegrationsToolProvider
-    {
-        $registry = new IntegrationRegistry(new NullLogger());
-        $registry->withProviders($providers);
-        return new IntegrationsToolProvider($registry);
-    }//end build()
+	/**
+	 * Build a provider over a registry seeded with the given providers.
+	 *
+	 * @param array<int, AbstractIntegrationProvider> $providers Providers.
+	 *
+	 * @return IntegrationsToolProvider
+	 */
+	private function build(array $providers): IntegrationsToolProvider {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->withProviders($providers);
+		return new IntegrationsToolProvider($registry);
+	}//end build()
 
-    /**
-     * App id + descriptor namespace.
-     *
-     * @return void
-     */
-    public function testToolDescriptor(): void
-    {
-        $provider = $this->build([]);
+	/**
+	 * App id + descriptor namespace.
+	 *
+	 * @return void
+	 */
+	public function testToolDescriptor(): void {
+		$provider = $this->build([]);
 
-        $this->assertSame('openregister', $provider->getAppId());
+		$this->assertSame('openregister', $provider->getAppId());
 
-        $tools = $provider->getTools();
-        $this->assertCount(1, $tools);
-        $this->assertSame(IntegrationsToolProvider::TOOL_ID, $tools[0]['id']);
-        $this->assertStringStartsWith('openregister.', $tools[0]['id']);
-    }//end testToolDescriptor()
+		$tools = $provider->getTools();
+		$this->assertCount(1, $tools);
+		$this->assertSame(IntegrationsToolProvider::TOOL_ID, $tools[0]['id']);
+		$this->assertStringStartsWith('openregister.', $tools[0]['id']);
+	}//end testToolDescriptor()
 
-    /**
-     * "list-integrations" enumerates registered ids + descriptors.
-     *
-     * @return void
-     */
-    public function testListIntegrationsDiscovery(): void
-    {
-        $provider = $this->build(
-            [
-                new _McpStubProvider(id: 'files', requiredApp: 'files'),
-                new _McpStubProvider(id: 'calendar', requiredApp: 'calendar'),
-            ]
-        );
+	/**
+	 * "list-integrations" enumerates registered ids + descriptors.
+	 *
+	 * @return void
+	 */
+	public function testListIntegrationsDiscovery(): void {
+		$provider = $this->build(
+			[
+				new _McpStubProvider(id: 'files', requiredApp: 'files'),
+				new _McpStubProvider(id: 'calendar', requiredApp: 'calendar'),
+			]
+		);
 
-        $result = $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: ['action' => 'list-integrations']
-        );
+		$result = $provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: ['action' => 'list-integrations']
+		);
 
-        $this->assertSame(['files', 'calendar'], $result['registered']);
-        $this->assertCount(2, $result['integrations']);
-        $this->assertSame('files', $result['integrations'][0]['id']);
-        $this->assertSame('files', $result['integrations'][0]['requiredApp']);
-        $this->assertSame('magic-column', $result['integrations'][0]['storageStrategy']);
-    }//end testListIntegrationsDiscovery()
+		$this->assertSame(['files', 'calendar'], $result['registered']);
+		$this->assertCount(2, $result['integrations']);
+		$this->assertSame('files', $result['integrations'][0]['id']);
+		$this->assertSame('files', $result['integrations'][0]['requiredApp']);
+		$this->assertSame('magic-column', $result['integrations'][0]['storageStrategy']);
+	}//end testListIntegrationsDiscovery()
 
-    /**
-     * "list" delegates to the matched provider's list().
-     *
-     * @return void
-     */
-    public function testListDelegates(): void
-    {
-        $stub     = new _McpStubProvider(id: 'files');
-        $provider = $this->build([$stub]);
+	/**
+	 * "list" delegates to the matched provider's list().
+	 *
+	 * @return void
+	 */
+	public function testListDelegates(): void {
+		$stub = new _McpStubProvider(id: 'files');
+		$provider = $this->build([$stub]);
 
-        $result = $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: [
-                'action'        => 'list',
-                'integrationId' => 'files',
-                'register'      => 'reg',
-                'schema'        => 'sch',
-                'objectId'      => 'obj-1',
-                'filters'       => ['_limit' => 5],
-            ]
-        );
+		$result = $provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: [
+				'action' => 'list',
+				'integrationId' => 'files',
+				'register' => 'reg',
+				'schema' => 'sch',
+				'objectId' => 'obj-1',
+				'filters' => ['_limit' => 5],
+			]
+		);
 
-        $this->assertSame([['id' => 'a'], ['id' => 'b']], $result['items']);
-        $this->assertSame('reg', $stub->listCalled['register']);
-        $this->assertSame('obj-1', $stub->listCalled['objectId']);
-        $this->assertSame(['_limit' => 5], $stub->listCalled['filters']);
-    }//end testListDelegates()
+		$this->assertSame([['id' => 'a'], ['id' => 'b']], $result['items']);
+		$this->assertSame('reg', $stub->listCalled['register']);
+		$this->assertSame('obj-1', $stub->listCalled['objectId']);
+		$this->assertSame(['_limit' => 5], $stub->listCalled['filters']);
+	}//end testListDelegates()
 
-    /**
-     * "get" delegates to provider->get().
-     *
-     * @return void
-     */
-    public function testGetDelegates(): void
-    {
-        $stub     = new _McpStubProvider(id: 'files');
-        $provider = $this->build([$stub]);
+	/**
+	 * "get" delegates to provider->get().
+	 *
+	 * @return void
+	 */
+	public function testGetDelegates(): void {
+		$stub = new _McpStubProvider(id: 'files');
+		$provider = $this->build([$stub]);
 
-        $result = $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: [
-                'action'        => 'get',
-                'integrationId' => 'files',
-                'register'      => 'reg',
-                'schema'        => 'sch',
-                'objectId'      => 'obj-1',
-                'entityId'      => 'ent-9',
-            ]
-        );
+		$result = $provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: [
+				'action' => 'get',
+				'integrationId' => 'files',
+				'register' => 'reg',
+				'schema' => 'sch',
+				'objectId' => 'obj-1',
+				'entityId' => 'ent-9',
+			]
+		);
 
-        $this->assertSame('ent-9', $result['id']);
-        $this->assertSame('ent-9', $stub->getCalled['entityId']);
-    }//end testGetDelegates()
+		$this->assertSame('ent-9', $result['id']);
+		$this->assertSame('ent-9', $stub->getCalled['entityId']);
+	}//end testGetDelegates()
 
-    /**
-     * "link" and "create" both delegate to provider->create().
-     *
-     * @return void
-     */
-    public function testLinkAndCreateDelegate(): void
-    {
-        $stub     = new _McpStubProvider(id: 'files');
-        $provider = $this->build([$stub]);
+	/**
+	 * "link" and "create" both delegate to provider->create().
+	 *
+	 * @return void
+	 */
+	public function testLinkAndCreateDelegate(): void {
+		$stub = new _McpStubProvider(id: 'files');
+		$provider = $this->build([$stub]);
 
-        foreach (['link', 'create'] as $action) {
-            $result = $provider->invokeTool(
-                toolId: IntegrationsToolProvider::TOOL_ID,
-                arguments: [
-                    'action'        => $action,
-                    'integrationId' => 'files',
-                    'register'      => 'reg',
-                    'schema'        => 'sch',
-                    'objectId'      => 'obj-1',
-                    'payload'       => ['name' => 'doc'],
-                ]
-            );
+		foreach (['link', 'create'] as $action) {
+			$result = $provider->invokeTool(
+				toolId: IntegrationsToolProvider::TOOL_ID,
+				arguments: [
+					'action' => $action,
+					'integrationId' => 'files',
+					'register' => 'reg',
+					'schema' => 'sch',
+					'objectId' => 'obj-1',
+					'payload' => ['name' => 'doc'],
+				]
+			);
 
-            $this->assertSame('new-id', $result['id']);
-            $this->assertSame(['name' => 'doc'], $stub->createCalled['payload']);
-        }
-    }//end testLinkAndCreateDelegate()
+			$this->assertSame('new-id', $result['id']);
+			$this->assertSame(['name' => 'doc'], $stub->createCalled['payload']);
+		}
+	}//end testLinkAndCreateDelegate()
 
-    /**
-     * Unknown integration id raises InvalidArgumentException.
-     *
-     * @return void
-     */
-    public function testUnknownIntegrationThrows(): void
-    {
-        $provider = $this->build([new _McpStubProvider(id: 'files')]);
+	/**
+	 * Unknown integration id raises InvalidArgumentException.
+	 *
+	 * @return void
+	 */
+	public function testUnknownIntegrationThrows(): void {
+		$provider = $this->build([new _McpStubProvider(id: 'files')]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: [
-                'action'        => 'list',
-                'integrationId' => 'nope',
-                'register'      => 'reg',
-                'schema'        => 'sch',
-                'objectId'      => 'obj-1',
-            ]
-        );
-    }//end testUnknownIntegrationThrows()
+		$this->expectException(InvalidArgumentException::class);
+		$provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: [
+				'action' => 'list',
+				'integrationId' => 'nope',
+				'register' => 'reg',
+				'schema' => 'sch',
+				'objectId' => 'obj-1',
+			]
+		);
+	}//end testUnknownIntegrationThrows()
 
-    /**
-     * A disabled provider is not invokable.
-     *
-     * @return void
-     */
-    public function testDisabledProviderThrows(): void
-    {
-        $provider = $this->build([new _McpStubProvider(id: 'files', enabled: false)]);
+	/**
+	 * A disabled provider is not invokable.
+	 *
+	 * @return void
+	 */
+	public function testDisabledProviderThrows(): void {
+		$provider = $this->build([new _McpStubProvider(id: 'files', enabled: false)]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: [
-                'action'        => 'list',
-                'integrationId' => 'files',
-                'register'      => 'reg',
-                'schema'        => 'sch',
-                'objectId'      => 'obj-1',
-            ]
-        );
-    }//end testDisabledProviderThrows()
+		$this->expectException(InvalidArgumentException::class);
+		$provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: [
+				'action' => 'list',
+				'integrationId' => 'files',
+				'register' => 'reg',
+				'schema' => 'sch',
+				'objectId' => 'obj-1',
+			]
+		);
+	}//end testDisabledProviderThrows()
 
-    /**
-     * Missing required parameter raises InvalidArgumentException.
-     *
-     * @return void
-     */
-    public function testMissingParamThrows(): void
-    {
-        $provider = $this->build([new _McpStubProvider(id: 'files')]);
+	/**
+	 * Missing required parameter raises InvalidArgumentException.
+	 *
+	 * @return void
+	 */
+	public function testMissingParamThrows(): void {
+		$provider = $this->build([new _McpStubProvider(id: 'files')]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: [
-                'action'        => 'list',
-                'integrationId' => 'files',
-                // register/schema/objectId omitted.
-            ]
-        );
-    }//end testMissingParamThrows()
+		$this->expectException(InvalidArgumentException::class);
+		$provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: [
+				'action' => 'list',
+				'integrationId' => 'files',
+				// register/schema/objectId omitted.
+			]
+		);
+	}//end testMissingParamThrows()
 
-    /**
-     * Unknown action raises InvalidArgumentException.
-     *
-     * @return void
-     */
-    public function testUnknownActionThrows(): void
-    {
-        $provider = $this->build([new _McpStubProvider(id: 'files')]);
+	/**
+	 * Unknown action raises InvalidArgumentException.
+	 *
+	 * @return void
+	 */
+	public function testUnknownActionThrows(): void {
+		$provider = $this->build([new _McpStubProvider(id: 'files')]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $provider->invokeTool(
-            toolId: IntegrationsToolProvider::TOOL_ID,
-            arguments: ['action' => 'bogus']
-        );
-    }//end testUnknownActionThrows()
+		$this->expectException(InvalidArgumentException::class);
+		$provider->invokeTool(
+			toolId: IntegrationsToolProvider::TOOL_ID,
+			arguments: ['action' => 'bogus']
+		);
+	}//end testUnknownActionThrows()
 }//end class

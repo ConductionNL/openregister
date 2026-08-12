@@ -27,86 +27,84 @@ use JsonSerializable;
  * @category ValueObject
  * @package  OCA\OpenRegister\Service\Anonymisation
  */
-final class BackendState implements JsonSerializable
-{
-    /**
-     * Regular-expression based recognition (always available fallback).
-     */
-    public const METHOD_REGEX = 'regex';
+final class BackendState implements JsonSerializable {
+	/**
+	 * Regular-expression based recognition (always available fallback).
+	 */
+	public const METHOD_REGEX = 'regex';
 
-    /**
-     * Microsoft Presidio HTTP backend.
-     */
-    public const METHOD_PRESIDIO = 'presidio';
+	/**
+	 * Microsoft Presidio HTTP backend.
+	 */
+	public const METHOD_PRESIDIO = 'presidio';
 
-    /**
-     * OpenAnonymiser ExApp backend.
-     */
-    public const METHOD_OPENANONYMISER = 'openanonymiser';
+	/**
+	 * OpenAnonymiser ExApp backend.
+	 */
+	public const METHOD_OPENANONYMISER = 'openanonymiser';
 
-    /**
-     * LLM-based recognition backend.
-     */
-    public const METHOD_LLM = 'llm';
+	/**
+	 * LLM-based recognition backend.
+	 */
+	public const METHOD_LLM = 'llm';
 
-    /**
-     * Hybrid backend composing regex + presidio + openanonymiser.
-     */
-    public const METHOD_HYBRID = 'hybrid';
+	/**
+	 * Hybrid backend composing regex + presidio + openanonymiser.
+	 */
+	public const METHOD_HYBRID = 'hybrid';
 
-    /**
-     * Sentinel stored value meaning "no explicit operator choice yet".
-     *
-     * Resolved to a concrete method at state-query time (auto-select on first run).
-     */
-    public const METHOD_AUTO = 'auto';
+	/**
+	 * Sentinel stored value meaning "no explicit operator choice yet".
+	 *
+	 * Resolved to a concrete method at state-query time (auto-select on first run).
+	 */
+	public const METHOD_AUTO = 'auto';
 
-    /**
-     * The valid concrete method enum values.
-     *
-     * @var string[]
-     */
-    public const METHODS = [
-        self::METHOD_REGEX,
-        self::METHOD_PRESIDIO,
-        self::METHOD_OPENANONYMISER,
-        self::METHOD_LLM,
-        self::METHOD_HYBRID,
-    ];
+	/**
+	 * The valid concrete method enum values.
+	 *
+	 * @var string[]
+	 */
+	public const METHODS = [
+		self::METHOD_REGEX,
+		self::METHOD_PRESIDIO,
+		self::METHOD_OPENANONYMISER,
+		self::METHOD_LLM,
+		self::METHOD_HYBRID,
+	];
 
-    /**
-     * Constructor.
-     *
-     * @param bool                       $entityRecognitionEnabled Whether recognition is enabled at all.
-     * @param string                     $activeMethod             The operator-selected (resolved) method.
-     * @param string                     $effectiveMethod          The method that will actually be used.
-     * @param array<string, BackendInfo> $backends                 Per-method availability records.
-     */
-    public function __construct(
-        public readonly bool $entityRecognitionEnabled,
-        public readonly string $activeMethod,
-        public readonly string $effectiveMethod,
-        public readonly array $backends,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param bool $entityRecognitionEnabled Whether recognition is enabled at all.
+	 * @param string $activeMethod The operator-selected (resolved) method.
+	 * @param string $effectiveMethod The method that will actually be used.
+	 * @param array<string, BackendInfo> $backends Per-method availability records.
+	 */
+	public function __construct(
+		public readonly bool $entityRecognitionEnabled,
+		public readonly string $activeMethod,
+		public readonly string $effectiveMethod,
+		public readonly array $backends,
+	) {
+	}//end __construct()
 
-    /**
-     * Serialise to a JSON-friendly array.
-     *
-     * @return array{entityRecognitionEnabled: bool, activeMethod: string, effectiveMethod: string, backends: array<string, mixed>}
-     */
-    public function jsonSerialize(): array
-    {
-        $backends = [];
-        foreach ($this->backends as $name => $info) {
-            $backends[$name] = $info->jsonSerialize();
-        }
+	/**
+	 * Serialise to a JSON-friendly array.
+	 *
+	 * @return array{entityRecognitionEnabled: bool, activeMethod: string, effectiveMethod: string, backends: array<string, mixed>}
+	 */
+	public function jsonSerialize(): array {
+		$backends = [];
+		foreach ($this->backends as $name => $info) {
+			$backends[$name] = $info->jsonSerialize();
+		}
 
-        return [
-            'entityRecognitionEnabled' => $this->entityRecognitionEnabled,
-            'activeMethod'             => $this->activeMethod,
-            'effectiveMethod'          => $this->effectiveMethod,
-            'backends'                 => $backends,
-        ];
-    }//end jsonSerialize()
+		return [
+			'entityRecognitionEnabled' => $this->entityRecognitionEnabled,
+			'activeMethod' => $this->activeMethod,
+			'effectiveMethod' => $this->effectiveMethod,
+			'backends' => $backends,
+		];
+	}//end jsonSerialize()
 }//end class

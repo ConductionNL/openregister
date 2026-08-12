@@ -10,7 +10,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -20,165 +19,151 @@ use PHPUnit\Framework\TestCase;
  *
  * @package Unit\Controller
  */
-class NotesControllerTest extends TestCase
-{
-    private NotesController $controller;
-    private IRequest&MockObject $request;
-    private NoteService&MockObject $noteService;
-    private ObjectService&MockObject $objectService;
+class NotesControllerTest extends TestCase {
+	private NotesController $controller;
+	private IRequest&MockObject $request;
+	private NoteService&MockObject $noteService;
+	private ObjectService&MockObject $objectService;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->noteService = $this->createMock(NoteService::class);
-        $this->objectService = $this->createMock(ObjectService::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->noteService = $this->createMock(NoteService::class);
+		$this->objectService = $this->createMock(ObjectService::class);
 
-        $this->controller = new NotesController(
-            'openregister',
-            $this->request,
-            $this->noteService,
-            $this->objectService
-        );
-    }
+		$this->controller = new NotesController(
+			'openregister',
+			$this->request,
+			$this->noteService,
+			$this->objectService
+		);
+	}
 
-    private function createRealObjectEntity(): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $ref = new \ReflectionClass($object);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($object, 1);
-        $object->setUuid('uuid-123');
-        return $object;
-    }
+	private function createRealObjectEntity(): ObjectEntity {
+		$object = new ObjectEntity();
+		$ref = new \ReflectionClass($object);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($object, 1);
+		$object->setUuid('uuid-123');
+		return $object;
+	}
 
-    public function testIndexReturnsNotesForObject(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
+	public function testIndexReturnsNotesForObject(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
 
-        $notes = [['id' => 1, 'message' => 'Note 1']];
-        $this->noteService->method('getNotesForObject')->willReturn($notes);
-        $this->request->method('getParams')->willReturn([]);
+		$notes = [['id' => 1, 'message' => 'Note 1']];
+		$this->noteService->method('getNotesForObject')->willReturn($notes);
+		$this->request->method('getParams')->willReturn([]);
 
-        $result = $this->controller->index('reg', 'schema', 'obj-id');
+		$result = $this->controller->index('reg', 'schema', 'obj-id');
 
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertArrayHasKey('results', $data);
-        $this->assertSame($notes, $data['results']);
-    }
+		$this->assertSame(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertArrayHasKey('results', $data);
+		$this->assertSame($notes, $data['results']);
+	}
 
-    public function testIndexReturns404WhenObjectNotFound(): void
-    {
-        $this->objectService->method('getObject')->willReturn(null);
+	public function testIndexReturns404WhenObjectNotFound(): void {
+		$this->objectService->method('getObject')->willReturn(null);
 
-        $result = $this->controller->index('reg', 'schema', 'nonexistent');
+		$result = $this->controller->index('reg', 'schema', 'nonexistent');
 
-        $this->assertSame(404, $result->getStatus());
-    }
+		$this->assertSame(404, $result->getStatus());
+	}
 
-    public function testIndexReturns404OnDoesNotExistException(): void
-    {
-        $this->objectService->method('getObject')
-            ->willThrowException(new DoesNotExistException('Not found'));
+	public function testIndexReturns404OnDoesNotExistException(): void {
+		$this->objectService->method('getObject')
+			->willThrowException(new DoesNotExistException('Not found'));
 
-        $result = $this->controller->index('reg', 'schema', 'obj-id');
+		$result = $this->controller->index('reg', 'schema', 'obj-id');
 
-        $this->assertSame(404, $result->getStatus());
-    }
+		$this->assertSame(404, $result->getStatus());
+	}
 
-    public function testIndexReturns500OnException(): void
-    {
-        $this->objectService->method('getObject')
-            ->willThrowException(new Exception('DB error'));
+	public function testIndexReturns500OnException(): void {
+		$this->objectService->method('getObject')
+			->willThrowException(new Exception('DB error'));
 
-        $result = $this->controller->index('reg', 'schema', 'obj-id');
+		$result = $this->controller->index('reg', 'schema', 'obj-id');
 
-        $this->assertSame(500, $result->getStatus());
-    }
+		$this->assertSame(500, $result->getStatus());
+	}
 
-    public function testCreateReturnsCreatedNote(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
+	public function testCreateReturnsCreatedNote(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
 
-        $note = ['id' => 1, 'message' => 'New note'];
-        $this->noteService->method('createNote')->willReturn($note);
-        $this->request->method('getParams')->willReturn(['message' => 'New note']);
+		$note = ['id' => 1, 'message' => 'New note'];
+		$this->noteService->method('createNote')->willReturn($note);
+		$this->request->method('getParams')->willReturn(['message' => 'New note']);
 
-        $result = $this->controller->create('reg', 'schema', 'obj-id');
+		$result = $this->controller->create('reg', 'schema', 'obj-id');
 
-        $this->assertSame(201, $result->getStatus());
-    }
+		$this->assertSame(201, $result->getStatus());
+	}
 
-    public function testCreateReturns404WhenObjectNotFound(): void
-    {
-        $this->objectService->method('getObject')->willReturn(null);
-        $this->request->method('getParams')->willReturn(['message' => 'test']);
+	public function testCreateReturns404WhenObjectNotFound(): void {
+		$this->objectService->method('getObject')->willReturn(null);
+		$this->request->method('getParams')->willReturn(['message' => 'test']);
 
-        $result = $this->controller->create('reg', 'schema', 'nonexistent');
+		$result = $this->controller->create('reg', 'schema', 'nonexistent');
 
-        $this->assertSame(404, $result->getStatus());
-    }
+		$this->assertSame(404, $result->getStatus());
+	}
 
-    public function testCreateReturns400WhenMessageEmpty(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
-        $this->request->method('getParams')->willReturn(['message' => '']);
+	public function testCreateReturns400WhenMessageEmpty(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => '']);
 
-        $result = $this->controller->create('reg', 'schema', 'obj-id');
+		$result = $this->controller->create('reg', 'schema', 'obj-id');
 
-        $this->assertSame(400, $result->getStatus());
-    }
+		$this->assertSame(400, $result->getStatus());
+	}
 
-    public function testCreateReturns400OnException(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
-        $this->request->method('getParams')->willReturn(['message' => 'test']);
-        $this->noteService->method('createNote')
-            ->willThrowException(new Exception('Failed'));
+	public function testCreateReturns400OnException(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'test']);
+		$this->noteService->method('createNote')
+			->willThrowException(new Exception('Failed'));
 
-        $result = $this->controller->create('reg', 'schema', 'obj-id');
+		$result = $this->controller->create('reg', 'schema', 'obj-id');
 
-        $this->assertSame(400, $result->getStatus());
-    }
+		$this->assertSame(400, $result->getStatus());
+	}
 
-    public function testDestroyReturnsSuccess(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
-        $this->noteService->expects($this->once())->method('deleteNote');
+	public function testDestroyReturnsSuccess(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->expects($this->once())->method('deleteNote');
 
-        $result = $this->controller->destroy('reg', 'schema', 'obj-id', '1');
+		$result = $this->controller->destroy('reg', 'schema', 'obj-id', '1');
 
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-    }
+		$this->assertSame(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+	}
 
-    public function testDestroyReturns404WhenObjectNotFound(): void
-    {
-        $this->objectService->method('getObject')->willReturn(null);
+	public function testDestroyReturns404WhenObjectNotFound(): void {
+		$this->objectService->method('getObject')->willReturn(null);
 
-        $result = $this->controller->destroy('reg', 'schema', 'nonexistent', '1');
+		$result = $this->controller->destroy('reg', 'schema', 'nonexistent', '1');
 
-        $this->assertSame(404, $result->getStatus());
-    }
+		$this->assertSame(404, $result->getStatus());
+	}
 
-    public function testDestroyReturns400OnException(): void
-    {
-        $object = $this->createRealObjectEntity();
-        $this->objectService->method('getObject')->willReturn($object);
-        $this->noteService->method('deleteNote')
-            ->willThrowException(new Exception('Delete failed'));
+	public function testDestroyReturns400OnException(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('deleteNote')
+			->willThrowException(new Exception('Delete failed'));
 
-        $result = $this->controller->destroy('reg', 'schema', 'obj-id', '1');
+		$result = $this->controller->destroy('reg', 'schema', 'obj-id', '1');
 
-        $this->assertSame(400, $result->getStatus());
-    }
+		$this->assertSame(400, $result->getStatus());
+	}
 }

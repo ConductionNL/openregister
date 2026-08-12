@@ -38,66 +38,61 @@ use OCA\OpenRegister\Mcp\Attribute\McpTool;
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Mcp\Fixtures
  */
-class AttributeFixtureService
-{
+class AttributeFixtureService {
 
-    /**
-     * Create a sales lead from a contact moment.
-     *
-     * @param string      $email   The contact's email address.
-     * @param string|null $company Optional company name.
-     * @param int         $score   Lead score (defaults to zero).
-     *
-     * @return array{id: string}
-     */
-    #[McpTool(name: 'createLead', description: 'Create a sales lead from a contact moment.')]
-    public function createLead(string $email, ?string $company = null, int $score = 0): array
-    {
-        return [
-            'id'      => 'lead-1',
-            'email'   => $email,
-            'company' => $company,
-            'score'   => $score,
-        ];
-    }//end createLead()
+	/**
+	 * Create a sales lead from a contact moment.
+	 *
+	 * @param string $email The contact's email address.
+	 * @param string|null $company Optional company name.
+	 * @param int $score Lead score (defaults to zero).
+	 *
+	 * @return array{id: string}
+	 */
+	#[McpTool(name: 'createLead', description: 'Create a sales lead from a contact moment.')]
+	public function createLead(string $email, ?string $company = null, int $score = 0): array {
+		return [
+			'id' => 'lead-1',
+			'email' => $email,
+			'company' => $company,
+			'score' => $score,
+		];
+	}//end createLead()
 
-    /**
-     * Log a contact moment against a lead.
-     *
-     * @param string $subject The moment's subject line.
-     *
-     * @return array{subject: string}
-     */
-    #[McpTool]
-    public function logContactmoment(string $subject): array
-    {
-        return ['subject' => $subject];
-    }//end logContactmoment()
+	/**
+	 * Log a contact moment against a lead.
+	 *
+	 * @param string $subject The moment's subject line.
+	 *
+	 * @return array{subject: string}
+	 */
+	#[McpTool]
+	public function logContactmoment(string $subject): array {
+		return ['subject' => $subject];
+	}//end logContactmoment()
 
-    /**
-     * Attributed but non-public — the scanner MUST ignore this with a
-     * logged warning (REQ-ATTR-001: "honoured only on public methods").
-     *
-     * @return array{internal: bool}
-     */
-    #[McpTool]
-    protected function internalOnly(): array
-    {
-        return ['internal' => true];
-    }//end internalOnly()
+	/**
+	 * Attributed but non-public — the scanner MUST ignore this with a
+	 * logged warning (REQ-ATTR-001: "honoured only on public methods").
+	 *
+	 * @return array{internal: bool}
+	 */
+	#[McpTool]
+	protected function internalOnly(): array {
+		return ['internal' => true];
+	}//end internalOnly()
 
-    /**
-     * Scalar-typed return — exercises non-omitted outputSchema inference
-     * (as opposed to the untyped-`array` returns above, which are
-     * deliberately omitted per design.md's "best-effort" contract).
-     *
-     * @param int $leadId The lead id to score.
-     *
-     * @return int The computed score.
-     */
-    #[McpTool]
-    public function computeScore(int $leadId): int
-    {
-        return ($leadId * 2);
-    }//end computeScore()
+	/**
+	 * Scalar-typed return — exercises non-omitted outputSchema inference
+	 * (as opposed to the untyped-`array` returns above, which are
+	 * deliberately omitted per design.md's "best-effort" contract).
+	 *
+	 * @param int $leadId The lead id to score.
+	 *
+	 * @return int The computed score.
+	 */
+	#[McpTool]
+	public function computeScore(int $leadId): int {
+		return ($leadId * 2);
+	}//end computeScore()
 }//end class

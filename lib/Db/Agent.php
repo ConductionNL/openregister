@@ -108,426 +108,420 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Agent extends Entity implements JsonSerializable
-{
+class Agent extends Entity implements JsonSerializable {
 
-    /**
-     * Unique identifier for the agent
-     *
-     * @var string|null UUID of the agent
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Unique identifier for the agent
+	 *
+	 * @var string|null UUID of the agent
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Name of the agent
-     *
-     * @var string|null The agent name
-     */
-    protected ?string $name = null;
+	/**
+	 * Name of the agent
+	 *
+	 * @var string|null The agent name
+	 */
+	protected ?string $name = null;
 
-    /**
-     * Description of the agent
-     *
-     * @var string|null The agent description
-     */
-    protected ?string $description = null;
+	/**
+	 * Description of the agent
+	 *
+	 * @var string|null The agent description
+	 */
+	protected ?string $description = null;
 
-    /**
-     * Type of agent (e.g., 'chat', 'automation', 'analysis', 'assistant')
-     *
-     * @var string|null Agent type
-     */
-    protected ?string $type = null;
+	/**
+	 * Type of agent (e.g., 'chat', 'automation', 'analysis', 'assistant')
+	 *
+	 * @var string|null Agent type
+	 */
+	protected ?string $type = null;
 
-    /**
-     * LLM provider (e.g., 'openai', 'ollama', 'fireworks', 'azure')
-     *
-     * @var string|null Provider name
-     */
-    protected ?string $provider = null;
+	/**
+	 * LLM provider (e.g., 'openai', 'ollama', 'fireworks', 'azure')
+	 *
+	 * @var string|null Provider name
+	 */
+	protected ?string $provider = null;
 
-    /**
-     * Model identifier (e.g., 'gpt-4o-mini', 'llama3')
-     *
-     * @var string|null Model name
-     */
-    protected ?string $model = null;
+	/**
+	 * Model identifier (e.g., 'gpt-4o-mini', 'llama3')
+	 *
+	 * @var string|null Model name
+	 */
+	protected ?string $model = null;
 
-    /**
-     * System prompt for the agent
-     *
-     * @var string|null Instructions and context for the AI
-     */
-    protected ?string $prompt = null;
+	/**
+	 * System prompt for the agent
+	 *
+	 * @var string|null Instructions and context for the AI
+	 */
+	protected ?string $prompt = null;
 
-    /**
-     * Temperature setting for response generation (0.0 - 2.0)
-     *
-     * @var float|null Controls randomness in responses
-     */
-    protected ?float $temperature = null;
+	/**
+	 * Temperature setting for response generation (0.0 - 2.0)
+	 *
+	 * @var float|null Controls randomness in responses
+	 */
+	protected ?float $temperature = null;
 
-    /**
-     * Maximum tokens to generate in responses
-     *
-     * @var integer|null Token limit
-     */
-    protected ?int $maxTokens = null;
+	/**
+	 * Maximum tokens to generate in responses
+	 *
+	 * @var integer|null Token limit
+	 */
+	protected ?int $maxTokens = null;
 
-    /**
-     * Additional configuration settings
-     *
-     * @var array|null JSON configuration for advanced settings
-     */
-    protected ?array $configuration = null;
+	/**
+	 * Additional configuration settings
+	 *
+	 * @var array|null JSON configuration for advanced settings
+	 */
+	protected ?array $configuration = null;
 
-    /**
-     * Organisation UUID that owns this agent
-     *
-     * @var string|null Organisation UUID
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation UUID that owns this agent
+	 *
+	 * @var string|null Organisation UUID
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Configuration that manages this agent (transient, not stored in DB)
-     *
-     * @var Configuration|null
-     */
-    protected ?Configuration $managedByConfig = null;
+	/**
+	 * Configuration that manages this agent (transient, not stored in DB)
+	 *
+	 * @var Configuration|null
+	 */
+	protected ?Configuration $managedByConfig = null;
 
-    /**
-     * Owner user ID
-     *
-     * @var string|null User ID of the owner
-     */
-    protected ?string $owner = null;
+	/**
+	 * Owner user ID
+	 *
+	 * @var string|null User ID of the owner
+	 */
+	protected ?string $owner = null;
 
-    /**
-     * Whether the agent is active
-     *
-     * @var boolean Active status
-     */
-    protected bool $active = true;
+	/**
+	 * Whether the agent is active
+	 *
+	 * @var boolean Active status
+	 */
+	protected bool $active = true;
 
-    /**
-     * Enable RAG (Retrieval-Augmented Generation)
-     *
-     * @var boolean Whether to use RAG for context retrieval
-     */
-    protected bool $enableRag = false;
+	/**
+	 * Enable RAG (Retrieval-Augmented Generation)
+	 *
+	 * @var boolean Whether to use RAG for context retrieval
+	 */
+	protected bool $enableRag = false;
 
-    /**
-     * RAG search mode (hybrid, semantic, keyword)
-     *
-     * @var string|null Search mode for RAG
-     */
-    protected ?string $ragSearchMode = null;
+	/**
+	 * RAG search mode (hybrid, semantic, keyword)
+	 *
+	 * @var string|null Search mode for RAG
+	 */
+	protected ?string $ragSearchMode = null;
 
-    /**
-     * Number of sources to retrieve for RAG
-     *
-     * @var integer|null Number of context sources
-     */
-    protected ?int $ragNumSources = null;
+	/**
+	 * Number of sources to retrieve for RAG
+	 *
+	 * @var integer|null Number of context sources
+	 */
+	protected ?int $ragNumSources = null;
 
-    /**
-     * Include files in RAG search
-     *
-     * @var boolean Whether to search files
-     */
-    protected bool $ragIncludeFiles = false;
+	/**
+	 * Include files in RAG search
+	 *
+	 * @var boolean Whether to search files
+	 */
+	protected bool $ragIncludeFiles = false;
 
-    /**
-     * Include objects in RAG search
-     *
-     * @var boolean Whether to search objects
-     */
-    protected bool $ragIncludeObjects = false;
+	/**
+	 * Include objects in RAG search
+	 *
+	 * @var boolean Whether to search objects
+	 */
+	protected bool $ragIncludeObjects = false;
 
-    /**
-     * API request quota per day (0 = unlimited)
-     *
-     * @var integer|null Maximum requests per day
-     */
-    protected ?int $requestQuota = null;
+	/**
+	 * API request quota per day (0 = unlimited)
+	 *
+	 * @var integer|null Maximum requests per day
+	 */
+	protected ?int $requestQuota = null;
 
-    /**
-     * Token quota per day (0 = unlimited)
-     *
-     * @var integer|null Maximum tokens per day
-     */
-    protected ?int $tokenQuota = null;
+	/**
+	 * Token quota per day (0 = unlimited)
+	 *
+	 * @var integer|null Maximum tokens per day
+	 */
+	protected ?int $tokenQuota = null;
 
-    /**
-     * Array of view UUIDs that filter which data the agent can access
-     *
-     * @var array|null View UUIDs for filtering
-     */
-    protected ?array $views = null;
+	/**
+	 * Array of view UUIDs that filter which data the agent can access
+	 *
+	 * @var array|null View UUIDs for filtering
+	 */
+	protected ?array $views = null;
 
-    /**
-     * Whether to search in files (Nextcloud files)
-     *
-     * @var boolean|null Search in files flag
-     */
-    protected ?bool $searchFiles = null;
+	/**
+	 * Whether to search in files (Nextcloud files)
+	 *
+	 * @var boolean|null Search in files flag
+	 */
+	protected ?bool $searchFiles = null;
 
-    /**
-     * Whether to search in objects (OpenRegister objects)
-     *
-     * @var boolean|null Search in objects flag
-     */
-    protected ?bool $searchObjects = null;
+	/**
+	 * Whether to search in objects (OpenRegister objects)
+	 *
+	 * @var boolean|null Search in objects flag
+	 */
+	protected ?bool $searchObjects = null;
 
-    /**
-     * Whether agent is private (not shared with organization)
-     *
-     * @var boolean|null Private flag
-     */
-    protected ?bool $isPrivate = null;
+	/**
+	 * Whether agent is private (not shared with organization)
+	 *
+	 * @var boolean|null Private flag
+	 */
+	protected ?bool $isPrivate = null;
 
-    /**
-     * Array of user IDs with access to private agent
-     *
-     * Only relevant when isPrivate is true.
-     *
-     * @var array|null Array of user IDs
-     */
-    protected ?array $invitedUsers = null;
+	/**
+	 * Array of user IDs with access to private agent
+	 *
+	 * Only relevant when isPrivate is true.
+	 *
+	 * @var array|null Array of user IDs
+	 */
+	protected ?array $invitedUsers = null;
 
-    /**
-     * Array of Nextcloud group IDs with access to this agent
-     *
-     * @var array|null Group IDs
-     */
-    protected ?array $groups = null;
+	/**
+	 * Array of Nextcloud group IDs with access to this agent
+	 *
+	 * @var array|null Group IDs
+	 */
+	protected ?array $groups = null;
 
-    /**
-     * Array of enabled tool names for function calling
-     *
-     * Available tools: 'register', 'schema', 'objects'
-     * Example: ['register', 'objects']
-     *
-     * @var array|null Tool names
-     */
-    protected ?array $tools = null;
+	/**
+	 * Array of enabled tool names for function calling
+	 *
+	 * Available tools: 'register', 'schema', 'objects'
+	 * Example: ['register', 'objects']
+	 *
+	 * @var array|null Tool names
+	 */
+	protected ?array $tools = null;
 
-    /**
-     * User ID for running agent in cron/background scenarios
-     *
-     * When no session exists (e.g., cron jobs), this user's context
-     * will be used for permissions and organization filtering.
-     *
-     * @var string|null User ID
-     */
-    protected ?string $user = null;
+	/**
+	 * User ID for running agent in cron/background scenarios
+	 *
+	 * When no session exists (e.g., cron jobs), this user's context
+	 * will be used for permissions and organization filtering.
+	 *
+	 * @var string|null User ID
+	 */
+	protected ?string $user = null;
 
-    /**
-     * Date when the agent was created
-     *
-     * @var DateTime|null Creation timestamp
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Date when the agent was created
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Date when the agent was last updated
-     *
-     * @var DateTime|null Last update timestamp
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Date when the agent was last updated
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Agent constructor
-     *
-     * Sets up the entity type mappings for proper database handling.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'type', type: 'string');
-        $this->addType(fieldName: 'provider', type: 'string');
-        $this->addType(fieldName: 'model', type: 'string');
-        $this->addType(fieldName: 'prompt', type: 'string');
-        $this->addType(fieldName: 'temperature', type: 'float');
-        $this->addType(fieldName: 'maxTokens', type: 'integer');
-        $this->addType(fieldName: 'configuration', type: 'json');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'active', type: 'boolean');
-        $this->addType(fieldName: 'enableRag', type: 'boolean');
-        $this->addType(fieldName: 'ragSearchMode', type: 'string');
-        $this->addType(fieldName: 'ragNumSources', type: 'integer');
-        $this->addType(fieldName: 'ragIncludeFiles', type: 'boolean');
-        $this->addType(fieldName: 'ragIncludeObjects', type: 'boolean');
-        $this->addType(fieldName: 'requestQuota', type: 'integer');
-        $this->addType(fieldName: 'tokenQuota', type: 'integer');
-        $this->addType(fieldName: 'views', type: 'json');
-        $this->addType(fieldName: 'searchFiles', type: 'boolean');
-        $this->addType(fieldName: 'searchObjects', type: 'boolean');
-        $this->addType(fieldName: 'isPrivate', type: 'boolean');
-        $this->addType(fieldName: 'invitedUsers', type: 'json');
-        $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'tools', type: 'json');
-        $this->addType(fieldName: 'user', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Agent constructor
+	 *
+	 * Sets up the entity type mappings for proper database handling.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'provider', type: 'string');
+		$this->addType(fieldName: 'model', type: 'string');
+		$this->addType(fieldName: 'prompt', type: 'string');
+		$this->addType(fieldName: 'temperature', type: 'float');
+		$this->addType(fieldName: 'maxTokens', type: 'integer');
+		$this->addType(fieldName: 'configuration', type: 'json');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'active', type: 'boolean');
+		$this->addType(fieldName: 'enableRag', type: 'boolean');
+		$this->addType(fieldName: 'ragSearchMode', type: 'string');
+		$this->addType(fieldName: 'ragNumSources', type: 'integer');
+		$this->addType(fieldName: 'ragIncludeFiles', type: 'boolean');
+		$this->addType(fieldName: 'ragIncludeObjects', type: 'boolean');
+		$this->addType(fieldName: 'requestQuota', type: 'integer');
+		$this->addType(fieldName: 'tokenQuota', type: 'integer');
+		$this->addType(fieldName: 'views', type: 'json');
+		$this->addType(fieldName: 'searchFiles', type: 'boolean');
+		$this->addType(fieldName: 'searchObjects', type: 'boolean');
+		$this->addType(fieldName: 'isPrivate', type: 'boolean');
+		$this->addType(fieldName: 'invitedUsers', type: 'json');
+		$this->addType(fieldName: 'groups', type: 'json');
+		$this->addType(fieldName: 'tools', type: 'json');
+		$this->addType(fieldName: 'user', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Check if a user is invited to access this private agent
-     *
-     * @param string $userId The user ID to check
-     *
-     * @return bool True if user is invited
-     */
-    public function hasInvitedUser(string $userId): bool
-    {
-        if ($this->invitedUsers === null) {
-            return false;
-        }
+	/**
+	 * Check if a user is invited to access this private agent
+	 *
+	 * @param string $userId The user ID to check
+	 *
+	 * @return bool True if user is invited
+	 */
+	public function hasInvitedUser(string $userId): bool {
+		if ($this->invitedUsers === null) {
+			return false;
+		}
 
-        return in_array($userId, $this->invitedUsers, true);
-    }//end hasInvitedUser()
+		return in_array($userId, $this->invitedUsers, true);
+	}//end hasInvitedUser()
 
-    /**
-     * Hydrate the entity from an array
-     *
-     * @param array<string, mixed> $object The data to hydrate from
-     *
-     * @return static The hydrated entity
-     */
-    public function hydrate(array $object): static
-    {
-        // Set UUID - generate if not provided.
-        $uuid = Uuid::v4()->toRfc4122();
-        if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
-            $uuid = $object['uuid'];
-        }
+	/**
+	 * Hydrate the entity from an array
+	 *
+	 * @param array<string, mixed> $object The data to hydrate from
+	 *
+	 * @return static The hydrated entity
+	 */
+	public function hydrate(array $object): static {
+		// Set UUID - generate if not provided.
+		$uuid = Uuid::v4()->toRfc4122();
+		if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
+			$uuid = $object['uuid'];
+		}
 
-        // Map property names to their resolved values.
-        // Uses camelCase keys with snake_case fallback and defaults where needed.
-        // NOTE: Entity setters use __call which does not support named arguments,
-        // so we use dynamic $this->$method($value) calls via the mapping approach.
-        $fields = [
-            'uuid'              => $uuid,
-            'name'              => $object['name'] ?? null,
-            'description'       => $object['description'] ?? null,
-            'type'              => $object['type'] ?? null,
-            'provider'          => $object['provider'] ?? null,
-            'model'             => $object['model'] ?? null,
-            'prompt'            => $object['prompt'] ?? null,
-            'temperature'       => $object['temperature'] ?? null,
-            'maxTokens'         => $object['maxTokens'] ?? $object['max_tokens'] ?? null,
-            'configuration'     => $object['configuration'] ?? null,
-            'organisation'      => $object['organisation'] ?? null,
-            'owner'             => $object['owner'] ?? null,
-            'active'            => $object['active'] ?? true,
-            'enableRag'         => $object['enableRag'] ?? $object['enable_rag'] ?? false,
-            'ragSearchMode'     => $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null,
-            'ragNumSources'     => $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null,
-            'ragIncludeFiles'   => $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false,
-            'ragIncludeObjects' => $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false,
-            'requestQuota'      => $object['requestQuota'] ?? $object['request_quota'] ?? null,
-            'tokenQuota'        => $object['tokenQuota'] ?? $object['token_quota'] ?? null,
-            'views'             => $object['views'] ?? null,
-            'searchFiles'       => $object['searchFiles'] ?? $object['search_files'] ?? true,
-            'searchObjects'     => $object['searchObjects'] ?? $object['search_objects'] ?? true,
-            'isPrivate'         => $object['isPrivate'] ?? $object['is_private'] ?? true,
-            'invitedUsers'      => $object['invitedUsers'] ?? $object['invited_users'] ?? null,
-            'groups'            => $object['groups'] ?? null,
-            'tools'             => $object['tools'] ?? null,
-            'user'              => $object['user'] ?? null,
-        ];
+		// Map property names to their resolved values.
+		// Uses camelCase keys with snake_case fallback and defaults where needed.
+		// NOTE: Entity setters use __call which does not support named arguments,
+		// so we use dynamic $this->$method($value) calls via the mapping approach.
+		$fields = [
+			'uuid' => $uuid,
+			'name' => $object['name'] ?? null,
+			'description' => $object['description'] ?? null,
+			'type' => $object['type'] ?? null,
+			'provider' => $object['provider'] ?? null,
+			'model' => $object['model'] ?? null,
+			'prompt' => $object['prompt'] ?? null,
+			'temperature' => $object['temperature'] ?? null,
+			'maxTokens' => $object['maxTokens'] ?? $object['max_tokens'] ?? null,
+			'configuration' => $object['configuration'] ?? null,
+			'organisation' => $object['organisation'] ?? null,
+			'owner' => $object['owner'] ?? null,
+			'active' => $object['active'] ?? true,
+			'enableRag' => $object['enableRag'] ?? $object['enable_rag'] ?? false,
+			'ragSearchMode' => $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null,
+			'ragNumSources' => $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null,
+			'ragIncludeFiles' => $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false,
+			'ragIncludeObjects' => $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false,
+			'requestQuota' => $object['requestQuota'] ?? $object['request_quota'] ?? null,
+			'tokenQuota' => $object['tokenQuota'] ?? $object['token_quota'] ?? null,
+			'views' => $object['views'] ?? null,
+			'searchFiles' => $object['searchFiles'] ?? $object['search_files'] ?? true,
+			'searchObjects' => $object['searchObjects'] ?? $object['search_objects'] ?? true,
+			'isPrivate' => $object['isPrivate'] ?? $object['is_private'] ?? true,
+			'invitedUsers' => $object['invitedUsers'] ?? $object['invited_users'] ?? null,
+			'groups' => $object['groups'] ?? null,
+			'tools' => $object['tools'] ?? null,
+			'user' => $object['user'] ?? null,
+		];
 
-        foreach ($fields as $key => $value) {
-            $method = 'set'.ucfirst($key);
-            try {
-                $this->$method($value);
-            } catch (\Exception $e) {
-                // Silently ignore invalid properties.
-            }
-        }
+		foreach ($fields as $key => $value) {
+			$method = 'set' . ucfirst($key);
+			try {
+				$this->$method($value);
+			} catch (\Exception $e) {
+				// Silently ignore invalid properties.
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize the entity to JSON
-     *
-     * @return (array|null|scalar)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, type: null|string, provider: null|string,
-     *     model: null|string, prompt: null|string, temperature: float|null,
-     *     maxTokens: int|null, configuration: array|null,
-     *     organisation: null|string, owner: null|string, active: bool,
-     *     enableRag: bool, ragSearchMode: null|string,
-     *     ragNumSources: int|null, ragIncludeFiles: bool,
-     *     ragIncludeObjects: bool, requestQuota: int|null,
-     *     tokenQuota: int|null, views: array|null, searchFiles: bool|null,
-     *     searchObjects: bool|null, isPrivate: bool|null,
-     *     invitedUsers: array|null, groups: array|null, tools: array|null,
-     *     user: null|string, created: null|string, updated: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                     => $this->id,
-            'uuid'                   => $this->uuid,
-            'name'                   => $this->name,
-            'description'            => $this->description,
-            'type'                   => $this->type,
-            'provider'               => $this->provider,
-            'model'                  => $this->model,
-            'prompt'                 => $this->prompt,
-            'temperature'            => $this->temperature,
-            'maxTokens'              => $this->maxTokens,
-            'configuration'          => $this->configuration,
-            'organisation'           => $this->organisation,
-            'owner'                  => $this->owner,
-            'active'                 => $this->active,
-            'enableRag'              => $this->enableRag,
-            'ragSearchMode'          => $this->ragSearchMode,
-            'ragNumSources'          => $this->ragNumSources,
-            'ragIncludeFiles'        => $this->ragIncludeFiles,
-            'ragIncludeObjects'      => $this->ragIncludeObjects,
-            'requestQuota'           => $this->requestQuota,
-            'tokenQuota'             => $this->tokenQuota,
-            'views'                  => $this->views,
-            'searchFiles'            => $this->searchFiles,
-            'searchObjects'          => $this->searchObjects,
-            'isPrivate'              => $this->isPrivate,
-            'invitedUsers'           => $this->invitedUsers,
-            'groups'                 => $this->groups,
-            'tools'                  => $this->tools,
-            'user'                   => $this->user,
-            'created'                => $this->created?->format('Y-m-d\TH:i:s\Z'),
-            'updated'                => $this->updated?->format('Y-m-d\TH:i:s\Z'),
-            'managedByConfiguration' => $this->getManagedByConfigurationData(),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialize the entity to JSON
+	 *
+	 * @return (array|null|scalar)[]
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, name: null|string,
+	 *     description: null|string, type: null|string, provider: null|string,
+	 *     model: null|string, prompt: null|string, temperature: float|null,
+	 *     maxTokens: int|null, configuration: array|null,
+	 *     organisation: null|string, owner: null|string, active: bool,
+	 *     enableRag: bool, ragSearchMode: null|string,
+	 *     ragNumSources: int|null, ragIncludeFiles: bool,
+	 *     ragIncludeObjects: bool, requestQuota: int|null,
+	 *     tokenQuota: int|null, views: array|null, searchFiles: bool|null,
+	 *     searchObjects: bool|null, isPrivate: bool|null,
+	 *     invitedUsers: array|null, groups: array|null, tools: array|null,
+	 *     user: null|string, created: null|string, updated: null|string,
+	 *     managedByConfiguration: array{id: int, uuid: null|string,
+	 *     title: null|string}|null}
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'description' => $this->description,
+			'type' => $this->type,
+			'provider' => $this->provider,
+			'model' => $this->model,
+			'prompt' => $this->prompt,
+			'temperature' => $this->temperature,
+			'maxTokens' => $this->maxTokens,
+			'configuration' => $this->configuration,
+			'organisation' => $this->organisation,
+			'owner' => $this->owner,
+			'active' => $this->active,
+			'enableRag' => $this->enableRag,
+			'ragSearchMode' => $this->ragSearchMode,
+			'ragNumSources' => $this->ragNumSources,
+			'ragIncludeFiles' => $this->ragIncludeFiles,
+			'ragIncludeObjects' => $this->ragIncludeObjects,
+			'requestQuota' => $this->requestQuota,
+			'tokenQuota' => $this->tokenQuota,
+			'views' => $this->views,
+			'searchFiles' => $this->searchFiles,
+			'searchObjects' => $this->searchObjects,
+			'isPrivate' => $this->isPrivate,
+			'invitedUsers' => $this->invitedUsers,
+			'groups' => $this->groups,
+			'tools' => $this->tools,
+			'user' => $this->user,
+			'created' => $this->created?->format('Y-m-d\TH:i:s\Z'),
+			'updated' => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+			'managedByConfiguration' => $this->getManagedByConfigurationData(),
+		];
+	}//end jsonSerialize()
 
-    /**
-     * Get managed by configuration data for JSON serialization
-     *
-     * @return (int|null|string)[]|null Configuration data or null
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-     */
-    private function getManagedByConfigurationData(): array|null
-    {
-        if ($this->managedByConfig !== null) {
-            return [
-                'id'    => $this->managedByConfig->getId(),
-                'uuid'  => $this->managedByConfig->getUuid(),
-                'title' => $this->managedByConfig->getTitle(),
-            ];
-        }
+	/**
+	 * Get managed by configuration data for JSON serialization
+	 *
+	 * @return (int|null|string)[]|null Configuration data or null
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
+	 */
+	private function getManagedByConfigurationData(): ?array {
+		if ($this->managedByConfig !== null) {
+			return [
+				'id' => $this->managedByConfig->getId(),
+				'uuid' => $this->managedByConfig->getUuid(),
+				'title' => $this->managedByConfig->getTitle(),
+			];
+		}
 
-        return null;
-    }//end getManagedByConfigurationData()
+		return null;
+	}//end getManagedByConfigurationData()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OcmResourceTypeListener — advertise the `openregister` OCM resource type.
  *
@@ -35,27 +36,25 @@ use OCP\OCM\Events\ResourceTypeRegisterEvent;
  *
  * @spec exclude federation ships without a formal openspec change; spec to be added in a follow-up ADR
  */
-class OcmResourceTypeListener implements IEventListener
-{
-    /**
-     * Handle the resource-type registration event.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec exclude federation ships without a formal openspec change; spec to be added in a follow-up ADR
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ResourceTypeRegisterEvent) === false) {
-            return;
-        }
+class OcmResourceTypeListener implements IEventListener {
+	/**
+	 * Handle the resource-type registration event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude federation ships without a formal openspec change; spec to be added in a follow-up ADR
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ResourceTypeRegisterEvent) === false) {
+			return;
+		}
 
-        $event->registerResourceType(
-            'openregister',
-            ['user', 'group'],
-            ['openregister' => '/apps/openregister/api/federation']
-        );
-    }//end handle()
+		$event->registerResourceType(
+			'openregister',
+			['user', 'group'],
+			['openregister' => '/apps/openregister/api/federation']
+		);
+	}//end handle()
 }//end class

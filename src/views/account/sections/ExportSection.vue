@@ -78,6 +78,8 @@ export default {
 
 <style scoped>
 .section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
+
 .section__error { color: var(--color-error); margin-top: 8px; }
+
 .section__success { color: var(--color-success); margin-top: 8px; }
 </style>

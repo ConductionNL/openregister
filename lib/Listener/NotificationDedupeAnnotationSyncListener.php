@@ -43,88 +43,85 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<SchemaCreatedEvent|SchemaUpdatedEvent>
  */
-final class NotificationDedupeAnnotationSyncListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param NotificationDedupeStateMapper $mapper Per-object dedup state mapper.
-     * @param LoggerInterface               $logger PSR logger.
-     */
-    public function __construct(
-        private readonly NotificationDedupeStateMapper $mapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+final class NotificationDedupeAnnotationSyncListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param NotificationDedupeStateMapper $mapper Per-object dedup state mapper.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		private readonly NotificationDedupeStateMapper $mapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle the event.
-     *
-     * @param Event $event Dispatched event.
-     *
-     * @return void
-     */
-    public function handle(Event $event): void
-    {
-        $schema = $this->resolveSchema(event: $event);
-        if ($schema === null) {
-            return;
-        }
+	/**
+	 * Handle the event.
+	 *
+	 * @param Event $event Dispatched event.
+	 *
+	 * @return void
+	 */
+	public function handle(Event $event): void {
+		$schema = $this->resolveSchema(event: $event);
+		if ($schema === null) {
+			return;
+		}
 
-        $schemaId = (int) $schema->getId();
-        if ($schemaId === 0) {
-            return;
-        }
+		$schemaId = (int)$schema->getId();
+		if ($schemaId === 0) {
+			return;
+		}
 
-        try {
-            $config        = ((array) ($schema->getConfiguration() ?? []));
-            $notifications = ($config['x-openregister-notifications'] ?? []);
-            $current       = [];
-            if (is_array($notifications) === true) {
-                foreach (array_keys($notifications) as $key) {
-                    $current[] = (string) $key;
-                }
-            }
+		try {
+			$config = ((array)($schema->getConfiguration() ?? []));
+			$notifications = ($config['x-openregister-notifications'] ?? []);
+			$current = [];
+			if (is_array($notifications) === true) {
+				foreach (array_keys($notifications) as $key) {
+					$current[] = (string)$key;
+				}
+			}
 
-            $tracked = $this->mapper->listRuleKeysForSchema(schemaId: $schemaId);
-            $orphan  = array_diff($tracked, $current);
-            foreach ($orphan as $key) {
-                $this->mapper->deleteByRule(schemaId: $schemaId, ruleKey: (string) $key);
-            }
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                sprintf('[NotificationDedupeAnnotationSyncListener] sync skipped: %s', $e->getMessage())
-            );
-        }
-    }//end handle()
+			$tracked = $this->mapper->listRuleKeysForSchema(schemaId: $schemaId);
+			$orphan = array_diff($tracked, $current);
+			foreach ($orphan as $key) {
+				$this->mapper->deleteByRule(schemaId: $schemaId, ruleKey: (string)$key);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[NotificationDedupeAnnotationSyncListener] sync skipped: %s', $e->getMessage())
+			);
+		}
+	}//end handle()
 
-    /**
-     * Extract the Schema entity from a create/update event.
-     *
-     * @param Event $event Event instance.
-     *
-     * @return Schema|null Schema when the event exposes one, null otherwise.
-     */
-    private function resolveSchema(Event $event): ?Schema
-    {
-        if ($event instanceof SchemaCreatedEvent) {
-            $schema = $event->getSchema();
-            if ($schema instanceof Schema) {
-                return $schema;
-            }
+	/**
+	 * Extract the Schema entity from a create/update event.
+	 *
+	 * @param Event $event Event instance.
+	 *
+	 * @return Schema|null Schema when the event exposes one, null otherwise.
+	 */
+	private function resolveSchema(Event $event): ?Schema {
+		if ($event instanceof SchemaCreatedEvent) {
+			$schema = $event->getSchema();
+			if ($schema instanceof Schema) {
+				return $schema;
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        if ($event instanceof SchemaUpdatedEvent) {
-            $schema = $event->getNewSchema();
-            if ($schema instanceof Schema) {
-                return $schema;
-            }
+		if ($event instanceof SchemaUpdatedEvent) {
+			$schema = $event->getNewSchema();
+			if ($schema instanceof Schema) {
+				return $schema;
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        return null;
-    }//end resolveSchema()
+		return null;
+	}//end resolveSchema()
 }//end class

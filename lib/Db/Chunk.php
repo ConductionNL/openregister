@@ -78,221 +78,218 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Chunk extends Entity implements JsonSerializable
-{
+class Chunk extends Entity implements JsonSerializable {
 
-    /**
-     * UUID.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * UUID.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Source type.
-     *
-     * @var string|null
-     */
-    protected ?string $sourceType = null;
+	/**
+	 * Source type.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $sourceType = null;
 
-    /**
-     * Source ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $sourceId = null;
+	/**
+	 * Source ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $sourceId = null;
 
-    /**
-     * Text content.
-     *
-     * @var string|null
-     */
-    protected ?string $textContent = null;
+	/**
+	 * Text content.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $textContent = null;
 
-    /**
-     * Start offset.
-     *
-     * @var integer
-     */
-    protected int $startOffset = 0;
+	/**
+	 * Start offset.
+	 *
+	 * @var integer
+	 */
+	protected int $startOffset = 0;
 
-    /**
-     * End offset.
-     *
-     * @var integer
-     */
-    protected int $endOffset = 0;
+	/**
+	 * End offset.
+	 *
+	 * @var integer
+	 */
+	protected int $endOffset = 0;
 
-    /**
-     * Chunk index.
-     *
-     * @var integer
-     */
-    protected int $chunkIndex = 0;
+	/**
+	 * Chunk index.
+	 *
+	 * @var integer
+	 */
+	protected int $chunkIndex = 0;
 
-    /**
-     * Position reference.
-     *
-     * @var array|null
-     */
-    protected ?array $positionReference = null;
+	/**
+	 * Position reference.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $positionReference = null;
 
-    /**
-     * Language.
-     *
-     * @var string|null
-     */
-    protected ?string $language = null;
+	/**
+	 * Language.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $language = null;
 
-    /**
-     * Language level.
-     *
-     * @var string|null
-     */
-    protected ?string $languageLevel = null;
+	/**
+	 * Language level.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $languageLevel = null;
 
-    /**
-     * Language confidence.
-     *
-     * @var float|null
-     */
-    protected ?float $languageConfidence = null;
+	/**
+	 * Language confidence.
+	 *
+	 * @var float|null
+	 */
+	protected ?float $languageConfidence = null;
 
-    /**
-     * Detection method.
-     *
-     * @var string|null
-     */
-    protected ?string $detectionMethod = null;
+	/**
+	 * Detection method.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $detectionMethod = null;
 
-    /**
-     * Indexed flag.
-     *
-     * @var boolean
-     */
-    protected bool $indexed = false;
+	/**
+	 * Indexed flag.
+	 *
+	 * @var boolean
+	 */
+	protected bool $indexed = false;
 
-    /**
-     * Vectorized flag.
-     *
-     * @var boolean
-     */
-    protected bool $vectorized = false;
+	/**
+	 * Vectorized flag.
+	 *
+	 * @var boolean
+	 */
+	protected bool $vectorized = false;
 
-    /**
-     * Embedding provider.
-     *
-     * @var string|null
-     */
-    protected ?string $embeddingProvider = null;
+	/**
+	 * Embedding provider.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $embeddingProvider = null;
 
-    /**
-     * Overlap size.
-     *
-     * @var integer
-     */
-    protected int $overlapSize = 0;
+	/**
+	 * Overlap size.
+	 *
+	 * @var integer
+	 */
+	protected int $overlapSize = 0;
 
-    /**
-     * Owner.
-     *
-     * @var string|null
-     */
-    protected ?string $owner = null;
+	/**
+	 * Owner.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $owner = null;
 
-    /**
-     * Organisation.
-     *
-     * @var string|null
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Checksum.
-     *
-     * @var string|null
-     */
-    protected ?string $checksum = null;
+	/**
+	 * Checksum.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $checksum = null;
 
-    /**
-     * Created at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * Created at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * Updated at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updatedAt = null;
+	/**
+	 * Updated at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updatedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'sourceType', type: 'string');
-        $this->addType(fieldName: 'sourceId', type: 'integer');
-        $this->addType(fieldName: 'textContent', type: 'string');
-        $this->addType(fieldName: 'startOffset', type: 'integer');
-        $this->addType(fieldName: 'endOffset', type: 'integer');
-        $this->addType(fieldName: 'chunkIndex', type: 'integer');
-        $this->addType(fieldName: 'positionReference', type: 'json');
-        $this->addType(fieldName: 'language', type: 'string');
-        $this->addType(fieldName: 'languageLevel', type: 'string');
-        $this->addType(fieldName: 'languageConfidence', type: 'float');
-        $this->addType(fieldName: 'detectionMethod', type: 'string');
-        $this->addType(fieldName: 'indexed', type: 'boolean');
-        $this->addType(fieldName: 'vectorized', type: 'boolean');
-        $this->addType(fieldName: 'embeddingProvider', type: 'string');
-        $this->addType(fieldName: 'overlapSize', type: 'integer');
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'checksum', type: 'string');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-        $this->addType(fieldName: 'updatedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'sourceType', type: 'string');
+		$this->addType(fieldName: 'sourceId', type: 'integer');
+		$this->addType(fieldName: 'textContent', type: 'string');
+		$this->addType(fieldName: 'startOffset', type: 'integer');
+		$this->addType(fieldName: 'endOffset', type: 'integer');
+		$this->addType(fieldName: 'chunkIndex', type: 'integer');
+		$this->addType(fieldName: 'positionReference', type: 'json');
+		$this->addType(fieldName: 'language', type: 'string');
+		$this->addType(fieldName: 'languageLevel', type: 'string');
+		$this->addType(fieldName: 'languageConfidence', type: 'float');
+		$this->addType(fieldName: 'detectionMethod', type: 'string');
+		$this->addType(fieldName: 'indexed', type: 'boolean');
+		$this->addType(fieldName: 'vectorized', type: 'boolean');
+		$this->addType(fieldName: 'embeddingProvider', type: 'string');
+		$this->addType(fieldName: 'overlapSize', type: 'integer');
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'checksum', type: 'string');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
+		$this->addType(fieldName: 'updatedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return (array|null|scalar)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, sourceType: null|string,
-     *     sourceId: int|null, chunkIndex: int, startOffset: int, endOffset: int,
-     *     language: null|string, languageLevel: null|string,
-     *     languageConfidence: float|null, indexed: bool, vectorized: bool,
-     *     embeddingProvider: null|string, overlapSize: int, owner: null|string,
-     *     organisation: null|string, checksum: null|string,
-     *     createdAt: null|string, updatedAt: null|string,
-     *     positionReference: array|null}
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                 => $this->id,
-            'uuid'               => $this->uuid,
-            'sourceType'         => $this->sourceType,
-            'sourceId'           => $this->sourceId,
-            'chunkIndex'         => $this->chunkIndex,
-            'startOffset'        => $this->startOffset,
-            'endOffset'          => $this->endOffset,
-            'language'           => $this->language,
-            'languageLevel'      => $this->languageLevel,
-            'languageConfidence' => $this->languageConfidence,
-            'indexed'            => $this->indexed,
-            'vectorized'         => $this->vectorized,
-            'embeddingProvider'  => $this->embeddingProvider,
-            'overlapSize'        => $this->overlapSize,
-            'owner'              => $this->owner,
-            'organisation'       => $this->organisation,
-            'checksum'           => $this->checksum,
-            'createdAt'          => $this->createdAt?->format(DateTime::ATOM),
-            'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
-            'positionReference'  => $this->positionReference,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return (array|null|scalar)[]
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, sourceType: null|string,
+	 *     sourceId: int|null, chunkIndex: int, startOffset: int, endOffset: int,
+	 *     language: null|string, languageLevel: null|string,
+	 *     languageConfidence: float|null, indexed: bool, vectorized: bool,
+	 *     embeddingProvider: null|string, overlapSize: int, owner: null|string,
+	 *     organisation: null|string, checksum: null|string,
+	 *     createdAt: null|string, updatedAt: null|string,
+	 *     positionReference: array|null}
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'sourceType' => $this->sourceType,
+			'sourceId' => $this->sourceId,
+			'chunkIndex' => $this->chunkIndex,
+			'startOffset' => $this->startOffset,
+			'endOffset' => $this->endOffset,
+			'language' => $this->language,
+			'languageLevel' => $this->languageLevel,
+			'languageConfidence' => $this->languageConfidence,
+			'indexed' => $this->indexed,
+			'vectorized' => $this->vectorized,
+			'embeddingProvider' => $this->embeddingProvider,
+			'overlapSize' => $this->overlapSize,
+			'owner' => $this->owner,
+			'organisation' => $this->organisation,
+			'checksum' => $this->checksum,
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
+			'positionReference' => $this->positionReference,
+		];
+	}//end jsonSerialize()
 }//end class

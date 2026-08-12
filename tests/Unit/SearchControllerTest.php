@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SearchController Test
  *
@@ -29,133 +30,126 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit
  */
-class SearchControllerTest extends TestCase
-{
+class SearchControllerTest extends TestCase {
 
-    /**
-     * Test search with single search term
-     *
-     * @return void
-     */
-    public function testSearchWithSingleTerm(): void
-    {
-        // Create mock objects.
-        $request       = $this->createMock(IRequest::class);
-        $objectService = $this->createMock(ObjectService::class);
+	/**
+	 * Test search with single search term
+	 *
+	 * @return void
+	 */
+	public function testSearchWithSingleTerm(): void {
+		// Create mock objects.
+		$request = $this->createMock(IRequest::class);
+		$objectService = $this->createMock(ObjectService::class);
 
-        // Set up request mock to return parameters.
-        $request->method('getParam')
-            ->willReturnMap([
-                ['query', '', 'test'],
-                ['offset', 0, 0],
-                ['limit', 25, 25],
-                ['_search', [], []],
-            ]);
+		// Set up request mock to return parameters.
+		$request->method('getParam')
+			->willReturnMap([
+				['query', '', 'test'],
+				['offset', 0, 0],
+				['limit', 25, 25],
+				['_search', [], []],
+			]);
 
-        // Set up object service mock to return empty results.
-        $objectService->expects($this->once())
-            ->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [],
-                'total'   => 0,
-            ]);
+		// Set up object service mock to return empty results.
+		$objectService->expects($this->once())
+			->method('searchObjectsPaginated')
+			->willReturn([
+				'results' => [],
+				'total' => 0,
+			]);
 
-        // Create controller instance.
-        $controller = new SearchController('openregister', $request, $objectService);
+		// Create controller instance.
+		$controller = new SearchController('openregister', $request, $objectService);
 
-        // Execute search.
-        $response = $controller->search();
+		// Execute search.
+		$response = $controller->search();
 
-        // Verify response.
-        $this->assertInstanceOf(JSONResponse::class, $response);
+		// Verify response.
+		$this->assertInstanceOf(JSONResponse::class, $response);
 
-    }//end testSearchWithSingleTerm()
+	}//end testSearchWithSingleTerm()
 
+	/**
+	 * Test search with empty terms
+	 *
+	 * @return void
+	 */
+	public function testSearchWithEmptyTerms(): void {
+		// Create mock objects.
+		$request = $this->createMock(IRequest::class);
+		$objectService = $this->createMock(ObjectService::class);
 
-    /**
-     * Test search with empty terms
-     *
-     * @return void
-     */
-    public function testSearchWithEmptyTerms(): void
-    {
-        // Create mock objects.
-        $request       = $this->createMock(IRequest::class);
-        $objectService = $this->createMock(ObjectService::class);
+		// Set up request mock to return empty search terms.
+		$request->method('getParam')
+			->willReturnMap([
+				['query', '', ''],
+				['offset', 0, 0],
+				['limit', 25, 25],
+				['_search', [], []],
+			]);
 
-        // Set up request mock to return empty search terms.
-        $request->method('getParam')
-            ->willReturnMap([
-                ['query', '', ''],
-                ['offset', 0, 0],
-                ['limit', 25, 25],
-                ['_search', [], []],
-            ]);
+		// Set up object service mock to return empty results.
+		$objectService->expects($this->once())
+			->method('searchObjectsPaginated')
+			->willReturn([
+				'results' => [],
+				'total' => 0,
+			]);
 
-        // Set up object service mock to return empty results.
-        $objectService->expects($this->once())
-            ->method('searchObjectsPaginated')
-            ->willReturn([
-                'results' => [],
-                'total'   => 0,
-            ]);
+		// Create controller instance.
+		$controller = new SearchController('openregister', $request, $objectService);
 
-        // Create controller instance.
-        $controller = new SearchController('openregister', $request, $objectService);
+		// Execute search.
+		$response = $controller->search();
 
-        // Execute search.
-        $response = $controller->search();
+		// Verify response.
+		$this->assertInstanceOf(JSONResponse::class, $response);
 
-        // Verify response.
-        $this->assertInstanceOf(JSONResponse::class, $response);
+	}//end testSearchWithEmptyTerms()
 
-    }//end testSearchWithEmptyTerms()
+	/**
+	 * Test search with actual results
+	 *
+	 * @return void
+	 */
+	public function testSearchWithResults(): void {
+		// Create mock objects.
+		$request = $this->createMock(IRequest::class);
+		$objectService = $this->createMock(ObjectService::class);
 
+		// Set up request mock to return a search term.
+		$request->method('getParam')
+			->willReturnMap([
+				['query', '', 'customer'],
+				['offset', 0, 0],
+				['limit', 25, 25],
+				['_search', [], []],
+			]);
 
-    /**
-     * Test search with actual results
-     *
-     * @return void
-     */
-    public function testSearchWithResults(): void
-    {
-        // Create mock objects.
-        $request       = $this->createMock(IRequest::class);
-        $objectService = $this->createMock(ObjectService::class);
+		// Create mock search results.
+		$mockResults = [
+			'results' => [
+				['id' => '1', 'name' => 'Customer Service'],
+				['id' => '2', 'name' => 'Customer Support'],
+			],
+			'total' => 2,
+		];
 
-        // Set up request mock to return a search term.
-        $request->method('getParam')
-            ->willReturnMap([
-                ['query', '', 'customer'],
-                ['offset', 0, 0],
-                ['limit', 25, 25],
-                ['_search', [], []],
-            ]);
+		// Set up object service mock to return results.
+		$objectService->expects($this->once())
+			->method('searchObjectsPaginated')
+			->willReturn($mockResults);
 
-        // Create mock search results.
-        $mockResults = [
-            'results' => [
-                ['id' => '1', 'name' => 'Customer Service'],
-                ['id' => '2', 'name' => 'Customer Support'],
-            ],
-            'total' => 2,
-        ];
+		// Create controller instance.
+		$controller = new SearchController('openregister', $request, $objectService);
 
-        // Set up object service mock to return results.
-        $objectService->expects($this->once())
-            ->method('searchObjectsPaginated')
-            ->willReturn($mockResults);
+		// Execute search.
+		$response = $controller->search();
 
-        // Create controller instance.
-        $controller = new SearchController('openregister', $request, $objectService);
+		// Verify response.
+		$this->assertInstanceOf(JSONResponse::class, $response);
 
-        // Execute search.
-        $response = $controller->search();
-
-        // Verify response.
-        $this->assertInstanceOf(JSONResponse::class, $response);
-
-    }//end testSearchWithResults()
-
+	}//end testSearchWithResults()
 
 }//end class
