@@ -3120,7 +3120,15 @@ class MagicMapper extends AbstractObjectMapper {
 			);
 
 			// Create indexes on frequently filtered metadata fields.
-			$idxMetaFields = ['created', 'updated', 'name'];
+			// `slug` and `uri` are here because the single-object lookup ORs all
+			// four identity columns together — `_id OR _uuid OR _slug OR _uri` —
+			// and Postgres will not use an index for a disjunction unless it can
+			// use one for EVERY branch. With two of the four unindexed it fell
+			// back to a sequential scan for what is a primary-key-shaped read.
+			// Measured on the contract register (2,962 rows): 2.5ms as a Seq Scan
+			// against 0.107ms for the same row by `_uuid` alone, and that read
+			// happens on every object fetch in every sharded table.
+			$idxMetaFields = ['created', 'updated', 'name', 'slug', 'uri'];
 			foreach ($idxMetaFields as $field) {
 				$col = self::METADATA_PREFIX . $field;
 				$idx = "{$tableName}_{$field}_idx";
