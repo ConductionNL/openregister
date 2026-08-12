@@ -170,6 +170,88 @@ class ObjectIntegrationsControllerTest extends TestCase
         return $objectService;
     }//end deniedObjectService()
 
+    /**
+     * An ObjectService whose setObject() THROWS, which is what the real one
+     * does for an id that matches nothing: it is not a setter, it calls
+     * `objectMapper->find()`.
+     *
+     * `deniedObjectService()` above cannot cover this. It stubs `getObject()`
+     * alone, so on a mock `setObject()` is a silent no-op and the throwing
+     * path is unreachable — which is exactly why a 500 lived here unnoticed
+     * behind a green test named "denies inaccessible object".
+     */
+    private function missingObjectService(): \OCA\OpenRegister\Service\ObjectService
+    {
+        $objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectService->method('setObject')->willThrowException(
+            new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table')
+        );
+
+        return $objectService;
+    }//end missingObjectService()
+
+    /**
+     * An object id that resolves to nothing is a 404, not a 500.
+     *
+     * Found via openconnector's `synced-from-leaf` e2e spec, which asks this
+     * endpoint about a deliberately absent uuid and expects an empty 200/404.
+     * It got a 500 with "Object not found in magic table" — and had never run,
+     * because it is skipped unless `openconnector.storage_migrated` is true,
+     * which no fresh install ever set (ocon#1180).
+     */
+    public function testIndexReturns404WhenTheObjectDoesNotExist(): void
+    {
+        $stub     = new _ControllerStubProvider('stub');
+        $registry = new IntegrationRegistry(new NullLogger());
+        $registry->addProvider($stub);
+
+        $controller = $this->buildController($registry, null, $this->missingObjectService());
+
+        $response = $controller->index('r', 's', '00000000-0000-0000-0000-000000000000', 'stub');
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+        $this->assertSame([], $stub->listCalled, 'the provider must not be reached');
+    }//end testIndexReturns404WhenTheObjectDoesNotExist()
+
+    /**
+     * The same holds for the other four verbs, which share the guard.
+     *
+     * @dataProvider guardedVerbProvider
+     */
+    public function testEveryGuardedVerbReturns404WhenTheObjectDoesNotExist(string $verb): void
+    {
+        $registry = new IntegrationRegistry(new NullLogger());
+        $registry->addProvider(new _ControllerStubProvider('stub'));
+
+        $controller = $this->buildController($registry, $this->buildRequest(), $this->missingObjectService());
+
+        $missing = '00000000-0000-0000-0000-000000000000';
+
+        $response = match ($verb) {
+            'show'    => $controller->show('r', 's', $missing, 'stub', 'e1'),
+            'create'  => $controller->create('r', 's', $missing, 'stub'),
+            'update'  => $controller->update('r', 's', $missing, 'stub', 'e1'),
+            'destroy' => $controller->destroy('r', 's', $missing, 'stub', 'e1'),
+        };
+
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus(), $verb.' must 404, not 500');
+    }//end testEveryGuardedVerbReturns404WhenTheObjectDoesNotExist()
+
+    /**
+     * The verbs that go through guardObjectAccess().
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function guardedVerbProvider(): array
+    {
+        return [
+            'show'    => ['show'],
+            'create'  => ['create'],
+            'update'  => ['update'],
+            'destroy' => ['destroy'],
+        ];
+    }//end guardedVerbProvider()
+
     public function testIndexDeniesInaccessibleObject(): void
     {
         // IDOR: the caller cannot read the target OR object → 404, and the
