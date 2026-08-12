@@ -102,15 +102,15 @@ class ConfidentialityClauseEnforcementTest extends TestCase
     public static function clearanceProvider(): array
     {
         return [
-            'openbaar clearance sees openbaar'          => ['openbaar', 'openbaar', true],
-            'openbaar clearance is DENIED intern'       => ['openbaar', 'intern', false],
-            'openbaar clearance is DENIED zeer geheim'  => ['openbaar', 'zeer_geheim', false],
-            'intern clearance sees openbaar'            => ['intern', 'openbaar', true],
-            'intern clearance sees intern'              => ['intern', 'intern', true],
-            'intern clearance is DENIED vertrouwelijk'  => ['intern', 'vertrouwelijk', false],
-            'geheim clearance is DENIED zeer geheim'    => ['geheim', 'zeer_geheim', false],
-            'zeer geheim clearance sees zeer geheim'    => ['zeer_geheim', 'zeer_geheim', true],
-            'zeer geheim clearance sees openbaar'       => ['zeer_geheim', 'openbaar', true],
+            'openbaar clearance sees openbaar'         => ['openbaar', 'openbaar', true],
+            'openbaar clearance is DENIED intern'      => ['openbaar', 'intern', false],
+            'openbaar clearance is DENIED zeer geheim' => ['openbaar', 'zeer_geheim', false],
+            'intern clearance sees openbaar'           => ['intern', 'openbaar', true],
+            'intern clearance sees intern'             => ['intern', 'intern', true],
+            'intern clearance is DENIED vertrouwelijk' => ['intern', 'vertrouwelijk', false],
+            'geheim clearance is DENIED zeer geheim'   => ['geheim', 'zeer_geheim', false],
+            'zeer geheim clearance sees zeer geheim'   => ['zeer_geheim', 'zeer_geheim', true],
+            'zeer geheim clearance sees openbaar'      => ['zeer_geheim', 'openbaar', true],
         ];
 
     }//end clearanceProvider()
