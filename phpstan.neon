@@ -1,7 +1,12 @@
+# OpenRegister — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
 includes:
-    # Per-app tracked lint debt lives here (auto-generated via `phpstan --generate-baseline`).
-    # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
-    # across the fleet.
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
     - phpstan-baseline.neon
     # Five JSONResponse generic-invariance mismatches surfaced by removing the
     # stale `@method` shadows from lib/Db. Kept in their own file so the reason
@@ -15,16 +20,9 @@ includes:
     - phpstan-baseline-nc34-ocp.neon
 
 parameters:
-    level: 5
-    paths:
-        - lib
-    bootstrapFiles:
-        - phpstan-bootstrap.php
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
     excludePaths:
-        - vendor
-        - vendor-bin
-        # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuild).
-        - lib/Resources/template
         # ContentProvider implements OCP\ContextChat\IContentProvider, which ships
         # with an OPTIONAL Nextcloud component and is therefore absent during
         # analysis. phpstan refuses to let a class-level "implements unknown
@@ -35,69 +33,8 @@ parameters:
         # phpstan accepts elsewhere. Excluding it removes noise rather than
         # hiding a finding.
         - lib/ContextChat/ContentProvider.php
-    scanDirectories:
-        - vendor/nextcloud/ocp
-    reportUnmatchedIgnoredErrors: false
+
     ignoreErrors:
-        # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
-        - '#Call to an undefined method OC::#'
-        - '#Class OC not found#'
-        - '#Access to static property \$server on an unknown class OC#'
-        - '#unknown class OC\\#'
-        - '#Caught class OC\\#'
-        - '#unknown class OC_App#'
-        - '#Class OC_App not found#'
-        # OCA\DAV is server-internal and not in nextcloud/ocp stubs
-        - '#unknown class OCA\\DAV\\#'
-        - '#Class OCA\\DAV\\#'
-        # OCA\Bookmarks is an optional peer app (lazy-resolved via
-        # \OCP\Server::get() behind a class_exists guard) — not a
-        # composer dependency, so its classes are absent during analysis.
-        - '#unknown class OCA\\Bookmarks\\#'
-        - '#OCA\\Bookmarks\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCA\\Bookmarks\\#'
-        - '#has invalid return type OCA\\Bookmarks\\#'
-        - '#Instantiated class OCA\\Bookmarks\\#'
-        # OCP\ContextChat and OCP\SystemTag ship with OPTIONAL Nextcloud
-        # components, so their classes are absent during analysis in exactly the
-        # way OCA\Bookmarks above is. Ignored rather than baselined because a
-        # baseline entry would go stale the moment the component IS present —
-        # psalm sets findUnusedBaselineEntry, and phpstan would report the entry
-        # as unmatched. An absent optional dependency is a property of the
-        # analysis environment, not debt to pay down.
-        - '#unknown class OCP\\ContextChat\\#'
-        - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCP\\ContextChat\\#'
-        - '#has invalid type OCP\\ContextChat\\#'
-        # The RETURN-type variant, which the line above does not cover: phpstan
-        # words a parameter/property as "has invalid type" and a return as "has
-        # invalid return type". Needed since ContextChatSubmissionListener
-        # resolves IContentManager lazily and returns `?IContentManager` from a
-        # private accessor. The OCA\Bookmarks block above — the same
-        # optional-peer-resolved-behind-a-guard shape — already carries its own
-        # `has invalid return type` entry for exactly this reason.
-        - '#has invalid return type OCP\\ContextChat\\#'
-        - '#implements unknown interface OCP\\ContextChat\\#'
-        - '#unknown class OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
-        - '#OCP\\SystemTag\\Tag(Assigned|Unassigned)Event not found#'
-        - '#has invalid type OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
-        # OCA classes from other apps (OpenRegister) not available during static analysis
-        - '#unknown class OCA\\OpenRegister\\#'
-        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCA\\OpenRegister\\#'
-        - '#has invalid return type OCA\\OpenRegister\\#'
-        - '#has invalid type OCA\\OpenRegister\\#'
-        - '#implements unknown interface OCA\\OpenRegister\\#'
-        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
-        - '#unknown class GuzzleHttp\\#'
-        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class GuzzleHttp\\#'
-        - '#invalid type GuzzleHttp\\#'
-        - '#Caught class GuzzleHttp\\#'
-        # Doctrine\DBAL is shipped by Nextcloud server but not stubbed in nextcloud/ocp
-        - '#unknown class Doctrine\\DBAL\\#'
-        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class Doctrine\\DBAL\\#'
         # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
         # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
         # PHPDocs (upstream typo — fictitious classes that PHPStan can't
@@ -110,13 +47,3 @@ parameters:
         - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
         - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
         - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'
-        # Dynamic HTTP status codes from business rule validation results
-        # (matches both `Parameter $statusCode` and `Parameter #N $statusCode` forms emitted by phpstan)
-        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
-        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
-        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
-        # OCP stub gaps for methods that exist at runtime
-        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
-        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
-        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
-        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
