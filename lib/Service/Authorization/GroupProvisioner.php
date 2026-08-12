@@ -46,7 +46,7 @@ use Throwable;
 /**
  * Provisions declared RBAC groups into Nextcloud, create-only.
  *
- * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class GroupProvisioner
 {
@@ -76,7 +76,7 @@ class GroupProvisioner
      *
      * @return array{created: string[], existing: string[], failed: string[]} What happened, per group.
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function provision(array $groups, string $declaredBy): array
     {
@@ -141,7 +141,7 @@ class GroupProvisioner
      *
      * @return array<string, array{exists: bool, members: int|null}> Keyed by group id; members null = unknown.
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function inventory(array $groups): array
     {

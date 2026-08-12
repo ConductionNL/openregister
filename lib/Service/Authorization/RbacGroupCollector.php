@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Authorization;
 /**
  * Collects declared RBAC group ids from OAS-shaped configuration documents.
  *
- * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class RbacGroupCollector
 {
@@ -73,7 +73,7 @@ class RbacGroupCollector
      *
      * @return string[] Unique group ids, in first-seen order, reserved principals removed.
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromDocument(array $document): array
     {
@@ -96,7 +96,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids declared in the scope map (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromScopeMap(array $document): array
     {
@@ -115,7 +115,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromSchemaDefinitions($schemas): array
     {
@@ -146,7 +146,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromSchemaDefinition(array $schemaDefinition): array
     {
@@ -178,7 +178,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromAuthorizationOwners($owners): array
     {
@@ -219,7 +219,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fromAuthorizationBlock($authorization): array
     {
@@ -260,7 +260,7 @@ class RbacGroupCollector
      *
      * @return string[] Group ids (unfiltered).
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function fromRoleAssignments(array $roleAssignments): array
     {
@@ -318,7 +318,7 @@ class RbacGroupCollector
      *
      * @return string[] Provisionable group ids.
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function provisionable(array $groups): array
     {
