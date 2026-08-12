@@ -310,6 +310,25 @@ class Flow extends Entity implements JsonSerializable
     protected ?string $notes = null;
 
     /**
+     * The authored rationale for the flow's design. Not read by the engine.
+     *
+     * Distinct from `notes`, which is a working scratchpad, and from
+     * `description`, which is the one-line label the UI lists a flow by. This
+     * holds the long-form "why it is shaped this way" a definition file carries
+     * as its top-level `$comment` — on hydra's lock reaper that is 90 lines
+     * recording four defects and the reasoning that prevents each recurring.
+     *
+     * It exists because until it did, that text had nowhere to live on the row:
+     * a flow authored as a file, imported, then regenerated FROM the database
+     * came back without it, silently. Regeneration had to merge rather than
+     * export to avoid the loss, which made the file the only home for the one
+     * piece of a flow that explains it.
+     *
+     * @var string|null
+     */
+    protected ?string $comment = null;
+
+    /**
      * Creation timestamp.
      *
      * @var DateTime|null
@@ -397,6 +416,7 @@ class Flow extends Entity implements JsonSerializable
         $this->addType(fieldName: 'owner', type: 'string');
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'notes', type: 'string');
+        $this->addType(fieldName: 'comment', type: 'string');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'status', type: 'string');
@@ -587,6 +607,7 @@ class Flow extends Entity implements JsonSerializable
             'owner'            => $this->owner,
             'organisation'     => $this->organisation,
             'notes'            => $this->notes,
+            'comment'          => $this->comment,
             'created'          => $created,
             'updated'          => $updated,
             'status'           => $this->status,

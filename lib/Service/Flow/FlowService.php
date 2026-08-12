@@ -320,7 +320,19 @@ class FlowService
             'cron'            => 'setCron',
             'executionMode'   => 'setExecutionMode',
             'notes'           => 'setNotes',
+            'comment'         => 'setComment',
         ];
+
+        // A flow authored as a definition file carries its rationale under the
+        // top-level `$comment` key — the JSON-Schema convention for "a human
+        // wrote this, no reader should interpret it". That key cannot be a
+        // column name, so it is normalised here rather than at every call site.
+        //
+        // `comment` wins when both are present: the explicit API field is a
+        // deliberate write, `$comment` is whatever the file happened to carry.
+        if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
+            $data['comment'] = $data['$comment'];
+        }
 
         foreach ($strings as $key => $setter) {
             if (array_key_exists($key, $data) === true) {
