@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);

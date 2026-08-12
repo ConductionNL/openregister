@@ -42,7 +42,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class GroupReconcilerJob extends TimedJob
 {
@@ -71,7 +71,7 @@ class GroupReconcilerJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     protected function run($argument): void
     {

@@ -15,7 +15,7 @@
 - [x] Record a positive control for each behaviour: breaking reserved-principal filtering fails 2 tests; disabling roles-map handling fails 1; reverting the export change fails 2.
 - [x] Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the full unit suite.
 - [x] Run `openspec validate declared-group-provisioning --strict` and fix until clean.
-- [ ] Archive: sync the spec delta into `openspec/specs/rbac-scopes/spec.md` and repoint the `@spec` tags at the canonical path.
+- [x] Archive: sync the spec delta into `openspec/specs/rbac-scopes/spec.md` and repoint the `@spec` tags at the canonical path.
 
 ## Deferred (tracked, not in this change)
 
