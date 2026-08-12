@@ -485,7 +485,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/specs/rbac-scopes/spec.md
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
      */
     public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void
     {
@@ -497,7 +497,7 @@ class ImportHandler
      *
      * @return RbacGroupCollector The collector instance.
      *
-     * @spec openspec/specs/rbac-scopes/spec.md
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
      */
     private function rbacGroupCollector(): RbacGroupCollector
     {
@@ -530,7 +530,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/specs/rbac-scopes/spec.md
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
      */
     private function provisionDeclaredGroups(array $data, ?string $appId): void
     {
