@@ -3525,7 +3525,66 @@
 				"owner": "",
 				"application": null,
 				"organisation": null,
-				"authorization": null,
+				"authorization": {
+					"read": [
+					{
+						"groups": ["zaak-lezers"],
+						"match": {
+							"vertrouwelijkheidaanduiding": {
+								"$in": [
+									"openbaar",
+									"beperkt_openbaar"
+								]
+							}
+						}
+					},
+					{
+						"groups": ["zaakbehandelaars"],
+						"match": {
+							"vertrouwelijkheidaanduiding": {
+								"$in": [
+									"openbaar",
+									"beperkt_openbaar",
+									"intern",
+									"zaakvertrouwelijk"
+								]
+							}
+						}
+					},
+					{
+						"groups": ["teamleiders"],
+						"match": {
+							"vertrouwelijkheidaanduiding": {
+								"$in": [
+									"openbaar",
+									"beperkt_openbaar",
+									"intern",
+									"zaakvertrouwelijk",
+									"vertrouwelijk",
+									"confidentieel"
+								]
+							}
+						}
+					},
+					{
+						"groups": ["gemeentesecretaris"],
+						"match": {
+							"vertrouwelijkheidaanduiding": {
+								"$in": [
+									"openbaar",
+									"beperkt_openbaar",
+									"intern",
+									"zaakvertrouwelijk",
+									"vertrouwelijk",
+									"confidentieel",
+									"geheim",
+									"zeer_geheim"
+								]
+							}
+						}
+					}
+					]
+				},
 				"deleted": null,
 				"configuration": null
 			},
