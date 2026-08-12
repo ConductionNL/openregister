@@ -261,4 +261,60 @@ export const CASES = [
 		// fewer calls out — which is the thing that would silently regress.
 		expect: { batched: { node: 'b1', maxOut: 3 } },
 	},
+	{
+		key: 'map-transform',
+		title: '12 — Reshape items through a stored mapping',
+		description: 'Feed fields into a stored mapping and write the RESHAPED result, proving the map node transformed rather than passed through.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			{ id: 's1', type: 'openregister.set-fields', config: { set: { first: 'Ada', last: 'Lovelace', n: '7' } } },
+			// Named by UUID, not by the numeric id: a flow definition is portable
+			// between instances where the id differs, and the uuid path is the one
+			// that used to throw. MappingMapper::find() put `id = '<uuid>'` into the
+			// disjunction, which on Postgres raises "invalid input syntax for type
+			// bigint" and takes the whole lookup down — so every by-uuid resolve
+			// failed with "No mapping matches", as though the row were absent.
+			{ id: 'm1', type: 'openregister.map', config: { mapping: '{{mappingUuid}}' } },
+			{ id: 'w1', type: 'openregister.object-write', config: { register: '{{register}}', schema: '{{schema}}', operation: 'create', fields: { name: '{{ fullName }}', sourceId: '{{ kept }}', status: 'mapped' } } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 't1', to: 's1' }, { id: 'b', from: 's1', to: 'm1' }, { id: 'c', from: 'm1', to: 'w1' }, { id: 'd', from: 'w1', to: 'e1' }],
+		// `fullName` exists ONLY as the mapping's output. Asserting the row's name
+		// equals 'Ada Lovelace' is what separates a real transform from a map node
+		// that quietly handed the items back unchanged — which is exactly what the
+		// node used to do before it learned to throw on an unresolvable mapping.
+		expect: { status: 'mapped', atLeast: 1, text: { name: 'name', equals: 'Ada Lovelace' } },
+	},
+	{
+		key: 'trigger-object',
+		title: '13 — An object-event trigger, run by hand',
+		description: 'A flow whose entry point is an object event still runs when triggered manually.',
+		nodes: [
+			{ id: 'to1', type: 'openregister.trigger-object', config: { event: 'created', register: '{{register}}', schema: '{{schema}}' } },
+			{ id: 'w1', type: 'openregister.object-write', config: { register: '{{register}}', schema: '{{schema}}', operation: 'create', fields: { name: 'event-triggered', status: 'evented' } } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 'to1', to: 'w1' }, { id: 'b', from: 'w1', to: 'e1' }],
+		expect: { status: 'evented', atLeast: 1 },
+	},
+	{
+		key: 'wait-suspends',
+		title: '14 — A wait step suspends the run',
+		description: 'A wait step parks the token instead of finishing, and says so.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			// `for` takes seconds as a bare number, or anything strtotime() can read
+			// as a relative phrase. NOT an ISO-8601 duration: `PT1H` is the obvious
+			// thing to write and strtotime('+PT1H') is false, whereupon the node
+			// passes the items straight through — a wait that silently does not
+			// wait, and a run that looks perfectly healthy afterwards.
+			{ id: 'wa1', type: 'openregister.wait', config: { for: '1 hour' } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 't1', to: 'wa1' }, { id: 'b', from: 'wa1', to: 'e1' }],
+		// `suspended` is this case's SUCCESS. A wait that came back `completed`
+		// would mean the step waited for nothing, and asserting the usual terminal
+		// set would have demanded exactly that broken behaviour.
+		expect: { terminal: ['suspended'], step: { node: 'wa1', status: 'suspended' } },
+	},
 ]

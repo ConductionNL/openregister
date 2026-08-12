@@ -65,14 +65,45 @@ leftovers() {
     docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
         "select (select count(*) from oc_openregister_flows where name like 'flow-engine-%')
               + (select count(*) from oc_openregister_registers where slug like 'flow-engine-%')
-              + (select count(*) from oc_openregister_schemas where slug like 'flow-engine-item-%');" 2>/dev/null | tr -d ' '
+              + (select count(*) from oc_openregister_schemas where slug like 'flow-engine-item-%')
+              + (select count(*) from oc_openregister_mappings where name like 'flow-engine-%');" 2>/dev/null | tr -d ' '
 }
 
+##
+# Orphans THIS RUN created, windowed by start time.
+#
+# The fixture count above is scoped by name; this one had no such scope and was
+# global, which is the identical trap one function up. It duly failed on 12 step
+# rows an unrelated workstream had orphaned the previous evening — a red suite
+# reporting someone else's residue as this collection's leak. A deleted flow
+# leaves nothing to match a name against, so the window is the only handle: only
+# rows created since this script started can possibly be ours.
+##
 orphans() {
     docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
-        "select (select count(*) from oc_openregister_flow_runs r where not exists (select 1 from oc_openregister_flows f where f.uuid=r.flow_id))
-              + (select count(*) from oc_openregister_flow_steps s where not exists (select 1 from oc_openregister_flow_runs r2 where r2.uuid=s.run_uuid));" 2>/dev/null | tr -d ' '
+        "select (select count(*) from oc_openregister_flow_runs r
+                  where r.created >= '$RUN_STARTED'
+                    and not exists (select 1 from oc_openregister_flows f where f.uuid=r.flow_id))
+              + (select count(*) from oc_openregister_flow_steps s
+                  where s.created >= '$RUN_STARTED'
+                    and not exists (select 1 from oc_openregister_flow_runs r2 where r2.uuid=s.run_uuid));" 2>/dev/null | tr -d ' '
 }
+
+# Stamped from the DATABASE clock, not the shell's: the comparison happens in
+# Postgres, and a host running even seconds ahead would window out this run's
+# own earliest rows and report a clean sweep it never verified.
+#
+# Formatted with a literal T rather than piped through `tr -d ' '`. That pipe
+# deleted the space INSIDE the timestamp — `2026-08-12 07:10:45` came out as
+# `2026-08-1207:10:45`, Postgres rejected it, 2>/dev/null ate the error, and the
+# empty result printed as `?` and was read as "no orphans". The check reported a
+# clean instance without having successfully run a single query.
+RUN_STARTED=$(docker exec "$DB_CONTAINER" psql -U oc_admin -d nextcloud -tAc \
+    "select to_char(now(), 'YYYY-MM-DD\"T\"HH24:MI:SS');" 2>/dev/null | tr -d ' \r')
+if [ -z "$RUN_STARTED" ]; then
+    echo -e "${RED}✗ could not read the database clock — the leak check cannot run${NC}"
+    exit 1
+fi
 
 echo ""
 
@@ -100,10 +131,17 @@ if [ "$SKIP_LEAK_CHECK" != "1" ]; then
     echo -e "${BLUE}━━━ Leak check ━━━${NC}"
     echo -e "  fixtures left: ${YELLOW}${LEFT:-?}${NC}   orphaned run/step rows: ${YELLOW}${ORPH:-?}${NC}"
 
-    if [ -n "$LEFT" ] && [ "$LEFT" != "0" ]; then
+    # An UNREADABLE count is a failure, never a pass. Both branches below used to
+    # be guarded by `[ -n "$X" ]`, so a query that errored produced an empty string
+    # and sailed through to the green "nothing left behind" — the check announcing
+    # a verdict on evidence it had failed to collect.
+    if [ -z "$LEFT" ] || [ -z "$ORPH" ]; then
+        echo -e "${RED}✗ the leak check could not read the database — this is not a pass${NC}"
+        rc=1
+    elif [ "$LEFT" != "0" ]; then
         echo -e "${RED}✗ $LEFT fixture(s) left behind — teardown is incomplete${NC}"
         rc=1
-    elif [ -n "$ORPH" ] && [ "$ORPH" != "0" ]; then
+    elif [ "$ORPH" != "0" ]; then
         echo -e "${RED}✗ $ORPH orphaned row(s) — the delete cascade did not fire${NC}"
         rc=1
     else

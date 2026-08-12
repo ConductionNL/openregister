@@ -102,6 +102,24 @@ const setup = {
 		req('attach schema to register', 'PUT', '/apps/openregister/api/registers/{{register}}', {
 			schemas: ['{{schema}}'],
 		}, ["pm.test('schema attached', () => pm.response.to.have.status(200))"]),
+		// The mapping the map case reshapes through. `fullName` is composed here
+		// and exists nowhere else, so a row carrying it proves the transform ran.
+		req('create mapping', 'POST', '/apps/openregister/api/mappings', {
+			name: 'flow-engine-map-{{stamp}}',
+			mapping: { fullName: '{{ first }} {{ last }}', kept: '{{ n }}' },
+		}, [
+			"const b = pm.response.json()",
+			"pm.collectionVariables.set('mappingId', String(b.id || ''))",
+			"pm.collectionVariables.set('mappingUuid', String(b.uuid || ''))",
+			"pm.test('mapping created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))",
+			'// The create/read asymmetry this suite exists to keep closed: a session',
+			'// with no ACTIVE organisation wrote the row with organisation NULL while',
+			'// every read welded `1 = 0` onto the query, so POST answered 201 and the',
+			'// very next GET answered 404 — for the same session, every time.',
+		]),
+		req('read the mapping back', 'GET', '/apps/openregister/api/mappings/{{mappingId}}', undefined, [
+			"pm.test('a just-created mapping is readable by its own API', () => pm.response.to.have.status(200))",
+		]),
 		req('create external source', 'POST', '/apps/openregister/api/objects/openconnector/source', {
 			name: 'flow-engine-ext-{{stamp}}',
 			location: 'https://jsonplaceholder.typicode.com',
@@ -241,7 +259,7 @@ const caseFolder = (c) => {
 				'',
 				`pm.test('${c.key}: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))`,
 				`pm.test('${c.key}: run reached a terminal state', () => {`,
-				`    pm.expect(${JSON.stringify(TERMINALS)}, 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))`,
+				`    pm.expect(${JSON.stringify(c.expect.terminal ?? TERMINALS)}, 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))`,
 				'})',
 			]),
 
@@ -289,6 +307,24 @@ const caseFolder = (c) => {
 							`pm.test('${c.key}: ${c.expect.field.name} carries the stored value, not a default', () => {`,
 							"    pm.expect(carrying.length, 'nothing to check the value on').to.be.above(0)",
 							`    pm.expect(Number(carrying[0][${JSON.stringify(c.expect.field.name)}])).to.eql(${c.expect.field.equals})`,
+							'})',
+						]
+						: []),
+					...(c.expect.text !== undefined
+						? [
+							`const bearing = objects.filter((o) => o.status === ${JSON.stringify(c.expect.status)})`,
+							`pm.test('${c.key}: ${c.expect.text.name} holds the TRANSFORMED value', () => {`,
+							"    pm.expect(bearing.length, 'nothing to check the value on').to.be.above(0)",
+							`    pm.expect(String(bearing[0][${JSON.stringify(c.expect.text.name)}])).to.eql(${JSON.stringify(c.expect.text.equals)})`,
+							'})',
+						]
+						: []),
+					...(c.expect.step !== undefined
+						? [
+							`const named = steps.filter((s) => s.transition === ${JSON.stringify(c.expect.step.node)})[0]`,
+							`pm.test('${c.key}: ${c.expect.step.node} reported ${c.expect.step.status}', () => {`,
+							"    pm.expect(named, 'that node produced no step at all — it never ran').to.not.be.undefined",
+							`    pm.expect(String(named.status)).to.eql(${JSON.stringify(c.expect.step.status)})`,
 							'})',
 						]
 						: []),
@@ -365,6 +401,9 @@ const teardown = {
 		req('delete register', 'DELETE', '/apps/openregister/api/registers/{{register}}', undefined, [
 			"pm.test('register deleted', () => pm.expect([200, 204, 404], JSON.stringify(pm.response.json())).to.include(pm.response.code))",
 		]),
+		req('delete mapping', 'DELETE', '/apps/openregister/api/mappings/{{mappingId}}', undefined, [
+			"pm.test('mapping deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+		]),
 		req('delete external source', 'DELETE', '/apps/openregister/api/objects/openconnector/source/{{extSource}}', undefined, [
 			"pm.test('external source deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
 		]),
@@ -402,6 +441,8 @@ const collection = {
 		{ key: 'extSource', value: '' },
 		{ key: 'ncSource', value: '' },
 		{ key: 'agent', value: '' },
+		{ key: 'mappingId', value: '' },
+		{ key: 'mappingUuid', value: '' },
 		{ key: 'flows', value: '' },
 		{ key: 'deleteQueue', value: '[]' },
 		{ key: 'deleteHead', value: '' },

@@ -50,6 +50,14 @@
       "value": ""
     },
     {
+      "key": "mappingId",
+      "value": ""
+    },
+    {
+      "key": "mappingUuid",
+      "value": ""
+    },
+    {
       "key": "flows",
       "value": ""
     },
@@ -270,6 +278,104 @@
                 "api",
                 "registers",
                 "{{register}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "create mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('mappingId', String(b.id || ''))",
+                  "pm.collectionVariables.set('mappingUuid', String(b.uuid || ''))",
+                  "pm.test('mapping created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))",
+                  "// The create/read asymmetry this suite exists to keep closed: a session",
+                  "// with no ACTIVE organisation wrote the row with organisation NULL while",
+                  "// every read welded `1 = 0` onto the query, so POST answered 201 and the",
+                  "// very next GET answered 404 — for the same session, every time."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-map-{{stamp}}\",\n  \"mapping\": {\n    \"fullName\": \"{{ first }} {{ last }}\",\n    \"kept\": \"{{ n }}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/mappings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "mappings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "read the mapping back",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a just-created mapping is readable by its own API', () => pm.response.to.have.status(200))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/mappings/{{mappingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "mappings",
+                "{{mappingId}}"
               ]
             }
           }
@@ -2444,6 +2550,530 @@
       ]
     },
     {
+      "name": "12 — Reshape items through a stored mapping",
+      "description": "Feed fields into a stored mapping and write the RESHAPED result, proving the map node transformed rather than passed through.",
+      "item": [
+        {
+          "name": "map-transform — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_map_transform_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('map-transform: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-map-transform-{{stamp}}\",\n  \"description\": \"Feed fields into a stored mapping and write the RESHAPED result, proving the map node transformed rather than passed through.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"s1\",\n      \"type\": \"openregister.set-fields\",\n      \"config\": {\n        \"set\": {\n          \"first\": \"Ada\",\n          \"last\": \"Lovelace\",\n          \"n\": \"7\"\n        }\n      }\n    },\n    {\n      \"id\": \"m1\",\n      \"type\": \"openregister.map\",\n      \"config\": {\n        \"mapping\": \"{{mappingUuid}}\"\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"{{ fullName }}\",\n          \"sourceId\": \"{{ kept }}\",\n          \"status\": \"mapped\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"s1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"s1\",\n      \"to\": \"m1\"\n    },\n    {\n      \"id\": \"c\",\n      \"from\": \"m1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"d\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "map-transform — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_map_transform_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_map_transform_status', String(run.status))",
+                  "pm.collectionVariables.set('case_map_transform_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('map-transform: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('map-transform: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_map_transform_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_map_transform_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "map-transform — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_map_transform_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_map_transform_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('map-transform: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"mapped\")",
+                  "pm.test('map-transform: wrote at least 1 mapped object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))",
+                  "const bearing = objects.filter((o) => o.status === \"mapped\")",
+                  "pm.test('map-transform: name holds the TRANSFORMED value', () => {",
+                  "    pm.expect(bearing.length, 'nothing to check the value on').to.be.above(0)",
+                  "    pm.expect(String(bearing[0][\"name\"])).to.eql(\"Ada Lovelace\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=1000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 — An object-event trigger, run by hand",
+      "description": "A flow whose entry point is an object event still runs when triggered manually.",
+      "item": [
+        {
+          "name": "trigger-object — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_trigger_object_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('trigger-object: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-trigger-object-{{stamp}}\",\n  \"description\": \"A flow whose entry point is an object event still runs when triggered manually.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"to1\",\n      \"type\": \"openregister.trigger-object\",\n      \"config\": {\n        \"event\": \"created\",\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\"\n      }\n    },\n    {\n      \"id\": \"w1\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"create\",\n        \"fields\": {\n          \"name\": \"event-triggered\",\n          \"status\": \"evented\"\n        }\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"to1\",\n      \"to\": \"w1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"w1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "trigger-object — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_trigger_object_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_trigger_object_status', String(run.status))",
+                  "pm.collectionVariables.set('case_trigger_object_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('trigger-object: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('trigger-object: run reached a terminal state', () => {",
+                  "    pm.expect([\"stopped\",\"completed\",\"failed\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_trigger_object_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_trigger_object_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "trigger-object — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_trigger_object_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_trigger_object_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('trigger-object: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const matching = objects.filter((o) => o.status === \"evented\")",
+                  "pm.test('trigger-object: wrote at least 1 evented object(s)', () => pm.expect(matching.length, 'the run was green but wrote nothing').to.be.at.least(1))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=1000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 — A wait step suspends the run",
+      "description": "A wait step parks the token instead of finishing, and says so.",
+      "item": [
+        {
+          "name": "wait-suspends — create flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json()",
+                  "pm.collectionVariables.set('case_wait_suspends_uuid', b.uuid || '')",
+                  "pm.collectionVariables.set('flows', (pm.collectionVariables.get('flows') || '') + ' ' + (b.uuid || ''))",
+                  "pm.test('wait-suspends: flow created', () => pm.expect(b.uuid, JSON.stringify(b).slice(0, 200)).to.be.a('string'))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"flow-engine-wait-suspends-{{stamp}}\",\n  \"description\": \"A wait step parks the token instead of finishing, and says so.\",\n  \"app\": \"openregister\",\n  \"enabled\": true,\n  \"executionMode\": \"async\",\n  \"nodes\": [\n    {\n      \"id\": \"t1\",\n      \"type\": \"openregister.trigger-manual\",\n      \"config\": {}\n    },\n    {\n      \"id\": \"wa1\",\n      \"type\": \"openregister.wait\",\n      \"config\": {\n        \"for\": \"1 hour\"\n      }\n    },\n    {\n      \"id\": \"e1\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"t1\",\n      \"to\": \"wa1\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"wa1\",\n      \"to\": \"e1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows"
+              ]
+            }
+          }
+        },
+        {
+          "name": "wait-suspends — run flow (sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = pm.response.json()",
+                  "pm.collectionVariables.set('case_wait_suspends_run', run.uuid || '')",
+                  "pm.collectionVariables.set('case_wait_suspends_status', String(run.status))",
+                  "pm.collectionVariables.set('case_wait_suspends_log', JSON.stringify(run.log || []))",
+                  "",
+                  "pm.test('wait-suspends: run executed', () => pm.expect(run.uuid, JSON.stringify(run).slice(0, 200)).to.be.a('string'))",
+                  "pm.test('wait-suspends: run reached a terminal state', () => {",
+                  "    pm.expect([\"suspended\"], 'a synchronous run answered ' + run.status + ' — it should never come back queued').to.include(String(run.status))",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sync\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows/{{case_wait_suspends_uuid}}/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows",
+                "{{case_wait_suspends_uuid}}",
+                "run"
+              ]
+            }
+          }
+        },
+        {
+          "name": "wait-suspends — assert effect",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const steps = JSON.parse(pm.collectionVariables.get('case_wait_suspends_log') || '[]')",
+                  "const status = pm.collectionVariables.get('case_wait_suspends_status')",
+                  "const failed = steps.filter((s) => s.status === 'failed')",
+                  "",
+                  "pm.test('wait-suspends: no step failed', () => {",
+                  "    pm.expect(failed.map((s) => s.transition + ': ' + s.error).join(' | '), 'a step failed').to.eql('')",
+                  "})",
+                  "",
+                  "// The claim that matters. A run reports `completed` when every step",
+                  "// processed ZERO items, so status alone proves nothing — during",
+                  "// development one of these was green with explode in=1 out=0.",
+                  "const body = pm.response.json()",
+                  "const objects = body.results || body || []",
+                  "const named = steps.filter((s) => s.transition === \"wa1\")[0]",
+                  "pm.test('wait-suspends: wa1 reported suspended', () => {",
+                  "    pm.expect(named, 'that node produced no step at all — it never ran').to.not.be.undefined",
+                  "    pm.expect(String(named.status)).to.eql(\"suspended\")",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/objects/{{register}}/{{schema}}?_limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{register}}",
+                "{{schema}}?_limit=1000"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "99 — teardown",
       "item": [
         {
@@ -2747,6 +3377,50 @@
                 "api",
                 "registers",
                 "{{register}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "delete mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('mapping deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/mappings/{{mappingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "mappings",
+                "{{mappingId}}"
               ]
             }
           }
