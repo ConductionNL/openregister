@@ -1009,6 +1009,16 @@ class Application extends App implements IBootstrap
                 $logger->debug('[Application] IUserManager unavailable for ImportHandler: '.$e->getMessage());
             }
 
+            // Optional: creates the Nextcloud groups the imported configuration
+            // declares, so a group named in an authorization block always exists.
+            try {
+                $importHandler->setGroupProvisioner(
+                    $container->get(\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class)
+                );
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] GroupProvisioner unavailable for ImportHandler: '.$e->getMessage());
+            }
+
             return $importHandler;
         };
 

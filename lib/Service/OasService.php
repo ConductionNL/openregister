@@ -36,6 +36,7 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
@@ -486,15 +487,10 @@ class OasService
      */
     private function extractGroupFromRule($rule): ?string
     {
-        if (is_string($rule) === true) {
-            return $rule;
-        }
-
-        if (is_array($rule) === true && isset($rule['group']) === true) {
-            return $rule['group'];
-        }
-
-        return null;
+        // Delegated so the OAS scope map, the configuration export and group
+        // provisioning all read an authorization rule the same way — a divergence
+        // here would mean OR advertises one scope set and enforces another.
+        return (new RbacGroupCollector())->groupFromRule(rule: $rule);
     }//end extractGroupFromRule()
 
     /**
