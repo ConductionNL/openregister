@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AppHost scheduling — cron evaluator tests.
  *
@@ -23,38 +24,32 @@ use PHPUnit\Framework\TestCase;
 /**
  * Covers cron parseability + next-fire computation via the vendored library.
  */
-class CronScheduleEvaluatorTest extends TestCase
-{
-    private CronScheduleEvaluator $evaluator;
+class CronScheduleEvaluatorTest extends TestCase {
+	private CronScheduleEvaluator $evaluator;
 
-    protected function setUp(): void
-    {
-        $this->evaluator = new CronScheduleEvaluator();
-    }
+	protected function setUp(): void {
+		$this->evaluator = new CronScheduleEvaluator();
+	}
 
-    public function testValidExpressionIsValid(): void
-    {
-        $this->assertTrue($this->evaluator->isValid('0 6 * * 1-5'));
-    }
+	public function testValidExpressionIsValid(): void {
+		$this->assertTrue($this->evaluator->isValid('0 6 * * 1-5'));
+	}
 
-    public function testUnparseableExpressionIsInvalid(): void
-    {
-        $this->assertFalse($this->evaluator->isValid('not a cron'));
-        $this->assertFalse($this->evaluator->isValid('99 99 * * *'));
-    }
+	public function testUnparseableExpressionIsInvalid(): void {
+		$this->assertFalse($this->evaluator->isValid('not a cron'));
+		$this->assertFalse($this->evaluator->isValid('99 99 * * *'));
+	}
 
-    public function testNextRunComputesFutureFireTime(): void
-    {
-        $from = new DateTime('2026-01-01 00:00:00');
-        $next = $this->evaluator->nextRun('0 6 * * *', $from);
+	public function testNextRunComputesFutureFireTime(): void {
+		$from = new DateTime('2026-01-01 00:00:00');
+		$next = $this->evaluator->nextRun('0 6 * * *', $from);
 
-        $this->assertNotNull($next);
-        $this->assertGreaterThan($from, $next);
-        $this->assertSame('06:00', $next->format('H:i'));
-    }
+		$this->assertNotNull($next);
+		$this->assertGreaterThan($from, $next);
+		$this->assertSame('06:00', $next->format('H:i'));
+	}
 
-    public function testNextRunReturnsNullForUnparseable(): void
-    {
-        $this->assertNull($this->evaluator->nextRun('nonsense', new DateTime()));
-    }
+	public function testNextRunReturnsNullForUnparseable(): void {
+		$this->assertNull($this->evaluator->nextRun('nonsense', new DateTime()));
+	}
 }//end class

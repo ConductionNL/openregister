@@ -28,9 +28,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\Files\IRootFolder;
@@ -43,139 +43,126 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class ScheduledReportServiceDueTest extends TestCase
-{
+class ScheduledReportServiceDueTest extends TestCase {
 
-    private ScheduledReportService $service;
+	private ScheduledReportService $service;
 
-    private ScheduledReportMapper&MockObject $mapper;
+	private ScheduledReportMapper&MockObject $mapper;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->mapper = $this->createMock(ScheduledReportMapper::class);
+		$this->mapper = $this->createMock(ScheduledReportMapper::class);
 
-        $this->service = new ScheduledReportService(
-            $this->mapper,
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(ExportService::class),
-            $this->createMock(IRootFolder::class),
-            $this->createMock(IUserManager::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(IManager::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(IMailer::class),
-            $this->createMock(IConfig::class)
-        );
-    }//end setUp()
+		$this->service = new ScheduledReportService(
+			$this->mapper,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(ExportService::class),
+			$this->createMock(IRootFolder::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IManager::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IMailer::class),
+			$this->createMock(IConfig::class)
+		);
+	}//end setUp()
 
-    /**
-     * Build a ScheduledReport with the given scheduleType/enabled/lastRunAt.
-     */
-    private function makeReport(string $scheduleType, bool $enabled, ?DateTime $lastRunAt): ScheduledReport
-    {
-        $report = new ScheduledReport();
-        $report->setScheduleType($scheduleType);
-        $report->setEnabled($enabled);
-        $report->setLastRunAt($lastRunAt);
-        return $report;
-    }//end makeReport()
+	/**
+	 * Build a ScheduledReport with the given scheduleType/enabled/lastRunAt.
+	 */
+	private function makeReport(string $scheduleType, bool $enabled, ?DateTime $lastRunAt): ScheduledReport {
+		$report = new ScheduledReport();
+		$report->setScheduleType($scheduleType);
+		$report->setEnabled($enabled);
+		$report->setLastRunAt($lastRunAt);
+		return $report;
+	}//end makeReport()
 
-    public function testDailyReportDueAfter24Hours(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('PT25H'));
-        $report    = $this->makeReport('daily', true, $lastRunAt);
+	public function testDailyReportDueAfter24Hours(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('PT25H'));
+		$report = $this->makeReport('daily', true, $lastRunAt);
 
-        self::assertTrue($this->service->isDue(report: $report, now: $now));
-    }//end testDailyReportDueAfter24Hours()
+		self::assertTrue($this->service->isDue(report: $report, now: $now));
+	}//end testDailyReportDueAfter24Hours()
 
-    public function testDailyReportNotDueBefore24Hours(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('PT2H'));
-        $report    = $this->makeReport('daily', true, $lastRunAt);
+	public function testDailyReportNotDueBefore24Hours(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('PT2H'));
+		$report = $this->makeReport('daily', true, $lastRunAt);
 
-        self::assertFalse($this->service->isDue(report: $report, now: $now));
-    }//end testDailyReportNotDueBefore24Hours()
+		self::assertFalse($this->service->isDue(report: $report, now: $now));
+	}//end testDailyReportNotDueBefore24Hours()
 
-    public function testWeeklyReportDueAfter7Days(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('P8D'));
-        $report    = $this->makeReport('weekly', true, $lastRunAt);
+	public function testWeeklyReportDueAfter7Days(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('P8D'));
+		$report = $this->makeReport('weekly', true, $lastRunAt);
 
-        self::assertTrue($this->service->isDue(report: $report, now: $now));
-    }//end testWeeklyReportDueAfter7Days()
+		self::assertTrue($this->service->isDue(report: $report, now: $now));
+	}//end testWeeklyReportDueAfter7Days()
 
-    public function testWeeklyReportNotDueBefore7Days(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('P3D'));
-        $report    = $this->makeReport('weekly', true, $lastRunAt);
+	public function testWeeklyReportNotDueBefore7Days(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('P3D'));
+		$report = $this->makeReport('weekly', true, $lastRunAt);
 
-        self::assertFalse($this->service->isDue(report: $report, now: $now));
-    }//end testWeeklyReportNotDueBefore7Days()
+		self::assertFalse($this->service->isDue(report: $report, now: $now));
+	}//end testWeeklyReportNotDueBefore7Days()
 
-    public function testMonthlyReportDueAfter30Days(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('P31D'));
-        $report    = $this->makeReport('monthly', true, $lastRunAt);
+	public function testMonthlyReportDueAfter30Days(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('P31D'));
+		$report = $this->makeReport('monthly', true, $lastRunAt);
 
-        self::assertTrue($this->service->isDue(report: $report, now: $now));
-    }//end testMonthlyReportDueAfter30Days()
+		self::assertTrue($this->service->isDue(report: $report, now: $now));
+	}//end testMonthlyReportDueAfter30Days()
 
-    public function testMonthlyReportNotDueBefore30Days(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('P20D'));
-        $report    = $this->makeReport('monthly', true, $lastRunAt);
+	public function testMonthlyReportNotDueBefore30Days(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('P20D'));
+		$report = $this->makeReport('monthly', true, $lastRunAt);
 
-        self::assertFalse($this->service->isDue(report: $report, now: $now));
-    }//end testMonthlyReportNotDueBefore30Days()
+		self::assertFalse($this->service->isDue(report: $report, now: $now));
+	}//end testMonthlyReportNotDueBefore30Days()
 
-    public function testNeverRunReportIsAlwaysDue(): void
-    {
-        $now    = new DateTime();
-        $report = $this->makeReport('monthly', true, null);
+	public function testNeverRunReportIsAlwaysDue(): void {
+		$now = new DateTime();
+		$report = $this->makeReport('monthly', true, null);
 
-        self::assertTrue($this->service->isDue(report: $report, now: $now));
-    }//end testNeverRunReportIsAlwaysDue()
+		self::assertTrue($this->service->isDue(report: $report, now: $now));
+	}//end testNeverRunReportIsAlwaysDue()
 
-    public function testDisabledReportIsNeverDue(): void
-    {
-        $now       = new DateTime();
-        $lastRunAt = (clone $now)->sub(new DateInterval('P60D'));
-        $report    = $this->makeReport('daily', false, $lastRunAt);
+	public function testDisabledReportIsNeverDue(): void {
+		$now = new DateTime();
+		$lastRunAt = (clone $now)->sub(new DateInterval('P60D'));
+		$report = $this->makeReport('daily', false, $lastRunAt);
 
-        self::assertFalse($this->service->isDue(report: $report, now: $now));
-    }//end testDisabledReportIsNeverDue()
+		self::assertFalse($this->service->isDue(report: $report, now: $now));
+	}//end testDisabledReportIsNeverDue()
 
-    public function testDisabledReportNeverRunIsStillNotDue(): void
-    {
-        $now    = new DateTime();
-        $report = $this->makeReport('daily', false, null);
+	public function testDisabledReportNeverRunIsStillNotDue(): void {
+		$now = new DateTime();
+		$report = $this->makeReport('daily', false, null);
 
-        self::assertFalse($this->service->isDue(report: $report, now: $now));
-    }//end testDisabledReportNeverRunIsStillNotDue()
+		self::assertFalse($this->service->isDue(report: $report, now: $now));
+	}//end testDisabledReportNeverRunIsStillNotDue()
 
-    /**
-     * Catch-up: three reports of every schedule type, all overdue because the
-     * job itself didn't run for a while, are all due on the same pass.
-     */
-    public function testCatchUpAfterDowntimeAllElapsedReportsAreDue(): void
-    {
-        $now = new DateTime();
+	/**
+	 * Catch-up: three reports of every schedule type, all overdue because the
+	 * job itself didn't run for a while, are all due on the same pass.
+	 */
+	public function testCatchUpAfterDowntimeAllElapsedReportsAreDue(): void {
+		$now = new DateTime();
 
-        $daily   = $this->makeReport('daily', true, (clone $now)->sub(new DateInterval('P5D')));
-        $weekly  = $this->makeReport('weekly', true, (clone $now)->sub(new DateInterval('P10D')));
-        $monthly = $this->makeReport('monthly', true, (clone $now)->sub(new DateInterval('P40D')));
+		$daily = $this->makeReport('daily', true, (clone $now)->sub(new DateInterval('P5D')));
+		$weekly = $this->makeReport('weekly', true, (clone $now)->sub(new DateInterval('P10D')));
+		$monthly = $this->makeReport('monthly', true, (clone $now)->sub(new DateInterval('P40D')));
 
-        self::assertTrue($this->service->isDue(report: $daily, now: $now));
-        self::assertTrue($this->service->isDue(report: $weekly, now: $now));
-        self::assertTrue($this->service->isDue(report: $monthly, now: $now));
-    }//end testCatchUpAfterDowntimeAllElapsedReportsAreDue()
+		self::assertTrue($this->service->isDue(report: $daily, now: $now));
+		self::assertTrue($this->service->isDue(report: $weekly, now: $now));
+		self::assertTrue($this->service->isDue(report: $monthly, now: $now));
+	}//end testCatchUpAfterDowntimeAllElapsedReportsAreDue()
 }//end class

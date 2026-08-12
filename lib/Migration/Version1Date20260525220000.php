@@ -57,125 +57,121 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Tier-2 time-tracker-links table — create-or-extend.
  */
-class Version1Date20260525220000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260525220000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable('openregister_timetracker_links') === false) {
-            $this->createTimeTrackerLinksTable(schema: $schema, output: $output);
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_timetracker_links') === false) {
+			$this->createTimeTrackerLinksTable(schema: $schema, output: $output);
+			$changed = true;
+		}
 
-        if ($schema->hasTable('openregister_timetracker_links') === true
-            && $this->extendTimeTrackerLinksTable(schema: $schema, output: $output) === true
-        ) {
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_timetracker_links') === true
+			&& $this->extendTimeTrackerLinksTable(schema: $schema, output: $output) === true
+		) {
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Create the openregister_timetracker_links table at the Tier-2 shape.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createTimeTrackerLinksTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $table = $schema->createTable('openregister_timetracker_links');
+	/**
+	 * Create the openregister_timetracker_links table at the Tier-2 shape.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createTimeTrackerLinksTable(ISchemaWrapper $schema, IOutput $output): void {
+		$table = $schema->createTable('openregister_timetracker_links');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('entry_type', Types::STRING, ['notnull' => true, 'length' => 16]);
-        $table->addColumn('client_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('task_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('time_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('duration', Types::INTEGER, ['notnull' => false, 'default' => null]);
-        $table->addColumn('billable', Types::BOOLEAN, ['notnull' => false, 'default' => null]);
-        $table->addColumn('started_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
-        $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('entry_type', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('client_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('task_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('time_id', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('duration', Types::INTEGER, ['notnull' => false, 'default' => null]);
+		$table->addColumn('billable', Types::BOOLEAN, ['notnull' => false, 'default' => null]);
+		$table->addColumn('started_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
+		$table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(
-            ['object_uuid', 'entry_type', 'client_id', 'task_id', 'time_id'],
-            'idx_tt_object_entry'
-        );
-        $table->addIndex(['object_uuid'], 'idx_tt_object');
-        $table->addIndex(['register_id'], 'idx_tt_register');
-        $table->addIndex(['schema_id'], 'idx_tt_schema');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(
+			['object_uuid', 'entry_type', 'client_id', 'task_id', 'time_id'],
+			'idx_tt_object_entry'
+		);
+		$table->addIndex(['object_uuid'], 'idx_tt_object');
+		$table->addIndex(['register_id'], 'idx_tt_register');
+		$table->addIndex(['schema_id'], 'idx_tt_schema');
 
-        $output->info('Created openregister_timetracker_links table (Tier-2 schema)');
-    }//end createTimeTrackerLinksTable()
+		$output->info('Created openregister_timetracker_links table (Tier-2 schema)');
+	}//end createTimeTrackerLinksTable()
 
-    /**
-     * Add any missing Tier-2 columns to an existing time-tracker links table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return bool True when a column was added.
-     */
-    private function extendTimeTrackerLinksTable(ISchemaWrapper $schema, IOutput $output): bool
-    {
-        $table   = $schema->getTable('openregister_timetracker_links');
-        $changed = false;
+	/**
+	 * Add any missing Tier-2 columns to an existing time-tracker links table.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return bool True when a column was added.
+	 */
+	private function extendTimeTrackerLinksTable(ISchemaWrapper $schema, IOutput $output): bool {
+		$table = $schema->getTable('openregister_timetracker_links');
+		$changed = false;
 
-        if ($table->hasColumn('schema_id') === false) {
-            $table->addColumn(
-                'schema_id',
-                Types::BIGINT,
-                ['notnull' => false, 'unsigned' => true, 'default' => null]
-            );
-            $table->addIndex(['schema_id'], 'idx_tt_schema');
-            $output->info('Added schema_id column to openregister_timetracker_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('schema_id') === false) {
+			$table->addColumn(
+				'schema_id',
+				Types::BIGINT,
+				['notnull' => false, 'unsigned' => true, 'default' => null]
+			);
+			$table->addIndex(['schema_id'], 'idx_tt_schema');
+			$output->info('Added schema_id column to openregister_timetracker_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('duration') === false) {
-            $table->addColumn('duration', Types::INTEGER, ['notnull' => false, 'default' => null]);
-            $output->info('Added duration column to openregister_timetracker_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('duration') === false) {
+			$table->addColumn('duration', Types::INTEGER, ['notnull' => false, 'default' => null]);
+			$output->info('Added duration column to openregister_timetracker_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('billable') === false) {
-            $table->addColumn('billable', Types::BOOLEAN, ['notnull' => false, 'default' => null]);
-            $output->info('Added billable column to openregister_timetracker_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('billable') === false) {
+			$table->addColumn('billable', Types::BOOLEAN, ['notnull' => false, 'default' => null]);
+			$output->info('Added billable column to openregister_timetracker_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('started_at') === false) {
-            $table->addColumn('started_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
-            $output->info('Added started_at column to openregister_timetracker_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('started_at') === false) {
+			$table->addColumn('started_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
+			$output->info('Added started_at column to openregister_timetracker_links');
+			$changed = true;
+		}
 
-        return $changed;
-    }//end extendTimeTrackerLinksTable()
+		return $changed;
+	}//end extendTimeTrackerLinksTable()
 }//end class

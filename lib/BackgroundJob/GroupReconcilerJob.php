@@ -44,45 +44,43 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class GroupReconcilerJob extends TimedJob
-{
-    /**
-     * Constructor for GroupReconcilerJob.
-     *
-     * @param ITimeFactory    $time       Time factory.
-     * @param GroupReconciler $reconciler The declared-group reconciler.
-     * @param LoggerInterface $logger     Logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly GroupReconciler $reconciler,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: 3600);
-    }//end __construct()
+class GroupReconcilerJob extends TimedJob {
+	/**
+	 * Constructor for GroupReconcilerJob.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param GroupReconciler $reconciler The declared-group reconciler.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly GroupReconciler $reconciler,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: 3600);
+	}//end __construct()
 
-    /**
-     * Execute one reconciliation sweep.
-     *
-     * @param mixed $argument Job argument (unused for TimedJob).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
-     */
-    protected function run($argument): void
-    {
-        try {
-            $this->reconciler->reconcile();
-        } catch (Throwable $e) {
-            // Defence in depth — reconcile() already never throws.
-            $this->logger->error(
-                message: '[GroupReconcilerJob] sweep failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-    }//end run()
+	/**
+	 * Execute one reconciliation sweep.
+	 *
+	 * @param mixed $argument Job argument (unused for TimedJob).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	protected function run($argument): void {
+		try {
+			$this->reconciler->reconcile();
+		} catch (Throwable $e) {
+			// Defence in depth — reconcile() already never throws.
+			$this->logger->error(
+				message: '[GroupReconcilerJob] sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end run()
 }//end class

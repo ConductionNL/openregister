@@ -39,313 +39,275 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-require_once __DIR__.'/../Fixtures/AttributeFixtureService.php';
-require_once __DIR__.'/../Fixtures/HintScopeFixtureService.php';
-require_once __DIR__.'/../Fixtures/ThrowingFixtureService.php';
+require_once __DIR__ . '/../Fixtures/AttributeFixtureService.php';
+require_once __DIR__ . '/../Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/../Fixtures/ThrowingFixtureService.php';
 
 /**
  * Unit tests for AttributeToolProvider.
  */
-class AttributeToolProviderTest extends TestCase
-{
+class AttributeToolProviderTest extends TestCase {
+
+	/** @var AuditTrailMapper&MockObject */
+	private $auditTrailMapper;
+
+	/** @var LoggerInterface&MockObject */
+	private $logger;
+
+	protected function setUp(): void {
+		parent::setUp();
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+	}//end setUp()
+
+	/**
+	 * Real descriptors from AttributeToolScanner, each augmented with a live
+	 * `instance` — exactly the shape Application::collectAttributeMcpProviders()
+	 * builds.
+	 *
+	 * @param object $instance The resolved owning service instance.
+	 * @param string $appId The owning app id.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function entriesFor(object $instance, string $appId = 'pipelinq'): array {
+		$scanner = new AttributeToolScanner();
+		$descriptors = $scanner->scanClass(appId: $appId, className: get_class($instance), logger: $this->logger);
+
+		foreach ($descriptors as &$descriptor) {
+			$descriptor['instance'] = $instance;
+		}
+
+		return $descriptors;
+	}//end entriesFor()
+
+	private function provider(array $entries, string $appId = 'pipelinq'): AttributeToolProvider {
+		return new AttributeToolProvider(
+			appId: $appId,
+			entries: $entries,
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->logger
+		);
+
+	}//end provider()
+
+	// ── getAppId / getTools ──────────────────────────────────────────
+
+	public function testGetAppIdReturnsOwningApp(): void {
+		$provider = $this->provider([]);
+		$this->assertSame('pipelinq', $provider->getAppId());
+
+	}//end testGetAppIdReturnsOwningApp()
+
+	public function testGetToolsExposesCatalogFieldsOnly(): void {
+		$entries = $this->entriesFor(new AttributeFixtureService());
+		$provider = $this->provider($entries);
+
+		$tools = $provider->getTools();
+		$ids = array_column($tools, 'id');
 
-    /** @var AuditTrailMapper&MockObject */
-    private $auditTrailMapper;
+		$this->assertContains('pipelinq.createLead', $ids);
+		$this->assertContains('pipelinq.logContactmoment', $ids);
+		$this->assertContains('pipelinq.computeScore', $ids);
+
+		foreach ($tools as $tool) {
+			$this->assertArrayHasKey('name', $tool);
+			$this->assertArrayHasKey('description', $tool);
+			$this->assertArrayHasKey('inputSchema', $tool);
+			// Invocation-only metadata must NOT leak onto the public catalog.
+			$this->assertArrayNotHasKey('instance', $tool);
+			$this->assertArrayNotHasKey('class', $tool);
+			$this->assertArrayNotHasKey('method', $tool);
+			$this->assertArrayNotHasKey('paramNames', $tool);
+		}
 
-    /** @var LoggerInterface&MockObject */
-    private $logger;
+	}//end testGetToolsExposesCatalogFieldsOnly()
 
+	// ── getTools: hint/scope forwarding (REQ-ATTR-005) ───────────────
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->logger            = $this->createMock(LoggerInterface::class);
+	public function testGetToolsForwardsDeclaredHintsAndScope(): void {
+		$entries = $this->entriesFor(new HintScopeFixtureService());
+		$provider = $this->provider($entries);
 
-    }//end setUp()
+		$tools = $provider->getTools();
+		$byId = [];
+		foreach ($tools as $tool) {
+			$byId[$tool['id']] = $tool;
+		}
 
+		$deleteLead = $byId['pipelinq.deleteLead'];
+		$this->assertFalse($deleteLead['readOnlyHint']);
+		$this->assertTrue($deleteLead['destructiveHint']);
+		$this->assertFalse($deleteLead['idempotentHint']);
+		$this->assertSame('delete', $deleteLead['scope']);
 
-    /**
-     * Real descriptors from AttributeToolScanner, each augmented with a live
-     * `instance` — exactly the shape Application::collectAttributeMcpProviders()
-     * builds.
-     *
-     * @param object $instance The resolved owning service instance.
-     * @param string $appId    The owning app id.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function entriesFor(object $instance, string $appId = 'pipelinq'): array
-    {
-        $scanner     = new AttributeToolScanner();
-        $descriptors = $scanner->scanClass(appId: $appId, className: get_class($instance), logger: $this->logger);
+	}//end testGetToolsForwardsDeclaredHintsAndScope()
 
-        foreach ($descriptors as &$descriptor) {
-            $descriptor['instance'] = $instance;
-        }
+	public function testGetToolsOmitsHintsAndScopeWhenUndeclared(): void {
+		$entries = $this->entriesFor(new HintScopeFixtureService());
+		$provider = $this->provider($entries);
 
-        return $descriptors;
+		$tools = $provider->getTools();
+		$byId = [];
+		foreach ($tools as $tool) {
+			$byId[$tool['id']] = $tool;
+		}
 
-    }//end entriesFor()
+		$getLead = $byId['pipelinq.getLead'];
+		$this->assertArrayNotHasKey('readOnlyHint', $getLead);
+		$this->assertArrayNotHasKey('destructiveHint', $getLead);
+		$this->assertArrayNotHasKey('idempotentHint', $getLead);
+		$this->assertArrayNotHasKey('scope', $getLead);
 
+	}//end testGetToolsOmitsHintsAndScopeWhenUndeclared()
 
-    private function provider(array $entries, string $appId = 'pipelinq'): AttributeToolProvider
-    {
-        return new AttributeToolProvider(
-            appId: $appId,
-            entries: $entries,
-            auditTrailMapper: $this->auditTrailMapper,
-            logger: $this->logger
-        );
+	public function testGetToolsExposesNoHintScopeKeysForUnannotatedFixture(): void {
+		// AttributeFixtureService declares none of the four new params on
+		// any method — its descriptors must carry no phantom hint/scope keys.
+		$entries = $this->entriesFor(new AttributeFixtureService());
+		$provider = $this->provider($entries);
 
-    }//end provider()
+		foreach ($provider->getTools() as $tool) {
+			$this->assertArrayNotHasKey('readOnlyHint', $tool);
+			$this->assertArrayNotHasKey('destructiveHint', $tool);
+			$this->assertArrayNotHasKey('idempotentHint', $tool);
+			$this->assertArrayNotHasKey('scope', $tool);
+		}
 
+	}//end testGetToolsExposesNoHintScopeKeysForUnannotatedFixture()
 
-    // ── getAppId / getTools ──────────────────────────────────────────
+	// ── invokeTool: in-process dispatch (ADR-041) ────────────────────
 
+	public function testInvokeUnknownToolIdThrows(): void {
+		$provider = $this->provider([]);
 
-    public function testGetAppIdReturnsOwningApp(): void
-    {
-        $provider = $this->provider([]);
-        $this->assertSame('pipelinq', $provider->getAppId());
+		$this->auditTrailMapper->expects($this->never())->method('createToolInvocationEntry');
 
-    }//end testGetAppIdReturnsOwningApp()
+		$this->expectException(InvalidArgumentException::class);
+		$provider->invokeTool('pipelinq.createLead', []);
 
+	}//end testInvokeUnknownToolIdThrows()
 
-    public function testGetToolsExposesCatalogFieldsOnly(): void
-    {
-        $entries  = $this->entriesFor(new AttributeFixtureService());
-        $provider = $this->provider($entries);
+	public function testInvocationCallsTheOwningInstanceInProcess(): void {
+		$instance = new AttributeFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
-        $tools = $provider->getTools();
-        $ids   = array_column($tools, 'id');
+		$result = $provider->invokeTool('pipelinq.createLead', ['email' => 'a@example.com', 'company' => 'Acme']);
 
-        $this->assertContains('pipelinq.createLead', $ids);
-        $this->assertContains('pipelinq.logContactmoment', $ids);
-        $this->assertContains('pipelinq.computeScore', $ids);
+		$this->assertSame('lead-1', $result['id']);
+		$this->assertSame('a@example.com', $result['email']);
+		$this->assertSame('Acme', $result['company']);
 
-        foreach ($tools as $tool) {
-            $this->assertArrayHasKey('name', $tool);
-            $this->assertArrayHasKey('description', $tool);
-            $this->assertArrayHasKey('inputSchema', $tool);
-            // Invocation-only metadata must NOT leak onto the public catalog.
-            $this->assertArrayNotHasKey('instance', $tool);
-            $this->assertArrayNotHasKey('class', $tool);
-            $this->assertArrayNotHasKey('method', $tool);
-            $this->assertArrayNotHasKey('paramNames', $tool);
-        }
+	}//end testInvocationCallsTheOwningInstanceInProcess()
 
-    }//end testGetToolsExposesCatalogFieldsOnly()
+	public function testInvocationOmitsUndeclaredArgumentsBeforeCalling(): void {
+		$instance = new AttributeFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
+		// `unexpectedExtraKey` is not a declared parameter of logContactmoment();
+		// PHP would fatal on an unknown named argument if it were passed
+		// through unfiltered.
+		$result = $provider->invokeTool(
+			'pipelinq.logContactmoment',
+			['subject' => 'Called back', 'unexpectedExtraKey' => 'x']
+		);
 
-    // ── getTools: hint/scope forwarding (REQ-ATTR-005) ───────────────
+		$this->assertSame('Called back', $result['subject']);
 
+	}//end testInvocationOmitsUndeclaredArgumentsBeforeCalling()
 
-    public function testGetToolsForwardsDeclaredHintsAndScope(): void
-    {
-        $entries  = $this->entriesFor(new HintScopeFixtureService());
-        $provider = $this->provider($entries);
+	public function testScalarReturnIsCoercedIntoAnArrayResult(): void {
+		$instance = new AttributeFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
-        $tools = $provider->getTools();
-        $byId  = [];
-        foreach ($tools as $tool) {
-            $byId[$tool['id']] = $tool;
-        }
+		$result = $provider->invokeTool('pipelinq.computeScore', ['leadId' => 21]);
 
-        $deleteLead = $byId['pipelinq.deleteLead'];
-        $this->assertFalse($deleteLead['readOnlyHint']);
-        $this->assertTrue($deleteLead['destructiveHint']);
-        $this->assertFalse($deleteLead['idempotentHint']);
-        $this->assertSame('delete', $deleteLead['scope']);
+		$this->assertSame(['result' => 42], $result);
 
-    }//end testGetToolsForwardsDeclaredHintsAndScope()
+	}//end testScalarReturnIsCoercedIntoAnArrayResult()
 
+	// ── Authorization: no bypass (REQ-ATTR-003) ──────────────────────
 
-    public function testGetToolsOmitsHintsAndScopeWhenUndeclared(): void
-    {
-        $entries  = $this->entriesFor(new HintScopeFixtureService());
-        $provider = $this->provider($entries);
+	public function testOwningMethodAuthorizationFailurePropagatesWithNoBypass(): void {
+		$instance = new ThrowingFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
-        $tools = $provider->getTools();
-        $byId  = [];
-        foreach ($tools as $tool) {
-            $byId[$tool['id']] = $tool;
-        }
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Not authorized');
 
-        $getLead = $byId['pipelinq.getLead'];
-        $this->assertArrayNotHasKey('readOnlyHint', $getLead);
-        $this->assertArrayNotHasKey('destructiveHint', $getLead);
-        $this->assertArrayNotHasKey('idempotentHint', $getLead);
-        $this->assertArrayNotHasKey('scope', $getLead);
+		$provider->invokeTool('pipelinq.privilegedAction', ['id' => 'x']);
 
-    }//end testGetToolsOmitsHintsAndScopeWhenUndeclared()
+	}//end testOwningMethodAuthorizationFailurePropagatesWithNoBypass()
 
+	// ── Audit (REQ-ATTR-004) ──────────────────────────────────────────
 
-    public function testGetToolsExposesNoHintScopeKeysForUnannotatedFixture(): void
-    {
-        // AttributeFixtureService declares none of the four new params on
-        // any method — its descriptors must carry no phantom hint/scope keys.
-        $entries  = $this->entriesFor(new AttributeFixtureService());
-        $provider = $this->provider($entries);
+	public function testSuccessfulInvocationWritesOneAuditRecordWithDigestNotRawParams(): void {
+		$instance = new AttributeFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
-        foreach ($provider->getTools() as $tool) {
-            $this->assertArrayNotHasKey('readOnlyHint', $tool);
-            $this->assertArrayNotHasKey('destructiveHint', $tool);
-            $this->assertArrayNotHasKey('idempotentHint', $tool);
-            $this->assertArrayNotHasKey('scope', $tool);
-        }
+		$capturedDigest = null;
+		$this->auditTrailMapper->expects($this->once())
+			->method('createToolInvocationEntry')
+			->willReturnCallback(function (
+				string $toolId,
+				string $paramsDigest,
+				array $resultSummary,
+				?int $register,
+				?int $schema,
+				?int $object,
+				?string $objectUuid,
+			) use (&$capturedDigest) {
+				$capturedDigest = $paramsDigest;
+				$this->assertSame('pipelinq.createLead', $toolId);
+				$this->assertFalse($resultSummary['isError']);
+				$this->assertSame('lead-1', $objectUuid);
+				return $this->createMock(AuditTrail::class);
+			});
 
-    }//end testGetToolsExposesNoHintScopeKeysForUnannotatedFixture()
+		$provider->invokeTool('pipelinq.createLead', ['email' => 'a@example.com']);
 
+		$this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $capturedDigest);
 
-    // ── invokeTool: in-process dispatch (ADR-041) ────────────────────
+	}//end testSuccessfulInvocationWritesOneAuditRecordWithDigestNotRawParams()
 
+	public function testFailedInvocationIsStillAuditedWithErrorSummary(): void {
+		$instance = new ThrowingFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
-    public function testInvokeUnknownToolIdThrows(): void
-    {
-        $provider = $this->provider([]);
+		$this->auditTrailMapper->expects($this->once())
+			->method('createToolInvocationEntry')
+			->with(
+				'pipelinq.privilegedAction',
+				$this->anything(),
+				$this->callback(function ($summary) {
+					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
+				}),
+				null,
+				null,
+				null,
+				null
+			)
+			->willReturn($this->createMock(AuditTrail::class));
 
-        $this->auditTrailMapper->expects($this->never())->method('createToolInvocationEntry');
+		try {
+			$provider->invokeTool('pipelinq.privilegedAction', ['id' => 'x']);
+			$this->fail('Expected RuntimeException was not thrown.');
+		} catch (RuntimeException $e) {
+			$this->assertSame('Not authorized', $e->getMessage());
+		}
 
-        $this->expectException(InvalidArgumentException::class);
-        $provider->invokeTool('pipelinq.createLead', []);
+	}//end testFailedInvocationIsStillAuditedWithErrorSummary()
 
-    }//end testInvokeUnknownToolIdThrows()
+	public function testAuditFailureDoesNotMaskSuccessfulResult(): void {
+		$instance = new AttributeFixtureService();
+		$provider = $this->provider($this->entriesFor($instance));
 
+		$this->auditTrailMapper->method('createToolInvocationEntry')->willThrowException(new RuntimeException('db down'));
 
-    public function testInvocationCallsTheOwningInstanceInProcess(): void
-    {
-        $instance = new AttributeFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
+		$result = $provider->invokeTool('pipelinq.logContactmoment', ['subject' => 'x']);
 
-        $result = $provider->invokeTool('pipelinq.createLead', ['email' => 'a@example.com', 'company' => 'Acme']);
+		$this->assertSame(['subject' => 'x'], $result);
 
-        $this->assertSame('lead-1', $result['id']);
-        $this->assertSame('a@example.com', $result['email']);
-        $this->assertSame('Acme', $result['company']);
-
-    }//end testInvocationCallsTheOwningInstanceInProcess()
-
-    public function testInvocationOmitsUndeclaredArgumentsBeforeCalling(): void
-    {
-        $instance = new AttributeFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        // `unexpectedExtraKey` is not a declared parameter of logContactmoment();
-        // PHP would fatal on an unknown named argument if it were passed
-        // through unfiltered.
-        $result = $provider->invokeTool(
-            'pipelinq.logContactmoment',
-            ['subject' => 'Called back', 'unexpectedExtraKey' => 'x']
-        );
-
-        $this->assertSame('Called back', $result['subject']);
-
-    }//end testInvocationOmitsUndeclaredArgumentsBeforeCalling()
-
-
-    public function testScalarReturnIsCoercedIntoAnArrayResult(): void
-    {
-        $instance = new AttributeFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        $result = $provider->invokeTool('pipelinq.computeScore', ['leadId' => 21]);
-
-        $this->assertSame(['result' => 42], $result);
-
-    }//end testScalarReturnIsCoercedIntoAnArrayResult()
-
-
-    // ── Authorization: no bypass (REQ-ATTR-003) ──────────────────────
-
-
-    public function testOwningMethodAuthorizationFailurePropagatesWithNoBypass(): void
-    {
-        $instance = new ThrowingFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Not authorized');
-
-        $provider->invokeTool('pipelinq.privilegedAction', ['id' => 'x']);
-
-    }//end testOwningMethodAuthorizationFailurePropagatesWithNoBypass()
-
-
-    // ── Audit (REQ-ATTR-004) ──────────────────────────────────────────
-
-
-    public function testSuccessfulInvocationWritesOneAuditRecordWithDigestNotRawParams(): void
-    {
-        $instance = new AttributeFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        $capturedDigest = null;
-        $this->auditTrailMapper->expects($this->once())
-            ->method('createToolInvocationEntry')
-            ->willReturnCallback(function (
-                string $toolId,
-                string $paramsDigest,
-                array $resultSummary,
-                ?int $register,
-                ?int $schema,
-                ?int $object,
-                ?string $objectUuid
-            ) use (&$capturedDigest) {
-                $capturedDigest = $paramsDigest;
-                $this->assertSame('pipelinq.createLead', $toolId);
-                $this->assertFalse($resultSummary['isError']);
-                $this->assertSame('lead-1', $objectUuid);
-                return $this->createMock(AuditTrail::class);
-            });
-
-        $provider->invokeTool('pipelinq.createLead', ['email' => 'a@example.com']);
-
-        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $capturedDigest);
-
-    }//end testSuccessfulInvocationWritesOneAuditRecordWithDigestNotRawParams()
-
-
-    public function testFailedInvocationIsStillAuditedWithErrorSummary(): void
-    {
-        $instance = new ThrowingFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        $this->auditTrailMapper->expects($this->once())
-            ->method('createToolInvocationEntry')
-            ->with(
-                'pipelinq.privilegedAction',
-                $this->anything(),
-                $this->callback(function ($summary) {
-                    return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
-                }),
-                null,
-                null,
-                null,
-                null
-            )
-            ->willReturn($this->createMock(AuditTrail::class));
-
-        try {
-            $provider->invokeTool('pipelinq.privilegedAction', ['id' => 'x']);
-            $this->fail('Expected RuntimeException was not thrown.');
-        } catch (RuntimeException $e) {
-            $this->assertSame('Not authorized', $e->getMessage());
-        }
-
-    }//end testFailedInvocationIsStillAuditedWithErrorSummary()
-
-
-    public function testAuditFailureDoesNotMaskSuccessfulResult(): void
-    {
-        $instance = new AttributeFixtureService();
-        $provider = $this->provider($this->entriesFor($instance));
-
-        $this->auditTrailMapper->method('createToolInvocationEntry')->willThrowException(new RuntimeException('db down'));
-
-        $result = $provider->invokeTool('pipelinq.logContactmoment', ['subject' => 'x']);
-
-        $this->assertSame(['subject' => 'x'], $result);
-
-    }//end testAuditFailureDoesNotMaskSuccessfulResult()
+	}//end testAuditFailureDoesNotMaskSuccessfulResult()
 }//end class

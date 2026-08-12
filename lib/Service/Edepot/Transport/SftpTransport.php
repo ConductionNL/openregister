@@ -39,198 +39,192 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class SftpTransport implements TransportInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface $logger Logger.
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class SftpTransport implements TransportInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Send a SIP package via SFTP.
-     *
-     * @param string              $sipFilePath The local path to the SIP ZIP archive.
-     * @param array<string,mixed> $config      SFTP configuration: host, port, username, password/keyPath, remotePath.
-     *
-     * @return TransportResult The result of the transport.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     * @spec openspec/specs/edepot-transfer/spec.md
-     */
-    public function send(string $sipFilePath, array $config): TransportResult
-    {
-        $this->logger->info(
-            message: '[SftpTransport] Starting SFTP transfer',
-            context: ['host' => ($config['host'] ?? 'unknown')]
-        );
+	/**
+	 * Send a SIP package via SFTP.
+	 *
+	 * @param string $sipFilePath The local path to the SIP ZIP archive.
+	 * @param array<string,mixed> $config SFTP configuration: host, port, username, password/keyPath, remotePath.
+	 *
+	 * @return TransportResult The result of the transport.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function send(string $sipFilePath, array $config): TransportResult {
+		$this->logger->info(
+			message: '[SftpTransport] Starting SFTP transfer',
+			context: ['host' => ($config['host'] ?? 'unknown')]
+		);
 
-        try {
-            $this->validateConfig(config: $config);
+		try {
+			$this->validateConfig(config: $config);
 
-            if (file_exists($sipFilePath) === false) {
-                throw new RuntimeException("SIP file not found: {$sipFilePath}");
-            }
+			if (file_exists($sipFilePath) === false) {
+				throw new RuntimeException("SIP file not found: {$sipFilePath}");
+			}
 
-            $localSize  = filesize($sipFilePath);
-            $remotePath = rtrim(($config['remotePath'] ?? '/'), '/').'/'.basename($sipFilePath);
+			$localSize = filesize($sipFilePath);
+			$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
 
-            // Use phpseclib for SFTP if available.
-            if (class_exists('\phpseclib3\Net\SFTP') === true) {
-                $sftp   = $this->createSftpConnection(config: $config);
-                $result = $sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
+			// Use phpseclib for SFTP if available.
+			if (class_exists('\phpseclib3\Net\SFTP') === true) {
+				$sftp = $this->createSftpConnection(config: $config);
+				$result = $sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
 
-                if ($result === false) {
-                    throw new RuntimeException('SFTP upload failed: '.$sftp->getLastSFTPError());
-                }
+				if ($result === false) {
+					throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
+				}
 
-                // Verify remote file size.
-                $remoteSize = $sftp->size($remotePath);
-                if ($remoteSize !== $localSize) {
-                    throw new RuntimeException(
-                        "Remote file size mismatch: expected {$localSize}, got {$remoteSize}"
-                    );
-                }
+				// Verify remote file size.
+				$remoteSize = $sftp->size($remotePath);
+				if ($remoteSize !== $localSize) {
+					throw new RuntimeException(
+						"Remote file size mismatch: expected {$localSize}, got {$remoteSize}"
+					);
+				}
 
-                $this->logger->info(
-                    message: '[SftpTransport] SFTP transfer successful',
-                    context: [
-                        'remotePath' => $remotePath,
-                        'size'       => $localSize,
-                    ]
-                );
+				$this->logger->info(
+					message: '[SftpTransport] SFTP transfer successful',
+					context: [
+						'remotePath' => $remotePath,
+						'size' => $localSize,
+					]
+				);
 
-                return new TransportResult(
-                    success: true,
-                    transferReference: $remotePath
-                );
-            }//end if
+				return new TransportResult(
+					success: true,
+					transferReference: $remotePath
+				);
+			}//end if
 
-            throw new RuntimeException(
-                'phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.'
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[SftpTransport] SFTP transfer failed',
-                context: ['error' => $e->getMessage()]
-            );
+			throw new RuntimeException(
+				'phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.'
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[SftpTransport] SFTP transfer failed',
+				context: ['error' => $e->getMessage()]
+			);
 
-            return new TransportResult(
-                success: false,
-                errorMessage: $e->getMessage()
-            );
-        }//end try
-    }//end send()
+			return new TransportResult(
+				success: false,
+				errorMessage: $e->getMessage()
+			);
+		}//end try
+	}//end send()
 
-    /**
-     * Test SFTP connection.
-     *
-     * @param array<string,mixed> $config SFTP configuration.
-     *
-     * @return bool True if connection test succeeds.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function testConnection(array $config): bool
-    {
-        try {
-            $this->validateConfig(config: $config);
+	/**
+	 * Test SFTP connection.
+	 *
+	 * @param array<string,mixed> $config SFTP configuration.
+	 *
+	 * @return bool True if connection test succeeds.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function testConnection(array $config): bool {
+		try {
+			$this->validateConfig(config: $config);
 
-            if (class_exists('\phpseclib3\Net\SFTP') === false) {
-                $this->logger->warning(
-                    message: '[SftpTransport] phpseclib3 not available for connection test'
-                );
-                return false;
-            }
+			if (class_exists('\phpseclib3\Net\SFTP') === false) {
+				$this->logger->warning(
+					message: '[SftpTransport] phpseclib3 not available for connection test'
+				);
+				return false;
+			}
 
-            $sftp = $this->createSftpConnection(config: $config);
-            $sftp->pwd();
-            return true;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[SftpTransport] Connection test failed',
-                context: ['error' => $e->getMessage()]
-            );
-            return false;
-        }
-    }//end testConnection()
+			$sftp = $this->createSftpConnection(config: $config);
+			$sftp->pwd();
+			return true;
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[SftpTransport] Connection test failed',
+				context: ['error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end testConnection()
 
-    /**
-     * Get transport name.
-     *
-     * @return string The transport name.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function getName(): string
-    {
-        return 'sftp';
-    }//end getName()
+	/**
+	 * Get transport name.
+	 *
+	 * @return string The transport name.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getName(): string {
+		return 'sftp';
+	}//end getName()
 
-    /**
-     * Validate SFTP configuration.
-     *
-     * @param array<string,mixed> $config The configuration to validate.
-     *
-     * @return void
-     *
-     * @throws RuntimeException If required configuration is missing.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    private function validateConfig(array $config): void
-    {
-        $required = ['host', 'username'];
-        foreach ($required as $key) {
-            if (empty($config[$key]) === true) {
-                throw new RuntimeException("Missing required SFTP config: {$key}");
-            }
-        }
+	/**
+	 * Validate SFTP configuration.
+	 *
+	 * @param array<string,mixed> $config The configuration to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException If required configuration is missing.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	private function validateConfig(array $config): void {
+		$required = ['host', 'username'];
+		foreach ($required as $key) {
+			if (empty($config[$key]) === true) {
+				throw new RuntimeException("Missing required SFTP config: {$key}");
+			}
+		}
 
-        if (empty($config['password']) === true && empty($config['keyPath']) === true) {
-            throw new RuntimeException('SFTP requires either password or keyPath for authentication');
-        }
-    }//end validateConfig()
+		if (empty($config['password']) === true && empty($config['keyPath']) === true) {
+			throw new RuntimeException('SFTP requires either password or keyPath for authentication');
+		}
+	}//end validateConfig()
 
-    /**
-     * Create an SFTP connection.
-     *
-     * @param array<string,mixed> $config SFTP configuration.
-     *
-     * @return \phpseclib3\Net\SFTP The SFTP connection.
-     *
-     * @throws RuntimeException If connection fails.
-     *
-     * @psalm-suppress UndefinedClass
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     */
-    private function createSftpConnection(array $config): SFTP
-    {
-        $port = (int) ($config['port'] ?? 22);
-        $sftp = new SFTP($config['host'], $port);
+	/**
+	 * Create an SFTP connection.
+	 *
+	 * @param array<string,mixed> $config SFTP configuration.
+	 *
+	 * @return \phpseclib3\Net\SFTP The SFTP connection.
+	 *
+	 * @throws RuntimeException If connection fails.
+	 *
+	 * @psalm-suppress UndefinedClass
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	private function createSftpConnection(array $config): SFTP {
+		$port = (int)($config['port'] ?? 22);
+		$sftp = new SFTP($config['host'], $port);
 
-        if (empty($config['keyPath']) === false) {
-            $key    = PublicKeyLoader::load(
-                file_get_contents($config['keyPath'])
-            );
-            $logged = $sftp->login($config['username'], $key);
-        }
+		if (empty($config['keyPath']) === false) {
+			$key = PublicKeyLoader::load(
+				file_get_contents($config['keyPath'])
+			);
+			$logged = $sftp->login($config['username'], $key);
+		}
 
-        if (empty($config['keyPath']) === true) {
-            $logged = $sftp->login($config['username'], ($config['password'] ?? ''));
-        }
+		if (empty($config['keyPath']) === true) {
+			$logged = $sftp->login($config['username'], ($config['password'] ?? ''));
+		}
 
-        if ($logged === false) {
-            throw new RuntimeException('SFTP authentication failed');
-        }
+		if ($logged === false) {
+			throw new RuntimeException('SFTP authentication failed');
+		}
 
-        return $sftp;
-    }//end createSftpConnection()
+		return $sftp;
+	}//end createSftpConnection()
 }//end class

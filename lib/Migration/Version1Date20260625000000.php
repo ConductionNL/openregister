@@ -36,41 +36,39 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the `openregister_sequences` table.
  */
-class Version1Date20260625000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The updated schema, or null when no change.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260625000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The updated schema, or null when no change.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_sequences') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_sequences') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_sequences');
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('scope_key', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
-        $table->addColumn('next_value', Types::BIGINT, ['notnull' => true, 'unsigned' => true, 'default' => 1]);
+		$table = $schema->createTable('openregister_sequences');
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('scope_key', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
+		$table->addColumn('next_value', Types::BIGINT, ['notnull' => true, 'unsigned' => true, 'default' => 1]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['register_id', 'schema_id', 'scope_key'], 'idx_or_seq_scope');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['register_id', 'schema_id', 'scope_key'], 'idx_or_seq_scope');
 
-        $output->info('Created openregister_sequences table');
+		$output->info('Created openregister_sequences table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

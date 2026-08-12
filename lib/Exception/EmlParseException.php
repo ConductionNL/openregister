@@ -35,6 +35,5 @@ use Exception;
 /**
  * Irrecoverable EML parse failure.
  */
-class EmlParseException extends Exception
-{
+class EmlParseException extends Exception {
 }//end class

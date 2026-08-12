@@ -31,106 +31,94 @@ namespace OCA\OpenRegister\Service\Schema;
 /**
  * Outcome of applying a transform chain to one object's data.
  */
-final class MigrationPlanResult
-{
+final class MigrationPlanResult {
 
-    /**
-     * The resulting data after applying the transform chain.
-     *
-     * @var array<string, mixed>
-     */
-    private array $data;
+	/**
+	 * The resulting data after applying the transform chain.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $data;
 
-    /**
-     * Whether the data changed relative to the input.
-     *
-     * @var boolean
-     */
-    private bool $changed;
+	/**
+	 * Whether the data changed relative to the input.
+	 *
+	 * @var boolean
+	 */
+	private bool $changed;
 
-    /**
-     * The failure reason, or null when the chain applied cleanly.
-     *
-     * @var string|null
-     */
-    private ?string $failure;
+	/**
+	 * The failure reason, or null when the chain applied cleanly.
+	 *
+	 * @var string|null
+	 */
+	private ?string $failure;
 
-    /**
-     * Ordered descriptions of the transforms that were applied.
-     *
-     * @var array<int, string>
-     */
-    private array $applied;
+	/**
+	 * Ordered descriptions of the transforms that were applied.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $applied;
 
-    /**
-     * Constructor.
-     *
-     * @param array<string, mixed> $data    Resulting data.
-     * @param bool                 $changed Whether data changed.
-     * @param string|null          $failure Failure reason, or null.
-     * @param array<int, string>   $applied Applied transform descriptions.
-     */
-    public function __construct(array $data, bool $changed, ?string $failure=null, array $applied=[])
-    {
-        $this->data    = $data;
-        $this->changed = $changed;
-        $this->failure = $failure;
-        $this->applied = $applied;
+	/**
+	 * Constructor.
+	 *
+	 * @param array<string, mixed> $data Resulting data.
+	 * @param bool $changed Whether data changed.
+	 * @param string|null $failure Failure reason, or null.
+	 * @param array<int, string> $applied Applied transform descriptions.
+	 */
+	public function __construct(array $data, bool $changed, ?string $failure = null, array $applied = []) {
+		$this->data = $data;
+		$this->changed = $changed;
+		$this->failure = $failure;
+		$this->applied = $applied;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the resulting data.
-     *
-     * @return array<string, mixed> The data.
-     */
-    public function getData(): array
-    {
-        return $this->data;
+	/**
+	 * Get the resulting data.
+	 *
+	 * @return array<string, mixed> The data.
+	 */
+	public function getData(): array {
+		return $this->data;
+	}//end getData()
 
-    }//end getData()
+	/**
+	 * Whether the data changed.
+	 *
+	 * @return bool True when changed.
+	 */
+	public function isChanged(): bool {
+		return $this->changed;
+	}//end isChanged()
 
-    /**
-     * Whether the data changed.
-     *
-     * @return bool True when changed.
-     */
-    public function isChanged(): bool
-    {
-        return $this->changed;
+	/**
+	 * Whether the chain failed for this object.
+	 *
+	 * @return bool True when a transform failed.
+	 */
+	public function isFailed(): bool {
+		return $this->failure !== null;
+	}//end isFailed()
 
-    }//end isChanged()
+	/**
+	 * Get the failure reason, if any.
+	 *
+	 * @return string|null The failure reason.
+	 */
+	public function getFailure(): ?string {
+		return $this->failure;
+	}//end getFailure()
 
-    /**
-     * Whether the chain failed for this object.
-     *
-     * @return bool True when a transform failed.
-     */
-    public function isFailed(): bool
-    {
-        return $this->failure !== null;
-
-    }//end isFailed()
-
-    /**
-     * Get the failure reason, if any.
-     *
-     * @return string|null The failure reason.
-     */
-    public function getFailure(): ?string
-    {
-        return $this->failure;
-
-    }//end getFailure()
-
-    /**
-     * Get the applied transform descriptions.
-     *
-     * @return array<int, string> The descriptions.
-     */
-    public function getApplied(): array
-    {
-        return $this->applied;
-
-    }//end getApplied()
+	/**
+	 * Get the applied transform descriptions.
+	 *
+	 * @return array<int, string> The descriptions.
+	 */
+	public function getApplied(): array {
+		return $this->applied;
+	}//end getApplied()
 }//end class

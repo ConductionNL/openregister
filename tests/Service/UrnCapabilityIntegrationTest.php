@@ -36,110 +36,104 @@ use PHPUnit\Framework\TestCase;
 /**
  * @group DB
  */
-class UrnCapabilityIntegrationTest extends TestCase
-{
+class UrnCapabilityIntegrationTest extends TestCase {
 
-    private UrnCapability $capability;
+	private UrnCapability $capability;
 
-    private UrnService $urnService;
+	private UrnService $urnService;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->capability = \OC::$server->get(UrnCapability::class);
-        $this->urnService = \OC::$server->get(UrnService::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->capability = \OC::$server->get(UrnCapability::class);
+		$this->urnService = \OC::$server->get(UrnService::class);
 
-    }//end setUp()
+	}//end setUp()
 
-    public function testCapabilityEnvelopeShape(): void
-    {
-        $caps = $this->capability->getCapabilities();
+	public function testCapabilityEnvelopeShape(): void {
+		$caps = $this->capability->getCapabilities();
 
-        $this->assertArrayHasKey('openregister', $caps, 'capability MUST live under the openregister namespace');
-        $this->assertArrayHasKey('urn', $caps['openregister'], 'openregister namespace MUST expose a urn block');
+		$this->assertArrayHasKey('openregister', $caps, 'capability MUST live under the openregister namespace');
+		$this->assertArrayHasKey('urn', $caps['openregister'], 'openregister namespace MUST expose a urn block');
 
-        $urn = $caps['openregister']['urn'];
-        $this->assertSame(true, $urn['enabled'], 'urn capability MUST advertise enabled=true');
-        $this->assertSame('1', $urn['version'], 'capability version MUST be tagged');
-        $this->assertSame(UrnService::DEFAULT_NID, $urn['nid'], 'NID MUST match the URN namespace identifier');
-        $this->assertIsString($urn['instance']);
-        $this->assertNotSame('', $urn['instance'], 'instance slug MUST NOT be empty');
+		$urn = $caps['openregister']['urn'];
+		$this->assertSame(true, $urn['enabled'], 'urn capability MUST advertise enabled=true');
+		$this->assertSame('1', $urn['version'], 'capability version MUST be tagged');
+		$this->assertSame(UrnService::DEFAULT_NID, $urn['nid'], 'NID MUST match the URN namespace identifier');
+		$this->assertIsString($urn['instance']);
+		$this->assertNotSame('', $urn['instance'], 'instance slug MUST NOT be empty');
 
-        $this->assertSame(
-            $this->urnService->getInstanceSlug(),
-            $urn['instance'],
-            'capability instance slug MUST match the live UrnService value (federation tooling depends on this)'
-        );
+		$this->assertSame(
+			$this->urnService->getInstanceSlug(),
+			$urn['instance'],
+			'capability instance slug MUST match the live UrnService value (federation tooling depends on this)'
+		);
 
-    }//end testCapabilityEnvelopeShape()
+	}//end testCapabilityEnvelopeShape()
 
-    public function testCapabilityAdvertisesAllV1Endpoints(): void
-    {
-        $caps      = $this->capability->getCapabilities();
-        $endpoints = $caps['openregister']['urn']['endpoints'] ?? [];
+	public function testCapabilityAdvertisesAllV1Endpoints(): void {
+		$caps = $this->capability->getCapabilities();
+		$endpoints = $caps['openregister']['urn']['endpoints'] ?? [];
 
-        $this->assertSame(
-            '/apps/openregister/api/urn/resolve',
-            $endpoints['resolve'] ?? null,
-            'resolve endpoint MUST be advertised'
-        );
-        $this->assertSame(
-            '/apps/openregister/api/urn/lookup',
-            $endpoints['lookup'] ?? null,
-            'lookup endpoint MUST be advertised'
-        );
-        $this->assertSame(
-            '/apps/openregister/api/urn/bulk',
-            $endpoints['bulk'] ?? null,
-            'bulk endpoint MUST be advertised'
-        );
+		$this->assertSame(
+			'/apps/openregister/api/urn/resolve',
+			$endpoints['resolve'] ?? null,
+			'resolve endpoint MUST be advertised'
+		);
+		$this->assertSame(
+			'/apps/openregister/api/urn/lookup',
+			$endpoints['lookup'] ?? null,
+			'lookup endpoint MUST be advertised'
+		);
+		$this->assertSame(
+			'/apps/openregister/api/urn/bulk',
+			$endpoints['bulk'] ?? null,
+			'bulk endpoint MUST be advertised'
+		);
 
-    }//end testCapabilityAdvertisesAllV1Endpoints()
+	}//end testCapabilityAdvertisesAllV1Endpoints()
 
-    public function testCapabilityAdvertisesV1FeatureFlags(): void
-    {
-        $caps     = $this->capability->getCapabilities();
-        $features = $caps['openregister']['urn']['features'] ?? [];
+	public function testCapabilityAdvertisesV1FeatureFlags(): void {
+		$caps = $this->capability->getCapabilities();
+		$features = $caps['openregister']['urn']['features'] ?? [];
 
-        // Implemented in v1.
-        $this->assertSame(true, $features['bulkResolve'] ?? null);
-        $this->assertSame(true, $features['reverseLookup'] ?? null);
+		// Implemented in v1.
+		$this->assertSame(true, $features['bulkResolve'] ?? null);
+		$this->assertSame(true, $features['reverseLookup'] ?? null);
 
-        // Deferred — clients SHOULD treat these as not-yet-supported and
-        // fall back to single-instance behaviour.
-        $this->assertSame(false, $features['crossInstance'] ?? null, 'federation MUST be advertised as off until v1.1');
-        $this->assertSame(false, $features['aliases'] ?? null, 'aliases MUST be advertised as off until implemented');
-        $this->assertSame(false, $features['versioning'] ?? null, 'versioning MUST be advertised as off until implemented');
+		// Deferred — clients SHOULD treat these as not-yet-supported and
+		// fall back to single-instance behaviour.
+		$this->assertSame(false, $features['crossInstance'] ?? null, 'federation MUST be advertised as off until v1.1');
+		$this->assertSame(false, $features['aliases'] ?? null, 'aliases MUST be advertised as off until implemented');
+		$this->assertSame(false, $features['versioning'] ?? null, 'versioning MUST be advertised as off until implemented');
 
-    }//end testCapabilityAdvertisesV1FeatureFlags()
+	}//end testCapabilityAdvertisesV1FeatureFlags()
 
-    public function testCapabilityIsRegisteredWithCapabilitiesManager(): void
-    {
-        // Probe Nextcloud's CapabilitiesManager directly: it aggregates
-        // every registered ICapability provider into a single envelope.
-        // If our `registerCapability(UrnCapability::class)` call from
-        // `Application::register()` is wired correctly, the openregister
-        // → urn block MUST appear in the aggregate.
-        /** @var CapabilitiesManager $manager */
-        $manager   = \OC::$server->get(\OC\CapabilitiesManager::class);
-        $aggregate = $manager->getCapabilities();
+	public function testCapabilityIsRegisteredWithCapabilitiesManager(): void {
+		// Probe Nextcloud's CapabilitiesManager directly: it aggregates
+		// every registered ICapability provider into a single envelope.
+		// If our `registerCapability(UrnCapability::class)` call from
+		// `Application::register()` is wired correctly, the openregister
+		// → urn block MUST appear in the aggregate.
+		/** @var CapabilitiesManager $manager */
+		$manager = \OC::$server->get(\OC\CapabilitiesManager::class);
+		$aggregate = $manager->getCapabilities();
 
-        $this->assertArrayHasKey(
-            'openregister',
-            $aggregate,
-            'CapabilitiesManager aggregate MUST contain the openregister namespace once the provider is registered'
-        );
-        $this->assertArrayHasKey(
-            'urn',
-            $aggregate['openregister'],
-            'aggregate openregister capabilities MUST include the urn block'
-        );
-        $this->assertSame(
-            true,
-            $aggregate['openregister']['urn']['enabled'] ?? null,
-            'aggregate envelope MUST advertise URN as enabled'
-        );
+		$this->assertArrayHasKey(
+			'openregister',
+			$aggregate,
+			'CapabilitiesManager aggregate MUST contain the openregister namespace once the provider is registered'
+		);
+		$this->assertArrayHasKey(
+			'urn',
+			$aggregate['openregister'],
+			'aggregate openregister capabilities MUST include the urn block'
+		);
+		$this->assertSame(
+			true,
+			$aggregate['openregister']['urn']['enabled'] ?? null,
+			'aggregate envelope MUST advertise URN as enabled'
+		);
 
-    }//end testCapabilityIsRegisteredWithCapabilitiesManager()
+	}//end testCapabilityIsRegisteredWithCapabilitiesManager()
 
 }//end class

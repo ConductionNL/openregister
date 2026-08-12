@@ -53,81 +53,78 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class NotificationDedupeState extends Entity implements JsonSerializable
-{
+class NotificationDedupeState extends Entity implements JsonSerializable {
 
-    /**
-     * Owning schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * Owning schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * Notification annotation key (rule key in `x-openregister-notifications`).
-     *
-     * @var string|null
-     */
-    protected ?string $ruleKey = null;
+	/**
+	 * Notification annotation key (rule key in `x-openregister-notifications`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $ruleKey = null;
 
-    /**
-     * Target ObjectEntity UUID.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * Target ObjectEntity UUID.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * SHA-1 fingerprint of the watched-field values at last dispatch.
-     *
-     * @var string|null
-     */
-    protected ?string $fingerprint = null;
+	/**
+	 * SHA-1 fingerprint of the watched-field values at last dispatch.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $fingerprint = null;
 
-    /**
-     * Timestamp the rule was dispatched for this object (last re-arm).
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $dispatchedAt = null;
+	/**
+	 * Timestamp the rule was dispatched for this object (last re-arm).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $dispatchedAt = null;
 
-    /**
-     * Last time the evaluator matched this (schema, rule, object) triple.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $seenAt = null;
+	/**
+	 * Last time the evaluator matched this (schema, rule, object) triple.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $seenAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'ruleKey', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'fingerprint', type: 'string');
-        $this->addType(fieldName: 'dispatchedAt', type: 'datetime');
-        $this->addType(fieldName: 'seenAt', type: 'datetime');
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'ruleKey', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'fingerprint', type: 'string');
+		$this->addType(fieldName: 'dispatchedAt', type: 'datetime');
+		$this->addType(fieldName: 'seenAt', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'           => $this->id,
-            'schemaId'     => $this->schemaId,
-            'ruleKey'      => $this->ruleKey,
-            'objectUuid'   => $this->objectUuid,
-            'fingerprint'  => $this->fingerprint,
-            'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
-            'seenAt'       => $this->seenAt?->format(DateTime::ATOM),
-        ];
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'schemaId' => $this->schemaId,
+			'ruleKey' => $this->ruleKey,
+			'objectUuid' => $this->objectUuid,
+			'fingerprint' => $this->fingerprint,
+			'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
+			'seenAt' => $this->seenAt?->format(DateTime::ATOM),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

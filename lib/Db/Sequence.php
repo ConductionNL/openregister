@@ -46,61 +46,58 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Sequence extends Entity implements JsonSerializable
-{
+class Sequence extends Entity implements JsonSerializable {
 
-    /**
-     * The register the sequence is scoped to.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register the sequence is scoped to.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema the sequence is scoped to.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema the sequence is scoped to.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The scope discriminator (e.g. the year "2026", "2026-06" or "" for global).
-     *
-     * @var string|null
-     */
-    protected ?string $scopeKey = null;
+	/**
+	 * The scope discriminator (e.g. the year "2026", "2026-06" or "" for global).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $scopeKey = null;
 
-    /**
-     * The next value to hand out (always >= 1).
-     *
-     * @var integer|null
-     */
-    protected ?int $nextValue = null;
+	/**
+	 * The next value to hand out (always >= 1).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $nextValue = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'scopeKey', type: 'string');
-        $this->addType(fieldName: 'nextValue', type: 'integer');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'scopeKey', type: 'string');
+		$this->addType(fieldName: 'nextValue', type: 'integer');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->id,
-            'registerId' => $this->registerId,
-            'schemaId'   => $this->schemaId,
-            'scopeKey'   => $this->scopeKey,
-            'nextValue'  => $this->nextValue,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'scopeKey' => $this->scopeKey,
+			'nextValue' => $this->nextValue,
+		];
+	}//end jsonSerialize()
 }//end class

@@ -51,60 +51,57 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
  */
-class Version1Date20260810140000 extends SimpleMigrationStep
-{
-    /**
-     * Create the indexed trigger table.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260810140000 extends SimpleMigrationStep {
+	/**
+	 * Create the indexed trigger table.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_flow_triggers') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_flow_triggers') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_flow_triggers');
+		$table = $schema->createTable('openregister_flow_triggers');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
 
-        // The flow's UUID, not its numeric id: the resolver answers in UUIDs and
-        // every other flow surface addresses a flow by UUID.
-        $table->addColumn('flow_uuid', Types::STRING, ['notnull' => true, 'length' => 64]);
+		// The flow's UUID, not its numeric id: the resolver answers in UUIDs and
+		// every other flow surface addresses a flow by UUID.
+		$table->addColumn('flow_uuid', Types::STRING, ['notnull' => true, 'length' => 64]);
 
-        $table->addColumn('event', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('schema_slug', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('event', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('register', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('schema_slug', Types::STRING, ['notnull' => true, 'length' => 255]);
 
-        // Denormalised from the flow row so a match needs no join. A trigger
-        // lookup runs on every object write, and reading `enabled` from here
-        // means the hot path touches ONE table.
-        $table->addColumn('enabled', Types::BOOLEAN, ['notnull' => false, 'default' => true]);
+		// Denormalised from the flow row so a match needs no join. A trigger
+		// lookup runs on every object write, and reading `enabled` from here
+		// means the hot path touches ONE table.
+		$table->addColumn('enabled', Types::BOOLEAN, ['notnull' => false, 'default' => true]);
 
-        $table->setPrimaryKey(['id']);
+		$table->setPrimaryKey(['id']);
 
-        // The lookup index, in the order a match filters: an object event knows
-        // its event, register and schema, and wants only enabled flows.
-        $table->addIndex(['enabled', 'event', 'register', 'schema_slug'], 'or_flowtrig_match_idx');
+		// The lookup index, in the order a match filters: an object event knows
+		// its event, register and schema, and wants only enabled flows.
+		$table->addIndex(['enabled', 'event', 'register', 'schema_slug'], 'or_flowtrig_match_idx');
 
-        // Rebuilding one flow's triggers deletes by flow, so that has an index too.
-        $table->addIndex(['flow_uuid'], 'or_flowtrig_flow_idx');
+		// Rebuilding one flow's triggers deletes by flow, so that has an index too.
+		$table->addIndex(['flow_uuid'], 'or_flowtrig_flow_idx');
 
-        $output->info('Created openregister_flow_triggers (indexed trigger set derived from trigger nodes).');
+		$output->info('Created openregister_flow_triggers (indexed trigger set derived from trigger nodes).');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

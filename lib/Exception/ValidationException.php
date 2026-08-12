@@ -43,61 +43,59 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class ValidationException extends Exception
-{
+class ValidationException extends Exception {
 
-    /**
-     * The validation errors from JSON schema validator
-     *
-     * Contains detailed error information including field paths, error types,
-     * and validation failure reasons. Null if validation errors are not available.
-     *
-     * @var ValidationError|null Validation errors object or null
-     */
-    private readonly ?ValidationError $errors;
+	/**
+	 * The validation errors from JSON schema validator
+	 *
+	 * Contains detailed error information including field paths, error types,
+	 * and validation failure reasons. Null if validation errors are not available.
+	 *
+	 * @var ValidationError|null Validation errors object or null
+	 */
+	private readonly ?ValidationError $errors;
 
-    /**
-     * Constructor for ValidationException
-     *
-     * Initializes exception with validation error message and optional detailed
-     * validation errors from JSON schema validator. Calls parent constructor
-     * to set message, code, and previous exception.
-     *
-     * @param string               $message  The error message describing validation failure
-     * @param int                  $code     The error code (default: 0)
-     * @param Throwable|null       $previous The previous exception that caused this one
-     * @param ValidationError|null $errors   The detailed validation errors from Opis validator
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(
-        string $message,
-        int $code=0,
-        ?Throwable $previous=null,
-        ?ValidationError $errors=null
-    ) {
-        // Store validation errors for detailed error reporting.
-        $this->errors = $errors;
+	/**
+	 * Constructor for ValidationException
+	 *
+	 * Initializes exception with validation error message and optional detailed
+	 * validation errors from JSON schema validator. Calls parent constructor
+	 * to set message, code, and previous exception.
+	 *
+	 * @param string $message The error message describing validation failure
+	 * @param int $code The error code (default: 0)
+	 * @param Throwable|null $previous The previous exception that caused this one
+	 * @param ValidationError|null $errors The detailed validation errors from Opis validator
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		string $message,
+		int $code = 0,
+		?Throwable $previous = null,
+		?ValidationError $errors = null,
+	) {
+		// Store validation errors for detailed error reporting.
+		$this->errors = $errors;
 
-        // Call parent constructor to initialize base exception properties.
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+		// Call parent constructor to initialize base exception properties.
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 
-    /**
-     * Returns the validation errors
-     *
-     * Returns detailed validation error information from JSON schema validator.
-     * Contains field paths, error types, and validation failure reasons.
-     * Returns null if validation errors were not provided.
-     *
-     * @return ValidationError|null The validation errors object or null if not available
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getErrors(): ?ValidationError
-    {
-        return $this->errors;
-    }//end getErrors()
+	/**
+	 * Returns the validation errors
+	 *
+	 * Returns detailed validation error information from JSON schema validator.
+	 * Contains field paths, error types, and validation failure reasons.
+	 * Returns null if validation errors were not provided.
+	 *
+	 * @return ValidationError|null The validation errors object or null if not available
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getErrors(): ?ValidationError {
+		return $this->errors;
+	}//end getErrors()
 }//end class

@@ -29,59 +29,55 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when a schema is updated
  */
-class SchemaUpdatedEvent extends Event
-{
+class SchemaUpdatedEvent extends Event {
 
-    /**
-     * The updated schema state
-     *
-     * @var Schema The schema after update
-     */
-    private Schema $newSchema;
+	/**
+	 * The updated schema state
+	 *
+	 * @var Schema The schema after update
+	 */
+	private Schema $newSchema;
 
-    /**
-     * The previous schema state
-     *
-     * @var Schema The schema before update
-     */
-    private Schema $oldSchema;
+	/**
+	 * The previous schema state
+	 *
+	 * @var Schema The schema before update
+	 */
+	private Schema $oldSchema;
 
-    /**
-     * Constructor for SchemaUpdatedEvent
-     *
-     * @param Schema $newSchema The schema after update
-     * @param Schema $oldSchema The schema before update
-     *
-     * @return void
-     */
-    public function __construct(Schema $newSchema, Schema $oldSchema)
-    {
-        parent::__construct();
-        $this->newSchema = $newSchema;
-        $this->oldSchema = $oldSchema;
-    }//end __construct()
+	/**
+	 * Constructor for SchemaUpdatedEvent
+	 *
+	 * @param Schema $newSchema The schema after update
+	 * @param Schema $oldSchema The schema before update
+	 *
+	 * @return void
+	 */
+	public function __construct(Schema $newSchema, Schema $oldSchema) {
+		parent::__construct();
+		$this->newSchema = $newSchema;
+		$this->oldSchema = $oldSchema;
+	}//end __construct()
 
-    /**
-     * Get the updated schema
-     *
-     * @return Schema The schema after update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getNewSchema(): Schema
-    {
-        return $this->newSchema;
-    }//end getNewSchema()
+	/**
+	 * Get the updated schema
+	 *
+	 * @return Schema The schema after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewSchema(): Schema {
+		return $this->newSchema;
+	}//end getNewSchema()
 
-    /**
-     * Get the original schema
-     *
-     * @return Schema The schema before update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getOldSchema(): Schema
-    {
-        return $this->oldSchema;
-    }//end getOldSchema()
+	/**
+	 * Get the original schema
+	 *
+	 * @return Schema The schema before update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldSchema(): Schema {
+		return $this->oldSchema;
+	}//end getOldSchema()
 }//end class

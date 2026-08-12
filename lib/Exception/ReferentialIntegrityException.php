@@ -34,59 +34,55 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  */
-class ReferentialIntegrityException extends Exception
-{
+class ReferentialIntegrityException extends Exception {
 
-    /**
-     * The deletion analysis containing blocker details.
-     *
-     * @var DeletionAnalysis
-     */
-    private readonly DeletionAnalysis $analysis;
+	/**
+	 * The deletion analysis containing blocker details.
+	 *
+	 * @var DeletionAnalysis
+	 */
+	private readonly DeletionAnalysis $analysis;
 
-    /**
-     * Constructor for ReferentialIntegrityException.
-     *
-     * @param DeletionAnalysis $analysis The deletion analysis with blocker information.
-     * @param int              $code     The error code.
-     * @param Exception|null   $previous The previous exception.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(DeletionAnalysis $analysis, int $code=0, ?Exception $previous=null)
-    {
-        $blockerCount = count($analysis->blockers);
-        $message      = "Cannot delete object: {$blockerCount} dependent object(s) block deletion";
+	/**
+	 * Constructor for ReferentialIntegrityException.
+	 *
+	 * @param DeletionAnalysis $analysis The deletion analysis with blocker information.
+	 * @param int $code The error code.
+	 * @param Exception|null $previous The previous exception.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(DeletionAnalysis $analysis, int $code = 0, ?Exception $previous = null) {
+		$blockerCount = count($analysis->blockers);
+		$message = "Cannot delete object: {$blockerCount} dependent object(s) block deletion";
 
-        parent::__construct(message: $message, code: $code, previous: $previous);
-        $this->analysis = $analysis;
-    }//end __construct()
+		parent::__construct(message: $message, code: $code, previous: $previous);
+		$this->analysis = $analysis;
+	}//end __construct()
 
-    /**
-     * Get the deletion analysis.
-     *
-     * @return DeletionAnalysis The analysis containing blocker and target details.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getAnalysis(): DeletionAnalysis
-    {
-        return $this->analysis;
-    }//end getAnalysis()
+	/**
+	 * Get the deletion analysis.
+	 *
+	 * @return DeletionAnalysis The analysis containing blocker and target details.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getAnalysis(): DeletionAnalysis {
+		return $this->analysis;
+	}//end getAnalysis()
 
-    /**
-     * Get a structured error response body suitable for JSON API responses.
-     *
-     * @return array The structured error response with error code, message, and blockers.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function toResponseBody(): array
-    {
-        return [
-            'error'    => 'DELETION_BLOCKED',
-            'message'  => $this->getMessage(),
-            'blockers' => $this->analysis->blockers,
-        ];
-    }//end toResponseBody()
+	/**
+	 * Get a structured error response body suitable for JSON API responses.
+	 *
+	 * @return array The structured error response with error code, message, and blockers.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function toResponseBody(): array {
+		return [
+			'error' => 'DELETION_BLOCKED',
+			'message' => $this->getMessage(),
+			'blockers' => $this->analysis->blockers,
+		];
+	}//end toResponseBody()
 }//end class

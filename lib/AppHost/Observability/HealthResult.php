@@ -33,19 +33,18 @@ namespace OCA\OpenRegister\AppHost\Observability;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.2
  */
-final class HealthResult
-{
-    /**
-     * Constructor.
-     *
-     * @param string                $status         ok|degraded|error.
-     * @param array<string, string> $checks         Map of check id => "ok" | "failed: ...".
-     * @param int                   $httpStatusCode Resolved HTTP status code.
-     */
-    public function __construct(
-        public readonly string $status,
-        public readonly array $checks,
-        public readonly int $httpStatusCode
-    ) {
-    }//end __construct()
+final class HealthResult {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $status ok|degraded|error.
+	 * @param array<string, string> $checks Map of check id => "ok" | "failed: ...".
+	 * @param int $httpStatusCode Resolved HTTP status code.
+	 */
+	public function __construct(
+		public readonly string $status,
+		public readonly array $checks,
+		public readonly int $httpStatusCode,
+	) {
+	}//end __construct()
 }//end class

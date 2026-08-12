@@ -49,41 +49,37 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the collector an app registers its MCP tool providers on.
  */
-class RegisterMcpToolProvidersEvent extends Event
-{
+class RegisterMcpToolProvidersEvent extends Event {
 
-    /**
-     * Providers contributed during this dispatch.
-     *
-     * @var array<int, IMcpToolProvider>
-     */
-    private array $providers = [];
+	/**
+	 * Providers contributed during this dispatch.
+	 *
+	 * @var array<int, IMcpToolProvider>
+	 */
+	private array $providers = [];
 
-    /**
-     * Contribute a provider.
-     *
-     * @param IMcpToolProvider $provider The provider.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
-     */
-    public function registerProvider(IMcpToolProvider $provider): void
-    {
-        $this->providers[] = $provider;
+	/**
+	 * Contribute a provider.
+	 *
+	 * @param IMcpToolProvider $provider The provider.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
+	 */
+	public function registerProvider(IMcpToolProvider $provider): void {
+		$this->providers[] = $provider;
 
-    }//end registerProvider()
+	}//end registerProvider()
 
-    /**
-     * Everything contributed during this dispatch.
-     *
-     * @return array<int, IMcpToolProvider> The providers.
-     *
-     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
-     */
-    public function getProviders(): array
-    {
-        return $this->providers;
-
-    }//end getProviders()
+	/**
+	 * Everything contributed during this dispatch.
+	 *
+	 * @return array<int, IMcpToolProvider> The providers.
+	 *
+	 * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
+	 */
+	public function getProviders(): array {
+		return $this->providers;
+	}//end getProviders()
 }//end class

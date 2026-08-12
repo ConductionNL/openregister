@@ -54,48 +54,46 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_notification_queue table.
  */
-class Version1Date20260712120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260712120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_notification_queue') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_notification_queue') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_notification_queue');
+		$table = $schema->createTable('openregister_notification_queue');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('rule_key', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
-        $table->addColumn('recipient', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
-        $table->addColumn('reason', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => '']);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('payload', Types::TEXT, ['notnull' => true]);
-        $table->addColumn('due_at_hint', Types::DATETIME, ['notnull' => true]);
-        $table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('rule_key', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('recipient', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('reason', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => '']);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('payload', Types::TEXT, ['notnull' => true]);
+		$table->addColumn('due_at_hint', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['recipient', 'reason'], 'idx_notifqueue_recip_reason');
-        $table->addIndex(['due_at_hint'], 'idx_notifqueue_due_hint');
-        $table->addIndex(['rule_key', 'recipient'], 'idx_notifqueue_rule_recip');
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['recipient', 'reason'], 'idx_notifqueue_recip_reason');
+		$table->addIndex(['due_at_hint'], 'idx_notifqueue_due_hint');
+		$table->addIndex(['rule_key', 'recipient'], 'idx_notifqueue_rule_recip');
 
-        $output->info('Created openregister_notification_queue table');
+		$output->info('Created openregister_notification_queue table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

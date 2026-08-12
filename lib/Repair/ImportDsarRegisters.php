@@ -53,107 +53,104 @@ use Throwable;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
  */
-class ImportDsarRegisters implements IRepairStep
-{
+class ImportDsarRegisters implements IRepairStep {
 
-    /**
-     * App-relative descriptor paths mapped to their configuration identity
-     * (appId) + the descriptor version passed to the importer's
-     * version_compare gate (bump alongside the schema versions).
-     *
-     * Each descriptor gets its OWN configuration appId: `importFromApp`
-     * version-gates per configuration row, so two descriptors sharing one
-     * appId silently skip whichever imports second (verified live — the
-     * policy-pack file was version-gated away against the case register's
-     * higher version under a shared 'openregister' id).
-     *
-     * @var array<string, array{appId: string, version: string}>
-     */
-    private const REGISTERS = [
-        '/lib/Settings/data_subject_request_register.json' => [
-            'appId'   => 'openregister.dsar-cases',
-            'version' => '1.2.0',
-        ],
-        '/lib/Settings/dsar_policy_pack_register.json'     => [
-            'appId'   => 'openregister.dsar-policy-packs',
-            'version' => '1.1.0',
-        ],
-    ];
+	/**
+	 * App-relative descriptor paths mapped to their configuration identity
+	 * (appId) + the descriptor version passed to the importer's
+	 * version_compare gate (bump alongside the schema versions).
+	 *
+	 * Each descriptor gets its OWN configuration appId: `importFromApp`
+	 * version-gates per configuration row, so two descriptors sharing one
+	 * appId silently skip whichever imports second (verified live — the
+	 * policy-pack file was version-gated away against the case register's
+	 * higher version under a shared 'openregister' id).
+	 *
+	 * @var array<string, array{appId: string, version: string}>
+	 */
+	private const REGISTERS = [
+		'/lib/Settings/data_subject_request_register.json' => [
+			'appId' => 'openregister.dsar-cases',
+			'version' => '1.2.0',
+		],
+		'/lib/Settings/dsar_policy_pack_register.json' => [
+			'appId' => 'openregister.dsar-policy-packs',
+			'version' => '1.1.0',
+		],
+	];
 
-    /**
-     * Constructor.
-     *
-     * @param ConfigurationService $configurationService The OR configuration importer.
-     * @param IAppManager          $appManager           Resolves the openregister app path on disk.
-     * @param LoggerInterface      $logger               Logger for import diagnostics.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ConfigurationService $configurationService,
-        private readonly IAppManager $appManager,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ConfigurationService $configurationService The OR configuration importer.
+	 * @param IAppManager $appManager Resolves the openregister app path on disk.
+	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ConfigurationService $configurationService,
+		private readonly IAppManager $appManager,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string The step name.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    public function getName(): string
-    {
-        return 'Import OpenRegister DSAR registers (data-subject requests + policy packs)';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string The step name.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	public function getName(): string {
+		return 'Import OpenRegister DSAR registers (data-subject requests + policy packs)';
+	}//end getName()
 
-    /**
-     * Run the repair step, importing both DSAR register descriptors.
-     *
-     * @param IOutput $output Output interface for status messages.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    public function run(IOutput $output): void
-    {
-        foreach (self::REGISTERS as $relativePath => $descriptor) {
-            $version = $descriptor['version'];
+	/**
+	 * Run the repair step, importing both DSAR register descriptors.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	public function run(IOutput $output): void {
+		foreach (self::REGISTERS as $relativePath => $descriptor) {
+			$version = $descriptor['version'];
 
-            try {
-                $path = $this->appManager->getAppPath('openregister').$relativePath;
-                if (is_file($path) === false) {
-                    $output->warning('DSAR register descriptor not found: '.$path);
-                    continue;
-                }
+			try {
+				$path = $this->appManager->getAppPath('openregister') . $relativePath;
+				if (is_file($path) === false) {
+					$output->warning('DSAR register descriptor not found: ' . $path);
+					continue;
+				}
 
-                // Import the DECODED descriptor via importFromApp() — NOT
-                // importFromFilePath(), which rejects an absolute path (it
-                // expects a Nextcloud-root-relative one) and would fail
-                // closed here. importFromApp() takes the data directly.
-                $data = json_decode((string) file_get_contents($path), true);
-                if (is_array($data) === false) {
-                    $output->warning('DSAR register descriptor is not valid JSON: '.$path);
-                    continue;
-                }
+				// Import the DECODED descriptor via importFromApp() — NOT
+				// importFromFilePath(), which rejects an absolute path (it
+				// expects a Nextcloud-root-relative one) and would fail
+				// closed here. importFromApp() takes the data directly.
+				$data = json_decode((string)file_get_contents($path), true);
+				if (is_array($data) === false) {
+					$output->warning('DSAR register descriptor is not valid JSON: ' . $path);
+					continue;
+				}
 
-                $this->configurationService->importFromApp(
-                    appId: $descriptor['appId'],
-                    data: $data,
-                    version: $version,
-                    force: false
-                );
+				$this->configurationService->importFromApp(
+					appId: $descriptor['appId'],
+					data: $data,
+					version: $version,
+					force: false
+				);
 
-                $output->info('DSAR register imported: '.basename($relativePath).' (v'.$version.')');
-            } catch (Throwable $e) {
-                $this->logger->warning('[ImportDsarRegisters] import failed for '.$relativePath.': '.$e->getMessage());
-                $output->warning('DSAR register import skipped for '.basename($relativePath).': '.$e->getMessage());
-            }//end try
-        }//end foreach
-    }//end run()
+				$output->info('DSAR register imported: ' . basename($relativePath) . ' (v' . $version . ')');
+			} catch (Throwable $e) {
+				$this->logger->warning('[ImportDsarRegisters] import failed for ' . $relativePath . ': ' . $e->getMessage());
+				$output->warning('DSAR register import skipped for ' . basename($relativePath) . ': ' . $e->getMessage());
+			}//end try
+		}//end foreach
+	}//end run()
 }//end class

@@ -29,37 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when a view is updated.
  */
-class ViewUpdatedEvent extends Event
-{
+class ViewUpdatedEvent extends Event {
 
-    /**
-     * The updated view state.
-     *
-     * @var View The view after update.
-     */
-    private View $newView;
+	/**
+	 * The updated view state.
+	 *
+	 * @var View The view after update.
+	 */
+	private View $newView;
 
-    /**
-     * The previous view state.
-     *
-     * @var View The view before update.
-     */
-    private View $oldView;
+	/**
+	 * The previous view state.
+	 *
+	 * @var View The view before update.
+	 */
+	private View $oldView;
 
-    /**
-     * Constructor for ViewUpdatedEvent.
-     *
-     * @param View $newView The view after update.
-     * @param View $oldView The view before update.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function __construct(View $newView, View $oldView)
-    {
-        parent::__construct();
-        $this->newView = $newView;
-        $this->oldView = $oldView;
-    }//end __construct()
+	/**
+	 * Constructor for ViewUpdatedEvent.
+	 *
+	 * @param View $newView The view after update.
+	 * @param View $oldView The view before update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(View $newView, View $oldView) {
+		parent::__construct();
+		$this->newView = $newView;
+		$this->oldView = $oldView;
+	}//end __construct()
 }//end class

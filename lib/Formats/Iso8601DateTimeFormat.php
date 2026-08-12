@@ -55,46 +55,44 @@ use Opis\JsonSchema\Format;
  * @version  GIT: <git_id>
  * @link     https://www.conduction.nl
  */
-class Iso8601DateTimeFormat implements Format
-{
-    /**
-     * Relaxed ISO 8601 date-time pattern.
-     *
-     * Derived from the opis/json-schema built-in date-time regex with the
-     * seconds component made optional (alongside the already-optional
-     * timezone). Capture groups 1-3 (year, month, day) are reused for a
-     * calendar-validity check via checkdate().
-     *
-     * @var string
-     */
-    private const ISO8601_DATETIME_PATTERN = '/^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'
-        .'T([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9]|60)(\.[0-9]+)?)?'
-        .'(Z|(\+|-)([01][0-9]|2[0-3]):([0-5][0-9]))?$/i';
+class Iso8601DateTimeFormat implements Format {
+	/**
+	 * Relaxed ISO 8601 date-time pattern.
+	 *
+	 * Derived from the opis/json-schema built-in date-time regex with the
+	 * seconds component made optional (alongside the already-optional
+	 * timezone). Capture groups 1-3 (year, month, day) are reused for a
+	 * calendar-validity check via checkdate().
+	 *
+	 * @var string
+	 */
+	private const ISO8601_DATETIME_PATTERN = '/^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'
+		. 'T([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9]|60)(\.[0-9]+)?)?'
+		. '(Z|(\+|-)([01][0-9]|2[0-3]):([0-5][0-9]))?$/i';
 
-    /**
-     * Validates if a given value is an ISO 8601 date-time with optional seconds/timezone
-     *
-     * @param mixed $data The data to validate against the date-time format
-     *
-     * @inheritDoc
-     *
-     * @return bool True if data is a valid ISO 8601 date-time, false otherwise
-     *
-     * @spec openspec/specs/data-import-export/spec.md
-     */
-    public function validate(mixed $data): bool
-    {
-        // Only validate strings.
-        if (is_string($data) === false) {
-            return false;
-        }
+	/**
+	 * Validates if a given value is an ISO 8601 date-time with optional seconds/timezone
+	 *
+	 * @param mixed $data The data to validate against the date-time format
+	 *
+	 * @inheritDoc
+	 *
+	 * @return bool True if data is a valid ISO 8601 date-time, false otherwise
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function validate(mixed $data): bool {
+		// Only validate strings.
+		if (is_string($data) === false) {
+			return false;
+		}
 
-        // Match the relaxed pattern and capture the date components.
-        if (preg_match(self::ISO8601_DATETIME_PATTERN, $data, $matches) !== 1) {
-            return false;
-        }
+		// Match the relaxed pattern and capture the date components.
+		if (preg_match(self::ISO8601_DATETIME_PATTERN, $data, $matches) !== 1) {
+			return false;
+		}
 
-        // Reject impossible calendar dates (e.g. 2026-02-30).
-        return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
-    }//end validate()
+		// Reject impossible calendar dates (e.g. 2026-02-30).
+		return checkdate((int)$matches[2], (int)$matches[3], (int)$matches[1]);
+	}//end validate()
 }//end class

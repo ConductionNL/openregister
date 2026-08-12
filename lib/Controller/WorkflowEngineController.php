@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IL10N;
 use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -42,352 +42,343 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
-class WorkflowEngineController extends Controller
-{
-    /**
-     * Constructor for WorkflowEngineController.
-     *
-     * @param string                 $appName      App name
-     * @param IRequest               $request      Request
-     * @param WorkflowEngineRegistry $registry     Engine registry
-     * @param LoggerInterface        $logger       Logger
-     * @param IL10N                  $l10n         Localization service
-     * @param IUserSession           $userSession  User session for admin checks
-     * @param IGroupManager          $groupManager Group manager for admin checks
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly WorkflowEngineRegistry $registry,
-        private readonly LoggerInterface $logger,
-        private readonly IL10N $l10n,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class WorkflowEngineController extends Controller {
+	/**
+	 * Constructor for WorkflowEngineController.
+	 *
+	 * @param string $appName App name
+	 * @param IRequest $request Request
+	 * @param WorkflowEngineRegistry $registry Engine registry
+	 * @param LoggerInterface $logger Logger
+	 * @param IL10N $l10n Localization service
+	 * @param IUserSession $userSession User session for admin checks
+	 * @param IGroupManager $groupManager Group manager for admin checks
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly WorkflowEngineRegistry $registry,
+		private readonly LoggerInterface $logger,
+		private readonly IL10N $l10n,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Check whether the currently authenticated user is a Nextcloud administrator.
-     *
-     * @return bool True if a user is signed in and belongs to the admin group.
-     */
-    private function isCurrentUserAdmin(): bool
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return false;
-        }
+	/**
+	 * Check whether the currently authenticated user is a Nextcloud administrator.
+	 *
+	 * @return bool True if a user is signed in and belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        return $this->groupManager->isAdmin($user->getUID());
-    }//end isCurrentUserAdmin()
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
 
-    /**
-     * List all registered engines.
-     *
-     * @auth admin-only Engine metadata serialises baseUrl, authType and healthStatus of an
-     *       instance-wide integration. The body already rejected non-admins; @NoAdminRequired said
-     *       the opposite, so the declared posture contradicted the enforced one. Declaring it here
-     *       makes middleware reject the request before the controller runs, which is the same
-     *       outcome one layer earlier.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function index(): JSONResponse
-    {
-        // SEC-CTRL: admin-only — workflow engines are instance-wide integration
-        // config; the serialized metadata exposes internal baseUrl/healthStatus.
-        // Reads are gated like the create/update/delete siblings.
-        if ($this->isCurrentUserAdmin() === false) {
-            return new JSONResponse(['error' => 'Admin privileges required'], 403);
-        }
+	/**
+	 * List all registered engines.
+	 *
+	 * @auth admin-only Engine metadata serialises baseUrl, authType and healthStatus of an
+	 *       instance-wide integration. The body already rejected non-admins; @NoAdminRequired said
+	 *       the opposite, so the declared posture contradicted the enforced one. Declaring it here
+	 *       makes middleware reject the request before the controller runs, which is the same
+	 *       outcome one layer earlier.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function index(): JSONResponse {
+		// SEC-CTRL: admin-only — workflow engines are instance-wide integration
+		// config; the serialized metadata exposes internal baseUrl/healthStatus.
+		// Reads are gated like the create/update/delete siblings.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-        $engines = $this->registry->getEngines();
+		$engines = $this->registry->getEngines();
 
-        return new JSONResponse(
-            array_map(fn ($engine) => $engine->jsonSerialize(), $engines)
-        );
-    }//end index()
+		return new JSONResponse(
+			array_map(fn ($engine) => $engine->jsonSerialize(), $engines)
+		);
+	}//end index()
 
-    /**
-     * Get a single engine.
-     *
-     * @param int $id Engine ID
-     *
-     * @auth admin-only Same as index(): engine metadata exposes baseUrl and healthStatus of an
-     *       instance-wide integration, and the body already rejected non-admins while the removed
-     *       attribute declared the opposite.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function show(int $id): JSONResponse
-    {
-        // SEC-CTRL: admin-only — see index(); engine metadata exposes internal
-        // baseUrl/healthStatus of an instance-wide integration.
-        if ($this->isCurrentUserAdmin() === false) {
-            return new JSONResponse(['error' => 'Admin privileges required'], 403);
-        }
+	/**
+	 * Get a single engine.
+	 *
+	 * @param int $id Engine ID
+	 *
+	 * @auth admin-only Same as index(): engine metadata exposes baseUrl and healthStatus of an
+	 *       instance-wide integration, and the body already rejected non-admins while the removed
+	 *       attribute declared the opposite.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function show(int $id): JSONResponse {
+		// SEC-CTRL: admin-only — see index(); engine metadata exposes internal
+		// baseUrl/healthStatus of an instance-wide integration.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-        try {
-            $engine = $this->registry->getEngine($id);
+		try {
+			$engine = $this->registry->getEngine($id);
 
-            return new JSONResponse($engine->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
-        }
-    }//end show()
+			return new JSONResponse($engine->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+		}
+	}//end show()
 
-    /**
-     * Register a new engine.
-     *
-     * @param string      $name           Engine name
-     * @param string      $engineType     Engine type (n8n, windmill)
-     * @param string      $baseUrl        Base URL
-     * @param string|null $authType       Auth type
-     * @param array|null  $authConfig     Auth configuration
-     * @param bool        $enabled        Whether enabled
-     * @param int         $defaultTimeout Default timeout
-     *
-     * @auth admin-only Registers an outbound integration target: baseUrl plus authType/authConfig
-     *       credentials that every later workflow execution will use. WorkflowEngine has no owner
-     *       column, so there is no per-object guard to write; a non-admin creating one would be
-     *       choosing where this instance sends data.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function create(
-        string $name,
-        string $engineType,
-        string $baseUrl,
-        ?string $authType='none',
-        ?array $authConfig=null,
-        bool $enabled=true,
-        int $defaultTimeout=30
-    ): JSONResponse {
-        if ($this->isCurrentUserAdmin() === false) {
-            return new JSONResponse(['error' => 'Admin privileges required'], 403);
-        }
+	/**
+	 * Register a new engine.
+	 *
+	 * @param string $name Engine name
+	 * @param string $engineType Engine type (n8n, windmill)
+	 * @param string $baseUrl Base URL
+	 * @param string|null $authType Auth type
+	 * @param array|null $authConfig Auth configuration
+	 * @param bool $enabled Whether enabled
+	 * @param int $defaultTimeout Default timeout
+	 *
+	 * @auth admin-only Registers an outbound integration target: baseUrl plus authType/authConfig
+	 *       credentials that every later workflow execution will use. WorkflowEngine has no owner
+	 *       column, so there is no per-object guard to write; a non-admin creating one would be
+	 *       choosing where this instance sends data.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function create(
+		string $name,
+		string $engineType,
+		string $baseUrl,
+		?string $authType = 'none',
+		?array $authConfig = null,
+		bool $enabled = true,
+		int $defaultTimeout = 30,
+	): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-        $validTypes = ['n8n', 'windmill'];
-        if (in_array(needle: $engineType, haystack: $validTypes, strict: true) === false) {
-            return new JSONResponse(
-                ['error' => "Invalid engine type '$engineType'. Must be one of: ".implode(', ', $validTypes)],
-                400
-            );
-        }
+		$validTypes = ['n8n', 'windmill'];
+		if (in_array(needle: $engineType, haystack: $validTypes, strict: true) === false) {
+			return new JSONResponse(
+				['error' => "Invalid engine type '$engineType'. Must be one of: " . implode(', ', $validTypes)],
+				400
+			);
+		}
 
-        try {
-            $engine = $this->registry->createEngine(
-                    [
-                        'name'           => $name,
-                        'engineType'     => $engineType,
-                        'baseUrl'        => $baseUrl,
-                        'authType'       => $authType ?? 'none',
-                        'authConfig'     => $authConfig,
-                        'enabled'        => $enabled,
-                        'defaultTimeout' => $defaultTimeout,
-                    ]
-                    );
+		try {
+			$engine = $this->registry->createEngine(
+				[
+					'name' => $name,
+					'engineType' => $engineType,
+					'baseUrl' => $baseUrl,
+					'authType' => $authType ?? 'none',
+					'authConfig' => $authConfig,
+					'enabled' => $enabled,
+					'defaultTimeout' => $defaultTimeout,
+				]
+			);
 
-            // Run initial health check.
-            try {
-                $this->registry->healthCheck($engine->getId());
-                $engine = $this->registry->getEngine($engine->getId());
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[WorkflowEngineController] Initial health check failed',
-                    context: ['engineId' => $engine->getId(), 'error' => $e->getMessage()]
-                );
-            }
+			// Run initial health check.
+			try {
+				$this->registry->healthCheck($engine->getId());
+				$engine = $this->registry->getEngine($engine->getId());
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[WorkflowEngineController] Initial health check failed',
+					context: ['engineId' => $engine->getId(), 'error' => $e->getMessage()]
+				);
+			}
 
-            return new JSONResponse($engine->jsonSerialize(), 201);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }//end try
-    }//end create()
+			return new JSONResponse($engine->jsonSerialize(), 201);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}//end try
+	}//end create()
 
-    /**
-     * Update an engine.
-     *
-     * @param int $id Engine ID
-     *
-     * @auth admin-only Can re-point baseUrl and replace the stored credentials of an instance-wide
-     *       integration, which redirects every subsequent execution. WorkflowEngine has no owner
-     *       column, so no per-object guard is expressible. The body enforces this too.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function update(int $id): JSONResponse
-    {
-        if ($this->isCurrentUserAdmin() === false) {
-            return new JSONResponse(['error' => 'Admin privileges required'], 403);
-        }
+	/**
+	 * Update an engine.
+	 *
+	 * @param int $id Engine ID
+	 *
+	 * @auth admin-only Can re-point baseUrl and replace the stored credentials of an instance-wide
+	 *       integration, which redirects every subsequent execution. WorkflowEngine has no owner
+	 *       column, so no per-object guard is expressible. The body enforces this too.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function update(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-        try {
-            $data   = $this->request->getParams();
-            $engine = $this->registry->updateEngine($id, $data);
+		try {
+			$data = $this->request->getParams();
+			$engine = $this->registry->updateEngine($id, $data);
 
-            return new JSONResponse($engine->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }//end update()
+			return new JSONResponse($engine->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end update()
 
-    /**
-     * Delete an engine.
-     *
-     * @param int $id Engine ID
-     *
-     * @auth admin-only Removes an instance-wide integration by id, breaking every workflow bound to
-     *       it. WorkflowEngine has no owner column, so a per-object guard has nothing to compare the
-     *       caller against. The body enforces this too.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        if ($this->isCurrentUserAdmin() === false) {
-            return new JSONResponse(['error' => 'Admin privileges required'], 403);
-        }
+	/**
+	 * Delete an engine.
+	 *
+	 * @param int $id Engine ID
+	 *
+	 * @auth admin-only Removes an instance-wide integration by id, breaking every workflow bound to
+	 *       it. WorkflowEngine has no owner column, so a per-object guard has nothing to compare the
+	 *       caller against. The body enforces this too.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function destroy(int $id): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
 
-        try {
-            $engine = $this->registry->deleteEngine($id);
+		try {
+			$engine = $this->registry->deleteEngine($id);
 
-            return new JSONResponse($engine->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
-        }
-    }//end destroy()
+			return new JSONResponse($engine->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+		}
+	}//end destroy()
 
-    /**
-     * Run a health check on an engine.
-     *
-     * @param int $id Engine ID
-     *
-     * @return JSONResponse
-     *
-     * @auth admin-only Makes this instance issue an outbound request to a stored baseUrl on demand
-     *       and reports whether it answered. That is a probe primitive, so it stays with the
-     *       administrator who configured the target rather than any authenticated user.
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function health(int $id): JSONResponse
-    {
-        try {
-            $result = $this->registry->healthCheck($id);
+	/**
+	 * Run a health check on an engine.
+	 *
+	 * @param int $id Engine ID
+	 *
+	 * @return JSONResponse
+	 *
+	 * @auth admin-only Makes this instance issue an outbound request to a stored baseUrl on demand
+	 *       and reports whether it answered. That is a probe primitive, so it stays with the
+	 *       administrator who configured the target rather than any authenticated user.
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function health(int $id): JSONResponse {
+		try {
+			$result = $this->registry->healthCheck($id);
 
-            return new JSONResponse($result);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
-        } catch (\Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }//end health()
+			return new JSONResponse($result);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+		} catch (\Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end health()
 
-    /**
-     * List auto-discovered engine types from installed ExApps.
-     *
-     * @auth admin-only Enumerates which ExApps are installed on this instance. That inventory is
-     *       administrative information and is only consumed by the engine admin UI, so it is gated
-     *       with the rest of that surface rather than exposed to every authenticated user.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function available(): JSONResponse
-    {
-        $engines = $this->registry->discoverEngines();
+	/**
+	 * List auto-discovered engine types from installed ExApps.
+	 *
+	 * @auth admin-only Enumerates which ExApps are installed on this instance. That inventory is
+	 *       administrative information and is only consumed by the engine admin UI, so it is gated
+	 *       with the rest of that surface rather than exposed to every authenticated user.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function available(): JSONResponse {
+		$engines = $this->registry->discoverEngines();
 
-        return new JSONResponse($engines);
-    }//end available()
+		return new JSONResponse($engines);
+	}//end available()
 
-    /**
-     * Test a hook by executing a workflow with sample data (dry-run).
-     *
-     * No database writes occur. The response includes dryRun: true.
-     *
-     * @param int $id Engine ID
-     *
-     * @auth admin-only "Dry run" describes this app's database, not the far side: the request is
-     *       really executed against the configured engine with caller-supplied sampleData, a
-     *       caller-supplied workflowId and a caller-supplied timeout. Under #[NoAdminRequired] any
-     *       authenticated user could drive outbound requests through a stored, credentialed target.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md
-     */
-    public function testHook(int $id): JSONResponse
-    {
-        $workflowId = $this->request->getParam('workflowId');
-        $sampleData = $this->request->getParam('sampleData', []);
-        $timeout    = (int) $this->request->getParam('timeout', 30);
+	/**
+	 * Test a hook by executing a workflow with sample data (dry-run).
+	 *
+	 * No database writes occur. The response includes dryRun: true.
+	 *
+	 * @param int $id Engine ID
+	 *
+	 * @auth admin-only "Dry run" describes this app's database, not the far side: the request is
+	 *       really executed against the configured engine with caller-supplied sampleData, a
+	 *       caller-supplied workflowId and a caller-supplied timeout. Under #[NoAdminRequired] any
+	 *       authenticated user could drive outbound requests through a stored, credentialed target.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md
+	 */
+	public function testHook(int $id): JSONResponse {
+		$workflowId = $this->request->getParam('workflowId');
+		$sampleData = $this->request->getParam('sampleData', []);
+		$timeout = (int)$this->request->getParam('timeout', 30);
 
-        if (empty($workflowId) === true) {
-            return new JSONResponse(['error' => 'workflowId is required'], 400);
-        }
+		if (empty($workflowId) === true) {
+			return new JSONResponse(['error' => 'workflowId is required'], 400);
+		}
 
-        if (is_array($sampleData) === false) {
-            $sampleData = json_decode((string) $sampleData, true) ?? [];
-        }
+		if (is_array($sampleData) === false) {
+			$sampleData = json_decode((string)$sampleData, true) ?? [];
+		}
 
-        try {
-            $adapter = $this->registry->resolveAdapterById($id);
-            $result  = $adapter->executeWorkflow(
-                workflowId: $workflowId,
-                data: $sampleData,
-                timeout: $timeout
-            );
+		try {
+			$adapter = $this->registry->resolveAdapterById($id);
+			$result = $adapter->executeWorkflow(
+				workflowId: $workflowId,
+				data: $sampleData,
+				timeout: $timeout
+			);
 
-            $response           = $result->toArray();
-            $response['dryRun'] = true;
+			$response = $result->toArray();
+			$response['dryRun'] = true;
 
-            return new JSONResponse($response);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
-        } catch (\Exception $e) {
-            $message = $e->getMessage();
-            $lower   = strtolower($message);
+			return new JSONResponse($response);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+		} catch (\Exception $e) {
+			$message = $e->getMessage();
+			$lower = strtolower($message);
 
-            // Connectivity errors return 502.
-            if (str_contains($lower, 'connection') === true
-                || str_contains($lower, 'unreachable') === true
-                || str_contains($lower, 'refused') === true
-            ) {
-                return new JSONResponse(
-                        [
-                            'status' => 'error',
-                            'errors' => [['message' => $message]],
-                            'dryRun' => true,
-                        ],
-                        502
-                        );
-            }
+			// Connectivity errors return 502.
+			if (str_contains($lower, 'connection') === true
+				|| str_contains($lower, 'unreachable') === true
+				|| str_contains($lower, 'refused') === true
+			) {
+				return new JSONResponse(
+					[
+						'status' => 'error',
+						'errors' => [['message' => $message]],
+						'dryRun' => true,
+					],
+					502
+				);
+			}
 
-            // Workflow errors return 422.
-            return new JSONResponse(
-                    [
-                        'status' => 'error',
-                        'errors' => [['message' => $message]],
-                        'dryRun' => true,
-                    ],
-                    422
-                    );
-        }//end try
-    }//end testHook()
+			// Workflow errors return 422.
+			return new JSONResponse(
+				[
+					'status' => 'error',
+					'errors' => [['message' => $message]],
+					'dryRun' => true,
+				],
+				422
+			);
+		}//end try
+	}//end testHook()
 }//end class

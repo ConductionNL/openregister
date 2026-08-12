@@ -36,75 +36,73 @@ use OCP\Migration\SimpleMigrationStep;
  * - Add `favored_by` for favorite functionality
  * - Update purpose: views are reusable query filters, not full UI state
  */
-class Version1Date20251102150000 extends SimpleMigrationStep
-{
-    /**
-     * Update views table structure
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null Updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251102150000 extends SimpleMigrationStep {
+	/**
+	 * Update views table structure
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null Updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        $output->info(message: '🔧 Updating views table structure...');
+		$output->info(message: '🔧 Updating views table structure...');
 
-        if ($schema->hasTable('openregister_views') === true) {
-            $table = $schema->getTable('openregister_views');
+		if ($schema->hasTable('openregister_views') === true) {
+			$table = $schema->getTable('openregister_views');
 
-            // Check if we still have old 'configuration' column.
-            if ($table->hasColumn('configuration') === true) {
-                // Drop old configuration column.
-                $table->dropColumn('configuration');
-                $output->info(message: '   ✓ Dropped old configuration column');
-            }
+			// Check if we still have old 'configuration' column.
+			if ($table->hasColumn('configuration') === true) {
+				// Drop old configuration column.
+				$table->dropColumn('configuration');
+				$output->info(message: '   ✓ Dropped old configuration column');
+			}
 
-            // Add query column if it doesn't exist.
-            if ($table->hasColumn('query') === false) {
-                $table->addColumn(
-                    'query',
-                    Types::JSON,
-                    [
-                        'notnull' => true,
-                        'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
-                    ]
-                );
-                $output->info(message: '   ✓ Added query column');
-            }
+			// Add query column if it doesn't exist.
+			if ($table->hasColumn('query') === false) {
+				$table->addColumn(
+					'query',
+					Types::JSON,
+					[
+						'notnull' => true,
+						'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
+					]
+				);
+				$output->info(message: '   ✓ Added query column');
+			}
 
-            // Add favored_by column if it doesn't exist.
-            if ($table->hasColumn('favored_by') === false) {
-                $table->addColumn(
-                    'favored_by',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Array of user IDs who favorited this view',
-                    ]
-                );
-                $output->info(message: '   ✓ Added favored_by column');
-            }
+			// Add favored_by column if it doesn't exist.
+			if ($table->hasColumn('favored_by') === false) {
+				$table->addColumn(
+					'favored_by',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => 'Array of user IDs who favorited this view',
+					]
+				);
+				$output->info(message: '   ✓ Added favored_by column');
+			}
 
-            $output->info(message: '✅ Views table updated successfully');
-            $output->info('🎯 Views now focus on:');
-            $output->info(message: '   • Query parameters (not full UI state)');
-            $output->info(message: '   • Reusable filters for API endpoints');
-            $output->info(message: '   • Favorite functionality');
+			$output->info(message: '✅ Views table updated successfully');
+			$output->info('🎯 Views now focus on:');
+			$output->info(message: '   • Query parameters (not full UI state)');
+			$output->info(message: '   • Reusable filters for API endpoints');
+			$output->info(message: '   • Favorite functionality');
 
-            return $schema;
-        }//end if
+			return $schema;
+		}//end if
 
-        $output->info(message: '⚠️  Views table not found!');
+		$output->info(message: '⚠️  Views table not found!');
 
-        return null;
-    }//end changeSchema()
+		return null;
+	}//end changeSchema()
 }//end class

@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Exception;
 /**
  * Provider lacks a CRUD operation for its storage strategy.
  */
-class NotImplementedException extends \RuntimeException
-{
+class NotImplementedException extends \RuntimeException {
 
 }//end class

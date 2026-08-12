@@ -31,42 +31,39 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260308120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260308120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_webhooks') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_webhooks') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_webhooks');
+		$table = $schema->getTable('openregister_webhooks');
 
-        if ($table->hasColumn('mapping') === true) {
-            return null;
-        }
+		if ($table->hasColumn('mapping') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            'mapping',
-            Types::INTEGER,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			'mapping',
+			Types::INTEGER,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

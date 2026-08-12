@@ -19,8 +19,8 @@ use OCP\Files\File;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -29,66 +29,63 @@ use Psr\Log\LoggerInterface;
  * Covers the conditional ownership-transfer contract: a node the current user
  * can already write MUST NOT be re-owned to the openregister system user.
  */
-class FileOwnershipHandlerTest extends TestCase
-{
+class FileOwnershipHandlerTest extends TestCase {
 
-    /**
-     * @var FileOwnershipHandler
-     */
-    private FileOwnershipHandler $handler;
+	/**
+	 * @var FileOwnershipHandler
+	 */
+	private FileOwnershipHandler $handler;
 
-    /**
-     * @var IUserManager&MockObject
-     */
-    private $userManager;
+	/**
+	 * @var IUserManager&MockObject
+	 */
+	private $userManager;
 
-    /**
-     * @var IGroupManager&MockObject
-     */
-    private $groupManager;
+	/**
+	 * @var IGroupManager&MockObject
+	 */
+	private $groupManager;
 
-    /**
-     * @var IUserSession&MockObject
-     */
-    private $userSession;
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->userManager  = $this->createMock(IUserManager::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->userSession  = $this->createMock(IUserSession::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->handler = new FileOwnershipHandler(
-            $this->userManager,
-            $this->groupManager,
-            $this->userSession,
-            $this->logger
-        );
-    }//end setUp()
+		$this->handler = new FileOwnershipHandler(
+			$this->userManager,
+			$this->groupManager,
+			$this->userSession,
+			$this->logger
+		);
+	}//end setUp()
 
-    // =========================================================================
-    // transferFileOwnershipIfNeeded - conditional re-own
-    // =========================================================================
+	// =========================================================================
+	// transferFileOwnershipIfNeeded - conditional re-own
+	// =========================================================================
 
-    public function testTransferSkippedWhenUserHasWriteRights(): void
-    {
-        // A node the current session can already write must be left as-is. The
-        // guard returns before the method ever resolves the session user, so
-        // IUserSession::getUser() must never be called and no transfer happens.
-        $file = $this->createMock(File::class);
-        $file->method('isUpdateable')->willReturn(true);
+	public function testTransferSkippedWhenUserHasWriteRights(): void {
+		// A node the current session can already write must be left as-is. The
+		// guard returns before the method ever resolves the session user, so
+		// IUserSession::getUser() must never be called and no transfer happens.
+		$file = $this->createMock(File::class);
+		$file->method('isUpdateable')->willReturn(true);
 
-        $this->userSession->expects($this->never())->method('getUser');
+		$this->userSession->expects($this->never())->method('getUser');
 
-        $this->handler->transferFileOwnershipIfNeeded(file: $file);
+		$this->handler->transferFileOwnershipIfNeeded(file: $file);
 
-        $this->assertTrue(true);
-    }//end testTransferSkippedWhenUserHasWriteRights()
+		$this->assertTrue(true);
+	}//end testTransferSkippedWhenUserHasWriteRights()
 }//end class

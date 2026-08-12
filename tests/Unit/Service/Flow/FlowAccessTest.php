@@ -43,176 +43,165 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowAccess
  */
-class FlowAccessTest extends TestCase
-{
+class FlowAccessTest extends TestCase {
 
-    /**
-     * The session, mocked.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * The session, mocked.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * The group manager, mocked.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager&MockObject $groupManager;
+	/**
+	 * The group manager, mocked.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
 
-    /**
-     * The rights matrix, mocked.
-     *
-     * @var OpenRegisterActionAuthService&MockObject
-     */
-    private OpenRegisterActionAuthService&MockObject $actionAuth;
+	/**
+	 * The rights matrix, mocked.
+	 *
+	 * @var OpenRegisterActionAuthService&MockObject
+	 */
+	private OpenRegisterActionAuthService&MockObject $actionAuth;
 
-    /**
-     * The service under test.
-     *
-     * @var FlowAccess
-     */
-    private FlowAccess $access;
+	/**
+	 * The service under test.
+	 *
+	 * @var FlowAccess
+	 */
+	private FlowAccess $access;
 
-    /**
-     * Build the service over mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build the service over mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->userSession  = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->actionAuth   = $this->createMock(OpenRegisterActionAuthService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->actionAuth = $this->createMock(OpenRegisterActionAuthService::class);
 
-        $this->access = new FlowAccess(
-            userSession: $this->userSession,
-            groupManager: $this->groupManager,
-            actionAuth: $this->actionAuth
-        );
+		$this->access = new FlowAccess(
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			actionAuth: $this->actionAuth
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A user with the given uid.
-     *
-     * @param string $uid The uid.
-     *
-     * @return IUser&MockObject The user.
-     */
-    private function user(string $uid): IUser&MockObject
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
+	/**
+	 * A user with the given uid.
+	 *
+	 * @param string $uid The uid.
+	 *
+	 * @return IUser&MockObject The user.
+	 */
+	private function user(string $uid): IUser&MockObject {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
 
-        return $user;
+		return $user;
+	}//end user()
 
-    }//end user()
+	/**
+	 * The session's user is handed back as-is, so the caller can tell an
+	 * anonymous request (401) from an authenticated refusal (403).
+	 *
+	 * @return void
+	 */
+	public function testCurrentUserReturnsTheSessionUser(): void {
+		$user = $this->user(uid: 'alice');
+		$this->userSession->method('getUser')->willReturn($user);
 
-    /**
-     * The session's user is handed back as-is, so the caller can tell an
-     * anonymous request (401) from an authenticated refusal (403).
-     *
-     * @return void
-     */
-    public function testCurrentUserReturnsTheSessionUser(): void
-    {
-        $user = $this->user(uid: 'alice');
-        $this->userSession->method('getUser')->willReturn($user);
+		$this->assertSame($user, $this->access->currentUser());
 
-        $this->assertSame($user, $this->access->currentUser());
+	}//end testCurrentUserReturnsTheSessionUser()
 
-    }//end testCurrentUserReturnsTheSessionUser()
+	/**
+	 * No session means null, not an exception and not a stand-in user.
+	 *
+	 * @return void
+	 */
+	public function testCurrentUserIsNullWithoutASession(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-    /**
-     * No session means null, not an exception and not a stand-in user.
-     *
-     * @return void
-     */
-    public function testCurrentUserIsNullWithoutASession(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+		$this->assertNull($this->access->currentUser());
 
-        $this->assertNull($this->access->currentUser());
+	}//end testCurrentUserIsNullWithoutASession()
 
-    }//end testCurrentUserIsNullWithoutASession()
+	/**
+	 * A held right is granted.
+	 *
+	 * @return void
+	 */
+	public function testMayGrantsAHeldRight(): void {
+		$user = $this->user(uid: 'alice');
+		$this->actionAuth->expects($this->once())
+			->method('can')
+			->with($user, 'flow.run')
+			->willReturn(true);
 
-    /**
-     * A held right is granted.
-     *
-     * @return void
-     */
-    public function testMayGrantsAHeldRight(): void
-    {
-        $user = $this->user(uid: 'alice');
-        $this->actionAuth->expects($this->once())
-            ->method('can')
-            ->with($user, 'flow.run')
-            ->willReturn(true);
+		$this->assertTrue($this->access->may(user: $user, action: 'flow.run'));
 
-        $this->assertTrue($this->access->may(user: $user, action: 'flow.run'));
+	}//end testMayGrantsAHeldRight()
 
-    }//end testMayGrantsAHeldRight()
+	/**
+	 * The positive control's opposite: a right the matrix refuses is refused
+	 * here too, so `may()` is not a function that always answers true.
+	 *
+	 * @return void
+	 */
+	public function testMayRefusesARightTheMatrixWithholds(): void {
+		$user = $this->user(uid: 'mallory');
+		$this->actionAuth->method('can')->willReturn(false);
 
-    /**
-     * The positive control's opposite: a right the matrix refuses is refused
-     * here too, so `may()` is not a function that always answers true.
-     *
-     * @return void
-     */
-    public function testMayRefusesARightTheMatrixWithholds(): void
-    {
-        $user = $this->user(uid: 'mallory');
-        $this->actionAuth->method('can')->willReturn(false);
+		$this->assertFalse($this->access->may(user: $user, action: 'flow.run'));
 
-        $this->assertFalse($this->access->may(user: $user, action: 'flow.run'));
+	}//end testMayRefusesARightTheMatrixWithholds()
 
-    }//end testMayRefusesARightTheMatrixWithholds()
+	/**
+	 * An administrator is recognised as one.
+	 *
+	 * @return void
+	 */
+	public function testCallerIsAdminForAnAdministrator(): void {
+		$this->userSession->method('getUser')->willReturn($this->user(uid: 'admin'));
+		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-    /**
-     * An administrator is recognised as one.
-     *
-     * @return void
-     */
-    public function testCallerIsAdminForAnAdministrator(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->user(uid: 'admin'));
-        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
+		$this->assertTrue($this->access->callerIsAdmin());
 
-        $this->assertTrue($this->access->callerIsAdmin());
+	}//end testCallerIsAdminForAnAdministrator()
 
-    }//end testCallerIsAdminForAnAdministrator()
+	/**
+	 * A signed-in non-administrator is not one.
+	 *
+	 * @return void
+	 */
+	public function testCallerIsNotAdminForAnOrdinaryUser(): void {
+		$this->userSession->method('getUser')->willReturn($this->user(uid: 'alice'));
+		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
 
-    /**
-     * A signed-in non-administrator is not one.
-     *
-     * @return void
-     */
-    public function testCallerIsNotAdminForAnOrdinaryUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn($this->user(uid: 'alice'));
-        $this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
+		$this->assertFalse($this->access->callerIsAdmin());
 
-        $this->assertFalse($this->access->callerIsAdmin());
+	}//end testCallerIsNotAdminForAnOrdinaryUser()
 
-    }//end testCallerIsNotAdminForAnOrdinaryUser()
+	/**
+	 * THE FAIL-CLOSED BRANCH. With no session the group manager is never even
+	 * asked — there is no uid to ask about — and the answer is false. The
+	 * `expects(never())` is the part that matters: passing a null uid through
+	 * to `isAdmin()` is the shape that would throw or, worse, match something.
+	 *
+	 * @return void
+	 */
+	public function testCallerIsNotAdminWithoutASession(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->groupManager->expects($this->never())->method('isAdmin');
 
-    /**
-     * THE FAIL-CLOSED BRANCH. With no session the group manager is never even
-     * asked — there is no uid to ask about — and the answer is false. The
-     * `expects(never())` is the part that matters: passing a null uid through
-     * to `isAdmin()` is the shape that would throw or, worse, match something.
-     *
-     * @return void
-     */
-    public function testCallerIsNotAdminWithoutASession(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->groupManager->expects($this->never())->method('isAdmin');
+		$this->assertFalse($this->access->callerIsAdmin());
 
-        $this->assertFalse($this->access->callerIsAdmin());
-
-    }//end testCallerIsNotAdminWithoutASession()
+	}//end testCallerIsNotAdminWithoutASession()
 }//end class

@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an agent is created.
  */
-class AgentCreatedEvent extends Event
-{
+class AgentCreatedEvent extends Event {
 
-    /**
-     * The newly created agent.
-     *
-     * @var Agent The agent that was created.
-     */
-    private Agent $agent;
+	/**
+	 * The newly created agent.
+	 *
+	 * @var Agent The agent that was created.
+	 */
+	private Agent $agent;
 
-    /**
-     * Constructor for AgentCreatedEvent.
-     *
-     * @param Agent $agent The agent that was created.
-     *
-     * @return void
-     */
-    public function __construct(Agent $agent)
-    {
-        parent::__construct();
-        $this->agent = $agent;
-    }//end __construct()
+	/**
+	 * Constructor for AgentCreatedEvent.
+	 *
+	 * @param Agent $agent The agent that was created.
+	 *
+	 * @return void
+	 */
+	public function __construct(Agent $agent) {
+		parent::__construct();
+		$this->agent = $agent;
+	}//end __construct()
 
-    /**
-     * Get the created agent.
-     *
-     * @return Agent The agent that was created.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getAgent(): Agent
-    {
-        return $this->agent;
-    }//end getAgent()
+	/**
+	 * Get the created agent.
+	 *
+	 * @return Agent The agent that was created.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getAgent(): Agent {
+		return $this->agent;
+	}//end getAgent()
 }//end class

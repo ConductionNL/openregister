@@ -46,150 +46,147 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ActionRetryJob extends QueuedJob
-{
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory    $time            Time factory
-     * @param ActionMapper    $actionMapper    Action mapper
-     * @param ActionExecutor  $actionExecutor  Action executor
-     * @param ActionLogMapper $actionLogMapper Action log mapper
-     * @param ActionService   $actionService   Action service
-     * @param IJobList        $jobList         Job list for re-queuing
-     * @param LoggerInterface $logger          Logger
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ActionMapper $actionMapper,
-        private readonly ActionExecutor $actionExecutor,
-        private readonly ActionLogMapper $actionLogMapper,
-        private readonly ActionService $actionService,
-        private readonly IJobList $jobList,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-    }//end __construct()
+class ActionRetryJob extends QueuedJob {
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param ActionMapper $actionMapper Action mapper
+	 * @param ActionExecutor $actionExecutor Action executor
+	 * @param ActionLogMapper $actionLogMapper Action log mapper
+	 * @param ActionService $actionService Action service
+	 * @param IJobList $jobList Job list for re-queuing
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ActionMapper $actionMapper,
+		private readonly ActionExecutor $actionExecutor,
+		private readonly ActionLogMapper $actionLogMapper,
+		private readonly ActionService $actionService,
+		private readonly IJobList $jobList,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+	}//end __construct()
 
-    /**
-     * Run the retry job
-     *
-     * @param mixed $arguments Job arguments containing action_id, payload, attempt, max_retries, retry_policy
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @spec openspec/specs/actions/spec.md
-     */
-    protected function run($arguments): void
-    {
-        $actionId    = $arguments['action_id'] ?? 0;
-        $payload     = $arguments['payload'] ?? [];
-        $attempt     = $arguments['attempt'] ?? 2;
-        $maxRetries  = $arguments['max_retries'] ?? 3;
-        $retryPolicy = $arguments['retry_policy'] ?? 'exponential';
+	/**
+	 * Run the retry job
+	 *
+	 * @param mixed $arguments Job arguments containing action_id, payload, attempt, max_retries, retry_policy
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	protected function run($arguments): void {
+		$actionId = $arguments['action_id'] ?? 0;
+		$payload = $arguments['payload'] ?? [];
+		$attempt = $arguments['attempt'] ?? 2;
+		$maxRetries = $arguments['max_retries'] ?? 3;
+		$retryPolicy = $arguments['retry_policy'] ?? 'exponential';
 
-        try {
-            $action = $this->actionMapper->find(id: $actionId);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[ActionRetryJob] Action not found for retry',
-                context: ['actionId' => $actionId, 'error' => $e->getMessage()]
-            );
-            return;
-        }
+		try {
+			$action = $this->actionMapper->find(id: $actionId);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ActionRetryJob] Action not found for retry',
+				context: ['actionId' => $actionId, 'error' => $e->getMessage()]
+			);
+			return;
+		}
 
-        // Check if max retries exceeded.
-        if ($attempt > $maxRetries) {
-            $this->logger->warning(
-                message: '[ActionRetryJob] Max retries exceeded, abandoning action',
-                context: [
-                    'actionId'   => $actionId,
-                    'actionName' => $action->getName(),
-                    'attempt'    => $attempt,
-                    'maxRetries' => $maxRetries,
-                ]
-            );
+		// Check if max retries exceeded.
+		if ($attempt > $maxRetries) {
+			$this->logger->warning(
+				message: '[ActionRetryJob] Max retries exceeded, abandoning action',
+				context: [
+					'actionId' => $actionId,
+					'actionName' => $action->getName(),
+					'attempt' => $attempt,
+					'maxRetries' => $maxRetries,
+				]
+			);
 
-            // Create final log entry with abandoned status.
-            $log = new ActionLog();
-            $log->setActionId($action->getId());
-            $log->setActionUuid($action->getUuid());
-            $log->setEventType('retry');
-            $log->setEngine($action->getEngine());
-            $log->setWorkflowId($action->getWorkflowId());
-            $log->setStatus('abandoned');
-            $log->setAttempt($attempt);
-            $log->setErrorMessage('Max retries exceeded ('.$maxRetries.')');
-            $log->setRequestPayload(json_encode($payload));
+			// Create final log entry with abandoned status.
+			$log = new ActionLog();
+			$log->setActionId($action->getId());
+			$log->setActionUuid($action->getUuid());
+			$log->setEventType('retry');
+			$log->setEngine($action->getEngine());
+			$log->setWorkflowId($action->getWorkflowId());
+			$log->setStatus('abandoned');
+			$log->setAttempt($attempt);
+			$log->setErrorMessage('Max retries exceeded (' . $maxRetries . ')');
+			$log->setRequestPayload(json_encode($payload));
 
-            $this->actionLogMapper->insert(entity: $log);
-            $this->actionService->updateStatistics($actionId, 'abandoned');
+			$this->actionLogMapper->insert(entity: $log);
+			$this->actionService->updateStatistics($actionId, 'abandoned');
 
-            return;
-        }//end if
+			return;
+		}//end if
 
-        $this->logger->info(
-            message: '[ActionRetryJob] Retrying action execution',
-            context: [
-                'actionId' => $actionId,
-                'attempt'  => $attempt,
-            ]
-        );
+		$this->logger->info(
+			message: '[ActionRetryJob] Retrying action execution',
+			context: [
+				'actionId' => $actionId,
+				'attempt' => $attempt,
+			]
+		);
 
-        try {
-            // Execute the action.
-            $syntheticEvent = new Event();
+		try {
+			// Execute the action.
+			$syntheticEvent = new Event();
 
-            $this->actionExecutor->executeActions(
-                actions: [$action],
-                event: $syntheticEvent,
-                payload: $payload,
-                eventType: 'retry'
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[ActionRetryJob] Retry failed, re-queuing',
-                context: [
-                    'actionId' => $actionId,
-                    'attempt'  => $attempt,
-                    'error'    => $e->getMessage(),
-                ]
-            );
+			$this->actionExecutor->executeActions(
+				actions: [$action],
+				event: $syntheticEvent,
+				payload: $payload,
+				eventType: 'retry'
+			);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ActionRetryJob] Retry failed, re-queuing',
+				context: [
+					'actionId' => $actionId,
+					'attempt' => $attempt,
+					'error' => $e->getMessage(),
+				]
+			);
 
-            // Re-queue with incremented attempt.
-            $this->jobList->add(
-                    self::class,
-                    [
-                        'action_id'    => $actionId,
-                        'payload'      => $payload,
-                        'attempt'      => ($attempt + 1),
-                        'max_retries'  => $maxRetries,
-                        'retry_policy' => $retryPolicy,
-                        'error'        => $e->getMessage(),
-                    ]
-                    );
-        }//end try
-    }//end run()
+			// Re-queue with incremented attempt.
+			$this->jobList->add(
+				self::class,
+				[
+					'action_id' => $actionId,
+					'payload' => $payload,
+					'attempt' => ($attempt + 1),
+					'max_retries' => $maxRetries,
+					'retry_policy' => $retryPolicy,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end run()
 
-    /**
-     * Calculate retry delay in seconds based on retry policy
-     *
-     * @param string $policy  Retry policy (exponential, linear, fixed)
-     * @param int    $attempt Current attempt number
-     *
-     * @return int Delay in seconds
-     *
-     * @spec openspec/specs/actions/spec.md
-     */
-    public static function calculateDelay(string $policy, int $attempt): int
-    {
-        return match ($policy) {
-            'exponential' => (int) pow(2, $attempt) * 60,
-            'linear'      => $attempt * 300,
-            'fixed'       => 300,
-            default       => 300,
-        };
-    }//end calculateDelay()
+	/**
+	 * Calculate retry delay in seconds based on retry policy
+	 *
+	 * @param string $policy Retry policy (exponential, linear, fixed)
+	 * @param int $attempt Current attempt number
+	 *
+	 * @return int Delay in seconds
+	 *
+	 * @spec openspec/specs/actions/spec.md
+	 */
+	public static function calculateDelay(string $policy, int $attempt): int {
+		return match ($policy) {
+			'exponential' => (int)pow(2, $attempt) * 60,
+			'linear' => $attempt * 300,
+			'fixed' => 300,
+			default => 300,
+		};
+	}//end calculateDelay()
 }//end class

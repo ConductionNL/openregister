@@ -32,75 +32,71 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
-class InListChunkingTest extends TestCase
-{
-    /**
-     * Every batched id-lookup mapper must declare the IN()-list ceiling and it
-     * must not exceed Nextcloud's 1000-expression limit.
-     *
-     * @return void
-     */
-    public function testMappersDeclareInListCeilingAtOrBelow1000(): void
-    {
-        $mappers = [
-            \OCA\OpenRegister\Db\SchemaMapper::class,
-            \OCA\OpenRegister\Db\RegisterMapper::class,
-            \OCA\OpenRegister\Db\EntityRelationMapper::class,
-        ];
+class InListChunkingTest extends TestCase {
+	/**
+	 * Every batched id-lookup mapper must declare the IN()-list ceiling and it
+	 * must not exceed Nextcloud's 1000-expression limit.
+	 *
+	 * @return void
+	 */
+	public function testMappersDeclareInListCeilingAtOrBelow1000(): void {
+		$mappers = [
+			\OCA\OpenRegister\Db\SchemaMapper::class,
+			\OCA\OpenRegister\Db\RegisterMapper::class,
+			\OCA\OpenRegister\Db\EntityRelationMapper::class,
+		];
 
-        foreach ($mappers as $mapper) {
-            $reflection = new ReflectionClass($mapper);
-            $this->assertTrue(
-                $reflection->hasConstant('MAX_IN_LIST_SIZE'),
-                $mapper.' must declare MAX_IN_LIST_SIZE'
-            );
+		foreach ($mappers as $mapper) {
+			$reflection = new ReflectionClass($mapper);
+			$this->assertTrue(
+				$reflection->hasConstant('MAX_IN_LIST_SIZE'),
+				$mapper . ' must declare MAX_IN_LIST_SIZE'
+			);
 
-            $max = $reflection->getConstant('MAX_IN_LIST_SIZE');
-            $this->assertIsInt($max);
-            $this->assertGreaterThan(0, $max);
-            $this->assertLessThanOrEqual(
-                1000,
-                $max,
-                $mapper.' MAX_IN_LIST_SIZE exceeds the Oracle/QueryBuilder 1000-expression limit'
-            );
-        }
-    }//end testMappersDeclareInListCeilingAtOrBelow1000()
+			$max = $reflection->getConstant('MAX_IN_LIST_SIZE');
+			$this->assertIsInt($max);
+			$this->assertGreaterThan(0, $max);
+			$this->assertLessThanOrEqual(
+				1000,
+				$max,
+				$mapper . ' MAX_IN_LIST_SIZE exceeds the Oracle/QueryBuilder 1000-expression limit'
+			);
+		}
+	}//end testMappersDeclareInListCeilingAtOrBelow1000()
 
-    /**
-     * The chunking arithmetic itself: a 1,233-schema instance (the observed
-     * live figure) must split into more than one query, and every chunk must
-     * stay within the limit.
-     *
-     * @return void
-     */
-    public function testLiveSchemaCountSplitsIntoBoundedChunks(): void
-    {
-        $max    = 1000;
-        $ids    = range(1, 1233);
-        $chunks = array_chunk($ids, $max);
+	/**
+	 * The chunking arithmetic itself: a 1,233-schema instance (the observed
+	 * live figure) must split into more than one query, and every chunk must
+	 * stay within the limit.
+	 *
+	 * @return void
+	 */
+	public function testLiveSchemaCountSplitsIntoBoundedChunks(): void {
+		$max = 1000;
+		$ids = range(1, 1233);
+		$chunks = array_chunk($ids, $max);
 
-        // Must actually chunk — a single oversized IN() is the bug.
-        $this->assertGreaterThan(1, count($chunks));
+		// Must actually chunk — a single oversized IN() is the bug.
+		$this->assertGreaterThan(1, count($chunks));
 
-        foreach ($chunks as $chunk) {
-            $this->assertLessThanOrEqual($max, count($chunk));
-        }
+		foreach ($chunks as $chunk) {
+			$this->assertLessThanOrEqual($max, count($chunk));
+		}
 
-        // No id may be dropped or duplicated by the chunking.
-        $flat = array_merge(...$chunks);
-        $this->assertSame($ids, $flat);
-    }//end testLiveSchemaCountSplitsIntoBoundedChunks()
+		// No id may be dropped or duplicated by the chunking.
+		$flat = array_merge(...$chunks);
+		$this->assertSame($ids, $flat);
+	}//end testLiveSchemaCountSplitsIntoBoundedChunks()
 
-    /**
-     * A list at or below the ceiling still issues exactly one query.
-     *
-     * @return void
-     */
-    public function testListWithinLimitIsNotSplit(): void
-    {
-        $chunks = array_chunk(range(1, 1000), 1000);
-        $this->assertCount(1, $chunks);
+	/**
+	 * A list at or below the ceiling still issues exactly one query.
+	 *
+	 * @return void
+	 */
+	public function testListWithinLimitIsNotSplit(): void {
+		$chunks = array_chunk(range(1, 1000), 1000);
+		$this->assertCount(1, $chunks);
 
-        $this->assertSame([], array_chunk([], 1000));
-    }//end testListWithinLimitIsNotSplit()
+		$this->assertSame([], array_chunk([], 1000));
+	}//end testListWithinLimitIsNotSplit()
 }//end class

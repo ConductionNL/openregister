@@ -54,6 +54,9 @@
       <code><![CDATA[ContentSecurityPolicyNonceManager]]></code>
       <code><![CDATA[CsrfTokenManager]]></code>
     </UndefinedClass>
+    <UndefinedMethod>
+      <code><![CDATA[allowEvalScript]]></code>
+    </UndefinedMethod>
   </file>
   <file src="lib/Controller/RegistersController.php">
     <InvalidScalarArgument>
@@ -140,11 +143,6 @@
     <UndefinedMethod>
       <code><![CDATA[getObject]]></code>
     </UndefinedMethod>
-  </file>
-  <file src="lib/Listener/NativeFlowTriggerListener.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[IEventListener]]></code>
-    </InvalidTemplateParam>
   </file>
   <file src="lib/Migration/Version1Date20260325120000.php">
     <UndefinedConstant>
@@ -307,8 +305,8 @@
   </file>
   <file src="lib/Service/Notification/SystemEntityObjectAdapter.php">
     <ConstructorSignatureMismatch>
-      <code><![CDATA[public function __construct(Entity $entity, string $systemSlug)]]></code>
-      <code><![CDATA[public function __construct(Entity $entity, string $systemSlug)]]></code>
+      <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
+      <code><![CDATA[public function __construct(Entity $entity, string $systemSlug) {]]></code>
     </ConstructorSignatureMismatch>
   </file>
   <file src="lib/Service/OasService.php">

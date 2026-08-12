@@ -28,36 +28,33 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Translation;
 
-class IdentityTranslationProvider implements TranslationProviderInterface
-{
-    /**
-     * Identity translation: returns the source text unchanged.
-     *
-     * @param string $text     The source text.
-     * @param string $fromLang BCP 47 source language code.
-     * @param string $toLang   BCP 47 target language code.
-     *
-     * @return string|null Always the source text (passthrough).
-     *
-     * @spec openspec/specs/register-i18n/spec.md
-     */
-    public function translate(string $text, string $fromLang, string $toLang): ?string
-    {
-        // Same-language translation is a degenerate but valid request.
-        // Different-language: passthrough (the operator should plug a
-        // real provider in front of this for real translations).
-        return $text;
-    }//end translate()
+class IdentityTranslationProvider implements TranslationProviderInterface {
+	/**
+	 * Identity translation: returns the source text unchanged.
+	 *
+	 * @param string $text The source text.
+	 * @param string $fromLang BCP 47 source language code.
+	 * @param string $toLang BCP 47 target language code.
+	 *
+	 * @return string|null Always the source text (passthrough).
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	public function translate(string $text, string $fromLang, string $toLang): ?string {
+		// Same-language translation is a degenerate but valid request.
+		// Different-language: passthrough (the operator should plug a
+		// real provider in front of this for real translations).
+		return $text;
+	}//end translate()
 
-    /**
-     * Provider identifier used for status attribution.
-     *
-     * @return string The literal `identity`.
-     *
-     * @spec openspec/specs/register-i18n/spec.md
-     */
-    public function getIdentifier(): string
-    {
-        return 'identity';
-    }//end getIdentifier()
+	/**
+	 * Provider identifier used for status attribution.
+	 *
+	 * @return string The literal `identity`.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	public function getIdentifier(): string {
+		return 'identity';
+	}//end getIdentifier()
 }//end class

@@ -33,88 +33,85 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-class Version1Date20260502200000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260502200000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_notification_subscriptions') === true) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_notification_subscriptions') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_notification_subscriptions');
+		$table = $schema->createTable(tableName: 'openregister_notification_subscriptions');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'user_id',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 64,
-                'comment' => 'NC user UID who subscribed',
-            ]
-        );
+		$table->addColumn(
+			name: 'user_id',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 64,
+				'comment' => 'NC user UID who subscribed',
+			]
+		);
 
-        $table->addColumn(
-            name: 'register_id',
-            typeName: Types::BIGINT,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Register being subscribed to (null = schema-only subscription)',
-            ]
-        );
+		$table->addColumn(
+			name: 'register_id',
+			typeName: Types::BIGINT,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Register being subscribed to (null = schema-only subscription)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'schema_id',
-            typeName: Types::BIGINT,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Schema being subscribed to (null = register-wide subscription)',
-            ]
-        );
+		$table->addColumn(
+			name: 'schema_id',
+			typeName: Types::BIGINT,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Schema being subscribed to (null = register-wide subscription)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'created',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => true,
-                'comment' => 'Subscription timestamp',
-            ]
-        );
+		$table->addColumn(
+			name: 'created',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => true,
+				'comment' => 'Subscription timestamp',
+			]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
-        $table->addUniqueIndex(
-            columnNames: ['user_id', 'register_id', 'schema_id'],
-            indexName: 'idx_or_subs_uid_reg_sch'
-        );
-        $table->addIndex(columnNames: ['user_id'], indexName: 'idx_or_subs_user_id');
-        $table->addIndex(columnNames: ['register_id', 'schema_id'], indexName: 'idx_or_subs_reg_sch');
+		$table->setPrimaryKey(columnNames: ['id']);
+		$table->addUniqueIndex(
+			columnNames: ['user_id', 'register_id', 'schema_id'],
+			indexName: 'idx_or_subs_uid_reg_sch'
+		);
+		$table->addIndex(columnNames: ['user_id'], indexName: 'idx_or_subs_user_id');
+		$table->addIndex(columnNames: ['register_id', 'schema_id'], indexName: 'idx_or_subs_reg_sch');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

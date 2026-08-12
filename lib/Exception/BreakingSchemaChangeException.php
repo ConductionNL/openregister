@@ -33,66 +33,60 @@ use Exception;
 /**
  * Signals an unacknowledged breaking schema change.
  */
-class BreakingSchemaChangeException extends Exception
-{
+class BreakingSchemaChangeException extends Exception {
 
-    /**
-     * The typed change list that triggered the gate.
-     *
-     * @var array<int, array<string, mixed>>
-     */
-    private array $changes;
+	/**
+	 * The typed change list that triggered the gate.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $changes;
 
-    /**
-     * Count of objects invalid under the latest revalidation (or null).
-     *
-     * @var integer|null
-     */
-    private ?int $invalidCount;
+	/**
+	 * Count of objects invalid under the latest revalidation (or null).
+	 *
+	 * @var integer|null
+	 */
+	private ?int $invalidCount;
 
-    /**
-     * Constructor.
-     *
-     * @param array<int, array<string, mixed>> $changes      The typed change list.
-     * @param int|null                         $invalidCount Latest invalid-object count, or null.
-     */
-    public function __construct(array $changes, ?int $invalidCount=null)
-    {
-        parent::__construct(message: 'Schema change classified breaking; acknowledgeBreaking required.');
-        $this->changes      = $changes;
-        $this->invalidCount = $invalidCount;
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, array<string, mixed>> $changes The typed change list.
+	 * @param int|null $invalidCount Latest invalid-object count, or null.
+	 */
+	public function __construct(array $changes, ?int $invalidCount = null) {
+		parent::__construct(message: 'Schema change classified breaking; acknowledgeBreaking required.');
+		$this->changes = $changes;
+		$this->invalidCount = $invalidCount;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the structured 409 response body.
-     *
-     * @return array<string, mixed> The response body.
-     */
-    public function toResponse(): array
-    {
-        $body = [
-            'error'          => $this->getMessage(),
-            'classification' => 'breaking',
-            'changes'        => $this->changes,
-        ];
+	/**
+	 * Get the structured 409 response body.
+	 *
+	 * @return array<string, mixed> The response body.
+	 */
+	public function toResponse(): array {
+		$body = [
+			'error' => $this->getMessage(),
+			'classification' => 'breaking',
+			'changes' => $this->changes,
+		];
 
-        if ($this->invalidCount !== null) {
-            $body['invalidCount'] = $this->invalidCount;
-        }
+		if ($this->invalidCount !== null) {
+			$body['invalidCount'] = $this->invalidCount;
+		}
 
-        return $body;
+		return $body;
+	}//end toResponse()
 
-    }//end toResponse()
-
-    /**
-     * Get the typed change list.
-     *
-     * @return array<int, array<string, mixed>> The changes.
-     */
-    public function getChanges(): array
-    {
-        return $this->changes;
-
-    }//end getChanges()
+	/**
+	 * Get the typed change list.
+	 *
+	 * @return array<int, array<string, mixed>> The changes.
+	 */
+	public function getChanges(): array {
+		return $this->changes;
+	}//end getChanges()
 }//end class

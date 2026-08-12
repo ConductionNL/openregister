@@ -40,76 +40,72 @@ use PHPUnit\Framework\TestCase;
  *
  * @see openspec/changes/opt-in-files-extend/specs/files-render-extension/spec.md
  */
-class FileMapperGetFileIdsForObjectsTest extends TestCase
-{
+class FileMapperGetFileIdsForObjectsTest extends TestCase {
 
-    /**
-     * Mocked database connection. Configured in setUp().
-     *
-     * @var IDBConnection&MockObject
-     */
-    private IDBConnection&MockObject $db;
+	/**
+	 * Mocked database connection. Configured in setUp().
+	 *
+	 * @var IDBConnection&MockObject
+	 */
+	private IDBConnection&MockObject $db;
 
-    /**
-     * Mocked URL generator. Configured in setUp().
-     *
-     * @var IURLGenerator&MockObject
-     */
-    private IURLGenerator&MockObject $urlGenerator;
+	/**
+	 * Mocked URL generator. Configured in setUp().
+	 *
+	 * @var IURLGenerator&MockObject
+	 */
+	private IURLGenerator&MockObject $urlGenerator;
 
-    /**
-     * The FileMapper instance under test. Constructed in setUp().
-     *
-     * @var FileMapper
-     */
-    private FileMapper $mapper;
+	/**
+	 * The FileMapper instance under test. Constructed in setUp().
+	 *
+	 * @var FileMapper
+	 */
+	private FileMapper $mapper;
 
-    /**
-     * Build mocked dependencies and the FileMapper instance under test.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->db           = $this->createMock(originalClassName: IDBConnection::class);
-        $this->urlGenerator = $this->createMock(originalClassName: IURLGenerator::class);
-        $this->mapper       = new FileMapper(db: $this->db, urlGenerator: $this->urlGenerator);
+	/**
+	 * Build mocked dependencies and the FileMapper instance under test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->db = $this->createMock(originalClassName: IDBConnection::class);
+		$this->urlGenerator = $this->createMock(originalClassName: IURLGenerator::class);
+		$this->mapper = new FileMapper(db: $this->db, urlGenerator: $this->urlGenerator);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Empty input must short-circuit before any DB query is issued.
-     *
-     * @return void
-     */
-    public function testEmptyInputReturnsEmptyArray(): void
-    {
-        // No DB queries should be issued for empty input.
-        $this->db->expects($this->never())->method('getQueryBuilder');
+	/**
+	 * Empty input must short-circuit before any DB query is issued.
+	 *
+	 * @return void
+	 */
+	public function testEmptyInputReturnsEmptyArray(): void {
+		// No DB queries should be issued for empty input.
+		$this->db->expects($this->never())->method('getQueryBuilder');
 
-        $this->assertSame(expected: [], actual: $this->mapper->getFileIdsForObjects(uuids: []));
+		$this->assertSame(expected: [], actual: $this->mapper->getFileIdsForObjects(uuids: []));
 
-    }//end testEmptyInputReturnsEmptyArray()
+	}//end testEmptyInputReturnsEmptyArray()
 
-    /**
-     * Input containing only invalid UUIDs (non-strings, empty strings) is filtered
-     * out before any DB query is issued, returning an empty result.
-     *
-     * @return void
-     */
-    public function testInputOfOnlyInvalidUuidsReturnsEmptyArray(): void
-    {
-        // Non-string and empty-string values are filtered out before any DB call.
-        $this->db->expects($this->never())->method('getQueryBuilder');
+	/**
+	 * Input containing only invalid UUIDs (non-strings, empty strings) is filtered
+	 * out before any DB query is issued, returning an empty result.
+	 *
+	 * @return void
+	 */
+	public function testInputOfOnlyInvalidUuidsReturnsEmptyArray(): void {
+		// Non-string and empty-string values are filtered out before any DB call.
+		$this->db->expects($this->never())->method('getQueryBuilder');
 
-        // Deliberate off-contract input — exercises the `is_string` guard on
-        // every non-string path (int, null, bool) plus the empty-string path.
-        // The method's docblock declares `string[]`, so static analysis would
-        // otherwise flag this; the guard exists exactly to defend against
-        // sloppy callers, and that defence deserves coverage.
-        /** @psalm-suppress InvalidArgument */
-        $result = $this->mapper->getFileIdsForObjects(uuids: ['', 0, null, false]);
-        $this->assertSame(expected: [], actual: $result);
+		// Deliberate off-contract input — exercises the `is_string` guard on
+		// every non-string path (int, null, bool) plus the empty-string path.
+		// The method's docblock declares `string[]`, so static analysis would
+		// otherwise flag this; the guard exists exactly to defend against
+		// sloppy callers, and that defence deserves coverage.
+		/** @psalm-suppress InvalidArgument */
+		$result = $this->mapper->getFileIdsForObjects(uuids: ['', 0, null, false]);
+		$this->assertSame(expected: [], actual: $result);
 
-    }//end testInputOfOnlyInvalidUuidsReturnsEmptyArray()
+	}//end testInputOfOnlyInvalidUuidsReturnsEmptyArray()
 }//end class

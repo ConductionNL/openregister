@@ -44,138 +44,132 @@ use OCP\Security\ICredentialsManager;
 /**
  * Per-user encrypted-vault implementation of the credential secret store.
  */
-class NextcloudVaultCredentialStore implements CredentialStore
-{
-    /**
-     * Vault key prefix for a credential secret (namespaced under the app).
-     *
-     * @var string
-     */
-    private const KEY_PREFIX = 'openregister/credential/';
+class NextcloudVaultCredentialStore implements CredentialStore {
+	/**
+	 * Vault key prefix for a credential secret (namespaced under the app).
+	 *
+	 * @var string
+	 */
+	private const KEY_PREFIX = 'openregister/credential/';
 
-    /**
-     * The credential scope that stores its secret under the reserved system identity.
-     *
-     * @var string
-     */
-    private const SCOPE_ORGANISATION = 'organisation';
+	/**
+	 * The credential scope that stores its secret under the reserved system identity.
+	 *
+	 * @var string
+	 */
+	private const SCOPE_ORGANISATION = 'organisation';
 
-    /**
-     * The reserved Nextcloud system-credential identity (empty-string user).
-     *
-     * @var string
-     */
-    private const SYSTEM_IDENTITY = '';
+	/**
+	 * The reserved Nextcloud system-credential identity (empty-string user).
+	 *
+	 * @var string
+	 */
+	private const SYSTEM_IDENTITY = '';
 
-    /**
-     * Constructor.
-     *
-     * @param ICredentialsManager $credentialsManager The NC encrypted per-user vault.
-     * @param IUserSession        $userSession        The current user session (scopes the vault key).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ICredentialsManager $credentialsManager,
-        private readonly IUserSession $userSession,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ICredentialsManager $credentialsManager The NC encrypted per-user vault.
+	 * @param IUserSession $userSession The current user session (scopes the vault key).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ICredentialsManager $credentialsManager,
+		private readonly IUserSession $userSession,
+	) {
+	}//end __construct()
 
-    /**
-     * Store (or overwrite) the secret for a credential under its scope's vault owner.
-     *
-     * @param string $uuid   The owning `credential` object's UUID.
-     * @param string $secret The raw secret to store.
-     * @param string $scope  The credential scope (`personal`|`organisation`).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function put(string $uuid, string $secret, string $scope='personal'): void
-    {
-        $this->credentialsManager->store(
-            $this->vaultOwner(scope: $scope),
-            self::KEY_PREFIX.$uuid,
-            $secret
-        );
-    }//end put()
+	/**
+	 * Store (or overwrite) the secret for a credential under its scope's vault owner.
+	 *
+	 * @param string $uuid The owning `credential` object's UUID.
+	 * @param string $secret The raw secret to store.
+	 * @param string $scope The credential scope (`personal`|`organisation`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function put(string $uuid, string $secret, string $scope = 'personal'): void {
+		$this->credentialsManager->store(
+			$this->vaultOwner(scope: $scope),
+			self::KEY_PREFIX . $uuid,
+			$secret
+		);
+	}//end put()
 
-    /**
-     * Retrieve the secret for a credential from its scope's vault owner.
-     *
-     * @param string $uuid  The owning `credential` object's UUID.
-     * @param string $scope The credential scope (`personal`|`organisation`).
-     *
-     * @return string|null The raw secret, or null when absent / not a string.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function get(string $uuid, string $scope='personal'): ?string
-    {
-        $value = $this->credentialsManager->retrieve(
-            $this->vaultOwner(scope: $scope),
-            self::KEY_PREFIX.$uuid
-        );
+	/**
+	 * Retrieve the secret for a credential from its scope's vault owner.
+	 *
+	 * @param string $uuid The owning `credential` object's UUID.
+	 * @param string $scope The credential scope (`personal`|`organisation`).
+	 *
+	 * @return string|null The raw secret, or null when absent / not a string.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function get(string $uuid, string $scope = 'personal'): ?string {
+		$value = $this->credentialsManager->retrieve(
+			$this->vaultOwner(scope: $scope),
+			self::KEY_PREFIX . $uuid
+		);
 
-        if (is_string($value) === true) {
-            return $value;
-        }
+		if (is_string($value) === true) {
+			return $value;
+		}
 
-        return null;
-    }//end get()
+		return null;
+	}//end get()
 
-    /**
-     * Delete the secret for a credential from its scope's vault owner.
-     *
-     * @param string $uuid  The owning `credential` object's UUID.
-     * @param string $scope The credential scope (`personal`|`organisation`).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function delete(string $uuid, string $scope='personal'): void
-    {
-        $this->credentialsManager->delete(
-            $this->vaultOwner(scope: $scope),
-            self::KEY_PREFIX.$uuid
-        );
-    }//end delete()
+	/**
+	 * Delete the secret for a credential from its scope's vault owner.
+	 *
+	 * @param string $uuid The owning `credential` object's UUID.
+	 * @param string $scope The credential scope (`personal`|`organisation`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function delete(string $uuid, string $scope = 'personal'): void {
+		$this->credentialsManager->delete(
+			$this->vaultOwner(scope: $scope),
+			self::KEY_PREFIX . $uuid
+		);
+	}//end delete()
 
-    /**
-     * The single shared scope→vault-owner selector (used at write AND read).
-     *
-     * An `organisation` credential stores under the reserved system identity
-     * (empty-string user) so no user owns the shared secret; every other scope
-     * (`personal`, or absent) stores under the current session user — byte-for-byte
-     * the pre-existing behaviour. Keeping this the ONLY place the mapping is made
-     * guarantees write and read cannot drift (design D2).
-     *
-     * @param string $scope The credential scope (`personal`|`organisation`).
-     *
-     * @return string The vault owner id (system identity or current user id).
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    private function vaultOwner(string $scope): string
-    {
-        if ($scope === self::SCOPE_ORGANISATION) {
-            return self::SYSTEM_IDENTITY;
-        }
+	/**
+	 * The single shared scope→vault-owner selector (used at write AND read).
+	 *
+	 * An `organisation` credential stores under the reserved system identity
+	 * (empty-string user) so no user owns the shared secret; every other scope
+	 * (`personal`, or absent) stores under the current session user — byte-for-byte
+	 * the pre-existing behaviour. Keeping this the ONLY place the mapping is made
+	 * guarantees write and read cannot drift (design D2).
+	 *
+	 * @param string $scope The credential scope (`personal`|`organisation`).
+	 *
+	 * @return string The vault owner id (system identity or current user id).
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function vaultOwner(string $scope): string {
+		if ($scope === self::SCOPE_ORGANISATION) {
+			return self::SYSTEM_IDENTITY;
+		}
 
-        return $this->currentUserId();
-    }//end vaultOwner()
+		return $this->currentUserId();
+	}//end vaultOwner()
 
-    /**
-     * Resolve the current user's id for per-user vault scoping.
-     *
-     * @return string The current user's UID, or an empty string when unauthenticated.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    private function currentUserId(): string
-    {
-        return ($this->userSession->getUser()?->getUID() ?? '');
-    }//end currentUserId()
+	/**
+	 * Resolve the current user's id for per-user vault scoping.
+	 *
+	 * @return string The current user's UID, or an empty string when unauthenticated.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function currentUserId(): string {
+		return ($this->userSession->getUser()?->getUID() ?? '');
+	}//end currentUserId()
 }//end class

@@ -18,447 +18,416 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class CacheSettingsControllerTest extends TestCase
-{
-    private CacheSettingsController $controller;
-    private IRequest&MockObject $request;
-    private SettingsService&MockObject $settingsService;
-    private LoggerInterface&MockObject $logger;
-    private Factory&MockObject $appDataFactory;
-    private IAppConfig&MockObject $appConfig;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->request        = $this->createMock(IRequest::class);
-        $this->settingsService = $this->createMock(SettingsService::class);
-        $this->logger         = $this->createMock(LoggerInterface::class);
-        $this->appDataFactory = $this->createMock(Factory::class);
-        $this->appConfig      = $this->createMock(IAppConfig::class);
-
-        $this->controller = new CacheSettingsController(
-            'openregister',
-            $this->request,
-            $this->settingsService,
-            $this->logger,
-            $this->appDataFactory,
-            $this->appConfig
-        );
-    }
-
-    public function testGetCacheStatsSuccess(): void
-    {
-        $stats = ['hits' => 100, 'misses' => 10];
-        $this->settingsService->method('getCacheStats')->willReturn($stats);
-
-        $result = $this->controller->getCacheStats();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertEquals($stats, $result->getData());
-    }
-
-    public function testGetCacheStatsException(): void
-    {
-        $this->settingsService->method('getCacheStats')
-            ->willThrowException(new \Exception('Cache error'));
-
-        $result = $this->controller->getCacheStats();
-
-        $this->assertEquals(500, $result->getStatus());
-    }
-
-    public function testClearCacheSuccess(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'all']);
-        $this->settingsService->method('clearCache')->willReturn(['cleared' => true]);
-
-        $result = $this->controller->clearCache();
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testClearCacheDefaultType(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $this->settingsService->expects($this->once())
-            ->method('clearCache')
-            ->with('all')
-            ->willReturn(['cleared' => true]);
-
-        $result = $this->controller->clearCache();
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testClearCacheException(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $this->settingsService->method('clearCache')
-            ->willThrowException(new \Exception('Failed'));
-
-        $result = $this->controller->clearCache();
-
-        $this->assertEquals(500, $result->getStatus());
-    }
-
-    public function testWarmupNamesCacheSuccess(): void
-    {
-        $this->settingsService->method('warmupNamesCache')
-            ->willReturn(['warmed' => 50]);
-
-        $result = $this->controller->warmupNamesCache();
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testWarmupNamesCacheException(): void
-    {
-        $this->settingsService->method('warmupNamesCache')
-            ->willThrowException(new \Exception('Failed'));
-
-        $result = $this->controller->warmupNamesCache();
-
-        $this->assertEquals(422, $result->getStatus());
-    }
-
-    public function testGetWarmupIntervalSuccess(): void
-    {
-        $this->appConfig->method('getValueString')
-            ->willReturnMap([
-                ['openregister', 'cache_warmup_interval', '3600', '1800'],
-                ['openregister', 'cache_warmup_last_run', '', '2024-01-01T00:00:00'],
-            ]);
-
-        $result = $this->controller->getWarmupInterval();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals(1800, $data['interval']);
-        $this->assertTrue($data['enabled']);
-    }
-
-    public function testGetWarmupIntervalException(): void
-    {
-        $this->appConfig->method('getValueString')
-            ->willThrowException(new \Exception('Config error'));
-
-        $result = $this->controller->getWarmupInterval();
-
-        $this->assertEquals(500, $result->getStatus());
-    }
-
-    public function testSetWarmupIntervalSuccess(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 600]);
-
-        $result = $this->controller->setWarmupInterval();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals(600, $data['interval']);
-        $this->assertTrue($data['enabled']);
-    }
-
-    public function testSetWarmupIntervalDisabled(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 0]);
-
-        $result = $this->controller->setWarmupInterval();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['enabled']);
-    }
-
-    public function testSetWarmupIntervalTooLow(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 100]);
-
-        $result = $this->controller->setWarmupInterval();
+class CacheSettingsControllerTest extends TestCase {
+	private CacheSettingsController $controller;
+	private IRequest&MockObject $request;
+	private SettingsService&MockObject $settingsService;
+	private LoggerInterface&MockObject $logger;
+	private Factory&MockObject $appDataFactory;
+	private IAppConfig&MockObject $appConfig;
 
-        $this->assertEquals(422, $result->getStatus());
-    }
-
-    public function testGetWarmupIntervalWithEmptyLastRun(): void
-    {
-        // When last_run is empty, the response last_run should be null.
-        $this->appConfig->method('getValueString')
-            ->willReturnMap([
-                ['openregister', 'cache_warmup_interval', '3600', '3600'],
-                ['openregister', 'cache_warmup_last_run', '', ''],
-            ]);
-
-        $result = $this->controller->getWarmupInterval();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertNull($data['last_run']);
-        $this->assertTrue($data['enabled']);
-        $this->assertEquals(3600, $data['interval']);
-    }
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->request = $this->createMock(IRequest::class);
+		$this->settingsService = $this->createMock(SettingsService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->appDataFactory = $this->createMock(Factory::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
 
-    public function testSetWarmupIntervalDisabledSetsZeroMessage(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 0]);
+		$this->controller = new CacheSettingsController(
+			'openregister',
+			$this->request,
+			$this->settingsService,
+			$this->logger,
+			$this->appDataFactory,
+			$this->appConfig
+		);
+	}
 
-        $result = $this->controller->setWarmupInterval();
+	public function testGetCacheStatsSuccess(): void {
+		$stats = ['hits' => 100, 'misses' => 10];
+		$this->settingsService->method('getCacheStats')->willReturn($stats);
 
-        $data = $result->getData();
-        $this->assertEquals('Cache warmup disabled', $data['message']);
-        $this->assertFalse($data['enabled']);
-        $this->assertEquals(0, $data['interval']);
-    }
+		$result = $this->controller->getCacheStats();
 
-    public function testSetWarmupIntervalWithExactlyMinimumAllowed(): void
-    {
-        // 300 seconds is the minimum non-zero value.
-        $this->request->method('getParams')->willReturn(['interval' => 300]);
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertEquals($stats, $result->getData());
+	}
 
-        $result = $this->controller->setWarmupInterval();
+	public function testGetCacheStatsException(): void {
+		$this->settingsService->method('getCacheStats')
+			->willThrowException(new \Exception('Cache error'));
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(300, $data['interval']);
-        $this->assertTrue($data['enabled']);
-    }
+		$result = $this->controller->getCacheStats();
 
-    public function testSetWarmupIntervalException(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 600]);
-        $this->appConfig->method('setValueString')
-            ->willThrowException(new \Exception('Config write failed'));
+		$this->assertEquals(500, $result->getStatus());
+	}
 
-        $result = $this->controller->setWarmupInterval();
+	public function testClearCacheSuccess(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'all']);
+		$this->settingsService->method('clearCache')->willReturn(['cleared' => true]);
 
-        $this->assertEquals(500, $result->getStatus());
-        $this->assertArrayHasKey('error', $result->getData());
-    }
+		$result = $this->controller->clearCache();
 
-    public function testSetWarmupIntervalLogsMessage(): void
-    {
-        $this->request->method('getParams')->willReturn(['interval' => 7200]);
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-        $this->logger->expects($this->once())
-            ->method('info')
-            ->with($this->stringContains('7200'));
+	public function testClearCacheDefaultType(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->settingsService->expects($this->once())
+			->method('clearCache')
+			->with('all')
+			->willReturn(['cleared' => true]);
 
-        $result = $this->controller->setWarmupInterval();
+		$result = $this->controller->clearCache();
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    public function testSetWarmupIntervalDefaultWhenNotProvided(): void
-    {
-        // When no interval is in params, default 3600 is used.
-        $this->request->method('getParams')->willReturn([]);
+	public function testClearCacheException(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->settingsService->method('clearCache')
+			->willThrowException(new \Exception('Failed'));
 
-        $result = $this->controller->setWarmupInterval();
+		$result = $this->controller->clearCache();
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(3600, $data['interval']);
-    }
+		$this->assertEquals(500, $result->getStatus());
+	}
 
-    public function testClearCacheWithSpecificType(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'object']);
-        $this->settingsService->expects($this->once())
-            ->method('clearCache')
-            ->with('object')
-            ->willReturn(['cleared' => true, 'type' => 'object']);
+	public function testWarmupNamesCacheSuccess(): void {
+		$this->settingsService->method('warmupNamesCache')
+			->willReturn(['warmed' => 50]);
 
-        $result = $this->controller->clearCache();
+		$result = $this->controller->warmupNamesCache();
 
-        $this->assertEquals(200, $result->getStatus());
-    }
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-    // ── clearAppStoreCache() ──
+	public function testWarmupNamesCacheException(): void {
+		$this->settingsService->method('warmupNamesCache')
+			->willThrowException(new \Exception('Failed'));
 
-    private function buildFileMock(array $json): ISimpleFile&MockObject
-    {
-        $file = $this->createMock(ISimpleFile::class);
-        $file->method('getContent')->willReturn(json_encode($json));
-        return $file;
-    }
+		$result = $this->controller->warmupNamesCache();
 
-    public function testClearAppStoreCacheSuccess(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+		$this->assertEquals(422, $result->getStatus());
+	}
 
-        $file = $this->buildFileMock(['timestamp' => 9999999, 'data' => []]);
-        $file->expects($this->once())->method('putContent');
+	public function testGetWarmupIntervalSuccess(): void {
+		$this->appConfig->method('getValueString')
+			->willReturnMap([
+				['openregister', 'cache_warmup_interval', '3600', '1800'],
+				['openregister', 'cache_warmup_last_run', '', '2024-01-01T00:00:00'],
+			]);
 
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->with('apps.json')->willReturn($file);
+		$result = $this->controller->getWarmupInterval();
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(1800, $data['interval']);
+		$this->assertTrue($data['enabled']);
+	}
 
-        $this->appDataFactory->method('get')->with('appstore')->willReturn($appData);
+	public function testGetWarmupIntervalException(): void {
+		$this->appConfig->method('getValueString')
+			->willThrowException(new \Exception('Config error'));
 
-        $result = $this->controller->clearAppStoreCache();
+		$result = $this->controller->getWarmupInterval();
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertContains('apps.json', $data['invalidated']);
-    }
+		$this->assertEquals(500, $result->getStatus());
+	}
 
-    public function testClearAppStoreCacheAllType(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'all']);
+	public function testSetWarmupIntervalSuccess(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 600]);
 
-        $makeFile = fn(string $name) => $this->buildFileMock(['timestamp' => 1000]);
+		$result = $this->controller->setWarmupInterval();
 
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->willReturnCallback(fn($name) => $makeFile($name));
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEquals(600, $data['interval']);
+		$this->assertTrue($data['enabled']);
+	}
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+	public function testSetWarmupIntervalDisabled(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 0]);
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$result = $this->controller->setWarmupInterval();
 
-        $result = $this->controller->clearAppStoreCache();
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['enabled']);
+	}
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertCount(3, $data['invalidated']);
-    }
+	public function testSetWarmupIntervalTooLow(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 100]);
 
-    public function testClearAppStoreCacheFileNotFound(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+		$result = $this->controller->setWarmupInterval();
 
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->willThrowException(new NotFoundException('apps.json'));
+		$this->assertEquals(422, $result->getStatus());
+	}
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+	public function testGetWarmupIntervalWithEmptyLastRun(): void {
+		// When last_run is empty, the response last_run should be null.
+		$this->appConfig->method('getValueString')
+			->willReturnMap([
+				['openregister', 'cache_warmup_interval', '3600', '3600'],
+				['openregister', 'cache_warmup_last_run', '', ''],
+			]);
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$result = $this->controller->getWarmupInterval();
 
-        $result = $this->controller->clearAppStoreCache();
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertNull($data['last_run']);
+		$this->assertTrue($data['enabled']);
+		$this->assertEquals(3600, $data['interval']);
+	}
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEmpty($data['invalidated']);
-        $this->assertContains('apps.json (not found)', $data['skipped']);
-    }
+	public function testSetWarmupIntervalDisabledSetsZeroMessage(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 0]);
 
-    public function testClearAppStoreCacheInvalidJsonFormat(): void
-    {
-        // File exists but has no 'timestamp' key → skipped as invalid format.
-        $this->request->method('getParams')->willReturn(['type' => 'categories']);
+		$result = $this->controller->setWarmupInterval();
 
-        $file = $this->buildFileMock(['no_timestamp' => 'here']);
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->with('categories.json')->willReturn($file);
+		$data = $result->getData();
+		$this->assertEquals('Cache warmup disabled', $data['message']);
+		$this->assertFalse($data['enabled']);
+		$this->assertEquals(0, $data['interval']);
+	}
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+	public function testSetWarmupIntervalWithExactlyMinimumAllowed(): void {
+		// 300 seconds is the minimum non-zero value.
+		$this->request->method('getParams')->willReturn(['interval' => 300]);
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$result = $this->controller->setWarmupInterval();
 
-        $result = $this->controller->clearAppStoreCache();
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEquals(300, $data['interval']);
+		$this->assertTrue($data['enabled']);
+	}
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEmpty($data['invalidated']);
-        $this->assertContains('categories.json (invalid format)', $data['skipped']);
-    }
+	public function testSetWarmupIntervalException(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 600]);
+		$this->appConfig->method('setValueString')
+			->willThrowException(new \Exception('Config write failed'));
 
-    public function testClearAppStoreCacheAppstoreFolderNotFound(): void
-    {
-        // Top-level NotFoundException — no appstore cache exists yet.
-        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+		$result = $this->controller->setWarmupInterval();
 
-        $this->appDataFactory->method('get')
-            ->willThrowException(new NotFoundException('appstore'));
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertArrayHasKey('error', $result->getData());
+	}
 
-        $result = $this->controller->clearAppStoreCache();
+	public function testSetWarmupIntervalLogsMessage(): void {
+		$this->request->method('getParams')->willReturn(['interval' => 7200]);
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEmpty($data['invalidated']);
-    }
+		$this->logger->expects($this->once())
+			->method('info')
+			->with($this->stringContains('7200'));
 
-    public function testClearAppStoreCacheGeneralException(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+		$result = $this->controller->setWarmupInterval();
 
-        $this->appDataFactory->method('get')
-            ->willThrowException(new \RuntimeException('Disk error'));
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-        $result = $this->controller->clearAppStoreCache();
+	public function testSetWarmupIntervalDefaultWhenNotProvided(): void {
+		// When no interval is in params, default 3600 is used.
+		$this->request->method('getParams')->willReturn([]);
 
-        $this->assertEquals(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('Failed to invalidate', $data['error']);
-    }
+		$result = $this->controller->setWarmupInterval();
 
-    public function testClearAppStoreCacheDefaultTypeIsApps(): void
-    {
-        // When 'type' is not specified, default is 'apps'.
-        $this->request->method('getParams')->willReturn([]);
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEquals(3600, $data['interval']);
+	}
 
-        $file = $this->buildFileMock(['timestamp' => 1]);
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->with('apps.json')->willReturn($file);
+	public function testClearCacheWithSpecificType(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'object']);
+		$this->settingsService->expects($this->once())
+			->method('clearCache')
+			->with('object')
+			->willReturn(['cleared' => true, 'type' => 'object']);
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+		$result = $this->controller->clearCache();
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$this->assertEquals(200, $result->getStatus());
+	}
 
-        $result = $this->controller->clearAppStoreCache();
+	// ── clearAppStoreCache() ──
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertContains('apps.json', $data['invalidated']);
-    }
+	private function buildFileMock(array $json): ISimpleFile&MockObject {
+		$file = $this->createMock(ISimpleFile::class);
+		$file->method('getContent')->willReturn(json_encode($json));
+		return $file;
+	}
 
-    public function testClearAppStoreCacheDiscoverType(): void
-    {
-        $this->request->method('getParams')->willReturn(['type' => 'discover']);
+	public function testClearAppStoreCacheSuccess(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'apps']);
 
-        $file = $this->buildFileMock(['timestamp' => 5000]);
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')->with('discover.json')->willReturn($file);
+		$file = $this->buildFileMock(['timestamp' => 9999999, 'data' => []]);
+		$file->expects($this->once())->method('putContent');
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->with('apps.json')->willReturn($file);
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
 
-        $result = $this->controller->clearAppStoreCache();
+		$this->appDataFactory->method('get')->with('appstore')->willReturn($appData);
 
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertContains('discover.json', $result->getData()['invalidated']);
-    }
+		$result = $this->controller->clearAppStoreCache();
 
-    public function testClearAppStoreCacheGenericFileException(): void
-    {
-        // GenericFileException during getFile should be caught per-file and added to skipped.
-        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertContains('apps.json', $data['invalidated']);
+	}
 
-        $folder = $this->createMock(ISimpleFolder::class);
-        $folder->method('getFile')
-            ->willThrowException(new GenericFileException('Read error'));
+	public function testClearAppStoreCacheAllType(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'all']);
 
-        $appData = $this->createMock(IAppData::class);
-        $appData->method('getFolder')->willReturn($folder);
+		$makeFile = fn (string $name) => $this->buildFileMock(['timestamp' => 1000]);
 
-        $this->appDataFactory->method('get')->willReturn($appData);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->willReturnCallback(fn ($name) => $makeFile($name));
 
-        $result = $this->controller->clearAppStoreCache();
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertContains('apps.json (not found)', $data['skipped']);
-    }
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertCount(3, $data['invalidated']);
+	}
+
+	public function testClearAppStoreCacheFileNotFound(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->willThrowException(new NotFoundException('apps.json'));
+
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
+
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEmpty($data['invalidated']);
+		$this->assertContains('apps.json (not found)', $data['skipped']);
+	}
+
+	public function testClearAppStoreCacheInvalidJsonFormat(): void {
+		// File exists but has no 'timestamp' key → skipped as invalid format.
+		$this->request->method('getParams')->willReturn(['type' => 'categories']);
+
+		$file = $this->buildFileMock(['no_timestamp' => 'here']);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->with('categories.json')->willReturn($file);
+
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
+
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertEmpty($data['invalidated']);
+		$this->assertContains('categories.json (invalid format)', $data['skipped']);
+	}
+
+	public function testClearAppStoreCacheAppstoreFolderNotFound(): void {
+		// Top-level NotFoundException — no appstore cache exists yet.
+		$this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+		$this->appDataFactory->method('get')
+			->willThrowException(new NotFoundException('appstore'));
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['success']);
+		$this->assertEmpty($data['invalidated']);
+	}
+
+	public function testClearAppStoreCacheGeneralException(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+		$this->appDataFactory->method('get')
+			->willThrowException(new \RuntimeException('Disk error'));
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(500, $result->getStatus());
+		$data = $result->getData();
+		$this->assertFalse($data['success']);
+		$this->assertStringContainsString('Failed to invalidate', $data['error']);
+	}
+
+	public function testClearAppStoreCacheDefaultTypeIsApps(): void {
+		// When 'type' is not specified, default is 'apps'.
+		$this->request->method('getParams')->willReturn([]);
+
+		$file = $this->buildFileMock(['timestamp' => 1]);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->with('apps.json')->willReturn($file);
+
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
+
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertContains('apps.json', $data['invalidated']);
+	}
+
+	public function testClearAppStoreCacheDiscoverType(): void {
+		$this->request->method('getParams')->willReturn(['type' => 'discover']);
+
+		$file = $this->buildFileMock(['timestamp' => 5000]);
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')->with('discover.json')->willReturn($file);
+
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
+
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertContains('discover.json', $result->getData()['invalidated']);
+	}
+
+	public function testClearAppStoreCacheGenericFileException(): void {
+		// GenericFileException during getFile should be caught per-file and added to skipped.
+		$this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+		$folder = $this->createMock(ISimpleFolder::class);
+		$folder->method('getFile')
+			->willThrowException(new GenericFileException('Read error'));
+
+		$appData = $this->createMock(IAppData::class);
+		$appData->method('getFolder')->willReturn($folder);
+
+		$this->appDataFactory->method('get')->willReturn($appData);
+
+		$result = $this->controller->clearAppStoreCache();
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertContains('apps.json (not found)', $data['skipped']);
+	}
 }

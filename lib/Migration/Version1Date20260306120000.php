@@ -32,38 +32,36 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @psalm-suppress UnusedClass
  */
-class Version1Date20260306120000 extends SimpleMigrationStep
-{
-    /**
-     * Apply schema changes for hooks column.
-     *
-     * @param IOutput                   $output        Output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array<string, mixed>      $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260306120000 extends SimpleMigrationStep {
+	/**
+	 * Apply schema changes for hooks column.
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array<string, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_schemas') === true) {
-            $table = $schema->getTable('openregister_schemas');
+		if ($schema->hasTable('openregister_schemas') === true) {
+			$table = $schema->getTable('openregister_schemas');
 
-            if ($table->hasColumn('hooks') === false) {
-                $table->addColumn(
-                    'hooks',
-                    Types::TEXT,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-                $output->info(message: 'Added hooks column to schemas table');
-            }
-        }
+			if ($table->hasColumn('hooks') === false) {
+				$table->addColumn(
+					'hooks',
+					Types::TEXT,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+				$output->info(message: 'Added hooks column to schemas table');
+			}
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

@@ -44,62 +44,60 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Scenario: No provider installed, queue mode)
  */
-class HandoffQueueDrainJob extends TimedJob
-{
+class HandoffQueueDrainJob extends TimedJob {
 
-    /**
-     * Default interval: 5 minutes (WebhookRetryJob cadence class).
-     *
-     * @var integer
-     */
-    private const DEFAULT_INTERVAL = 300;
+	/**
+	 * Default interval: 5 minutes (WebhookRetryJob cadence class).
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_INTERVAL = 300;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory    $time           Time factory.
-     * @param HandoffService  $handoffService The handoff engine (drain surface).
-     * @param LoggerInterface $logger         Structured logging.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly HandoffService $handoffService,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(time: $time);
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param HandoffService $handoffService The handoff engine (drain surface).
+	 * @param LoggerInterface $logger Structured logging.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly HandoffService $handoffService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Sweep parked entries whose kind now resolves.
-     *
-     * @param mixed $argument Job arguments (unused).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Scenario: No provider installed, queue mode)
-     */
-    protected function run($argument): void
-    {
-        try {
-            $summary = $this->handoffService->drainParked();
-            if ($summary['drained'] > 0 || $summary['failed'] > 0) {
-                $this->logger->info(
-                    message: '[HandoffQueueDrainJob] Fallback drain sweep completed',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
-                );
-            }
-        } catch (\Throwable $e) {
-            $this->logger->error(
-                message: '[HandoffQueueDrainJob] Fallback drain sweep failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
+	/**
+	 * Sweep parked entries whose kind now resolves.
+	 *
+	 * @param mixed $argument Job arguments (unused).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Scenario: No provider installed, queue mode)
+	 */
+	protected function run($argument): void {
+		try {
+			$summary = $this->handoffService->drainParked();
+			if ($summary['drained'] > 0 || $summary['failed'] > 0) {
+				$this->logger->info(
+					message: '[HandoffQueueDrainJob] Fallback drain sweep completed',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
+				);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[HandoffQueueDrainJob] Fallback drain sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
 
-    }//end run()
+	}//end run()
 }//end class

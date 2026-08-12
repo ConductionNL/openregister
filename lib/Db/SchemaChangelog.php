@@ -55,151 +55,146 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class SchemaChangelog extends Entity implements JsonSerializable
-{
+class SchemaChangelog extends Entity implements JsonSerializable {
 
-    /**
-     * The schema this changelog entry belongs to.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema this changelog entry belongs to.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The resulting schema version for this change.
-     *
-     * @var string|null
-     */
-    protected ?string $version = null;
+	/**
+	 * The resulting schema version for this change.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $version = null;
 
-    /**
-     * The change classification (compatible | breaking | none).
-     *
-     * @var string|null
-     */
-    protected ?string $classification = null;
+	/**
+	 * The change classification (compatible | breaking | none).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $classification = null;
 
-    /**
-     * The typed change list.
-     *
-     * @var array<int, array<string, mixed>>|null
-     */
-    protected ?array $changes = null;
+	/**
+	 * The typed change list.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	protected ?array $changes = null;
 
-    /**
-     * The acting user id.
-     *
-     * @var string|null
-     */
-    protected ?string $actor = null;
+	/**
+	 * The acting user id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $actor = null;
 
-    /**
-     * The user who acknowledged a breaking change.
-     *
-     * @var string|null
-     */
-    protected ?string $acknowledgedBy = null;
+	/**
+	 * The user who acknowledged a breaking change.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $acknowledgedBy = null;
 
-    /**
-     * When the breaking change was acknowledged.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $acknowledgedAt = null;
+	/**
+	 * When the breaking change was acknowledged.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $acknowledgedAt = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Constructor — registers field types for hydration.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'version', type: 'string');
-        $this->addType(fieldName: 'classification', type: 'string');
-        $this->addType(fieldName: 'changes', type: 'json');
-        $this->addType(fieldName: 'actor', type: 'string');
-        $this->addType(fieldName: 'acknowledgedBy', type: 'string');
-        $this->addType(fieldName: 'acknowledgedAt', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
+	/**
+	 * Constructor — registers field types for hydration.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'version', type: 'string');
+		$this->addType(fieldName: 'classification', type: 'string');
+		$this->addType(fieldName: 'changes', type: 'json');
+		$this->addType(fieldName: 'actor', type: 'string');
+		$this->addType(fieldName: 'acknowledgedBy', type: 'string');
+		$this->addType(fieldName: 'acknowledgedAt', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The field names registered with the 'json' type.
-     *
-     * @return array<int, string> The json-typed field names.
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                static function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
+	/**
+	 * The field names registered with the 'json' type.
+	 *
+	 * @return array<int, string> The json-typed field names.
+	 */
+	public function getJsonFields(): array {
+		return array_keys(
+			array_filter(
+				$this->getFieldTypes(),
+				static function ($field) {
+					return $field === 'json';
+				}
+			)
+		);
+	}//end getJsonFields()
 
-    /**
-     * Hydrate the entity from an array.
-     *
-     * Without this, SchemaChangelogMapper::createFromArray()'s `$entry->hydrate()`
-     * call hit Entity::__call and threw "hydrate does not exist", so every schema
-     * changelog write failed silently (swallowed by the caller's try/catch) and
-     * the schema-change audit trail was never recorded.
-     *
-     * @param array<string, mixed> $object The source data.
-     *
-     * @return static This entity, hydrated.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * Without this, SchemaChangelogMapper::createFromArray()'s `$entry->hydrate()`
+	 * call hit Entity::__call and threw "hydrate does not exist", so every schema
+	 * changelog write failed silently (swallowed by the caller's try/catch) and
+	 * the schema-change audit trail was never recorded.
+	 *
+	 * @param array<string, mixed> $object The source data.
+	 *
+	 * @return static This entity, hydrated.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields, true) === true && $value === []) {
-                $value = null;
-            }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields, true) === true && $value === []) {
+				$value = null;
+			}
 
-            $method = 'set'.ucfirst($key);
+			$method = 'set' . ucfirst($key);
 
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * JSON serialisation.
-     *
-     * @return array<string, mixed> The serialised changelog entry.
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'             => $this->id,
-            'schemaId'       => $this->schemaId,
-            'version'        => $this->version,
-            'classification' => $this->classification,
-            'changes'        => ($this->changes ?? []),
-            'actor'          => $this->actor,
-            'acknowledgedBy' => $this->acknowledgedBy,
-            'acknowledgedAt' => $this->acknowledgedAt?->format(DateTime::ATOM),
-            'created'        => $this->created?->format(DateTime::ATOM),
-        ];
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array<string, mixed> The serialised changelog entry.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'schemaId' => $this->schemaId,
+			'version' => $this->version,
+			'classification' => $this->classification,
+			'changes' => ($this->changes ?? []),
+			'actor' => $this->actor,
+			'acknowledgedBy' => $this->acknowledgedBy,
+			'acknowledgedAt' => $this->acknowledgedAt?->format(DateTime::ATOM),
+			'created' => $this->created?->format(DateTime::ATOM),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

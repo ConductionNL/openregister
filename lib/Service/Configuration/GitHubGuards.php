@@ -48,166 +48,161 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  */
-class GitHubGuards
-{
-    /**
-     * Per-user GET cache-miss rate-limit window, in seconds (task 1.19).
-     */
-    private const GET_RATE_LIMIT_WINDOW = 300;
+class GitHubGuards {
+	/**
+	 * Per-user GET cache-miss rate-limit window, in seconds (task 1.19).
+	 */
+	private const GET_RATE_LIMIT_WINDOW = 300;
 
-    /**
-     * Per-user GET cache-miss budget within GET_RATE_LIMIT_WINDOW (task 1.19).
-     */
-    private const GET_RATE_LIMIT_MAX = 10;
+	/**
+	 * Per-user GET cache-miss budget within GET_RATE_LIMIT_WINDOW (task 1.19).
+	 */
+	private const GET_RATE_LIMIT_MAX = 10;
 
-    /**
-     * GitHubGuards constructor.
-     *
-     * @param IAppConfig         $appConfig   App-level config (allowlist repo, opt-out flag).
-     * @param IUserSession       $userSession Current user for the per-user GET counter.
-     * @param RateLimiterService $rateLimiter Cache-backed rate limiter with fail-closed contract.
-     */
-    public function __construct(
-        private readonly IAppConfig $appConfig,
-        private readonly IUserSession $userSession,
-        private readonly RateLimiterService $rateLimiter
-    ) {
-    }//end __construct()
+	/**
+	 * GitHubGuards constructor.
+	 *
+	 * @param IAppConfig $appConfig App-level config (allowlist repo, opt-out flag).
+	 * @param IUserSession $userSession Current user for the per-user GET counter.
+	 * @param RateLimiterService $rateLimiter Cache-backed rate limiter with fail-closed contract.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+		private readonly IUserSession $userSession,
+		private readonly RateLimiterService $rateLimiter,
+	) {
+	}//end __construct()
 
-    /**
-     * Run a sequence of guard closures, short-circuiting on the first non-null response.
-     *
-     * @param array<callable(): ?JSONResponse> $guards Ordered guard closures.
-     *
-     * @return JSONResponse|null First failing response, or null when all guards pass.
-     *
-     * @spec exclude Generic guard-runner combinator — loops guard closures and short-circuits on the first
-     *              non-null response; carries no policy itself (the individual guards are separately annotated).
-     */
-    public function runGuards(array $guards): ?JSONResponse
-    {
-        foreach ($guards as $guard) {
-            $response = $guard();
-            if ($response !== null) {
-                return $response;
-            }
-        }
+	/**
+	 * Run a sequence of guard closures, short-circuiting on the first non-null response.
+	 *
+	 * @param array<callable(): ?JSONResponse> $guards Ordered guard closures.
+	 *
+	 * @return JSONResponse|null First failing response, or null when all guards pass.
+	 *
+	 * @spec exclude Generic guard-runner combinator — loops guard closures and short-circuits on the first
+	 *              non-null response; carries no policy itself (the individual guards are separately annotated).
+	 */
+	public function runGuards(array $guards): ?JSONResponse {
+		foreach ($guards as $guard) {
+			$response = $guard();
+			if ($response !== null) {
+				return $response;
+			}
+		}
 
-        return null;
-    }//end runGuards()
+		return null;
+	}//end runGuards()
 
-    /**
-     * Enforce admin opt-out flag `openregister::features_roadmap_enabled` (task 1.21).
-     *
-     * When `false`, both endpoints SHALL return HTTP 403 `feature_disabled`. Default is `true`,
-     * so unconfigured instances inherit the feature.
-     *
-     * @return JSONResponse|null Null on enabled, 403 `feature_disabled` on disabled.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-21
-     */
-    public function enforceFeatureFlag(): ?JSONResponse
-    {
-        $enabled = $this->appConfig->getValueBool('openregister', 'features_roadmap_enabled', true);
-        if ($enabled === true) {
-            return null;
-        }
+	/**
+	 * Enforce admin opt-out flag `openregister::features_roadmap_enabled` (task 1.21).
+	 *
+	 * When `false`, both endpoints SHALL return HTTP 403 `feature_disabled`. Default is `true`,
+	 * so unconfigured instances inherit the feature.
+	 *
+	 * @return JSONResponse|null Null on enabled, 403 `feature_disabled` on disabled.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-21
+	 */
+	public function enforceFeatureFlag(): ?JSONResponse {
+		$enabled = $this->appConfig->getValueBool('openregister', 'features_roadmap_enabled', true);
+		if ($enabled === true) {
+			return null;
+		}
 
-        return new JSONResponse(['error' => 'feature_disabled'], Http::STATUS_FORBIDDEN);
-    }//end enforceFeatureFlag()
+		return new JSONResponse(['error' => 'feature_disabled'], Http::STATUS_FORBIDDEN);
+	}//end enforceFeatureFlag()
 
-    /**
-     * Enforce per-instance owner allowlist (task 1.14, generalised).
-     *
-     * Reads `openregister::github_allowed_owners` from IAppConfig as a
-     * comma-separated list of GitHub organisation / user names. The caller's
-     * `repo` is `<owner>/<name>`; only the owner segment is matched against
-     * the allowlist (case-insensitive). This lets one OR instance proxy
-     * issues for many sibling repos under the same orgs without per-repo
-     * configuration.
-     *
-     *   - Unset / empty after trimming → graceful degradation: 200 +
-     *     `hint: github_repo_not_configured` on GET, 503 +
-     *     `error: github_repo_not_configured` on POST.
-     *   - Owner not in list → 403 `repo_not_allowed`.
-     *   - Owner in list → null (continue).
-     *
-     * Default value: `ConductionNL,nextcloud` so fresh installs proxy the
-     * Conduction-fleet and core Nextcloud repos out of the box.
-     *
-     * Supersedes the old single-repo `openregister::github_repo` config key
-     * which used strict `owner/repo` equality (PR #1726).
-     *
-     * @param string $repo   Caller-supplied slug `<owner>/<name>` (already format-validated).
-     * @param bool   $isRead Whether the call is the GET path (alters the unset-config response).
-     *
-     * @return JSONResponse|null Null on match, structured 403/200/503 otherwise.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14
-     */
-    public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse
-    {
-        $rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
-        $allowed    = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn($ownerStr) => $ownerStr !== ''));
+	/**
+	 * Enforce per-instance owner allowlist (task 1.14, generalised).
+	 *
+	 * Reads `openregister::github_allowed_owners` from IAppConfig as a
+	 * comma-separated list of GitHub organisation / user names. The caller's
+	 * `repo` is `<owner>/<name>`; only the owner segment is matched against
+	 * the allowlist (case-insensitive). This lets one OR instance proxy
+	 * issues for many sibling repos under the same orgs without per-repo
+	 * configuration.
+	 *
+	 *   - Unset / empty after trimming → graceful degradation: 200 +
+	 *     `hint: github_repo_not_configured` on GET, 503 +
+	 *     `error: github_repo_not_configured` on POST.
+	 *   - Owner not in list → 403 `repo_not_allowed`.
+	 *   - Owner in list → null (continue).
+	 *
+	 * Default value: `ConductionNL,nextcloud` so fresh installs proxy the
+	 * Conduction-fleet and core Nextcloud repos out of the box.
+	 *
+	 * Supersedes the old single-repo `openregister::github_repo` config key
+	 * which used strict `owner/repo` equality (PR #1726).
+	 *
+	 * @param string $repo Caller-supplied slug `<owner>/<name>` (already format-validated).
+	 * @param bool $isRead Whether the call is the GET path (alters the unset-config response).
+	 *
+	 * @return JSONResponse|null Null on match, structured 403/200/503 otherwise.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14
+	 */
+	public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse {
+		$rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
+		$allowed = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn ($ownerStr) => $ownerStr !== ''));
 
-        if ($allowed === []) {
-            if ($isRead === true) {
-                return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
-            }
+		if ($allowed === []) {
+			if ($isRead === true) {
+				return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
+			}
 
-            return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
-        }
+			return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
 
-        $owner        = explode('/', $repo, 2)[0];
-        $ownerLower   = strtolower($owner);
-        $allowedLower = array_map('strtolower', $allowed);
-        if (in_array($ownerLower, $allowedLower, true) === true) {
-            return null;
-        }
+		$owner = explode('/', $repo, 2)[0];
+		$ownerLower = strtolower($owner);
+		$allowedLower = array_map('strtolower', $allowed);
+		if (in_array($ownerLower, $allowedLower, true) === true) {
+			return null;
+		}
 
-        return new JSONResponse(['error' => 'repo_not_allowed'], Http::STATUS_FORBIDDEN);
-    }//end enforceRepoAllowlist()
+		return new JSONResponse(['error' => 'repo_not_allowed'], Http::STATUS_FORBIDDEN);
+	}//end enforceRepoAllowlist()
 
-    /**
-     * Enforce per-user GET cache-miss rate limit (tasks 1.19 + 1.18). Counts distinct cache-key
-     * tuples within a rolling GET_RATE_LIMIT_WINDOW via the shared RateLimiterService. Anonymous
-     * callers are not counted. When no cache backend is available the limiter fails closed with
-     * HTTP 503 `rate_limiter_unavailable`.
-     *
-     * @param string $cacheKey The exact read cache key the caller is about to miss against.
-     *
-     * @return JSONResponse|null Null when within budget, 503 `rate_limiter_unavailable` when no
-     *                           cache backend exists, 429 `user_rate_limited` when exhausted.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
-     */
-    public function enforceGetRateLimit(string $cacheKey): ?JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return null;
-        }
+	/**
+	 * Enforce per-user GET cache-miss rate limit (tasks 1.19 + 1.18). Counts distinct cache-key
+	 * tuples within a rolling GET_RATE_LIMIT_WINDOW via the shared RateLimiterService. Anonymous
+	 * callers are not counted. When no cache backend is available the limiter fails closed with
+	 * HTTP 503 `rate_limiter_unavailable`.
+	 *
+	 * @param string $cacheKey The exact read cache key the caller is about to miss against.
+	 *
+	 * @return JSONResponse|null Null when within budget, 503 `rate_limiter_unavailable` when no
+	 *                           cache backend exists, 429 `user_rate_limited` when exhausted.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+	 */
+	public function enforceGetRateLimit(string $cacheKey): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
 
-        if ($this->rateLimiter->isOperational() === false) {
-            return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
-        }
+		if ($this->rateLimiter->isOperational() === false) {
+			return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
 
-        $retryAfter = $this->rateLimiter->consumeDistinctKeyBudget(
-            bucketKey: 'getmiss:'.$user->getUID(),
-            distinctKey: $cacheKey,
-            maxKeys: self::GET_RATE_LIMIT_MAX,
-            windowSeconds: self::GET_RATE_LIMIT_WINDOW
-        );
-        if ($retryAfter === null) {
-            return null;
-        }
+		$retryAfter = $this->rateLimiter->consumeDistinctKeyBudget(
+			bucketKey: 'getmiss:' . $user->getUID(),
+			distinctKey: $cacheKey,
+			maxKeys: self::GET_RATE_LIMIT_MAX,
+			windowSeconds: self::GET_RATE_LIMIT_WINDOW
+		);
+		if ($retryAfter === null) {
+			return null;
+		}
 
-        $resp = new JSONResponse(
-            ['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
-            Http::STATUS_TOO_MANY_REQUESTS
-        );
-        $resp->addHeader('Retry-After', (string) $retryAfter);
-        return $resp;
-    }//end enforceGetRateLimit()
+		$resp = new JSONResponse(
+			['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
+			Http::STATUS_TOO_MANY_REQUESTS
+		);
+		$resp->addHeader('Retry-After', (string)$retryAfter);
+		return $resp;
+	}//end enforceGetRateLimit()
 }//end class

@@ -36,32 +36,30 @@ namespace OCA\OpenRegister\Service\Gdpr\Export;
 /**
  * SHA-256-only stub signer — carries the hash, does not sign.
  */
-final class UnsignedPadesSigner implements PadesSigner
-{
+final class UnsignedPadesSigner implements PadesSigner {
 
-    /**
-     * Signature-state marker for the unsigned stub.
-     *
-     * @var string
-     */
-    public const STATE_PENDING_LIBRARY = 'pending PAdES-LTV library';
+	/**
+	 * Signature-state marker for the unsigned stub.
+	 *
+	 * @var string
+	 */
+	public const STATE_PENDING_LIBRARY = 'pending PAdES-LTV library';
 
-    /**
-     * Attach a SHA-256 content hash to the bytes and mark them unsigned.
-     *
-     * @param string $bytes The rendered bundle bytes.
-     *
-     * @return SignedBundle Bytes + `sha256:` hash + `signed:false` pending-library state.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function sign(string $bytes): SignedBundle
-    {
-        return new SignedBundle(
-            bytes: $bytes,
-            contentHash: 'sha256:'.hash(algo: 'sha256', data: $bytes),
-            signed: false,
-            signatureState: self::STATE_PENDING_LIBRARY
-        );
-    }//end sign()
+	/**
+	 * Attach a SHA-256 content hash to the bytes and mark them unsigned.
+	 *
+	 * @param string $bytes The rendered bundle bytes.
+	 *
+	 * @return SignedBundle Bytes + `sha256:` hash + `signed:false` pending-library state.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function sign(string $bytes): SignedBundle {
+		return new SignedBundle(
+			bytes: $bytes,
+			contentHash: 'sha256:' . hash(algo: 'sha256', data: $bytes),
+			signed: false,
+			signatureState: self::STATE_PENDING_LIBRARY
+		);
+	}//end sign()
 }//end class

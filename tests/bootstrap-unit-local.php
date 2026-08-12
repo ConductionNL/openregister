@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Local bootstrap for unit tests that do not need the Nextcloud runtime.
  *
@@ -34,10 +35,10 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // generator can resolve interfaces like OCP\IUserSession.
 $ocpStubBase = __DIR__ . '/../vendor/nextcloud/ocp';
 if (is_dir($ocpStubBase . '/OCP') === true) {
-    $loader = new \Composer\Autoload\ClassLoader();
-    $loader->addPsr4('OCP\\', $ocpStubBase . '/OCP');
-    $loader->addPsr4('NCU\\', $ocpStubBase . '/NCU');
-    $loader->register(true);
+	$loader = new \Composer\Autoload\ClassLoader();
+	$loader->addPsr4('OCP\\', $ocpStubBase . '/OCP');
+	$loader->addPsr4('NCU\\', $ocpStubBase . '/NCU');
+	$loader->register(true);
 }
 
 // Internal (non-OCP) Nextcloud symbols referenced by OCP stub files at parse
@@ -64,8 +65,8 @@ require_once __DIR__ . '/stubs/DoriathStubs.php';
 // classes here is sufficient: only the constants are read; behaviour is
 // never invoked from tests.
 if (class_exists('Doctrine\\DBAL\\ParameterType', false) === false) {
-    eval(
-        'namespace Doctrine\\DBAL {
+	eval(
+		'namespace Doctrine\\DBAL {
             class ParameterType {
                 const NULL = 0;
                 const INTEGER = 1;
@@ -86,12 +87,12 @@ if (class_exists('Doctrine\\DBAL\\ParameterType', false) === false) {
                 const PARAM_STR_ARRAY = 102;
             }
         }'
-    );
+	);
 }
 
 if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
-    eval(
-        'namespace Doctrine\\DBAL\\Types {
+	eval(
+		'namespace Doctrine\\DBAL\\Types {
             class Types {
                 const ARRAY = "array";
                 const ASCII_STRING = "ascii_string";
@@ -120,14 +121,14 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
                 const TIME_IMMUTABLE = "time_immutable";
             }
         }'
-    );
+	);
 }
 
 // OCP\DB\QueryBuilder\IExpressionBuilder uses constant references from Doctrine's ExpressionBuilder.
 // Without this stub, PHPUnit cannot create mocks of IExpressionBuilder in local tests.
 if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder', false) === false) {
-    eval(
-        'namespace Doctrine\\DBAL\\Query\\Expression {
+	eval(
+		'namespace Doctrine\\DBAL\\Query\\Expression {
             class ExpressionBuilder {
                 const EQ  = "=";
                 const NEQ = "<>";
@@ -137,5 +138,5 @@ if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder', false) 
                 const GTE = ">=";
             }
         }'
-    );
+	);
 }

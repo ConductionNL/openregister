@@ -34,60 +34,56 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<AnalyticsSeries>
  */
-class AnalyticsSeriesMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_analytics_series', entityClass: AnalyticsSeries::class);
-    }//end __construct()
+class AnalyticsSeriesMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_analytics_series', entityClass: AnalyticsSeries::class);
+	}//end __construct()
 
-    /**
-     * Find a series by its stable key.
-     *
-     * @param string $seriesKey The series key.
-     *
-     * @return AnalyticsSeries|null The series, or null when unknown.
-     */
-    public function findByKey(string $seriesKey): ?AnalyticsSeries
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('series_key', $qb->createNamedParameter($seriesKey)));
+	/**
+	 * Find a series by its stable key.
+	 *
+	 * @param string $seriesKey The series key.
+	 *
+	 * @return AnalyticsSeries|null The series, or null when unknown.
+	 */
+	public function findByKey(string $seriesKey): ?AnalyticsSeries {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('series_key', $qb->createNamedParameter($seriesKey)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByKey()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByKey()
 
-    /**
-     * Find all series scoped to a register (and optionally a schema).
-     *
-     * @param int      $registerId The register id.
-     * @param int|null $schemaId   Optional schema id filter.
-     *
-     * @return AnalyticsSeries[] Matching series.
-     */
-    public function findByScope(int $registerId, ?int $schemaId=null): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Find all series scoped to a register (and optionally a schema).
+	 *
+	 * @param int $registerId The register id.
+	 * @param int|null $schemaId Optional schema id filter.
+	 *
+	 * @return AnalyticsSeries[] Matching series.
+	 */
+	public function findByScope(int $registerId, ?int $schemaId = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
 
-        if ($schemaId !== null) {
-            $qb->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-        }
+		if ($schemaId !== null) {
+			$qb->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
+		}
 
-        $qb->orderBy('updated_at', 'DESC');
+		$qb->orderBy('updated_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByScope()
+		return $this->findEntities(query: $qb);
+	}//end findByScope()
 }//end class

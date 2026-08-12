@@ -48,84 +48,82 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Deadline breach is stamped on the case and visible to the privacy officer)
  */
-class PrivacyOfficerRecipientResolver implements RecipientResolverInterface
-{
+class PrivacyOfficerRecipientResolver implements RecipientResolverInterface {
 
-    /**
-     * The pack field naming the privacy-officer Nextcloud group.
-     *
-     * @var string
-     */
-    public const PACK_FIELD = 'privacyOfficerGroup';
+	/**
+	 * The pack field naming the privacy-officer Nextcloud group.
+	 *
+	 * @var string
+	 */
+	public const PACK_FIELD = 'privacyOfficerGroup';
 
-    /**
-     * Constructor.
-     *
-     * @param DsarPolicyPackResolver $packResolver Active-pack resolution for the case.
-     * @param IGroupManager          $groupManager Group-member expansion.
-     * @param LoggerInterface        $logger       Logger for resolution diagnostics.
-     */
-    public function __construct(
-        private readonly DsarPolicyPackResolver $packResolver,
-        private readonly IGroupManager $groupManager,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution for the case.
+	 * @param IGroupManager $groupManager Group-member expansion.
+	 * @param LoggerInterface $logger Logger for resolution diagnostics.
+	 */
+	public function __construct(
+		private readonly DsarPolicyPackResolver $packResolver,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Resolve the officer recipients for a notification dispatch.
-     *
-     * @param ObjectEntity         $object  The DSAR case the event happened on.
-     * @param array<string, mixed> $context Trigger-specific extras (unused).
-     *
-     * @return array<int, string> Officer group member uids (empty fail-safe).
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $context is part of the resolver contract.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Scenario: Breach notifies handler and privacy officer)
-     */
-    public function resolve(ObjectEntity $object, array $context): array
-    {
-        $case = ($object->getObject() ?? []);
+	/**
+	 * Resolve the officer recipients for a notification dispatch.
+	 *
+	 * @param ObjectEntity $object The DSAR case the event happened on.
+	 * @param array<string, mixed> $context Trigger-specific extras (unused).
+	 *
+	 * @return array<int, string> Officer group member uids (empty fail-safe).
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $context is part of the resolver contract.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Scenario: Breach notifies handler and privacy officer)
+	 */
+	public function resolve(ObjectEntity $object, array $context): array {
+		$case = ($object->getObject() ?? []);
 
-        // Notification dispatch may run from a user write OR a system sweep;
-        // resolve the pack system-scoped so both paths see the same pack.
-        $pack = $this->packResolver->activePackForCase(case: $case, systemContext: true);
-        if ($pack === null) {
-            return [];
-        }
+		// Notification dispatch may run from a user write OR a system sweep;
+		// resolve the pack system-scoped so both paths see the same pack.
+		$pack = $this->packResolver->activePackForCase(case: $case, systemContext: true);
+		if ($pack === null) {
+			return [];
+		}
 
-        $groupId = ($pack[self::PACK_FIELD] ?? null);
-        if (is_string($groupId) === false || $groupId === '' || str_starts_with($groupId, '<') === true) {
-            // Unset or placeholder (`<privacy-officer-group>`) — fail-safe.
-            return [];
-        }
+		$groupId = ($pack[self::PACK_FIELD] ?? null);
+		if (is_string($groupId) === false || $groupId === '' || str_starts_with($groupId, '<') === true) {
+			// Unset or placeholder (`<privacy-officer-group>`) — fail-safe.
+			return [];
+		}
 
-        try {
-            $group = $this->groupManager->get($groupId);
-            if ($group === null) {
-                $this->logger->debug(
-                    message: '[PrivacyOfficerRecipientResolver] pack names unknown group "'.$groupId.'" — no officer recipients',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                return [];
-            }
+		try {
+			$group = $this->groupManager->get($groupId);
+			if ($group === null) {
+				$this->logger->debug(
+					message: '[PrivacyOfficerRecipientResolver] pack names unknown group "' . $groupId . '" — no officer recipients',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				return [];
+			}
 
-            $uids = [];
-            foreach ($group->getUsers() as $user) {
-                $uids[] = $user->getUID();
-            }
+			$uids = [];
+			foreach ($group->getUsers() as $user) {
+				$uids[] = $user->getUID();
+			}
 
-            return array_values(array_unique($uids));
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[PrivacyOfficerRecipientResolver] group resolution failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'group' => $groupId]
-            );
-            return [];
-        }//end try
+			return array_values(array_unique($uids));
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[PrivacyOfficerRecipientResolver] group resolution failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'group' => $groupId]
+			);
+			return [];
+		}//end try
 
-    }//end resolve()
+	}//end resolve()
 }//end class

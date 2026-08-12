@@ -55,57 +55,54 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class Version1Date20260614110000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260614110000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_sync_records') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_sync_records') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_sync_records');
+		$table = $schema->createTable('openregister_sync_records');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('source_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('execution_id', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('external_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-        $table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'pending']);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('content_hash', Types::STRING, ['notnull' => false, 'length' => 64]);
-        $table->addColumn('raw_data', Types::TEXT, ['notnull' => false]);
-        $table->addColumn('error_message', Types::TEXT, ['notnull' => false]);
-        $table->addColumn('attempts', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
-        $table->addColumn('organisation', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('created', Types::DATETIME, ['notnull' => true]);
-        $table->addColumn('updated', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('source_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('execution_id', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('external_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+		$table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'pending']);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('content_hash', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('raw_data', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('error_message', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('attempts', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
+		$table->addColumn('organisation', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('updated', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['uuid'], 'idx_syncrec_uuid');
-        $table->addIndex(['execution_id'], 'idx_syncrec_exec');
-        $table->addIndex(['source_id', 'status'], 'idx_syncrec_src_status');
-        $table->addIndex(['source_id', 'external_id'], 'idx_syncrec_src_ext');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['uuid'], 'idx_syncrec_uuid');
+		$table->addIndex(['execution_id'], 'idx_syncrec_exec');
+		$table->addIndex(['source_id', 'status'], 'idx_syncrec_src_status');
+		$table->addIndex(['source_id', 'external_id'], 'idx_syncrec_src_ext');
 
-        $output->info('Created openregister_sync_records table');
+		$output->info('Created openregister_sync_records table');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

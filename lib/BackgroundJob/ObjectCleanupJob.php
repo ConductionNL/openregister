@@ -56,86 +56,84 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
  */
-class ObjectCleanupJob extends ActorForwardedJob
-{
-    /**
-     * Wire the cleanup collaborators on top of the actor plumbing.
-     *
-     * @param ITimeFactory                 $time         Time factory for the parent job class.
-     * @param IUserSession                 $userSession  Session to impersonate on / restore.
-     * @param IUserManager                 $userManager  Resolver for the captured user id.
-     * @param OrganisationService          $organisation Active-organisation resolver.
-     * @param LoggerInterface              $logger       PSR logger.
-     * @param DeferredEntryObjectResolver  $resolver     Re-create guard lookup.
-     * @param ObjectRelationCleanupService $cleanup      Shared cleanup implementation.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IUserSession $userSession,
-        IUserManager $userManager,
-        OrganisationService $organisation,
-        LoggerInterface $logger,
-        private readonly DeferredEntryObjectResolver $resolver,
-        private readonly ObjectRelationCleanupService $cleanup
-    ) {
-        parent::__construct(
-            time: $time,
-            userSession: $userSession,
-            userManager: $userManager,
-            organisation: $organisation,
-            logger: $logger
-        );
-    }//end __construct()
+class ObjectCleanupJob extends ActorForwardedJob {
+	/**
+	 * Wire the cleanup collaborators on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param DeferredEntryObjectResolver $resolver Re-create guard lookup.
+	 * @param ObjectRelationCleanupService $cleanup Shared cleanup implementation.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		OrganisationService $organisation,
+		LoggerInterface $logger,
+		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly ObjectRelationCleanupService $cleanup,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $userSession,
+			userManager: $userManager,
+			organisation: $organisation,
+			logger: $logger
+		);
+	}//end __construct()
 
-    /**
-     * Clean up every entry whose object is genuinely gone.
-     *
-     * Per-entry failures are logged and do not abort the chunk.
-     *
-     * @param DeferredListenerContext $context The captured dispatch-time context.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
-     */
-    protected function runDeferred(DeferredListenerContext $context): void
-    {
-        foreach ($context->getEntries() as $entry) {
-            $uuid = ($entry['uuid'] ?? null);
-            if (is_string($uuid) === false || $uuid === '') {
-                continue;
-            }
+	/**
+	 * Clean up every entry whose object is genuinely gone.
+	 *
+	 * Per-entry failures are logged and do not abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$uuid = ($entry['uuid'] ?? null);
+			if (is_string($uuid) === false || $uuid === '') {
+				continue;
+			}
 
-            // Re-create guard: a live object under this UUID means the id came
-            // back between the delete and this job. Its relations belong to
-            // the NEW object; wiping them would be data loss.
-            if ($this->resolver->resolve(entry: $entry) !== null) {
-                $this->logger->info(
-                    message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'uuid' => $uuid,
-                    ]
-                );
-                continue;
-            }
+			// Re-create guard: a live object under this UUID means the id came
+			// back between the delete and this job. Its relations belong to
+			// the NEW object; wiping them would be data loss.
+			if ($this->resolver->resolve(entry: $entry) !== null) {
+				$this->logger->info(
+					message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => $uuid,
+					]
+				);
+				continue;
+			}
 
-            try {
-                $this->cleanup->cleanup(objectUuid: $uuid);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[ObjectCleanupJob] Cleanup failed for entry',
-                    context: [
-                        'file'  => __FILE__,
-                        'line'  => __LINE__,
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
-                );
-            }
-        }//end foreach
-    }//end runDeferred()
+			try {
+				$this->cleanup->cleanup(objectUuid: $uuid);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ObjectCleanupJob] Cleanup failed for entry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => $uuid,
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end runDeferred()
 }//end class

@@ -52,214 +52,196 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
  */
-class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
-    }//end __construct()
+class ExplodeNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function getId(): string
-    {
-        return 'openregister.explode';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function getId(): string {
+		return 'openregister.explode';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Explode');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Explode');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Turn a list on the item into one item per entry, so later steps act on each.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('openregister', 'app-dark.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Turn a list on the item into one item per entry, so later steps act on each.');
+	/**
+	 * Available in both scopes.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of an explode step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return ['path', 'as', 'keepRecord'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('openregister', 'app-dark.svg');
+	/**
+	 * Reject an explode that names no path.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When no path is named.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function validateConfig(array $config): void {
+		if (trim((string)($config['path'] ?? '')) === '') {
+			throw new UnexpectedValueException($this->l10n->t('An explode step needs the path of a list.'));
+		}
 
-    }//end getIcon()
+	}//end validateConfig()
 
-    /**
-     * Available in both scopes.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	/**
+	 * Emit one item per element of the named list.
+	 *
+	 * The element is placed under `as` (default `item`) on a COPY of the
+	 * original record, so an exploded entry keeps the context it came from —
+	 * a finding still knows its repository and its run. Dropping the rest would
+	 * make the node unusable for anything except a list of complete records.
+	 *
+	 * An item whose path holds no list contributes NOTHING and is not an error:
+	 * "the reviewer found nothing" is the ordinary case, and failing the step on
+	 * an empty list would turn a clean review into a broken run. An item whose
+	 * path holds a SCALAR is a different matter — that is a mis-authored flow,
+	 * and it fails.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array One item per element, across all input items.
+	 *
+	 * @throws UnexpectedValueException When the path holds a scalar.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
+	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
+	 * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
+	 *   constructor every node uses; injecting a factory for it would add a
+	 *   dependency to describe a shape.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		// `validateConfig()` runs only when a flow is SAVED, and a seeded or
+		// imported flow reaches here unvalidated — at which point returning the
+		// items unchanged would make this a silent pass-through that looks
+		// exactly like a list of one.
+		$this->validateConfig(config: $config);
 
-    }//end isAvailableForScope()
+		$path = trim((string)$config['path']);
+		$under = (string)($config['as'] ?? 'item');
+		$keep = (($config['keepRecord'] ?? true) !== false);
 
-    /**
-     * The config vocabulary of an explode step.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['path', 'as', 'keepRecord'];
+		$out = [];
+		foreach ($items as $index => $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			$list = $this->valueAt(json: $json, path: $path);
 
-    }//end configKeys()
+			if ($list === null) {
+				continue;
+			}
 
-    /**
-     * Reject an explode that names no path.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When no path is named.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function validateConfig(array $config): void
-    {
-        if (trim((string) ($config['path'] ?? '')) === '') {
-            throw new UnexpectedValueException($this->l10n->t('An explode step needs the path of a list.'));
-        }
+			if (is_array($list) === false) {
+				throw new UnexpectedValueException(
+					$this->l10n->t('The explode path "%s" is not a list.', [$path])
+				);
+			}
 
-    }//end validateConfig()
+			foreach ($list as $entry) {
+				$record = [];
+				if ($keep === true) {
+					$record = $json;
+				}
 
-    /**
-     * Emit one item per element of the named list.
-     *
-     * The element is placed under `as` (default `item`) on a COPY of the
-     * original record, so an exploded entry keeps the context it came from —
-     * a finding still knows its repository and its run. Dropping the rest would
-     * make the node unusable for anything except a list of complete records.
-     *
-     * An item whose path holds no list contributes NOTHING and is not an error:
-     * "the reviewer found nothing" is the ordinary case, and failing the step on
-     * an empty list would turn a clean review into a broken run. An item whose
-     * path holds a SCALAR is a different matter — that is a mis-authored flow,
-     * and it fails.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array One item per element, across all input items.
-     *
-     * @throws UnexpectedValueException When the path holds a scalar.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
-     *   IFlowNode contract; this node needs no run metadata to fan out a list.
-     * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
-     *   constructor every node uses; injecting a factory for it would add a
-     *   dependency to describe a shape.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        // `validateConfig()` runs only when a flow is SAVED, and a seeded or
-        // imported flow reaches here unvalidated — at which point returning the
-        // items unchanged would make this a silent pass-through that looks
-        // exactly like a list of one.
-        $this->validateConfig(config: $config);
+				$record[$under] = $entry;
 
-        $path  = trim((string) $config['path']);
-        $under = (string) ($config['as'] ?? 'item');
-        $keep  = (($config['keepRecord'] ?? true) !== false);
+				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
+			}
+		}//end foreach
 
-        $out = [];
-        foreach ($items as $index => $item) {
-            $json = (array) ($item[FlowItems::JSON] ?? []);
-            $list = $this->valueAt(json: $json, path: $path);
+		return $out;
+	}//end execute()
 
-            if ($list === null) {
-                continue;
-            }
+	/**
+	 * The value at a dotted path, or null when absent.
+	 *
+	 * @param array $json The item's record.
+	 * @param string $path The dotted path.
+	 *
+	 * @return mixed The value, or null.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function valueAt(array $json, string $path) {
+		$value = $json;
+		foreach (explode('.', $path) as $segment) {
+			if (is_array($value) === false || array_key_exists($segment, $value) === false) {
+				return null;
+			}
 
-            if (is_array($list) === false) {
-                throw new UnexpectedValueException(
-                    $this->l10n->t('The explode path "%s" is not a list.', [$path])
-                );
-            }
+			$value = $value[$segment];
+		}
 
-            foreach ($list as $entry) {
-                $record = [];
-                if ($keep === true) {
-                    $record = $json;
-                }
-
-                $record[$under] = $entry;
-
-                $out[] = FlowItems::item(json: $record, fromItemIndex: $index);
-            }
-        }//end foreach
-
-        return $out;
-
-    }//end execute()
-
-    /**
-     * The value at a dotted path, or null when absent.
-     *
-     * @param array  $json The item's record.
-     * @param string $path The dotted path.
-     *
-     * @return mixed The value, or null.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function valueAt(array $json, string $path)
-    {
-        $value = $json;
-        foreach (explode('.', $path) as $segment) {
-            if (is_array($value) === false || array_key_exists($segment, $value) === false) {
-                return null;
-            }
-
-            $value = $value[$segment];
-        }
-
-        return $value;
-
-    }//end valueAt()
+		return $value;
+	}//end valueAt()
 }//end class

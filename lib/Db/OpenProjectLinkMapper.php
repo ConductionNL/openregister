@@ -31,112 +31,105 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<OpenProjectLink>
  */
-class OpenProjectLinkMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_openproject_links', entityClass: OpenProjectLink::class);
-    }//end __construct()
+class OpenProjectLinkMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_openproject_links', entityClass: OpenProjectLink::class);
+	}//end __construct()
 
-    /**
-     * Find OpenProject links by object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return OpenProjectLink[] Array of OpenProject links.
-     */
-    public function findByObjectUuid(string $objectUuid): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find OpenProject links by object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return OpenProjectLink[] Array of OpenProject links.
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByObjectUuid()
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
 
-    /**
-     * Find OpenProject links by work-package id.
-     *
-     * @param int $workPackageId The work-package id.
-     *
-     * @return OpenProjectLink[] Array of OpenProject links.
-     */
-    public function findByWorkPackageId(int $workPackageId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find OpenProject links by work-package id.
+	 *
+	 * @param int $workPackageId The work-package id.
+	 *
+	 * @return OpenProjectLink[] Array of OpenProject links.
+	 */
+	public function findByWorkPackageId(int $workPackageId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByWorkPackageId()
+		return $this->findEntities(query: $qb);
+	}//end findByWorkPackageId()
 
-    /**
-     * Find a specific OpenProject link by object UUID and work-package id.
-     *
-     * @param string $objectUuid    The object UUID.
-     * @param int    $workPackageId The work-package id.
-     *
-     * @return OpenProjectLink|null The link or null if not found.
-     */
-    public function findByObjectAndWorkPackage(string $objectUuid, int $workPackageId): ?OpenProjectLink
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Find a specific OpenProject link by object UUID and work-package id.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param int $workPackageId The work-package id.
+	 *
+	 * @return OpenProjectLink|null The link or null if not found.
+	 */
+	public function findByObjectAndWorkPackage(string $objectUuid, int $workPackageId): ?OpenProjectLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByObjectAndWorkPackage()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectAndWorkPackage()
 
-    /**
-     * Delete all OpenProject links for an object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return int Number of deleted rows.
-     */
-    public function deleteByObjectUuid(string $objectUuid): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+	/**
+	 * Delete all OpenProject links for an object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function deleteByObjectUuid(string $objectUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
 
-        return $qb->executeStatement();
-    }//end deleteByObjectUuid()
+		return $qb->executeStatement();
+	}//end deleteByObjectUuid()
 
-    /**
-     * Delete an OpenProject link by object UUID + work-package id (Tier-2
-     * unlink path).
-     *
-     * Returns the number of rows actually deleted so callers can
-     * distinguish "no such link" (0) from "ok" (>=1).
-     *
-     * @param string $objectUuid    The object UUID.
-     * @param int    $workPackageId The work-package id.
-     *
-     * @return int Number of deleted rows.
-     */
-    public function deleteByObjectAndWorkPackage(string $objectUuid, int $workPackageId): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Delete an OpenProject link by object UUID + work-package id (Tier-2
+	 * unlink path).
+	 *
+	 * Returns the number of rows actually deleted so callers can
+	 * distinguish "no such link" (0) from "ok" (>=1).
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param int $workPackageId The work-package id.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function deleteByObjectAndWorkPackage(string $objectUuid, int $workPackageId): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)));
 
-        return $qb->executeStatement();
-    }//end deleteByObjectAndWorkPackage()
+		return $qb->executeStatement();
+	}//end deleteByObjectAndWorkPackage()
 }//end class

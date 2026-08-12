@@ -41,53 +41,50 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Deterministic UUIDv5 derivation for Tables-backed virtual objects.
  */
-final class TablesUuidDeriver
-{
+final class TablesUuidDeriver {
 
-    /**
-     * The fixed OpenRegister namespace UUID for Tables-derived object uuids.
-     *
-     * A stable, purpose-specific RFC-4122 namespace so the derivation never
-     * collides with any other UUIDv5 namespace in the system. It is a constant of
-     * the derivation contract and MUST NOT change (changing it would silently
-     * re-key every virtual object and break existing relation deep-links).
-     *
-     * @var string
-     */
-    public const NAMESPACE_UUID = '4b3d2c1a-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+	/**
+	 * The fixed OpenRegister namespace UUID for Tables-derived object uuids.
+	 *
+	 * A stable, purpose-specific RFC-4122 namespace so the derivation never
+	 * collides with any other UUIDv5 namespace in the system. It is a constant of
+	 * the derivation contract and MUST NOT change (changing it would silently
+	 * re-key every virtual object and break existing relation deep-links).
+	 *
+	 * @var string
+	 */
+	public const NAMESPACE_UUID = '4b3d2c1a-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
 
-    /**
-     * Derive the deterministic uuid of the virtual object for a Tables row.
-     *
-     * @param int $tableId The id of the table the row lives in.
-     * @param int $rowId   The Tables row id.
-     *
-     * @return string The RFC-4122 UUIDv5 string.
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v5/fromString are the standard symfony/uid factories.
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    public function deriveObjectUuid(int $tableId, int $rowId): string
-    {
-        $namespace = Uuid::fromString(self::NAMESPACE_UUID);
+	/**
+	 * Derive the deterministic uuid of the virtual object for a Tables row.
+	 *
+	 * @param int $tableId The id of the table the row lives in.
+	 * @param int $rowId The Tables row id.
+	 *
+	 * @return string The RFC-4122 UUIDv5 string.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v5/fromString are the standard symfony/uid factories.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function deriveObjectUuid(int $tableId, int $rowId): string {
+		$namespace = Uuid::fromString(self::NAMESPACE_UUID);
 
-        return Uuid::v5($namespace, sprintf('tables:%d:%d', $tableId, $rowId))->toRfc4122();
-    }//end deriveObjectUuid()
+		return Uuid::v5($namespace, sprintf('tables:%d:%d', $tableId, $rowId))->toRfc4122();
+	}//end deriveObjectUuid()
 
-    /**
-     * Whether an id looks like an RFC-4122 UUID (rather than a numeric rowId).
-     *
-     * @param string $id The candidate id.
-     *
-     * @return bool True when the id is a valid UUID string.
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is the standard symfony/uid validator.
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    public function looksLikeUuid(string $id): bool
-    {
-        return Uuid::isValid($id);
-    }//end looksLikeUuid()
+	/**
+	 * Whether an id looks like an RFC-4122 UUID (rather than a numeric rowId).
+	 *
+	 * @param string $id The candidate id.
+	 *
+	 * @return bool True when the id is a valid UUID string.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is the standard symfony/uid validator.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function looksLikeUuid(string $id): bool {
+		return Uuid::isValid($id);
+	}//end looksLikeUuid()
 }//end class

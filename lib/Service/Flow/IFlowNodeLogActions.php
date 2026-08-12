@@ -44,36 +44,35 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Declares the links a node's run-log entries earn.
  */
-interface IFlowNodeLogActions
-{
-    /**
-     * The links this log entry earns.
-     *
-     * `$entry` IS UNTRUSTED. `FlowController::logActions()` is `#[NoAdminRequired]`
-     * and passes the caller's POST body through verbatim — it is not read back from
-     * a stored run log, and OpenRegister cannot check it, because only the node that
-     * wrote the entry knows what its fields mean. An implementer that resolves an id
-     * out of `$entry` (a call log, a source, an agent session) MUST authorise that
-     * read for the current user before returning a link to it. Returning a link to a
-     * record the caller may not see is an IDOR whichever app the link points into,
-     * and an href alone already discloses that the record exists.
-     *
-     * Each entry:
-     *
-     *   label string Translated — it is a link an operator reads.
-     *   href  string Where it goes. Opened in a NEW TAB by the editor, which
-     *                holds unsaved state: navigating away in place would throw
-     *                away an author's in-progress flow to show them a record
-     *                they wanted to glance at.
-     *   icon  string Optional.
-     *
-     * An entry with nothing to point at MUST return an empty array rather than
-     * a link to a list page. A link that goes somewhere unrelated is worse than
-     * no link: it is followed once, and thereafter none of them are trusted.
-     *
-     * @param array<string, mixed> $entry One entry from the run's log.
-     *
-     * @return array<int, array{label: string, href: string, icon?: string}> The links.
-     */
-    public function logActions(array $entry): array;
+interface IFlowNodeLogActions {
+	/**
+	 * The links this log entry earns.
+	 *
+	 * `$entry` IS UNTRUSTED. `FlowController::logActions()` is `#[NoAdminRequired]`
+	 * and passes the caller's POST body through verbatim — it is not read back from
+	 * a stored run log, and OpenRegister cannot check it, because only the node that
+	 * wrote the entry knows what its fields mean. An implementer that resolves an id
+	 * out of `$entry` (a call log, a source, an agent session) MUST authorise that
+	 * read for the current user before returning a link to it. Returning a link to a
+	 * record the caller may not see is an IDOR whichever app the link points into,
+	 * and an href alone already discloses that the record exists.
+	 *
+	 * Each entry:
+	 *
+	 *   label string Translated — it is a link an operator reads.
+	 *   href  string Where it goes. Opened in a NEW TAB by the editor, which
+	 *                holds unsaved state: navigating away in place would throw
+	 *                away an author's in-progress flow to show them a record
+	 *                they wanted to glance at.
+	 *   icon  string Optional.
+	 *
+	 * An entry with nothing to point at MUST return an empty array rather than
+	 * a link to a list page. A link that goes somewhere unrelated is worse than
+	 * no link: it is followed once, and thereafter none of them are trusted.
+	 *
+	 * @param array<string, mixed> $entry One entry from the run's log.
+	 *
+	 * @return array<int, array{label: string, href: string, icon?: string}> The links.
+	 */
+	public function logActions(array $entry): array;
 }//end interface

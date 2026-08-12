@@ -133,17 +133,20 @@ export default {
 	padding: 24px 32px;
 	max-width: 1400px;
 }
+
 .integrations-view__title {
 	font-size: 28px;
 	font-weight: 700;
 	margin: 0 0 8px;
 	color: var(--color-main-text);
 }
+
 .integrations-view__subtitle {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast);
 	margin: 0 0 16px;
 }
+
 .integrations-view__empty {
 	padding: 48px 32px;
 	color: var(--color-text-maxcontrast);

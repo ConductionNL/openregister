@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -29,118 +28,111 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<ContactLink>
  */
-class ContactLinkMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
-    }//end __construct()
+class ContactLinkMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
+	}//end __construct()
 
-    /**
-     * Find contact links by object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return ContactLink[] Array of contact links.
-     */
-    public function findByObjectUuid(string $objectUuid): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find contact links by object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return ContactLink[] Array of contact links.
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByObjectUuid()
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
 
-    /**
-     * Find contact links by contact UID.
-     *
-     * @param string $contactUid The contact UID from the vCard.
-     *
-     * @return ContactLink[] Array of contact links.
-     */
-    public function findByContactUid(string $contactUid): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find contact links by contact UID.
+	 *
+	 * @param string $contactUid The contact UID from the vCard.
+	 *
+	 * @return ContactLink[] Array of contact links.
+	 */
+	public function findByContactUid(string $contactUid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByContactUid()
+		return $this->findEntities(query: $qb);
+	}//end findByContactUid()
 
-    /**
-     * Count contact links for an object.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return int Count of links.
-     */
-    public function countByObjectUuid(string $objectUuid): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('COUNT(*)'))
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+	/**
+	 * Count contact links for an object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return int Count of links.
+	 */
+	public function countByObjectUuid(string $objectUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*)'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
 
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
 
-        return $count;
-    }//end countByObjectUuid()
+		return $count;
+	}//end countByObjectUuid()
 
-    /**
-     * Delete all contact links for an object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return int Number of deleted rows.
-     */
-    public function deleteByObjectUuid(string $objectUuid): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+	/**
+	 * Delete all contact links for an object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function deleteByObjectUuid(string $objectUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
 
-        return $qb->executeStatement();
-    }//end deleteByObjectUuid()
+		return $qb->executeStatement();
+	}//end deleteByObjectUuid()
 
-    /**
-     * Find the single link for an (objectUuid, contactUid) pair.
-     *
-     * Backs the upsert path in `ContactService::linkContact()` — the DB
-     * already enforces uniqueness via the Tier-2 composite index
-     * `idx_contact_object_uid_uniq`, but reading first lets the service
-     * update the cached vCard fields (phone/org/avatar) and role
-     * in-place instead of failing on the duplicate-key.
-     *
-     * @param string $objectUuid The object UUID.
-     * @param string $contactUid The vCard UID.
-     *
-     * @return ContactLink|null The link, or null when no row exists.
-     */
-    public function findByObjectAndContact(string $objectUuid, string $contactUid): ?ContactLink
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
-            ->setMaxResults(1);
+	/**
+	 * Find the single link for an (objectUuid, contactUid) pair.
+	 *
+	 * Backs the upsert path in `ContactService::linkContact()` — the DB
+	 * already enforces uniqueness via the Tier-2 composite index
+	 * `idx_contact_object_uid_uniq`, but reading first lets the service
+	 * update the cached vCard fields (phone/org/avatar) and role
+	 * in-place instead of failing on the duplicate-key.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The vCard UID.
+	 *
+	 * @return ContactLink|null The link, or null when no row exists.
+	 */
+	public function findByObjectAndContact(string $objectUuid, string $contactUid): ?ContactLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+			->setMaxResults(1);
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByObjectAndContact()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectAndContact()
 }//end class

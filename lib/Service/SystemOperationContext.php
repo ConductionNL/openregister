@@ -36,58 +36,54 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-final class SystemOperationContext
-{
+final class SystemOperationContext {
 
-    /**
-     * Nesting depth of active system-operation scopes.
-     *
-     * A depth counter (not a boolean) so nested run() calls compose: the
-     * elevation only ends when the OUTERMOST scope exits.
-     *
-     * @var integer
-     */
-    private static int $depth = 0;
+	/**
+	 * Nesting depth of active system-operation scopes.
+	 *
+	 * A depth counter (not a boolean) so nested run() calls compose: the
+	 * elevation only ends when the OUTERMOST scope exits.
+	 *
+	 * @var integer
+	 */
+	private static int $depth = 0;
 
-    /**
-     * This class is a static scope holder and must not be instantiated.
-     */
-    private function __construct()
-    {
-    }//end __construct()
+	/**
+	 * This class is a static scope holder and must not be instantiated.
+	 */
+	private function __construct() {
+	}//end __construct()
 
-    /**
-     * Run a callable inside a trusted system-operation scope.
-     *
-     * While the callable executes, RBAC checks in MultiTenancyTrait and
-     * PermissionHandler treat the caller as a trusted system principal —
-     * mirroring the existing CLI trust. The scope is released in a finally
-     * block, so an exception inside the operation cannot leak elevation.
-     *
-     * @param callable $operation The trusted operation to execute.
-     *
-     * @return mixed Whatever the callable returns.
-     *
-     * @spec openspec/specs/faceting-configuration/spec.md
-     */
-    public static function run(callable $operation)
-    {
-        self::$depth++;
+	/**
+	 * Run a callable inside a trusted system-operation scope.
+	 *
+	 * While the callable executes, RBAC checks in MultiTenancyTrait and
+	 * PermissionHandler treat the caller as a trusted system principal —
+	 * mirroring the existing CLI trust. The scope is released in a finally
+	 * block, so an exception inside the operation cannot leak elevation.
+	 *
+	 * @param callable $operation The trusted operation to execute.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	public static function run(callable $operation) {
+		self::$depth++;
 
-        try {
-            return $operation();
-        } finally {
-            self::$depth--;
-        }
-    }//end run()
+		try {
+			return $operation();
+		} finally {
+			self::$depth--;
+		}
+	}//end run()
 
-    /**
-     * Whether a system-operation scope is currently active.
-     *
-     * @return bool True when executing inside run().
-     */
-    public static function isActive(): bool
-    {
-        return self::$depth > 0;
-    }//end isActive()
+	/**
+	 * Whether a system-operation scope is currently active.
+	 *
+	 * @return bool True when executing inside run().
+	 */
+	public static function isActive(): bool {
+		return self::$depth > 0;
+	}//end isActive()
 }//end class

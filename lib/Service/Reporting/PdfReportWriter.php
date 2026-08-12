@@ -29,80 +29,78 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Reporting;
 
 use Dompdf\Dompdf;
-use RuntimeException;
 use Dompdf\Options;
+use RuntimeException;
 
 /**
  * Render a resolved dashboard as a single PDF document.
  */
-class PdfReportWriter
-{
-    /**
-     * Constructor.
-     *
-     * @param HtmlReportWriter $htmlWriter HTML writer used as the input layer.
-     */
-    public function __construct(private readonly HtmlReportWriter $htmlWriter)
-    {
+class PdfReportWriter {
+	/**
+	 * Constructor.
+	 *
+	 * @param HtmlReportWriter $htmlWriter HTML writer used as the input layer.
+	 */
+	public function __construct(
+		private readonly HtmlReportWriter $htmlWriter,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Render the PDF.
-     *
-     * @param array<string, mixed>                               $dashboard       Dashboard payload.
-     * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
-     *
-     * @return string Rendered PDF bytes.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-4
-     */
-    public function write(array $dashboard, array $resolvedWidgets): string
-    {
-        $html = $this->htmlWriter->write(dashboard: $dashboard, resolvedWidgets: $resolvedWidgets);
+	/**
+	 * Render the PDF.
+	 *
+	 * @param array<string, mixed> $dashboard Dashboard payload.
+	 * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
+	 *
+	 * @return string Rendered PDF bytes.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-4
+	 */
+	public function write(array $dashboard, array $resolvedWidgets): string {
+		$html = $this->htmlWriter->write(dashboard: $dashboard, resolvedWidgets: $resolvedWidgets);
 
-        // SECURITY: strip `<link rel="stylesheet">` and `@font-face`
-        // src declarations before handing HTML to Dompdf. Dompdf
-        // honours `file://` URLs even when `isRemoteEnabled=false`,
-        // so a stylesheet/font reference smuggled through the
-        // dashboard payload could read arbitrary files off the FS.
-        $html = preg_replace(
-            '#<link[^>]+rel\s*=\s*["\']?stylesheet["\']?[^>]*>#i',
-            '',
-            $html
-        ) ?? $html;
-        $html = preg_replace(
-            '#@font-face\s*\{[^}]*\}#i',
-            '',
-            $html
-        ) ?? $html;
+		// SECURITY: strip `<link rel="stylesheet">` and `@font-face`
+		// src declarations before handing HTML to Dompdf. Dompdf
+		// honours `file://` URLs even when `isRemoteEnabled=false`,
+		// so a stylesheet/font reference smuggled through the
+		// dashboard payload could read arbitrary files off the FS.
+		$html = preg_replace(
+			'#<link[^>]+rel\s*=\s*["\']?stylesheet["\']?[^>]*>#i',
+			'',
+			$html
+		) ?? $html;
+		$html = preg_replace(
+			'#@font-face\s*\{[^}]*\}#i',
+			'',
+			$html
+		) ?? $html;
 
-        $options = new Options();
-        // No remote stylesheet/image fetches — keeps the renderer hermetic.
-        $options->set('isRemoteEnabled', false);
-        // PHP execution in templates is disabled by default in 3.x; pin it explicitly.
-        $options->set('isPhpEnabled', false);
-        $options->set('defaultFont', 'DejaVu Sans');
-        $options->set('defaultPaperSize', 'A4');
-        $options->set('defaultPaperOrientation', 'portrait');
+		$options = new Options();
+		// No remote stylesheet/image fetches — keeps the renderer hermetic.
+		$options->set('isRemoteEnabled', false);
+		// PHP execution in templates is disabled by default in 3.x; pin it explicitly.
+		$options->set('isPhpEnabled', false);
+		$options->set('defaultFont', 'DejaVu Sans');
+		$options->set('defaultPaperSize', 'A4');
+		$options->set('defaultPaperOrientation', 'portrait');
 
-        // SECURITY: assert sandbox flags didn't drift via a future
-        // refactor. Dompdf has a history of SSRF / file-disclosure
-        // CVEs (CVE-2022-41343, CVE-2023-23924); these flags are the
-        // primary mitigation and must stay false.
-        if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
-            throw new RuntimeException(
-                'PdfReportWriter sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
-            );
-        }
+		// SECURITY: assert sandbox flags didn't drift via a future
+		// refactor. Dompdf has a history of SSRF / file-disclosure
+		// CVEs (CVE-2022-41343, CVE-2023-23924); these flags are the
+		// primary mitigation and must stay false.
+		if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
+			throw new RuntimeException(
+				'PdfReportWriter sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
+			);
+		}
 
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html, 'UTF-8');
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+		$dompdf = new Dompdf($options);
+		$dompdf->loadHtml($html, 'UTF-8');
+		$dompdf->setPaper('A4', 'portrait');
+		$dompdf->render();
 
-        $output = $dompdf->output();
-        return $output ?? '';
-
-    }//end write()
+		$output = $dompdf->output();
+		return $output ?? '';
+	}//end write()
 }//end class

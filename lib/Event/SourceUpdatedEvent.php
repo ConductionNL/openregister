@@ -29,71 +29,66 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when a source is updated.
  */
-class SourceUpdatedEvent extends Event
-{
+class SourceUpdatedEvent extends Event {
 
-    /**
-     * The updated source state.
-     *
-     * @var Source The source after update.
-     */
-    private Source $newSource;
+	/**
+	 * The updated source state.
+	 *
+	 * @var Source The source after update.
+	 */
+	private Source $newSource;
 
-    /**
-     * The previous source state.
-     *
-     * @var Source The source before update.
-     */
-    private Source $oldSource;
+	/**
+	 * The previous source state.
+	 *
+	 * @var Source The source before update.
+	 */
+	private Source $oldSource;
 
-    /**
-     * Constructor for SourceUpdatedEvent.
-     *
-     * @param Source $newSource The source after update.
-     * @param Source $oldSource The source before update.
-     *
-     * @return void
-     */
-    public function __construct(Source $newSource, Source $oldSource)
-    {
-        parent::__construct();
-        $this->newSource = $newSource;
-        $this->oldSource = $oldSource;
-    }//end __construct()
+	/**
+	 * Constructor for SourceUpdatedEvent.
+	 *
+	 * @param Source $newSource The source after update.
+	 * @param Source $oldSource The source before update.
+	 *
+	 * @return void
+	 */
+	public function __construct(Source $newSource, Source $oldSource) {
+		parent::__construct();
+		$this->newSource = $newSource;
+		$this->oldSource = $oldSource;
+	}//end __construct()
 
-    /**
-     * Get the updated source.
-     *
-     * @return Source The source after update.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getSource(): Source
-    {
-        return $this->newSource;
-    }//end getSource()
+	/**
+	 * Get the updated source.
+	 *
+	 * @return Source The source after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getSource(): Source {
+		return $this->newSource;
+	}//end getSource()
 
-    /**
-     * Get the new source state.
-     *
-     * @return Source The source after update.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getNewSource(): Source
-    {
-        return $this->newSource;
-    }//end getNewSource()
+	/**
+	 * Get the new source state.
+	 *
+	 * @return Source The source after update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewSource(): Source {
+		return $this->newSource;
+	}//end getNewSource()
 
-    /**
-     * Get the old source state.
-     *
-     * @return Source The source before update.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getOldSource(): Source
-    {
-        return $this->oldSource;
-    }//end getOldSource()
+	/**
+	 * Get the old source state.
+	 *
+	 * @return Source The source before update.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldSource(): Source {
+		return $this->oldSource;
+	}//end getOldSource()
 }//end class

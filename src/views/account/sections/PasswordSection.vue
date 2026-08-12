@@ -100,9 +100,14 @@ export default {
 
 <style scoped>
 .section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
+
 .section__field { margin-bottom: 12px; }
+
 .section__field label { display: block; margin-bottom: 4px; font-weight: bold; }
+
 .section__disabled { color: var(--color-text-maxcontrast); font-style: italic; }
+
 .section__error { color: var(--color-error); margin-top: 8px; }
+
 .section__success { color: var(--color-success); margin-top: 8px; }
 </style>

@@ -51,83 +51,80 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class Version1Date20260805100000 extends SimpleMigrationStep
-{
-    /**
-     * Add the six nullable columns.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260805100000 extends SimpleMigrationStep {
+	/**
+	 * Add the six nullable columns.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_flows') === false) {
-            $output->info('openregister_flows does not exist yet; nothing to alter.');
-            return null;
-        }
+		if ($schema->hasTable('openregister_flows') === false) {
+			$output->info('openregister_flows does not exist yet; nothing to alter.');
+			return null;
+		}
 
-        $table   = $schema->getTable('openregister_flows');
-        $changed = false;
+		$table = $schema->getTable('openregister_flows');
+		$changed = false;
 
-        // Short strings, not enums: the vocabulary is `ok`/`error` today, and a
-        // database-level enum would need a migration to add a third value.
-        $strings = [
-            'status'           => 32,
-            'status_message'   => 1024,
-            'last_run_uuid'    => 64,
-            'last_run_status'  => 32,
-            'last_run_message' => 1024,
-        ];
+		// Short strings, not enums: the vocabulary is `ok`/`error` today, and a
+		// database-level enum would need a migration to add a third value.
+		$strings = [
+			'status' => 32,
+			'status_message' => 1024,
+			'last_run_uuid' => 64,
+			'last_run_status' => 32,
+			'last_run_message' => 1024,
+		];
 
-        foreach ($strings as $column => $length) {
-            if ($table->hasColumn($column) === true) {
-                continue;
-            }
+		foreach ($strings as $column => $length) {
+			if ($table->hasColumn($column) === true) {
+				continue;
+			}
 
-            $table->addColumn(
-                $column,
-                Types::STRING,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                    'length'  => $length,
-                ]
-            );
-            $changed = true;
-        }//end foreach
+			$table->addColumn(
+				$column,
+				Types::STRING,
+				[
+					'notnull' => false,
+					'default' => null,
+					'length' => $length,
+				]
+			);
+			$changed = true;
+		}//end foreach
 
-        if ($table->hasColumn('last_run_at') === false) {
-            $table->addColumn(
-                'last_run_at',
-                Types::DATETIME,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn('last_run_at') === false) {
+			$table->addColumn(
+				'last_run_at',
+				Types::DATETIME,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+			$changed = true;
+		}
 
-        if ($changed === true) {
-            $output->info('Added flow status and last-run columns to openregister_flows.');
-        }
+		if ($changed === true) {
+			$output->info('Added flow status and last-run columns to openregister_flows.');
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

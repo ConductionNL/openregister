@@ -18,9 +18,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // for unit tests without a running Nextcloud installation.
 $ocpStubsDir = __DIR__ . '/../vendor/nextcloud/ocp';
 if (is_dir($ocpStubsDir) === true) {
-    $loader = new \Composer\Autoload\ClassLoader();
-    $loader->addPsr4('OCP\\', $ocpStubsDir . '/OCP');
-    $loader->register(true);
+	$loader = new \Composer\Autoload\ClassLoader();
+	$loader->addPsr4('OCP\\', $ocpStubsDir . '/OCP');
+	$loader->register(true);
 }
 
 // Load Doctrine DBAL from the Nextcloud 3rdparty directory when present.
@@ -30,13 +30,13 @@ if (is_dir($ocpStubsDir) === true) {
 // container's canonical server root, so the type-hints resolve regardless
 // of where the worktree is checked out.
 foreach ([
-    __DIR__ . '/../../../3rdparty/doctrine/dbal/src',
-    '/var/www/html/3rdparty/doctrine/dbal/src',
+	__DIR__ . '/../../../3rdparty/doctrine/dbal/src',
+	'/var/www/html/3rdparty/doctrine/dbal/src',
 ] as $doctrineDbalDir) {
-    if (is_dir($doctrineDbalDir) === true) {
-        $loader2 = new \Composer\Autoload\ClassLoader();
-        $loader2->addPsr4('Doctrine\\DBAL\\', $doctrineDbalDir);
-        $loader2->register(true);
-        break;
-    }
+	if (is_dir($doctrineDbalDir) === true) {
+		$loader2 = new \Composer\Autoload\ClassLoader();
+		$loader2->addPsr4('Doctrine\\DBAL\\', $doctrineDbalDir);
+		$loader2->register(true);
+		break;
+	}
 }

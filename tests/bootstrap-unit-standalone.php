@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Standalone unit test bootstrap — no Nextcloud installation required.
  *
@@ -16,7 +17,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // Register OCP stubs so Nextcloud interfaces are available without a running NC instance.
 $ocpSrc = __DIR__ . '/../vendor/nextcloud/ocp/OCP';
 if (is_dir($ocpSrc) === true) {
-    $loader = new \Composer\Autoload\ClassLoader();
-    $loader->addPsr4('OCP\\', $ocpSrc);
-    $loader->register(true);
+	$loader = new \Composer\Autoload\ClassLoader();
+	$loader->addPsr4('OCP\\', $ocpSrc);
+	$loader->register(true);
 }

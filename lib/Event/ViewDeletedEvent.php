@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when a view is deleted.
  */
-class ViewDeletedEvent extends Event
-{
+class ViewDeletedEvent extends Event {
 
-    /**
-     * The deleted view.
-     *
-     * @var View The view that was deleted.
-     */
-    private View $view;
+	/**
+	 * The deleted view.
+	 *
+	 * @var View The view that was deleted.
+	 */
+	private View $view;
 
-    /**
-     * Constructor for ViewDeletedEvent.
-     *
-     * @param View $view The view that was deleted.
-     *
-     * @return void
-     */
-    public function __construct(View $view)
-    {
-        parent::__construct();
-        $this->view = $view;
-    }//end __construct()
+	/**
+	 * Constructor for ViewDeletedEvent.
+	 *
+	 * @param View $view The view that was deleted.
+	 *
+	 * @return void
+	 */
+	public function __construct(View $view) {
+		parent::__construct();
+		$this->view = $view;
+	}//end __construct()
 
-    /**
-     * Get the deleted view.
-     *
-     * @return View The view that was deleted.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getView(): View
-    {
-        return $this->view;
-    }//end getView()
+	/**
+	 * Get the deleted view.
+	 *
+	 * @return View The view that was deleted.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getView(): View {
+		return $this->view;
+	}//end getView()
 }//end class

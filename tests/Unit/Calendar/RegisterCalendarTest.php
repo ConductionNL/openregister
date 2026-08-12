@@ -26,209 +26,194 @@ use OCP\Constants;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class RegisterCalendarTest extends TestCase
-{
-    private RegisterCalendar $calendar;
-    private Schema $schema;
-    private MagicMapper $magicMapper;
-    private RegisterMapper $registerMapper;
-    private CalendarEventTransformer $transformer;
-    private LoggerInterface $logger;
+class RegisterCalendarTest extends TestCase {
+	private RegisterCalendar $calendar;
+	private Schema $schema;
+	private MagicMapper $magicMapper;
+	private RegisterMapper $registerMapper;
+	private CalendarEventTransformer $transformer;
+	private LoggerInterface $logger;
 
-    protected function setUp(): void
-    {
-        $this->schema = new Schema();
-        $this->schema->setId(42);
-        $this->schema->setTitle('Test Schema');
+	protected function setUp(): void {
+		$this->schema = new Schema();
+		$this->schema->setId(42);
+		$this->schema->setTitle('Test Schema');
 
-        $this->magicMapper    = $this->createMock(MagicMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->transformer    = $this->createMock(CalendarEventTransformer::class);
-        $this->logger         = $this->createMock(LoggerInterface::class);
+		$this->magicMapper = $this->createMock(MagicMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->transformer = $this->createMock(CalendarEventTransformer::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $config = [
-            'enabled'       => true,
-            'dtstart'       => 'startdatum',
-            'titleTemplate' => '{naam}',
-            'displayName'   => 'Test Calendar',
-            'color'         => '#FF0000',
-        ];
+		$config = [
+			'enabled' => true,
+			'dtstart' => 'startdatum',
+			'titleTemplate' => '{naam}',
+			'displayName' => 'Test Calendar',
+			'color' => '#FF0000',
+		];
 
-        $this->calendar = new RegisterCalendar(
-            $this->schema,
-            $config,
-            $this->magicMapper,
-            $this->registerMapper,
-            $this->transformer,
-            'principals/users/admin',
-            $this->logger
-        );
-    }
+		$this->calendar = new RegisterCalendar(
+			$this->schema,
+			$config,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->transformer,
+			'principals/users/admin',
+			$this->logger
+		);
+	}
 
-    public function testGetKeyReturnsSchemaBasedKey(): void
-    {
-        $this->assertSame('openregister-schema-42', $this->calendar->getKey());
-    }
+	public function testGetKeyReturnsSchemaBasedKey(): void {
+		$this->assertSame('openregister-schema-42', $this->calendar->getKey());
+	}
 
-    public function testGetUriReturnsSchemaBasedUri(): void
-    {
-        $this->assertSame('openregister-schema-42', $this->calendar->getUri());
-    }
+	public function testGetUriReturnsSchemaBasedUri(): void {
+		$this->assertSame('openregister-schema-42', $this->calendar->getUri());
+	}
 
-    public function testGetDisplayNameReturnsConfiguredName(): void
-    {
-        $this->assertSame('Test Calendar', $this->calendar->getDisplayName());
-    }
+	public function testGetDisplayNameReturnsConfiguredName(): void {
+		$this->assertSame('Test Calendar', $this->calendar->getDisplayName());
+	}
 
-    public function testGetDisplayNameFallsBackToSchemaTitle(): void
-    {
-        $calendar = new RegisterCalendar(
-            $this->schema,
-            ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-            $this->magicMapper,
-            $this->registerMapper,
-            $this->transformer,
-            'principals/users/admin',
-            $this->logger
-        );
+	public function testGetDisplayNameFallsBackToSchemaTitle(): void {
+		$calendar = new RegisterCalendar(
+			$this->schema,
+			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->transformer,
+			'principals/users/admin',
+			$this->logger
+		);
 
-        $this->assertSame('Test Schema', $calendar->getDisplayName());
-    }
+		$this->assertSame('Test Schema', $calendar->getDisplayName());
+	}
 
-    public function testGetDisplayColorReturnsConfiguredColor(): void
-    {
-        $this->assertSame('#FF0000', $this->calendar->getDisplayColor());
-    }
+	public function testGetDisplayColorReturnsConfiguredColor(): void {
+		$this->assertSame('#FF0000', $this->calendar->getDisplayColor());
+	}
 
-    public function testGetDisplayColorDefaultsWhenNotConfigured(): void
-    {
-        $calendar = new RegisterCalendar(
-            $this->schema,
-            ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-            $this->magicMapper,
-            $this->registerMapper,
-            $this->transformer,
-            'principals/users/admin',
-            $this->logger
-        );
+	public function testGetDisplayColorDefaultsWhenNotConfigured(): void {
+		$calendar = new RegisterCalendar(
+			$this->schema,
+			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->transformer,
+			'principals/users/admin',
+			$this->logger
+		);
 
-        $this->assertSame('#0082C9', $calendar->getDisplayColor());
-    }
+		$this->assertSame('#0082C9', $calendar->getDisplayColor());
+	}
 
-    public function testGetPermissionsReturnsReadOnly(): void
-    {
-        $this->assertSame(Constants::PERMISSION_READ, $this->calendar->getPermissions());
-    }
+	public function testGetPermissionsReturnsReadOnly(): void {
+		$this->assertSame(Constants::PERMISSION_READ, $this->calendar->getPermissions());
+	}
 
-    public function testIsDeletedReturnsFalse(): void
-    {
-        $this->assertFalse($this->calendar->isDeleted());
-    }
+	public function testIsDeletedReturnsFalse(): void {
+		$this->assertFalse($this->calendar->isDeleted());
+	}
 
-    public function testSearchReturnsEmptyForInvalidPrincipal(): void
-    {
-        $calendar = new RegisterCalendar(
-            $this->schema,
-            ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-            $this->magicMapper,
-            $this->registerMapper,
-            $this->transformer,
-            'principals/groups/everyone',
-            $this->logger
-        );
+	public function testSearchReturnsEmptyForInvalidPrincipal(): void {
+		$calendar = new RegisterCalendar(
+			$this->schema,
+			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->transformer,
+			'principals/groups/everyone',
+			$this->logger
+		);
 
-        $result = $calendar->search('');
-        $this->assertSame([], $result);
-    }
+		$result = $calendar->search('');
+		$this->assertSame([], $result);
+	}
 
-    public function testSearchReturnsTransformedEvents(): void
-    {
-        $register = new Register();
-        $register->setId(1);
-        $register->setSchemas([42]);
+	public function testSearchReturnsTransformedEvents(): void {
+		$register = new Register();
+		$register->setId(1);
+		$register->setSchemas([42]);
 
-        $this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-        $object = new ObjectEntity();
-        $this->magicMapper->method('findAllInRegisterSchemaTable')
-            ->willReturn([$object]);
+		$object = new ObjectEntity();
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$object]);
 
-        $eventArray = [
-            'id'           => 'openregister-42-test-uuid',
-            'type'         => 'VEVENT',
-            'calendar-key' => 'openregister-schema-42',
-            'calendar-uri' => 'openregister-schema-42',
-            'objects'      => [
-                ['SUMMARY' => ['Test Event', []]],
-            ],
-        ];
+		$eventArray = [
+			'id' => 'openregister-42-test-uuid',
+			'type' => 'VEVENT',
+			'calendar-key' => 'openregister-schema-42',
+			'calendar-uri' => 'openregister-schema-42',
+			'objects' => [
+				['SUMMARY' => ['Test Event', []]],
+			],
+		];
 
-        $this->transformer->method('transform')->willReturn($eventArray);
+		$this->transformer->method('transform')->willReturn($eventArray);
 
-        $result = $this->calendar->search('');
+		$result = $this->calendar->search('');
 
-        $this->assertCount(1, $result);
-        $this->assertSame('openregister-42-test-uuid', $result[0]['id']);
-    }
+		$this->assertCount(1, $result);
+		$this->assertSame('openregister-42-test-uuid', $result[0]['id']);
+	}
 
-    public function testSearchSkipsNullTransformResults(): void
-    {
-        $register = new Register();
-        $register->setSchemas([42]);
-        $this->registerMapper->method('findAll')->willReturn([$register]);
+	public function testSearchSkipsNullTransformResults(): void {
+		$register = new Register();
+		$register->setSchemas([42]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-        $object = new ObjectEntity();
-        $this->magicMapper->method('findAllInRegisterSchemaTable')
-            ->willReturn([$object]);
+		$object = new ObjectEntity();
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$object]);
 
-        // Transformer returns null for objects with no date.
-        $this->transformer->method('transform')->willReturn(null);
+		// Transformer returns null for objects with no date.
+		$this->transformer->method('transform')->willReturn(null);
 
-        $result = $this->calendar->search('');
+		$result = $this->calendar->search('');
 
-        $this->assertCount(0, $result);
-    }
+		$this->assertCount(0, $result);
+	}
 
-    public function testSearchFiltersEventsByPattern(): void
-    {
-        $register = new Register();
-        $register->setSchemas([42]);
-        $this->registerMapper->method('findAll')->willReturn([$register]);
+	public function testSearchFiltersEventsByPattern(): void {
+		$register = new Register();
+		$register->setSchemas([42]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-        $object1 = new ObjectEntity();
-        $object2 = new ObjectEntity();
+		$object1 = new ObjectEntity();
+		$object2 = new ObjectEntity();
 
-        $this->magicMapper->method('findAllInRegisterSchemaTable')
-            ->willReturn([$object1, $object2]);
+		$this->magicMapper->method('findAllInRegisterSchemaTable')
+			->willReturn([$object1, $object2]);
 
-        $this->transformer->method('transform')
-            ->willReturnOnConsecutiveCalls(
-                [
-                    'id' => 'e1', 'type' => 'VEVENT',
-                    'calendar-key' => 'k', 'calendar-uri' => 'k',
-                    'objects' => [['SUMMARY' => ['Matching Event', []]]],
-                ],
-                [
-                    'id' => 'e2', 'type' => 'VEVENT',
-                    'calendar-key' => 'k', 'calendar-uri' => 'k',
-                    'objects' => [['SUMMARY' => ['Other Thing', []]]],
-                ]
-            );
+		$this->transformer->method('transform')
+			->willReturnOnConsecutiveCalls(
+				[
+					'id' => 'e1', 'type' => 'VEVENT',
+					'calendar-key' => 'k', 'calendar-uri' => 'k',
+					'objects' => [['SUMMARY' => ['Matching Event', []]]],
+				],
+				[
+					'id' => 'e2', 'type' => 'VEVENT',
+					'calendar-key' => 'k', 'calendar-uri' => 'k',
+					'objects' => [['SUMMARY' => ['Other Thing', []]]],
+				]
+			);
 
-        $result = $this->calendar->search('Matching');
+		$result = $this->calendar->search('Matching');
 
-        $this->assertCount(1, $result);
-        $this->assertSame('e1', $result[0]['id']);
-    }
+		$this->assertCount(1, $result);
+		$this->assertSame('e1', $result[0]['id']);
+	}
 
-    public function testSearchReturnsEmptyWhenNoRegistersContainSchema(): void
-    {
-        $register = new Register();
-        $register->setSchemas([99]);  // Different schema ID
-        $this->registerMapper->method('findAll')->willReturn([$register]);
+	public function testSearchReturnsEmptyWhenNoRegistersContainSchema(): void {
+		$register = new Register();
+		$register->setSchemas([99]);  // Different schema ID
+		$this->registerMapper->method('findAll')->willReturn([$register]);
 
-        $result = $this->calendar->search('');
+		$result = $this->calendar->search('');
 
-        $this->assertSame([], $result);
-    }
+		$this->assertSame([], $result);
+	}
 }

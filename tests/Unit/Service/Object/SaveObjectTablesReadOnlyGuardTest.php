@@ -45,75 +45,72 @@ use Twig\Loader\ArrayLoader;
 /**
  * Unit test for the read-only-projection write-guard on a tables-bound schema.
  */
-class SaveObjectTablesReadOnlyGuardTest extends TestCase
-{
+class SaveObjectTablesReadOnlyGuardTest extends TestCase {
 
-    /**
-     * Build a SaveObject with all collaborators mocked (the guard fires before
-     * any of them are used for persistence).
-     *
-     * @return SaveObject The handler under test.
-     */
-    private function handler(): SaveObject
-    {
-        return new SaveObject(
-            $this->createMock(MagicMapper::class),
-            $this->createMock(MagicMapper::class),
-            $this->createMock(MetadataHydrationHandler::class),
-            $this->createMock(FilePropertyHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(AuditTrailMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(IURLGenerator::class),
-            $this->createMock(OrganisationService::class),
-            $this->createMock(CacheHandler::class),
-            $this->createMock(SettingsService::class),
-            $this->createMock(PropertyRbacHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-            new ArrayLoader()
-        );
-    }//end handler()
+	/**
+	 * Build a SaveObject with all collaborators mocked (the guard fires before
+	 * any of them are used for persistence).
+	 *
+	 * @return SaveObject The handler under test.
+	 */
+	private function handler(): SaveObject {
+		return new SaveObject(
+			$this->createMock(MagicMapper::class),
+			$this->createMock(MagicMapper::class),
+			$this->createMock(MetadataHydrationHandler::class),
+			$this->createMock(FilePropertyHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(IURLGenerator::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(CacheHandler::class),
+			$this->createMock(SettingsService::class),
+			$this->createMock(PropertyRbacHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+			new ArrayLoader()
+		);
+	}//end handler()
 
-    /**
-     * Saving an object into a tables-bound schema throws the read-only-
-     * projection error before any persistence.
-     *
-     * @return void
-     */
-    public function testSaveIntoTablesBoundSchemaIsRejected(): void
-    {
-        $schema = new Schema();
-        $schema->setId(300);
-        $schema->setSlug('nc-inspecties-t7');
-        $schema->setConfiguration(
-            [
-                'x-openregister-object-source' => [
-                    'provider' => 'tables',
-                    'readOnly' => true,
-                    'config'   => ['tableId' => 7, 'managed' => true],
-                ],
-            ]
-        );
+	/**
+	 * Saving an object into a tables-bound schema throws the read-only-
+	 * projection error before any persistence.
+	 *
+	 * @return void
+	 */
+	public function testSaveIntoTablesBoundSchemaIsRejected(): void {
+		$schema = new Schema();
+		$schema->setId(300);
+		$schema->setSlug('nc-inspecties-t7');
+		$schema->setConfiguration(
+			[
+				'x-openregister-object-source' => [
+					'provider' => 'tables',
+					'readOnly' => true,
+					'config' => ['tableId' => 7, 'managed' => true],
+				],
+			]
+		);
 
-        $register = new Register();
-        $register->setId(30);
-        $register->setSlug('tables');
+		$register = new Register();
+		$register->setId(30);
+		$register->setSlug('tables');
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/read-only projection.*tables/');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/read-only projection.*tables/');
 
-        $this->handler()->saveObject(
-            data: ['name' => 'should never persist'],
-            schema: $schema,
-            register: $register
-        );
-    }//end testSaveIntoTablesBoundSchemaIsRejected()
+		$this->handler()->saveObject(
+			data: ['name' => 'should never persist'],
+			schema: $schema,
+			register: $register
+		);
+	}//end testSaveIntoTablesBoundSchemaIsRejected()
 }//end class

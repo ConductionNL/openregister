@@ -30,116 +30,113 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class Version1Date20260307000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260307000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_consumers') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_consumers') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_consumers');
+		$table = $schema->createTable('openregister_consumers');
 
-        $table->addColumn(
-            'id',
-            Types::INTEGER,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
-        $table->addColumn(
-            'uuid',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 36,
-            ]
-        );
-        $table->addColumn(
-            'name',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'description',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'domains',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'ips',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'authorization_type',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 50,
-            ]
-        );
-        $table->addColumn(
-            'authorization_configuration',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'user_id',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'created',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'updated',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-            ]
-        );
+		$table->addColumn(
+			'id',
+			Types::INTEGER,
+			[
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
+		$table->addColumn(
+			'uuid',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 36,
+			]
+		);
+		$table->addColumn(
+			'name',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 255,
+			]
+		);
+		$table->addColumn(
+			'description',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'domains',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'ips',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'authorization_type',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 50,
+			]
+		);
+		$table->addColumn(
+			'authorization_configuration',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'user_id',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 64,
+			]
+		);
+		$table->addColumn(
+			'created',
+			Types::DATETIME,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'updated',
+			Types::DATETIME,
+			[
+				'notnull' => false,
+			]
+		);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['uuid'], 'or_consumers_uuid_idx');
-        $table->addIndex(['name'], 'or_consumers_name_idx');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['uuid'], 'or_consumers_uuid_idx');
+		$table->addIndex(['name'], 'or_consumers_name_idx');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

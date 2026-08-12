@@ -43,69 +43,67 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
  */
-class SystemEntityObjectAdapter extends ObjectEntity
-{
-    /**
-     * Build a virtual ObjectEntity from a system entity.
-     *
-     * The entity is expected to implement `jsonSerialize()` and expose `getUuid()`.
-     * Optionally `getTitle()` or `getName()` are used to populate the display name.
-     *
-     * @param Entity $entity     The system entity (Source, Agent, Configuration, etc.).
-     * @param string $systemSlug The canonical system schema slug (SystemSchemaRules::SLUG_*).
-     *
-     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
-     */
-    public function __construct(Entity $entity, string $systemSlug)
-    {
-        parent::__construct();
+class SystemEntityObjectAdapter extends ObjectEntity {
+	/**
+	 * Build a virtual ObjectEntity from a system entity.
+	 *
+	 * The entity is expected to implement `jsonSerialize()` and expose `getUuid()`.
+	 * Optionally `getTitle()` or `getName()` are used to populate the display name.
+	 *
+	 * @param Entity $entity The system entity (Source, Agent, Configuration, etc.).
+	 * @param string $systemSlug The canonical system schema slug (SystemSchemaRules::SLUG_*).
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 */
+	public function __construct(Entity $entity, string $systemSlug) {
+		parent::__construct();
 
-        // Virtual schema reference — the bridge listener resolves this slug to
-        // a synthetic Schema via SystemSchemaRules::buildSchema().
-        $this->schema   = $systemSlug;
-        $this->register = null;
+		// Virtual schema reference — the bridge listener resolves this slug to
+		// a synthetic Schema via SystemSchemaRules::buildSchema().
+		$this->schema = $systemSlug;
+		$this->register = null;
 
-        // UUID — used for the notification object reference and idempotency keys.
-        // Entity magic getters are dispatched via __call, so method_exists() returns
-        // false; call them directly and catch any BadMethodCallException.
-        try {
-            // @phpstan-ignore-next-line
-            $uuidVal = $entity->getUuid();
-            if ($uuidVal !== null) {
-                $this->uuid = (string) $uuidVal;
-            }
-        } catch (\Throwable) {
-            // GetUuid() not available — uuid stays null.
-        }
+		// UUID — used for the notification object reference and idempotency keys.
+		// Entity magic getters are dispatched via __call, so method_exists() returns
+		// false; call them directly and catch any BadMethodCallException.
+		try {
+			// @phpstan-ignore-next-line
+			$uuidVal = $entity->getUuid();
+			if ($uuidVal !== null) {
+				$this->uuid = (string)$uuidVal;
+			}
+		} catch (\Throwable) {
+			// GetUuid() not available — uuid stays null.
+		}
 
-        // Display name for subject interpolation (title wins over name).
-        $displayName = null;
-        try {
-            // @phpstan-ignore-next-line
-            $displayName = $entity->getTitle();
-        } catch (\Throwable) {
-            // GetTitle() not available — fall through.
-        }
+		// Display name for subject interpolation (title wins over name).
+		$displayName = null;
+		try {
+			// @phpstan-ignore-next-line
+			$displayName = $entity->getTitle();
+		} catch (\Throwable) {
+			// GetTitle() not available — fall through.
+		}
 
-        if ($displayName === null) {
-            try {
-                // @phpstan-ignore-next-line
-                $displayName = $entity->getName();
-            } catch (\Throwable) {
-                // GetName() not available — displayName stays null.
-            }
-        }
+		if ($displayName === null) {
+			try {
+				// @phpstan-ignore-next-line
+				$displayName = $entity->getName();
+			} catch (\Throwable) {
+				// GetName() not available — displayName stays null.
+			}
+		}
 
-        if (is_string($displayName) === true && $displayName !== '') {
-            $this->name = $displayName;
-        }
+		if (is_string($displayName) === true && $displayName !== '') {
+			$this->name = $displayName;
+		}
 
-        // Payload array for {{field}} template interpolation in subjects.
-        if ($entity instanceof \JsonSerializable) {
-            $serialized = $entity->jsonSerialize();
-            if (is_array($serialized) === true) {
-                $this->object = $serialized;
-            }
-        }
-    }//end __construct()
+		// Payload array for {{field}} template interpolation in subjects.
+		if ($entity instanceof \JsonSerializable) {
+			$serialized = $entity->jsonSerialize();
+			if (is_array($serialized) === true) {
+				$this->object = $serialized;
+			}
+		}
+	}//end __construct()
 }//end class

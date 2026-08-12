@@ -25,84 +25,79 @@ use PHPUnit\Framework\TestCase;
  * and "dedupe ids across resolvers" no longer describe anything. What replaced
  * them is FlowLocatorTest, which covers the store read directly.
  */
-class FlowTriggerServiceTest extends TestCase
-{
-    /**
-     * A locator that reports the given flow ids for any trigger.
-     *
-     * @param array<int, string> $ids The flow ids to report.
-     *
-     * @return FlowLocator The stubbed locator.
-     */
-    private function locatorReturning(array $ids): FlowLocator
-    {
-        $locator = $this->createMock(FlowLocator::class);
-        $locator->method('flowsForTrigger')->willReturn($ids);
+class FlowTriggerServiceTest extends TestCase {
+	/**
+	 * A locator that reports the given flow ids for any trigger.
+	 *
+	 * @param array<int, string> $ids The flow ids to report.
+	 *
+	 * @return FlowLocator The stubbed locator.
+	 */
+	private function locatorReturning(array $ids): FlowLocator {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForTrigger')->willReturn($ids);
 
-        return $locator;
-    }//end locatorReturning()
+		return $locator;
+	}//end locatorReturning()
 
-    public function testFiringQueuesARunForEveryWiredFlow(): void
-    {
-        $locator = $this->locatorReturning(['f1', 'f2']);
+	public function testFiringQueuesARunForEveryWiredFlow(): void {
+		$locator = $this->locatorReturning(['f1', 'f2']);
 
-        $queued = [];
-        $mapper = $this->createMock(FlowRunMapper::class);
-        $mapper->method('insert')->willReturnCallback(
-                function (FlowRun $r) use (&$queued) {
-                    $queued[] = $r->getFlowId();
-                    return $r;
-                }
-                );
+		$queued = [];
+		$mapper = $this->createMock(FlowRunMapper::class);
+		$mapper->method('insert')->willReturnCallback(
+			function (FlowRun $r) use (&$queued) {
+				$queued[] = $r->getFlowId();
+				return $r;
+			}
+		);
 
-        // No OrganisationService in the container — a run queued with no session
-        // is recorded unattributed rather than guessed at.
-        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
-        $container->method('get')->willThrowException(new \RuntimeException('not available'));
+		// No OrganisationService in the container — a run queued with no session
+		// is recorded unattributed rather than guessed at.
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('not available'));
 
-        $runner = new FlowRunService(
-            $mapper,
-            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-            $this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class),
-            $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
-            new \Psr\Log\NullLogger(),
-            $container
-        );
+		$runner = new FlowRunService(
+			$mapper,
+			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class),
+			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+			new \Psr\Log\NullLogger(),
+			$container
+		);
 
-        $service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
 
-        $count = $service->fire(
-            event: 'object.created',
-            subject: ['uuid' => 'u1', 'register' => 'hermiq', 'schema' => 'agent'],
-            user: 'alice'
-        );
+		$count = $service->fire(
+			event: 'object.created',
+			subject: ['uuid' => 'u1', 'register' => 'hermiq', 'schema' => 'agent'],
+			user: 'alice'
+		);
 
-        $this->assertSame(2, $count);
-        $this->assertSame(['f1', 'f2'], $queued);
-    }//end testFiringQueuesARunForEveryWiredFlow()
+		$this->assertSame(2, $count);
+		$this->assertSame(['f1', 'f2'], $queued);
+	}//end testFiringQueuesARunForEveryWiredFlow()
 
-    public function testAnEventWithNoWiredFlowQueuesNothing(): void
-    {
-        $runner = $this->createMock(FlowRunService::class);
-        $runner->expects($this->never())->method('queue');
+	public function testAnEventWithNoWiredFlowQueuesNothing(): void {
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->expects($this->never())->method('queue');
 
-        $service = new FlowTriggerService($this->locatorReturning([]), $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService($this->locatorReturning([]), $runner, new \Psr\Log\NullLogger());
 
-        $this->assertSame(0, $service->fire(event: 'object.created', subject: ['register' => 'x', 'schema' => 'y']));
-    }//end testAnEventWithNoWiredFlowQueuesNothing()
+		$this->assertSame(0, $service->fire(event: 'object.created', subject: ['register' => 'x', 'schema' => 'y']));
+	}//end testAnEventWithNoWiredFlowQueuesNothing()
 
-    /**
-     * A trigger runs inside a user's save; a failure to queue must be swallowed,
-     * never thrown into that action.
-     */
-    public function testAQueueFailureIsSwallowed(): void
-    {
-        $runner = $this->createMock(FlowRunService::class);
-        $runner->method('queue')->willThrowException(new \RuntimeException('db down'));
+	/**
+	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
+	 * never thrown into that action.
+	 */
+	public function testAQueueFailureIsSwallowed(): void {
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queue')->willThrowException(new \RuntimeException('db down'));
 
-        $service = new FlowTriggerService($this->locatorReturning(['f1']), $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService($this->locatorReturning(['f1']), $runner, new \Psr\Log\NullLogger());
 
-        // No exception escapes; returns 0.
-        $this->assertSame(0, $service->fire(event: 'object.created'));
-    }//end testAQueueFailureIsSwallowed()
+		// No exception escapes; returns 0.
+		$this->assertSame(0, $service->fire(event: 'object.created'));
+	}//end testAQueueFailureIsSwallowed()
 }//end class

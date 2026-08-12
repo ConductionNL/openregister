@@ -68,221 +68,216 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class Version1Date20260809000000 extends SimpleMigrationStep
-{
+class Version1Date20260809000000 extends SimpleMigrationStep {
 
-    /**
-     * Name of the schema cache table.
-     *
-     * @var string
-     */
-    private const SCHEMA_CACHE_TABLE = 'openregister_schema_cache';
+	/**
+	 * Name of the schema cache table.
+	 *
+	 * @var string
+	 */
+	private const SCHEMA_CACHE_TABLE = 'openregister_schema_cache';
 
-    /**
-     * Name of the facet cache table.
-     *
-     * @var string
-     */
-    private const FACET_CACHE_TABLE = 'openregister_schema_facet_cache';
+	/**
+	 * Name of the facet cache table.
+	 *
+	 * @var string
+	 */
+	private const FACET_CACHE_TABLE = 'openregister_schema_facet_cache';
 
-    /**
-     * Create both cache tables when they are absent.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Create both cache tables when they are absent.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable(tableName: self::SCHEMA_CACHE_TABLE) === false) {
-            $this->createSchemaCacheTable(schema: $schema);
-            $output->info('Created '.self::SCHEMA_CACHE_TABLE.'.');
-            $changed = true;
-        }
+		if ($schema->hasTable(tableName: self::SCHEMA_CACHE_TABLE) === false) {
+			$this->createSchemaCacheTable(schema: $schema);
+			$output->info('Created ' . self::SCHEMA_CACHE_TABLE . '.');
+			$changed = true;
+		}
 
-        if ($schema->hasTable(tableName: self::FACET_CACHE_TABLE) === false) {
-            $this->createFacetCacheTable(schema: $schema);
-            $output->info('Created '.self::FACET_CACHE_TABLE.'.');
-            $changed = true;
-        }
+		if ($schema->hasTable(tableName: self::FACET_CACHE_TABLE) === false) {
+			$this->createFacetCacheTable(schema: $schema);
+			$output->info('Created ' . self::FACET_CACHE_TABLE . '.');
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
+	/**
+	 * Create the schema cache table.
+	 *
+	 * @param ISchemaWrapper $schema The schema being modified.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function createSchemaCacheTable(ISchemaWrapper $schema): void {
+		$table = $schema->createTable(self::SCHEMA_CACHE_TABLE);
 
-    /**
-     * Create the schema cache table.
-     *
-     * @param ISchemaWrapper $schema The schema being modified.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function createSchemaCacheTable(ISchemaWrapper $schema): void
-    {
-        $table = $schema->createTable(self::SCHEMA_CACHE_TABLE);
+		$table->addColumn(
+			'id',
+			Types::BIGINT,
+			[
+				'autoincrement' => true,
+				'notnull' => true,
+				'length' => 20,
+			]
+		);
+		$table->addColumn(
+			'schema_id',
+			Types::BIGINT,
+			[
+				'notnull' => true,
+				'length' => 20,
+			]
+		);
+		// The handler's own vocabulary is `schema_object`, `facetable_fields`,
+		// `configuration` and `properties`; 64 leaves room without inviting a
+		// key long enough to blow the composite index.
+		$table->addColumn(
+			'cache_key',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 64,
+			]
+		);
+		$table->addColumn(
+			'cache_data',
+			Types::TEXT,
+			['notnull' => true]
+		);
+		$table->addColumn(
+			'created',
+			Types::DATETIME,
+			['notnull' => true]
+		);
+		$table->addColumn(
+			'updated',
+			Types::DATETIME,
+			['notnull' => true]
+		);
+		// NULL means "never expires" — a zero TTL in the handler.
+		$table->addColumn(
+			'expires',
+			Types::DATETIME,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'length'        => 20,
-            ]
-        );
-        $table->addColumn(
-            'schema_id',
-            Types::BIGINT,
-            [
-                'notnull' => true,
-                'length'  => 20,
-            ]
-        );
-        // The handler's own vocabulary is `schema_object`, `facetable_fields`,
-        // `configuration` and `properties`; 64 leaves room without inviting a
-        // key long enough to blow the composite index.
-        $table->addColumn(
-            'cache_key',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'cache_data',
-            Types::TEXT,
-            ['notnull' => true]
-        );
-        $table->addColumn(
-            'created',
-            Types::DATETIME,
-            ['notnull' => true]
-        );
-        $table->addColumn(
-            'updated',
-            Types::DATETIME,
-            ['notnull' => true]
-        );
-        // NULL means "never expires" — a zero TTL in the handler.
-        $table->addColumn(
-            'expires',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['schema_id', 'cache_key'], 'or_schema_cache_key_uniq');
+		$table->addIndex(['expires'], 'or_schema_cache_expires_idx');
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['schema_id', 'cache_key'], 'or_schema_cache_key_uniq');
-        $table->addIndex(['expires'], 'or_schema_cache_expires_idx');
+	}//end createSchemaCacheTable()
 
-    }//end createSchemaCacheTable()
+	/**
+	 * Create the facet cache table.
+	 *
+	 * @param ISchemaWrapper $schema The schema being modified.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function createFacetCacheTable(ISchemaWrapper $schema): void {
+		$table = $schema->createTable(self::FACET_CACHE_TABLE);
 
-    /**
-     * Create the facet cache table.
-     *
-     * @param ISchemaWrapper $schema The schema being modified.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function createFacetCacheTable(ISchemaWrapper $schema): void
-    {
-        $table = $schema->createTable(self::FACET_CACHE_TABLE);
+		$table->addColumn(
+			'id',
+			Types::BIGINT,
+			[
+				'autoincrement' => true,
+				'notnull' => true,
+				'length' => 20,
+			]
+		);
+		$table->addColumn(
+			'schema_id',
+			Types::BIGINT,
+			[
+				'notnull' => true,
+				'length' => 20,
+			]
+		);
+		$table->addColumn(
+			'facet_type',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 64,
+			]
+		);
+		// A schema property name. 255 keeps the composite unique index inside
+		// the 3072-byte InnoDB limit at utf8mb4.
+		$table->addColumn(
+			'field_name',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 255,
+			]
+		);
+		$table->addColumn(
+			'facet_config',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
+		$table->addColumn(
+			'cache_data',
+			Types::TEXT,
+			['notnull' => true]
+		);
+		$table->addColumn(
+			'created',
+			Types::DATETIME,
+			['notnull' => true]
+		);
+		$table->addColumn(
+			'updated',
+			Types::DATETIME,
+			['notnull' => true]
+		);
+		$table->addColumn(
+			'expires',
+			Types::DATETIME,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'length'        => 20,
-            ]
-        );
-        $table->addColumn(
-            'schema_id',
-            Types::BIGINT,
-            [
-                'notnull' => true,
-                'length'  => 20,
-            ]
-        );
-        $table->addColumn(
-            'facet_type',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 64,
-            ]
-        );
-        // A schema property name. 255 keeps the composite unique index inside
-        // the 3072-byte InnoDB limit at utf8mb4.
-        $table->addColumn(
-            'field_name',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'facet_config',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'cache_data',
-            Types::TEXT,
-            ['notnull' => true]
-        );
-        $table->addColumn(
-            'created',
-            Types::DATETIME,
-            ['notnull' => true]
-        );
-        $table->addColumn(
-            'updated',
-            Types::DATETIME,
-            ['notnull' => true]
-        );
-        $table->addColumn(
-            'expires',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->setPrimaryKey(['id']);
+		// `setCachedFacetData()` updates on (schema_id, field_name), so that is
+		// the pair that must be unique for its upsert to hold.
+		$table->addUniqueIndex(['schema_id', 'field_name'], 'or_facet_cache_field_uniq');
+		$table->addIndex(['facet_type'], 'or_facet_cache_type_idx');
+		$table->addIndex(['expires'], 'or_facet_cache_expires_idx');
 
-        $table->setPrimaryKey(['id']);
-        // `setCachedFacetData()` updates on (schema_id, field_name), so that is
-        // the pair that must be unique for its upsert to hold.
-        $table->addUniqueIndex(['schema_id', 'field_name'], 'or_facet_cache_field_uniq');
-        $table->addIndex(['facet_type'], 'or_facet_cache_type_idx');
-        $table->addIndex(['expires'], 'or_facet_cache_expires_idx');
-
-    }//end createFacetCacheTable()
+	}//end createFacetCacheTable()
 }//end class

@@ -44,254 +44,227 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-require_once __DIR__.'/Fixtures/AttributeFixtureService.php';
-require_once __DIR__.'/Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
+require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
 
 /**
  * Dual-surface tests for the attribute-derived provider.
  */
-class AttributeToolDualSurfaceTest extends TestCase
-{
+class AttributeToolDualSurfaceTest extends TestCase {
 
-    /** @var AuditTrailMapper&MockObject */
-    private $auditTrailMapper;
+	/** @var AuditTrailMapper&MockObject */
+	private $auditTrailMapper;
 
-    /** @var LoggerInterface&MockObject */
-    private $logger;
+	/** @var LoggerInterface&MockObject */
+	private $logger;
 
+	protected function setUp(): void {
+		parent::setUp();
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->logger            = $this->createMock(LoggerInterface::class);
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Build the attributed provider around the fixture service.
+	 *
+	 * @return AttributeToolProvider
+	 */
+	private function attributedProvider(): AttributeToolProvider {
+		$instance = new AttributeFixtureService();
+		$scanner = new AttributeToolScanner();
 
+		$entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
 
-    /**
-     * Build the attributed provider around the fixture service.
-     *
-     * @return AttributeToolProvider
-     */
-    private function attributedProvider(): AttributeToolProvider
-    {
-        $instance = new AttributeFixtureService();
-        $scanner  = new AttributeToolScanner();
+		return new AttributeToolProvider(
+			appId: 'pipelinq',
+			entries: $entries,
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->logger
+		);
 
-        $entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
-        foreach ($entries as &$entry) {
-            $entry['instance'] = $instance;
-        }
+	}//end attributedProvider()
 
-        return new AttributeToolProvider(
-            appId: 'pipelinq',
-            entries: $entries,
-            auditTrailMapper: $this->auditTrailMapper,
-            logger: $this->logger
-        );
+	/**
+	 * Build the attributed provider around the hint/scope fixture service
+	 * (REQ-ATTR-005 — one method declares all four optional hint/scope
+	 * params).
+	 *
+	 * @return AttributeToolProvider
+	 */
+	private function hintScopeProvider(): AttributeToolProvider {
+		$instance = new HintScopeFixtureService();
+		$scanner = new AttributeToolScanner();
 
-    }//end attributedProvider()
+		$entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
 
+		return new AttributeToolProvider(
+			appId: 'pipelinq',
+			entries: $entries,
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->logger
+		);
 
-    /**
-     * Build the attributed provider around the hint/scope fixture service
-     * (REQ-ATTR-005 — one method declares all four optional hint/scope
-     * params).
-     *
-     * @return AttributeToolProvider
-     */
-    private function hintScopeProvider(): AttributeToolProvider
-    {
-        $instance = new HintScopeFixtureService();
-        $scanner  = new AttributeToolScanner();
+	}//end hintScopeProvider()
 
-        $entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
-        foreach ($entries as &$entry) {
-            $entry['instance'] = $instance;
-        }
+	// ── JSON-RPC surface (McpToolsService) ───────────────────────────
 
-        return new AttributeToolProvider(
-            appId: 'pipelinq',
-            entries: $entries,
-            auditTrailMapper: $this->auditTrailMapper,
-            logger: $this->logger
-        );
+	public function testAttributedToolsAreListedOnJsonRpcSurface(): void {
+		$service = new McpToolsService(
+			providers: [$this->attributedProvider()],
+			logger: $this->logger
+		);
 
-    }//end hintScopeProvider()
+		$ids = array_column($service->listTools()['tools'], 'id');
 
+		$this->assertContains('pipelinq.createLead', $ids);
+		$this->assertContains('pipelinq.logContactmoment', $ids);
 
-    // ── JSON-RPC surface (McpToolsService) ───────────────────────────
+	}//end testAttributedToolsAreListedOnJsonRpcSurface()
 
+	public function testToolsCallRoutesToAttributeProviderInvokeTool(): void {
+		$service = new McpToolsService(
+			providers: [$this->attributedProvider()],
+			logger: $this->logger
+		);
 
-    public function testAttributedToolsAreListedOnJsonRpcSurface(): void
-    {
-        $service = new McpToolsService(
-            providers: [$this->attributedProvider()],
-            logger: $this->logger
-        );
+		$result = $service->invokeTool('pipelinq.createLead', ['email' => 'a@example.com']);
 
-        $ids = array_column($service->listTools()['tools'], 'id');
+		$this->assertFalse($result['isError']);
+		$this->assertSame('a@example.com', $result['result']['email']);
 
-        $this->assertContains('pipelinq.createLead', $ids);
-        $this->assertContains('pipelinq.logContactmoment', $ids);
+	}//end testToolsCallRoutesToAttributeProviderInvokeTool()
 
-    }//end testAttributedToolsAreListedOnJsonRpcSurface()
+	public function testAttributedIdsAreDisjointFromThreePartDerivedShapedIds(): void {
+		// Attributed ids are two-part ({appId}.{toolName}); a schema-derived
+		// id would be three-part ({appId}.{schema}.{verb}) — structurally
+		// disjoint by construction (REQ-ATTR-002).
+		$service = new McpToolsService(
+			providers: [$this->attributedProvider()],
+			logger: $this->logger
+		);
 
+		foreach (array_column($service->listTools()['tools'], 'id') as $id) {
+			$this->assertSame(1, substr_count($id, '.'), "Attributed id '{$id}' must have exactly one dot.");
+		}
 
-    public function testToolsCallRoutesToAttributeProviderInvokeTool(): void
-    {
-        $service = new McpToolsService(
-            providers: [$this->attributedProvider()],
-            logger: $this->logger
-        );
+	}//end testAttributedIdsAreDisjointFromThreePartDerivedShapedIds()
 
-        $result = $service->invokeTool('pipelinq.createLead', ['email' => 'a@example.com']);
+	// ── Chat/facade surface (ToolRegistry + bridge + facade) ─────────
 
-        $this->assertFalse($result['isError']);
-        $this->assertSame('a@example.com', $result['result']['email']);
+	/**
+	 * Wire the REAL registry/listener/bridge/facade chain around one
+	 * attributed provider and return the facade.
+	 *
+	 * @param AttributeToolProvider|null $provider The provider to wire; defaults to {@see attributedProvider()}.
+	 *
+	 * @return ToolRegistryFacade
+	 */
+	private function buildFacade(?AttributeToolProvider $provider = null): ToolRegistryFacade {
+		$mcpToolsService = new McpToolsService(
+			providers: [$provider ?? $this->attributedProvider()],
+			logger: $this->logger
+		);
 
-    }//end testToolsCallRoutesToAttributeProviderInvokeTool()
+		$listener = new ToolRegistrationListener(
+			registerTool: $this->createMock(RegisterTool::class),
+			schemaTool: $this->createMock(SchemaTool::class),
+			objectsTool: $this->createMock(ObjectsTool::class),
+			applicationTool: $this->createMock(ApplicationTool::class),
+			agentTool: $this->createMock(AgentTool::class),
+			mcpToolsService: $mcpToolsService,
+			logger: $this->logger
+		);
 
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')
+			->willReturnCallback(function ($event) use ($listener) {
+				if ($event instanceof ToolRegistrationEvent) {
+					$listener->handle($event);
+				}
+			});
 
-    public function testAttributedIdsAreDisjointFromThreePartDerivedShapedIds(): void
-    {
-        // Attributed ids are two-part ({appId}.{toolName}); a schema-derived
-        // id would be three-part ({appId}.{schema}.{verb}) — structurally
-        // disjoint by construction (REQ-ATTR-002).
-        $service = new McpToolsService(
-            providers: [$this->attributedProvider()],
-            logger: $this->logger
-        );
+		$registry = new ToolRegistry($dispatcher, $this->logger);
 
-        foreach (array_column($service->listTools()['tools'], 'id') as $id) {
-            $this->assertSame(1, substr_count($id, '.'), "Attributed id '{$id}' must have exactly one dot.");
-        }
+		return new ToolRegistryFacade(toolRegistry: $registry, logger: $this->logger);
+	}//end buildFacade()
 
-    }//end testAttributedIdsAreDisjointFromThreePartDerivedShapedIds()
+	public function testAttributedToolIsVisibleOnFacadeSurface(): void {
+		$facade = $this->buildFacade();
 
+		$descriptors = $facade->listTools();
+		$mcpIds = array_column($descriptors, 'mcpId');
+		$names = array_column($descriptors, 'name');
 
-    // ── Chat/facade surface (ToolRegistry + bridge + facade) ─────────
+		$this->assertContains('pipelinq.createLead', $mcpIds);
+		$this->assertContains('pipelinq_createLead', $names);
 
+	}//end testAttributedToolIsVisibleOnFacadeSurface()
 
-    /**
-     * Wire the REAL registry/listener/bridge/facade chain around one
-     * attributed provider and return the facade.
-     *
-     * @param AttributeToolProvider|null $provider The provider to wire; defaults to {@see attributedProvider()}.
-     *
-     * @return ToolRegistryFacade
-     */
-    private function buildFacade(?AttributeToolProvider $provider = null): ToolRegistryFacade
-    {
-        $mcpToolsService = new McpToolsService(
-            providers: [$provider ?? $this->attributedProvider()],
-            logger: $this->logger
-        );
+	public function testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited(): void {
+		$this->auditTrailMapper->expects($this->once())
+			->method('createToolInvocationEntry')
+			->with(
+				'pipelinq.createLead',
+				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
+				$this->callback(fn ($summary) => $summary['isError'] === false),
+				null,
+				null,
+				null,
+				'lead-1'
+			);
 
-        $listener = new ToolRegistrationListener(
-            registerTool: $this->createMock(RegisterTool::class),
-            schemaTool: $this->createMock(SchemaTool::class),
-            objectsTool: $this->createMock(ObjectsTool::class),
-            applicationTool: $this->createMock(ApplicationTool::class),
-            agentTool: $this->createMock(AgentTool::class),
-            mcpToolsService: $mcpToolsService,
-            logger: $this->logger
-        );
+		$facade = $this->buildFacade();
 
-        $dispatcher = $this->createMock(IEventDispatcher::class);
-        $dispatcher->method('dispatchTyped')
-            ->willReturnCallback(function ($event) use ($listener) {
-                if ($event instanceof ToolRegistrationEvent) {
-                    $listener->handle($event);
-                }
-            });
+		$result = $facade->invokeTool('pipelinq.createLead', ['email' => 'b@example.com']);
 
-        $registry = new ToolRegistry($dispatcher, $this->logger);
+		$this->assertFalse($result['isError']);
+		$this->assertSame('b@example.com', $result['result']['email']);
 
-        return new ToolRegistryFacade(toolRegistry: $registry, logger: $this->logger);
+	}//end testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited()
 
-    }//end buildFacade()
+	// ── Hint/scope dual-surface proof (REQ-ATTR-005) ──────────────────
 
+	public function testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface(): void {
+		$service = new McpToolsService(
+			providers: [$this->hintScopeProvider()],
+			logger: $this->logger
+		);
 
-    public function testAttributedToolIsVisibleOnFacadeSurface(): void
-    {
-        $facade = $this->buildFacade();
+		$tools = $service->listTools()['tools'];
+		$byId = [];
+		foreach ($tools as $tool) {
+			$byId[$tool['id']] = $tool;
+		}
 
-        $descriptors = $facade->listTools();
-        $mcpIds      = array_column($descriptors, 'mcpId');
-        $names       = array_column($descriptors, 'name');
+		$deleteLead = $byId['pipelinq.deleteLead'];
+		$this->assertFalse($deleteLead['readOnlyHint']);
+		$this->assertTrue($deleteLead['destructiveHint']);
+		$this->assertFalse($deleteLead['idempotentHint']);
+		$this->assertSame('delete', $deleteLead['scope']);
 
-        $this->assertContains('pipelinq.createLead', $mcpIds);
-        $this->assertContains('pipelinq_createLead', $names);
+	}//end testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface()
 
-    }//end testAttributedToolIsVisibleOnFacadeSurface()
+	public function testDeclaredHintsAndScopeAreVisibleOnFacadeSurface(): void {
+		$facade = $this->buildFacade($this->hintScopeProvider());
 
+		$descriptors = $facade->listTools();
+		$byMcpId = [];
+		foreach ($descriptors as $descriptor) {
+			$byMcpId[$descriptor['mcpId']] = $descriptor;
+		}
 
-    public function testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited(): void
-    {
-        $this->auditTrailMapper->expects($this->once())
-            ->method('createToolInvocationEntry')
-            ->with(
-                'pipelinq.createLead',
-                $this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
-                $this->callback(fn($summary) => $summary['isError'] === false),
-                null,
-                null,
-                null,
-                'lead-1'
-            );
+		$deleteLead = $byMcpId['pipelinq.deleteLead'];
+		$this->assertFalse($deleteLead['readOnlyHint']);
+		$this->assertTrue($deleteLead['destructiveHint']);
+		$this->assertFalse($deleteLead['idempotentHint']);
+		$this->assertSame('delete', $deleteLead['scope']);
 
-        $facade = $this->buildFacade();
-
-        $result = $facade->invokeTool('pipelinq.createLead', ['email' => 'b@example.com']);
-
-        $this->assertFalse($result['isError']);
-        $this->assertSame('b@example.com', $result['result']['email']);
-
-    }//end testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited()
-
-
-    // ── Hint/scope dual-surface proof (REQ-ATTR-005) ──────────────────
-
-
-    public function testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface(): void
-    {
-        $service = new McpToolsService(
-            providers: [$this->hintScopeProvider()],
-            logger: $this->logger
-        );
-
-        $tools = $service->listTools()['tools'];
-        $byId  = [];
-        foreach ($tools as $tool) {
-            $byId[$tool['id']] = $tool;
-        }
-
-        $deleteLead = $byId['pipelinq.deleteLead'];
-        $this->assertFalse($deleteLead['readOnlyHint']);
-        $this->assertTrue($deleteLead['destructiveHint']);
-        $this->assertFalse($deleteLead['idempotentHint']);
-        $this->assertSame('delete', $deleteLead['scope']);
-
-    }//end testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface()
-
-
-    public function testDeclaredHintsAndScopeAreVisibleOnFacadeSurface(): void
-    {
-        $facade = $this->buildFacade($this->hintScopeProvider());
-
-        $descriptors = $facade->listTools();
-        $byMcpId     = [];
-        foreach ($descriptors as $descriptor) {
-            $byMcpId[$descriptor['mcpId']] = $descriptor;
-        }
-
-        $deleteLead = $byMcpId['pipelinq.deleteLead'];
-        $this->assertFalse($deleteLead['readOnlyHint']);
-        $this->assertTrue($deleteLead['destructiveHint']);
-        $this->assertFalse($deleteLead['idempotentHint']);
-        $this->assertSame('delete', $deleteLead['scope']);
-
-    }//end testDeclaredHintsAndScopeAreVisibleOnFacadeSurface()
+	}//end testDeclaredHintsAndScopeAreVisibleOnFacadeSurface()
 }//end class

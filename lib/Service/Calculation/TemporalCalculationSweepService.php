@@ -60,382 +60,365 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
  */
-class TemporalCalculationSweepService
-{
-    /**
-     * Constructor.
-     *
-     * @param SchemaMapper              $schemaMapper   Schema enumeration (system scope).
-     * @param RegisterMapper            $registerMapper Register enumeration for schema→register resolution.
-     * @param MagicMapper               $objectMapper   Raw per-table object enumeration.
-     * @param CalculationEvaluator      $evaluator      Expression evaluator (exposes `now`).
-     * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-     * @param ObjectService             $objectService  The normal object write path (events + audit).
-     * @param LoggerInterface           $logger         Structured logging.
-     */
-    public function __construct(
-        private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly MagicMapper $objectMapper,
-        private readonly CalculationEvaluator $evaluator,
-        private readonly CalculationPayloadBuilder $payloadBuilder,
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger,
-    ) {
+class TemporalCalculationSweepService {
+	/**
+	 * Constructor.
+	 *
+	 * @param SchemaMapper $schemaMapper Schema enumeration (system scope).
+	 * @param RegisterMapper $registerMapper Register enumeration for schema→register resolution.
+	 * @param MagicMapper $objectMapper Raw per-table object enumeration.
+	 * @param CalculationEvaluator $evaluator Expression evaluator (exposes `now`).
+	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
+	 * @param ObjectService $objectService The normal object write path (events + audit).
+	 * @param LoggerInterface $logger Structured logging.
+	 */
+	public function __construct(
+		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapper $objectMapper,
+		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationPayloadBuilder $payloadBuilder,
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Run one sweep over every schema with `now`-dependent materialised
-     * calculations.
-     *
-     * @return array{schemasScanned: int, temporalSchemas: int, objectsEvaluated: int, objectsRewritten: int, errors: int} Sweep summary.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Scenario: Untouched case crosses the reminder tier)
-     */
-    public function runSweep(): array
-    {
-        $summary = [
-            'schemasScanned'   => 0,
-            'temporalSchemas'  => 0,
-            'objectsEvaluated' => 0,
-            'objectsRewritten' => 0,
-            'errors'           => 0,
-        ];
+	/**
+	 * Run one sweep over every schema with `now`-dependent materialised
+	 * calculations.
+	 *
+	 * @return array{schemasScanned: int, temporalSchemas: int, objectsEvaluated: int, objectsRewritten: int, errors: int} Sweep summary.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Scenario: Untouched case crosses the reminder tier)
+	 */
+	public function runSweep(): array {
+		$summary = [
+			'schemasScanned' => 0,
+			'temporalSchemas' => 0,
+			'objectsEvaluated' => 0,
+			'objectsRewritten' => 0,
+			'errors' => 0,
+		];
 
-        $schemas = [];
-        try {
-            $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-        } catch (\Throwable $e) {
-            $this->logger->error(
-                message: '[TemporalCalculationSweep] schema enumeration failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $summary['errors']++;
-            return $summary;
-        }
+		$schemas = [];
+		try {
+			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[TemporalCalculationSweep] schema enumeration failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			$summary['errors']++;
+			return $summary;
+		}
 
-        $registers = $this->loadRegisters();
+		$registers = $this->loadRegisters();
 
-        foreach ($schemas as $schema) {
-            $summary['schemasScanned']++;
+		foreach ($schemas as $schema) {
+			$summary['schemasScanned']++;
 
-            $calcs = $this->materialisedCalculations(schema: $schema);
-            if ($calcs === [] || $this->hasTemporalCalculation(calculations: $calcs) === false) {
-                // Schemas with no `now`-dependent materialised calculation are skipped entirely.
-                continue;
-            }
+			$calcs = $this->materialisedCalculations(schema: $schema);
+			if ($calcs === [] || $this->hasTemporalCalculation(calculations: $calcs) === false) {
+				// Schemas with no `now`-dependent materialised calculation are skipped entirely.
+				continue;
+			}
 
-            $register = $this->registerOf(schema: $schema, registers: $registers);
-            if ($register === null) {
-                continue;
-            }
+			$register = $this->registerOf(schema: $schema, registers: $registers);
+			if ($register === null) {
+				continue;
+			}
 
-            $summary['temporalSchemas']++;
-            $this->sweepSchema(register: $register, schema: $schema, calcs: $calcs, summary: $summary);
-        }//end foreach
+			$summary['temporalSchemas']++;
+			$this->sweepSchema(register: $register, schema: $schema, calcs: $calcs, summary: $summary);
+		}//end foreach
 
-        return $summary;
+		return $summary;
+	}//end runSweep()
 
-    }//end runSweep()
+	/**
+	 * Whether any materialised calculation references the evaluation clock.
+	 *
+	 * Detects both the `{"now": []}` operator anywhere in the expression tree
+	 * and the literal `"now"` argument accepted by `dateDiff`-style
+	 * operators.
+	 *
+	 * @param array<string, mixed> $calculations The schema's materialised calculations.
+	 *
+	 * @return bool True when at least one expression is time-dependent.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	public function hasTemporalCalculation(array $calculations): bool {
+		foreach ($calculations as $spec) {
+			if (is_array($spec) === false) {
+				continue;
+			}
 
-    /**
-     * Whether any materialised calculation references the evaluation clock.
-     *
-     * Detects both the `{"now": []}` operator anywhere in the expression tree
-     * and the literal `"now"` argument accepted by `dateDiff`-style
-     * operators.
-     *
-     * @param array<string, mixed> $calculations The schema's materialised calculations.
-     *
-     * @return bool True when at least one expression is time-dependent.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    public function hasTemporalCalculation(array $calculations): bool
-    {
-        foreach ($calculations as $spec) {
-            if (is_array($spec) === false) {
-                continue;
-            }
+			if ($this->expressionReferencesNow(expression: ($spec['expression'] ?? null)) === true) {
+				return true;
+			}
+		}
 
-            if ($this->expressionReferencesNow(expression: ($spec['expression'] ?? null)) === true) {
-                return true;
-            }
-        }
+		return false;
+	}//end hasTemporalCalculation()
 
-        return false;
+	/**
+	 * Sweep one register+schema pair: recompute the materialised calculations
+	 * for every object in a non-terminal lifecycle state and rewrite only
+	 * objects whose recomputed values changed.
+	 *
+	 * @param Register $register The owning register.
+	 * @param Schema $schema The temporal schema.
+	 * @param array<string, mixed> $calcs Materialised calculations.
+	 * @param array<string, int> $summary Running summary counters (by reference).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Scenario: Tier crossing notifies exactly once)
+	 */
+	private function sweepSchema(Register $register, Schema $schema, array $calcs, array &$summary): void {
+		try {
+			$objects = $this->objectMapper->findAllInRegisterSchemaTable(register: $register, schema: $schema);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[TemporalCalculationSweep] object enumeration failed for schema ' . (string)$schema->getSlug() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			$summary['errors']++;
+			return;
+		}
 
-    }//end hasTemporalCalculation()
+		[$lifecycleField, $terminalStates] = $this->lifecycleTerminals(schema: $schema);
 
-    /**
-     * Sweep one register+schema pair: recompute the materialised calculations
-     * for every object in a non-terminal lifecycle state and rewrite only
-     * objects whose recomputed values changed.
-     *
-     * @param Register             $register The owning register.
-     * @param Schema               $schema   The temporal schema.
-     * @param array<string, mixed> $calcs    Materialised calculations.
-     * @param array<string, int>   $summary  Running summary counters (by reference).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Scenario: Tier crossing notifies exactly once)
-     */
-    private function sweepSchema(Register $register, Schema $schema, array $calcs, array &$summary): void
-    {
-        try {
-            $objects = $this->objectMapper->findAllInRegisterSchemaTable(register: $register, schema: $schema);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[TemporalCalculationSweep] object enumeration failed for schema '.(string) $schema->getSlug().': '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $summary['errors']++;
-            return;
-        }
+		foreach ($objects as $object) {
+			$data = ($object->getObject() ?? []);
 
-        [$lifecycleField, $terminalStates] = $this->lifecycleTerminals(schema: $schema);
+			// Terminal cases are left alone (spec scenario) — their clock no
+			// longer matters and rewriting them would churn finalised dossiers.
+			if ($lifecycleField !== null) {
+				$state = (string)($data[$lifecycleField] ?? '');
+				if (in_array($state, $terminalStates, true) === true) {
+					continue;
+				}
+			}
 
-        foreach ($objects as $object) {
-            $data = ($object->getObject() ?? []);
+			$summary['objectsEvaluated']++;
 
-            // Terminal cases are left alone (spec scenario) — their clock no
-            // longer matters and rewriting them would churn finalised dossiers.
-            if ($lifecycleField !== null) {
-                $state = (string) ($data[$lifecycleField] ?? '');
-                if (in_array($state, $terminalStates, true) === true) {
-                    continue;
-                }
-            }
+			try {
+				if ($this->recomputeChanges(object: $object, schema: $schema, calcs: $calcs) === false) {
+					// Unchanged recomputation — no write, no duplicate notification.
+					continue;
+				}
 
-            $summary['objectsEvaluated']++;
+				// Re-save the object UNCHANGED through the normal write path:
+				// CalculationOnSaveListener re-materialises the calculations
+				// (producing the same new values just detected) and the update
+				// event carries old+new data, so the declared calculatedChange
+				// rules fire exactly on the crossing. System sweep: RBAC and
+				// tenancy scoping are bypassed deliberately (no user session);
+				// the write is still audited through the normal path.
+				$this->objectService->saveObject(
+					object: $data,
+					register: $register,
+					schema: $schema,
+					uuid: (string)$object->getUuid(),
+					_rbac: false,
+					_multitenancy: false
+				);
+				$summary['objectsRewritten']++;
+			} catch (\Throwable $e) {
+				$summary['errors']++;
+				$this->logger->warning(
+					message: '[TemporalCalculationSweep] recompute failed for object ' . (string)$object->getUuid() . ': ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}//end try
+		}//end foreach
 
-            try {
-                if ($this->recomputeChanges(object: $object, schema: $schema, calcs: $calcs) === false) {
-                    // Unchanged recomputation — no write, no duplicate notification.
-                    continue;
-                }
+	}//end sweepSchema()
 
-                // Re-save the object UNCHANGED through the normal write path:
-                // CalculationOnSaveListener re-materialises the calculations
-                // (producing the same new values just detected) and the update
-                // event carries old+new data, so the declared calculatedChange
-                // rules fire exactly on the crossing. System sweep: RBAC and
-                // tenancy scoping are bypassed deliberately (no user session);
-                // the write is still audited through the normal path.
-                $this->objectService->saveObject(
-                    object: $data,
-                    register: $register,
-                    schema: $schema,
-                    uuid: (string) $object->getUuid(),
-                    _rbac: false,
-                    _multitenancy: false
-                );
-                $summary['objectsRewritten']++;
-            } catch (\Throwable $e) {
-                $summary['errors']++;
-                $this->logger->warning(
-                    message: '[TemporalCalculationSweep] recompute failed for object '.(string) $object->getUuid().': '.$e->getMessage(),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }//end try
-        }//end foreach
+	/**
+	 * Recompute the schema's materialised calculations for an object and
+	 * report whether ANY value differs from the stored one.
+	 *
+	 * Evaluates sequentially in declaration order against the shared payload
+	 * shape (`@self` / `@ref` / `@aggregate` injected), exactly like the
+	 * save-time listener, so a calculation may reference an earlier one.
+	 *
+	 * @param ObjectEntity $object The object to probe.
+	 * @param Schema $schema The schema declaring the calculations.
+	 * @param array<string, mixed> $calcs Materialised calculations.
+	 *
+	 * @return bool True when at least one recomputed value changed.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Scenario: Tier crossing notifies exactly once)
+	 */
+	private function recomputeChanges(ObjectEntity $object, Schema $schema, array $calcs): bool {
+		$payload = $this->payloadBuilder->build(object: $object, schema: $schema);
+		$changed = false;
 
-    }//end sweepSchema()
+		foreach ($calcs as $name => $spec) {
+			try {
+				$value = $this->evaluator->evaluate($payload, $spec['expression'] ?? null);
+			} catch (EvaluationException $e) {
+				// Mirrors the save-time listener: a failing calculation is
+				// logged and skipped, never fails the sweep.
+				$this->logger->warning(
+					message: sprintf(
+						'[TemporalCalculationSweep] calculation "%s" failed on %s: %s',
+						(string)$name,
+						(string)$object->getUuid(),
+						$e->getMessage()
+					),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				continue;
+			}
 
-    /**
-     * Recompute the schema's materialised calculations for an object and
-     * report whether ANY value differs from the stored one.
-     *
-     * Evaluates sequentially in declaration order against the shared payload
-     * shape (`@self` / `@ref` / `@aggregate` injected), exactly like the
-     * save-time listener, so a calculation may reference an earlier one.
-     *
-     * @param ObjectEntity         $object The object to probe.
-     * @param Schema               $schema The schema declaring the calculations.
-     * @param array<string, mixed> $calcs  Materialised calculations.
-     *
-     * @return bool True when at least one recomputed value changed.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Scenario: Tier crossing notifies exactly once)
-     */
-    private function recomputeChanges(ObjectEntity $object, Schema $schema, array $calcs): bool
-    {
-        $payload = $this->payloadBuilder->build(object: $object, schema: $schema);
-        $changed = false;
+			if ($value instanceof \DateTimeInterface) {
+				$value = $value->format(DATE_ATOM);
+			}
 
-        foreach ($calcs as $name => $spec) {
-            try {
-                $value = $this->evaluator->evaluate($payload, $spec['expression'] ?? null);
-            } catch (EvaluationException $e) {
-                // Mirrors the save-time listener: a failing calculation is
-                // logged and skipped, never fails the sweep.
-                $this->logger->warning(
-                    message: sprintf(
-                        '[TemporalCalculationSweep] calculation "%s" failed on %s: %s',
-                        (string) $name,
-                        (string) $object->getUuid(),
-                        $e->getMessage()
-                    ),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                continue;
-            }
+			if (($payload[(string)$name] ?? null) !== $value) {
+				$changed = true;
+			}
 
-            if ($value instanceof \DateTimeInterface) {
-                $value = $value->format(DATE_ATOM);
-            }
+			// Later calculations may reference this one's fresh value.
+			$payload[(string)$name] = $value;
+		}//end foreach
 
-            if (($payload[(string) $name] ?? null) !== $value) {
-                $changed = true;
-            }
+		return $changed;
+	}//end recomputeChanges()
 
-            // Later calculations may reference this one's fresh value.
-            $payload[(string) $name] = $value;
-        }//end foreach
+	/**
+	 * The schema's materialised calculations (empty when none declared).
+	 *
+	 * @param Schema $schema The schema to inspect.
+	 *
+	 * @return array<string, mixed> Materialised calculation specs by name.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	private function materialisedCalculations(Schema $schema): array {
+		$config = ($schema->getConfiguration() ?? []);
+		$calcs = ($config['x-openregister-calculations'] ?? null);
+		if (is_array($calcs) === false) {
+			return [];
+		}
 
-        return $changed;
+		$materialised = [];
+		foreach ($calcs as $name => $spec) {
+			if (is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
+				$materialised[(string)$name] = $spec;
+			}
+		}
 
-    }//end recomputeChanges()
+		return $materialised;
+	}//end materialisedCalculations()
 
-    /**
-     * The schema's materialised calculations (empty when none declared).
-     *
-     * @param Schema $schema The schema to inspect.
-     *
-     * @return array<string, mixed> Materialised calculation specs by name.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    private function materialisedCalculations(Schema $schema): array
-    {
-        $config = ($schema->getConfiguration() ?? []);
-        $calcs  = ($config['x-openregister-calculations'] ?? null);
-        if (is_array($calcs) === false) {
-            return [];
-        }
+	/**
+	 * Recursively detect a reference to the evaluation clock in an
+	 * expression tree: the `now` operator key or the literal string `"now"`
+	 * (accepted by `dateDiff`'s from/to arguments).
+	 *
+	 * @param mixed $expression The (sub-)expression to scan.
+	 *
+	 * @return bool True when the expression references `now`.
+	 */
+	private function expressionReferencesNow(mixed $expression): bool {
+		if (is_string($expression) === true) {
+			return $expression === 'now';
+		}
 
-        $materialised = [];
-        foreach ($calcs as $name => $spec) {
-            if (is_array($spec) === true && ($spec['materialise'] ?? false) === true) {
-                $materialised[(string) $name] = $spec;
-            }
-        }
+		if (is_array($expression) === false) {
+			return false;
+		}
 
-        return $materialised;
+		foreach ($expression as $key => $value) {
+			if ($key === 'now') {
+				return true;
+			}
 
-    }//end materialisedCalculations()
+			if ($this->expressionReferencesNow(expression: $value) === true) {
+				return true;
+			}
+		}
 
-    /**
-     * Recursively detect a reference to the evaluation clock in an
-     * expression tree: the `now` operator key or the literal string `"now"`
-     * (accepted by `dateDiff`'s from/to arguments).
-     *
-     * @param mixed $expression The (sub-)expression to scan.
-     *
-     * @return bool True when the expression references `now`.
-     */
-    private function expressionReferencesNow(mixed $expression): bool
-    {
-        if (is_string($expression) === true) {
-            return $expression === 'now';
-        }
+		return false;
+	}//end expressionReferencesNow()
 
-        if (is_array($expression) === false) {
-            return false;
-        }
+	/**
+	 * The schema's lifecycle field + terminal (final) states, or [null, []]
+	 * when the schema declares no usable lifecycle. Schemas without a
+	 * lifecycle sweep ALL their objects (bounded by the unchanged-skip).
+	 *
+	 * @param Schema $schema The schema to inspect.
+	 *
+	 * @return array{0: string|null, 1: array<int, string>} Lifecycle field + terminal states.
+	 */
+	private function lifecycleTerminals(Schema $schema): array {
+		$config = ($schema->getConfiguration() ?? []);
+		$lifecycle = ($config['x-openregister-lifecycle'] ?? null);
+		if (is_array($lifecycle) === false) {
+			return [null, []];
+		}
 
-        foreach ($expression as $key => $value) {
-            if ($key === 'now') {
-                return true;
-            }
+		$field = ($lifecycle['field'] ?? ($lifecycle['property'] ?? null));
+		if (is_string($field) === false || $field === '') {
+			return [null, []];
+		}
 
-            if ($this->expressionReferencesNow(expression: $value) === true) {
-                return true;
-            }
-        }
+		$final = ($lifecycle['final'] ?? []);
+		if (is_array($final) === false) {
+			$final = [];
+		}
 
-        return false;
+		return [$field, array_values(array_map('strval', $final))];
+	}//end lifecycleTerminals()
 
-    }//end expressionReferencesNow()
+	/**
+	 * Load every register once (system scope), keyed for membership lookup.
+	 *
+	 * @return array<int, Register> All registers.
+	 */
+	private function loadRegisters(): array {
+		try {
+			return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[TemporalCalculationSweep] register enumeration failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
 
-    /**
-     * The schema's lifecycle field + terminal (final) states, or [null, []]
-     * when the schema declares no usable lifecycle. Schemas without a
-     * lifecycle sweep ALL their objects (bounded by the unchanged-skip).
-     *
-     * @param Schema $schema The schema to inspect.
-     *
-     * @return array{0: string|null, 1: array<int, string>} Lifecycle field + terminal states.
-     */
-    private function lifecycleTerminals(Schema $schema): array
-    {
-        $config    = ($schema->getConfiguration() ?? []);
-        $lifecycle = ($config['x-openregister-lifecycle'] ?? null);
-        if (is_array($lifecycle) === false) {
-            return [null, []];
-        }
+	}//end loadRegisters()
 
-        $field = ($lifecycle['field'] ?? ($lifecycle['property'] ?? null));
-        if (is_string($field) === false || $field === '') {
-            return [null, []];
-        }
+	/**
+	 * Find the register a schema belongs to (first register whose schema-id
+	 * list contains it), or null for orphaned schemas.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param array<int, Register> $registers All registers.
+	 *
+	 * @return Register|null The owning register, or null.
+	 */
+	private function registerOf(Schema $schema, array $registers): ?Register {
+		$schemaId = (int)$schema->getId();
+		foreach ($registers as $register) {
+			foreach (($register->getSchemas() ?? []) as $memberId) {
+				if ((int)$memberId === $schemaId) {
+					return $register;
+				}
+			}
+		}
 
-        $final = ($lifecycle['final'] ?? []);
-        if (is_array($final) === false) {
-            $final = [];
-        }
-
-        return [$field, array_values(array_map('strval', $final))];
-
-    }//end lifecycleTerminals()
-
-    /**
-     * Load every register once (system scope), keyed for membership lookup.
-     *
-     * @return array<int, Register> All registers.
-     */
-    private function loadRegisters(): array
-    {
-        try {
-            return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[TemporalCalculationSweep] register enumeration failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return [];
-        }
-
-    }//end loadRegisters()
-
-    /**
-     * Find the register a schema belongs to (first register whose schema-id
-     * list contains it), or null for orphaned schemas.
-     *
-     * @param Schema               $schema    The schema.
-     * @param array<int, Register> $registers All registers.
-     *
-     * @return Register|null The owning register, or null.
-     */
-    private function registerOf(Schema $schema, array $registers): ?Register
-    {
-        $schemaId = (int) $schema->getId();
-        foreach ($registers as $register) {
-            foreach (($register->getSchemas() ?? []) as $memberId) {
-                if ((int) $memberId === $schemaId) {
-                    return $register;
-                }
-            }
-        }
-
-        return null;
-
-    }//end registerOf()
+		return null;
+	}//end registerOf()
 }//end class

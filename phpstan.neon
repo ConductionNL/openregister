@@ -8,6 +8,11 @@ includes:
     # (written at the top of it) cannot get detached from the entries.
     # openregister#2288
     - phpstan-baseline-jsonresponse-invariance.neon
+    # Twenty-one findings surfaced by analysing against nextcloud/ocp 34 instead
+    # of 31 — the version appinfo/info.xml already declares. Pre-existing code,
+    # newly visible; four are real NC 34 API removals. Kept separate so the
+    # reason travels with the entries. openregister#2450
+    - phpstan-baseline-nc34-ocp.neon
 
 parameters:
     level: 5

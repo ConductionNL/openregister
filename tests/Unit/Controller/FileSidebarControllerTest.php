@@ -39,182 +39,175 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Tests\Unit\Controller
  */
-class FileSidebarControllerTest extends TestCase
-{
-    private FileSidebarController $controller;
-    private FileSidebarService&MockObject $fileSidebarService;
-    private IRequest&MockObject $request;
-    private LoggerInterface&MockObject $logger;
-    private IRootFolder&MockObject $rootFolder;
-    private IUserSession&MockObject $userSession;
+class FileSidebarControllerTest extends TestCase {
+	private FileSidebarController $controller;
+	private FileSidebarService&MockObject $fileSidebarService;
+	private IRequest&MockObject $request;
+	private LoggerInterface&MockObject $logger;
+	private IRootFolder&MockObject $rootFolder;
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->request             = $this->createMock(IRequest::class);
-        $this->fileSidebarService  = $this->createMock(FileSidebarService::class);
-        $this->logger              = $this->createMock(LoggerInterface::class);
-        $this->rootFolder          = $this->createMock(IRootFolder::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->fileSidebarService = $this->createMock(FileSidebarService::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 
-        // Default: an authenticated user whose folder resolves any file ID so
-        // the per-file access guard passes for the happy-path tests.
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
-        $userFolder = $this->createMock(Folder::class);
-        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
-        $this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+		// Default: an authenticated user whose folder resolves any file ID so
+		// the per-file access guard passes for the happy-path tests.
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 
-        $this->controller = new FileSidebarController(
-            'openregister',
-            $this->request,
-            $this->fileSidebarService,
-            $this->logger,
-            $this->rootFolder,
-            $this->userSession
-        );
-    }//end setUp()
+		$this->controller = new FileSidebarController(
+			'openregister',
+			$this->request,
+			$this->fileSidebarService,
+			$this->logger,
+			$this->rootFolder,
+			$this->userSession
+		);
+	}//end setUp()
 
-    /**
-     * A non-owner (user folder resolves no node) must be rejected with 404
-     * before the sidebar service is queried — the IDOR fix.
-     *
-     * @return void
-     */
-    public function testFileEndpointsRejectInaccessibleFile(): void
-    {
-        $userFolder = $this->createMock(Folder::class);
-        $userFolder->method('getById')->willReturn([]);
-        $rootFolder = $this->createMock(IRootFolder::class);
-        $rootFolder->method('getUserFolder')->willReturn($userFolder);
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('bob');
-        $session = $this->createMock(IUserSession::class);
-        $session->method('getUser')->willReturn($user);
+	/**
+	 * A non-owner (user folder resolves no node) must be rejected with 404
+	 * before the sidebar service is queried — the IDOR fix.
+	 *
+	 * @return void
+	 */
+	public function testFileEndpointsRejectInaccessibleFile(): void {
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([]);
+		$rootFolder = $this->createMock(IRootFolder::class);
+		$rootFolder->method('getUserFolder')->willReturn($userFolder);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
 
-        $controller = new FileSidebarController(
-            'openregister',
-            $this->request,
-            $this->fileSidebarService,
-            $this->logger,
-            $rootFolder,
-            $session
-        );
+		$controller = new FileSidebarController(
+			'openregister',
+			$this->request,
+			$this->fileSidebarService,
+			$this->logger,
+			$rootFolder,
+			$session
+		);
 
-        $this->fileSidebarService->expects($this->never())->method('getObjectsForFile');
-        $this->fileSidebarService->expects($this->never())->method('getExtractionStatus');
+		$this->fileSidebarService->expects($this->never())->method('getObjectsForFile');
+		$this->fileSidebarService->expects($this->never())->method('getExtractionStatus');
 
-        $this->assertSame(404, $controller->getObjectsForFile(999)->getStatus());
-        $this->assertSame(404, $controller->getExtractionStatus(999)->getStatus());
-    }//end testFileEndpointsRejectInaccessibleFile()
+		$this->assertSame(404, $controller->getObjectsForFile(999)->getStatus());
+		$this->assertSame(404, $controller->getExtractionStatus(999)->getStatus());
+	}//end testFileEndpointsRejectInaccessibleFile()
 
-    /**
-     * Test getObjectsForFile returns success response with objects.
-     *
-     * @return void
-     */
-    public function testGetObjectsForFileReturnsSuccess(): void
-    {
-        $objects = [
-            [
-                'uuid'     => 'abc-123',
-                'title'    => 'Test Object',
-                'register' => ['id' => 1, 'title' => 'My Register'],
-                'schema'   => ['id' => 2, 'title' => 'My Schema'],
-            ],
-        ];
+	/**
+	 * Test getObjectsForFile returns success response with objects.
+	 *
+	 * @return void
+	 */
+	public function testGetObjectsForFileReturnsSuccess(): void {
+		$objects = [
+			[
+				'uuid' => 'abc-123',
+				'title' => 'Test Object',
+				'register' => ['id' => 1, 'title' => 'My Register'],
+				'schema' => ['id' => 2, 'title' => 'My Schema'],
+			],
+		];
 
-        $this->fileSidebarService->expects($this->once())
-            ->method('getObjectsForFile')
-            ->with(42)
-            ->willReturn($objects);
+		$this->fileSidebarService->expects($this->once())
+			->method('getObjectsForFile')
+			->with(42)
+			->willReturn($objects);
 
-        $response = $this->controller->getObjectsForFile(42);
+		$response = $this->controller->getObjectsForFile(42);
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertInstanceOf(JSONResponse::class, $response);
 
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-        $this->assertCount(1, $data['data']);
-        $this->assertSame('abc-123', $data['data'][0]['uuid']);
-    }//end testGetObjectsForFileReturnsSuccess()
+		$data = $response->getData();
+		$this->assertTrue($data['success']);
+		$this->assertCount(1, $data['data']);
+		$this->assertSame('abc-123', $data['data'][0]['uuid']);
+	}//end testGetObjectsForFileReturnsSuccess()
 
-    /**
-     * Test getObjectsForFile returns 500 on exception.
-     *
-     * @return void
-     */
-    public function testGetObjectsForFileReturns500OnException(): void
-    {
-        $this->fileSidebarService->method('getObjectsForFile')
-            ->willThrowException(new \Exception('Service failure'));
+	/**
+	 * Test getObjectsForFile returns 500 on exception.
+	 *
+	 * @return void
+	 */
+	public function testGetObjectsForFileReturns500OnException(): void {
+		$this->fileSidebarService->method('getObjectsForFile')
+			->willThrowException(new \Exception('Service failure'));
 
-        $response = $this->controller->getObjectsForFile(42);
+		$response = $this->controller->getObjectsForFile(42);
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(500, $response->getStatus());
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(500, $response->getStatus());
 
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertArrayHasKey('error', $data);
-    }//end testGetObjectsForFileReturns500OnException()
+		$data = $response->getData();
+		$this->assertFalse($data['success']);
+		$this->assertArrayHasKey('error', $data);
+	}//end testGetObjectsForFileReturns500OnException()
 
-    /**
-     * Test getExtractionStatus returns success response.
-     *
-     * @return void
-     */
-    public function testGetExtractionStatusReturnsSuccess(): void
-    {
-        $status = [
-            'fileId'           => 99,
-            'extractionStatus' => 'completed',
-            'chunkCount'       => 5,
-            'entityCount'      => 3,
-            'riskLevel'        => 'medium',
-            'extractedAt'      => '2024-01-01T00:00:00+00:00',
-            'entities'         => [['type' => 'PERSON', 'count' => 3]],
-            'anonymized'       => false,
-            'anonymizedAt'     => null,
-            'anonymizedFileId' => null,
-        ];
+	/**
+	 * Test getExtractionStatus returns success response.
+	 *
+	 * @return void
+	 */
+	public function testGetExtractionStatusReturnsSuccess(): void {
+		$status = [
+			'fileId' => 99,
+			'extractionStatus' => 'completed',
+			'chunkCount' => 5,
+			'entityCount' => 3,
+			'riskLevel' => 'medium',
+			'extractedAt' => '2024-01-01T00:00:00+00:00',
+			'entities' => [['type' => 'PERSON', 'count' => 3]],
+			'anonymized' => false,
+			'anonymizedAt' => null,
+			'anonymizedFileId' => null,
+		];
 
-        $this->fileSidebarService->expects($this->once())
-            ->method('getExtractionStatus')
-            ->with(99)
-            ->willReturn($status);
+		$this->fileSidebarService->expects($this->once())
+			->method('getExtractionStatus')
+			->with(99)
+			->willReturn($status);
 
-        $response = $this->controller->getExtractionStatus(99);
+		$response = $this->controller->getExtractionStatus(99);
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertInstanceOf(JSONResponse::class, $response);
 
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame(99, $data['data']['fileId']);
-        $this->assertSame('completed', $data['data']['extractionStatus']);
-    }//end testGetExtractionStatusReturnsSuccess()
+		$data = $response->getData();
+		$this->assertTrue($data['success']);
+		$this->assertSame(99, $data['data']['fileId']);
+		$this->assertSame('completed', $data['data']['extractionStatus']);
+	}//end testGetExtractionStatusReturnsSuccess()
 
-    /**
-     * Test getExtractionStatus returns 500 on exception.
-     *
-     * @return void
-     */
-    public function testGetExtractionStatusReturns500OnException(): void
-    {
-        $this->fileSidebarService->method('getExtractionStatus')
-            ->willThrowException(new \RuntimeException('DB down'));
+	/**
+	 * Test getExtractionStatus returns 500 on exception.
+	 *
+	 * @return void
+	 */
+	public function testGetExtractionStatusReturns500OnException(): void {
+		$this->fileSidebarService->method('getExtractionStatus')
+			->willThrowException(new \RuntimeException('DB down'));
 
-        $response = $this->controller->getExtractionStatus(99);
+		$response = $this->controller->getExtractionStatus(99);
 
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(500, $response->getStatus());
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(500, $response->getStatus());
 
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-    }//end testGetExtractionStatusReturns500OnException()
+		$data = $response->getData();
+		$this->assertFalse($data['success']);
+	}//end testGetExtractionStatusReturns500OnException()
 }//end class

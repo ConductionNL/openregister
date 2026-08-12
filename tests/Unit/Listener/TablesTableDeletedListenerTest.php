@@ -36,79 +36,75 @@ use Psr\Log\NullLogger;
 /**
  * Test class for TablesTableDeletedListener.
  */
-class TablesTableDeletedListenerTest extends TestCase
-{
+class TablesTableDeletedListenerTest extends TestCase {
 
-    /**
-     * A TableDeletedEvent carrying a table retires that table's schema.
-     *
-     * @return void
-     */
-    public function testHandleRetiresSchema(): void
-    {
-        $syncService = $this->createMock(TablesSchemaSyncService::class);
-        $syncService->expects($this->once())->method('retireByTableId')->with(5)->willReturn(true);
+	/**
+	 * A TableDeletedEvent carrying a table retires that table's schema.
+	 *
+	 * @return void
+	 */
+	public function testHandleRetiresSchema(): void {
+		$syncService = $this->createMock(TablesSchemaSyncService::class);
+		$syncService->expects($this->once())->method('retireByTableId')->with(5)->willReturn(true);
 
-        $listener = new TablesTableDeletedListener($syncService, new NullLogger());
-        $listener->handle($this->eventWithTable(tableId: 5));
-    }//end testHandleRetiresSchema()
+		$listener = new TablesTableDeletedListener($syncService, new NullLogger());
+		$listener->handle($this->eventWithTable(tableId: 5));
+	}//end testHandleRetiresSchema()
 
-    /**
-     * An event with no resolvable table id is a no-op.
-     *
-     * @return void
-     */
-    public function testHandleIgnoresUnresolvableEvent(): void
-    {
-        $syncService = $this->createMock(TablesSchemaSyncService::class);
-        $syncService->expects($this->never())->method('retireByTableId');
+	/**
+	 * An event with no resolvable table id is a no-op.
+	 *
+	 * @return void
+	 */
+	public function testHandleIgnoresUnresolvableEvent(): void {
+		$syncService = $this->createMock(TablesSchemaSyncService::class);
+		$syncService->expects($this->never())->method('retireByTableId');
 
-        $listener = new TablesTableDeletedListener($syncService, new NullLogger());
-        $listener->handle(new Event());
-    }//end testHandleIgnoresUnresolvableEvent()
+		$listener = new TablesTableDeletedListener($syncService, new NullLogger());
+		$listener->handle(new Event());
+	}//end testHandleIgnoresUnresolvableEvent()
 
-    /**
-     * Build a synthetic event exposing getTable()->getId() like Tables' event.
-     *
-     * @param int $tableId The deleted table id.
-     *
-     * @return Event The synthetic event.
-     */
-    private function eventWithTable(int $tableId): Event
-    {
-        $table = new class($tableId) {
-            /**
-             * @param int $id The table id.
-             */
-            public function __construct(private int $id)
-            {
-            }
+	/**
+	 * Build a synthetic event exposing getTable()->getId() like Tables' event.
+	 *
+	 * @param int $tableId The deleted table id.
+	 *
+	 * @return Event The synthetic event.
+	 */
+	private function eventWithTable(int $tableId): Event {
+		$table = new class($tableId) {
+			/**
+			 * @param int $id The table id.
+			 */
+			public function __construct(
+				private int $id,
+			) {
+			}
 
-            /**
-             * @return int The table id.
-             */
-            public function getId(): int
-            {
-                return $this->id;
-            }
-        };
+			/**
+			 * @return int The table id.
+			 */
+			public function getId(): int {
+				return $this->id;
+			}
+		};
 
-        return new class($table) extends Event {
-            /**
-             * @param object $table The table entity.
-             */
-            public function __construct(private object $table)
-            {
-                parent::__construct();
-            }
+		return new class($table) extends Event {
+			/**
+			 * @param object $table The table entity.
+			 */
+			public function __construct(
+				private object $table,
+			) {
+				parent::__construct();
+			}
 
-            /**
-             * @return object The table entity.
-             */
-            public function getTable(): object
-            {
-                return $this->table;
-            }
-        };
-    }//end eventWithTable()
+			/**
+			 * @return object The table entity.
+			 */
+			public function getTable(): object {
+				return $this->table;
+			}
+		};
+	}//end eventWithTable()
 }//end class

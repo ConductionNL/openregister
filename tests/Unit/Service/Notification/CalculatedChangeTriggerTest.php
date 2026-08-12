@@ -48,333 +48,308 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class CalculatedChangeTriggerTest extends TestCase
-{
+class CalculatedChangeTriggerTest extends TestCase {
 
-    /** @var SchemaMapper&MockObject */
-    private SchemaMapper $schemaMapper;
+	/** @var SchemaMapper&MockObject */
+	private SchemaMapper $schemaMapper;
 
-    /** @var INotificationManager&MockObject */
-    private INotificationManager $notificationManager;
+	/** @var INotificationManager&MockObject */
+	private INotificationManager $notificationManager;
 
-    /** @var LoggerInterface&MockObject */
-    private LoggerInterface $logger;
+	/** @var LoggerInterface&MockObject */
+	private LoggerInterface $logger;
 
-    /** @var IGroupManager&MockObject */
-    private IGroupManager $groupManager;
+	/** @var IGroupManager&MockObject */
+	private IGroupManager $groupManager;
 
-    /** @var IUserManager&MockObject */
-    private IUserManager $userManager;
+	/** @var IUserManager&MockObject */
+	private IUserManager $userManager;
 
-    /** @var IMailer&MockObject */
-    private IMailer $mailer;
+	/** @var IMailer&MockObject */
+	private IMailer $mailer;
 
-    /** @var IActivityManager&MockObject */
-    private IActivityManager $activityManager;
+	/** @var IActivityManager&MockObject */
+	private IActivityManager $activityManager;
 
-    /** @var IClientService&MockObject */
-    private IClientService $httpClient;
+	/** @var IClientService&MockObject */
+	private IClientService $httpClient;
 
-    /** @var IServerContainer&MockObject */
-    private IServerContainer $serverContainer;
+	/** @var IServerContainer&MockObject */
+	private IServerContainer $serverContainer;
 
+	/**
+	 * Set up mocks shared across all test methods.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->notificationManager = $this->createMock(INotificationManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->mailer = $this->createMock(IMailer::class);
+		$this->activityManager = $this->createMock(IActivityManager::class);
+		$this->httpClient = $this->createMock(IClientService::class);
+		$this->serverContainer = $this->createMock(IServerContainer::class);
 
-    /**
-     * Set up mocks shared across all test methods.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->schemaMapper        = $this->createMock(SchemaMapper::class);
-        $this->notificationManager = $this->createMock(INotificationManager::class);
-        $this->logger              = $this->createMock(LoggerInterface::class);
-        $this->groupManager        = $this->createMock(IGroupManager::class);
-        $this->userManager         = $this->createMock(IUserManager::class);
-        $this->mailer              = $this->createMock(IMailer::class);
-        $this->activityManager     = $this->createMock(IActivityManager::class);
-        $this->httpClient          = $this->createMock(IClientService::class);
-        $this->serverContainer     = $this->createMock(IServerContainer::class);
+		// All UIDs resolve as real users so recipient filtering never drops them.
+		$this->userManager->method('userExists')->willReturn(true);
 
-        // All UIDs resolve as real users so recipient filtering never drops them.
-        $this->userManager->method('userExists')->willReturn(true);
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * (a) First save: both new and old values are below 0.85.
+	 * The `previously` clause (gte: 0.85) is NOT satisfied by the old value,
+	 * so no boundary crossing occurred — the rule must NOT fire.
+	 *
+	 * @return void
+	 */
+	public function testFirstSaveBelowThresholdDoesNotFire(): void {
+		$schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
+		$this->notificationManager->expects($this->never())->method('createNotification');
 
-    /**
-     * (a) First save: both new and old values are below 0.85.
-     * The `previously` clause (gte: 0.85) is NOT satisfied by the old value,
-     * so no boundary crossing occurred — the rule must NOT fire.
-     *
-     * @return void
-     */
-    public function testFirstSaveBelowThresholdDoesNotFire(): void
-    {
-        $schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.70),
+			'calculatedChange',
+			[
+				'_newData' => ['coveragePercent' => 0.70],
+				'_oldData' => ['coveragePercent' => 0.72],
+			]
+		);
 
-        $this->notificationManager->expects($this->never())->method('createNotification');
+	}//end testFirstSaveBelowThresholdDoesNotFire()
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.70),
-            'calculatedChange',
-            [
-                '_newData' => ['coveragePercent' => 0.70],
-                '_oldData' => ['coveragePercent' => 0.72],
-            ]
-        );
+	/**
+	 * (b) Above-then-below crossing: old value was >= 0.85, new value is < 0.85.
+	 * Both clauses are satisfied — the rule must fire exactly once.
+	 *
+	 * @return void
+	 */
+	public function testAboveThenBelowCrossingFires(): void {
+		$schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-    }//end testFirstSaveBelowThresholdDoesNotFire()
+		$delivered = [];
+		$this->captureDeliveredUids($delivered);
 
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.80),
+			'calculatedChange',
+			[
+				'_newData' => ['coveragePercent' => 0.80],
+				'_oldData' => ['coveragePercent' => 0.90],
+			]
+		);
 
-    /**
-     * (b) Above-then-below crossing: old value was >= 0.85, new value is < 0.85.
-     * Both clauses are satisfied — the rule must fire exactly once.
-     *
-     * @return void
-     */
-    public function testAboveThenBelowCrossingFires(): void
-    {
-        $schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+		$this->assertSame(['officer'], $delivered, 'Notification must fire on a genuine boundary crossing.');
 
-        $delivered = [];
-        $this->captureDeliveredUids($delivered);
+	}//end testAboveThenBelowCrossingFires()
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.80),
-            'calculatedChange',
-            [
-                '_newData' => ['coveragePercent' => 0.80],
-                '_oldData' => ['coveragePercent' => 0.90],
-            ]
-        );
+	/**
+	 * (c) Below-then-still-below: old value was already below 0.85.
+	 * The `previously` (gte: 0.85) clause is NOT satisfied — debounce, no fire.
+	 *
+	 * @return void
+	 */
+	public function testBelowThenStillBelowDebouncesAndDoesNotFire(): void {
+		$schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->assertSame(['officer'], $delivered, 'Notification must fire on a genuine boundary crossing.');
+		$this->notificationManager->expects($this->never())->method('createNotification');
 
-    }//end testAboveThenBelowCrossingFires()
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.75),
+			'calculatedChange',
+			[
+				'_newData' => ['coveragePercent' => 0.75],
+				'_oldData' => ['coveragePercent' => 0.80],
+			]
+		);
 
+	}//end testBelowThenStillBelowDebouncesAndDoesNotFire()
 
-    /**
-     * (c) Below-then-still-below: old value was already below 0.85.
-     * The `previously` (gte: 0.85) clause is NOT satisfied — debounce, no fire.
-     *
-     * @return void
-     */
-    public function testBelowThenStillBelowDebouncesAndDoesNotFire(): void
-    {
-        $schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+	/**
+	 * (d) Both `condition` AND `previously` must hold.
+	 * The condition clause fails (new value is above 0.85), so no fire.
+	 *
+	 * @return void
+	 */
+	public function testConditionClauseFailureBlocksFire(): void {
+		$schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->notificationManager->expects($this->never())->method('createNotification');
+		$this->notificationManager->expects($this->never())->method('createNotification');
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.75),
-            'calculatedChange',
-            [
-                '_newData' => ['coveragePercent' => 0.75],
-                '_oldData' => ['coveragePercent' => 0.80],
-            ]
-        );
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.90),
+			'calculatedChange',
+			[
+				'_newData' => ['coveragePercent' => 0.90],
+				'_oldData' => ['coveragePercent' => 0.95],
+			]
+		);
 
-    }//end testBelowThenStillBelowDebouncesAndDoesNotFire()
+	}//end testConditionClauseFailureBlocksFire()
 
+	/**
+	 * When _oldData is absent from context the rule is skipped (fail-closed).
+	 * Better to miss a notification than to fire spuriously without proof of crossing.
+	 *
+	 * @return void
+	 */
+	public function testMissingOldDataSkipsRule(): void {
+		$schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-    /**
-     * (d) Both `condition` AND `previously` must hold.
-     * The condition clause fails (new value is above 0.85), so no fire.
-     *
-     * @return void
-     */
-    public function testConditionClauseFailureBlocksFire(): void
-    {
-        $schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+		$this->notificationManager->expects($this->never())->method('createNotification');
 
-        $this->notificationManager->expects($this->never())->method('createNotification');
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.80),
+			'calculatedChange',
+			['_newData' => ['coveragePercent' => 0.80]]
+		);
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.90),
-            'calculatedChange',
-            [
-                '_newData' => ['coveragePercent' => 0.90],
-                '_oldData' => ['coveragePercent' => 0.95],
-            ]
-        );
+	}//end testMissingOldDataSkipsRule()
 
-    }//end testConditionClauseFailureBlocksFire()
+	/**
+	 * Without condition or previously the gate is open — fires on every
+	 * calculatedChange event for the named field.
+	 *
+	 * @return void
+	 */
+	public function testOpenGateWithoutConditionOrPreviouslyFires(): void {
+		$schema = $this->schemaWithRule(condition: null, previously: null);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
+		$delivered = [];
+		$this->captureDeliveredUids($delivered);
 
-    /**
-     * When _oldData is absent from context the rule is skipped (fail-closed).
-     * Better to miss a notification than to fire spuriously without proof of crossing.
-     *
-     * @return void
-     */
-    public function testMissingOldDataSkipsRule(): void
-    {
-        $schema = $this->schemaWithRule(condition: ['lt' => 0.85], previously: ['gte' => 0.85]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+		$dispatcher = $this->makeDispatcher();
+		$dispatcher->dispatch(
+			$this->objectWithCoverage(0.80),
+			'calculatedChange',
+			[
+				'_newData' => ['coveragePercent' => 0.80],
+				'_oldData' => ['coveragePercent' => 0.90],
+			]
+		);
 
-        $this->notificationManager->expects($this->never())->method('createNotification');
+		$this->assertSame(['officer'], $delivered);
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.80),
-            'calculatedChange',
-            ['_newData' => ['coveragePercent' => 0.80]]
-        );
+	}//end testOpenGateWithoutConditionOrPreviouslyFires()
 
-    }//end testMissingOldDataSkipsRule()
+	// -----------------------------------------------------------------------
+	// Helpers
+	// -----------------------------------------------------------------------
 
+	/**
+	 * Build a schema with a single `calculatedChange` notification rule
+	 * monitoring the `coveragePercent` field.
+	 *
+	 * @param array<string, float|int|string>|null $condition Operators the new value must satisfy.
+	 * @param array<string, float|int|string>|null $previously Operators the old value must satisfy.
+	 *
+	 * @return Schema
+	 */
+	private function schemaWithRule(?array $condition, ?array $previously): Schema {
+		$trigger = ['type' => 'calculatedChange', 'field' => 'coveragePercent'];
+		if ($condition !== null) {
+			$trigger['condition'] = $condition;
+		}
 
-    /**
-     * Without condition or previously the gate is open — fires on every
-     * calculatedChange event for the named field.
-     *
-     * @return void
-     */
-    public function testOpenGateWithoutConditionOrPreviouslyFires(): void
-    {
-        $schema = $this->schemaWithRule(condition: null, previously: null);
-        $this->schemaMapper->method('find')->willReturn($schema);
+		if ($previously !== null) {
+			$trigger['previously'] = $previously;
+		}
 
-        $delivered = [];
-        $this->captureDeliveredUids($delivered);
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setSlug('coverage-schema');
+		$schema->setConfiguration(
+			[
+				'x-openregister-notifications' => [
+					'officerAlertOnCoverageDrop' => [
+						'trigger' => $trigger,
+						'recipients' => [['kind' => 'users', 'users' => ['officer']]],
+						'channels' => ['nc-notification'],
+						'subject' => 'Coverage dropped below threshold',
+					],
+				],
+			]
+		);
+		return $schema;
+	}//end schemaWithRule()
 
-        $dispatcher = $this->makeDispatcher();
-        $dispatcher->dispatch(
-            $this->objectWithCoverage(0.80),
-            'calculatedChange',
-            [
-                '_newData' => ['coveragePercent' => 0.80],
-                '_oldData' => ['coveragePercent' => 0.90],
-            ]
-        );
+	/**
+	 * Build a minimal ObjectEntity carrying a `coveragePercent` value.
+	 *
+	 * @param float $coverage Coverage percentage (0 to 1).
+	 *
+	 * @return ObjectEntity
+	 */
+	private function objectWithCoverage(float $coverage): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid('obj-uuid-1');
+		$object->setSchema('coverage-schema');
+		$object->setRegister('reg-1');
+		$object->setObject(['coveragePercent' => $coverage]);
+		return $object;
+	}//end objectWithCoverage()
 
-        $this->assertSame(['officer'], $delivered);
+	/**
+	 * Build the dispatcher under test with minimal mocks.
+	 *
+	 * @return AnnotationNotificationDispatcher
+	 */
+	private function makeDispatcher(): AnnotationNotificationDispatcher {
+		return new AnnotationNotificationDispatcher(
+			$this->schemaMapper,
+			$this->notificationManager,
+			$this->logger,
+			$this->groupManager,
+			$this->userManager,
+			$this->mailer,
+			$this->activityManager,
+			$this->httpClient,
+			$this->serverContainer
+		);
 
-    }//end testOpenGateWithoutConditionOrPreviouslyFires()
+	}//end makeDispatcher()
 
+	/**
+	 * Stub INotificationManager so each notify() call appends the recipient
+	 * uid to $delivered.
+	 *
+	 * @param array<int, string> $delivered Out-param accumulating delivered uids.
+	 *
+	 * @return void
+	 */
+	private function captureDeliveredUids(array &$delivered): void {
+		$this->notificationManager->method('createNotification')
+			->willReturnCallback(
+				function () use (&$delivered) {
+					$notif = $this->createMock(INotification::class);
+					$notif->method('setApp')->willReturnSelf();
+					$notif->method('setUser')->willReturnCallback(
+						function (string $uid) use ($notif, &$delivered) {
+							$delivered[] = $uid;
+							return $notif;
+						}
+					);
+					$notif->method('setDateTime')->willReturnSelf();
+					$notif->method('setObject')->willReturnSelf();
+					$notif->method('setSubject')->willReturnSelf();
+					return $notif;
+				}
+			);
 
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
-
-    /**
-     * Build a schema with a single `calculatedChange` notification rule
-     * monitoring the `coveragePercent` field.
-     *
-     * @param array<string, float|int|string>|null $condition  Operators the new value must satisfy.
-     * @param array<string, float|int|string>|null $previously Operators the old value must satisfy.
-     *
-     * @return Schema
-     */
-    private function schemaWithRule(?array $condition, ?array $previously): Schema
-    {
-        $trigger = ['type' => 'calculatedChange', 'field' => 'coveragePercent'];
-        if ($condition !== null) {
-            $trigger['condition'] = $condition;
-        }
-
-        if ($previously !== null) {
-            $trigger['previously'] = $previously;
-        }
-
-        $schema = new Schema();
-        $schema->setId(1);
-        $schema->setSlug('coverage-schema');
-        $schema->setConfiguration(
-            [
-                'x-openregister-notifications' => [
-                    'officerAlertOnCoverageDrop' => [
-                        'trigger'    => $trigger,
-                        'recipients' => [['kind' => 'users', 'users' => ['officer']]],
-                        'channels'   => ['nc-notification'],
-                        'subject'    => 'Coverage dropped below threshold',
-                    ],
-                ],
-            ]
-        );
-        return $schema;
-
-    }//end schemaWithRule()
-
-
-    /**
-     * Build a minimal ObjectEntity carrying a `coveragePercent` value.
-     *
-     * @param float $coverage Coverage percentage (0 to 1).
-     *
-     * @return ObjectEntity
-     */
-    private function objectWithCoverage(float $coverage): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('obj-uuid-1');
-        $object->setSchema('coverage-schema');
-        $object->setRegister('reg-1');
-        $object->setObject(['coveragePercent' => $coverage]);
-        return $object;
-
-    }//end objectWithCoverage()
-
-
-    /**
-     * Build the dispatcher under test with minimal mocks.
-     *
-     * @return AnnotationNotificationDispatcher
-     */
-    private function makeDispatcher(): AnnotationNotificationDispatcher
-    {
-        return new AnnotationNotificationDispatcher(
-            $this->schemaMapper,
-            $this->notificationManager,
-            $this->logger,
-            $this->groupManager,
-            $this->userManager,
-            $this->mailer,
-            $this->activityManager,
-            $this->httpClient,
-            $this->serverContainer
-        );
-
-    }//end makeDispatcher()
-
-
-    /**
-     * Stub INotificationManager so each notify() call appends the recipient
-     * uid to $delivered.
-     *
-     * @param array<int, string> $delivered Out-param accumulating delivered uids.
-     *
-     * @return void
-     */
-    private function captureDeliveredUids(array &$delivered): void
-    {
-        $this->notificationManager->method('createNotification')
-            ->willReturnCallback(
-                function () use (&$delivered) {
-                    $notif = $this->createMock(INotification::class);
-                    $notif->method('setApp')->willReturnSelf();
-                    $notif->method('setUser')->willReturnCallback(
-                    function (string $uid) use ($notif, &$delivered) {
-                        $delivered[] = $uid;
-                        return $notif;
-                    }
-                    );
-                    $notif->method('setDateTime')->willReturnSelf();
-                    $notif->method('setObject')->willReturnSelf();
-                    $notif->method('setSubject')->willReturnSelf();
-                    return $notif;
-                }
-            );
-
-    }//end captureDeliveredUids()
+	}//end captureDeliveredUids()
 }//end class

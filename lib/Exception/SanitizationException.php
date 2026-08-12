@@ -57,79 +57,77 @@ use Throwable;
  *
  * @spec openspec/specs/office-document-sanitization/spec.md
  */
-class SanitizationException extends \Exception
-{
+class SanitizationException extends \Exception {
 
-    /**
-     * No registered strategy supports the input MIME type.
-     *
-     * @var string
-     */
-    public const REASON_UNSUPPORTED_MIME = 'unsupported-mime';
+	/**
+	 * No registered strategy supports the input MIME type.
+	 *
+	 * @var string
+	 */
+	public const REASON_UNSUPPORTED_MIME = 'unsupported-mime';
 
-    /**
-     * The ZIP container is encrypted / password-protected.
-     *
-     * @var string
-     */
-    public const REASON_ENCRYPTED = 'encrypted';
+	/**
+	 * The ZIP container is encrypted / password-protected.
+	 *
+	 * @var string
+	 */
+	public const REASON_ENCRYPTED = 'encrypted';
 
-    /**
-     * The ZIP container is corrupt or not a valid Office package.
-     *
-     * @var string
-     */
-    public const REASON_CORRUPT_ZIP = 'corrupt-zip';
+	/**
+	 * The ZIP container is corrupt or not a valid Office package.
+	 *
+	 * @var string
+	 */
+	public const REASON_CORRUPT_ZIP = 'corrupt-zip';
 
-    /**
-     * Unexpected internal sanitiser failure.
-     *
-     * @var string
-     */
-    public const REASON_INTERNAL = 'internal';
+	/**
+	 * Unexpected internal sanitiser failure.
+	 *
+	 * @var string
+	 */
+	public const REASON_INTERNAL = 'internal';
 
-    /**
-     * The structured reason code (one of the REASON_* constants).
-     *
-     * MUST NOT carry filename or content (ADR-005).
-     *
-     * @var string
-     */
-    public readonly string $reason;
+	/**
+	 * The structured reason code (one of the REASON_* constants).
+	 *
+	 * MUST NOT carry filename or content (ADR-005).
+	 *
+	 * @var string
+	 */
+	public readonly string $reason;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $reason   One of the REASON_* constants.
-     * @param string         $message  PII-free human-readable detail.
-     * @param Throwable|null $previous Previous exception.
-     *
-     * @spec openspec/specs/office-document-sanitization/spec.md
-     */
-    public function __construct(
-        string $reason,
-        string $message='',
-        ?Throwable $previous=null
-    ) {
-        $this->reason = $reason;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $reason One of the REASON_* constants.
+	 * @param string $message PII-free human-readable detail.
+	 * @param Throwable|null $previous Previous exception.
+	 *
+	 * @spec openspec/specs/office-document-sanitization/spec.md
+	 */
+	public function __construct(
+		string $reason,
+		string $message = '',
+		?Throwable $previous = null,
+	) {
+		$this->reason = $reason;
 
-        $finalMessage = $message;
-        if ($finalMessage === '') {
-            $finalMessage = sprintf('Office document sanitisation failed: %s', $reason);
-        }
+		$finalMessage = $message;
+		if ($finalMessage === '') {
+			$finalMessage = sprintf('Office document sanitisation failed: %s', $reason);
+		}
 
-        parent::__construct(message: $finalMessage, code: 0, previous: $previous);
-    }//end __construct()
+		parent::__construct(message: $finalMessage, code: 0, previous: $previous);
+	}//end __construct()
 
-    /**
-     * Get the structured reason code.
-     *
-     * @return string One of the REASON_* constants.
-     *
-     * @spec openspec/specs/office-document-sanitization/spec.md
-     */
-    public function getReason(): string
-    {
-        return $this->reason;
-    }//end getReason()
+	/**
+	 * Get the structured reason code.
+	 *
+	 * @return string One of the REASON_* constants.
+	 *
+	 * @spec openspec/specs/office-document-sanitization/spec.md
+	 */
+	public function getReason(): string {
+		return $this->reason;
+	}//end getReason()
 }//end class

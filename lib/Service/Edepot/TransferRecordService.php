@@ -48,232 +48,221 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
  *   (Requirement: Durable transfer-list objects served over the API)
  */
-class TransferRecordService
-{
+class TransferRecordService {
 
-    /**
-     * Register slug the durable transfer records live under.
-     *
-     * @var string
-     */
-    public const REGISTER_SLUG = 'edepot-transfers';
+	/**
+	 * Register slug the durable transfer records live under.
+	 *
+	 * @var string
+	 */
+	public const REGISTER_SLUG = 'edepot-transfers';
 
-    /**
-     * Schema slug for the durable transfer list.
-     *
-     * @var string
-     */
-    public const TRANSFER_SCHEMA_SLUG = 'edepotTransfer';
+	/**
+	 * Schema slug for the durable transfer list.
+	 *
+	 * @var string
+	 */
+	public const TRANSFER_SCHEMA_SLUG = 'edepotTransfer';
 
-    /**
-     * Schema slug for the immutable proof-of-transfer record.
-     *
-     * @var string
-     */
-    public const PROOF_SCHEMA_SLUG = 'edepotTransferProof';
+	/**
+	 * Schema slug for the immutable proof-of-transfer record.
+	 *
+	 * @var string
+	 */
+	public const PROOF_SCHEMA_SLUG = 'edepotTransferProof';
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService   $objectService The RBAC/tenant-scoped, audited object store.
-     * @param LoggerInterface $logger        Structured logging.
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger,
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objectService The RBAC/tenant-scoped, audited object store.
+	 * @param LoggerInterface $logger Structured logging.
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Persist (create or update) a transfer-list record.
-     *
-     * Keyed by the transfer list's own `uuid`, so status transitions on the
-     * same list update the one durable object. Returns the persisted data.
-     *
-     * @param array<string, mixed> $transferList The transfer-list array (from TransferListService).
-     *
-     * @return array<string, mixed> The persisted transfer-list data (with its object uuid).
-     *
-     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
-     *   (Requirement: Durable transfer-list objects served over the API)
-     */
-    public function saveTransferList(array $transferList): array
-    {
-        $uuid = (string) ($transferList['uuid'] ?? '');
+	/**
+	 * Persist (create or update) a transfer-list record.
+	 *
+	 * Keyed by the transfer list's own `uuid`, so status transitions on the
+	 * same list update the one durable object. Returns the persisted data.
+	 *
+	 * @param array<string, mixed> $transferList The transfer-list array (from TransferListService).
+	 *
+	 * @return array<string, mixed> The persisted transfer-list data (with its object uuid).
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Requirement: Durable transfer-list objects served over the API)
+	 */
+	public function saveTransferList(array $transferList): array {
+		$uuid = (string)($transferList['uuid'] ?? '');
 
-        $data = $transferList;
-        // The list's own uuid IS the object uuid — keep them aligned so
-        // subsequent status writes update the same durable object.
-        $uuidArg = null;
-        if ($uuid !== '') {
-            $data['@self'] = ['uuid' => $uuid];
-            $uuidArg       = $uuid;
-        }
+		$data = $transferList;
+		// The list's own uuid IS the object uuid — keep them aligned so
+		// subsequent status writes update the same durable object.
+		$uuidArg = null;
+		if ($uuid !== '') {
+			$data['@self'] = ['uuid' => $uuid];
+			$uuidArg = $uuid;
+		}
 
-        $saved = $this->objectService->saveObject(
-            object: $data,
-            register: self::REGISTER_SLUG,
-            schema: self::TRANSFER_SCHEMA_SLUG,
-            uuid: $uuidArg
-        );
+		$saved = $this->objectService->saveObject(
+			object: $data,
+			register: self::REGISTER_SLUG,
+			schema: self::TRANSFER_SCHEMA_SLUG,
+			uuid: $uuidArg
+		);
 
-        $rendered         = $saved->getObject();
-        $rendered['uuid'] = (string) $saved->getUuid();
+		$rendered = $saved->getObject();
+		$rendered['uuid'] = (string)$saved->getUuid();
 
-        return $rendered;
+		return $rendered;
+	}//end saveTransferList()
 
-    }//end saveTransferList()
+	/**
+	 * Load a transfer-list record by uuid, or null when absent.
+	 *
+	 * @param string $uuid The transfer-list uuid.
+	 *
+	 * @return array<string, mixed>|null The transfer-list data, or null.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Scenario: Show returns a persisted transfer list)
+	 */
+	public function loadTransferList(string $uuid): ?array {
+		try {
+			$object = $this->objectService->find(
+				id: $uuid,
+				register: self::REGISTER_SLUG,
+				schema: self::TRANSFER_SCHEMA_SLUG
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-    /**
-     * Load a transfer-list record by uuid, or null when absent.
-     *
-     * @param string $uuid The transfer-list uuid.
-     *
-     * @return array<string, mixed>|null The transfer-list data, or null.
-     *
-     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
-     *   (Scenario: Show returns a persisted transfer list)
-     */
-    public function loadTransferList(string $uuid): ?array
-    {
-        try {
-            $object = $this->objectService->find(
-                id: $uuid,
-                register: self::REGISTER_SLUG,
-                schema: self::TRANSFER_SCHEMA_SLUG
-            );
-        } catch (\Throwable $e) {
-            return null;
-        }
+		if ($object === null) {
+			return null;
+		}
 
-        if ($object === null) {
-            return null;
-        }
+		$data = $object->getObject();
+		$data['uuid'] = (string)$object->getUuid();
 
-        $data         = $object->getObject();
-        $data['uuid'] = (string) $object->getUuid();
+		return $data;
+	}//end loadTransferList()
 
-        return $data;
+	/**
+	 * List all durable transfer-list records (newest first), RBAC/tenant scoped.
+	 *
+	 * @return array<int, array<string, mixed>> The transfer-list records.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Scenario: Index returns persisted transfer lists)
+	 */
+	public function listTransferLists(): array {
+		try {
+			$rows = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::REGISTER_SLUG,
+						'schema' => self::TRANSFER_SCHEMA_SLUG,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[TransferRecordService] transfer-list enumeration failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
 
-    }//end loadTransferList()
+		$lists = [];
+		foreach ($rows as $row) {
+			if (is_array($row) === true) {
+				$lists[] = $row;
+			}
+		}
 
-    /**
-     * List all durable transfer-list records (newest first), RBAC/tenant scoped.
-     *
-     * @return array<int, array<string, mixed>> The transfer-list records.
-     *
-     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
-     *   (Scenario: Index returns persisted transfer lists)
-     */
-    public function listTransferLists(): array
-    {
-        try {
-            $rows = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => self::REGISTER_SLUG,
-                        'schema'   => self::TRANSFER_SCHEMA_SLUG,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[TransferRecordService] transfer-list enumeration failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return [];
-        }
+		return $lists;
+	}//end listTransferLists()
 
-        $lists = [];
-        foreach ($rows as $row) {
-            if (is_array($row) === true) {
-                $lists[] = $row;
-            }
-        }
+	/**
+	 * Create an immutable proof-of-transfer record for one confirmed object.
+	 *
+	 * Write-once: if a proof already exists for this (transfer, object) pair
+	 * it is returned unchanged rather than duplicated (idempotent re-run
+	 * safety; belt to the schema `immutable` flag).
+	 *
+	 * @param array<string, mixed> $proof The proof field set (objectUuid, transferUuid, eDepotReference, …).
+	 *
+	 * @return array<string, mixed> The persisted (or pre-existing) proof data.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Scenario: Proof created on confirmed transfer)
+	 */
+	public function createProof(array $proof): array {
+		$objectUuid = (string)($proof['objectUuid'] ?? '');
+		$transferUuid = (string)($proof['transferUuid'] ?? '');
 
-        return $lists;
+		$existing = $this->findProof(objectUuid: $objectUuid, transferUuid: $transferUuid);
+		if ($existing !== null) {
+			return $existing;
+		}
 
-    }//end listTransferLists()
+		if (isset($proof['confirmedAt']) === false) {
+			$proof['confirmedAt'] = (new DateTime())->format('c');
+		}
 
-    /**
-     * Create an immutable proof-of-transfer record for one confirmed object.
-     *
-     * Write-once: if a proof already exists for this (transfer, object) pair
-     * it is returned unchanged rather than duplicated (idempotent re-run
-     * safety; belt to the schema `immutable` flag).
-     *
-     * @param array<string, mixed> $proof The proof field set (objectUuid, transferUuid, eDepotReference, …).
-     *
-     * @return array<string, mixed> The persisted (or pre-existing) proof data.
-     *
-     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
-     *   (Scenario: Proof created on confirmed transfer)
-     */
-    public function createProof(array $proof): array
-    {
-        $objectUuid   = (string) ($proof['objectUuid'] ?? '');
-        $transferUuid = (string) ($proof['transferUuid'] ?? '');
+		$saved = $this->objectService->createObject(
+			data: $proof + ['@self' => ['register' => self::REGISTER_SLUG, 'schema' => self::PROOF_SCHEMA_SLUG]]
+		);
 
-        $existing = $this->findProof(objectUuid: $objectUuid, transferUuid: $transferUuid);
-        if ($existing !== null) {
-            return $existing;
-        }
+		$rendered = $saved->getObject();
+		$rendered['uuid'] = (string)$saved->getUuid();
 
-        if (isset($proof['confirmedAt']) === false) {
-            $proof['confirmedAt'] = (new DateTime())->format('c');
-        }
+		return $rendered;
+	}//end createProof()
 
-        $saved = $this->objectService->createObject(
-            data: $proof + ['@self' => ['register' => self::REGISTER_SLUG, 'schema' => self::PROOF_SCHEMA_SLUG]]
-        );
+	/**
+	 * Find an existing proof for a (transfer, object) pair, or null.
+	 *
+	 * @param string $objectUuid The transferred object's uuid.
+	 * @param string $transferUuid The transfer list's uuid.
+	 *
+	 * @return array<string, mixed>|null The proof data, or null when none exists.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Scenario: Proof is write-once)
+	 */
+	public function findProof(string $objectUuid, string $transferUuid): ?array {
+		if ($objectUuid === '' || $transferUuid === '') {
+			return null;
+		}
 
-        $rendered         = $saved->getObject();
-        $rendered['uuid'] = (string) $saved->getUuid();
+		try {
+			$rows = $this->objectService->findAll(
+				config: [
+					'filters' => [
+						'register' => self::REGISTER_SLUG,
+						'schema' => self::PROOF_SCHEMA_SLUG,
+						'objectUuid' => $objectUuid,
+						'transferUuid' => $transferUuid,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-        return $rendered;
+		foreach ($rows as $row) {
+			if (is_array($row) === true) {
+				return $row;
+			}
+		}
 
-    }//end createProof()
-
-    /**
-     * Find an existing proof for a (transfer, object) pair, or null.
-     *
-     * @param string $objectUuid   The transferred object's uuid.
-     * @param string $transferUuid The transfer list's uuid.
-     *
-     * @return array<string, mixed>|null The proof data, or null when none exists.
-     *
-     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
-     *   (Scenario: Proof is write-once)
-     */
-    public function findProof(string $objectUuid, string $transferUuid): ?array
-    {
-        if ($objectUuid === '' || $transferUuid === '') {
-            return null;
-        }
-
-        try {
-            $rows = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register'     => self::REGISTER_SLUG,
-                        'schema'       => self::PROOF_SCHEMA_SLUG,
-                        'objectUuid'   => $objectUuid,
-                        'transferUuid' => $transferUuid,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            return null;
-        }
-
-        foreach ($rows as $row) {
-            if (is_array($row) === true) {
-                return $row;
-            }
-        }
-
-        return null;
-
-    }//end findProof()
+		return null;
+	}//end findProof()
 }//end class

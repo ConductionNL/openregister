@@ -260,15 +260,18 @@ export default {
 	gap: 12px;
 	padding: 16px;
 }
+
 .avgField {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
+
 .avgField span {
 	font-weight: 600;
 	color: var(--color-text-maxcontrast);
 }
+
 .avgTextarea {
 	width: 100%;
 	min-height: 60px;
@@ -278,6 +281,7 @@ export default {
 	font: inherit;
 	resize: vertical;
 }
+
 .avgEditActions {
 	display: flex;
 	justify-content: flex-end;

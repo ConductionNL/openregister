@@ -49,97 +49,91 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 
-class SchemaMapperInlineCompositionTest extends TestCase
-{
-    private SchemaMapper $mapper;
+class SchemaMapperInlineCompositionTest extends TestCase {
+	private SchemaMapper $mapper;
 
-    protected function setUp(): void
-    {
-        // The DB mock deliberately throws on any query: an inline composition entry must
-        // never reach the DB (via loadSchema), so a throw here would prove a regression.
-        $db = $this->createMock(IDBConnection::class);
-        $db->method('getQueryBuilder')->willThrowException(new DoesNotExistException('no DB in this unit test'));
+	protected function setUp(): void {
+		// The DB mock deliberately throws on any query: an inline composition entry must
+		// never reach the DB (via loadSchema), so a throw here would prove a regression.
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willThrowException(new DoesNotExistException('no DB in this unit test'));
 
-        $this->mapper = new SchemaMapper(
-            $db,
-            $this->createMock(IEventDispatcher::class),
-            $this->createMock(PropertyValidatorHandler::class),
-            $this->createMock(OrganisationMapper::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(IGroupManager::class),
-            $this->createMock(IAppConfig::class),
-            $this->createMock(LoggerInterface::class)
-        );
-    }
+		$this->mapper = new SchemaMapper(
+			$db,
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(PropertyValidatorHandler::class),
+			$this->createMock(OrganisationMapper::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IAppConfig::class),
+			$this->createMock(LoggerInterface::class)
+		);
+	}
 
-    /**
-     * Invoke the private resolveSchemaExtension().
-     *
-     * @param Schema $schema The schema to resolve.
-     *
-     * @return Schema
-     */
-    private function resolve(Schema $schema): Schema
-    {
-        $method = new ReflectionMethod(SchemaMapper::class, 'resolveSchemaExtension');
-        $method->setAccessible(true);
+	/**
+	 * Invoke the private resolveSchemaExtension().
+	 *
+	 * @param Schema $schema The schema to resolve.
+	 *
+	 * @return Schema
+	 */
+	private function resolve(Schema $schema): Schema {
+		$method = new ReflectionMethod(SchemaMapper::class, 'resolveSchemaExtension');
+		$method->setAccessible(true);
 
-        return $method->invoke($this->mapper, $schema, []);
-    }
+		return $method->invoke($this->mapper, $schema, []);
+	}
 
-    /**
-     * The XOR constraint from openconnector's lti_deployment: an all-inline oneOf resolves
-     * without touching the DB.
-     *
-     * @return void
-     */
-    public function testInlineOneOfConstraintResolvesWithoutLoadingSchemas(): void
-    {
-        $schema = new Schema();
-        $schema->setTitle('lti_deployment');
-        $schema->setOneOf(
-            [
-                ['required' => ['ltiPlatformId'], 'not' => ['required' => ['ltiToolId']]],
-                ['required' => ['ltiToolId'], 'not' => ['required' => ['ltiPlatformId']]],
-            ]
-        );
+	/**
+	 * The XOR constraint from openconnector's lti_deployment: an all-inline oneOf resolves
+	 * without touching the DB.
+	 *
+	 * @return void
+	 */
+	public function testInlineOneOfConstraintResolvesWithoutLoadingSchemas(): void {
+		$schema = new Schema();
+		$schema->setTitle('lti_deployment');
+		$schema->setOneOf(
+			[
+				['required' => ['ltiPlatformId'], 'not' => ['required' => ['ltiToolId']]],
+				['required' => ['ltiToolId'], 'not' => ['required' => ['ltiPlatformId']]],
+			]
+		);
 
-        // If the inline entries were passed to loadSchema(), the throwing DB mock would
-        // surface here. Reaching a return proves they were skipped.
-        $resolved = $this->resolve($schema);
+		// If the inline entries were passed to loadSchema(), the throwing DB mock would
+		// surface here. Reaching a return proves they were skipped.
+		$resolved = $this->resolve($schema);
 
-        $this->assertSame('lti_deployment', $resolved->getTitle());
-    }
+		$this->assertSame('lti_deployment', $resolved->getTitle());
+	}
 
-    /**
-     * An all-inline allOf is likewise skipped (same guard, different keyword).
-     *
-     * @return void
-     */
-    public function testInlineAllOfConstraintResolvesWithoutLoadingSchemas(): void
-    {
-        $schema = new Schema();
-        $schema->setTitle('constrained');
-        $schema->setAllOf([['required' => ['a']], ['required' => ['b']]]);
+	/**
+	 * An all-inline allOf is likewise skipped (same guard, different keyword).
+	 *
+	 * @return void
+	 */
+	public function testInlineAllOfConstraintResolvesWithoutLoadingSchemas(): void {
+		$schema = new Schema();
+		$schema->setTitle('constrained');
+		$schema->setAllOf([['required' => ['a']], ['required' => ['b']]]);
 
-        $resolved = $this->resolve($schema);
+		$resolved = $this->resolve($schema);
 
-        $this->assertSame('constrained', $resolved->getTitle());
-    }
+		$this->assertSame('constrained', $resolved->getTitle());
+	}
 
-    /**
-     * An all-inline anyOf is likewise skipped.
-     *
-     * @return void
-     */
-    public function testInlineAnyOfConstraintResolvesWithoutLoadingSchemas(): void
-    {
-        $schema = new Schema();
-        $schema->setTitle('flexible');
-        $schema->setAnyOf([['required' => ['a']], ['minProperties' => 1]]);
+	/**
+	 * An all-inline anyOf is likewise skipped.
+	 *
+	 * @return void
+	 */
+	public function testInlineAnyOfConstraintResolvesWithoutLoadingSchemas(): void {
+		$schema = new Schema();
+		$schema->setTitle('flexible');
+		$schema->setAnyOf([['required' => ['a']], ['minProperties' => 1]]);
 
-        $resolved = $this->resolve($schema);
+		$resolved = $this->resolve($schema);
 
-        $this->assertSame('flexible', $resolved->getTitle());
-    }
+		$this->assertSame('flexible', $resolved->getTitle());
+	}
 }

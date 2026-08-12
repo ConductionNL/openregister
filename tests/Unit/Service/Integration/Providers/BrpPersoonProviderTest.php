@@ -52,239 +52,223 @@ use Psr\Log\LoggerInterface;
 /**
  * Unit tests for BrpPersoonProvider.
  */
-class BrpPersoonProviderTest extends TestCase
-{
+class BrpPersoonProviderTest extends TestCase {
 
-    /**
-     * Mocked external-call router.
-     *
-     * @var ExternalIntegrationRouter&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $router;
+	/**
+	 * Mocked external-call router.
+	 *
+	 * @var ExternalIntegrationRouter&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $router;
 
-    /**
-     * Mocked NC app manager.
-     *
-     * @var IAppManager&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $appManager;
+	/**
+	 * Mocked NC app manager.
+	 *
+	 * @var IAppManager&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $appManager;
 
-    /**
-     * System under test.
-     *
-     * @var BrpPersoonProvider
-     */
-    private BrpPersoonProvider $provider;
+	/**
+	 * System under test.
+	 *
+	 * @var BrpPersoonProvider
+	 */
+	private BrpPersoonProvider $provider;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->router     = $this->createMock(ExternalIntegrationRouter::class);
-        $this->appManager = $this->createMock(IAppManager::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->router = $this->createMock(ExternalIntegrationRouter::class);
+		$this->appManager = $this->createMock(IAppManager::class);
 
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
-        $logger = $this->createMock(LoggerInterface::class);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $this->provider = new BrpPersoonProvider(
-            router: $this->router,
-            appManager: $this->appManager,
-            l10n: $l10n,
-            logger: $logger,
-        );
-    }//end setUp()
+		$this->provider = new BrpPersoonProvider(
+			router: $this->router,
+			appManager: $this->appManager,
+			l10n: $l10n,
+			logger: $logger,
+		);
+	}//end setUp()
 
-    public function testMetadataMatchesLeafSpec(): void
-    {
-        $this->assertSame('brp-haalcentraal', $this->provider->getId());
-        $this->assertSame('BRP Person Register (HaalCentraal)', $this->provider->getLabel());
-        $this->assertSame('AccountSearch', $this->provider->getIcon());
-        $this->assertSame('external', $this->provider->getGroup());
-        $this->assertSame('openconnector', $this->provider->getRequiredApp());
-        $this->assertSame('external', $this->provider->getStorageStrategy());
-        $this->assertSame('brp-haalcentraal', $this->provider->getOpenConnectorSource());
-        $this->assertSame('brp-haalcentraal', BrpPersoonProvider::SOURCE_ID);
-        $this->assertNull($this->provider->requiresPermission());
-    }//end testMetadataMatchesLeafSpec()
+	public function testMetadataMatchesLeafSpec(): void {
+		$this->assertSame('brp-haalcentraal', $this->provider->getId());
+		$this->assertSame('BRP Person Register (HaalCentraal)', $this->provider->getLabel());
+		$this->assertSame('AccountSearch', $this->provider->getIcon());
+		$this->assertSame('external', $this->provider->getGroup());
+		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		$this->assertSame('external', $this->provider->getStorageStrategy());
+		$this->assertSame('brp-haalcentraal', $this->provider->getOpenConnectorSource());
+		$this->assertSame('brp-haalcentraal', BrpPersoonProvider::SOURCE_ID);
+		$this->assertNull($this->provider->requiresPermission());
+	}//end testMetadataMatchesLeafSpec()
 
-    public function testAuthRequirementsAreExternalOAuthAndMtlsViaOpenConnector(): void
-    {
-        $auth = $this->provider->authRequirements();
-        $this->assertSame('external', $auth['type']);
-        $this->assertSame('openconnector', $auth['configuredVia']);
-        $this->assertSame('brp-haalcentraal', $auth['source']);
-        $this->assertContains('oauth2_client_credentials', $auth['supports']);
-        $this->assertContains('mtls', $auth['supports']);
-    }//end testAuthRequirementsAreExternalOAuthAndMtlsViaOpenConnector()
+	public function testAuthRequirementsAreExternalOAuthAndMtlsViaOpenConnector(): void {
+		$auth = $this->provider->authRequirements();
+		$this->assertSame('external', $auth['type']);
+		$this->assertSame('openconnector', $auth['configuredVia']);
+		$this->assertSame('brp-haalcentraal', $auth['source']);
+		$this->assertContains('oauth2_client_credentials', $auth['supports']);
+		$this->assertContains('mtls', $auth['supports']);
+	}//end testAuthRequirementsAreExternalOAuthAndMtlsViaOpenConnector()
 
-    public function testIsEnabledMirrorsOpenConnectorInstall(): void
-    {
-        $this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
-        $this->assertTrue($this->provider->isEnabled());
-    }//end testIsEnabledMirrorsOpenConnectorInstall()
+	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
+		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->assertTrue($this->provider->isEnabled());
+	}//end testIsEnabledMirrorsOpenConnectorInstall()
 
-    public function testLookupByBsnPostsRaadpleegBodyAndUnwrapsPersonen(): void
-    {
-        $this->router->expects($this->once())
-            ->method('callWithMeta')
-            ->with(
-                $this->provider,
-                'POST',
-                'personen',
-                $this->callback(
-                    static function (array $opts): bool {
-                        $body = ($opts['body'] ?? []);
-                        return ($body['type'] ?? null) === 'RaadpleegMetBurgerservicenummer'
-                            && ($body['burgerservicenummer'][0] ?? null) === '999993653'
-                            && is_array($body['fields'] ?? null) === true
-                            && in_array('burgerservicenummer', $body['fields'], true) === true
-                            && ($opts['headers']['Accept'] ?? null) === 'application/hal+json';
-                    }
-                )
-            )
-            ->willReturn(
-                [
-                    'body' => ['personen' => [['burgerservicenummer' => '999993653', 'naam' => ['geslachtsnaam' => 'Tester']]]],
-                    'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
-                ]
-            );
+	public function testLookupByBsnPostsRaadpleegBodyAndUnwrapsPersonen(): void {
+		$this->router->expects($this->once())
+			->method('callWithMeta')
+			->with(
+				$this->provider,
+				'POST',
+				'personen',
+				$this->callback(
+					static function (array $opts): bool {
+						$body = ($opts['body'] ?? []);
+						return ($body['type'] ?? null) === 'RaadpleegMetBurgerservicenummer'
+							&& ($body['burgerservicenummer'][0] ?? null) === '999993653'
+							&& is_array($body['fields'] ?? null) === true
+							&& in_array('burgerservicenummer', $body['fields'], true) === true
+							&& ($opts['headers']['Accept'] ?? null) === 'application/hal+json';
+					}
+				)
+			)
+			->willReturn(
+				[
+					'body' => ['personen' => [['burgerservicenummer' => '999993653', 'naam' => ['geslachtsnaam' => 'Tester']]]],
+					'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
+				]
+			);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertArrayNotHasKey('unavailable', $result);
-        $this->assertSame(1, $result['total']);
-        $this->assertSame('999993653', $result['results'][0]['burgerservicenummer']);
-    }//end testLookupByBsnPostsRaadpleegBodyAndUnwrapsPersonen()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertArrayNotHasKey('unavailable', $result);
+		$this->assertSame(1, $result['total']);
+		$this->assertSame('999993653', $result['results'][0]['burgerservicenummer']);
+	}//end testLookupByBsnPostsRaadpleegBodyAndUnwrapsPersonen()
 
-    public function testLookupUnwrapsEmbeddedPersonenEnvelope(): void
-    {
-        $this->router->method('callWithMeta')->willReturn(
-            [
-                'body' => ['_embedded' => ['personen' => [['burgerservicenummer' => '999993653']]]],
-                'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
-            ]
-        );
+	public function testLookupUnwrapsEmbeddedPersonenEnvelope(): void {
+		$this->router->method('callWithMeta')->willReturn(
+			[
+				'body' => ['_embedded' => ['personen' => [['burgerservicenummer' => '999993653']]]],
+				'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
+			]
+		);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertSame(1, $result['total']);
-        $this->assertSame('999993653', $result['results'][0]['burgerservicenummer']);
-    }//end testLookupUnwrapsEmbeddedPersonenEnvelope()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertSame(1, $result['total']);
+		$this->assertSame('999993653', $result['results'][0]['burgerservicenummer']);
+	}//end testLookupUnwrapsEmbeddedPersonenEnvelope()
 
-    public function testLookupSurfacesAuditMetadataFromUpstreamResponse(): void
-    {
-        // The router surfaces the upstream X-Correlation-ID + round-trip
-        // duration + HTTP status; the leaf shapes them into `meta` so the
-        // consuming app can persist the Wet-BRP-required audit fields.
-        $this->router->method('callWithMeta')->willReturn(
-            [
-                'body' => ['personen' => [['burgerservicenummer' => '999993653']]],
-                'meta' => [
-                    'correlationId' => 'abcd-1234-correlation',
-                    'durationMs'    => 137,
-                    'status'        => 200,
-                    'headers'       => ['X-Correlation-ID' => 'abcd-1234-correlation'],
-                ],
-            ]
-        );
+	public function testLookupSurfacesAuditMetadataFromUpstreamResponse(): void {
+		// The router surfaces the upstream X-Correlation-ID + round-trip
+		// duration + HTTP status; the leaf shapes them into `meta` so the
+		// consuming app can persist the Wet-BRP-required audit fields.
+		$this->router->method('callWithMeta')->willReturn(
+			[
+				'body' => ['personen' => [['burgerservicenummer' => '999993653']]],
+				'meta' => [
+					'correlationId' => 'abcd-1234-correlation',
+					'durationMs' => 137,
+					'status' => 200,
+					'headers' => ['X-Correlation-ID' => 'abcd-1234-correlation'],
+				],
+			]
+		);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertArrayHasKey('meta', $result);
-        $this->assertSame('abcd-1234-correlation', $result['meta']['correlationId']);
-        $this->assertSame(137, $result['meta']['durationMs']);
-        $this->assertSame(200, $result['meta']['status']);
-        // The BSN must NEVER appear in the audit metadata.
-        $this->assertStringNotContainsString('999993653', json_encode($result['meta']));
-    }//end testLookupSurfacesAuditMetadataFromUpstreamResponse()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertArrayHasKey('meta', $result);
+		$this->assertSame('abcd-1234-correlation', $result['meta']['correlationId']);
+		$this->assertSame(137, $result['meta']['durationMs']);
+		$this->assertSame(200, $result['meta']['status']);
+		// The BSN must NEVER appear in the audit metadata.
+		$this->assertStringNotContainsString('999993653', json_encode($result['meta']));
+	}//end testLookupSurfacesAuditMetadataFromUpstreamResponse()
 
-    public function testLookupMetaDefaultsWhenRouterOmitsMeta(): void
-    {
-        $this->router->method('callWithMeta')->willReturn(
-            ['body' => ['personen' => [['burgerservicenummer' => '999993653']]]]
-        );
+	public function testLookupMetaDefaultsWhenRouterOmitsMeta(): void {
+		$this->router->method('callWithMeta')->willReturn(
+			['body' => ['personen' => [['burgerservicenummer' => '999993653']]]]
+		);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertNull($result['meta']['correlationId']);
-        $this->assertSame(0, $result['meta']['durationMs']);
-        $this->assertSame(0, $result['meta']['status']);
-    }//end testLookupMetaDefaultsWhenRouterOmitsMeta()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertNull($result['meta']['correlationId']);
+		$this->assertSame(0, $result['meta']['durationMs']);
+		$this->assertSame(0, $result['meta']['status']);
+	}//end testLookupMetaDefaultsWhenRouterOmitsMeta()
 
-    public function testLookupByEmptyBsnShortCircuits(): void
-    {
-        $this->router->expects($this->never())->method('callWithMeta');
-        $result = $this->provider->lookupByBsn('   ');
-        $this->assertSame(
-            ['results' => [], 'total' => 0, 'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 0]],
-            $result
-        );
-    }//end testLookupByEmptyBsnShortCircuits()
+	public function testLookupByEmptyBsnShortCircuits(): void {
+		$this->router->expects($this->never())->method('callWithMeta');
+		$result = $this->provider->lookupByBsn('   ');
+		$this->assertSame(
+			['results' => [], 'total' => 0, 'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 0]],
+			$result
+		);
+	}//end testLookupByEmptyBsnShortCircuits()
 
-    public function testListDelegatesUsingSearchFilterAsBsn(): void
-    {
-        $this->router->expects($this->once())
-            ->method('call')
-            ->with(
-                $this->provider,
-                'POST',
-                'personen',
-                $this->callback(
-                    static fn (array $opts): bool => ($opts['body']['burgerservicenummer'][0] ?? null) === '999993653'
-                )
-            )
-            ->willReturn(['personen' => [['burgerservicenummer' => '999993653']]]);
+	public function testListDelegatesUsingSearchFilterAsBsn(): void {
+		$this->router->expects($this->once())
+			->method('call')
+			->with(
+				$this->provider,
+				'POST',
+				'personen',
+				$this->callback(
+					static fn (array $opts): bool => ($opts['body']['burgerservicenummer'][0] ?? null) === '999993653'
+				)
+			)
+			->willReturn(['personen' => [['burgerservicenummer' => '999993653']]]);
 
-        $rows = $this->provider->list('', '', '', ['_search' => '999993653']);
-        $this->assertCount(1, $rows);
-        $this->assertSame('999993653', $rows[0]['burgerservicenummer']);
-    }//end testListDelegatesUsingSearchFilterAsBsn()
+		$rows = $this->provider->list('', '', '', ['_search' => '999993653']);
+		$this->assertCount(1, $rows);
+		$this->assertSame('999993653', $rows[0]['burgerservicenummer']);
+	}//end testListDelegatesUsingSearchFilterAsBsn()
 
-    public function testListWithoutBsnShortCircuits(): void
-    {
-        $this->router->expects($this->never())->method('call');
-        $this->assertSame([], $this->provider->list('', '', '', []));
-    }//end testListWithoutBsnShortCircuits()
+	public function testListWithoutBsnShortCircuits(): void {
+		$this->router->expects($this->never())->method('call');
+		$this->assertSame([], $this->provider->list('', '', '', []));
+	}//end testListWithoutBsnShortCircuits()
 
-    public function testLookupDegradesOnSourceMissing(): void
-    {
-        $this->router->method('callWithMeta')->willThrowException(
-            new ProviderUnavailableException(
-                'no source',
-                ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
-            )
-        );
+	public function testLookupDegradesOnSourceMissing(): void {
+		$this->router->method('callWithMeta')->willThrowException(
+			new ProviderUnavailableException(
+				'no source',
+				ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
+			)
+		);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('openconnector-source-missing', $result['cause']);
-        $this->assertSame([], $result['results']);
-        $this->assertSame(0, $result['total']);
-    }//end testLookupDegradesOnSourceMissing()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('openconnector-source-missing', $result['cause']);
+		$this->assertSame([], $result['results']);
+		$this->assertSame(0, $result['total']);
+	}//end testLookupDegradesOnSourceMissing()
 
-    public function testLookupDegradesOnUpstreamDown(): void
-    {
-        $this->router->method('callWithMeta')->willThrowException(
-            new ProviderUnavailableException(
-                'down',
-                ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN
-            )
-        );
+	public function testLookupDegradesOnUpstreamDown(): void {
+		$this->router->method('callWithMeta')->willThrowException(
+			new ProviderUnavailableException(
+				'down',
+				ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN
+			)
+		);
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('upstream-service-down', $result['cause']);
-    }//end testLookupDegradesOnUpstreamDown()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('upstream-service-down', $result['cause']);
+	}//end testLookupDegradesOnUpstreamDown()
 
-    public function testLookupDegradesOnUnexpectedThrowable(): void
-    {
-        $this->router->method('callWithMeta')->willThrowException(new \RuntimeException('boom'));
+	public function testLookupDegradesOnUnexpectedThrowable(): void {
+		$this->router->method('callWithMeta')->willThrowException(new \RuntimeException('boom'));
 
-        $result = $this->provider->lookupByBsn('999993653');
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('upstream-service-down', $result['cause']);
-    }//end testLookupDegradesOnUnexpectedThrowable()
+		$result = $this->provider->lookupByBsn('999993653');
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('upstream-service-down', $result['cause']);
+	}//end testLookupDegradesOnUnexpectedThrowable()
 
-    public function testHealthDefersToRouterProbe(): void
-    {
-        $probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
-        $this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);
-        $this->assertSame($probe, $this->provider->health());
-    }//end testHealthDefersToRouterProbe()
+	public function testHealthDefersToRouterProbe(): void {
+		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		$this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);
+		$this->assertSame($probe, $this->provider->health());
+	}//end testHealthDefersToRouterProbe()
 }//end class

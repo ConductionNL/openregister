@@ -54,506 +54,496 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller requires many service dependencies
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   REST endpoints for full destruction workflow
  */
-class ArchivalController extends Controller
-{
+class ArchivalController extends Controller {
 
-    /**
-     * The archivist group name for authorization.
-     */
-    private const ARCHIVIST_GROUP = 'archivaris';
+	/**
+	 * The archivist group name for authorization.
+	 */
+	private const ARCHIVIST_GROUP = 'archivaris';
 
-    /**
-     * Destruction service.
-     *
-     * @var DestructionService
-     */
-    private DestructionService $destructionService;
+	/**
+	 * Destruction service.
+	 *
+	 * @var DestructionService
+	 */
+	private DestructionService $destructionService;
 
-    /**
-     * Legal hold service.
-     *
-     * @var LegalHoldService
-     */
-    private LegalHoldService $legalHoldService;
+	/**
+	 * Legal hold service.
+	 *
+	 * @var LegalHoldService
+	 */
+	private LegalHoldService $legalHoldService;
 
-    /**
-     * Object mapper.
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $objectMapper;
+	/**
+	 * Object mapper.
+	 *
+	 * @var MagicMapper
+	 */
+	private MagicMapper $objectMapper;
 
-    /**
-     * User session.
-     *
-     * @var IUserSession
-     */
-    private IUserSession $userSession;
+	/**
+	 * User session.
+	 *
+	 * @var IUserSession
+	 */
+	private IUserSession $userSession;
 
-    /**
-     * Group manager for role checking.
-     *
-     * @var IGroupManager
-     */
-    private IGroupManager $groupManager;
+	/**
+	 * Group manager for role checking.
+	 *
+	 * @var IGroupManager
+	 */
+	private IGroupManager $groupManager;
 
-    /**
-     * Logger instance.
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Logger instance.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
 
-    /**
-     * Constructor.
-     *
-     * @param string             $appName            The app name.
-     * @param IRequest           $request            The request object.
-     * @param DestructionService $destructionService Destruction service.
-     * @param LegalHoldService   $legalHoldService   Legal hold service.
-     * @param MagicMapper        $objectMapper       Object mapper.
-     * @param IUserSession       $userSession        User session.
-     * @param IGroupManager      $groupManager       Group manager.
-     * @param LoggerInterface    $logger             Logger.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        DestructionService $destructionService,
-        LegalHoldService $legalHoldService,
-        MagicMapper $objectMapper,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app name.
+	 * @param IRequest $request The request object.
+	 * @param DestructionService $destructionService Destruction service.
+	 * @param LegalHoldService $legalHoldService Legal hold service.
+	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param IUserSession $userSession User session.
+	 * @param IGroupManager $groupManager Group manager.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		DestructionService $destructionService,
+		LegalHoldService $legalHoldService,
+		MagicMapper $objectMapper,
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-        $this->destructionService = $destructionService;
-        $this->legalHoldService   = $legalHoldService;
-        $this->objectMapper       = $objectMapper;
-        $this->userSession        = $userSession;
-        $this->groupManager       = $groupManager;
-        $this->logger = $logger;
-    }//end __construct()
+		$this->destructionService = $destructionService;
+		$this->legalHoldService = $legalHoldService;
+		$this->objectMapper = $objectMapper;
+		$this->userSession = $userSession;
+		$this->groupManager = $groupManager;
+		$this->logger = $logger;
+	}//end __construct()
 
-    /**
-     * List destruction lists with optional status filter.
-     *
-     * @return JSONResponse The list of destruction lists.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function listDestructionLists(): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * List destruction lists with optional status filter.
+	 *
+	 * @return JSONResponse The list of destruction lists.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function listDestructionLists(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        $status = $this->request->getParam('status');
+		$status = $this->request->getParam('status');
 
-        // In a full implementation, this would query the archival register
-        // for destruction list objects. For now, return the structure.
-        return new JSONResponse(
-            data: [
-                'results' => [],
-                'total'   => 0,
-                'filter'  => $status,
-            ],
-            statusCode: Http::STATUS_OK
-        );
-    }//end listDestructionLists()
+		// In a full implementation, this would query the archival register
+		// for destruction list objects. For now, return the structure.
+		return new JSONResponse(
+			data: [
+				'results' => [],
+				'total' => 0,
+				'filter' => $status,
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end listDestructionLists()
 
-    /**
-     * Get a specific destruction list by ID.
-     *
-     * @param string $id The destruction list UUID.
-     *
-     * @return JSONResponse The destruction list detail.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function getDestructionList(string $id): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * Get a specific destruction list by ID.
+	 *
+	 * @param string $id The destruction list UUID.
+	 *
+	 * @return JSONResponse The destruction list detail.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function getDestructionList(string $id): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        try {
-            $object = $this->objectMapper->findByUuid($id);
-            return new JSONResponse(
-                data: $object->jsonSerialize(),
-                statusCode: Http::STATUS_OK
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Destruction list not found'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }
-    }//end getDestructionList()
+		try {
+			$object = $this->objectMapper->findByUuid($id);
+			return new JSONResponse(
+				data: $object->jsonSerialize(),
+				statusCode: Http::STATUS_OK
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Destruction list not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+	}//end getDestructionList()
 
-    /**
-     * Approve a destruction list (full or partial).
-     *
-     * @param string $id The destruction list UUID.
-     *
-     * @return JSONResponse The updated destruction list.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function approveDestructionList(string $id): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * Approve a destruction list (full or partial).
+	 *
+	 * @param string $id The destruction list UUID.
+	 *
+	 * @return JSONResponse The updated destruction list.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function approveDestructionList(string $id): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        $params           = $this->request->getParams();
-        $action           = $params['action'] ?? 'approve_all';
-        $excludedIds      = $params['excluded'] ?? [];
-        $exclusionReasons = $params['exclusionReasons'] ?? [];
+		$params = $this->request->getParams();
+		$action = $params['action'] ?? 'approve_all';
+		$excludedIds = $params['excluded'] ?? [];
+		$exclusionReasons = $params['exclusionReasons'] ?? [];
 
-        try {
-            $object          = $this->objectMapper->findByUuid($id);
-            $destructionList = $object->getObject() ?? [];
+		try {
+			$object = $this->objectMapper->findByUuid($id);
+			$destructionList = $object->getObject() ?? [];
 
-            // Check for dual-approval requirement based on schema config.
-            $requiresDual = false;
+			// Check for dual-approval requirement based on schema config.
+			$requiresDual = false;
 
-            $result = $this->destructionService->approveList(
-                destructionList: $destructionList,
-                action: $action,
-                excludedIds: $excludedIds,
-                exclusionReasons: $exclusionReasons,
-                requiresDual: $requiresDual,
-                listUuid: $id
-            );
+			$result = $this->destructionService->approveList(
+				destructionList: $destructionList,
+				action: $action,
+				excludedIds: $excludedIds,
+				exclusionReasons: $exclusionReasons,
+				requiresDual: $requiresDual,
+				listUuid: $id
+			);
 
-            // Check if dual approval was rejected (same user).
-            if ($result['status'] === $destructionList['status']
-                && $result['status'] === DestructionService::STATUS_AWAITING_SECOND
-            ) {
-                return new JSONResponse(
-                    data: ['error' => 'De tweede goedkeuring moet door een andere archivaris worden gegeven'],
-                    statusCode: Http::STATUS_CONFLICT
-                );
-            }
+			// Check if dual approval was rejected (same user).
+			if ($result['status'] === $destructionList['status']
+				&& $result['status'] === DestructionService::STATUS_AWAITING_SECOND
+			) {
+				return new JSONResponse(
+					data: ['error' => 'De tweede goedkeuring moet door een andere archivaris worden gegeven'],
+					statusCode: Http::STATUS_CONFLICT
+				);
+			}
 
-            // Persist the approval. Without this the recorded approval and the
-            // `approved` status were returned to the caller but never written back,
-            // so the list stayed `in_review` in storage and the execution job — which
-            // reloads the list by uuid and requires status `approved` — refused to run
-            // (openregister#393). RetentionController has always persisted here.
-            $object->setObject($result);
-            $this->objectMapper->update($object);
+			// Persist the approval. Without this the recorded approval and the
+			// `approved` status were returned to the caller but never written back,
+			// so the list stayed `in_review` in storage and the execution job — which
+			// reloads the list by uuid and requires status `approved` — refused to run
+			// (openregister#393). RetentionController has always persisted here.
+			$object->setObject($result);
+			$this->objectMapper->update($object);
 
-            return new JSONResponse(
-                data: $result,
-                statusCode: Http::STATUS_OK
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ArchivalController] Failed to approve destruction list',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'id'        => $id,
-                    'exception' => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(
-                data: ['error' => 'Failed to approve destruction list: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end approveDestructionList()
+			return new JSONResponse(
+				data: $result,
+				statusCode: Http::STATUS_OK
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ArchivalController] Failed to approve destruction list',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'id' => $id,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				data: ['error' => 'Failed to approve destruction list: ' . $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end approveDestructionList()
 
-    /**
-     * Reject a destruction list.
-     *
-     * @param string $id The destruction list UUID.
-     *
-     * @return JSONResponse The updated destruction list.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function rejectDestructionList(string $id): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * Reject a destruction list.
+	 *
+	 * @param string $id The destruction list UUID.
+	 *
+	 * @return JSONResponse The updated destruction list.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function rejectDestructionList(string $id): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        $params = $this->request->getParams();
-        $reason = $params['reason'] ?? null;
+		$params = $this->request->getParams();
+		$reason = $params['reason'] ?? null;
 
-        if ($reason === null || trim($reason) === '') {
-            return new JSONResponse(
-                data: ['error' => 'Een reden voor afwijzing is verplicht'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		if ($reason === null || trim($reason) === '') {
+			return new JSONResponse(
+				data: ['error' => 'Een reden voor afwijzing is verplicht'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            $object          = $this->objectMapper->findByUuid($id);
-            $destructionList = $object->getObject() ?? [];
+		try {
+			$object = $this->objectMapper->findByUuid($id);
+			$destructionList = $object->getObject() ?? [];
 
-            $result = $this->destructionService->rejectList($destructionList, $reason);
+			$result = $this->destructionService->rejectList($destructionList, $reason);
 
-            return new JSONResponse(
-                data: $result,
-                statusCode: Http::STATUS_OK
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ArchivalController] Failed to reject destruction list',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'id'        => $id,
-                    'exception' => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(
-                data: ['error' => 'Failed to reject destruction list: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end rejectDestructionList()
+			return new JSONResponse(
+				data: $result,
+				statusCode: Http::STATUS_OK
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ArchivalController] Failed to reject destruction list',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'id' => $id,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				data: ['error' => 'Failed to reject destruction list: ' . $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end rejectDestructionList()
 
-    /**
-     * Place a legal hold on one or more objects.
-     *
-     * @return JSONResponse The legal hold result.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function createLegalHold(): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * Place a legal hold on one or more objects.
+	 *
+	 * @return JSONResponse The legal hold result.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function createLegalHold(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        $params   = $this->request->getParams();
-        $objectId = $params['objectId'] ?? null;
-        $schemaId = $params['schemaId'] ?? null;
-        $reason   = $params['reason'] ?? null;
+		$params = $this->request->getParams();
+		$objectId = $params['objectId'] ?? null;
+		$schemaId = $params['schemaId'] ?? null;
+		$reason = $params['reason'] ?? null;
 
-        if ($reason === null || trim($reason) === '') {
-            return new JSONResponse(
-                data: ['error' => 'Een reden voor de bewaarplicht is verplicht'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		if ($reason === null || trim($reason) === '') {
+			return new JSONResponse(
+				data: ['error' => 'Een reden voor de bewaarplicht is verplicht'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            // Bulk hold on schema.
-            if ($schemaId !== null) {
-                $registerId = $params['registerId'] ?? null;
-                if ($registerId === null) {
-                    return new JSONResponse(
-                        data: ['error' => 'registerId is verplicht voor schema-brede bewaarplicht'],
-                        statusCode: Http::STATUS_BAD_REQUEST
-                    );
-                }
+		try {
+			// Bulk hold on schema.
+			if ($schemaId !== null) {
+				$registerId = $params['registerId'] ?? null;
+				if ($registerId === null) {
+					return new JSONResponse(
+						data: ['error' => 'registerId is verplicht voor schema-brede bewaarplicht'],
+						statusCode: Http::STATUS_BAD_REQUEST
+					);
+				}
 
-                $this->legalHoldService->bulkPlaceHold(
-                    (int) $schemaId,
-                    (int) $registerId,
-                    $reason
-                );
+				$this->legalHoldService->bulkPlaceHold(
+					(int)$schemaId,
+					(int)$registerId,
+					$reason
+				);
 
-                return new JSONResponse(
-                    data: ['message' => 'Bulk bewaarplicht is ingepland als achtergrondtaak'],
-                    statusCode: Http::STATUS_ACCEPTED
-                );
-            }
+				return new JSONResponse(
+					data: ['message' => 'Bulk bewaarplicht is ingepland als achtergrondtaak'],
+					statusCode: Http::STATUS_ACCEPTED
+				);
+			}
 
-            // Single object hold.
-            if ($objectId === null) {
-                return new JSONResponse(
-                    data: ['error' => 'objectId of schemaId is verplicht'],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
+			// Single object hold.
+			if ($objectId === null) {
+				return new JSONResponse(
+					data: ['error' => 'objectId of schemaId is verplicht'],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
 
-            $object = $this->objectMapper->findByUuid($objectId);
-            $result = $this->legalHoldService->placeHold($object, $reason);
+			$object = $this->objectMapper->findByUuid($objectId);
+			$result = $this->legalHoldService->placeHold($object, $reason);
 
-            return new JSONResponse(
-                data: [
-                    'message'   => 'Bewaarplicht geplaatst',
-                    'objectId'  => $result->getUuid(),
-                    'legalHold' => $result->getRetention()['legalHold'] ?? [],
-                ],
-                statusCode: Http::STATUS_OK
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ArchivalController] Failed to create legal hold',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e->getMessage(),
-                ]
-            );
-            return new JSONResponse(
-                data: ['error' => 'Failed to create legal hold: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end createLegalHold()
+			return new JSONResponse(
+				data: [
+					'message' => 'Bewaarplicht geplaatst',
+					'objectId' => $result->getUuid(),
+					'legalHold' => $result->getRetention()['legalHold'] ?? [],
+				],
+				statusCode: Http::STATUS_OK
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ArchivalController] Failed to create legal hold',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return new JSONResponse(
+				data: ['error' => 'Failed to create legal hold: ' . $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end createLegalHold()
 
-    /**
-     * Release a legal hold on an object.
-     *
-     * @param string $id The object UUID to release the hold from.
-     *
-     * @return JSONResponse The release result.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function releaseLegalHold(string $id): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * Release a legal hold on an object.
+	 *
+	 * @param string $id The object UUID to release the hold from.
+	 *
+	 * @return JSONResponse The release result.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function releaseLegalHold(string $id): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        $params = $this->request->getParams();
-        $reason = $params['reason'] ?? null;
+		$params = $this->request->getParams();
+		$reason = $params['reason'] ?? null;
 
-        if ($reason === null || trim($reason) === '') {
-            return new JSONResponse(
-                data: ['error' => 'Een reden voor het opheffen van de bewaarplicht is verplicht'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }
+		if ($reason === null || trim($reason) === '') {
+			return new JSONResponse(
+				data: ['error' => 'Een reden voor het opheffen van de bewaarplicht is verplicht'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
 
-        try {
-            $object = $this->objectMapper->findByUuid($id);
-            $result = $this->legalHoldService->releaseHold($object, $reason);
+		try {
+			$object = $this->objectMapper->findByUuid($id);
+			$result = $this->legalHoldService->releaseHold($object, $reason);
 
-            return new JSONResponse(
-                data: [
-                    'message'   => 'Bewaarplicht opgeheven',
-                    'objectId'  => $result->getUuid(),
-                    'legalHold' => $result->getRetention()['legalHold'] ?? [],
-                ],
-                statusCode: Http::STATUS_OK
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Failed to release legal hold: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }//end releaseLegalHold()
+			return new JSONResponse(
+				data: [
+					'message' => 'Bewaarplicht opgeheven',
+					'objectId' => $result->getUuid(),
+					'legalHold' => $result->getRetention()['legalHold'] ?? [],
+				],
+				statusCode: Http::STATUS_OK
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to release legal hold: ' . $e->getMessage()],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+	}//end releaseLegalHold()
 
-    /**
-     * List active legal holds.
-     *
-     * @return JSONResponse The list of active legal holds.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function listLegalHolds(): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * List active legal holds.
+	 *
+	 * @return JSONResponse The list of active legal holds.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function listLegalHolds(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        // In a full implementation, this would query objects with active legal holds.
-        return new JSONResponse(
-            data: [
-                'results' => [],
-                'total'   => 0,
-            ],
-            statusCode: Http::STATUS_OK
-        );
-    }//end listLegalHolds()
+		// In a full implementation, this would query objects with active legal holds.
+		return new JSONResponse(
+			data: [
+				'results' => [],
+				'total' => 0,
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end listLegalHolds()
 
-    /**
-     * List destruction certificates.
-     *
-     * @return JSONResponse The list of destruction certificates.
-     *
-     * @NoAdminRequired
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    public function listCertificates(): JSONResponse
-    {
-        $authCheck = $this->checkArchivistRole();
-        if ($authCheck !== null) {
-            return $authCheck;
-        }
+	/**
+	 * List destruction certificates.
+	 *
+	 * @return JSONResponse The list of destruction certificates.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function listCertificates(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
 
-        // In a full implementation, this would query the archival register
-        // for certificate objects.
-        return new JSONResponse(
-            data: [
-                'results' => [],
-                'total'   => 0,
-            ],
-            statusCode: Http::STATUS_OK
-        );
-    }//end listCertificates()
+		// In a full implementation, this would query the archival register
+		// for certificate objects.
+		return new JSONResponse(
+			data: [
+				'results' => [],
+				'total' => 0,
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end listCertificates()
 
-    /**
-     * Check if the current user has the archivist role.
-     *
-     * @return JSONResponse|null Returns a 403 response if unauthorized, null if authorized.
-     *
-     * @spec openspec/specs/archival-destruction-workflow/spec.md
-     */
-    private function checkArchivistRole(): ?JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(
-                data: ['error' => 'Niet geauthenticeerd'],
-                statusCode: Http::STATUS_UNAUTHORIZED
-            );
-        }
+	/**
+	 * Check if the current user has the archivist role.
+	 *
+	 * @return JSONResponse|null Returns a 403 response if unauthorized, null if authorized.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function checkArchivistRole(): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Niet geauthenticeerd'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
 
-        // Check if user is in the archivaris group or is an admin.
-        $isArchivist = $this->groupManager->isInGroup($user->getUID(), self::ARCHIVIST_GROUP);
-        $isAdmin     = $this->groupManager->isAdmin($user->getUID());
+		// Check if user is in the archivaris group or is an admin.
+		$isArchivist = $this->groupManager->isInGroup($user->getUID(), self::ARCHIVIST_GROUP);
+		$isAdmin = $this->groupManager->isAdmin($user->getUID());
 
-        if ($isArchivist === false && $isAdmin === false) {
-            return new JSONResponse(
-                data: ['error' => 'Onvoldoende rechten: archivaris rol is vereist'],
-                statusCode: Http::STATUS_FORBIDDEN
-            );
-        }
+		if ($isArchivist === false && $isAdmin === false) {
+			return new JSONResponse(
+				data: ['error' => 'Onvoldoende rechten: archivaris rol is vereist'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
 
-        return null;
-    }//end checkArchivistRole()
+		return null;
+	}//end checkArchivistRole()
 }//end class

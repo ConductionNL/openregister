@@ -34,22 +34,20 @@ use RuntimeException;
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Mcp\Fixtures
  */
-class ThrowingFixtureService
-{
+class ThrowingFixtureService {
 
-    /**
-     * Always rejects — simulates the owning method's own authorization
-     * check failing.
-     *
-     * @param string $id The target id.
-     *
-     * @return array<string, mixed> Never returns.
-     *
-     * @throws RuntimeException Always.
-     */
-    #[McpTool]
-    public function privilegedAction(string $id): array
-    {
-        throw new RuntimeException('Not authorized');
-    }//end privilegedAction()
+	/**
+	 * Always rejects — simulates the owning method's own authorization
+	 * check failing.
+	 *
+	 * @param string $id The target id.
+	 *
+	 * @return array<string, mixed> Never returns.
+	 *
+	 * @throws RuntimeException Always.
+	 */
+	#[McpTool]
+	public function privilegedAction(string $id): array {
+		throw new RuntimeException('Not authorized');
+	}//end privilegedAction()
 }//end class

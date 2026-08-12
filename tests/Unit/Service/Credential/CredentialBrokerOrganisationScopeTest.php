@@ -48,280 +48,272 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  */
-class CredentialBrokerOrganisationScopeTest extends TestCase
-{
-    private const UUID = 'cred-org-1';
+class CredentialBrokerOrganisationScopeTest extends TestCase {
+	private const UUID = 'cred-org-1';
 
-    private const ORG_UUID = 'org-uuid-tender-office';
+	private const ORG_UUID = 'org-uuid-tender-office';
 
-    /**
-     * The github catalogue entry used across the tests.
-     *
-     * @return array<string, mixed>
-     */
-    private function githubProvider(): array
-    {
-        return [
-            'identifier' => 'github',
-            'baseUrl'    => 'https://api.github.com',
-            'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
-            'allowRules' => [['method' => 'GET', 'pathPattern' => '/repos/*']],
-        ];
-    }
+	/**
+	 * The github catalogue entry used across the tests.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function githubProvider(): array {
+		return [
+			'identifier' => 'github',
+			'baseUrl' => 'https://api.github.com',
+			'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
+			'allowRules' => [['method' => 'GET', 'pathPattern' => '/repos/*']],
+		];
+	}
 
-    /**
-     * An authenticated MEMBER of the org drives the credential — admitted, secret
-     * read from the SYSTEM vault owner ('organisation' scope), personal owner
-     * branch never evaluated.
-     */
-    public function testOrganisationMemberDrivesCredential(): void
-    {
-        $store = $this->createMock(CredentialStore::class);
-        // The vault owner is derived from scope: the broker MUST read with 'organisation'.
-        $store->expects($this->once())->method('get')
-            ->with(self::UUID, 'organisation')
-            ->willReturn('ORG-SECRET');
+	/**
+	 * An authenticated MEMBER of the org drives the credential — admitted, secret
+	 * read from the SYSTEM vault owner ('organisation' scope), personal owner
+	 * branch never evaluated.
+	 */
+	public function testOrganisationMemberDrivesCredential(): void {
+		$store = $this->createMock(CredentialStore::class);
+		// The vault owner is derived from scope: the broker MUST read with 'organisation'.
+		$store->expects($this->once())->method('get')
+			->with(self::UUID, 'organisation')
+			->willReturn('ORG-SECRET');
 
-        $orgService = $this->createMock(OrganisationService::class);
-        $orgService->method('hasAccessToOrganisation')->with(self::ORG_UUID)->willReturn(true);
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->method('hasAccessToOrganisation')->with(self::ORG_UUID)->willReturn(true);
 
-        $client = $this->makeClient(status: 200);
-        $client->expects($this->once())->method('request');
+		$client = $this->makeClient(status: 200);
+		$client->expects($this->once())->method('request');
 
-        $broker = $this->makeBroker(
-            sessionUid: 'member-bob',
-            store: $store,
-            orgService: $orgService,
-            client: $client
-        );
+		$broker = $this->makeBroker(
+			sessionUid: 'member-bob',
+			store: $store,
+			orgService: $orgService,
+			client: $client
+		);
 
-        $result = $broker->request(
-            credentialId: self::UUID,
-            appId: 'hermiq',
-            method: 'GET',
-            path: '/repos/Conduction/openregister'
-        );
+		$result = $broker->request(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'GET',
+			path: '/repos/Conduction/openregister'
+		);
 
-        $this->assertSame(200, $result['status']);
-    }
+		$this->assertSame(200, $result['status']);
+	}
 
-    /**
-     * A non-member is denied before any provider call is made.
-     */
-    public function testNonMemberIsDenied(): void
-    {
-        $orgService = $this->createMock(OrganisationService::class);
-        $orgService->method('hasAccessToOrganisation')->willReturn(false);
+	/**
+	 * A non-member is denied before any provider call is made.
+	 */
+	public function testNonMemberIsDenied(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->method('hasAccessToOrganisation')->willReturn(false);
 
-        $client = $this->createMock(IClient::class);
-        $client->expects($this->never())->method('request');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('request');
 
-        $broker = $this->makeBroker(
-            sessionUid: 'stranger',
-            orgService: $orgService,
-            client: $client
-        );
+		$broker = $this->makeBroker(
+			sessionUid: 'stranger',
+			orgService: $orgService,
+			client: $client
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $broker->request(
-            credentialId: self::UUID,
-            appId: 'hermiq',
-            method: 'GET',
-            path: '/repos/Conduction/openregister'
-        );
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->request(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'GET',
+			path: '/repos/Conduction/openregister'
+		);
+	}
 
-    /**
-     * An organisation call with NO session is denied — the sessionless acting-user
-     * fallback applies to personal credentials only.
-     */
-    public function testOrganisationCallRequiresSession(): void
-    {
-        $orgService = $this->createMock(OrganisationService::class);
-        // Membership must never even be consulted without a session.
-        $orgService->expects($this->never())->method('hasAccessToOrganisation');
+	/**
+	 * An organisation call with NO session is denied — the sessionless acting-user
+	 * fallback applies to personal credentials only.
+	 */
+	public function testOrganisationCallRequiresSession(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		// Membership must never even be consulted without a session.
+		$orgService->expects($this->never())->method('hasAccessToOrganisation');
 
-        $client = $this->createMock(IClient::class);
-        $client->expects($this->never())->method('request');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('request');
 
-        $broker = $this->makeBroker(
-            sessionUid: null,
-            orgService: $orgService,
-            client: $client
-        );
+		$broker = $this->makeBroker(
+			sessionUid: null,
+			orgService: $orgService,
+			client: $client
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $broker->request(
-            credentialId: self::UUID,
-            appId: 'hermiq',
-            method: 'GET',
-            path: '/repos/Conduction/openregister',
-            actingUserId: 'member-bob'
-        );
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->request(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'GET',
+			path: '/repos/Conduction/openregister',
+			actingUserId: 'member-bob'
+		);
+	}
 
-    /**
-     * A member whose app is NOT in allowedApps is denied (allowedApps guard still runs).
-     */
-    public function testNonAllowedAppIsDenied(): void
-    {
-        $orgService = $this->createMock(OrganisationService::class);
-        $orgService->method('hasAccessToOrganisation')->willReturn(true);
+	/**
+	 * A member whose app is NOT in allowedApps is denied (allowedApps guard still runs).
+	 */
+	public function testNonAllowedAppIsDenied(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->method('hasAccessToOrganisation')->willReturn(true);
 
-        $client = $this->createMock(IClient::class);
-        $client->expects($this->never())->method('request');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('request');
 
-        $broker = $this->makeBroker(
-            sessionUid: 'member-bob',
-            orgService: $orgService,
-            client: $client
-        );
+		$broker = $this->makeBroker(
+			sessionUid: 'member-bob',
+			orgService: $orgService,
+			client: $client
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $broker->request(
-            credentialId: self::UUID,
-            appId: 'not-allowed-app',
-            method: 'GET',
-            path: '/repos/Conduction/openregister'
-        );
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->request(
+			credentialId: self::UUID,
+			appId: 'not-allowed-app',
+			method: 'GET',
+			path: '/repos/Conduction/openregister'
+		);
+	}
 
-    /**
-     * Guard invariant: a PERSONAL credential is never routed through the org
-     * membership branch. A non-owner is denied and membership is never consulted,
-     * so the org branch can never leak into (widen) the personal one.
-     */
-    public function testPersonalCredentialNeverEntersOrganisationBranch(): void
-    {
-        $orgService = $this->createMock(OrganisationService::class);
-        $orgService->expects($this->never())->method('hasAccessToOrganisation');
+	/**
+	 * Guard invariant: a PERSONAL credential is never routed through the org
+	 * membership branch. A non-owner is denied and membership is never consulted,
+	 * so the org branch can never leak into (widen) the personal one.
+	 */
+	public function testPersonalCredentialNeverEntersOrganisationBranch(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->expects($this->never())->method('hasAccessToOrganisation');
 
-        $store = $this->createMock(CredentialStore::class);
-        // Secret is never read: the owner guard denies first.
-        $store->expects($this->never())->method('get');
+		$store = $this->createMock(CredentialStore::class);
+		// Secret is never read: the owner guard denies first.
+		$store->expects($this->never())->method('get');
 
-        $client = $this->createMock(IClient::class);
-        $client->expects($this->never())->method('request');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('request');
 
-        // Personal credential owned by alice; session is bob (a non-owner who might
-        // well be a member of some organisation — irrelevant to the personal path).
-        $broker = $this->makeBroker(
-            sessionUid: 'bob',
-            store: $store,
-            orgService: $orgService,
-            client: $client,
-            credData: [
-                'name'        => 'Personal GitHub',
-                'provider'    => 'github',
-                'owner'       => 'alice',
-                'allowedApps' => ['hermiq'],
-            ],
-            ownerUid: 'alice'
-        );
+		// Personal credential owned by alice; session is bob (a non-owner who might
+		// well be a member of some organisation — irrelevant to the personal path).
+		$broker = $this->makeBroker(
+			sessionUid: 'bob',
+			store: $store,
+			orgService: $orgService,
+			client: $client,
+			credData: [
+				'name' => 'Personal GitHub',
+				'provider' => 'github',
+				'owner' => 'alice',
+				'allowedApps' => ['hermiq'],
+			],
+			ownerUid: 'alice'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $broker->request(
-            credentialId: self::UUID,
-            appId: 'hermiq',
-            method: 'GET',
-            path: '/repos/Conduction/openregister'
-        );
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->request(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'GET',
+			path: '/repos/Conduction/openregister'
+		);
+	}
 
-    /**
-     * Build a broker over an organisation credential (default) or a supplied one.
-     *
-     * @param string|null              $sessionUid Session user id, or null for sessionless.
-     * @param CredentialStore|null     $store      Optional store override.
-     * @param OrganisationService|null $orgService Optional organisation service override.
-     * @param IClient|null             $client     Optional HTTP client override.
-     * @param array<string, mixed>|null $credData  Optional credential property bag.
-     * @param string                   $ownerUid   The credential @self owner uid.
-     */
-    private function makeBroker(
-        ?string $sessionUid,
-        ?CredentialStore $store=null,
-        ?OrganisationService $orgService=null,
-        ?IClient $client=null,
-        ?array $credData=null,
-        string $ownerUid='provisioning-admin'
-    ): CredentialBrokerService {
-        if ($credData === null) {
-            $credData = [
-                'name'         => 'Tender-office GitHub',
-                'provider'     => 'github',
-                'owner'        => $ownerUid,
-                'scope'        => 'organisation',
-                'organisation' => self::ORG_UUID,
-                'allowedApps'  => ['hermiq'],
-            ];
-        }
+	/**
+	 * Build a broker over an organisation credential (default) or a supplied one.
+	 *
+	 * @param string|null $sessionUid Session user id, or null for sessionless.
+	 * @param CredentialStore|null $store Optional store override.
+	 * @param OrganisationService|null $orgService Optional organisation service override.
+	 * @param IClient|null $client Optional HTTP client override.
+	 * @param array<string, mixed>|null $credData Optional credential property bag.
+	 * @param string $ownerUid The credential @self owner uid.
+	 */
+	private function makeBroker(
+		?string $sessionUid,
+		?CredentialStore $store = null,
+		?OrganisationService $orgService = null,
+		?IClient $client = null,
+		?array $credData = null,
+		string $ownerUid = 'provisioning-admin',
+	): CredentialBrokerService {
+		if ($credData === null) {
+			$credData = [
+				'name' => 'Tender-office GitHub',
+				'provider' => 'github',
+				'owner' => $ownerUid,
+				'scope' => 'organisation',
+				'organisation' => self::ORG_UUID,
+				'allowedApps' => ['hermiq'],
+			];
+		}
 
-        $entity = new ObjectEntity();
-        $entity->setUuid(self::UUID);
-        $entity->setOwner($ownerUid);
-        $entity->setObject($credData);
+		$entity = new ObjectEntity();
+		$entity->setUuid(self::UUID);
+		$entity->setOwner($ownerUid);
+		$entity->setObject($credData);
 
-        $objectService = $this->createMock(ObjectService::class);
-        $objectService->method('find')->willReturn($entity);
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($entity);
 
-        if ($store === null) {
-            $store = $this->createMock(CredentialStore::class);
-            $store->method('get')->willReturn('ORG-SECRET');
-        }
+		if ($store === null) {
+			$store = $this->createMock(CredentialStore::class);
+			$store->method('get')->willReturn('ORG-SECRET');
+		}
 
-        if ($orgService === null) {
-            $orgService = $this->createMock(OrganisationService::class);
-            $orgService->method('hasAccessToOrganisation')->willReturn(true);
-        }
+		if ($orgService === null) {
+			$orgService = $this->createMock(OrganisationService::class);
+			$orgService->method('hasAccessToOrganisation')->willReturn(true);
+		}
 
-        $user = null;
-        if ($sessionUid !== null) {
-            $user = $this->createMock(IUser::class);
-            $user->method('getUID')->willReturn($sessionUid);
-        }
+		$user = null;
+		if ($sessionUid !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($sessionUid);
+		}
 
-        $session = $this->createMock(IUserSession::class);
-        $session->method('getUser')->willReturn($user);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
 
-        $catalogue = $this->createMock(ProviderCatalogue::class);
-        $catalogue->method('get')->willReturn($this->githubProvider());
+		$catalogue = $this->createMock(ProviderCatalogue::class);
+		$catalogue->method('get')->willReturn($this->githubProvider());
 
-        if ($client === null) {
-            $client = $this->makeClient(status: 200);
-        }
+		if ($client === null) {
+			$client = $this->makeClient(status: 200);
+		}
 
-        $clientService = $this->createMock(IClientService::class);
-        $clientService->method('newClient')->willReturn($client);
+		$clientService = $this->createMock(IClientService::class);
+		$clientService->method('newClient')->willReturn($client);
 
-        return new CredentialBrokerService(
-            $objectService,
-            $store,
-            $catalogue,
-            $session,
-            $clientService,
-            $this->createMock(LoggerInterface::class),
-            $orgService
-        );
-    }
+		return new CredentialBrokerService(
+			$objectService,
+			$store,
+			$catalogue,
+			$session,
+			$clientService,
+			$this->createMock(LoggerInterface::class),
+			$orgService
+		);
+	}
 
-    /**
-     * A mock HTTP client returning a fixed status with an empty body.
-     *
-     * @param int $status The upstream status code.
-     *
-     * @return IClient&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private function makeClient(int $status): IClient
-    {
-        $response = $this->createMock(IResponse::class);
-        $response->method('getStatusCode')->willReturn($status);
-        $response->method('getHeaders')->willReturn([]);
-        $response->method('getBody')->willReturn('{}');
+	/**
+	 * A mock HTTP client returning a fixed status with an empty body.
+	 *
+	 * @param int $status The upstream status code.
+	 *
+	 * @return IClient&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function makeClient(int $status): IClient {
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn($status);
+		$response->method('getHeaders')->willReturn([]);
+		$response->method('getBody')->willReturn('{}');
 
-        $client = $this->createMock(IClient::class);
-        $client->method('request')->willReturn($response);
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willReturn($response);
 
-        return $client;
-    }
+		return $client;
+	}
 }//end class

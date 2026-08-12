@@ -133,8 +133,12 @@ export default {
 
 <style scoped>
 .hook-form { padding: 16px; }
+
 .form-group { margin-bottom: 12px; }
+
 .form-group label { display: block; margin-bottom: 4px; font-weight: bold; }
+
 .input-field { width: 100%; padding: 8px; }
+
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 </style>

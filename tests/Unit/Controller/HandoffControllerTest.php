@@ -41,109 +41,100 @@ use Psr\Log\LoggerInterface;
 /**
  * HandoffControllerTest.
  */
-class HandoffControllerTest extends TestCase
-{
+class HandoffControllerTest extends TestCase {
 
-    private HandoffService&MockObject $handoffService;
+	private HandoffService&MockObject $handoffService;
 
-    private HandoffController $controller;
+	private HandoffController $controller;
 
+	protected function setUp(): void {
+		$this->handoffService = $this->createMock(HandoffService::class);
+		$this->controller = new HandoffController(
+			appName: 'openregister',
+			request: $this->createMock(IRequest::class),
+			handoffService: $this->handoffService,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 
-    protected function setUp(): void
-    {
-        $this->handoffService = $this->createMock(HandoffService::class);
-        $this->controller     = new HandoffController(
-            appName: 'openregister',
-            request: $this->createMock(IRequest::class),
-            handoffService: $this->handoffService,
-            logger: $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Availability passes the service result through under `handoffs`.
+	 *
+	 * @return void
+	 */
+	public function testAvailabilityPassesServiceResultThrough(): void {
+		$availability = [
+			[
+				'id' => 'to-case',
+				'state' => 'available',
+			],
+		];
+		$this->handoffService->method('listAvailability')->willReturn($availability);
 
+		$response = $this->controller->availability(register: 'r', schema: 's', id: 'o');
 
-    /**
-     * Availability passes the service result through under `handoffs`.
-     *
-     * @return void
-     */
-    public function testAvailabilityPassesServiceResultThrough(): void
-    {
-        $availability = [
-            [
-                'id'    => 'to-case',
-                'state' => 'available',
-            ],
-        ];
-        $this->handoffService->method('listAvailability')->willReturn($availability);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['handoffs' => $availability], $response->getData());
 
-        $response = $this->controller->availability(register: 'r', schema: 's', id: 'o');
+	}//end testAvailabilityPassesServiceResultThrough()
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame(['handoffs' => $availability], $response->getData());
+	/**
+	 * Executed → 200 with the service result; parked → 202.
+	 *
+	 * @return void
+	 */
+	public function testExecuteStatusCodes(): void {
+		$this->handoffService->method('execute')->willReturn(['status' => 'executed']);
+		$response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 
-    }//end testAvailabilityPassesServiceResultThrough()
+		$this->setUp();
+		$this->handoffService->method('execute')->willReturn(['status' => 'parked']);
+		$response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
+		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
 
+	}//end testExecuteStatusCodes()
 
-    /**
-     * Executed → 200 with the service result; parked → 202.
-     *
-     * @return void
-     */
-    public function testExecuteStatusCodes(): void
-    {
-        $this->handoffService->method('execute')->willReturn(['status' => 'executed']);
-        $response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+	/**
+	 * Typed error mapping: not-declared → 404, provider-unavailable → 409
+	 * (never 5xx), RBAC refusal → 403, validation → 400.
+	 *
+	 * @return void
+	 */
+	public function testExecuteTypedErrorMapping(): void {
+		$cases = [
+			[
+				new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'nope'),
+				Http::STATUS_NOT_FOUND,
+				HandoffException::NOT_DECLARED,
+			],
+			[
+				new HandoffException(errorCode: HandoffException::PROVIDER_UNAVAILABLE, message: 'absent'),
+				Http::STATUS_CONFLICT,
+				HandoffException::PROVIDER_UNAVAILABLE,
+			],
+			[
+				new NotAuthorizedException(message: 'denied'),
+				Http::STATUS_FORBIDDEN,
+				'forbidden',
+			],
+			[
+				new ValidationException(message: 'bad payload'),
+				Http::STATUS_BAD_REQUEST,
+				'validation',
+			],
+		];
 
-        $this->setUp();
-        $this->handoffService->method('execute')->willReturn(['status' => 'parked']);
-        $response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
-        $this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+		foreach ($cases as [$exception, $expectedStatus, $expectedError]) {
+			$this->setUp();
+			$this->handoffService->method('execute')->willThrowException($exception);
 
-    }//end testExecuteStatusCodes()
+			$response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
 
+			$this->assertSame($expectedStatus, $response->getStatus());
+			$this->assertSame($expectedError, $response->getData()['error']);
+		}
 
-    /**
-     * Typed error mapping: not-declared → 404, provider-unavailable → 409
-     * (never 5xx), RBAC refusal → 403, validation → 400.
-     *
-     * @return void
-     */
-    public function testExecuteTypedErrorMapping(): void
-    {
-        $cases = [
-            [
-                new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'nope'),
-                Http::STATUS_NOT_FOUND,
-                HandoffException::NOT_DECLARED,
-            ],
-            [
-                new HandoffException(errorCode: HandoffException::PROVIDER_UNAVAILABLE, message: 'absent'),
-                Http::STATUS_CONFLICT,
-                HandoffException::PROVIDER_UNAVAILABLE,
-            ],
-            [
-                new NotAuthorizedException(message: 'denied'),
-                Http::STATUS_FORBIDDEN,
-                'forbidden',
-            ],
-            [
-                new ValidationException(message: 'bad payload'),
-                Http::STATUS_BAD_REQUEST,
-                'validation',
-            ],
-        ];
-
-        foreach ($cases as [$exception, $expectedStatus, $expectedError]) {
-            $this->setUp();
-            $this->handoffService->method('execute')->willThrowException($exception);
-
-            $response = $this->controller->execute(register: 'r', schema: 's', id: 'o', handoffId: 'h');
-
-            $this->assertSame($expectedStatus, $response->getStatus());
-            $this->assertSame($expectedError, $response->getData()['error']);
-        }
-
-    }//end testExecuteTypedErrorMapping()
+	}//end testExecuteTypedErrorMapping()
 }//end class

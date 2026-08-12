@@ -39,144 +39,132 @@ use RuntimeException;
 /**
  * Unit tests for {@see GroupProvisioner}.
  */
-class GroupProvisionerTest extends TestCase
-{
+class GroupProvisionerTest extends TestCase {
 
-    /**
-     * Mocked group manager.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private $groupManager;
+	/**
+	 * Mocked group manager.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private $groupManager;
 
-    /**
-     * System under test.
-     *
-     * @var GroupProvisioner
-     */
-    private GroupProvisioner $provisioner;
+	/**
+	 * System under test.
+	 *
+	 * @var GroupProvisioner
+	 */
+	private GroupProvisioner $provisioner;
 
+	/**
+	 * Build the provisioner with mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->provisioner = new GroupProvisioner(
+			$this->groupManager,
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end setUp()
 
-    /**
-     * Build the provisioner with mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->provisioner  = new GroupProvisioner(
-            $this->groupManager,
-            $this->createMock(LoggerInterface::class)
-        );
-    }//end setUp()
+	/**
+	 * A missing group is created; an existing one is left alone.
+	 *
+	 * @return void
+	 */
+	public function testCreatesOnlyMissingGroups(): void {
+		$this->groupManager->method('groupExists')
+			->willReturnMap([['bestaat', true], ['bestaat-niet', false]]);
 
+		$this->groupManager->expects($this->once())
+			->method('createGroup')
+			->with('bestaat-niet');
 
-    /**
-     * A missing group is created; an existing one is left alone.
-     *
-     * @return void
-     */
-    public function testCreatesOnlyMissingGroups(): void
-    {
-        $this->groupManager->method('groupExists')
-            ->willReturnMap([['bestaat', true], ['bestaat-niet', false]]);
+		$result = $this->provisioner->provision(groups: ['bestaat', 'bestaat-niet'], declaredBy: 'testapp');
 
-        $this->groupManager->expects($this->once())
-            ->method('createGroup')
-            ->with('bestaat-niet');
+		$this->assertSame(['bestaat-niet'], $result['created']);
+		$this->assertSame(['bestaat'], $result['existing']);
+	}//end testCreatesOnlyMissingGroups()
 
-        $result = $this->provisioner->provision(groups: ['bestaat', 'bestaat-niet'], declaredBy: 'testapp');
+	/**
+	 * Provisioning is create-only: no membership is ever written.
+	 *
+	 * A created group starts EMPTY, so it denies every caller until an
+	 * administrator populates it. That is the intended contract.
+	 *
+	 * @return void
+	 */
+	public function testNeverAddsMembers(): void {
+		$group = $this->createMock(IGroup::class);
+		$group->expects($this->never())->method('addUser');
 
-        $this->assertSame(['bestaat-niet'], $result['created']);
-        $this->assertSame(['bestaat'], $result['existing']);
-    }//end testCreatesOnlyMissingGroups()
+		$this->groupManager->method('groupExists')->willReturn(false);
+		$this->groupManager->method('createGroup')->willReturn($group);
+		// A membership-seeding implementation would have to resolve users first.
+		$this->groupManager->expects($this->never())->method('get');
 
+		$this->provisioner->provision(groups: ['nieuw'], declaredBy: 'testapp');
+	}//end testNeverAddsMembers()
 
-    /**
-     * Provisioning is create-only: no membership is ever written.
-     *
-     * A created group starts EMPTY, so it denies every caller until an
-     * administrator populates it. That is the intended contract.
-     *
-     * @return void
-     */
-    public function testNeverAddsMembers(): void
-    {
-        $group = $this->createMock(IGroup::class);
-        $group->expects($this->never())->method('addUser');
+	/**
+	 * One failing group never costs the others.
+	 *
+	 * Provisioning runs inside imports and background jobs; a backend that
+	 * refuses one creation must not abort work that is otherwise complete.
+	 *
+	 * @return void
+	 */
+	public function testOneFailureDoesNotStopTheRest(): void {
+		$this->groupManager->method('groupExists')->willReturn(false);
+		$this->groupManager->method('createGroup')
+			->willReturnCallback(
+				static function (string $gid) {
+					if ($gid === 'stuk') {
+						throw new RuntimeException('read-only backend');
+					}
 
-        $this->groupManager->method('groupExists')->willReturn(false);
-        $this->groupManager->method('createGroup')->willReturn($group);
-        // A membership-seeding implementation would have to resolve users first.
-        $this->groupManager->expects($this->never())->method('get');
+					return null;
+				}
+			);
 
-        $this->provisioner->provision(groups: ['nieuw'], declaredBy: 'testapp');
-    }//end testNeverAddsMembers()
+		$result = $this->provisioner->provision(groups: ['eerste', 'stuk', 'laatste'], declaredBy: 'testapp');
 
+		$this->assertSame(['eerste', 'laatste'], $result['created']);
+		$this->assertSame(['stuk'], $result['failed']);
+	}//end testOneFailureDoesNotStopTheRest()
 
-    /**
-     * One failing group never costs the others.
-     *
-     * Provisioning runs inside imports and background jobs; a backend that
-     * refuses one creation must not abort work that is otherwise complete.
-     *
-     * @return void
-     */
-    public function testOneFailureDoesNotStopTheRest(): void
-    {
-        $this->groupManager->method('groupExists')->willReturn(false);
-        $this->groupManager->method('createGroup')
-            ->willReturnCallback(
-                static function (string $gid) {
-                    if ($gid === 'stuk') {
-                        throw new RuntimeException('read-only backend');
-                    }
+	/**
+	 * An uncountable backend reports UNKNOWN, not zero.
+	 *
+	 * `IGroup::count()` returns `int|bool` and hands back `false` on backends
+	 * that cannot count. Collapsing that to 0 would report a fully populated
+	 * group as empty — the exact false alarm the inventory exists to prevent.
+	 *
+	 * @return void
+	 */
+	public function testUncountableBackendReportsUnknownNotEmpty(): void {
+		$countable = $this->createMock(IGroup::class);
+		$countable->method('count')->willReturn(4);
 
-                    return null;
-                }
-            );
+		$uncountable = $this->createMock(IGroup::class);
+		$uncountable->method('count')->willReturn(false);
 
-        $result = $this->provisioner->provision(groups: ['eerste', 'stuk', 'laatste'], declaredBy: 'testapp');
+		$this->groupManager->method('get')
+			->willReturnMap(
+				[
+					['telbaar', $countable],
+					['ontelbaar', $uncountable],
+					['weg', null],
+				]
+			);
 
-        $this->assertSame(['eerste', 'laatste'], $result['created']);
-        $this->assertSame(['stuk'], $result['failed']);
-    }//end testOneFailureDoesNotStopTheRest()
+		$inventory = $this->provisioner->inventory(groups: ['telbaar', 'ontelbaar', 'weg']);
 
-
-    /**
-     * An uncountable backend reports UNKNOWN, not zero.
-     *
-     * `IGroup::count()` returns `int|bool` and hands back `false` on backends
-     * that cannot count. Collapsing that to 0 would report a fully populated
-     * group as empty — the exact false alarm the inventory exists to prevent.
-     *
-     * @return void
-     */
-    public function testUncountableBackendReportsUnknownNotEmpty(): void
-    {
-        $countable = $this->createMock(IGroup::class);
-        $countable->method('count')->willReturn(4);
-
-        $uncountable = $this->createMock(IGroup::class);
-        $uncountable->method('count')->willReturn(false);
-
-        $this->groupManager->method('get')
-            ->willReturnMap(
-                [
-                    ['telbaar', $countable],
-                    ['ontelbaar', $uncountable],
-                    ['weg', null],
-                ]
-            );
-
-        $inventory = $this->provisioner->inventory(groups: ['telbaar', 'ontelbaar', 'weg']);
-
-        $this->assertSame(4, $inventory['telbaar']['members']);
-        $this->assertNull($inventory['ontelbaar']['members'], 'unknown, not empty');
-        $this->assertFalse($inventory['weg']['exists']);
-    }//end testUncountableBackendReportsUnknownNotEmpty()
-
+		$this->assertSame(4, $inventory['telbaar']['members']);
+		$this->assertNull($inventory['ontelbaar']['members'], 'unknown, not empty');
+		$this->assertFalse($inventory['weg']['exists']);
+	}//end testUncountableBackendReportsUnknownNotEmpty()
 
 }//end class

@@ -37,11 +37,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\NotificationSubscriptionMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IUserSession;
 
 /**
@@ -56,192 +56,181 @@ use OCP\IUserSession;
  *
  * @deprecated Use NotificationPreferencesController (override-only user-config).
  */
-class NotificationSubscriptionsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                         $appName        App name.
-     * @param IRequest                       $request        Request.
-     * @param NotificationSubscriptionMapper $mapper         Subscription mapper.
-     * @param IUserSession                   $userSession    Current-user session.
-     * @param RegisterMapper                 $registerMapper Register mapper for permission check.
-     * @param SchemaMapper                   $schemaMapper   Schema mapper for permission check.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly NotificationSubscriptionMapper $mapper,
-        private readonly IUserSession $userSession,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class NotificationSubscriptionsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param NotificationSubscriptionMapper $mapper Subscription mapper.
+	 * @param IUserSession $userSession Current-user session.
+	 * @param RegisterMapper $registerMapper Register mapper for permission check.
+	 * @param SchemaMapper $schemaMapper Schema mapper for permission check.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly NotificationSubscriptionMapper $mapper,
+		private readonly IUserSession $userSession,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * List the current user's subscriptions.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
-     */
-    public function index(): JSONResponse
-    {
-        $userId = $this->resolveUserId();
-        if ($userId === null) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+	/**
+	 * List the current user's subscriptions.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
+	 */
+	public function index(): JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
 
-        $rows  = $this->mapper->findByUser(userId: $userId);
-        $items = array_map(
-            static fn($r) => $r->jsonSerialize(),
-            $rows
-        );
-        return new JSONResponse(data: ['results' => $items, 'total' => count($items)]);
+		$rows = $this->mapper->findByUser(userId: $userId);
+		$items = array_map(
+			static fn ($r) => $r->jsonSerialize(),
+			$rows
+		);
+		return new JSONResponse(data: ['results' => $items, 'total' => count($items)]);
+	}//end index()
 
-    }//end index()
+	/**
+	 * Subscribe the current user to a (register, schema) tuple.
+	 *
+	 * Body: `{ registerId?: int, schemaId?: int }`. At least one MUST
+	 * be present.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
+	 */
+	public function create(): JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
 
-    /**
-     * Subscribe the current user to a (register, schema) tuple.
-     *
-     * Body: `{ registerId?: int, schemaId?: int }`. At least one MUST
-     * be present.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
-     */
-    public function create(): JSONResponse
-    {
-        $userId = $this->resolveUserId();
-        if ($userId === null) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+		$params = $this->request->getParams();
+		$registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
+		$schemaId = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
 
-        $params     = $this->request->getParams();
-        $registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
-        $schemaId   = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
+		// SECURITY (M2): verify the caller has read access to the referenced
+		// register/schema before persisting the subscription.
+		// Use _multitenancy: true to enforce tenant-scope — a user in org A
+		// must not be allowed to subscribe to org B's register/schema events.
+		if ($registerId !== null) {
+			try {
+				$this->registerMapper->find($registerId, _multitenancy: true);
+			} catch (\Throwable $e) {
+				return new JSONResponse(
+					data: ['error' => 'Register not found or not accessible'],
+					statusCode: 404
+				);
+			}
+		}
 
-        // SECURITY (M2): verify the caller has read access to the referenced
-        // register/schema before persisting the subscription.
-        // Use _multitenancy: true to enforce tenant-scope — a user in org A
-        // must not be allowed to subscribe to org B's register/schema events.
-        if ($registerId !== null) {
-            try {
-                $this->registerMapper->find($registerId, _multitenancy: true);
-            } catch (\Throwable $e) {
-                return new JSONResponse(
-                    data: ['error' => 'Register not found or not accessible'],
-                    statusCode: 404
-                );
-            }
-        }
+		if ($schemaId !== null) {
+			try {
+				$this->schemaMapper->find($schemaId, _multitenancy: true);
+			} catch (\Throwable $e) {
+				return new JSONResponse(
+					data: ['error' => 'Schema not found or not accessible'],
+					statusCode: 404
+				);
+			}
+		}
 
-        if ($schemaId !== null) {
-            try {
-                $this->schemaMapper->find($schemaId, _multitenancy: true);
-            } catch (\Throwable $e) {
-                return new JSONResponse(
-                    data: ['error' => 'Schema not found or not accessible'],
-                    statusCode: 404
-                );
-            }
-        }
+		try {
+			$entity = $this->mapper->subscribe(
+				userId: $userId,
+				registerId: $registerId,
+				schemaId: $schemaId
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
+		}
 
-        try {
-            $entity = $this->mapper->subscribe(
-                userId: $userId,
-                registerId: $registerId,
-                schemaId: $schemaId
-            );
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
-        }
+		return new JSONResponse(data: $entity->jsonSerialize(), statusCode: 201);
+	}//end create()
 
-        return new JSONResponse(data: $entity->jsonSerialize(), statusCode: 201);
+	/**
+	 * Unsubscribe the current user from a (register, schema) tuple.
+	 *
+	 * Query: `?registerId=X&schemaId=Y` (either may be omitted).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
+	 */
+	public function destroy(): JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
 
-    }//end create()
+		$registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
+		$schemaId = $this->coerceNullableInt(value: $this->request->getParam('schemaId'));
 
-    /**
-     * Unsubscribe the current user from a (register, schema) tuple.
-     *
-     * Query: `?registerId=X&schemaId=Y` (either may be omitted).
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
-     */
-    public function destroy(): JSONResponse
-    {
-        $userId = $this->resolveUserId();
-        if ($userId === null) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+		$deleted = $this->mapper->unsubscribe(
+			userId: $userId,
+			registerId: $registerId,
+			schemaId: $schemaId
+		);
 
-        $registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
-        $schemaId   = $this->coerceNullableInt(value: $this->request->getParam('schemaId'));
+		return new JSONResponse(data: ['deleted' => $deleted]);
+	}//end destroy()
 
-        $deleted = $this->mapper->unsubscribe(
-            userId: $userId,
-            registerId: $registerId,
-            schemaId: $schemaId
-        );
+	/**
+	 * Resolve the current user's UID, or null when anonymous.
+	 *
+	 * @return ?string
+	 *
+	 * @spec exclude Private helper: resolves the session UID (null when anonymous);
+	 *              the subscription endpoints are owned by notificatie-engine/tasks.md.
+	 */
+	private function resolveUserId(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
 
-        return new JSONResponse(data: ['deleted' => $deleted]);
+		return $user->getUID();
+	}//end resolveUserId()
 
-    }//end destroy()
+	/**
+	 * Coerce a request value to a nullable int. Empty string and null
+	 * both become null; anything else cast to int.
+	 *
+	 * @param mixed $value Input.
+	 *
+	 * @return ?int
+	 *
+	 * @spec exclude Private helper: coerces a request value to a nullable int; the subscription endpoints are owned by notificatie-engine/tasks.md.
+	 */
+	private function coerceNullableInt(mixed $value): ?int {
+		if ($value === null || $value === '') {
+			return null;
+		}
 
-    /**
-     * Resolve the current user's UID, or null when anonymous.
-     *
-     * @return ?string
-     *
-     * @spec exclude Private helper: resolves the session UID (null when anonymous);
-     *              the subscription endpoints are owned by notificatie-engine/tasks.md.
-     */
-    private function resolveUserId(): ?string
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return null;
-        }
+		if (is_numeric($value) === false) {
+			return null;
+		}
 
-        return $user->getUID();
-
-    }//end resolveUserId()
-
-    /**
-     * Coerce a request value to a nullable int. Empty string and null
-     * both become null; anything else cast to int.
-     *
-     * @param mixed $value Input.
-     *
-     * @return ?int
-     *
-     * @spec exclude Private helper: coerces a request value to a nullable int; the subscription endpoints are owned by notificatie-engine/tasks.md.
-     */
-    private function coerceNullableInt(mixed $value): ?int
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        if (is_numeric($value) === false) {
-            return null;
-        }
-
-        return (int) $value;
-
-    }//end coerceNullableInt()
+		return (int)$value;
+	}//end coerceNullableInt()
 }//end class

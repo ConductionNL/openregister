@@ -24,11 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Db\SchemaMapper;
-use Psr\Log\LoggerInterface;
-use OCP\AppFramework\IAppContainer;
 use Exception;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCP\AppFramework\IAppContainer;
+use Psr\Log\LoggerInterface;
 
 /**
  * Validation Operations Handler
@@ -44,167 +44,163 @@ use Exception;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Settings
  */
-class ValidationOperationsHandler
-{
+class ValidationOperationsHandler {
 
-    /**
-     * Container for lazy loading ObjectService to break circular dependency.
-     *
-     * @var IAppContainer
-     */
-    private IAppContainer $container;
+	/**
+	 * Container for lazy loading ObjectService to break circular dependency.
+	 *
+	 * @var IAppContainer
+	 */
+	private IAppContainer $container;
 
-    /**
-     * Lazily loaded ValidateObject to break circular dependency.
-     *
-     * @var ValidateObject|null
-     */
-    private ?ValidateObject $validateHandler = null;
+	/**
+	 * Lazily loaded ValidateObject to break circular dependency.
+	 *
+	 * @var ValidateObject|null
+	 */
+	private ?ValidateObject $validateHandler = null;
 
-    /**
-     * Constructor for ValidationOperationsHandler.
-     *
-     * @param ValidateObject|null $validateHandler Handler for validation operations (nullable for lazy loading)
-     * @param SchemaMapper        $schemaMapper    Mapper for schema entities
-     * @param LoggerInterface     $logger          Logger for logging operations
-     * @param IAppContainer       $container       Application container
-     */
-    public function __construct(
-        ?ValidateObject $validateHandler,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger,
-        IAppContainer $container
-    ) {
-        $this->validateHandler = $validateHandler;
-        $this->container       = $container;
-    }//end __construct()
+	/**
+	 * Constructor for ValidationOperationsHandler.
+	 *
+	 * @param ValidateObject|null $validateHandler Handler for validation operations (nullable for lazy loading)
+	 * @param SchemaMapper $schemaMapper Mapper for schema entities
+	 * @param LoggerInterface $logger Logger for logging operations
+	 * @param IAppContainer $container Application container
+	 */
+	public function __construct(
+		?ValidateObject $validateHandler,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly LoggerInterface $logger,
+		IAppContainer $container,
+	) {
+		$this->validateHandler = $validateHandler;
+		$this->container = $container;
+	}//end __construct()
 
-    /**
-     * Get ValidateObject lazily to break circular dependency.
-     *
-     * @return ValidateObject The validate handler.
-     */
-    private function getValidateHandler(): ValidateObject
-    {
-        if ($this->validateHandler === null) {
-            $this->validateHandler = $this->container->get(ValidateObject::class);
-        }
+	/**
+	 * Get ValidateObject lazily to break circular dependency.
+	 *
+	 * @return ValidateObject The validate handler.
+	 */
+	private function getValidateHandler(): ValidateObject {
+		if ($this->validateHandler === null) {
+			$this->validateHandler = $this->container->get(ValidateObject::class);
+		}
 
-        return $this->validateHandler;
-    }//end getValidateHandler()
+		return $this->validateHandler;
+	}//end getValidateHandler()
 
-    /**
-     * Get ObjectService via lazy loading to break circular dependency.
-     *
-     * @return null
-     */
-    private function getObjectService()
-    {
-        // CIRCULAR FIX - ObjectService causes circular dependency, return null to break it.
-        // This method is a placeholder for when circular dependency is resolved.
-        return null;
-    }//end getObjectService()
+	/**
+	 * Get ObjectService via lazy loading to break circular dependency.
+	 *
+	 * @return null
+	 */
+	private function getObjectService() {
+		// CIRCULAR FIX - ObjectService causes circular dependency, return null to break it.
+		// This method is a placeholder for when circular dependency is resolved.
+		return null;
+	}//end getObjectService()
 
-    /**
-     * Validate all objects in the system.
-     *
-     * Iterates through all objects, validates each against its schema,
-     * and generates a comprehensive validation report with statistics.
-     *
-     * @throws Exception If validation operation fails.
-     *
-     * @return array Validation report with total_objects, valid/invalid counts, errors, and summary.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     *     Validation loop with error handling requires multiple branches
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *     Try-catch and conditional result handling creates multiple paths
-     *     Circular dependency workaround and validation result handling require else branch
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-     */
-    public function validateAllObjects(): array
-    {
-        // Get all objects from the system.
-        $objectService = $this->getObjectService();
-        if ($objectService === null) {
-            // Return empty result when ObjectService is unavailable (circular dependency workaround).
-            return [
-                'total_objects'     => 0,
-                'valid_objects'     => 0,
-                'invalid_objects'   => 0,
-                'validation_errors' => [],
-                'summary'           => [
-                    'validation_success_rate' => 100,
-                    'has_errors'              => false,
-                    'error_count'             => 0,
-                ],
-            ];
-        }
+	/**
+	 * Validate all objects in the system.
+	 *
+	 * Iterates through all objects, validates each against its schema,
+	 * and generates a comprehensive validation report with statistics.
+	 *
+	 * @throws Exception If validation operation fails.
+	 *
+	 * @return array Validation report with total_objects, valid/invalid counts, errors, and summary.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *     Validation loop with error handling requires multiple branches
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 *     Try-catch and conditional result handling creates multiple paths
+	 *     Circular dependency workaround and validation result handling require else branch
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
+	 */
+	public function validateAllObjects(): array {
+		// Get all objects from the system.
+		$objectService = $this->getObjectService();
+		if ($objectService === null) {
+			// Return empty result when ObjectService is unavailable (circular dependency workaround).
+			return [
+				'total_objects' => 0,
+				'valid_objects' => 0,
+				'invalid_objects' => 0,
+				'validation_errors' => [],
+				'summary' => [
+					'validation_success_rate' => 100,
+					'has_errors' => false,
+					'error_count' => 0,
+				],
+			];
+		}
 
-        $allObjects = $objectService->findAll(config: []);
+		$allObjects = $objectService->findAll(config: []);
 
-        $validationResults = [
-            'total_objects'     => count($allObjects),
-            'valid_objects'     => 0,
-            'invalid_objects'   => 0,
-            'validation_errors' => [],
-            'summary'           => [],
-        ];
+		$validationResults = [
+			'total_objects' => count($allObjects),
+			'valid_objects' => 0,
+			'invalid_objects' => 0,
+			'validation_errors' => [],
+			'summary' => [],
+		];
 
-        // Validate each object.
-        foreach ($allObjects as $object) {
-            try {
-                // Get the schema for this object.
-                $schema = $this->schemaMapper->find(id: $object->getSchema());
+		// Validate each object.
+		foreach ($allObjects as $object) {
+			try {
+				// Get the schema for this object.
+				$schema = $this->schemaMapper->find(id: $object->getSchema());
 
-                // Validate the object against its schema using the ValidateObject handler.
-                $validationResult = $this->getValidateHandler()->validateObject(
-                    $object->getObject(),
-                    schema: $schema
-                );
+				// Validate the object against its schema using the ValidateObject handler.
+				$validationResult = $this->getValidateHandler()->validateObject(
+					$object->getObject(),
+					schema: $schema
+				);
 
-                if ($validationResult->isValid() === true) {
-                    $validationResults['valid_objects']++;
-                }
+				if ($validationResult->isValid() === true) {
+					$validationResults['valid_objects']++;
+				}
 
-                if ($validationResult->isValid() !== true) {
-                    $validationResults['invalid_objects']++;
-                    $validationResults['validation_errors'][] = [
-                        'object_id'   => $object->getUuid(),
-                        'object_name' => $object->getName() ?? $object->getUuid(),
-                        'register'    => $object->getRegister(),
-                        'schema'      => $object->getSchema(),
-                        'errors'      => $validationResult->error(),
-                    ];
-                }
-            } catch (Exception $e) {
-                $validationResults['invalid_objects']++;
-                $validationResults['validation_errors'][] = [
-                    'object_id'   => $object->getUuid(),
-                    'object_name' => $object->getName() ?? $object->getUuid(),
-                    'register'    => $object->getRegister(),
-                    'schema'      => $object->getSchema(),
-                    'errors'      => ['Validation failed: '.$e->getMessage()],
-                ];
-            }//end try
-        }//end foreach
+				if ($validationResult->isValid() !== true) {
+					$validationResults['invalid_objects']++;
+					$validationResults['validation_errors'][] = [
+						'object_id' => $object->getUuid(),
+						'object_name' => $object->getName() ?? $object->getUuid(),
+						'register' => $object->getRegister(),
+						'schema' => $object->getSchema(),
+						'errors' => $validationResult->error(),
+					];
+				}
+			} catch (Exception $e) {
+				$validationResults['invalid_objects']++;
+				$validationResults['validation_errors'][] = [
+					'object_id' => $object->getUuid(),
+					'object_name' => $object->getName() ?? $object->getUuid(),
+					'register' => $object->getRegister(),
+					'schema' => $object->getSchema(),
+					'errors' => ['Validation failed: ' . $e->getMessage()],
+				];
+			}//end try
+		}//end foreach
 
-        // Create summary with validation statistics.
-        $validSuccessRate = 100;
-        if ($validationResults['total_objects'] > 0) {
-            $validSuccessRate = round(
-                ($validationResults['valid_objects'] / $validationResults['total_objects']) * 100,
-                2
-            );
-        }
+		// Create summary with validation statistics.
+		$validSuccessRate = 100;
+		if ($validationResults['total_objects'] > 0) {
+			$validSuccessRate = round(
+				($validationResults['valid_objects'] / $validationResults['total_objects']) * 100,
+				2
+			);
+		}
 
-        $validationResults['summary'] = [
-            'validation_success_rate' => $validSuccessRate,
-            'has_errors'              => $validationResults['invalid_objects'] > 0,
-            'error_count'             => count($validationResults['validation_errors']),
-        ];
+		$validationResults['summary'] = [
+			'validation_success_rate' => $validSuccessRate,
+			'has_errors' => $validationResults['invalid_objects'] > 0,
+			'error_count' => count($validationResults['validation_errors']),
+		];
 
-        return $validationResults;
-    }//end validateAllObjects()
+		return $validationResults;
+	}//end validateAllObjects()
 }//end class

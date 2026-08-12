@@ -33,27 +33,26 @@ use OCA\OpenRegister\Db\GdprEntity;
 /**
  * Result payload from `ManualEntityService::addManualEntity`.
  */
-final class ManualEntityResult
-{
-    /**
-     * Constructor.
-     *
-     * @param GdprEntity       $entity         The catalogue entry (newly inserted or reused).
-     * @param bool             $entityWasNew   True when this call inserted the catalogue row;
-     *                                         false when an existing one was reused.
-     * @param EntityRelation[] $relations      Relation rows inserted by this call. Excludes rows
-     *                                         that were skipped because they already existed.
-     * @param int              $matchCount     Total positions found in the file's chunks.
-     * @param int              $matchesSkipped How many of those positions were skipped because
-     *                                         a relation row already covered them.
-     */
-    public function __construct(
-        public readonly GdprEntity $entity,
-        public readonly bool $entityWasNew,
-        public readonly array $relations,
-        public readonly int $matchCount,
-        public readonly int $matchesSkipped
-    ) {
+final class ManualEntityResult {
+	/**
+	 * Constructor.
+	 *
+	 * @param GdprEntity $entity The catalogue entry (newly inserted or reused).
+	 * @param bool $entityWasNew True when this call inserted the catalogue row;
+	 *                           false when an existing one was reused.
+	 * @param EntityRelation[] $relations Relation rows inserted by this call. Excludes rows
+	 *                                    that were skipped because they already existed.
+	 * @param int $matchCount Total positions found in the file's chunks.
+	 * @param int $matchesSkipped How many of those positions were skipped because
+	 *                            a relation row already covered them.
+	 */
+	public function __construct(
+		public readonly GdprEntity $entity,
+		public readonly bool $entityWasNew,
+		public readonly array $relations,
+		public readonly int $matchCount,
+		public readonly int $matchesSkipped,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 }//end class

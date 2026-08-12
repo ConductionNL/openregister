@@ -39,36 +39,35 @@ namespace OCA\OpenRegister\Service\Flow;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-interface IFlowOversightCheck
-{
-    /**
-     * Stable id, namespaced by the contributing app (`{app}.{check}`).
-     *
-     * Recorded on the step row when this check vetoes, so a stopped run names
-     * what stopped it rather than reporting a bare refusal.
-     *
-     * @return string The check's id.
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function getId(): string;
+interface IFlowOversightCheck {
+	/**
+	 * Stable id, namespaced by the contributing app (`{app}.{check}`).
+	 *
+	 * Recorded on the step row when this check vetoes, so a stopped run names
+	 * what stopped it rather than reporting a bare refusal.
+	 *
+	 * @return string The check's id.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function getId(): string;
 
-    /**
-     * Decide whether the next hop may execute.
-     *
-     * Returning a reason string is a VETO; returning null is consent. The
-     * asymmetry is deliberate: a check that cannot form an opinion must return
-     * null explicitly, so "no objection" is always a decision rather than the
-     * result of an exception being swallowed. A check that throws is treated by
-     * the registry as a veto, never as consent.
-     *
-     * @param array<string, mixed> $context The run context: flow id, run uuid,
-     *                                      owner, organisation, the node about
-     *                                      to execute and its type.
-     *
-     * @return string|null The reason for refusing, or null to allow the hop.
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function veto(array $context): ?string;
+	/**
+	 * Decide whether the next hop may execute.
+	 *
+	 * Returning a reason string is a VETO; returning null is consent. The
+	 * asymmetry is deliberate: a check that cannot form an opinion must return
+	 * null explicitly, so "no objection" is always a decision rather than the
+	 * result of an exception being swallowed. A check that throws is treated by
+	 * the registry as a veto, never as consent.
+	 *
+	 * @param array<string, mixed> $context The run context: flow id, run uuid,
+	 *                                      owner, organisation, the node about
+	 *                                      to execute and its type.
+	 *
+	 * @return string|null The reason for refusing, or null to allow the hop.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function veto(array $context): ?string;
 }//end interface

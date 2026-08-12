@@ -39,78 +39,75 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
  */
-class Version1Date20260520120000 extends SimpleMigrationStep
-{
-    /**
-     * Apply the schema change.
-     *
-     * @param IOutput              $output        Migration output channel.
-     * @param Closure              $schemaClosure Schema closure factory.
-     * @param array<string, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null Modified schema wrapper, or null when nothing changed.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260520120000 extends SimpleMigrationStep {
+	/**
+	 * Apply the schema change.
+	 *
+	 * @param IOutput $output Migration output channel.
+	 * @param Closure $schemaClosure Schema closure factory.
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null Modified schema wrapper, or null when nothing changed.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_translations') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable('openregister_translations') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable('openregister_translations');
-        if ($table->hasColumn('source_language') === true) {
-            return $schema;
-        }
+		$table = $schema->getTable('openregister_translations');
+		if ($table->hasColumn('source_language') === true) {
+			return $schema;
+		}
 
-        $table->addColumn(
-            'source_language',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 16,
-                'default' => '',
-            ]
-        );
+		$table->addColumn(
+			'source_language',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 16,
+				'default' => '',
+			]
+		);
 
-        if ($table->hasIndex('idx_translations_source_lang') === false) {
-            $table->addIndex(['source_language'], 'idx_translations_source_lang');
-        }
+		if ($table->hasIndex('idx_translations_source_lang') === false) {
+			$table->addIndex(['source_language'], 'idx_translations_source_lang');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Run the SQL back-fill that gives every row a non-empty source_language.
-     *
-     * Joins through `openregister_objects` to the parent register and uses
-     * the first element of the register's `languages` array (falling back
-     * to `'nl'` when the JSON column is empty or null).
-     *
-     * Idempotent: only updates rows where `source_language = ''`. The
-     * companion `openregister:translations:backfill-source-language`
-     * console command is the entry point preferred for large datasets.
-     *
-     * @param IOutput              $output        Migration output channel.
-     * @param Closure              $schemaClosure Schema closure factory (unused).
-     * @param array<string, mixed> $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // The actual back-fill is intentionally delegated to the
-        // `openregister:translations:backfill-source-language` console
-        // command so admins can choose the batch size. We only emit an
-        // advisory message here.
-        $output->info(
-            '[i18n-source-of-truth] openregister_translations.source_language column added. '
-            .'Run `occ openregister:translations:backfill-source-language` to populate '
-            .'existing rows from their parent register defaults.'
-        );
-    }//end postSchemaChange()
+	/**
+	 * Run the SQL back-fill that gives every row a non-empty source_language.
+	 *
+	 * Joins through `openregister_objects` to the parent register and uses
+	 * the first element of the register's `languages` array (falling back
+	 * to `'nl'` when the JSON column is empty or null).
+	 *
+	 * Idempotent: only updates rows where `source_language = ''`. The
+	 * companion `openregister:translations:backfill-source-language`
+	 * console command is the entry point preferred for large datasets.
+	 *
+	 * @param IOutput $output Migration output channel.
+	 * @param Closure $schemaClosure Schema closure factory (unused).
+	 * @param array<string, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// The actual back-fill is intentionally delegated to the
+		// `openregister:translations:backfill-source-language` console
+		// command so admins can choose the batch size. We only emit an
+		// advisory message here.
+		$output->info(
+			'[i18n-source-of-truth] openregister_translations.source_language column added. '
+			. 'Run `occ openregister:translations:backfill-source-language` to populate '
+			. 'existing rows from their parent register defaults.'
+		);
+	}//end postSchemaChange()
 }//end class

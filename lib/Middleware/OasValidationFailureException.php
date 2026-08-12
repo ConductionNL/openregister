@@ -27,27 +27,25 @@ namespace OCA\OpenRegister\Middleware;
 /**
  * Internal carrier for the validator's `{path, message}[]` error list.
  */
-class OasValidationFailureException extends \RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param array<int, array{path: string, message: string}> $errors The flat list of validation errors.
-     */
-    public function __construct(private readonly array $errors)
-    {
-        parent::__construct(message: 'OAS request validation failed');
+class OasValidationFailureException extends \RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, array{path: string, message: string}> $errors The flat list of validation errors.
+	 */
+	public function __construct(
+		private readonly array $errors,
+	) {
+		parent::__construct(message: 'OAS request validation failed');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Return the validator's `{path, message}[]` payload.
-     *
-     * @return array<int, array{path: string, message: string}>
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-
-    }//end getErrors()
+	/**
+	 * Return the validator's `{path, message}[]` payload.
+	 *
+	 * @return array<int, array{path: string, message: string}>
+	 */
+	public function getErrors(): array {
+		return $this->errors;
+	}//end getErrors()
 }//end class

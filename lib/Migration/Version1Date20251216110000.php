@@ -38,42 +38,40 @@ use OCP\Migration\SimpleMigrationStep;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
-class Version1Date20251216110000 extends SimpleMigrationStep
-{
-    /**
-     * Change database schema
-     *
-     * @param IOutput $output        Output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251216110000 extends SimpleMigrationStep {
+	/**
+	 * Change database schema
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Add request_body column to webhook_logs table if it exists.
-        if ($schema->hasTable('openregister_webhook_logs') === true) {
-            $table = $schema->getTable('openregister_webhook_logs');
+		// Add request_body column to webhook_logs table if it exists.
+		if ($schema->hasTable('openregister_webhook_logs') === true) {
+			$table = $schema->getTable('openregister_webhook_logs');
 
-            // Add request_body column if it doesn't exist.
-            if ($table->hasColumn('request_body') === false) {
-                $table->addColumn(
-                    'request_body',
-                    Types::TEXT,
-                    [
-                        'notnull' => false,
-                    ]
-                );
-                $output->info('Added request_body column to openregister_webhook_logs table');
-            }
-        }
+			// Add request_body column if it doesn't exist.
+			if ($table->hasColumn('request_body') === false) {
+				$table->addColumn(
+					'request_body',
+					Types::TEXT,
+					[
+						'notnull' => false,
+					]
+				);
+				$output->info('Added request_body column to openregister_webhook_logs table');
+			}
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

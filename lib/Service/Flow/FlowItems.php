@@ -43,205 +43,195 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Helpers for building and normalising flow item lists.
  */
-final class FlowItems
-{
+final class FlowItems {
 
-    /**
-     * The key carrying an item's record.
-     */
-    public const JSON = 'json';
+	/**
+	 * The key carrying an item's record.
+	 */
+	public const JSON = 'json';
 
-    /**
-     * The key carrying an item's file attachments.
-     */
-    public const BINARY = 'binary';
+	/**
+	 * The key carrying an item's file attachments.
+	 */
+	public const BINARY = 'binary';
 
-    /**
-     * The key carrying an item's provenance.
-     */
-    public const PAIRED_ITEM = 'pairedItem';
+	/**
+	 * The key carrying an item's provenance.
+	 */
+	public const PAIRED_ITEM = 'pairedItem';
 
-    /**
-     * The key naming which output branch an item is routed to.
-     *
-     * Optional and usually absent: only a routing node ({@see Nodes\RouterNode})
-     * sets it, and the engine strips it once it has distributed the item, so it
-     * never lingers on an item a downstream step sees. An item without it is
-     * broadcast to every output, which is the ordinary behaviour.
-     */
-    public const OUTPUT = 'output';
+	/**
+	 * The key naming which output branch an item is routed to.
+	 *
+	 * Optional and usually absent: only a routing node ({@see Nodes\RouterNode})
+	 * sets it, and the engine strips it once it has distributed the item, so it
+	 * never lingers on an item a downstream step sees. An item without it is
+	 * broadcast to every output, which is the ordinary behaviour.
+	 */
+	public const OUTPUT = 'output';
 
-    /**
-     * Coerce whatever a step returned into a well-formed item list.
-     *
-     * Steps are written by consuming apps, so the engine cannot assume the
-     * shape it gets back. Three authoring shapes are accepted and normalised
-     * rather than rejected, because rejecting them would push the same
-     * boilerplate into every dispatcher:
-     *
-     *   - a full item list             -> used as-is
-     *   - a single item (`['json'=>…]`) -> wrapped into a one-item list
-     *   - a bare record (`['a'=>1]`)    -> wrapped as that item's `json`
-     *
-     * A step that legitimately produces nothing returns an empty list, which
-     * is meaningful: it ends that branch's data, exactly as a filter should.
-     *
-     * @param mixed    $value         What the step returned.
-     * @param int|null $fromItemIndex Input item this output came from, when known.
-     *
-     * @return array<int, array<string, mixed>> A well-formed item list.
-     *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-     */
-    public static function normalise(mixed $value, ?int $fromItemIndex=null): array
-    {
-        if (is_array($value) === false) {
-            return [];
-        }
+	/**
+	 * Coerce whatever a step returned into a well-formed item list.
+	 *
+	 * Steps are written by consuming apps, so the engine cannot assume the
+	 * shape it gets back. Three authoring shapes are accepted and normalised
+	 * rather than rejected, because rejecting them would push the same
+	 * boilerplate into every dispatcher:
+	 *
+	 *   - a full item list             -> used as-is
+	 *   - a single item (`['json'=>…]`) -> wrapped into a one-item list
+	 *   - a bare record (`['a'=>1]`)    -> wrapped as that item's `json`
+	 *
+	 * A step that legitimately produces nothing returns an empty list, which
+	 * is meaningful: it ends that branch's data, exactly as a filter should.
+	 *
+	 * @param mixed $value What the step returned.
+	 * @param int|null $fromItemIndex Input item this output came from, when known.
+	 *
+	 * @return array<int, array<string, mixed>> A well-formed item list.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public static function normalise(mixed $value, ?int $fromItemIndex = null): array {
+		if (is_array($value) === false) {
+			return [];
+		}
 
-        if ($value === []) {
-            return [];
-        }
+		if ($value === []) {
+			return [];
+		}
 
-        // A list whose members are arrays is treated as an item list; each
-        // member is normalised in turn so a half-shaped list still lands well.
-        if (array_is_list($value) === true) {
-            $items = [];
-            foreach ($value as $index => $member) {
-                if (is_array($member) === false) {
-                    continue;
-                }
+		// A list whose members are arrays is treated as an item list; each
+		// member is normalised in turn so a half-shaped list still lands well.
+		if (array_is_list($value) === true) {
+			$items = [];
+			foreach ($value as $index => $member) {
+				if (is_array($member) === false) {
+					continue;
+				}
 
-                $items[] = self::item(
-                    json: (array) ($member[self::JSON] ?? $member),
-                    binary: (array) ($member[self::BINARY] ?? []),
-                    fromItemIndex: self::pairedIndex(member: $member, fallback: ($fromItemIndex ?? $index)),
-                    output: self::outputOf(member: $member)
-                );
-            }
+				$items[] = self::item(
+					json: (array)($member[self::JSON] ?? $member),
+					binary: (array)($member[self::BINARY] ?? []),
+					fromItemIndex: self::pairedIndex(member: $member, fallback: ($fromItemIndex ?? $index)),
+					output: self::outputOf(member: $member)
+				);
+			}
 
-            return $items;
-        }
+			return $items;
+		}
 
-        // A single item, or a bare record standing in for one.
-        return [
-            self::item(
-                json: (array) ($value[self::JSON] ?? $value),
-                binary: (array) ($value[self::BINARY] ?? []),
-                fromItemIndex: self::pairedIndex(member: $value, fallback: $fromItemIndex),
-                output: self::outputOf(member: $value)
-            ),
-        ];
+		// A single item, or a bare record standing in for one.
+		return [
+			self::item(
+				json: (array)($value[self::JSON] ?? $value),
+				binary: (array)($value[self::BINARY] ?? []),
+				fromItemIndex: self::pairedIndex(member: $value, fallback: $fromItemIndex),
+				output: self::outputOf(member: $value)
+			),
+		];
 
-    }//end normalise()
+	}//end normalise()
 
-    /**
-     * Build one well-formed item.
-     *
-     * @param array       $json          The record.
-     * @param array       $binary        File attachments, keyed by name.
-     * @param int|null    $fromItemIndex Input item this came from, when known.
-     * @param string|null $output        The output branch this item routes to, when set.
-     *
-     * @return array<string, mixed> The item.
-     *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-     */
-    public static function item(array $json, array $binary=[], ?int $fromItemIndex=null, ?string $output=null): array
-    {
-        $paired = null;
-        if ($fromItemIndex !== null) {
-            $paired = ['item' => $fromItemIndex];
-        }
+	/**
+	 * Build one well-formed item.
+	 *
+	 * @param array $json The record.
+	 * @param array $binary File attachments, keyed by name.
+	 * @param int|null $fromItemIndex Input item this came from, when known.
+	 * @param string|null $output The output branch this item routes to, when set.
+	 *
+	 * @return array<string, mixed> The item.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
+		$paired = null;
+		if ($fromItemIndex !== null) {
+			$paired = ['item' => $fromItemIndex];
+		}
 
-        $item = [
-            self::JSON        => $json,
-            self::BINARY      => $binary,
-            self::PAIRED_ITEM => $paired,
-        ];
+		$item = [
+			self::JSON => $json,
+			self::BINARY => $binary,
+			self::PAIRED_ITEM => $paired,
+		];
 
-        // The output tag is added only when set, so an ordinary item keeps its
-        // exact three-key shape and nothing downstream has to know about routing.
-        if ($output !== null && $output !== '') {
-            $item[self::OUTPUT] = $output;
-        }
+		// The output tag is added only when set, so an ordinary item keeps its
+		// exact three-key shape and nothing downstream has to know about routing.
+		if ($output !== null && $output !== '') {
+			$item[self::OUTPUT] = $output;
+		}
 
-        return $item;
+		return $item;
+	}//end item()
 
-    }//end item()
+	/**
+	 * Read a member's output tag, if it carries one.
+	 *
+	 * @param array $member A returned item.
+	 *
+	 * @return string|null The output branch, or null when the item is unrouted.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	public static function outputOf(array $member): ?string {
+		$output = ($member[self::OUTPUT] ?? null);
+		if (is_string($output) === true && $output !== '') {
+			return $output;
+		}
 
-    /**
-     * Read a member's output tag, if it carries one.
-     *
-     * @param array $member A returned item.
-     *
-     * @return string|null The output branch, or null when the item is unrouted.
-     *
-     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-     */
-    public static function outputOf(array $member): ?string
-    {
-        $output = ($member[self::OUTPUT] ?? null);
-        if (is_string($output) === true && $output !== '') {
-            return $output;
-        }
+		return null;
+	}//end outputOf()
 
-        return null;
+	/**
+	 * Seed a run's item list from the object it is about.
+	 *
+	 * A run always starts with exactly one item, so a flow that never fans out
+	 * reads the same as the single-subject model it replaces.
+	 *
+	 * @param object $subject The object the run is about.
+	 *
+	 * @return array<int, array<string, mixed>> A one-item list.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public static function fromSubject(object $subject): array {
+		$json = [];
+		if (method_exists($subject, 'jsonSerialize') === true) {
+			$json = (array)$subject->jsonSerialize();
+		} elseif (method_exists($subject, 'getObject') === true) {
+			$json = (array)$subject->getObject();
+		} else {
+			$json = get_object_vars($subject);
+		}
 
-    }//end outputOf()
+		return [self::item(json: $json)];
+	}//end fromSubject()
 
-    /**
-     * Seed a run's item list from the object it is about.
-     *
-     * A run always starts with exactly one item, so a flow that never fans out
-     * reads the same as the single-subject model it replaces.
-     *
-     * @param object $subject The object the run is about.
-     *
-     * @return array<int, array<string, mixed>> A one-item list.
-     *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-     */
-    public static function fromSubject(object $subject): array
-    {
-        $json = [];
-        if (method_exists($subject, 'jsonSerialize') === true) {
-            $json = (array) $subject->jsonSerialize();
-        } else if (method_exists($subject, 'getObject') === true) {
-            $json = (array) $subject->getObject();
-        } else {
-            $json = get_object_vars($subject);
-        }
+	/**
+	 * Read an already-set `pairedItem` index, falling back when absent.
+	 *
+	 * A dispatcher that tracked provenance itself keeps it; one that did not
+	 * gets the engine's best guess rather than nothing.
+	 *
+	 * @param array $member The returned member.
+	 * @param int|null $fallback The index to use when the member carries none.
+	 *
+	 * @return int|null The paired input index.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private static function pairedIndex(array $member, ?int $fallback): ?int {
+		$paired = ($member[self::PAIRED_ITEM] ?? null);
+		if (is_array($paired) === true && isset($paired['item']) === true) {
+			return (int)$paired['item'];
+		}
 
-        return [self::item(json: $json)];
+		if (is_int($paired) === true) {
+			return $paired;
+		}
 
-    }//end fromSubject()
-
-    /**
-     * Read an already-set `pairedItem` index, falling back when absent.
-     *
-     * A dispatcher that tracked provenance itself keeps it; one that did not
-     * gets the engine's best guess rather than nothing.
-     *
-     * @param array    $member   The returned member.
-     * @param int|null $fallback The index to use when the member carries none.
-     *
-     * @return int|null The paired input index.
-     *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-     */
-    private static function pairedIndex(array $member, ?int $fallback): ?int
-    {
-        $paired = ($member[self::PAIRED_ITEM] ?? null);
-        if (is_array($paired) === true && isset($paired['item']) === true) {
-            return (int) $paired['item'];
-        }
-
-        if (is_int($paired) === true) {
-            return $paired;
-        }
-
-        return $fallback;
-
-    }//end pairedIndex()
+		return $fallback;
+	}//end pairedIndex()
 }//end class

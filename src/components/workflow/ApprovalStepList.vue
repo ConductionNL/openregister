@@ -102,11 +102,18 @@ export default {
 
 <style scoped>
 .step-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
+
 .step-order { font-weight: bold; }
+
 .status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+
 .status-pending { background: var(--color-warning); color: white; }
+
 .status-approved { background: var(--color-success); color: white; }
+
 .status-rejected { background: var(--color-error); color: white; }
+
 .status-waiting { background: var(--color-background-dark); }
+
 .step-actions { display: flex; gap: 4px; margin-left: auto; }
 </style>

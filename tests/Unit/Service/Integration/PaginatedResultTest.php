@@ -34,85 +34,76 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for PaginatedResult.
  */
-class PaginatedResultTest extends TestCase
-{
+class PaginatedResultTest extends TestCase {
 
-    public function testFlatArrayDefaultsTotalToCount(): void
-    {
-        $result = PaginatedResult::fromMixed([['id' => 'a'], ['id' => 'b'], ['id' => 'c']]);
+	public function testFlatArrayDefaultsTotalToCount(): void {
+		$result = PaginatedResult::fromMixed([['id' => 'a'], ['id' => 'b'], ['id' => 'c']]);
 
-        $this->assertCount(3, $result->items);
-        $this->assertSame(3, $result->total);
-        $this->assertNull($result->nextCursor);
-    }//end testFlatArrayDefaultsTotalToCount()
+		$this->assertCount(3, $result->items);
+		$this->assertSame(3, $result->total);
+		$this->assertNull($result->nextCursor);
+	}//end testFlatArrayDefaultsTotalToCount()
 
-    public function testFullEnvelopeIsPreserved(): void
-    {
-        $result = PaginatedResult::fromMixed(
-            [
-                'items'      => [['id' => 'a']],
-                'total'      => 99,
-                'nextCursor' => '25',
-            ]
-        );
+	public function testFullEnvelopeIsPreserved(): void {
+		$result = PaginatedResult::fromMixed(
+			[
+				'items' => [['id' => 'a']],
+				'total' => 99,
+				'nextCursor' => '25',
+			]
+		);
 
-        $this->assertCount(1, $result->items);
-        $this->assertSame(99, $result->total);
-        $this->assertSame('25', $result->nextCursor);
-    }//end testFullEnvelopeIsPreserved()
+		$this->assertCount(1, $result->items);
+		$this->assertSame(99, $result->total);
+		$this->assertSame('25', $result->nextCursor);
+	}//end testFullEnvelopeIsPreserved()
 
-    public function testResultsKeyedEnvelopeIsCoercedToItems(): void
-    {
-        $result = PaginatedResult::fromMixed(
-            [
-                'results' => [['id' => 'x'], ['id' => 'y']],
-                'total'   => 2,
-            ]
-        );
+	public function testResultsKeyedEnvelopeIsCoercedToItems(): void {
+		$result = PaginatedResult::fromMixed(
+			[
+				'results' => [['id' => 'x'], ['id' => 'y']],
+				'total' => 2,
+			]
+		);
 
-        $this->assertSame([['id' => 'x'], ['id' => 'y']], $result->items);
-        $this->assertSame(2, $result->total);
-        $this->assertNull($result->nextCursor);
-    }//end testResultsKeyedEnvelopeIsCoercedToItems()
+		$this->assertSame([['id' => 'x'], ['id' => 'y']], $result->items);
+		$this->assertSame(2, $result->total);
+		$this->assertNull($result->nextCursor);
+	}//end testResultsKeyedEnvelopeIsCoercedToItems()
 
-    public function testEnvelopeWithoutTotalFallsBackToItemCount(): void
-    {
-        $result = PaginatedResult::fromMixed(['items' => [['id' => 'a'], ['id' => 'b']]]);
+	public function testEnvelopeWithoutTotalFallsBackToItemCount(): void {
+		$result = PaginatedResult::fromMixed(['items' => [['id' => 'a'], ['id' => 'b']]]);
 
-        $this->assertSame(2, $result->total);
-    }//end testEnvelopeWithoutTotalFallsBackToItemCount()
+		$this->assertSame(2, $result->total);
+	}//end testEnvelopeWithoutTotalFallsBackToItemCount()
 
-    public function testNumericNextCursorIsCastToString(): void
-    {
-        $result = PaginatedResult::fromMixed(['items' => [], 'total' => 0, 'nextCursor' => 7]);
+	public function testNumericNextCursorIsCastToString(): void {
+		$result = PaginatedResult::fromMixed(['items' => [], 'total' => 0, 'nextCursor' => 7]);
 
-        $this->assertSame('7', $result->nextCursor);
-    }//end testNumericNextCursorIsCastToString()
+		$this->assertSame('7', $result->nextCursor);
+	}//end testNumericNextCursorIsCastToString()
 
-    public function testNonArrayYieldsEmptyEnvelope(): void
-    {
-        $result = PaginatedResult::fromMixed('not-an-array');
+	public function testNonArrayYieldsEmptyEnvelope(): void {
+		$result = PaginatedResult::fromMixed('not-an-array');
 
-        $this->assertSame([], $result->items);
-        $this->assertSame(0, $result->total);
-        $this->assertNull($result->nextCursor);
-    }//end testNonArrayYieldsEmptyEnvelope()
+		$this->assertSame([], $result->items);
+		$this->assertSame(0, $result->total);
+		$this->assertNull($result->nextCursor);
+	}//end testNonArrayYieldsEmptyEnvelope()
 
-    public function testPaginatedResultInstanceIsReturnedUnchanged(): void
-    {
-        $original = new PaginatedResult(items: [['id' => 'a']], total: 5, nextCursor: '1');
+	public function testPaginatedResultInstanceIsReturnedUnchanged(): void {
+		$original = new PaginatedResult(items: [['id' => 'a']], total: 5, nextCursor: '1');
 
-        $this->assertSame($original, PaginatedResult::fromMixed($original));
-    }//end testPaginatedResultInstanceIsReturnedUnchanged()
+		$this->assertSame($original, PaginatedResult::fromMixed($original));
+	}//end testPaginatedResultInstanceIsReturnedUnchanged()
 
-    public function testToArrayMirrorsItemsUnderResults(): void
-    {
-        $result = new PaginatedResult(items: [['id' => 'a']], total: 1, nextCursor: null);
-        $array  = $result->toArray();
+	public function testToArrayMirrorsItemsUnderResults(): void {
+		$result = new PaginatedResult(items: [['id' => 'a']], total: 1, nextCursor: null);
+		$array = $result->toArray();
 
-        $this->assertSame($array['items'], $array['results']);
-        $this->assertSame(1, $array['total']);
-        $this->assertArrayHasKey('nextCursor', $array);
-        $this->assertNull($array['nextCursor']);
-    }//end testToArrayMirrorsItemsUnderResults()
+		$this->assertSame($array['items'], $array['results']);
+		$this->assertSame(1, $array['total']);
+		$this->assertArrayHasKey('nextCursor', $array);
+		$this->assertNull($array['nextCursor']);
+	}//end testToArrayMirrorsItemsUnderResults()
 }//end class

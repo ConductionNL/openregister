@@ -95,8 +95,12 @@ export default {
 
 <style scoped>
 .chain-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+
 .form-group { margin-bottom: 8px; }
+
 .form-group label { display: block; font-weight: bold; }
+
 .input-field { width: 100%; padding: 8px; }
+
 .create-form { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
 </style>

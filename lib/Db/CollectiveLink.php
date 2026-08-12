@@ -66,142 +66,139 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class CollectiveLink extends Entity implements JsonSerializable
-{
+class CollectiveLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The NC Collectives page id (primary key in `oc_collectives_pages`).
-     *
-     * @var integer|null
-     */
-    protected ?int $pageId = null;
+	/**
+	 * The NC Collectives page id (primary key in `oc_collectives_pages`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $pageId = null;
 
-    /**
-     * The owning collective id.
-     *
-     * @var integer|null
-     */
-    protected ?int $collectiveId = null;
+	/**
+	 * The owning collective id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $collectiveId = null;
 
-    /**
-     * The collective display name (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $collectiveName = null;
+	/**
+	 * The collective display name (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $collectiveName = null;
 
-    /**
-     * The page title (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $pageTitle = null;
+	/**
+	 * The page title (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $pageTitle = null;
 
-    /**
-     * The cached page slug.
-     *
-     * @var string|null
-     */
-    protected ?string $slug = null;
+	/**
+	 * The cached page slug.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $slug = null;
 
-    /**
-     * The cached page emoji.
-     *
-     * @var string|null
-     */
-    protected ?string $emoji = null;
+	/**
+	 * The cached page emoji.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $emoji = null;
 
-    /**
-     * The cached page last-modified timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $lastModified = null;
+	/**
+	 * The cached page last-modified timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastModified = null;
 
-    /**
-     * The cached deep link to the page.
-     *
-     * @var string|null
-     */
-    protected ?string $url = null;
+	/**
+	 * The cached deep link to the page.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $url = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'pageId', type: 'integer');
-        $this->addType(fieldName: 'collectiveId', type: 'integer');
-        $this->addType(fieldName: 'collectiveName', type: 'string');
-        $this->addType(fieldName: 'pageTitle', type: 'string');
-        $this->addType(fieldName: 'slug', type: 'string');
-        $this->addType(fieldName: 'emoji', type: 'string');
-        $this->addType(fieldName: 'lastModified', type: 'datetime');
-        $this->addType(fieldName: 'url', type: 'string');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'pageId', type: 'integer');
+		$this->addType(fieldName: 'collectiveId', type: 'integer');
+		$this->addType(fieldName: 'collectiveName', type: 'string');
+		$this->addType(fieldName: 'pageTitle', type: 'string');
+		$this->addType(fieldName: 'slug', type: 'string');
+		$this->addType(fieldName: 'emoji', type: 'string');
+		$this->addType(fieldName: 'lastModified', type: 'datetime');
+		$this->addType(fieldName: 'url', type: 'string');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'             => $this->id,
-            'objectUuid'     => $this->objectUuid,
-            'registerId'     => $this->registerId,
-            'schemaId'       => $this->schemaId,
-            'pageId'         => $this->pageId,
-            'collectiveId'   => $this->collectiveId,
-            'collectiveName' => $this->collectiveName,
-            'pageTitle'      => $this->pageTitle,
-            'slug'           => $this->slug,
-            'emoji'          => $this->emoji,
-            'lastModified'   => $this->lastModified?->format(DateTime::ATOM),
-            'url'            => $this->url,
-            'linkedBy'       => $this->linkedBy,
-            'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'pageId' => $this->pageId,
+			'collectiveId' => $this->collectiveId,
+			'collectiveName' => $this->collectiveName,
+			'pageTitle' => $this->pageTitle,
+			'slug' => $this->slug,
+			'emoji' => $this->emoji,
+			'lastModified' => $this->lastModified?->format(DateTime::ATOM),
+			'url' => $this->url,
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

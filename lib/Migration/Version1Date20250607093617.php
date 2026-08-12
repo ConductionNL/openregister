@@ -29,42 +29,40 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-class Version1Date20250607093617 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @phpstan-return ISchemaWrapper|null
-     *
-     * @psalm-return ISchemaWrapper|null
-     * @return       ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20250607093617 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @phpstan-return ISchemaWrapper|null
+	 *
+	 * @psalm-return ISchemaWrapper|null
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Update the openregister_configurations table.
-        $table = $schema->getTable('openregister_audit_trails');
+		// Update the openregister_configurations table.
+		$table = $schema->getTable('openregister_audit_trails');
 
-        // Add the expires column if it doesn't exist.
-        if ($table->hasColumn('expires') === false) {
-            $table->addColumn(
-                'expires',
-                Types::DATETIME,
-                [
-                    'notnull' => false,
-                ]
-            );
-        }
+		// Add the expires column if it doesn't exist.
+		if ($table->hasColumn('expires') === false) {
+			$table->addColumn(
+				'expires',
+				Types::DATETIME,
+				[
+					'notnull' => false,
+				]
+			);
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

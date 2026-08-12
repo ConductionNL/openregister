@@ -55,120 +55,116 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Tier-2 cospend-links table — create-or-extend.
  */
-class Version1Date20260525210000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260525210000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable('openregister_cospend_links') === false) {
-            $this->createCospendLinksTable(schema: $schema, output: $output);
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_cospend_links') === false) {
+			$this->createCospendLinksTable(schema: $schema, output: $output);
+			$changed = true;
+		}
 
-        if ($schema->hasTable('openregister_cospend_links') === true
-            && $this->extendCospendLinksTable(schema: $schema, output: $output) === true
-        ) {
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_cospend_links') === true
+			&& $this->extendCospendLinksTable(schema: $schema, output: $output) === true
+		) {
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Create the openregister_cospend_links table at the Tier-2 shape.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createCospendLinksTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $table = $schema->createTable('openregister_cospend_links');
+	/**
+	 * Create the openregister_cospend_links table at the Tier-2 shape.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createCospendLinksTable(ISchemaWrapper $schema, IOutput $output): void {
+		$table = $schema->createTable('openregister_cospend_links');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('entry_type', Types::STRING, ['notnull' => true, 'length' => 16]);
-        $table->addColumn('project_id', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('bill_id', Types::INTEGER, ['notnull' => false, 'default' => null]);
-        $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('amount', Types::FLOAT, ['notnull' => false, 'default' => null]);
-        $table->addColumn('currency', Types::STRING, ['notnull' => false, 'length' => 16, 'default' => null]);
-        $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('entry_type', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('project_id', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('bill_id', Types::INTEGER, ['notnull' => false, 'default' => null]);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('amount', Types::FLOAT, ['notnull' => false, 'default' => null]);
+		$table->addColumn('currency', Types::STRING, ['notnull' => false, 'length' => 16, 'default' => null]);
+		$table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['object_uuid', 'entry_type', 'project_id', 'bill_id'], 'idx_cospend_unique');
-        $table->addIndex(['object_uuid'], 'idx_cospend_object');
-        $table->addIndex(['register_id'], 'idx_cospend_register');
-        $table->addIndex(['schema_id'], 'idx_cospend_schema');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['object_uuid', 'entry_type', 'project_id', 'bill_id'], 'idx_cospend_unique');
+		$table->addIndex(['object_uuid'], 'idx_cospend_object');
+		$table->addIndex(['register_id'], 'idx_cospend_register');
+		$table->addIndex(['schema_id'], 'idx_cospend_schema');
 
-        $output->info('Created openregister_cospend_links table (Tier-2 schema)');
-    }//end createCospendLinksTable()
+		$output->info('Created openregister_cospend_links table (Tier-2 schema)');
+	}//end createCospendLinksTable()
 
-    /**
-     * Add any missing Tier-2 columns to an existing cospend_links table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return bool True when a column was added.
-     */
-    private function extendCospendLinksTable(ISchemaWrapper $schema, IOutput $output): bool
-    {
-        $table   = $schema->getTable('openregister_cospend_links');
-        $changed = false;
+	/**
+	 * Add any missing Tier-2 columns to an existing cospend_links table.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return bool True when a column was added.
+	 */
+	private function extendCospendLinksTable(ISchemaWrapper $schema, IOutput $output): bool {
+		$table = $schema->getTable('openregister_cospend_links');
+		$changed = false;
 
-        if ($table->hasColumn('schema_id') === false) {
-            $table->addColumn(
-                'schema_id',
-                Types::BIGINT,
-                ['notnull' => false, 'unsigned' => true, 'default' => null]
-            );
-            $table->addIndex(['schema_id'], 'idx_cospend_schema');
-            $output->info('Added schema_id column to openregister_cospend_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('schema_id') === false) {
+			$table->addColumn(
+				'schema_id',
+				Types::BIGINT,
+				['notnull' => false, 'unsigned' => true, 'default' => null]
+			);
+			$table->addIndex(['schema_id'], 'idx_cospend_schema');
+			$output->info('Added schema_id column to openregister_cospend_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('bill_id') === false) {
-            $table->addColumn('bill_id', Types::INTEGER, ['notnull' => false, 'default' => null]);
-            $output->info('Added bill_id column to openregister_cospend_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('bill_id') === false) {
+			$table->addColumn('bill_id', Types::INTEGER, ['notnull' => false, 'default' => null]);
+			$output->info('Added bill_id column to openregister_cospend_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('amount') === false) {
-            $table->addColumn('amount', Types::FLOAT, ['notnull' => false, 'default' => null]);
-            $output->info('Added amount column to openregister_cospend_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('amount') === false) {
+			$table->addColumn('amount', Types::FLOAT, ['notnull' => false, 'default' => null]);
+			$output->info('Added amount column to openregister_cospend_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('currency') === false) {
-            $table->addColumn('currency', Types::STRING, ['notnull' => false, 'length' => 16, 'default' => null]);
-            $output->info('Added currency column to openregister_cospend_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('currency') === false) {
+			$table->addColumn('currency', Types::STRING, ['notnull' => false, 'length' => 16, 'default' => null]);
+			$output->info('Added currency column to openregister_cospend_links');
+			$changed = true;
+		}
 
-        return $changed;
-    }//end extendCospendLinksTable()
+		return $changed;
+	}//end extendCospendLinksTable()
 }//end class

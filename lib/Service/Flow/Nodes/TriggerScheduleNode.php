@@ -43,162 +43,146 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow on a cron schedule.
  */
-class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The node type.
-     *
-     * @return string The id.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getId(): string
-    {
-        return 'openregister.trigger-schedule';
+	/**
+	 * The node type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getId(): string {
+		return 'openregister.trigger-schedule';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('On a schedule');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('On a schedule');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Start the flow on a cron schedule. The run begins with no object — the first node has to fetch what it works on.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/history.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Start the flow on a cron schedule. The run begins with no object — the first node has to fetch what it works on.');
+	/**
+	 * Starting a flow grants no privilege of its own.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of a schedule trigger.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function configKeys(): array {
+		return ['cron'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/history.svg');
+	/**
+	 * The expression is required, and must have five fields.
+	 *
+	 * The shape is checked, not the semantics: a five-field expression that
+	 * never matches a real minute is a scheduling question, and this node is
+	 * not the scheduler. What it can catch is the expression that is not a cron
+	 * expression at all — which otherwise sits in a saved flow that simply
+	 * never runs.
+	 *
+	 * @param array $config The node configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the cron expression is missing or malformed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function validateConfig(array $config): void {
+		$cron = trim((string)($config['cron'] ?? ''));
+		if ($cron === '') {
+			throw new InvalidArgumentException(
+				'A schedule trigger must carry a "cron" expression — without one nothing ever starts it, '
+				. 'which is indistinguishable from a flow with nothing to do.'
+			);
+		}
 
-    }//end getIcon()
+		$fields = preg_split('/\s+/', $cron);
+		if (is_array($fields) === false || count($fields) !== 5) {
+			$fieldCount = 0;
+			if (is_array($fields) === true) {
+				$fieldCount = count($fields);
+			}
 
-    /**
-     * Starting a flow grants no privilege of its own.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+			throw new InvalidArgumentException(
+				sprintf(
+					'A cron expression has five space-separated fields (minute hour day month weekday); "%s" has %d.',
+					$cron,
+					$fieldCount
+				)
+			);
+		}
 
-    }//end isAvailableForScope()
+	}//end validateConfig()
 
-    /**
-     * The config vocabulary of a schedule trigger.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function configKeys(): array
-    {
-        return ['cron'];
-
-    }//end configKeys()
-
-    /**
-     * The expression is required, and must have five fields.
-     *
-     * The shape is checked, not the semantics: a five-field expression that
-     * never matches a real minute is a scheduling question, and this node is
-     * not the scheduler. What it can catch is the expression that is not a cron
-     * expression at all — which otherwise sits in a saved flow that simply
-     * never runs.
-     *
-     * @param array $config The node configuration.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException When the cron expression is missing or malformed.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function validateConfig(array $config): void
-    {
-        $cron = trim((string) ($config['cron'] ?? ''));
-        if ($cron === '') {
-            throw new InvalidArgumentException(
-                'A schedule trigger must carry a "cron" expression — without one nothing ever starts it, '
-                .'which is indistinguishable from a flow with nothing to do.'
-            );
-        }
-
-        $fields = preg_split('/\s+/', $cron);
-        if (is_array($fields) === false || count($fields) !== 5) {
-            $fieldCount = 0;
-            if (is_array($fields) === true) {
-                $fieldCount = count($fields);
-            }
-
-            throw new InvalidArgumentException(
-                sprintf(
-                    'A cron expression has five space-separated fields (minute hour day month weekday); "%s" has %d.',
-                    $cron,
-                    $fieldCount
-                )
-            );
-        }
-
-    }//end validateConfig()
-
-    /**
-     * A trigger is an entry point, not work.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The node configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        return $items;
-
-    }//end execute()
+	/**
+	 * A trigger is an entry point, not work.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The node configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		return $items;
+	}//end execute()
 }//end class

@@ -42,175 +42,164 @@ use OCP\IDBConnection;
 use OCP\IL10N;
 use Throwable;
 
-class CollectivesProvider extends AbstractIntegrationProvider
-{
-    use MarkerLookupTrait;
+class CollectivesProvider extends AbstractIntegrationProvider {
+	use MarkerLookupTrait;
 
-    private const REQUIRED_APP = 'collectives';
+	private const REQUIRED_APP = 'collectives';
 
-    private const MARKER_PREFIX = '[or:';
+	private const MARKER_PREFIX = '[or:';
 
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection        $db                   NC DB connection.
-     * @param IAppManager          $appManager           NC app manager.
-     * @param IL10N                $l10n                 Localisation.
-     * @param CollectiveLinkMapper $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
-     */
-    public function __construct(
-        private IDBConnection $db,
-        private IAppManager $appManager,
-        private IL10N $l10n,
-        private CollectiveLinkMapper $collectiveLinkMapper,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db NC DB connection.
+	 * @param IAppManager $appManager NC app manager.
+	 * @param IL10N $l10n Localisation.
+	 * @param CollectiveLinkMapper $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
+	 */
+	public function __construct(
+		private IDBConnection $db,
+		private IAppManager $appManager,
+		private IL10N $l10n,
+		private CollectiveLinkMapper $collectiveLinkMapper,
+	) {
+	}//end __construct()
 
-    public function getId(): string
-    {
-        return 'collectives';
-    }//end getId()
+	public function getId(): string {
+		return 'collectives';
+	}//end getId()
 
-    public function getLabel(): string
-    {
-        return $this->l10n->t('Knowledge');
-    }//end getLabel()
+	public function getLabel(): string {
+		return $this->l10n->t('Knowledge');
+	}//end getLabel()
 
-    public function getIcon(): string
-    {
-        return 'BookOpenPageVariant';
-    }//end getIcon()
+	public function getIcon(): string {
+		return 'BookOpenPageVariant';
+	}//end getIcon()
 
-    public function getGroup(): ?string
-    {
-        return 'docs';
-    }//end getGroup()
+	public function getGroup(): ?string {
+		return 'docs';
+	}//end getGroup()
 
-    public function getRequiredApp(): ?string
-    {
-        return self::REQUIRED_APP;
-    }//end getRequiredApp()
+	public function getRequiredApp(): ?string {
+		return self::REQUIRED_APP;
+	}//end getRequiredApp()
 
-    public function getStorageStrategy(): string
-    {
-        return 'link-table';
-    }//end getStorageStrategy()
+	public function getStorageStrategy(): string {
+		return 'link-table';
+	}//end getStorageStrategy()
 
-    public function isEnabled(): bool
-    {
-        return $this->appManager->isInstalled(self::REQUIRED_APP);
-    }//end isEnabled()
+	public function isEnabled(): bool {
+		return $this->appManager->isInstalled(self::REQUIRED_APP);
+	}//end isEnabled()
 
-    /**
-     * List linked Knowledge pages for an OR object.
-     *
-     * Reads the Tier-2 link table first; if no link rows exist it falls
-     * back to the legacy `[or:{uuid}]` marker scan in
-     * `collectives_pages.slug` so pages that pre-date the link table
-     * still surface.
-     *
-     * @param string $register Register slug for the parent object.
-     * @param string $schema   Schema slug for the parent object.
-     * @param string $objectId UUID of the OR object whose rows we want.
-     * @param array  $filters  Optional registry filters (unused).
-     *
-     * @return array<int,array<string,mixed>> List of registry leaf rows.
-     *
-     * @spec openspec/specs/integration-collectives/spec.md
-     */
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
-    {
-        if ($this->isEnabled() === false) {
-            return [];
-        }
+	/**
+	 * List linked Knowledge pages for an OR object.
+	 *
+	 * Reads the Tier-2 link table first; if no link rows exist it falls
+	 * back to the legacy `[or:{uuid}]` marker scan in
+	 * `collectives_pages.slug` so pages that pre-date the link table
+	 * still surface.
+	 *
+	 * @param string $register Register slug for the parent object.
+	 * @param string $schema Schema slug for the parent object.
+	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param array $filters Optional registry filters (unused).
+	 *
+	 * @return array<int,array<string,mixed>> List of registry leaf rows.
+	 *
+	 * @spec openspec/specs/integration-collectives/spec.md
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		if ($this->isEnabled() === false) {
+			return [];
+		}
 
-        // Tier-2 path: read from the link table.
-        try {
-            $linkRows = $this->collectiveLinkMapper->findByObjectUuid($objectId);
-        } catch (Throwable $e) {
-            $linkRows = [];
-        }
+		// Tier-2 path: read from the link table.
+		try {
+			$linkRows = $this->collectiveLinkMapper->findByObjectUuid($objectId);
+		} catch (Throwable $e) {
+			$linkRows = [];
+		}
 
-        if (count($linkRows) > 0) {
-            return array_map(
-                fn (CollectiveLink $link): array => $this->rowFromLink(link: $link),
-                $linkRows
-            );
-        }
+		if (count($linkRows) > 0) {
+			return array_map(
+				fn (CollectiveLink $link): array => $this->rowFromLink(link: $link),
+				$linkRows
+			);
+		}
 
-        // Backwards-compat fallback: scan the legacy `[or:{uuid}]`
-        // marker in `collectives_pages.slug`.
-        $marker = self::MARKER_PREFIX.$objectId.']';
-        $rows   = $this->findByMarker(
-            db: $this->db,
-            table: 'collectives_pages',
-            markerColumn: 'slug',
-            marker: $marker,
-            extraColumns: ['emoji', 'last_user_id'],
-            idColumn: 'id',
-        );
+		// Backwards-compat fallback: scan the legacy `[or:{uuid}]`
+		// marker in `collectives_pages.slug`.
+		$marker = self::MARKER_PREFIX . $objectId . ']';
+		$rows = $this->findByMarker(
+			db: $this->db,
+			table: 'collectives_pages',
+			markerColumn: 'slug',
+			marker: $marker,
+			extraColumns: ['emoji', 'last_user_id'],
+			idColumn: 'id',
+		);
 
-        return array_map(
-                static function (array $row): array {
-                    return [
-                        'id'    => (string) ($row['id'] ?? ''),
-                        'title' => (string) ($row['slug'] ?? ''),
-                        'url'   => '/index.php/apps/collectives/'.(string) ($row['id'] ?? ''),
-                        'data'  => $row,
-                    ];
-                },
-                $rows
-                );
-    }//end list()
+		return array_map(
+			static function (array $row): array {
+				return [
+					'id' => (string)($row['id'] ?? ''),
+					'title' => (string)($row['slug'] ?? ''),
+					'url' => '/index.php/apps/collectives/' . (string)($row['id'] ?? ''),
+					'data' => $row,
+				];
+			},
+			$rows
+		);
+	}//end list()
 
-    /**
-     * Convert a CollectiveLink row into the registry leaf-row shape.
-     *
-     * @param CollectiveLink $link Link row from the mapper.
-     *
-     * @return array<string,mixed>
-     */
-    private function rowFromLink(CollectiveLink $link): array
-    {
-        $pageId = (int) $link->getPageId();
-        $data   = $link->jsonSerialize();
-        $url    = $link->getUrl();
-        if ($url === null || $url === '') {
-            $url = '/index.php/apps/collectives/?fileId='.$pageId;
-        }
+	/**
+	 * Convert a CollectiveLink row into the registry leaf-row shape.
+	 *
+	 * @param CollectiveLink $link Link row from the mapper.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function rowFromLink(CollectiveLink $link): array {
+		$pageId = (int)$link->getPageId();
+		$data = $link->jsonSerialize();
+		$url = $link->getUrl();
+		if ($url === null || $url === '') {
+			$url = '/index.php/apps/collectives/?fileId=' . $pageId;
+		}
 
-        return [
-            'id'             => (string) $pageId,
-            'title'          => (string) $link->getPageTitle(),
-            'url'            => $url,
-            'emoji'          => $link->getEmoji(),
-            'collectiveName' => $link->getCollectiveName(),
-            'data'           => $data,
-        ];
-    }//end rowFromLink()
+		return [
+			'id' => (string)$pageId,
+			'title' => (string)$link->getPageTitle(),
+			'url' => $url,
+			'emoji' => $link->getEmoji(),
+			'collectiveName' => $link->getCollectiveName(),
+			'data' => $data,
+		];
+	}//end rowFromLink()
 
-    /**
-     * Provider health descriptor (enabled/disabled echo).
-     *
-     * @return array<string,mixed>
-     *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
-     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
-     */
-    public function health(): array
-    {
-        $available = $this->isEnabled();
-        $status    = 'unavailable';
-        $message   = 'NC Knowledge app is not installed';
-        if ($available === true) {
-            $status  = 'ok';
-            $message = null;
-        }
+	/**
+	 * Provider health descriptor (enabled/disabled echo).
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
+	 */
+	public function health(): array {
+		$available = $this->isEnabled();
+		$status = 'unavailable';
+		$message = 'NC Knowledge app is not installed';
+		if ($available === true) {
+			$status = 'ok';
+			$message = null;
+		}
 
-        return [
-            'status'     => $status,
-            'authStatus' => 'configured',
-            'message'    => $message,
-        ];
-    }//end health()
+		return [
+			'status' => $status,
+			'authStatus' => 'configured',
+			'message' => $message,
+		];
+	}//end health()
 }//end class

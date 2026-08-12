@@ -28,76 +28,69 @@ use Twig\Extension\RuntimeExtensionInterface;
  *
  * @package OCA\OpenRegister\Twig
  */
-class AuthenticationRuntime implements RuntimeExtensionInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param AuthenticationService $authService The authentication service
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(
-        private readonly AuthenticationService $authService,
-    ) {
+class AuthenticationRuntime implements RuntimeExtensionInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param AuthenticationService $authService The authentication service
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly AuthenticationService $authService,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Fetch an OAuth token for a source.
-     *
-     * @param Source $source The source to authenticate with
-     *
-     * @return string The OAuth access token
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function oauthToken(Source $source): string
-    {
-        $configuration = new Dot($source->getConfiguration(), true);
-        $authConfig    = $configuration->get('authentication');
+	/**
+	 * Fetch an OAuth token for a source.
+	 *
+	 * @param Source $source The source to authenticate with
+	 *
+	 * @return string The OAuth access token
+	 *
+	 * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function oauthToken(Source $source): string {
+		$configuration = new Dot($source->getConfiguration(), true);
+		$authConfig = $configuration->get('authentication');
 
-        return $this->authService->fetchOAuthTokens($authConfig);
+		return $this->authService->fetchOAuthTokens($authConfig);
+	}//end oauthToken()
 
-    }//end oauthToken()
+	/**
+	 * Fetch a DeCOS token for a source.
+	 *
+	 * @param Source $source The source to authenticate with
+	 *
+	 * @return string The DeCOS access token
+	 *
+	 * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function decosToken(Source $source): string {
+		$configuration = new Dot($source->getConfiguration(), true);
+		$authConfig = $configuration->get('authentication');
 
-    /**
-     * Fetch a DeCOS token for a source.
-     *
-     * @param Source $source The source to authenticate with
-     *
-     * @return string The DeCOS access token
-     *
-     * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function decosToken(Source $source): string
-    {
-        $configuration = new Dot($source->getConfiguration(), true);
-        $authConfig    = $configuration->get('authentication');
+		return $this->authService->fetchDecosToken($authConfig);
+	}//end decosToken()
 
-        return $this->authService->fetchDecosToken($authConfig);
+	/**
+	 * Fetch a JWT token for a source.
+	 *
+	 * @param Source $source The source to authenticate with
+	 *
+	 * @return string The signed JWT token
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function jwtToken(Source $source): string {
+		$configuration = new Dot($source->getConfiguration(), true);
+		$authConfig = $configuration->get('authentication');
 
-    }//end decosToken()
-
-    /**
-     * Fetch a JWT token for a source.
-     *
-     * @param Source $source The source to authenticate with
-     *
-     * @return string The signed JWT token
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function jwtToken(Source $source): string
-    {
-        $configuration = new Dot($source->getConfiguration(), true);
-        $authConfig    = $configuration->get('authentication');
-
-        return $this->authService->fetchJWTToken($authConfig);
-
-    }//end jwtToken()
+		return $this->authService->fetchJWTToken($authConfig);
+	}//end jwtToken()
 }//end class

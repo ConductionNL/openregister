@@ -43,163 +43,155 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  */
-class NotificationHistoryController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                    $appName      Application name.
-     * @param IRequest                  $request      HTTP request.
-     * @param NotificationHistoryMapper $mapper       Mapper for the notification history table.
-     * @param IUserSession              $userSession  Active session — drives the per-caller filter scope (F07).
-     * @param IGroupManager             $groupManager Group resolver — admins keep full audit visibility (F07).
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly NotificationHistoryMapper $mapper,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class NotificationHistoryController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName Application name.
+	 * @param IRequest $request HTTP request.
+	 * @param NotificationHistoryMapper $mapper Mapper for the notification history table.
+	 * @param IUserSession $userSession Active session — drives the per-caller filter scope (F07).
+	 * @param IGroupManager $groupManager Group resolver — admins keep full audit visibility (F07).
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly NotificationHistoryMapper $mapper,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * List notification history rows with optional filters.
-     *
-     * Supported query string params: `ruleId`, `channel`, `recipient`,
-     * `objectUuid`, `schemaId`, `registerId`, `status`, `limit`, `offset`.
-     *
-     * @return JSONResponse JSON response with results, total, limit, offset.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md
-     */
-    public function index(): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required'],
-                statusCode: Http::STATUS_UNAUTHORIZED
-            );
-        }
+	/**
+	 * List notification history rows with optional filters.
+	 *
+	 * Supported query string params: `ruleId`, `channel`, `recipient`,
+	 * `objectUuid`, `schemaId`, `registerId`, `status`, `limit`, `offset`.
+	 *
+	 * @return JSONResponse JSON response with results, total, limit, offset.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function index(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required'],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
 
-        $filters = $this->extractFilters();
+		$filters = $this->extractFilters();
 
-        // SECURITY: non-admins may only read their OWN history. Force the
-        // `recipient` filter to the current UID regardless of any value
-        // the caller supplied — without this, any authed Bob could query
-        // `?recipient=alice` and read Alice's full notification stream
-        // (recipient list, channels, ruleId, dispatch timestamps), a
-        // privacy + recon vector across tenants.
-        if ($this->groupManager->isAdmin($user->getUID()) === false) {
-            $filters['recipient'] = $user->getUID();
-        }
+		// SECURITY: non-admins may only read their OWN history. Force the
+		// `recipient` filter to the current UID regardless of any value
+		// the caller supplied — without this, any authed Bob could query
+		// `?recipient=alice` and read Alice's full notification stream
+		// (recipient list, channels, ruleId, dispatch timestamps), a
+		// privacy + recon vector across tenants.
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			$filters['recipient'] = $user->getUID();
+		}
 
-        $limit  = $this->resolveLimit();
-        $offset = $this->resolveOffset();
+		$limit = $this->resolveLimit();
+		$offset = $this->resolveOffset();
 
-        $results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
-        $total   = $this->mapper->countFiltered(filters: $filters);
+		$results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
+		$total = $this->mapper->countFiltered(filters: $filters);
 
-        return new JSONResponse(
-            data: [
-                'results' => array_map(static fn ($entity) => $entity->jsonSerialize(), $results),
-                'total'   => $total,
-                'limit'   => $limit,
-                'offset'  => $offset,
-            ]
-        );
+		return new JSONResponse(
+			data: [
+				'results' => array_map(static fn ($entity) => $entity->jsonSerialize(), $results),
+				'total' => $total,
+				'limit' => $limit,
+				'offset' => $offset,
+			]
+		);
 
-    }//end index()
+	}//end index()
 
-    /**
-     * Extract supported filter values from the request.
-     *
-     * @return array<string, string|null> Filter map.
-     */
-    private function extractFilters(): array
-    {
-        $supported = [
-            'ruleId',
-            'channel',
-            'recipient',
-            'objectUuid',
-            'schemaId',
-            'registerId',
-            'status',
-        ];
+	/**
+	 * Extract supported filter values from the request.
+	 *
+	 * @return array<string, string|null> Filter map.
+	 */
+	private function extractFilters(): array {
+		$supported = [
+			'ruleId',
+			'channel',
+			'recipient',
+			'objectUuid',
+			'schemaId',
+			'registerId',
+			'status',
+		];
 
-        $filters = [];
-        foreach ($supported as $key) {
-            $value = $this->request->getParam($key);
-            if (is_string($value) === true && $value !== '') {
-                $filters[$key] = $value;
-            }
-        }
+		$filters = [];
+		foreach ($supported as $key) {
+			$value = $this->request->getParam($key);
+			if (is_string($value) === true && $value !== '') {
+				$filters[$key] = $value;
+			}
+		}
 
-        return $filters;
+		return $filters;
+	}//end extractFilters()
 
-    }//end extractFilters()
+	/**
+	 * Resolve the limit parameter.
+	 *
+	 * Defaults to 50 when missing or invalid; capped at 500 to prevent
+	 * accidental "give me everything" queries from spiking memory.
+	 *
+	 * @return int Resolved limit.
+	 */
+	private function resolveLimit(): int {
+		$defaultValue = 50;
+		$maxValue = 500;
 
-    /**
-     * Resolve the limit parameter.
-     *
-     * Defaults to 50 when missing or invalid; capped at 500 to prevent
-     * accidental "give me everything" queries from spiking memory.
-     *
-     * @return int Resolved limit.
-     */
-    private function resolveLimit(): int
-    {
-        $defaultValue = 50;
-        $maxValue     = 500;
+		$raw = $this->request->getParam('limit');
+		if ($raw === null || $raw === '') {
+			return $defaultValue;
+		}
 
-        $raw = $this->request->getParam('limit');
-        if ($raw === null || $raw === '') {
-            return $defaultValue;
-        }
+		if (is_string($raw) === true && ctype_digit($raw) === true) {
+			$value = (int)$raw;
+			if ($value > 0) {
+				return min($value, $maxValue);
+			}
+		} elseif (is_int($raw) === true && $raw > 0) {
+			return min($raw, $maxValue);
+		}
 
-        if (is_string($raw) === true && ctype_digit($raw) === true) {
-            $value = (int) $raw;
-            if ($value > 0) {
-                return min($value, $maxValue);
-            }
-        } else if (is_int($raw) === true && $raw > 0) {
-            return min($raw, $maxValue);
-        }
+		return $defaultValue;
+	}//end resolveLimit()
 
-        return $defaultValue;
+	/**
+	 * Resolve the offset parameter.
+	 *
+	 * Defaults to 0 when missing or invalid.
+	 *
+	 * @return int Resolved offset.
+	 */
+	private function resolveOffset(): int {
+		$raw = $this->request->getParam('offset');
+		if ($raw === null || $raw === '') {
+			return 0;
+		}
 
-    }//end resolveLimit()
+		if (is_string($raw) === true && ctype_digit($raw) === true) {
+			return (int)$raw;
+		}
 
-    /**
-     * Resolve the offset parameter.
-     *
-     * Defaults to 0 when missing or invalid.
-     *
-     * @return int Resolved offset.
-     */
-    private function resolveOffset(): int
-    {
-        $raw = $this->request->getParam('offset');
-        if ($raw === null || $raw === '') {
-            return 0;
-        }
+		if (is_int($raw) === true && $raw >= 0) {
+			return $raw;
+		}
 
-        if (is_string($raw) === true && ctype_digit($raw) === true) {
-            return (int) $raw;
-        }
-
-        if (is_int($raw) === true && $raw >= 0) {
-            return $raw;
-        }
-
-        return 0;
-
-    }//end resolveOffset()
+		return 0;
+	}//end resolveOffset()
 }//end class

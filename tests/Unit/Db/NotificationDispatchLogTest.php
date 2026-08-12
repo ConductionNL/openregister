@@ -27,44 +27,40 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for NotificationDispatchLog entity.
  */
-class NotificationDispatchLogTest extends TestCase
-{
+class NotificationDispatchLogTest extends TestCase {
 
-    public function testAllFieldsRoundTrip(): void
-    {
-        $entity = new NotificationDispatchLog();
-        $now    = new DateTime('2026-05-11T12:00:00+00:00');
+	public function testAllFieldsRoundTrip(): void {
+		$entity = new NotificationDispatchLog();
+		$now = new DateTime('2026-05-11T12:00:00+00:00');
 
-        $entity->setNotificationSlug('reminderT30');
-        $entity->setIdempotencyKey('uuid-123-T30-2026-06-01');
-        $entity->setDispatchedAt($now);
+		$entity->setNotificationSlug('reminderT30');
+		$entity->setIdempotencyKey('uuid-123-T30-2026-06-01');
+		$entity->setDispatchedAt($now);
 
-        $this->assertSame('reminderT30', $entity->getNotificationSlug());
-        $this->assertSame('uuid-123-T30-2026-06-01', $entity->getIdempotencyKey());
-        $this->assertSame($now, $entity->getDispatchedAt());
-    }//end testAllFieldsRoundTrip()
+		$this->assertSame('reminderT30', $entity->getNotificationSlug());
+		$this->assertSame('uuid-123-T30-2026-06-01', $entity->getIdempotencyKey());
+		$this->assertSame($now, $entity->getDispatchedAt());
+	}//end testAllFieldsRoundTrip()
 
-    public function testJsonSerializeReturnsDocumentedShape(): void
-    {
-        $entity = new NotificationDispatchLog();
-        $entity->setNotificationSlug('reminderT30');
-        $entity->setIdempotencyKey('uuid-123-T30-2026-06-01');
-        $entity->setDispatchedAt(new DateTime('2026-05-11T12:00:00+00:00'));
+	public function testJsonSerializeReturnsDocumentedShape(): void {
+		$entity = new NotificationDispatchLog();
+		$entity->setNotificationSlug('reminderT30');
+		$entity->setIdempotencyKey('uuid-123-T30-2026-06-01');
+		$entity->setDispatchedAt(new DateTime('2026-05-11T12:00:00+00:00'));
 
-        $serialized = $entity->jsonSerialize();
+		$serialized = $entity->jsonSerialize();
 
-        $this->assertSame('reminderT30', $serialized['notificationSlug']);
-        $this->assertSame('uuid-123-T30-2026-06-01', $serialized['idempotencyKey']);
-        $this->assertSame('2026-05-11T12:00:00+00:00', $serialized['dispatchedAt']);
-    }//end testJsonSerializeReturnsDocumentedShape()
+		$this->assertSame('reminderT30', $serialized['notificationSlug']);
+		$this->assertSame('uuid-123-T30-2026-06-01', $serialized['idempotencyKey']);
+		$this->assertSame('2026-05-11T12:00:00+00:00', $serialized['dispatchedAt']);
+	}//end testJsonSerializeReturnsDocumentedShape()
 
-    public function testJsonSerializeWithNullDispatchedAt(): void
-    {
-        $entity = new NotificationDispatchLog();
-        $entity->setNotificationSlug('test');
-        $entity->setIdempotencyKey('key');
+	public function testJsonSerializeWithNullDispatchedAt(): void {
+		$entity = new NotificationDispatchLog();
+		$entity->setNotificationSlug('test');
+		$entity->setIdempotencyKey('key');
 
-        $serialized = $entity->jsonSerialize();
-        $this->assertNull($serialized['dispatchedAt']);
-    }//end testJsonSerializeWithNullDispatchedAt()
+		$serialized = $entity->jsonSerialize();
+		$this->assertNull($serialized['dispatchedAt']);
+	}//end testJsonSerializeWithNullDispatchedAt()
 }//end class

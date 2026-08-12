@@ -40,12 +40,12 @@ use OCP\AppFramework\Db\Entity;
  * an operator editing it. `FlowScheduleService` already made that choice for
  * the last-fire timestamp; this generalises it.
  *
- * @method string|null   getFlowId()
- * @method void          setFlowId(?string $flowId)
- * @method array|null    getState()
- * @method void          setState(?array $state)
+ * @method string|null getFlowId()
+ * @method void setFlowId(?string $flowId)
+ * @method array|null getState()
+ * @method void setState(?array $state)
  * @method DateTime|null getUpdated()
- * @method void          setUpdated(?DateTime $updated)
+ * @method void setUpdated(?DateTime $updated)
  *
  * @category Database
  * @package  OCA\OpenRegister\Db
@@ -56,61 +56,58 @@ use OCP\AppFramework\Db\Entity;
  *
  * @link https://OpenRegister.app
  */
-class FlowState extends Entity implements JsonSerializable
-{
+class FlowState extends Entity implements JsonSerializable {
 
-    /**
-     * The uuid of the flow this state belongs to.
-     *
-     * @var string|null
-     */
-    protected ?string $flowId = null;
+	/**
+	 * The uuid of the flow this state belongs to.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $flowId = null;
 
-    /**
-     * The state itself, as a free-form map.
-     *
-     * @var array|null
-     */
-    protected ?array $state = null;
+	/**
+	 * The state itself, as a free-form map.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $state = null;
 
-    /**
-     * When the state was last written.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * When the state was last written.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Register field types.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'flowId', type: 'string');
-        $this->addType(fieldName: 'state', type: 'json');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+	/**
+	 * Register field types.
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'flowId', type: 'string');
+		$this->addType(fieldName: 'state', type: 'json');
+		$this->addType(fieldName: 'updated', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Serialise for API output.
-     *
-     * @return array The serialised state.
-     */
-    public function jsonSerialize(): array
-    {
-        $updated = null;
-        if ($this->updated !== null) {
-            $updated = $this->updated->format('c');
-        }
+	/**
+	 * Serialise for API output.
+	 *
+	 * @return array The serialised state.
+	 */
+	public function jsonSerialize(): array {
+		$updated = null;
+		if ($this->updated !== null) {
+			$updated = $this->updated->format('c');
+		}
 
-        return [
-            'id'      => $this->id,
-            'flowId'  => $this->flowId,
-            'state'   => ($this->state ?? []),
-            'updated' => $updated,
-        ];
+		return [
+			'id' => $this->id,
+			'flowId' => $this->flowId,
+			'state' => ($this->state ?? []),
+			'updated' => $updated,
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

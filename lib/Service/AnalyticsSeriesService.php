@@ -54,224 +54,219 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service composes the series mapper, integration
  * registry, user session and group manager — each is required for the register / fetch / RBAC contract.
  */
-class AnalyticsSeriesService
-{
+class AnalyticsSeriesService {
 
-    /**
-     * Allowed visibility tiers.
-     *
-     * @var string[]
-     */
-    private const VISIBILITIES = ['private', 'group', 'public'];
+	/**
+	 * Allowed visibility tiers.
+	 *
+	 * @var string[]
+	 */
+	private const VISIBILITIES = ['private', 'group', 'public'];
 
-    /**
-     * Allowed chart types the render layer understands.
-     *
-     * @var string[]
-     */
-    private const CHART_TYPES = ['line', 'bar', 'pie', 'doughnut', 'area', 'radar'];
+	/**
+	 * Allowed chart types the render layer understands.
+	 *
+	 * @var string[]
+	 */
+	private const CHART_TYPES = ['line', 'bar', 'pie', 'doughnut', 'area', 'radar'];
 
-    /**
-     * Constructor.
-     *
-     * @param AnalyticsSeriesMapper $mapper       Series persistence.
-     * @param IntegrationRegistry   $registry     Registry for the page-widget surface.
-     * @param IUserSession          $userSession  Current user.
-     * @param IGroupManager         $groupManager Group / admin checks.
-     *
-     * @return void
-     */
-    public function __construct(
-        private AnalyticsSeriesMapper $mapper,
-        private IntegrationRegistry $registry,
-        private IUserSession $userSession,
-        private IGroupManager $groupManager,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param AnalyticsSeriesMapper $mapper Series persistence.
+	 * @param IntegrationRegistry $registry Registry for the page-widget surface.
+	 * @param IUserSession $userSession Current user.
+	 * @param IGroupManager $groupManager Group / admin checks.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private AnalyticsSeriesMapper $mapper,
+		private IntegrationRegistry $registry,
+		private IUserSession $userSession,
+		private IGroupManager $groupManager,
+	) {
+	}//end __construct()
 
-    /**
-     * Authorisation guard for the register (write) path — a series may
-     * only be registered by an authenticated user. Throws fail-closed
-     * (ADR-005) so the controller surfaces 400/401 rather than silently
-     * writing. Called explicitly from the controller so the authz
-     * decision is visible at the endpoint boundary.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException When no user is logged in.
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    public function ensureCanRegister(): void
-    {
-        if ($this->userSession->getUser() === null) {
-            throw new InvalidArgumentException('A logged-in user is required to register a series');
-        }
-    }//end ensureCanRegister()
+	/**
+	 * Authorisation guard for the register (write) path — a series may
+	 * only be registered by an authenticated user. Throws fail-closed
+	 * (ADR-005) so the controller surfaces 400/401 rather than silently
+	 * writing. Called explicitly from the controller so the authz
+	 * decision is visible at the endpoint boundary.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When no user is logged in.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function ensureCanRegister(): void {
+		if ($this->userSession->getUser() === null) {
+			throw new InvalidArgumentException('A logged-in user is required to register a series');
+		}
+	}//end ensureCanRegister()
 
-    /**
-     * Authorisation guard for the fetch (read) path — resolves the series
-     * RBAC-scoped and returns it only when the current user may read it.
-     * Returns null on unknown OR disallowed so the controller answers a
-     * uniform 404 (no enumeration oracle, ADR-005 fail-closed). Called
-     * explicitly from the controller so the authz decision is visible at
-     * the endpoint boundary.
-     *
-     * @param string $seriesKey The series key.
-     *
-     * @return array<string,mixed>|null The render contract, or null.
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    public function ensureReadableOrNull(string $seriesKey): ?array
-    {
-        return $this->fetch(seriesKey: $seriesKey);
-    }//end ensureReadableOrNull()
+	/**
+	 * Authorisation guard for the fetch (read) path — resolves the series
+	 * RBAC-scoped and returns it only when the current user may read it.
+	 * Returns null on unknown OR disallowed so the controller answers a
+	 * uniform 404 (no enumeration oracle, ADR-005 fail-closed). Called
+	 * explicitly from the controller so the authz decision is visible at
+	 * the endpoint boundary.
+	 *
+	 * @param string $seriesKey The series key.
+	 *
+	 * @return array<string,mixed>|null The render contract, or null.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function ensureReadableOrNull(string $seriesKey): ?array {
+		return $this->fetch(seriesKey: $seriesKey);
+	}//end ensureReadableOrNull()
 
-    /**
-     * Register (create or replace) a page-level series.
-     *
-     * Upserts by `seriesKey`: re-registering the same key updates the
-     * payload in place so a leaf can refresh its dashboard data without
-     * accumulating duplicates. Also (re)declares the matching page widget
-     * on the IntegrationRegistry so the render layer can discover it.
-     *
-     * @param string                         $seriesKey  Stable series key.
-     * @param array<int,mixed>               $labels     X-axis labels.
-     * @param array<int,array<string,mixed>> $datasets   Named datasets.
-     * @param string|null                    $title      Chart title.
-     * @param string                         $chartType  Chart type hint.
-     * @param string                         $visibility 'private'|'group'|'public'.
-     * @param int|null                       $registerId Optional register scope.
-     * @param int|null                       $schemaId   Optional schema scope.
-     *
-     * @return array<string,mixed> The stored series render contract.
-     *
-     * @throws InvalidArgumentException On invalid key / visibility / chart type.
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    public function register(
-        string $seriesKey,
-        array $labels,
-        array $datasets,
-        ?string $title=null,
-        string $chartType='line',
-        string $visibility='private',
-        ?int $registerId=null,
-        ?int $schemaId=null
-    ): array {
-        if (trim($seriesKey) === '') {
-            throw new InvalidArgumentException('seriesKey is required to register a series');
-        }
+	/**
+	 * Register (create or replace) a page-level series.
+	 *
+	 * Upserts by `seriesKey`: re-registering the same key updates the
+	 * payload in place so a leaf can refresh its dashboard data without
+	 * accumulating duplicates. Also (re)declares the matching page widget
+	 * on the IntegrationRegistry so the render layer can discover it.
+	 *
+	 * @param string $seriesKey Stable series key.
+	 * @param array<int,mixed> $labels X-axis labels.
+	 * @param array<int,array<string,mixed>> $datasets Named datasets.
+	 * @param string|null $title Chart title.
+	 * @param string $chartType Chart type hint.
+	 * @param string $visibility 'private'|'group'|'public'.
+	 * @param int|null $registerId Optional register scope.
+	 * @param int|null $schemaId Optional schema scope.
+	 *
+	 * @return array<string,mixed> The stored series render contract.
+	 *
+	 * @throws InvalidArgumentException On invalid key / visibility / chart type.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function register(
+		string $seriesKey,
+		array $labels,
+		array $datasets,
+		?string $title = null,
+		string $chartType = 'line',
+		string $visibility = 'private',
+		?int $registerId = null,
+		?int $schemaId = null,
+	): array {
+		if (trim($seriesKey) === '') {
+			throw new InvalidArgumentException('seriesKey is required to register a series');
+		}
 
-        if (in_array($visibility, self::VISIBILITIES, true) === false) {
-            throw new InvalidArgumentException('Invalid visibility — expected one of: '.implode(', ', self::VISIBILITIES));
-        }
+		if (in_array($visibility, self::VISIBILITIES, true) === false) {
+			throw new InvalidArgumentException('Invalid visibility — expected one of: ' . implode(', ', self::VISIBILITIES));
+		}
 
-        if (in_array($chartType, self::CHART_TYPES, true) === false) {
-            throw new InvalidArgumentException('Invalid chartType — expected one of: '.implode(', ', self::CHART_TYPES));
-        }
+		if (in_array($chartType, self::CHART_TYPES, true) === false) {
+			throw new InvalidArgumentException('Invalid chartType — expected one of: ' . implode(', ', self::CHART_TYPES));
+		}
 
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            throw new InvalidArgumentException('A logged-in user is required to register a series');
-        }
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new InvalidArgumentException('A logged-in user is required to register a series');
+		}
 
-        $now      = new DateTime();
-        $existing = $this->mapper->findByKey($seriesKey);
+		$now = new DateTime();
+		$existing = $this->mapper->findByKey($seriesKey);
 
-        $entity = ($existing ?? new AnalyticsSeries());
-        $entity->setSeriesKey($seriesKey);
-        $entity->setRegisterId($registerId);
-        $entity->setSchemaId($schemaId);
-        $entity->setTitle($title);
-        $entity->setChartType($chartType);
-        $entity->setLabels(json_encode(array_values($labels)));
-        $entity->setDatasets(json_encode(array_values($datasets)));
-        $entity->setVisibility($visibility);
-        $entity->setUpdatedAt($now);
+		$entity = ($existing ?? new AnalyticsSeries());
+		$entity->setSeriesKey($seriesKey);
+		$entity->setRegisterId($registerId);
+		$entity->setSchemaId($schemaId);
+		$entity->setTitle($title);
+		$entity->setChartType($chartType);
+		$entity->setLabels(json_encode(array_values($labels)));
+		$entity->setDatasets(json_encode(array_values($datasets)));
+		$entity->setVisibility($visibility);
+		$entity->setUpdatedAt($now);
 
-        if ($existing === null) {
-            $entity->setCreatedBy($user->getUID());
-            $entity->setCreatedAt($now);
-            $saved = $this->mapper->insert($entity);
-        } else {
-            $saved = $this->mapper->update($entity);
-        }
+		if ($existing === null) {
+			$entity->setCreatedBy($user->getUID());
+			$entity->setCreatedAt($now);
+			$saved = $this->mapper->insert($entity);
+		} else {
+			$saved = $this->mapper->update($entity);
+		}
 
-        // (Re)declare the page widget so the render layer can discover it.
-        // First-write-wins inside the registry; harmless on a refresh.
-        $this->registry->registerPageWidget(
-                [
-                    'id'         => 'analytics-series:'.$seriesKey,
-                    'type'       => 'chart',
-                    'title'      => $title,
-                    'providerId' => 'analytics-series',
-                    'config'     => [
-                        'seriesKey'  => $seriesKey,
-                        'chartType'  => $chartType,
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                    ],
-                ]
-                );
+		// (Re)declare the page widget so the render layer can discover it.
+		// First-write-wins inside the registry; harmless on a refresh.
+		$this->registry->registerPageWidget(
+			[
+				'id' => 'analytics-series:' . $seriesKey,
+				'type' => 'chart',
+				'title' => $title,
+				'providerId' => 'analytics-series',
+				'config' => [
+					'seriesKey' => $seriesKey,
+					'chartType' => $chartType,
+					'registerId' => $registerId,
+					'schemaId' => $schemaId,
+				],
+			]
+		);
 
-        return $saved->jsonSerialize();
-    }//end register()
+		return $saved->jsonSerialize();
+	}//end register()
 
-    /**
-     * Fetch a registered series by key, RBAC-scoped.
-     *
-     * Returns null when the series is unknown or the current user is not
-     * permitted to read it, so the controller can return a uniform 404.
-     *
-     * @param string $seriesKey The series key.
-     *
-     * @return array<string,mixed>|null The render contract, or null.
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    public function fetch(string $seriesKey): ?array
-    {
-        $series = $this->mapper->findByKey($seriesKey);
-        if ($series === null) {
-            return null;
-        }
+	/**
+	 * Fetch a registered series by key, RBAC-scoped.
+	 *
+	 * Returns null when the series is unknown or the current user is not
+	 * permitted to read it, so the controller can return a uniform 404.
+	 *
+	 * @param string $seriesKey The series key.
+	 *
+	 * @return array<string,mixed>|null The render contract, or null.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function fetch(string $seriesKey): ?array {
+		$series = $this->mapper->findByKey($seriesKey);
+		if ($series === null) {
+			return null;
+		}
 
-        if ($this->canRead(series: $series) === false) {
-            return null;
-        }
+		if ($this->canRead(series: $series) === false) {
+			return null;
+		}
 
-        return $series->jsonSerialize();
-    }//end fetch()
+		return $series->jsonSerialize();
+	}//end fetch()
 
-    /**
-     * Whether the current user may read the given series.
-     *
-     * - 'public'           — anyone.
-     * - 'group'/'private'  — the creator or an admin.
-     *
-     * @param AnalyticsSeries $series The series.
-     *
-     * @return bool True when readable.
-     */
-    private function canRead(AnalyticsSeries $series): bool
-    {
-        if ($series->getVisibility() === 'public') {
-            return true;
-        }
+	/**
+	 * Whether the current user may read the given series.
+	 *
+	 * - 'public'           — anyone.
+	 * - 'group'/'private'  — the creator or an admin.
+	 *
+	 * @param AnalyticsSeries $series The series.
+	 *
+	 * @return bool True when readable.
+	 */
+	private function canRead(AnalyticsSeries $series): bool {
+		if ($series->getVisibility() === 'public') {
+			return true;
+		}
 
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return false;
-        }
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-        $uid = $user->getUID();
-        if ($series->getCreatedBy() === $uid) {
-            return true;
-        }
+		$uid = $user->getUID();
+		if ($series->getCreatedBy() === $uid) {
+			return true;
+		}
 
-        return $this->groupManager->isAdmin($uid);
-    }//end canRead()
+		return $this->groupManager->isAdmin($uid);
+	}//end canRead()
 }//end class

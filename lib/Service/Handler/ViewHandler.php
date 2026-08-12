@@ -29,6 +29,5 @@ namespace OCA\OpenRegister\Service\Handler;
  *
  * @package OCA\OpenRegister\Service\Handler
  */
-class ViewHandler
-{
+class ViewHandler {
 }//end class

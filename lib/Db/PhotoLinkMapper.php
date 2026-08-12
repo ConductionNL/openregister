@@ -31,111 +31,104 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<PhotoLink>
  */
-class PhotoLinkMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_photo_links', entityClass: PhotoLink::class);
-    }//end __construct()
+class PhotoLinkMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_photo_links', entityClass: PhotoLink::class);
+	}//end __construct()
 
-    /**
-     * Find photo links by object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return PhotoLink[] Array of photo links.
-     */
-    public function findByObjectUuid(string $objectUuid): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find photo links by object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return PhotoLink[] Array of photo links.
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByObjectUuid()
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
 
-    /**
-     * Find photo links by album id.
-     *
-     * @param int $albumId The album id.
-     *
-     * @return PhotoLink[] Array of photo links.
-     */
-    public function findByAlbumId(int $albumId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)))
-            ->orderBy('linked_at', 'DESC');
+	/**
+	 * Find photo links by album id.
+	 *
+	 * @param int $albumId The album id.
+	 *
+	 * @return PhotoLink[] Array of photo links.
+	 */
+	public function findByAlbumId(int $albumId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)))
+			->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByAlbumId()
+		return $this->findEntities(query: $qb);
+	}//end findByAlbumId()
 
-    /**
-     * Find a specific photo link by object UUID and album id.
-     *
-     * @param string $objectUuid The object UUID.
-     * @param int    $albumId    The album id.
-     *
-     * @return PhotoLink|null The link or null if not found.
-     */
-    public function findByObjectAndAlbum(string $objectUuid, int $albumId): ?PhotoLink
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Find a specific photo link by object UUID and album id.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param int $albumId The album id.
+	 *
+	 * @return PhotoLink|null The link or null if not found.
+	 */
+	public function findByObjectAndAlbum(string $objectUuid, int $albumId): ?PhotoLink {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByObjectAndAlbum()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByObjectAndAlbum()
 
-    /**
-     * Delete all photo links for an object UUID.
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return int Number of deleted rows.
-     */
-    public function deleteByObjectUuid(string $objectUuid): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+	/**
+	 * Delete all photo links for an object UUID.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function deleteByObjectUuid(string $objectUuid): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
 
-        return $qb->executeStatement();
-    }//end deleteByObjectUuid()
+		return $qb->executeStatement();
+	}//end deleteByObjectUuid()
 
-    /**
-     * Delete a photo link by object UUID + album id (Tier-2 unlink path).
-     *
-     * Returns the number of rows actually deleted so callers can
-     * distinguish "no such link" (0) from "ok" (>=1).
-     *
-     * @param string $objectUuid The object UUID.
-     * @param int    $albumId    The album id.
-     *
-     * @return int Number of deleted rows.
-     */
-    public function deleteByObjectAndAlbum(string $objectUuid, int $albumId): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Delete a photo link by object UUID + album id (Tier-2 unlink path).
+	 *
+	 * Returns the number of rows actually deleted so callers can
+	 * distinguish "no such link" (0) from "ok" (>=1).
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param int $albumId The album id.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function deleteByObjectAndAlbum(string $objectUuid, int $albumId): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
 
-        return $qb->executeStatement();
-    }//end deleteByObjectAndAlbum()
+		return $qb->executeStatement();
+	}//end deleteByObjectAndAlbum()
 }//end class

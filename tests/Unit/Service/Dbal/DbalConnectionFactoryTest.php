@@ -42,246 +42,232 @@ use Psr\Log\NullLogger;
 /**
  * Test class for DbalConnectionFactory.
  */
-class DbalConnectionFactoryTest extends TestCase
-{
+class DbalConnectionFactoryTest extends TestCase {
 
-    /**
-     * Path to the generated SQLite permits fixture.
-     *
-     * @var string
-     */
-    private static string $fixturePath;
+	/**
+	 * Path to the generated SQLite permits fixture.
+	 *
+	 * @var string
+	 */
+	private static string $fixturePath;
 
-    /**
-     * Build the permits fixture once for the class.
-     *
-     * @return void
-     */
-    public static function setUpBeforeClass(): void
-    {
-        include_once __DIR__.'/../../../fixtures/dbal/build-permits-sqlite.php';
-        self::$fixturePath = sys_get_temp_dir().'/or-dbal-factory-test-permits.sqlite';
-        build_permits_sqlite(path: self::$fixturePath);
-    }//end setUpBeforeClass()
+	/**
+	 * Build the permits fixture once for the class.
+	 *
+	 * @return void
+	 */
+	public static function setUpBeforeClass(): void {
+		include_once __DIR__ . '/../../../fixtures/dbal/build-permits-sqlite.php';
+		self::$fixturePath = sys_get_temp_dir() . '/or-dbal-factory-test-permits.sqlite';
+		build_permits_sqlite(path: self::$fixturePath);
+	}//end setUpBeforeClass()
 
-    /**
-     * Remove the fixture after the class.
-     *
-     * @return void
-     */
-    public static function tearDownAfterClass(): void
-    {
-        if (file_exists(self::$fixturePath) === true) {
-            unlink(self::$fixturePath);
-        }
-    }//end tearDownAfterClass()
+	/**
+	 * Remove the fixture after the class.
+	 *
+	 * @return void
+	 */
+	public static function tearDownAfterClass(): void {
+		if (file_exists(self::$fixturePath) === true) {
+			unlink(self::$fixturePath);
+		}
+	}//end tearDownAfterClass()
 
-    /**
-     * Build a CredentialStore stub returning the given secret (or null).
-     *
-     * @param string|null $secret The secret get() returns.
-     *
-     * @return CredentialStore The stub store.
-     */
-    private function store(?string $secret): CredentialStore
-    {
-        return new class ($secret) implements CredentialStore {
-            /**
-             * @param string|null $secret The stubbed secret.
-             */
-            public function __construct(private readonly ?string $secret)
-            {
-            }//end __construct()
+	/**
+	 * Build a CredentialStore stub returning the given secret (or null).
+	 *
+	 * @param string|null $secret The secret get() returns.
+	 *
+	 * @return CredentialStore The stub store.
+	 */
+	private function store(?string $secret): CredentialStore {
+		return new class($secret) implements CredentialStore {
+			/**
+			 * @param string|null $secret The stubbed secret.
+			 */
+			public function __construct(
+				private readonly ?string $secret,
+			) {
+			}//end __construct()
 
-            /**
-             * {@inheritDoc}
-             *
-             * @param string $uuid   The credential UUID.
-             * @param string $secret The secret.
-             * @param string $scope  The scope.
-             *
-             * @return void
-             */
-            public function put(string $uuid, string $secret, string $scope='personal'): void
-            {
-            }//end put()
+			/**
+			 * {@inheritDoc}
+			 *
+			 * @param string $uuid The credential UUID.
+			 * @param string $secret The secret.
+			 * @param string $scope The scope.
+			 *
+			 * @return void
+			 */
+			public function put(string $uuid, string $secret, string $scope = 'personal'): void {
+			}//end put()
 
-            /**
-             * {@inheritDoc}
-             *
-             * @param string $uuid  The credential UUID.
-             * @param string $scope The scope.
-             *
-             * @return string|null The stubbed secret.
-             */
-            public function get(string $uuid, string $scope='personal'): ?string
-            {
-                return $this->secret;
-            }//end get()
+			/**
+			 * {@inheritDoc}
+			 *
+			 * @param string $uuid The credential UUID.
+			 * @param string $scope The scope.
+			 *
+			 * @return string|null The stubbed secret.
+			 */
+			public function get(string $uuid, string $scope = 'personal'): ?string {
+				return $this->secret;
+			}//end get()
 
-            /**
-             * {@inheritDoc}
-             *
-             * @param string $uuid  The credential UUID.
-             * @param string $scope The scope.
-             *
-             * @return void
-             */
-            public function delete(string $uuid, string $scope='personal'): void
-            {
-            }//end delete()
-        };
-    }//end store()
+			/**
+			 * {@inheritDoc}
+			 *
+			 * @param string $uuid The credential UUID.
+			 * @param string $scope The scope.
+			 *
+			 * @return void
+			 */
+			public function delete(string $uuid, string $scope = 'personal'): void {
+			}//end delete()
+		};
+	}//end store()
 
-    /**
-     * Build a database Source pointing at the SQLite fixture.
-     *
-     * @param array<string, mixed> $authConfig Overriding authConfig entries.
-     *
-     * @return Source The source.
-     */
-    private function sqliteSource(array $authConfig=[]): Source
-    {
-        $source = new Source();
-        $source->setId(42);
-        $source->setUuid('00000000-0000-0000-0000-000000000000');
-        $source->setType('database');
-        $source->setAuthConfig(array_merge(['driver' => 'pdo_sqlite', 'path' => self::$fixturePath], $authConfig));
+	/**
+	 * Build a database Source pointing at the SQLite fixture.
+	 *
+	 * @param array<string, mixed> $authConfig Overriding authConfig entries.
+	 *
+	 * @return Source The source.
+	 */
+	private function sqliteSource(array $authConfig = []): Source {
+		$source = new Source();
+		$source->setId(42);
+		$source->setUuid('00000000-0000-0000-0000-000000000000');
+		$source->setType('database');
+		$source->setAuthConfig(array_merge(['driver' => 'pdo_sqlite', 'path' => self::$fixturePath], $authConfig));
 
-        return $source;
-    }//end sqliteSource()
+		return $source;
+	}//end sqliteSource()
 
-    /**
-     * Connecting to the SQLite fixture succeeds and a trivial read works.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testConnectsToSqliteFixture(): void
-    {
-        $factory    = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
-        $connection = $factory->getConnection(source: $this->sqliteSource());
+	/**
+	 * Connecting to the SQLite fixture succeeds and a trivial read works.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testConnectsToSqliteFixture(): void {
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
+		$connection = $factory->getConnection(source: $this->sqliteSource());
 
-        $count = $connection->fetchOne('SELECT COUNT(*) FROM permits');
-        $this->assertSame(2, (int) $count);
-    }//end testConnectsToSqliteFixture()
+		$count = $connection->fetchOne('SELECT COUNT(*) FROM permits');
+		$this->assertSame(2, (int)$count);
+	}//end testConnectsToSqliteFixture()
 
-    /**
-     * The same source yields the same cached connection within a request.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testConnectionIsCachedPerSource(): void
-    {
-        $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
-        $source  = $this->sqliteSource();
+	/**
+	 * The same source yields the same cached connection within a request.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testConnectionIsCachedPerSource(): void {
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
+		$source = $this->sqliteSource();
 
-        $this->assertSame(
-            $factory->getConnection(source: $source),
-            $factory->getConnection(source: $source)
-        );
-    }//end testConnectionIsCachedPerSource()
+		$this->assertSame(
+			$factory->getConnection(source: $source),
+			$factory->getConnection(source: $source)
+		);
+	}//end testConnectionIsCachedPerSource()
 
-    /**
-     * A configured credential that resolves to null FAILS CLOSED with the typed
-     * exception, and neither the exception nor the log carries a secret.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testUnresolvableCredentialFailsClosed(): void
-    {
-        $logger = new class extends AbstractLogger {
+	/**
+	 * A configured credential that resolves to null FAILS CLOSED with the typed
+	 * exception, and neither the exception nor the log carries a secret.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testUnresolvableCredentialFailsClosed(): void {
+		$logger = new class extends AbstractLogger {
 
-            /**
-             * Captured log messages.
-             *
-             * @var array<int, string>
-             */
-            public array $messages = [];
+			/**
+			 * Captured log messages.
+			 *
+			 * @var array<int, string>
+			 */
+			public array $messages = [];
 
-            /**
-             * {@inheritDoc}
-             *
-             * @param mixed                $level   Log level.
-             * @param string|\Stringable   $message Message.
-             * @param array<string, mixed> $context Context.
-             *
-             * @return void
-             */
-            public function log($level, string|\Stringable $message, array $context=[]): void
-            {
-                $this->messages[] = (string) $message;
-            }//end log()
-        };
+			/**
+			 * {@inheritDoc}
+			 *
+			 * @param mixed $level Log level.
+			 * @param string|\Stringable $message Message.
+			 * @param array<string, mixed> $context Context.
+			 *
+			 * @return void
+			 */
+			public function log($level, string|\Stringable $message, array $context = []): void {
+				$this->messages[] = (string)$message;
+			}//end log()
+		};
 
-        $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: $logger);
-        $source  = $this->sqliteSource(authConfig: ['credential' => '11111111-1111-1111-1111-111111111111']);
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: $logger);
+		$source = $this->sqliteSource(authConfig: ['credential' => '11111111-1111-1111-1111-111111111111']);
 
-        try {
-            $factory->getConnection(source: $source);
-            $this->fail('Expected DbalConnectionException for an unresolvable credential');
-        } catch (DbalConnectionException $e) {
-            $this->assertStringNotContainsString('11111111', $e->getMessage());
-        }
+		try {
+			$factory->getConnection(source: $source);
+			$this->fail('Expected DbalConnectionException for an unresolvable credential');
+		} catch (DbalConnectionException $e) {
+			$this->assertStringNotContainsString('11111111', $e->getMessage());
+		}
 
-        foreach ($logger->messages as $message) {
-            $this->assertStringNotContainsString('password', strtolower($message));
-        }
-    }//end testUnresolvableCredentialFailsClosed()
+		foreach ($logger->messages as $message) {
+			$this->assertStringNotContainsString('password', strtolower($message));
+		}
+	}//end testUnresolvableCredentialFailsClosed()
 
-    /**
-     * An unsupported driver is rejected before any connection attempt.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testUnsupportedDriverIsRejected(): void
-    {
-        $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
+	/**
+	 * An unsupported driver is rejected before any connection attempt.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testUnsupportedDriverIsRejected(): void {
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
 
-        $this->expectException(DbalConnectionException::class);
-        $factory->getConnection(source: $this->sqliteSource(authConfig: ['driver' => 'oci8']));
-    }//end testUnsupportedDriverIsRejected()
+		$this->expectException(DbalConnectionException::class);
+		$factory->getConnection(source: $this->sqliteSource(authConfig: ['driver' => 'oci8']));
+	}//end testUnsupportedDriverIsRejected()
 
-    /**
-     * A network source without host/dbname is rejected.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testMissingHostIsRejected(): void
-    {
-        if (in_array('mysql', \PDO::getAvailableDrivers(), true) === false) {
-            $this->markTestSkipped('pdo_mysql not available');
-        }
+	/**
+	 * A network source without host/dbname is rejected.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testMissingHostIsRejected(): void {
+		if (in_array('mysql', \PDO::getAvailableDrivers(), true) === false) {
+			$this->markTestSkipped('pdo_mysql not available');
+		}
 
-        $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
-        $source  = $this->sqliteSource(authConfig: ['driver' => 'pdo_mysql', 'path' => null]);
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
+		$source = $this->sqliteSource(authConfig: ['driver' => 'pdo_mysql', 'path' => null]);
 
-        $this->expectException(DbalConnectionException::class);
-        $factory->getConnection(source: $source);
-    }//end testMissingHostIsRejected()
+		$this->expectException(DbalConnectionException::class);
+		$factory->getConnection(source: $source);
+	}//end testMissingHostIsRejected()
 
-    /**
-     * isDriverAvailable() accepts loaded supported drivers and rejects others.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function testIsDriverAvailable(): void
-    {
-        $factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
+	/**
+	 * isDriverAvailable() accepts loaded supported drivers and rejects others.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testIsDriverAvailable(): void {
+		$factory = new DbalConnectionFactory(credentialStore: $this->store(secret: null), logger: new NullLogger());
 
-        $this->assertTrue($factory->isDriverAvailable(driver: 'pdo_sqlite'));
-        $this->assertFalse($factory->isDriverAvailable(driver: 'oci8'));
-        $this->assertFalse($factory->isDriverAvailable(driver: ''));
-    }//end testIsDriverAvailable()
+		$this->assertTrue($factory->isDriverAvailable(driver: 'pdo_sqlite'));
+		$this->assertFalse($factory->isDriverAvailable(driver: 'oci8'));
+		$this->assertFalse($factory->isDriverAvailable(driver: ''));
+	}//end testIsDriverAvailable()
 }//end class

@@ -60,52 +60,50 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
  */
-class Version1Date20260730120000 extends SimpleMigrationStep
-{
-    /**
-     * The index that serves the tenant-scoped active-runs read.
-     *
-     * @var string
-     */
-    private const ACTIVE_RUNS_INDEX = 'or_flowrun_org_status_idx';
+class Version1Date20260730120000 extends SimpleMigrationStep {
+	/**
+	 * The index that serves the tenant-scoped active-runs read.
+	 *
+	 * @var string
+	 */
+	private const ACTIVE_RUNS_INDEX = 'or_flowrun_org_status_idx';
 
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_flow_runs') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable('openregister_flow_runs') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable('openregister_flow_runs');
+		$table = $schema->getTable('openregister_flow_runs');
 
-        if ($table->hasIndex(self::ACTIVE_RUNS_INDEX) === true) {
-            $output->info(self::ACTIVE_RUNS_INDEX.' already present on openregister_flow_runs; nothing to do.');
-            return $schema;
-        }
+		if ($table->hasIndex(self::ACTIVE_RUNS_INDEX) === true) {
+			$output->info(self::ACTIVE_RUNS_INDEX . ' already present on openregister_flow_runs; nothing to do.');
+			return $schema;
+		}
 
-        $table->addIndex(['organisation', 'status', 'id'], self::ACTIVE_RUNS_INDEX);
-        $output->info(
-            'Added '.self::ACTIVE_RUNS_INDEX.' on openregister_flow_runs(organisation, status, id): '
-            .'the active-runs read previously walked the primary key backwards and filtered, '
-            .'reading tens of thousands of rows to return one.'
-        );
+		$table->addIndex(['organisation', 'status', 'id'], self::ACTIVE_RUNS_INDEX);
+		$output->info(
+			'Added ' . self::ACTIVE_RUNS_INDEX . ' on openregister_flow_runs(organisation, status, id): '
+			. 'the active-runs read previously walked the primary key backwards and filtered, '
+			. 'reading tens of thousands of rows to return one.'
+		);
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

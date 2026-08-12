@@ -42,48 +42,45 @@ use Throwable;
  * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md
  *   — Requirement: Register configuration resolution (Scenario: Empty configuration fails closed)
  */
-class ConfigurationMissingException extends RuntimeException
-{
-    /**
-     * Construct the configuration-missing exception with diagnostic context.
-     *
-     * @param string         $appId     The consuming (leaf) app id.
-     * @param string         $configKey The empty/missing config key or file (e.g. `register`, `petstore_register.json`).
-     * @param Throwable|null $previous  Previous exception in the chain.
-     */
-    public function __construct(
-        private readonly string $appId,
-        private readonly string $configKey,
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(
-            message: sprintf(
-                '[AppHost:%s] configuration "%s" is not set. Run the app setup or POST /api/settings/load to initialise registers and schemas.',
-                $appId,
-                $configKey
-            ),
-            code: 503,
-            previous: $previous
-        );
-    }//end __construct()
+class ConfigurationMissingException extends RuntimeException {
+	/**
+	 * Construct the configuration-missing exception with diagnostic context.
+	 *
+	 * @param string $appId The consuming (leaf) app id.
+	 * @param string $configKey The empty/missing config key or file (e.g. `register`, `petstore_register.json`).
+	 * @param Throwable|null $previous Previous exception in the chain.
+	 */
+	public function __construct(
+		private readonly string $appId,
+		private readonly string $configKey,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(
+			message: sprintf(
+				'[AppHost:%s] configuration "%s" is not set. Run the app setup or POST /api/settings/load to initialise registers and schemas.',
+				$appId,
+				$configKey
+			),
+			code: 503,
+			previous: $previous
+		);
+	}//end __construct()
 
-    /**
-     * Get the consuming app id the failure was raised for.
-     *
-     * @return string The leaf app id.
-     */
-    public function getAppId(): string
-    {
-        return $this->appId;
-    }//end getAppId()
+	/**
+	 * Get the consuming app id the failure was raised for.
+	 *
+	 * @return string The leaf app id.
+	 */
+	public function getAppId(): string {
+		return $this->appId;
+	}//end getAppId()
 
-    /**
-     * Get the config key (or register JSON filename) that was missing.
-     *
-     * @return string The missing config key.
-     */
-    public function getConfigKey(): string
-    {
-        return $this->configKey;
-    }//end getConfigKey()
+	/**
+	 * Get the config key (or register JSON filename) that was missing.
+	 *
+	 * @return string The missing config key.
+	 */
+	public function getConfigKey(): string {
+		return $this->configKey;
+	}//end getConfigKey()
 }//end class

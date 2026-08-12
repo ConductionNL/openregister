@@ -48,70 +48,67 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
-class Version1Date20260615000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260615000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_case_tokens') === false) {
-            $table = $schema->createTable('openregister_case_tokens');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-            $table->addColumn('token', Types::STRING, ['notnull' => true, 'length' => 64]);
-            $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 64]);
-            $table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-            $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-            $table->addColumn('label', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
-            $table->addColumn('created_at', Types::DATETIME, ['notnull' => false]);
-            $table->addColumn('expires_at', Types::DATETIME, ['notnull' => false]);
-            $table->addColumn('revoked_at', Types::DATETIME, ['notnull' => false]);
+		if ($schema->hasTable('openregister_case_tokens') === false) {
+			$table = $schema->createTable('openregister_case_tokens');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+			$table->addColumn('token', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
+			$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
+			$table->addColumn('label', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
+			$table->addColumn('created_at', Types::DATETIME, ['notnull' => false]);
+			$table->addColumn('expires_at', Types::DATETIME, ['notnull' => false]);
+			$table->addColumn('revoked_at', Types::DATETIME, ['notnull' => false]);
 
-            $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['token'], 'idx_or_casetok_token');
-            $table->addIndex(['object_uuid'], 'idx_or_casetok_object');
+			$table->setPrimaryKey(['id']);
+			$table->addUniqueIndex(['token'], 'idx_or_casetok_token');
+			$table->addIndex(['object_uuid'], 'idx_or_casetok_object');
 
-            $output->info('Created openregister_case_tokens table');
-        }//end if
+			$output->info('Created openregister_case_tokens table');
+		}//end if
 
-        if ($schema->hasTable('openregister_analytics_series') === false) {
-            $table = $schema->createTable('openregister_analytics_series');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-            $table->addColumn('series_key', Types::STRING, ['notnull' => true, 'length' => 128]);
-            $table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-            $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-            $table->addColumn('title', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('chart_type', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'line']);
-            $table->addColumn('labels', Types::TEXT, ['notnull' => false]);
-            $table->addColumn('datasets', Types::TEXT, ['notnull' => false]);
-            $table->addColumn('visibility', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'private']);
-            $table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
-            $table->addColumn('created_at', Types::DATETIME, ['notnull' => false]);
-            $table->addColumn('updated_at', Types::DATETIME, ['notnull' => false]);
+		if ($schema->hasTable('openregister_analytics_series') === false) {
+			$table = $schema->createTable('openregister_analytics_series');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+			$table->addColumn('series_key', Types::STRING, ['notnull' => true, 'length' => 128]);
+			$table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
+			$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
+			$table->addColumn('title', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('chart_type', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'line']);
+			$table->addColumn('labels', Types::TEXT, ['notnull' => false]);
+			$table->addColumn('datasets', Types::TEXT, ['notnull' => false]);
+			$table->addColumn('visibility', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'private']);
+			$table->addColumn('created_by', Types::STRING, ['notnull' => false, 'length' => 64]);
+			$table->addColumn('created_at', Types::DATETIME, ['notnull' => false]);
+			$table->addColumn('updated_at', Types::DATETIME, ['notnull' => false]);
 
-            $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['series_key'], 'idx_or_anaser_key');
-            $table->addIndex(['register_id', 'schema_id'], 'idx_or_anaser_scope');
+			$table->setPrimaryKey(['id']);
+			$table->addUniqueIndex(['series_key'], 'idx_or_anaser_key');
+			$table->addIndex(['register_id', 'schema_id'], 'idx_or_anaser_scope');
 
-            $output->info('Created openregister_analytics_series table');
-        }//end if
+			$output->info('Created openregister_analytics_series table');
+		}//end if
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

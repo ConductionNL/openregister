@@ -44,33 +44,31 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<Event>
  */
-class FilesSidebarListener implements IEventListener
-{
-    /**
-     * Handle the LoadAdditionalScriptsEvent from the Files app.
-     *
-     * Injects the sidebar tab JavaScript bundle so that the OpenRegister
-     * tabs appear in the Files app sidebar.
-     *
-     * @param Event $event The event instance.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        // Only handle LoadAdditionalScriptsEvent from the Files app.
-        // We check by class name string to avoid a hard dependency on the Files app.
-        if (get_class($event) !== 'OCA\Files\Event\LoadAdditionalScriptsEvent') {
-            return;
-        }
+class FilesSidebarListener implements IEventListener {
+	/**
+	 * Handle the LoadAdditionalScriptsEvent from the Files app.
+	 *
+	 * Injects the sidebar tab JavaScript bundle so that the OpenRegister
+	 * tabs appear in the Files app sidebar.
+	 *
+	 * @param Event $event The event instance.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function handle(Event $event): void {
+		// Only handle LoadAdditionalScriptsEvent from the Files app.
+		// We check by class name string to avoid a hard dependency on the Files app.
+		if (get_class($event) !== 'OCA\Files\Event\LoadAdditionalScriptsEvent') {
+			return;
+		}
 
-        $jsPath = __DIR__.'/../../js/openregister-filesSidebar.js';
-        if (file_exists($jsPath) === true) {
-            ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
-        }
-    }//end handle()
+		$jsPath = __DIR__ . '/../../js/openregister-filesSidebar.js';
+		if (file_exists($jsPath) === true) {
+			ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
+		}
+	}//end handle()
 }//end class

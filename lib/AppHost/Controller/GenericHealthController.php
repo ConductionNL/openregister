@@ -44,59 +44,57 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.3
  */
-class GenericHealthController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * The controller's `$appName` is the calling (leaf) app id — set by the
-     * leaf app's alias registration in its own Application.php. For OpenRegister
-     * self-dogfooding it is `openregister`.
-     *
-     * @param string              $appName        Calling app id.
-     * @param IRequest            $request        HTTP request.
-     * @param ManifestLoader      $manifestLoader Loads the app's observability config.
-     * @param HealthCheckExecutor $executor       Runs the checks.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ManifestLoader $manifestLoader,
-        private readonly HealthCheckExecutor $executor
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class GenericHealthController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * The controller's `$appName` is the calling (leaf) app id — set by the
+	 * leaf app's alias registration in its own Application.php. For OpenRegister
+	 * self-dogfooding it is `openregister`.
+	 *
+	 * @param string $appName Calling app id.
+	 * @param IRequest $request HTTP request.
+	 * @param ManifestLoader $manifestLoader Loads the app's observability config.
+	 * @param HealthCheckExecutor $executor Runs the checks.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ManifestLoader $manifestLoader,
+		private readonly HealthCheckExecutor $executor,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * GET /api/health — declarative health check (ADR-006).
-     *
-     * @return JSONResponse `{status, app, version, checks}` with HTTP code per statusCodePolicy.
-     *
-     * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Health Execution
-     */
-    #[PublicPage]
-    #[NoCSRFRequired]
-    public function index(): JSONResponse
-    {
-        $appId    = $this->appName;
-        $manifest = $this->manifestLoader->load(appId: $appId);
-        $result   = $this->executor->execute(manifest: $manifest);
+	/**
+	 * GET /api/health — declarative health check (ADR-006).
+	 *
+	 * @return JSONResponse `{status, app, version, checks}` with HTTP code per statusCodePolicy.
+	 *
+	 * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Health Execution
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	public function index(): JSONResponse {
+		$appId = $this->appName;
+		$manifest = $this->manifestLoader->load(appId: $appId);
+		$result = $this->executor->execute(manifest: $manifest);
 
-        $response = new JSONResponse(
-            [
-                'status'  => $result->status,
-                'app'     => $appId,
-                'version' => $this->manifestLoader->appVersion(appId: $appId),
-                'checks'  => $result->checks,
-            ],
-            $result->httpStatusCode
-        );
+		$response = new JSONResponse(
+			[
+				'status' => $result->status,
+				'app' => $appId,
+				'version' => $this->manifestLoader->appVersion(appId: $appId),
+				'checks' => $result->checks,
+			],
+			$result->httpStatusCode
+		);
 
-        if ($manifest->cors === true) {
-            $response->addHeader('Access-Control-Allow-Origin', '*');
-            $response->addHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        }
+		if ($manifest->cors === true) {
+			$response->addHeader('Access-Control-Allow-Origin', '*');
+			$response->addHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+		}
 
-        return $response;
-    }//end index()
+		return $response;
+	}//end index()
 }//end class

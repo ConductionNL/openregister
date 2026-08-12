@@ -1007,6 +1007,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin: 0;
+	font-family: monospace;
 }
 
 .merge-table-container {
@@ -1193,12 +1194,6 @@ export default {
 	flex-direction: column;
 	gap: 4px;
 	margin-top: 8px;
-}
-
-.object-id {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	font-family: monospace;
 }
 
 .object-title {

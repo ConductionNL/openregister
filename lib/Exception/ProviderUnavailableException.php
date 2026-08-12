@@ -32,64 +32,60 @@ namespace OCA\OpenRegister\Exception;
  * External-integration call failed because the upstream or the
  * connector itself is unavailable.
  */
-class ProviderUnavailableException extends \RuntimeException
-{
+class ProviderUnavailableException extends \RuntimeException {
 
-    /**
-     * Permitted cause values.
-     */
-    public const CAUSE_OPENCONNECTOR_DOWN           = 'openconnector-down';
-    public const CAUSE_OPENCONNECTOR_SOURCE_MISSING = 'openconnector-source-missing';
-    public const CAUSE_UPSTREAM_SERVICE_DOWN        = 'upstream-service-down';
-    public const CAUSE_PROVIDER_AUTH = 'provider-auth';
+	/**
+	 * Permitted cause values.
+	 */
+	public const CAUSE_OPENCONNECTOR_DOWN = 'openconnector-down';
+	public const CAUSE_OPENCONNECTOR_SOURCE_MISSING = 'openconnector-source-missing';
+	public const CAUSE_UPSTREAM_SERVICE_DOWN = 'upstream-service-down';
+	public const CAUSE_PROVIDER_AUTH = 'provider-auth';
 
-    /**
-     * The cause classification.
-     *
-     * @var string
-     */
-    private string $cause;
+	/**
+	 * The cause classification.
+	 *
+	 * @var string
+	 */
+	private string $cause;
 
-    /**
-     * Constructor.
-     *
-     * @param string          $message  Human-readable explanation.
-     * @param string          $cause    One of the CAUSE_* constants.
-     * @param \Throwable|null $previous Optional wrapped throwable.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
-     */
-    public function __construct(string $message, string $cause, ?\Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-        $this->cause = $cause;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Human-readable explanation.
+	 * @param string $cause One of the CAUSE_* constants.
+	 * @param \Throwable|null $previous Optional wrapped throwable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
+	 */
+	public function __construct(string $message, string $cause, ?\Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+		$this->cause = $cause;
+	}//end __construct()
 
-    /**
-     * Return the cause classification.
-     *
-     * @return string One of openconnector-down |
-     *                openconnector-source-missing | upstream-service-down.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
-     */
-    public function getCause(): string
-    {
-        return $this->cause;
-    }//end getCause()
+	/**
+	 * Return the cause classification.
+	 *
+	 * @return string One of openconnector-down |
+	 *                openconnector-source-missing | upstream-service-down.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
+	 */
+	public function getCause(): string {
+		return $this->cause;
+	}//end getCause()
 
-    /**
-     * Convenience getter producing the structured details payload that
-     * the UI renders (per AD-23: `details.cause`).
-     *
-     * @return array{cause: string}
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
-     */
-    public function getDetails(): array
-    {
-        return ['cause' => $this->cause];
-    }//end getDetails()
+	/**
+	 * Convenience getter producing the structured details payload that
+	 * the UI renders (per AD-23: `details.cause`).
+	 *
+	 * @return array{cause: string}
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
+	 */
+	public function getDetails(): array {
+		return ['cause' => $this->cause];
+	}//end getDetails()
 }//end class

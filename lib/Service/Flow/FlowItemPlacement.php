@@ -37,160 +37,151 @@ use Symfony\Component\Workflow\Workflow;
  *
  * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
  */
-class FlowItemPlacement
-{
-    /**
-     * Gather the items a transition reads: every input place's items, in the
-     * froms' declared order.
-     *
-     * For a normal step this is just its one input place. For a join it is the
-     * concatenation of every incoming branch's items — which is what a Merge
-     * node receives and then combines.
-     *
-     * @param object               $transition The transition.
-     * @param array<string, array> $placeItems Items per place.
-     *
-     * @return array<int, mixed> The gathered input items.
-     *
-     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
-     */
-    public function itemsForTransition(object $transition, array $placeItems): array
-    {
-        $items = [];
-        foreach ($transition->getFroms() as $from) {
-            foreach (($placeItems[(string) $from] ?? []) as $item) {
-                $items[] = $item;
-            }
-        }
+class FlowItemPlacement {
+	/**
+	 * Gather the items a transition reads: every input place's items, in the
+	 * froms' declared order.
+	 *
+	 * For a normal step this is just its one input place. For a join it is the
+	 * concatenation of every incoming branch's items — which is what a Merge
+	 * node receives and then combines.
+	 *
+	 * @param object $transition The transition.
+	 * @param array<string, array> $placeItems Items per place.
+	 *
+	 * @return array<int, mixed> The gathered input items.
+	 *
+	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 */
+	public function itemsForTransition(object $transition, array $placeItems): array {
+		$items = [];
+		foreach ($transition->getFroms() as $from) {
+			foreach (($placeItems[(string)$from] ?? []) as $item) {
+				$items[] = $item;
+			}
+		}
 
-        return $items;
+		return $items;
+	}//end itemsForTransition()
 
-    }//end itemsForTransition()
+	/**
+	 * Seed the per-place item buffers from the current marking.
+	 *
+	 * Items belong to the PLACES a token sits on, not to the run globally: a
+	 * parallel split hands each branch the items from the split point, and a
+	 * join reads the items every incoming branch left on it. A single shared
+	 * list cannot express either — the second branch to run would overwrite
+	 * the first.
+	 *
+	 * Seeded from the CURRENT marking, which is what makes resume work: a fresh
+	 * run's marking is the initial place, a resumed run's is wherever it
+	 * suspended, and either way the stored items land on the place that holds
+	 * the token.
+	 *
+	 * @param Workflow $workflow The workflow.
+	 * @param object $subject The subject holding the marking.
+	 * @param Definition $definition The definition (for the initial-place fallback).
+	 * @param array $items The seed items.
+	 *
+	 * @return array<string, array> Items keyed by place.
+	 *
+	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 */
+	public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array {
+		$placeItems = [];
+		foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
+			$placeItems[(string)$place] = $items;
+		}
 
-    /**
-     * Seed the per-place item buffers from the current marking.
-     *
-     * Items belong to the PLACES a token sits on, not to the run globally: a
-     * parallel split hands each branch the items from the split point, and a
-     * join reads the items every incoming branch left on it. A single shared
-     * list cannot express either — the second branch to run would overwrite
-     * the first.
-     *
-     * Seeded from the CURRENT marking, which is what makes resume work: a fresh
-     * run's marking is the initial place, a resumed run's is wherever it
-     * suspended, and either way the stored items land on the place that holds
-     * the token.
-     *
-     * @param Workflow   $workflow   The workflow.
-     * @param object     $subject    The subject holding the marking.
-     * @param Definition $definition The definition (for the initial-place fallback).
-     * @param array      $items      The seed items.
-     *
-     * @return array<string, array> Items keyed by place.
-     *
-     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
-     */
-    public function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array
-    {
-        $placeItems = [];
-        foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
-            $placeItems[(string) $place] = $items;
-        }
+		if ($placeItems === []) {
+			foreach ($definition->getInitialPlaces() as $place) {
+				$placeItems[(string)$place] = $items;
+			}
+		}
 
-        if ($placeItems === []) {
-            foreach ($definition->getInitialPlaces() as $place) {
-                $placeItems[(string) $place] = $items;
-            }
-        }
+		return $placeItems;
+	}//end seedPlaceItems()
 
-        return $placeItems;
+	/**
+	 * Move a fired transition's items: onto its output places, off its inputs.
+	 *
+	 * Per-item routing (n8n's If/Switch) lives here. An item that names an output
+	 * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
+	 * place with that name; an item that names none is broadcast to every output,
+	 * which is the ordinary behaviour and what a parallel split relies on. So a
+	 * step whose items carry no output tag distributes exactly as before — this
+	 * is additive, not a change to any existing flow. The tag is stripped as the
+	 * item lands, so it never lingers to misroute a later step.
+	 *
+	 * Clearing the consumed inputs matters for a loop that re-enters the
+	 * transition — it must read fresh items, not a stale copy left behind.
+	 *
+	 * @param object $transition The fired transition.
+	 * @param array<string, array> $placeItems The current per-place buffers.
+	 * @param array $items What the step produced.
+	 * @param array<string> $taken The output places the exit claimed.
+	 *
+	 * @return array<string, array> The updated buffers.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array {
+		foreach ($transition->getTos() as $to) {
+			// Only the taken exit receives items. Seeding a branch the token
+			// never reaches would leave stale items for a later firing to pick
+			// up as if they were fresh.
+			if (in_array((string)$to, $taken, true) === false) {
+				unset($placeItems[(string)$to]);
+				continue;
+			}
 
-    }//end seedPlaceItems()
+			$placeItems[(string)$to] = $this->itemsForOutput(items: $items, output: (string)$to);
+		}
 
-    /**
-     * Move a fired transition's items: onto its output places, off its inputs.
-     *
-     * Per-item routing (n8n's If/Switch) lives here. An item that names an output
-     * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
-     * place with that name; an item that names none is broadcast to every output,
-     * which is the ordinary behaviour and what a parallel split relies on. So a
-     * step whose items carry no output tag distributes exactly as before — this
-     * is additive, not a change to any existing flow. The tag is stripped as the
-     * item lands, so it never lingers to misroute a later step.
-     *
-     * Clearing the consumed inputs matters for a loop that re-enters the
-     * transition — it must read fresh items, not a stale copy left behind.
-     *
-     * @param object               $transition The fired transition.
-     * @param array<string, array> $placeItems The current per-place buffers.
-     * @param array                $items      What the step produced.
-     * @param array<string>        $taken      The output places the exit claimed.
-     *
-     * @return array<string, array> The updated buffers.
-     *
-     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-     */
-    public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array
-    {
-        foreach ($transition->getTos() as $to) {
-            // Only the taken exit receives items. Seeding a branch the token
-            // never reaches would leave stale items for a later firing to pick
-            // up as if they were fresh.
-            if (in_array((string) $to, $taken, true) === false) {
-                unset($placeItems[(string) $to]);
-                continue;
-            }
+		foreach ($transition->getFroms() as $from) {
+			unset($placeItems[(string)$from]);
+		}
 
-            $placeItems[(string) $to] = $this->itemsForOutput(items: $items, output: (string) $to);
-        }
+		return $placeItems;
+	}//end advanceItems()
 
-        foreach ($transition->getFroms() as $from) {
-            unset($placeItems[(string) $from]);
-        }
+	/**
+	 * The items that belong on one output place: those routed to it, plus the
+	 * unrouted ones that go everywhere. The output tag is dropped on the way.
+	 *
+	 * @param array<int, array> $items The produced items.
+	 * @param string $output The output place's name.
+	 *
+	 * @return array<int, array> The items for that output, tag removed.
+	 *
+	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 */
+	public function itemsForOutput(array $items, string $output): array {
+		// A routing step tags an item with the NODE it is routing to, and a
+		// node's input place is named after the node — so the tag and the place
+		// name are normally the same string. The one exception is a declared
+		// join, whose input places are `<node>#<edge>` so it can require a token
+		// on each. Comparing the raw place name there would match nothing and
+		// silently drop every routed item into an empty branch, which is the
+		// failure mode this engine exists to refuse rather than produce.
+		$target = $output;
+		$split = strpos($output, '#');
+		if ($split !== false) {
+			$target = substr($output, 0, $split);
+		}
 
-        return $placeItems;
+		$out = [];
+		foreach ($items as $item) {
+			$tag = FlowItems::outputOf(member: (array)$item);
+			if ($tag !== null && $tag !== $target) {
+				// Routed elsewhere: not this output's item.
+				continue;
+			}
 
-    }//end advanceItems()
+			unset($item[FlowItems::OUTPUT]);
+			$out[] = $item;
+		}
 
-    /**
-     * The items that belong on one output place: those routed to it, plus the
-     * unrouted ones that go everywhere. The output tag is dropped on the way.
-     *
-     * @param array<int, array> $items  The produced items.
-     * @param string            $output The output place's name.
-     *
-     * @return array<int, array> The items for that output, tag removed.
-     *
-     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-     */
-    public function itemsForOutput(array $items, string $output): array
-    {
-        // A routing step tags an item with the NODE it is routing to, and a
-        // node's input place is named after the node — so the tag and the place
-        // name are normally the same string. The one exception is a declared
-        // join, whose input places are `<node>#<edge>` so it can require a token
-        // on each. Comparing the raw place name there would match nothing and
-        // silently drop every routed item into an empty branch, which is the
-        // failure mode this engine exists to refuse rather than produce.
-        $target = $output;
-        $split  = strpos($output, '#');
-        if ($split !== false) {
-            $target = substr($output, 0, $split);
-        }
-
-        $out = [];
-        foreach ($items as $item) {
-            $tag = FlowItems::outputOf(member: (array) $item);
-            if ($tag !== null && $tag !== $target) {
-                // Routed elsewhere: not this output's item.
-                continue;
-            }
-
-            unset($item[FlowItems::OUTPUT]);
-            $out[] = $item;
-        }
-
-        return $out;
-
-    }//end itemsForOutput()
+		return $out;
+	}//end itemsForOutput()
 }//end class

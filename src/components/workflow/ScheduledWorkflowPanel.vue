@@ -145,9 +145,14 @@ export default {
 
 <style scoped>
 .schedule-table { width: 100%; border-collapse: collapse; }
+
 .schedule-table th, .schedule-table td { padding: 8px; border-bottom: 1px solid var(--color-border); }
+
 .create-form { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
+
 .form-group { margin-bottom: 8px; }
+
 .form-group label { display: block; font-weight: bold; }
+
 .input-field { width: 100%; padding: 8px; }
 </style>

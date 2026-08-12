@@ -9,8 +9,8 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAvatarManager;
 use OCP\IAvatar;
+use OCP\IAvatarManager;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -29,441 +29,413 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
-class UserServiceProfileActionsTest extends TestCase
-{
-    private UserService $service;
-    private IUserManager&MockObject $userManager;
-    private IUserSession&MockObject $userSession;
-    private IConfig&MockObject $config;
-    private IGroupManager&MockObject $groupManager;
-    private IAccountManager&MockObject $accountManager;
-    private LoggerInterface&MockObject $logger;
-    private OrganisationService&MockObject $organisationService;
-    private IEventDispatcher&MockObject $eventDispatcher;
-    private IAvatarManager&MockObject $avatarManager;
-    private AuditTrailMapper&MockObject $auditTrailMapper;
-    private ISecureRandom&MockObject $secureRandom;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->userManager = $this->createMock(IUserManager::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->config = $this->createMock(IConfig::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->accountManager = $this->createMock(IAccountManager::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->organisationService = $this->createMock(OrganisationService::class);
-        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
-        $this->avatarManager = $this->createMock(IAvatarManager::class);
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->secureRandom = $this->createMock(ISecureRandom::class);
-
-        $this->service = new UserService(
-            $this->userManager,
-            $this->userSession,
-            $this->config,
-            $this->groupManager,
-            $this->accountManager,
-            $this->logger,
-            $this->organisationService,
-            $this->eventDispatcher,
-            $this->avatarManager,
-            $this->auditTrailMapper,
-            $this->secureRandom,
-            $this->createMock(IDBConnection::class),
-            $this->createMock(IFactory::class)
-        );
-    }
-
-    // ── changePassword() ──
-
-    public function testChangePasswordSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-        $user->method('canChangePassword')->willReturn(true);
-        $user->method('setPassword')->willReturn(true);
-
-        $this->userManager->method('checkPassword')->willReturn($user);
-
-        $result = $this->service->changePassword($user, 'OldPass!', 'NewPass!');
-
-        $this->assertTrue($result['success']);
-        $this->assertEquals('Password updated successfully', $result['message']);
-    }
-
-    public function testChangePasswordBackendUnsupported(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('canChangePassword')->willReturn(false);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(409);
-
-        $this->service->changePassword($user, 'old', 'new');
-    }
-
-    public function testChangePasswordIncorrectCurrent(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-        $user->method('canChangePassword')->willReturn(true);
-
-        $this->userManager->method('checkPassword')->willReturn(false);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(403);
-
-        $this->service->changePassword($user, 'wrong', 'new');
-    }
-
-    public function testChangePasswordPolicyViolation(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-        $user->method('canChangePassword')->willReturn(true);
-        $user->method('setPassword')->willReturn(false);
-
-        $this->userManager->method('checkPassword')->willReturn($user);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(400);
+class UserServiceProfileActionsTest extends TestCase {
+	private UserService $service;
+	private IUserManager&MockObject $userManager;
+	private IUserSession&MockObject $userSession;
+	private IConfig&MockObject $config;
+	private IGroupManager&MockObject $groupManager;
+	private IAccountManager&MockObject $accountManager;
+	private LoggerInterface&MockObject $logger;
+	private OrganisationService&MockObject $organisationService;
+	private IEventDispatcher&MockObject $eventDispatcher;
+	private IAvatarManager&MockObject $avatarManager;
+	private AuditTrailMapper&MockObject $auditTrailMapper;
+	private ISecureRandom&MockObject $secureRandom;
+
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->config = $this->createMock(IConfig::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->accountManager = $this->createMock(IAccountManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->organisationService = $this->createMock(OrganisationService::class);
+		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->avatarManager = $this->createMock(IAvatarManager::class);
+		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->secureRandom = $this->createMock(ISecureRandom::class);
+
+		$this->service = new UserService(
+			$this->userManager,
+			$this->userSession,
+			$this->config,
+			$this->groupManager,
+			$this->accountManager,
+			$this->logger,
+			$this->organisationService,
+			$this->eventDispatcher,
+			$this->avatarManager,
+			$this->auditTrailMapper,
+			$this->secureRandom,
+			$this->createMock(IDBConnection::class),
+			$this->createMock(IFactory::class)
+		);
+	}
+
+	// ── changePassword() ──
+
+	public function testChangePasswordSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
+		$user->method('canChangePassword')->willReturn(true);
+		$user->method('setPassword')->willReturn(true);
+
+		$this->userManager->method('checkPassword')->willReturn($user);
+
+		$result = $this->service->changePassword($user, 'OldPass!', 'NewPass!');
+
+		$this->assertTrue($result['success']);
+		$this->assertEquals('Password updated successfully', $result['message']);
+	}
+
+	public function testChangePasswordBackendUnsupported(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('canChangePassword')->willReturn(false);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(409);
+
+		$this->service->changePassword($user, 'old', 'new');
+	}
+
+	public function testChangePasswordIncorrectCurrent(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
+		$user->method('canChangePassword')->willReturn(true);
+
+		$this->userManager->method('checkPassword')->willReturn(false);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(403);
+
+		$this->service->changePassword($user, 'wrong', 'new');
+	}
+
+	public function testChangePasswordPolicyViolation(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
+		$user->method('canChangePassword')->willReturn(true);
+		$user->method('setPassword')->willReturn(false);
+
+		$this->userManager->method('checkPassword')->willReturn($user);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(400);
+
+		$this->service->changePassword($user, 'old', 'abc');
+	}
+
+	// ── uploadAvatar() ──
+
+	public function testUploadAvatarSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
+		$user->method('canChangeAvatar')->willReturn(true);
 
-        $this->service->changePassword($user, 'old', 'abc');
-    }
+		$avatar = $this->createMock(IAvatar::class);
+		$avatar->expects($this->once())->method('set');
+		$this->avatarManager->method('getAvatar')->willReturn($avatar);
 
-    // ── uploadAvatar() ──
+		$result = $this->service->uploadAvatar($user, 'imagedata', 'image/jpeg', 1024);
 
-    public function testUploadAvatarSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-        $user->method('canChangeAvatar')->willReturn(true);
+		$this->assertTrue($result['success']);
+		$this->assertStringContainsString('/avatar/jan/128', $result['avatarUrl']);
+	}
 
-        $avatar = $this->createMock(IAvatar::class);
-        $avatar->expects($this->once())->method('set');
-        $this->avatarManager->method('getAvatar')->willReturn($avatar);
+	public function testUploadAvatarUnsupportedType(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('canChangeAvatar')->willReturn(true);
 
-        $result = $this->service->uploadAvatar($user, 'imagedata', 'image/jpeg', 1024);
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(400);
 
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('/avatar/jan/128', $result['avatarUrl']);
-    }
+		$this->service->uploadAvatar($user, 'data', 'image/bmp', 1024);
+	}
 
-    public function testUploadAvatarUnsupportedType(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('canChangeAvatar')->willReturn(true);
+	public function testUploadAvatarTooLarge(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('canChangeAvatar')->willReturn(true);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(400);
 
-        $this->service->uploadAvatar($user, 'data', 'image/bmp', 1024);
-    }
+		$this->service->uploadAvatar($user, 'data', 'image/jpeg', 6000000);
+	}
 
-    public function testUploadAvatarTooLarge(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('canChangeAvatar')->willReturn(true);
+	public function testUploadAvatarBackendUnsupported(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('canChangeAvatar')->willReturn(false);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(409);
 
-        $this->service->uploadAvatar($user, 'data', 'image/jpeg', 6000000);
-    }
+		$this->service->uploadAvatar($user, 'data', 'image/jpeg', 1024);
+	}
 
-    public function testUploadAvatarBackendUnsupported(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('canChangeAvatar')->willReturn(false);
+	// ── deleteAvatar() ──
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(409);
+	public function testDeleteAvatarSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
+		$user->method('canChangeAvatar')->willReturn(true);
 
-        $this->service->uploadAvatar($user, 'data', 'image/jpeg', 1024);
-    }
+		$avatar = $this->createMock(IAvatar::class);
+		$avatar->expects($this->once())->method('remove');
+		$this->avatarManager->method('getAvatar')->willReturn($avatar);
 
-    // ── deleteAvatar() ──
+		$result = $this->service->deleteAvatar($user);
 
-    public function testDeleteAvatarSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-        $user->method('canChangeAvatar')->willReturn(true);
+		$this->assertTrue($result['success']);
+	}
 
-        $avatar = $this->createMock(IAvatar::class);
-        $avatar->expects($this->once())->method('remove');
-        $this->avatarManager->method('getAvatar')->willReturn($avatar);
+	// ── getNotificationPreferences() ──
 
-        $result = $this->service->deleteAvatar($user);
+	public function testGetNotificationPreferencesDefaults(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->assertTrue($result['success']);
-    }
+		$this->config->method('getUserValue')->willReturn('');
 
-    // ── getNotificationPreferences() ──
+		$result = $this->service->getNotificationPreferences($user);
 
-    public function testGetNotificationPreferencesDefaults(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertTrue($result['objectChanges']);
+		$this->assertTrue($result['assignments']);
+		$this->assertEquals('daily', $result['emailDigest']);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
+	public function testGetNotificationPreferencesStored(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->getNotificationPreferences($user);
+		$this->config->method('getUserValue')
+			->willReturnMap([
+				['jan', 'openregister', 'notification_objectChanges', '', 'false'],
+				['jan', 'openregister', 'notification_assignments', '', 'true'],
+				['jan', 'openregister', 'notification_organisationChanges', '', ''],
+				['jan', 'openregister', 'notification_systemAnnouncements', '', ''],
+				['jan', 'openregister', 'notification_emailDigest', '', 'weekly'],
+			]);
 
-        $this->assertTrue($result['objectChanges']);
-        $this->assertTrue($result['assignments']);
-        $this->assertEquals('daily', $result['emailDigest']);
-    }
+		$result = $this->service->getNotificationPreferences($user);
 
-    public function testGetNotificationPreferencesStored(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertFalse($result['objectChanges']);
+		$this->assertTrue($result['assignments']);
+		$this->assertEquals('weekly', $result['emailDigest']);
+	}
 
-        $this->config->method('getUserValue')
-            ->willReturnMap([
-                ['jan', 'openregister', 'notification_objectChanges', '', 'false'],
-                ['jan', 'openregister', 'notification_assignments', '', 'true'],
-                ['jan', 'openregister', 'notification_organisationChanges', '', ''],
-                ['jan', 'openregister', 'notification_systemAnnouncements', '', ''],
-                ['jan', 'openregister', 'notification_emailDigest', '', 'weekly'],
-            ]);
+	// ── setNotificationPreferences() ──
 
-        $result = $this->service->getNotificationPreferences($user);
+	public function testSetNotificationPreferencesSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->assertFalse($result['objectChanges']);
-        $this->assertTrue($result['assignments']);
-        $this->assertEquals('weekly', $result['emailDigest']);
-    }
+		$this->config->method('getUserValue')->willReturn('');
+		$this->config->expects($this->atLeastOnce())->method('setUserValue');
 
-    // ── setNotificationPreferences() ──
+		$result = $this->service->setNotificationPreferences($user, ['objectChanges' => false]);
 
-    public function testSetNotificationPreferencesSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertArrayHasKey('objectChanges', $result);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
-        $this->config->expects($this->atLeastOnce())->method('setUserValue');
+	public function testSetNotificationPreferencesInvalidDigest(): void {
+		$user = $this->createMock(IUser::class);
 
-        $result = $this->service->setNotificationPreferences($user, ['objectChanges' => false]);
+		$this->expectException(\InvalidArgumentException::class);
 
-        $this->assertArrayHasKey('objectChanges', $result);
-    }
+		$this->service->setNotificationPreferences($user, ['emailDigest' => 'hourly']);
+	}
 
-    public function testSetNotificationPreferencesInvalidDigest(): void
-    {
-        $user = $this->createMock(IUser::class);
+	// ── getUserActivity() ──
 
-        $this->expectException(\InvalidArgumentException::class);
+	public function testGetUserActivitySuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->service->setNotificationPreferences($user, ['emailDigest' => 'hourly']);
-    }
+		$this->auditTrailMapper->method('findByActor')->willReturn([
+			'results' => [],
+			'total' => 0,
+		]);
 
-    // ── getUserActivity() ──
+		$result = $this->service->getUserActivity($user);
 
-    public function testGetUserActivitySuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertArrayHasKey('results', $result);
+		$this->assertEquals(0, $result['total']);
+	}
 
-        $this->auditTrailMapper->method('findByActor')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
+	// ── Token management ──
 
-        $result = $this->service->getUserActivity($user);
+	public function testCreateApiTokenSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->assertArrayHasKey('results', $result);
-        $this->assertEquals(0, $result['total']);
-    }
+		$this->config->method('getUserValue')->willReturn('');
+		$this->secureRandom->method('generate')
+			->willReturnOnConsecutiveCalls('abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 'tokenid123456789');
 
-    // ── Token management ──
+		$result = $this->service->createApiToken($user, 'CI Pipeline', '90d');
 
-    public function testCreateApiTokenSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertEquals('CI Pipeline', $result['name']);
+		$this->assertNotEmpty($result['token']);
+		$this->assertNotNull($result['expires']);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
-        $this->secureRandom->method('generate')
-            ->willReturnOnConsecutiveCalls('abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 'tokenid123456789');
+	public function testCreateApiTokenMaxReached(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->createApiToken($user, 'CI Pipeline', '90d');
+		$tokens = [];
+		for ($i = 0; $i < 10; $i++) {
+			$tokens["token_$i"] = ['id' => "token_$i", 'name' => "Token $i"];
+		}
+		$this->config->method('getUserValue')->willReturn(json_encode($tokens));
 
-        $this->assertEquals('CI Pipeline', $result['name']);
-        $this->assertNotEmpty($result['token']);
-        $this->assertNotNull($result['expires']);
-    }
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(400);
 
-    public function testCreateApiTokenMaxReached(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->service->createApiToken($user, 'One more');
+	}
 
-        $tokens = [];
-        for ($i = 0; $i < 10; $i++) {
-            $tokens["token_$i"] = ['id' => "token_$i", 'name' => "Token $i"];
-        }
-        $this->config->method('getUserValue')->willReturn(json_encode($tokens));
+	public function testListApiTokensMasked(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(400);
+		$this->config->method('getUserValue')->willReturn(json_encode([
+			'tok1' => [
+				'id' => 'tok1',
+				'name' => 'CI',
+				'preview' => 'abcd',
+				'created' => '2026-03-24T10:00:00Z',
+			],
+		]));
 
-        $this->service->createApiToken($user, 'One more');
-    }
+		$result = $this->service->listApiTokens($user);
 
-    public function testListApiTokensMasked(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertCount(1, $result);
+		$this->assertEquals('****abcd', $result[0]['preview']);
+	}
 
-        $this->config->method('getUserValue')->willReturn(json_encode([
-            'tok1' => [
-                'id' => 'tok1',
-                'name' => 'CI',
-                'preview' => 'abcd',
-                'created' => '2026-03-24T10:00:00Z',
-            ],
-        ]));
+	public function testRevokeApiTokenSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->listApiTokens($user);
+		$this->config->method('getUserValue')->willReturn(json_encode([
+			'tok1' => ['id' => 'tok1', 'name' => 'CI'],
+		]));
 
-        $this->assertCount(1, $result);
-        $this->assertEquals('****abcd', $result[0]['preview']);
-    }
+		$result = $this->service->revokeApiToken($user, 'tok1');
+		$this->assertTrue($result['success']);
+	}
 
-    public function testRevokeApiTokenSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+	public function testRevokeApiTokenNotFound(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->config->method('getUserValue')->willReturn(json_encode([
-            'tok1' => ['id' => 'tok1', 'name' => 'CI'],
-        ]));
+		$this->config->method('getUserValue')->willReturn('');
 
-        $result = $this->service->revokeApiToken($user, 'tok1');
-        $this->assertTrue($result['success']);
-    }
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(404);
 
-    public function testRevokeApiTokenNotFound(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->service->revokeApiToken($user, 'nonexistent');
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
+	// ── Deactivation ──
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(404);
+	public function testRequestDeactivationSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->service->revokeApiToken($user, 'nonexistent');
-    }
+		$this->config->method('getUserValue')->willReturn('');
 
-    // ── Deactivation ──
+		$result = $this->service->requestDeactivation($user, 'Leaving');
 
-    public function testRequestDeactivationSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertTrue($result['success']);
+		$this->assertEquals('pending', $result['status']);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
+	public function testRequestDeactivationDuplicate(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->requestDeactivation($user, 'Leaving');
+		$this->config->method('getUserValue')->willReturn(
+			json_encode(['status' => 'pending', 'requestedAt' => '2026-03-24T10:00:00Z'])
+		);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('pending', $result['status']);
-    }
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(409);
 
-    public function testRequestDeactivationDuplicate(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->service->requestDeactivation($user, 'Again');
+	}
 
-        $this->config->method('getUserValue')->willReturn(
-            json_encode(['status' => 'pending', 'requestedAt' => '2026-03-24T10:00:00Z'])
-        );
+	public function testGetDeactivationStatusActive(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(409);
+		$this->config->method('getUserValue')->willReturn('');
 
-        $this->service->requestDeactivation($user, 'Again');
-    }
+		$result = $this->service->getDeactivationStatus($user);
 
-    public function testGetDeactivationStatusActive(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertEquals('active', $result['status']);
+		$this->assertNull($result['pendingRequest']);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
+	public function testGetDeactivationStatusPending(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->getDeactivationStatus($user);
+		$this->config->method('getUserValue')->willReturn(
+			json_encode(['status' => 'pending', 'requestedAt' => '2026-03-24T10:00:00Z'])
+		);
 
-        $this->assertEquals('active', $result['status']);
-        $this->assertNull($result['pendingRequest']);
-    }
+		$result = $this->service->getDeactivationStatus($user);
 
-    public function testGetDeactivationStatusPending(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertEquals('pending', $result['status']);
+		$this->assertNotNull($result['pendingRequest']);
+	}
 
-        $this->config->method('getUserValue')->willReturn(
-            json_encode(['status' => 'pending', 'requestedAt' => '2026-03-24T10:00:00Z'])
-        );
+	public function testCancelDeactivationSuccess(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->getDeactivationStatus($user);
+		$this->config->method('getUserValue')->willReturn(
+			json_encode(['status' => 'pending'])
+		);
 
-        $this->assertEquals('pending', $result['status']);
-        $this->assertNotNull($result['pendingRequest']);
-    }
+		$result = $this->service->cancelDeactivation($user);
 
-    public function testCancelDeactivationSuccess(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->assertTrue($result['success']);
+		$this->assertEquals('active', $result['status']);
+	}
 
-        $this->config->method('getUserValue')->willReturn(
-            json_encode(['status' => 'pending'])
-        );
+	public function testCancelDeactivationNoPending(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $result = $this->service->cancelDeactivation($user);
+		$this->config->method('getUserValue')->willReturn('');
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('active', $result['status']);
-    }
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(404);
 
-    public function testCancelDeactivationNoPending(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
+		$this->service->cancelDeactivation($user);
+	}
 
-        $this->config->method('getUserValue')->willReturn('');
+	// ── exportPersonalData() ──
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(404);
+	public function testExportPersonalDataRateLimited(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('jan');
 
-        $this->service->cancelDeactivation($user);
-    }
+		// Last export was 5 minutes ago.
+		$this->config->method('getUserValue')
+			->willReturnMap([
+				['jan', 'openregister', 'last_export_time', '0', (string)(time() - 300)],
+			]);
 
-    // ── exportPersonalData() ──
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionCode(429);
 
-    public function testExportPersonalDataRateLimited(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('jan');
-
-        // Last export was 5 minutes ago.
-        $this->config->method('getUserValue')
-            ->willReturnMap([
-                ['jan', 'openregister', 'last_export_time', '0', (string)(time() - 300)],
-            ]);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(429);
-
-        $this->service->exportPersonalData($user);
-    }
+		$this->service->exportPersonalData($user);
+	}
 }

@@ -23,117 +23,104 @@ namespace Unit\Service\Merge;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
-class MergeAnnotationValidatorTest extends TestCase
-{
+class MergeAnnotationValidatorTest extends TestCase {
 
-    private MergeAnnotationValidator $validator;
+	private MergeAnnotationValidator $validator;
 
-    protected function setUp(): void
-    {
-        $this->validator = new MergeAnnotationValidator();
-    }//end setUp()
+	protected function setUp(): void {
+		$this->validator = new MergeAnnotationValidator();
+	}//end setUp()
 
-    public function testAbsentAnnotationIsValid(): void
-    {
-        $this->assertSame([], $this->validator->validate(['properties' => []]));
-    }//end testAbsentAnnotationIsValid()
+	public function testAbsentAnnotationIsValid(): void {
+		$this->assertSame([], $this->validator->validate(['properties' => []]));
+	}//end testAbsentAnnotationIsValid()
 
-    public function testValidAnnotationWithDefaults(): void
-    {
-        $shape = ['x-openregister-merge' => []];
-        $this->assertSame([], $this->validator->validate($shape));
-    }//end testValidAnnotationWithDefaults()
+	public function testValidAnnotationWithDefaults(): void {
+		$shape = ['x-openregister-merge' => []];
+		$this->assertSame([], $this->validator->validate($shape));
+	}//end testValidAnnotationWithDefaults()
 
-    public function testValidFullAnnotation(): void
-    {
-        $shape = [
-            'x-openregister-merge' => [
-                'sourceLinkField'     => 'sources',
-                'entityType'          => 'organisation',
-                'reversalWindowDays'  => 30,
-                'statusField'         => 'status',
-                'survivorStatus'      => 'active',
-                'mergedStatus'        => 'merged-into-other',
-            ],
-        ];
-        $this->assertSame([], $this->validator->validate($shape));
-    }//end testValidFullAnnotation()
+	public function testValidFullAnnotation(): void {
+		$shape = [
+			'x-openregister-merge' => [
+				'sourceLinkField' => 'sources',
+				'entityType' => 'organisation',
+				'reversalWindowDays' => 30,
+				'statusField' => 'status',
+				'survivorStatus' => 'active',
+				'mergedStatus' => 'merged-into-other',
+			],
+		];
+		$this->assertSame([], $this->validator->validate($shape));
+	}//end testValidFullAnnotation()
 
-    public function testNonObjectAnnotationIsInvalid(): void
-    {
-        $errors = $this->validator->validate(['x-openregister-merge' => 'not-an-object']);
-        $this->assertNotEmpty($errors);
-        $this->assertSame('merge.not-object', $errors[0]['code']);
-    }//end testNonObjectAnnotationIsInvalid()
+	public function testNonObjectAnnotationIsInvalid(): void {
+		$errors = $this->validator->validate(['x-openregister-merge' => 'not-an-object']);
+		$this->assertNotEmpty($errors);
+		$this->assertSame('merge.not-object', $errors[0]['code']);
+	}//end testNonObjectAnnotationIsInvalid()
 
-    public function testNonIntegerReversalWindowIsInvalid(): void
-    {
-        $errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => 'thirty']]);
-        $this->assertNotEmpty($errors);
-        $this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
-    }//end testNonIntegerReversalWindowIsInvalid()
+	public function testNonIntegerReversalWindowIsInvalid(): void {
+		$errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => 'thirty']]);
+		$this->assertNotEmpty($errors);
+		$this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
+	}//end testNonIntegerReversalWindowIsInvalid()
 
-    public function testNegativeReversalWindowIsInvalid(): void
-    {
-        $errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => -5]]);
-        $this->assertNotEmpty($errors);
-        $this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
-    }//end testNegativeReversalWindowIsInvalid()
+	public function testNegativeReversalWindowIsInvalid(): void {
+		$errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => -5]]);
+		$this->assertNotEmpty($errors);
+		$this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
+	}//end testNegativeReversalWindowIsInvalid()
 
-    public function testZeroReversalWindowIsInvalid(): void
-    {
-        $errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => 0]]);
-        $this->assertNotEmpty($errors);
-        $this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
-    }//end testZeroReversalWindowIsInvalid()
+	public function testZeroReversalWindowIsInvalid(): void {
+		$errors = $this->validator->validate(['x-openregister-merge' => ['reversalWindowDays' => 0]]);
+		$this->assertNotEmpty($errors);
+		$this->assertSame('merge.invalid-reversal-window', $errors[0]['code']);
+	}//end testZeroReversalWindowIsInvalid()
 
-    public function testNonStringFieldIsInvalid(): void
-    {
-        $errors = $this->validator->validate(['x-openregister-merge' => ['sourceLinkField' => 123]]);
-        $this->assertNotEmpty($errors);
-        $this->assertSame('merge.field-not-string', $errors[0]['code']);
-    }//end testNonStringFieldIsInvalid()
+	public function testNonStringFieldIsInvalid(): void {
+		$errors = $this->validator->validate(['x-openregister-merge' => ['sourceLinkField' => 123]]);
+		$this->assertNotEmpty($errors);
+		$this->assertSame('merge.field-not-string', $errors[0]['code']);
+	}//end testNonStringFieldIsInvalid()
 
-    public function testMultipleErrorsAreAllReported(): void
-    {
-        $errors = $this->validator->validate(
-            [
-                'x-openregister-merge' => [
-                    'reversalWindowDays' => -1,
-                    'statusField'        => 123,
-                    'survivorStatus'     => true,
-                ],
-            ]
-        );
-        $this->assertGreaterThanOrEqual(3, count($errors));
-    }//end testMultipleErrorsAreAllReported()
+	public function testMultipleErrorsAreAllReported(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-merge' => [
+					'reversalWindowDays' => -1,
+					'statusField' => 123,
+					'survivorStatus' => true,
+				],
+			]
+		);
+		$this->assertGreaterThanOrEqual(3, count($errors));
+	}//end testMultipleErrorsAreAllReported()
 
-    public function testWellFormedReverseFkSourceLinkIsAccepted(): void
-    {
-        $errors = $this->validator->validate(
-            [
-                'x-openregister-merge' => [
-                    'sourceLink' => [
-                        'mode'           => 'reverseFk',
-                        'sourceSchema'   => 'sourceRecord',
-                        'referenceField' => 'currentMasterEntity',
-                    ],
-                ],
-            ]
-        );
-        $this->assertSame([], $errors);
-    }//end testWellFormedReverseFkSourceLinkIsAccepted()
+	public function testWellFormedReverseFkSourceLinkIsAccepted(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-merge' => [
+					'sourceLink' => [
+						'mode' => 'reverseFk',
+						'sourceSchema' => 'sourceRecord',
+						'referenceField' => 'currentMasterEntity',
+					],
+				],
+			]
+		);
+		$this->assertSame([], $errors);
+	}//end testWellFormedReverseFkSourceLinkIsAccepted()
 
-    public function testIncompleteReverseFkSourceLinkIsFlagged(): void
-    {
-        $errors = $this->validator->validate(
-            [
-                'x-openregister-merge' => [
-                    'sourceLink' => ['mode' => 'reverseFk', 'referenceField' => 'currentMasterEntity'],
-                ],
-            ]
-        );
-        $codes = array_column($errors, 'code');
-        $this->assertContains('merge.source-link-reverse-fk-incomplete', $codes);
-    }//end testIncompleteReverseFkSourceLinkIsFlagged()
+	public function testIncompleteReverseFkSourceLinkIsFlagged(): void {
+		$errors = $this->validator->validate(
+			[
+				'x-openregister-merge' => [
+					'sourceLink' => ['mode' => 'reverseFk', 'referenceField' => 'currentMasterEntity'],
+				],
+			]
+		);
+		$codes = array_column($errors, 'code');
+		$this->assertContains('merge.source-link-reverse-fk-incomplete', $codes);
+	}//end testIncompleteReverseFkSourceLinkIsFlagged()
 }//end class

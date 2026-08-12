@@ -52,62 +52,60 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class Version1Date20260714000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260714000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_scheduled_reports') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_scheduled_reports') === false) {
+			return null;
+		}
 
-        $table   = $schema->getTable(tableName: 'openregister_scheduled_reports');
-        $changed = false;
+		$table = $schema->getTable(tableName: 'openregister_scheduled_reports');
+		$changed = false;
 
-        if ($table->hasColumn(name: 'delivery_mode') === false) {
-            $table->addColumn(
-                name: 'delivery_mode',
-                typeName: Types::STRING,
-                options: [
-                    'notnull' => true,
-                    'length'  => 16,
-                    'default' => 'files',
-                ]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn(name: 'delivery_mode') === false) {
+			$table->addColumn(
+				name: 'delivery_mode',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => true,
+					'length' => 16,
+					'default' => 'files',
+				]
+			);
+			$changed = true;
+		}
 
-        if ($table->hasColumn(name: 'recipients') === false) {
-            $table->addColumn(
-                name: 'recipients',
-                typeName: Types::TEXT,
-                options: ['notnull' => false]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn(name: 'recipients') === false) {
+			$table->addColumn(
+				name: 'recipients',
+				typeName: Types::TEXT,
+				options: ['notnull' => false]
+			);
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        $output->info('Added delivery_mode/recipients to openregister_scheduled_reports');
+		$output->info('Added delivery_mode/recipients to openregister_scheduled_reports');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

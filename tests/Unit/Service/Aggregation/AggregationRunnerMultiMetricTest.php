@@ -54,322 +54,305 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationQuery
  */
-class AggregationRunnerMultiMetricTest extends TestCase
-{
+class AggregationRunnerMultiMetricTest extends TestCase {
 
-    /**
-     * Five rows across two statuses; `amount` drives the sum/avg/min/max
-     * metrics. open: [10, 20] (sum=30, avg=15); in-progress: [30]; total
-     * sum = 30 + 20 + ... — see per-test comments for the exact arithmetic.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function dataset(): array
-    {
-        return [
-            ['status' => 'open',        'amount' => 10],
-            ['status' => 'open',        'amount' => 20],
-            ['status' => 'in-progress', 'amount' => 5],
-        ];
-    }
+	/**
+	 * Five rows across two statuses; `amount` drives the sum/avg/min/max
+	 * metrics. open: [10, 20] (sum=30, avg=15); in-progress: [30]; total
+	 * sum = 30 + 20 + ... — see per-test comments for the exact arithmetic.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function dataset(): array {
+		return [
+			['status' => 'open',        'amount' => 10],
+			['status' => 'open',        'amount' => 20],
+			['status' => 'in-progress', 'amount' => 5],
+		];
+	}
 
-    // -----------------------------------------------------------------------
-    // Native path (SQLite, grouped — the ungrouped scalar native path is
-    // Postgres-only; grouped runs natively on SQLite, see AggregationRunner's
-    // tryNativeAggregation() docblock).
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Native path (SQLite, grouped — the ungrouped scalar native path is
+	// Postgres-only; grouped runs natively on SQLite, see AggregationRunner's
+	// tryNativeAggregation() docblock).
+	// -----------------------------------------------------------------------
 
-    public function testNativeGroupedMultiMetricCarriesValuesMap(): void
-    {
-        $runner = $this->makeNativeRunner();
+	public function testNativeGroupedMultiMetricCarriesValuesMap(): void {
+		$runner = $this->makeNativeRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(
-                metric: 'count',
-                groupBy: ['field' => 'status'],
-                metrics: [
-                    ['metric' => 'count'],
-                    ['metric' => 'sum', 'field' => 'amount'],
-                ]
-            )
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				groupBy: ['field' => 'status'],
+				metrics: [
+					['metric' => 'count'],
+					['metric' => 'sum', 'field' => 'amount'],
+				]
+			)
+		);
 
-        $this->assertSame('sqlite', $result['backend']);
-        $folded = [];
-        foreach ($result['groups'] as $group) {
-            $this->assertArrayHasKey('key', $group);
-            $this->assertArrayHasKey('values', $group);
-            $this->assertArrayNotHasKey('value', $group, 'multi-metric groups MUST carry `values`, not `value`');
-            // SQLite's native SUM() returns an int for whole-number columns
-            // (unlike Postgres's ::numeric cast, which always yields a
-            // float) — cast for a type-agnostic comparison, same convention
-            // AggregationRunnerMultiFieldGroupByTest::foldMulti() uses.
-            $folded[(string) $group['key']] = [
-                'count'      => $group['values']['count'],
-                'sum_amount' => (float) $group['values']['sum_amount'],
-            ];
-        }
+		$this->assertSame('sqlite', $result['backend']);
+		$folded = [];
+		foreach ($result['groups'] as $group) {
+			$this->assertArrayHasKey('key', $group);
+			$this->assertArrayHasKey('values', $group);
+			$this->assertArrayNotHasKey('value', $group, 'multi-metric groups MUST carry `values`, not `value`');
+			// SQLite's native SUM() returns an int for whole-number columns
+			// (unlike Postgres's ::numeric cast, which always yields a
+			// float) — cast for a type-agnostic comparison, same convention
+			// AggregationRunnerMultiFieldGroupByTest::foldMulti() uses.
+			$folded[(string)$group['key']] = [
+				'count' => $group['values']['count'],
+				'sum_amount' => (float)$group['values']['sum_amount'],
+			];
+		}
 
-        $this->assertSame(['count' => 2, 'sum_amount' => 30.0], $folded['open']);
-        $this->assertSame(['count' => 1, 'sum_amount' => 5.0], $folded['in-progress']);
+		$this->assertSame(['count' => 2, 'sum_amount' => 30.0], $folded['open']);
+		$this->assertSame(['count' => 1, 'sum_amount' => 5.0], $folded['in-progress']);
 
-    }//end testNativeGroupedMultiMetricCarriesValuesMap()
+	}//end testNativeGroupedMultiMetricCarriesValuesMap()
 
-    public function testNativeUngroupedMultiMetricBailsToPhpFallback(): void
-    {
-        // Ungrouped scalar native path is Postgres-only; on SQLite the
-        // FIRST per-metric native call already returns null, so the whole
-        // multi-metric attempt bails to bucketInPhp() rather than mixing
-        // native+PHP results.
-        $runner = $this->makeNativeRunner();
+	public function testNativeUngroupedMultiMetricBailsToPhpFallback(): void {
+		// Ungrouped scalar native path is Postgres-only; on SQLite the
+		// FIRST per-metric native call already returns null, so the whole
+		// multi-metric attempt bails to bucketInPhp() rather than mixing
+		// native+PHP results.
+		$runner = $this->makeNativeRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(
-                metric: 'count',
-                metrics: [
-                    ['metric' => 'count'],
-                    ['metric' => 'sum', 'field' => 'amount'],
-                ]
-            )
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				metrics: [
+					['metric' => 'count'],
+					['metric' => 'sum', 'field' => 'amount'],
+				]
+			)
+		);
 
-        $this->assertSame('php-fallback', $result['backend']);
-        $this->assertSame(['count' => 3, 'sum_amount' => 35.0], $result['values']);
-        $this->assertArrayNotHasKey('value', $result);
+		$this->assertSame('php-fallback', $result['backend']);
+		$this->assertSame(['count' => 3, 'sum_amount' => 35.0], $result['values']);
+		$this->assertArrayNotHasKey('value', $result);
 
-    }//end testNativeUngroupedMultiMetricBailsToPhpFallback()
+	}//end testNativeUngroupedMultiMetricBailsToPhpFallback()
 
-    // -----------------------------------------------------------------------
-    // PHP-fallback path (forced via an unrecognised platform).
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// PHP-fallback path (forced via an unrecognised platform).
+	// -----------------------------------------------------------------------
 
-    public function testPhpFallbackUngroupedMultiMetric(): void
-    {
-        $runner = $this->makePhpFallbackRunner();
+	public function testPhpFallbackUngroupedMultiMetric(): void {
+		$runner = $this->makePhpFallbackRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(
-                metric: 'count',
-                metrics: [
-                    ['metric' => 'count'],
-                    ['metric' => 'sum', 'field' => 'amount'],
-                    ['metric' => 'avg', 'field' => 'amount'],
-                ]
-            )
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				metrics: [
+					['metric' => 'count'],
+					['metric' => 'sum', 'field' => 'amount'],
+					['metric' => 'avg', 'field' => 'amount'],
+				]
+			)
+		);
 
-        $this->assertSame('php-fallback', $result['backend']);
-        $this->assertSame(3, $result['values']['count']);
-        $this->assertSame(35.0, $result['values']['sum_amount']);
-        $this->assertEqualsWithDelta(35.0 / 3.0, $result['values']['avg_amount'], 0.0001);
+		$this->assertSame('php-fallback', $result['backend']);
+		$this->assertSame(3, $result['values']['count']);
+		$this->assertSame(35.0, $result['values']['sum_amount']);
+		$this->assertEqualsWithDelta(35.0 / 3.0, $result['values']['avg_amount'], 0.0001);
 
-    }//end testPhpFallbackUngroupedMultiMetric()
+	}//end testPhpFallbackUngroupedMultiMetric()
 
-    public function testPhpFallbackGroupedMultiMetric(): void
-    {
-        $runner = $this->makePhpFallbackRunner();
+	public function testPhpFallbackGroupedMultiMetric(): void {
+		$runner = $this->makePhpFallbackRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(
-                metric: 'count',
-                groupBy: ['field' => 'status'],
-                metrics: [
-                    ['metric' => 'count'],
-                    ['metric' => 'sum', 'field' => 'amount'],
-                ]
-            )
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				groupBy: ['field' => 'status'],
+				metrics: [
+					['metric' => 'count'],
+					['metric' => 'sum', 'field' => 'amount'],
+				]
+			)
+		);
 
-        $folded = [];
-        foreach ($result['groups'] as $group) {
-            $folded[(string) $group['key']] = $group['values'];
-        }
+		$folded = [];
+		foreach ($result['groups'] as $group) {
+			$folded[(string)$group['key']] = $group['values'];
+		}
 
-        $this->assertSame(['count' => 2, 'sum_amount' => 30.0], $folded['open']);
-        $this->assertSame(['count' => 1, 'sum_amount' => 5.0], $folded['in-progress']);
+		$this->assertSame(['count' => 2, 'sum_amount' => 30.0], $folded['open']);
+		$this->assertSame(['count' => 1, 'sum_amount' => 5.0], $folded['in-progress']);
 
-    }//end testPhpFallbackGroupedMultiMetric()
+	}//end testPhpFallbackGroupedMultiMetric()
 
-    // -----------------------------------------------------------------------
-    // Legacy single-metric requests are unaffected (regression).
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Legacy single-metric requests are unaffected (regression).
+	// -----------------------------------------------------------------------
 
-    public function testLegacySingleMetricRequestStillReturnsScalarValue(): void
-    {
-        $runner = $this->makePhpFallbackRunner();
+	public function testLegacySingleMetricRequestStillReturnsScalarValue(): void {
+		$runner = $this->makePhpFallbackRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(metric: 'count')
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(metric: 'count')
+		);
 
-        $this->assertSame(3, $result['value']);
-        $this->assertArrayNotHasKey('values', $result);
+		$this->assertSame(3, $result['value']);
+		$this->assertArrayNotHasKey('values', $result);
 
-    }//end testLegacySingleMetricRequestStillReturnsScalarValue()
+	}//end testLegacySingleMetricRequestStillReturnsScalarValue()
 
-    public function testOneElementMetricsListBehavesLikeLegacySingleMetric(): void
-    {
-        $runner = $this->makePhpFallbackRunner();
+	public function testOneElementMetricsListBehavesLikeLegacySingleMetric(): void {
+		$runner = $this->makePhpFallbackRunner();
 
-        $result = $runner->runAdhoc(
-            register: $this->makeRegister(),
-            schema: $this->makeSchema(),
-            query: AggregationQuery::create(
-                metric: 'count',
-                metrics: [['metric' => 'count']]
-            )
-        );
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				metrics: [['metric' => 'count']]
+			)
+		);
 
-        $this->assertSame(3, $result['value']);
-        $this->assertArrayNotHasKey('values', $result);
+		$this->assertSame(3, $result['value']);
+		$this->assertArrayNotHasKey('values', $result);
 
-    }//end testOneElementMetricsListBehavesLikeLegacySingleMetric()
+	}//end testOneElementMetricsListBehavesLikeLegacySingleMetric()
 
-    // -----------------------------------------------------------------------
-    // Helpers.
-    // -----------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// Helpers.
+	// -----------------------------------------------------------------------
 
-    /**
-     * Runner whose IDBConnection executes real SQL against an in-memory
-     * SQLite database seeded with {@see dataset()}.
-     *
-     * @return AggregationRunner
-     */
-    private function makeNativeRunner(): AggregationRunner
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_organisation" TEXT, "status" TEXT, "amount" INTEGER)');
-        $insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "status", "amount") VALUES (NULL, ?, ?, ?)');
-        foreach ($this->dataset() as $row) {
-            $insert->execute(['__no_active_org__', $row['status'], $row['amount']]);
-        }
+	/**
+	 * Runner whose IDBConnection executes real SQL against an in-memory
+	 * SQLite database seeded with {@see dataset()}.
+	 *
+	 * @return AggregationRunner
+	 */
+	private function makeNativeRunner(): AggregationRunner {
+		$pdo = new PDO('sqlite::memory:');
+		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_organisation" TEXT, "status" TEXT, "amount" INTEGER)');
+		$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "status", "amount") VALUES (NULL, ?, ?, ?)');
+		foreach ($this->dataset() as $row) {
+			$insert->execute(['__no_active_org__', $row['status'], $row['amount']]);
+		}
 
-        $db = $this->createMock(IDBConnection::class);
-        $db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));
-        $db->method('prepare')->willReturnCallback(
-            function (string $sql) use ($pdo): IPreparedStatement {
-                $pdoStmt = $pdo->prepare($sql);
-                $stmt    = $this->createMock(IPreparedStatement::class);
-                $stmt->method('execute')->willReturnCallback(
-                    function ($bindings=[]) use ($pdoStmt): IResult {
-                        $pdoStmt->execute(($bindings ?? []));
-                        return $this->createMock(IResult::class);
-                    }
-                );
-                $stmt->method('fetch')->willReturnCallback(static fn() => $pdoStmt->fetch(PDO::FETCH_ASSOC));
-                return $stmt;
-            }
-        );
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));
+		$db->method('prepare')->willReturnCallback(
+			function (string $sql) use ($pdo): IPreparedStatement {
+				$pdoStmt = $pdo->prepare($sql);
+				$stmt = $this->createMock(IPreparedStatement::class);
+				$stmt->method('execute')->willReturnCallback(
+					function ($bindings = []) use ($pdoStmt): IResult {
+						$pdoStmt->execute(($bindings ?? []));
+						return $this->createMock(IResult::class);
+					}
+				);
+				$stmt->method('fetch')->willReturnCallback(static fn () => $pdoStmt->fetch(PDO::FETCH_ASSOC));
+				return $stmt;
+			}
+		);
 
-        $magicMapper = $this->createMock(MagicMapper::class);
-        $magicMapper->method('getTableNameForRegisterSchema')->willReturn('register_1_schema_x');
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('getTableNameForRegisterSchema')->willReturn('register_1_schema_x');
 
-        $entities = [];
-        foreach ($this->dataset() as $row) {
-            $entity = $this->createMock(ObjectEntity::class);
-            $entity->method('getObject')->willReturn($row);
-            $entities[] = $entity;
-        }
+		$entities = [];
+		foreach ($this->dataset() as $row) {
+			$entity = $this->createMock(ObjectEntity::class);
+			$entity->method('getObject')->willReturn($row);
+			$entities[] = $entity;
+		}
 
-        $magicMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$magicMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
 
-        return $this->makeRunner(db: $db, magicMapper: $magicMapper);
+		return $this->makeRunner(db: $db, magicMapper: $magicMapper);
+	}//end makeNativeRunner()
 
-    }//end makeNativeRunner()
+	/**
+	 * Runner whose platform is unrecognised (forcing the PHP fallback).
+	 *
+	 * @return AggregationRunner
+	 */
+	private function makePhpFallbackRunner(): AggregationRunner {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractPlatform::class));
 
-    /**
-     * Runner whose platform is unrecognised (forcing the PHP fallback).
-     *
-     * @return AggregationRunner
-     */
-    private function makePhpFallbackRunner(): AggregationRunner
-    {
-        $db = $this->createMock(IDBConnection::class);
-        $db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractPlatform::class));
+		$entities = [];
+		foreach ($this->dataset() as $row) {
+			$entity = $this->createMock(ObjectEntity::class);
+			$entity->method('getObject')->willReturn($row);
+			$entities[] = $entity;
+		}
 
-        $entities = [];
-        foreach ($this->dataset() as $row) {
-            $entity = $this->createMock(ObjectEntity::class);
-            $entity->method('getObject')->willReturn($row);
-            $entities[] = $entity;
-        }
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$magicMapper->method('getTableNameForRegisterSchema')->willReturn('register_1_schema_x');
 
-        $magicMapper = $this->createMock(MagicMapper::class);
-        $magicMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
-        $magicMapper->method('getTableNameForRegisterSchema')->willReturn('register_1_schema_x');
+		return $this->makeRunner(db: $db, magicMapper: $magicMapper);
+	}//end makePhpFallbackRunner()
 
-        return $this->makeRunner(db: $db, magicMapper: $magicMapper);
+	private function makeRunner(IDBConnection $db, MagicMapper $magicMapper): AggregationRunner {
+		$userSession = $this->createMock(IUserSession::class);
+		$userSession->method('getUser')->willReturn(null);
 
-    }//end makePhpFallbackRunner()
+		$organisationService = $this->createMock(OrganisationService::class);
+		$organisationService->method('getActiveOrganisation')->willReturn(null);
 
-    private function makeRunner(IDBConnection $db, MagicMapper $magicMapper): AggregationRunner
-    {
-        $userSession = $this->createMock(IUserSession::class);
-        $userSession->method('getUser')->willReturn(null);
+		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler->method('hasPermission')->willReturn(true);
 
-        $organisationService = $this->createMock(OrganisationService::class);
-        $organisationService->method('getActiveOrganisation')->willReturn(null);
+		$cache = $this->createMock(AggregationCache::class);
+		$cache->method('getAdhoc')->willReturn(null);
 
-        $permissionHandler = $this->createMock(PermissionHandler::class);
-        $permissionHandler->method('hasPermission')->willReturn(true);
+		$translationHandler = $this->createMock(TranslationHandler::class);
+		$translationHandler->method('getTranslatableProperties')->willReturn([]);
 
-        $cache = $this->createMock(AggregationCache::class);
-        $cache->method('getAdhoc')->willReturn(null);
+		$languageService = $this->createMock(LanguageService::class);
+		$languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
-        $translationHandler = $this->createMock(TranslationHandler::class);
-        $translationHandler->method('getTranslatableProperties')->willReturn([]);
+		return new AggregationRunner(
+			magicMapper: $magicMapper,
+			registerMapper: $this->createMock(RegisterMapper::class),
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			placeholders: new PlaceholderResolver($userSession),
+			db: $db,
+			cache: $cache,
+			permissionHandler: $permissionHandler,
+			userSession: $userSession,
+			organisationService: $organisationService,
+			translationHandler: $translationHandler,
+			languageService: $languageService,
+		);
 
-        $languageService = $this->createMock(LanguageService::class);
-        $languageService->method('shouldReturnAllTranslations')->willReturn(false);
+	}//end makeRunner()
 
-        return new AggregationRunner(
-            magicMapper: $magicMapper,
-            registerMapper: $this->createMock(RegisterMapper::class),
-            schemaMapper: $this->createMock(SchemaMapper::class),
-            placeholders: new PlaceholderResolver($userSession),
-            db: $db,
-            cache: $cache,
-            permissionHandler: $permissionHandler,
-            userSession: $userSession,
-            organisationService: $organisationService,
-            translationHandler: $translationHandler,
-            languageService: $languageService,
-        );
+	private function makeRegister(): Register {
+		$register = new Register();
+		$register->setSlug('bookkeeping');
+		$register->setSchemas([1]);
+		return $register;
+	}//end makeRegister()
 
-    }//end makeRunner()
-
-    private function makeRegister(): Register
-    {
-        $register = new Register();
-        $register->setSlug('bookkeeping');
-        $register->setSchemas([1]);
-        return $register;
-
-    }//end makeRegister()
-
-    private function makeSchema(): Schema
-    {
-        $schema = new Schema();
-        $schema->setSlug('items');
-        $schema->setId(1);
-        $schema->setProperties(
-            [
-                'status' => ['type' => 'string'],
-                'amount' => ['type' => 'number'],
-            ]
-        );
-        return $schema;
-
-    }//end makeSchema()
+	private function makeSchema(): Schema {
+		$schema = new Schema();
+		$schema->setSlug('items');
+		$schema->setId(1);
+		$schema->setProperties(
+			[
+				'status' => ['type' => 'string'],
+				'amount' => ['type' => 'number'],
+			]
+		);
+		return $schema;
+	}//end makeSchema()
 }//end class

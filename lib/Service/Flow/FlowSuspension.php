@@ -39,35 +39,32 @@ use RuntimeException;
 /**
  * Signals that the current run should suspend.
  */
-class FlowSuspension extends RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param DateTime|null $resumeAt When the run becomes eligible to resume;
-     *                                null means it waits for an external
-     *                                signal (a child run, a webhook) instead
-     *                                of a clock.
-     * @param string        $reason   Why it suspended, for the run log.
-     */
-    public function __construct(
-        private readonly ?DateTime $resumeAt=null,
-        string $reason='suspended'
-    ) {
-        parent::__construct(message: $reason);
+class FlowSuspension extends RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param DateTime|null $resumeAt When the run becomes eligible to resume;
+	 *                                null means it waits for an external
+	 *                                signal (a child run, a webhook) instead
+	 *                                of a clock.
+	 * @param string $reason Why it suspended, for the run log.
+	 */
+	public function __construct(
+		private readonly ?DateTime $resumeAt = null,
+		string $reason = 'suspended',
+	) {
+		parent::__construct(message: $reason);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * When this run may resume.
-     *
-     * @return DateTime|null The resume time, or null when waiting on a signal.
-     *
-     * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-     */
-    public function getResumeAt(): ?DateTime
-    {
-        return $this->resumeAt;
-
-    }//end getResumeAt()
+	/**
+	 * When this run may resume.
+	 *
+	 * @return DateTime|null The resume time, or null when waiting on a signal.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	public function getResumeAt(): ?DateTime {
+		return $this->resumeAt;
+	}//end getResumeAt()
 }//end class

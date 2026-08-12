@@ -54,123 +54,121 @@ use Throwable;
 /**
  * Re-dispatches a lifecycle event for one object, outside the write request.
  */
-class DeferredObjectEventJob extends QueuedJob
-{
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory     $time            Clock for the job base class.
-     * @param MagicMapper      $objectMapper    Re-reads the object at run time.
-     * @param RegisterMapper   $registerMapper  Resolves the register to scope the read.
-     * @param SchemaMapper     $schemaMapper    Resolves the schema to scope the read.
-     * @param IEventDispatcher $eventDispatcher Dispatches the event.
-     * @param IUserSession     $userSession     Restores the acting user for the dispatch.
-     * @param IUserManager     $userManager     Resolves the acting user by uid.
-     * @param LoggerInterface  $logger          The logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly MagicMapper $objectMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly IEventDispatcher $eventDispatcher,
-        private readonly IUserSession $userSession,
-        private readonly IUserManager $userManager,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+class DeferredObjectEventJob extends QueuedJob {
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Clock for the job base class.
+	 * @param MagicMapper $objectMapper Re-reads the object at run time.
+	 * @param RegisterMapper $registerMapper Resolves the register to scope the read.
+	 * @param SchemaMapper $schemaMapper Resolves the schema to scope the read.
+	 * @param IEventDispatcher $eventDispatcher Dispatches the event.
+	 * @param IUserSession $userSession Restores the acting user for the dispatch.
+	 * @param IUserManager $userManager Resolves the acting user by uid.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly MagicMapper $objectMapper,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly IUserSession $userSession,
+		private readonly IUserManager $userManager,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Re-read the object and dispatch its event.
-     *
-     * Never throws. This runs after the write it belongs to has already been
-     * reported as successful, so a failure here must not be able to fail
-     * anything — it is logged and the job ends.
-     *
-     * @param mixed $argument `{uuid, registerId, schemaId, action}`.
-     *
-     * @return void
-     */
-    protected function run($argument): void
-    {
-        $uuid = (string) (((array) $argument)['uuid'] ?? '');
-        if ($uuid === '') {
-            return;
-        }
+	/**
+	 * Re-read the object and dispatch its event.
+	 *
+	 * Never throws. This runs after the write it belongs to has already been
+	 * reported as successful, so a failure here must not be able to fail
+	 * anything — it is logged and the job ends.
+	 *
+	 * @param mixed $argument `{uuid, registerId, schemaId, action}`.
+	 *
+	 * @return void
+	 */
+	protected function run($argument): void {
+		$uuid = (string)(((array)$argument)['uuid'] ?? '');
+		if ($uuid === '') {
+			return;
+		}
 
-        $registerId = (int) (((array) $argument)['registerId'] ?? 0);
-        $schemaId   = (int) (((array) $argument)['schemaId'] ?? 0);
-        $actingUid  = (string) (((array) $argument)['user'] ?? '');
+		$registerId = (int)(((array)$argument)['registerId'] ?? 0);
+		$schemaId = (int)(((array)$argument)['schemaId'] ?? 0);
+		$actingUid = (string)(((array)$argument)['user'] ?? '');
 
-        // Restore the acting user for the dispatch. A background job has no
-        // session, and OpenRegister reads are organisation-filtered against the
-        // session user — so listeners that consult the register (the CloudEvent
-        // firehose gate is the clearest example) see an empty instance and skip.
-        // Verified 2026-07-29: dispatching without this ran clean, logged
-        // nothing, and produced zero CloudEvents where the inline path produced
-        // one. Deferring side effects without carrying identity does not move
-        // the work — it deletes it.
-        $restored = false;
-        if ($actingUid !== '') {
-            $actingUser = $this->userManager->get($actingUid);
-            if ($actingUser !== null) {
-                $this->userSession->setUser($actingUser);
-                $restored = true;
-            }
-        }
+		// Restore the acting user for the dispatch. A background job has no
+		// session, and OpenRegister reads are organisation-filtered against the
+		// session user — so listeners that consult the register (the CloudEvent
+		// firehose gate is the clearest example) see an empty instance and skip.
+		// Verified 2026-07-29: dispatching without this ran clean, logged
+		// nothing, and produced zero CloudEvents where the inline path produced
+		// one. Deferring side effects without carrying identity does not move
+		// the work — it deletes it.
+		$restored = false;
+		if ($actingUid !== '') {
+			$actingUser = $this->userManager->get($actingUid);
+			if ($actingUser !== null) {
+				$this->userSession->setUser($actingUser);
+				$restored = true;
+			}
+		}
 
-        if ($restored === false) {
-            $this->logger->warning(
-                message: '[DeferredObjectEventJob] No acting user for '.$uuid
-                    .'; listeners that read organisation-scoped data will see nothing.',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'uid' => $actingUid]
-            );
-        }
+		if ($restored === false) {
+			$this->logger->warning(
+				message: '[DeferredObjectEventJob] No acting user for ' . $uuid
+					. '; listeners that read organisation-scoped data will see nothing.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'uid' => $actingUid]
+			);
+		}
 
-        try {
-            $register = null;
-            $schema   = null;
-            if ($registerId > 0) {
-                $register = $this->registerMapper->find($registerId);
-            }
+		try {
+			$register = null;
+			$schema = null;
+			if ($registerId > 0) {
+				$register = $this->registerMapper->find($registerId);
+			}
 
-            if ($schemaId > 0) {
-                $schema = $this->schemaMapper->find($schemaId);
-            }
+			if ($schemaId > 0) {
+				$schema = $this->schemaMapper->find($schemaId);
+			}
 
-            // Scoped read: the register and schema are known, so this never
-            // reaches the cross-table fan-out.
-            $object = $this->objectMapper->find(
-                identifier: $uuid,
-                register: $register,
-                schema: $schema,
-                includeDeleted: false,
-                _rbac: false,
-                _multitenancy: false
-            );
+			// Scoped read: the register and schema are known, so this never
+			// reaches the cross-table fan-out.
+			$object = $this->objectMapper->find(
+				identifier: $uuid,
+				register: $register,
+				schema: $schema,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
 
-            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $object));
-        } catch (Throwable $e) {
-            // The object may legitimately be gone by now — a create followed by
-            // a delete before the queue drained — so this is not an error. It is
-            // logged at WARNING rather than INFO deliberately: a deferred event
-            // that never fires is silent by construction, every listener simply
-            // does not run, and the default loglevel (2 = warning) would hide an
-            // INFO line. A side effect that vanished must be visible at the
-            // level operators actually keep.
-            $this->logger->warning(
-                message: '[DeferredObjectEventJob] Could not dispatch deferred event for '.$uuid.': '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-            );
-        } finally {
-            // Do not leave the impersonation standing for whatever job the
-            // worker runs next out of the same process.
-            if ($restored === true) {
-                $this->userSession->setUser(null);
-            }
-        }//end try
+			$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $object));
+		} catch (Throwable $e) {
+			// The object may legitimately be gone by now — a create followed by
+			// a delete before the queue drained — so this is not an error. It is
+			// logged at WARNING rather than INFO deliberately: a deferred event
+			// that never fires is silent by construction, every listener simply
+			// does not run, and the default loglevel (2 = warning) would hide an
+			// INFO line. A side effect that vanished must be visible at the
+			// level operators actually keep.
+			$this->logger->warning(
+				message: '[DeferredObjectEventJob] Could not dispatch deferred event for ' . $uuid . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
+		} finally {
+			// Do not leave the impersonation standing for whatever job the
+			// worker runs next out of the same process.
+			if ($restored === true) {
+				$this->userSession->setUser(null);
+			}
+		}//end try
 
-    }//end run()
+	}//end run()
 }//end class

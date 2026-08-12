@@ -43,19 +43,18 @@ namespace OCA\OpenRegister\Service\File;
  *
  * @spec openspec/specs/office-document-sanitization/spec.md
  */
-final class SanitizationResult
-{
-    /**
-     * Constructor.
-     *
-     * @param string             $path   Absolute path to the sanitised temp file.
-     * @param SanitizationReport $report Per-category sanitisation counts.
-     *
-     * @spec openspec/specs/office-document-sanitization/spec.md
-     */
-    public function __construct(
-        public readonly string $path,
-        public readonly SanitizationReport $report
-    ) {
-    }//end __construct()
+final class SanitizationResult {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $path Absolute path to the sanitised temp file.
+	 * @param SanitizationReport $report Per-category sanitisation counts.
+	 *
+	 * @spec openspec/specs/office-document-sanitization/spec.md
+	 */
+	public function __construct(
+		public readonly string $path,
+		public readonly SanitizationReport $report,
+	) {
+	}//end __construct()
 }//end class

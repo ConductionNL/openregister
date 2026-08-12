@@ -37,43 +37,42 @@ namespace OCA\OpenRegister\Service\Gdpr\Evidence;
 /**
  * A registerable source of evidence items for a case.
  */
-interface EvidenceSourceProvider
-{
-    /**
-     * Stable source id recorded on every evidence item this provider harvests.
-     *
-     * @return string The provider id (e.g. `openconnector-crm`).
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
-     */
-    public function getSourceId(): string;
+interface EvidenceSourceProvider {
+	/**
+	 * Stable source id recorded on every evidence item this provider harvests.
+	 *
+	 * @return string The provider id (e.g. `openconnector-crm`).
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 */
+	public function getSourceId(): string;
 
-    /**
-     * Whether this provider can harvest on this instance right now (e.g. the
-     * backing app is installed and reachable). A disabled provider is skipped
-     * by the harvest service.
-     *
-     * @return bool True when the provider is usable.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
-     */
-    public function isEnabled(): bool;
+	/**
+	 * Whether this provider can harvest on this instance right now (e.g. the
+	 * backing app is installed and reachable). A disabled provider is skipped
+	 * by the harvest service.
+	 *
+	 * @return bool True when the provider is usable.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 */
+	public function isEnabled(): bool;
 
-    /**
-     * Harvest evidence items for a data-subject-request case.
-     *
-     * The provider is handed the case's serialised payload (subject identifier,
-     * request type, handler, existing evidence, …) so it can decide what to
-     * collect. Each returned item MUST carry a stable `contentHash` so the
-     * harvest service can deduplicate idempotently across re-runs, and a
-     * per-item `status` so a slow/failed source is visible on the case.
-     *
-     * @param string               $caseUuid The case object uuid.
-     * @param array<string, mixed> $case     The case's serialised payload.
-     *
-     * @return EvidenceItem[] The harvested items (possibly empty).
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
-     */
-    public function harvest(string $caseUuid, array $case): array;
+	/**
+	 * Harvest evidence items for a data-subject-request case.
+	 *
+	 * The provider is handed the case's serialised payload (subject identifier,
+	 * request type, handler, existing evidence, …) so it can decide what to
+	 * collect. Each returned item MUST carry a stable `contentHash` so the
+	 * harvest service can deduplicate idempotently across re-runs, and a
+	 * per-item `status` so a slow/failed source is visible on the case.
+	 *
+	 * @param string $caseUuid The case object uuid.
+	 * @param array<string, mixed> $case The case's serialised payload.
+	 *
+	 * @return EvidenceItem[] The harvested items (possibly empty).
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 */
+	public function harvest(string $caseUuid, array $case): array;
 }//end interface

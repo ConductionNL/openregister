@@ -52,139 +52,133 @@ use ReflectionMethod;
 /**
  * Proves emitChunkSideEffects() is gated by SystemOperationContext.
  */
-class SaveObjectsSystemOperationTest extends TestCase
-{
+class SaveObjectsSystemOperationTest extends TestCase {
 
-    /**
-     * Service under test.
-     *
-     * @var SaveObjects
-     */
-    private SaveObjects $service;
+	/**
+	 * Service under test.
+	 *
+	 * @var SaveObjects
+	 */
+	private SaveObjects $service;
 
-    /**
-     * Dispatcher whose calls are counted.
-     *
-     * @var IEventDispatcher&MockObject
-     */
-    private IEventDispatcher&MockObject $dispatcher;
+	/**
+	 * Dispatcher whose calls are counted.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
+	private IEventDispatcher&MockObject $dispatcher;
 
-    /**
-     * Build SaveObjects with only the collaborators this path touches.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build SaveObjects with only the collaborators this path touches.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->dispatcher = $this->createMock(IEventDispatcher::class);
+		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 
-        $this->service = new SaveObjects(
-            $this->createMock(MagicMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SaveObject::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(OrganisationService::class),
-            $this->createMock(LoggerInterface::class),
-            null,
-            null,
-            null,
-            $this->dispatcher,
-            // No AuditTrailMapper: this test is about EVENTS, and a null mapper
-            // skips the audit branch entirely rather than needing it stubbed.
-            null
-        );
+		$this->service = new SaveObjects(
+			$this->createMock(MagicMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SaveObject::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(LoggerInterface::class),
+			null,
+			null,
+			null,
+			$this->dispatcher,
+			// No AuditTrailMapper: this test is about EVENTS, and a null mapper
+			// skips the audit branch entirely rather than needing it stubbed.
+			null
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Invoke the private side-effect emitter with one created entity.
-     *
-     * @return void
-     */
-    private function emitOneCreate(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('11111111-2222-3333-4444-555555555555');
+	/**
+	 * Invoke the private side-effect emitter with one created entity.
+	 *
+	 * @return void
+	 */
+	private function emitOneCreate(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-2222-3333-4444-555555555555');
 
-        $method = new ReflectionMethod(SaveObjects::class, 'emitChunkSideEffects');
-        $method->setAccessible(true);
-        $method->invoke(
-            $this->service,
-            ['created' => [$entity], 'updated' => []],
-            true
-        );
+		$method = new ReflectionMethod(SaveObjects::class, 'emitChunkSideEffects');
+		$method->setAccessible(true);
+		$method->invoke(
+			$this->service,
+			['created' => [$entity], 'updated' => []],
+			true
+		);
 
-    }//end emitOneCreate()
+	}//end emitOneCreate()
 
-    /**
-     * NEGATIVE CONTROL: outside a system operation the event is dispatched.
-     *
-     * Without this, the assertion below passes for free — an emitter that never
-     * dispatched anything, for any reason, would look exactly like a working
-     * gate.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function testBulkPathDispatchesOutsideASystemOperation(): void
-    {
-        $this->dispatcher->expects($this->once())->method('dispatchTyped');
+	/**
+	 * NEGATIVE CONTROL: outside a system operation the event is dispatched.
+	 *
+	 * Without this, the assertion below passes for free — an emitter that never
+	 * dispatched anything, for any reason, would look exactly like a working
+	 * gate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testBulkPathDispatchesOutsideASystemOperation(): void {
+		$this->dispatcher->expects($this->once())->method('dispatchTyped');
 
-        $this->emitOneCreate();
+		$this->emitOneCreate();
 
-        $this->assertFalse(
-            SystemOperationContext::isActive(),
-            'The control must run with no system operation active'
-        );
+		$this->assertFalse(
+			SystemOperationContext::isActive(),
+			'The control must run with no system operation active'
+		);
 
-    }//end testBulkPathDispatchesOutsideASystemOperation()
+	}//end testBulkPathDispatchesOutsideASystemOperation()
 
-    /**
-     * Inside a system operation the bulk path dispatches nothing.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function testBulkPathWithholdsEventsDuringASystemOperation(): void
-    {
-        $this->dispatcher->expects($this->never())->method('dispatchTyped');
+	/**
+	 * Inside a system operation the bulk path dispatches nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testBulkPathWithholdsEventsDuringASystemOperation(): void {
+		$this->dispatcher->expects($this->never())->method('dispatchTyped');
 
-        SystemOperationContext::run(
-            function (): void {
-                $this->emitOneCreate();
-            }
-        );
+		SystemOperationContext::run(
+			function (): void {
+				$this->emitOneCreate();
+			}
+		);
 
-    }//end testBulkPathWithholdsEventsDuringASystemOperation()
+	}//end testBulkPathWithholdsEventsDuringASystemOperation()
 
-    /**
-     * The gate is scoped to the operation, not sticky for the process.
-     *
-     * A suppression that outlived its context would silence every later save in
-     * the request — the same outage as the fan-out, arrived at from the other
-     * side and much harder to notice.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function testEventsResumeAfterTheSystemOperationEnds(): void
-    {
-        $this->dispatcher->expects($this->once())->method('dispatchTyped');
+	/**
+	 * The gate is scoped to the operation, not sticky for the process.
+	 *
+	 * A suppression that outlived its context would silence every later save in
+	 * the request — the same outage as the fan-out, arrived at from the other
+	 * side and much harder to notice.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testEventsResumeAfterTheSystemOperationEnds(): void {
+		$this->dispatcher->expects($this->once())->method('dispatchTyped');
 
-        SystemOperationContext::run(
-            function (): void {
-                $this->emitOneCreate();
-            }
-        );
+		SystemOperationContext::run(
+			function (): void {
+				$this->emitOneCreate();
+			}
+		);
 
-        // Outside again: this one MUST reach the dispatcher.
-        $this->emitOneCreate();
+		// Outside again: this one MUST reach the dispatcher.
+		$this->emitOneCreate();
 
-    }//end testEventsResumeAfterTheSystemOperationEnds()
+	}//end testEventsResumeAfterTheSystemOperationEnds()
 }//end class

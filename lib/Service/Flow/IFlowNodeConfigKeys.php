@@ -72,36 +72,35 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Optional companion to {@see IFlowNode}: the node's full config vocabulary.
  */
-interface IFlowNodeConfigKeys
-{
-    /**
-     * The prefix marking a config key as an authoring annotation.
-     *
-     * `$why`, `$comment` and anything else so prefixed is documentation the
-     * engine never reads and no author mistakes for behaviour. Exempt from the
-     * unknown-key check by contract.
-     */
-    public const ANNOTATION_PREFIX = '$';
+interface IFlowNodeConfigKeys {
+	/**
+	 * The prefix marking a config key as an authoring annotation.
+	 *
+	 * `$why`, `$comment` and anything else so prefixed is documentation the
+	 * engine never reads and no author mistakes for behaviour. Exempt from the
+	 * unknown-key check by contract.
+	 */
+	public const ANNOTATION_PREFIX = '$';
 
-    /**
-     * Every config key this node reads, required and optional alike.
-     *
-     * The list is the node's whole vocabulary. A key on a step that is not in
-     * it, and is not an annotation ({@see self::ANNOTATION_PREFIX}), is one the
-     * node will silently ignore — which is a step that returns its input
-     * untouched and reports success.
-     *
-     * Only TOP-LEVEL keys. Nested shape (`rules[].condition`, `set.<field>`) is
-     * the node's own business and is checked in `validateConfig()`, where the
-     * node can say something specific about it.
-     *
-     * An empty list is meaningful and legal: it means the node reads NO config,
-     * so any key at all on that step is wrong. `openregister.switch` is exactly
-     * that — its conditions live on its outgoing edges, never in its config.
-     *
-     * @return array<int, string> The accepted top-level config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array;
+	/**
+	 * Every config key this node reads, required and optional alike.
+	 *
+	 * The list is the node's whole vocabulary. A key on a step that is not in
+	 * it, and is not an annotation ({@see self::ANNOTATION_PREFIX}), is one the
+	 * node will silently ignore — which is a step that returns its input
+	 * untouched and reports success.
+	 *
+	 * Only TOP-LEVEL keys. Nested shape (`rules[].condition`, `set.<field>`) is
+	 * the node's own business and is checked in `validateConfig()`, where the
+	 * node can say something specific about it.
+	 *
+	 * An empty list is meaningful and legal: it means the node reads NO config,
+	 * so any key at all on that step is wrong. `openregister.switch` is exactly
+	 * that — its conditions live on its outgoing edges, never in its config.
+	 *
+	 * @return array<int, string> The accepted top-level config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array;
 }//end interface

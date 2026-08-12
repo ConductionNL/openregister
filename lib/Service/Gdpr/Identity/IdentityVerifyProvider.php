@@ -38,34 +38,33 @@ namespace OCA\OpenRegister\Service\Gdpr\Identity;
 /**
  * A registerable identity-verification provider for a DSAR case.
  */
-interface IdentityVerifyProvider
-{
-    /**
-     * Stable provider id addressed by a `dsarPolicyPack.identityVerifyProvider`
-     * selector. MUST be unique across the registry; collisions are rejected
-     * first-wins at registration time.
-     *
-     * @return string The provider id (e.g. `or.default.identity-verify.null`).
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
-     */
-    public function getProviderId(): string;
+interface IdentityVerifyProvider {
+	/**
+	 * Stable provider id addressed by a `dsarPolicyPack.identityVerifyProvider`
+	 * selector. MUST be unique across the registry; collisions are rejected
+	 * first-wins at registration time.
+	 *
+	 * @return string The provider id (e.g. `or.default.identity-verify.null`).
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 */
+	public function getProviderId(): string;
 
-    /**
-     * Verify the identity of the data-subject on a DSAR case.
-     *
-     * The provider is handed the case's serialised payload (subject identifier,
-     * subject type, jurisdiction, …) so it can decide how to verify. It MUST
-     * return exactly one of the three states of {@see IdentityVerifyResult}
-     * (`verified` / `failed` / `needs-more`). It MUST NOT return `verified`
-     * unless the identity was positively established (fail-closed).
-     *
-     * @param string               $caseUuid The case object uuid.
-     * @param array<string, mixed> $case     The case's serialised payload.
-     *
-     * @return IdentityVerifyResult The three-state verification outcome.
-     *
-     * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
-     */
-    public function verify(string $caseUuid, array $case): IdentityVerifyResult;
+	/**
+	 * Verify the identity of the data-subject on a DSAR case.
+	 *
+	 * The provider is handed the case's serialised payload (subject identifier,
+	 * subject type, jurisdiction, …) so it can decide how to verify. It MUST
+	 * return exactly one of the three states of {@see IdentityVerifyResult}
+	 * (`verified` / `failed` / `needs-more`). It MUST NOT return `verified`
+	 * unless the identity was positively established (fail-closed).
+	 *
+	 * @param string $caseUuid The case object uuid.
+	 * @param array<string, mixed> $case The case's serialised payload.
+	 *
+	 * @return IdentityVerifyResult The three-state verification outcome.
+	 *
+	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 */
+	public function verify(string $caseUuid, array $case): IdentityVerifyResult;
 }//end interface

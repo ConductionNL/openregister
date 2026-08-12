@@ -53,257 +53,241 @@ use Psr\Container\ContainerInterface;
 /**
  * Unit tests for the built-in providers' contract metadata.
  */
-class BuiltinProvidersMetadataTest extends TestCase
-{
+class BuiltinProvidersMetadataTest extends TestCase {
 
-    /**
-     * Build a mocked IL10N that passes strings through unchanged.
-     */
-    private function buildL10n(): IL10N
-    {
-        $mock = $this->createMock(IL10N::class);
-        $mock->method('t')->willReturnArgument(0);
-        return $mock;
-    }//end buildL10n()
+	/**
+	 * Build a mocked IL10N that passes strings through unchanged.
+	 */
+	private function buildL10n(): IL10N {
+		$mock = $this->createMock(IL10N::class);
+		$mock->method('t')->willReturnArgument(0);
+		return $mock;
+	}//end buildL10n()
 
-    public function testFilesProviderMetadata(): void
-    {
-        $provider = new FilesProvider(
-            fileService: $this->createMock(FileService::class),
-            container: $this->createMock(ContainerInterface::class),
-            l10n: $this->buildL10n(),
-        );
+	public function testFilesProviderMetadata(): void {
+		$provider = new FilesProvider(
+			fileService: $this->createMock(FileService::class),
+			container: $this->createMock(ContainerInterface::class),
+			l10n: $this->buildL10n(),
+		);
 
-        $this->assertSame('files', $provider->getId());
-        $this->assertSame('Files', $provider->getLabel());
-        $this->assertSame('magic-column', $provider->getStorageStrategy());
-        $this->assertNull($provider->getRequiredApp());
-        $this->assertSame('core', $provider->getGroup());
-        $this->assertTrue($provider->isEnabled());
-        $this->assertNull($provider->getOpenConnectorSource());
-    }//end testFilesProviderMetadata()
+		$this->assertSame('files', $provider->getId());
+		$this->assertSame('Files', $provider->getLabel());
+		$this->assertSame('magic-column', $provider->getStorageStrategy());
+		$this->assertNull($provider->getRequiredApp());
+		$this->assertSame('core', $provider->getGroup());
+		$this->assertTrue($provider->isEnabled());
+		$this->assertNull($provider->getOpenConnectorSource());
+	}//end testFilesProviderMetadata()
 
-    public function testFilesProviderCreateThrowsNotImplemented(): void
-    {
-        $provider = new FilesProvider(
-            $this->createMock(FileService::class),
-            $this->createMock(ContainerInterface::class),
-            $this->buildL10n(),
-        );
-        $this->expectException(NotImplementedException::class);
-        $provider->create('r', 's', 'o', []);
-    }//end testFilesProviderCreateThrowsNotImplemented()
+	public function testFilesProviderCreateThrowsNotImplemented(): void {
+		$provider = new FilesProvider(
+			$this->createMock(FileService::class),
+			$this->createMock(ContainerInterface::class),
+			$this->buildL10n(),
+		);
+		$this->expectException(NotImplementedException::class);
+		$provider->create('r', 's', 'o', []);
+	}//end testFilesProviderCreateThrowsNotImplemented()
 
-    public function testNotesProviderMetadata(): void
-    {
-        $provider = new NotesProvider(
-            $this->createMock(NoteService::class),
-            $this->buildL10n(),
-        );
+	public function testNotesProviderMetadata(): void {
+		$provider = new NotesProvider(
+			$this->createMock(NoteService::class),
+			$this->buildL10n(),
+		);
 
-        $this->assertSame('notes', $provider->getId());
-        $this->assertSame('Notes', $provider->getLabel());
-        $this->assertSame('link-table', $provider->getStorageStrategy());
-        $this->assertNull($provider->getRequiredApp());
-    }//end testNotesProviderMetadata()
+		$this->assertSame('notes', $provider->getId());
+		$this->assertSame('Notes', $provider->getLabel());
+		$this->assertSame('link-table', $provider->getStorageStrategy());
+		$this->assertNull($provider->getRequiredApp());
+	}//end testNotesProviderMetadata()
 
-    public function testNotesProviderListDelegatesToService(): void
-    {
-        $noteService = $this->createMock(NoteService::class);
-        $noteService->expects($this->once())
-            ->method('getNotesForObject')
-            ->with('object-uuid', 50, 0)
-            ->willReturn([['id' => 1, 'message' => 'hello']]);
+	public function testNotesProviderListDelegatesToService(): void {
+		$noteService = $this->createMock(NoteService::class);
+		$noteService->expects($this->once())
+			->method('getNotesForObject')
+			->with('object-uuid', 50, 0)
+			->willReturn([['id' => 1, 'message' => 'hello']]);
 
-        $provider = new NotesProvider($noteService, $this->buildL10n());
-        $result   = $provider->list('reg', 'sch', 'object-uuid');
+		$provider = new NotesProvider($noteService, $this->buildL10n());
+		$result = $provider->list('reg', 'sch', 'object-uuid');
 
-        $this->assertSame([['id' => 1, 'message' => 'hello']], $result);
-    }//end testNotesProviderListDelegatesToService()
+		$this->assertSame([['id' => 1, 'message' => 'hello']], $result);
+	}//end testNotesProviderListDelegatesToService()
 
-    public function testTasksProviderMetadata(): void
-    {
-        $provider = $this->buildTasksProvider($this->createMock(TaskService::class));
+	public function testTasksProviderMetadata(): void {
+		$provider = $this->buildTasksProvider($this->createMock(TaskService::class));
 
-        $this->assertSame('tasks', $provider->getId());
-        $this->assertSame('Tasks', $provider->getLabel());
-        $this->assertSame('link-table', $provider->getStorageStrategy());
-        $this->assertNull($provider->getRequiredApp());
-    }//end testTasksProviderMetadata()
+		$this->assertSame('tasks', $provider->getId());
+		$this->assertSame('Tasks', $provider->getLabel());
+		$this->assertSame('link-table', $provider->getStorageStrategy());
+		$this->assertNull($provider->getRequiredApp());
+	}//end testTasksProviderMetadata()
 
-    public function testTasksProviderUpdateRejectsBadEntityId(): void
-    {
-        $provider = $this->buildTasksProvider($this->createMock(TaskService::class));
-        $this->expectException(NotImplementedException::class);
-        $provider->update('r', 's', 'o', 'not-a-composite', []);
-    }//end testTasksProviderUpdateRejectsBadEntityId()
+	public function testTasksProviderUpdateRejectsBadEntityId(): void {
+		$provider = $this->buildTasksProvider($this->createMock(TaskService::class));
+		$this->expectException(NotImplementedException::class);
+		$provider->update('r', 's', 'o', 'not-a-composite', []);
+	}//end testTasksProviderUpdateRejectsBadEntityId()
 
-    public function testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle(): void
-    {
-        $taskService = $this->createMock(TaskService::class);
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $objectService = $this->createMock(ObjectService::class);
+	public function testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle(): void {
+		$taskService = $this->createMock(TaskService::class);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$objectService = $this->createMock(ObjectService::class);
 
-        $register = new Register();
-        $register->setId(42);
-        $schema = new Schema();
-        $schema->setId(7);
-        $object = new ObjectEntity();
-        $object->setName('My Object');
+		$register = new Register();
+		$register->setId(42);
+		$schema = new Schema();
+		$schema->setId(7);
+		$object = new ObjectEntity();
+		$object->setName('My Object');
 
-        $registerMapper->expects($this->once())->method('find')->with('my-register')->willReturn($register);
-        $schemaMapper->expects($this->once())->method('find')->with('my-schema')->willReturn($schema);
-        $objectService->expects($this->once())
-            ->method('find')
-            ->with('obj-uuid-1', [], false, $register, $schema)
-            ->willReturn($object);
+		$registerMapper->expects($this->once())->method('find')->with('my-register')->willReturn($register);
+		$schemaMapper->expects($this->once())->method('find')->with('my-schema')->willReturn($schema);
+		$objectService->expects($this->once())
+			->method('find')
+			->with('obj-uuid-1', [], false, $register, $schema)
+			->willReturn($object);
 
-        $taskService->expects($this->once())
-            ->method('createTask')
-            ->with(
-                42,
-                7,
-                'obj-uuid-1',
-                'My Object',
-                [
-                    'summary'     => 'Do the thing',
-                    'description' => 'Details here',
-                    'priority'    => 5,
-                    'status'      => 'NEEDS-ACTION',
-                    'due'         => '2026-06-01T12:00:00Z',
-                ]
-            )
-            ->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
+		$taskService->expects($this->once())
+			->method('createTask')
+			->with(
+				42,
+				7,
+				'obj-uuid-1',
+				'My Object',
+				[
+					'summary' => 'Do the thing',
+					'description' => 'Details here',
+					'priority' => 5,
+					'status' => 'NEEDS-ACTION',
+					'due' => '2026-06-01T12:00:00Z',
+				]
+			)
+			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
-        $provider = new TasksProvider(
-            taskService: $taskService,
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper,
-            objectService: $objectService,
-            l10n: $this->buildL10n()
-        );
+		$provider = new TasksProvider(
+			taskService: $taskService,
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper,
+			objectService: $objectService,
+			l10n: $this->buildL10n()
+		);
 
-        $result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
-            'summary'     => 'Do the thing',
-            'description' => 'Details here',
-            'priority'    => 5,
-            'due'         => '2026-06-01T12:00:00Z',
-            // calendarId is intentionally ignored — TaskService auto-finds.
-            'calendarId'  => 'this-should-be-ignored',
-        ]);
+		$result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
+			'summary' => 'Do the thing',
+			'description' => 'Details here',
+			'priority' => 5,
+			'due' => '2026-06-01T12:00:00Z',
+			// calendarId is intentionally ignored — TaskService auto-finds.
+			'calendarId' => 'this-should-be-ignored',
+		]);
 
-        $this->assertSame(['id' => 'cal/task.ics', 'summary' => 'Do the thing'], $result);
-    }//end testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle()
+		$this->assertSame(['id' => 'cal/task.ics', 'summary' => 'Do the thing'], $result);
+	}//end testTasksProviderCreateResolvesRegisterSchemaAndObjectTitle()
 
-    public function testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing(): void
-    {
-        $taskService = $this->createMock(TaskService::class);
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $schemaMapper = $this->createMock(SchemaMapper::class);
-        $objectService = $this->createMock(ObjectService::class);
+	public function testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing(): void {
+		$taskService = $this->createMock(TaskService::class);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$objectService = $this->createMock(ObjectService::class);
 
-        $register = new Register();
-        $register->setId(1);
-        $schema = new Schema();
-        $schema->setId(2);
+		$register = new Register();
+		$register->setId(1);
+		$schema = new Schema();
+		$schema->setId(2);
 
-        $registerMapper->method('find')->willReturn($register);
-        $schemaMapper->method('find')->willReturn($schema);
-        $objectService->method('find')->willReturn(null);
+		$registerMapper->method('find')->willReturn($register);
+		$schemaMapper->method('find')->willReturn($schema);
+		$objectService->method('find')->willReturn(null);
 
-        $taskService->expects($this->once())
-            ->method('createTask')
-            ->with(
-                1,
-                2,
-                'missing-uuid',
-                'missing-uuid',
-                $this->callback(static fn (array $d): bool => $d['summary'] === 'x')
-            )
-            ->willReturn(['id' => 'cal/task.ics']);
+		$taskService->expects($this->once())
+			->method('createTask')
+			->with(
+				1,
+				2,
+				'missing-uuid',
+				'missing-uuid',
+				$this->callback(static fn (array $d): bool => $d['summary'] === 'x')
+			)
+			->willReturn(['id' => 'cal/task.ics']);
 
-        $provider = new TasksProvider(
-            taskService: $taskService,
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper,
-            objectService: $objectService,
-            l10n: $this->buildL10n()
-        );
+		$provider = new TasksProvider(
+			taskService: $taskService,
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper,
+			objectService: $objectService,
+			l10n: $this->buildL10n()
+		);
 
-        $result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
-        $this->assertSame(['id' => 'cal/task.ics'], $result);
-    }//end testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing()
+		$result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
+		$this->assertSame(['id' => 'cal/task.ics'], $result);
+	}//end testTasksProviderCreateFallsBackToObjectIdWhenObjectMissing()
 
-    private function buildTasksProvider(TaskService $taskService): TasksProvider
-    {
-        return new TasksProvider(
-            taskService: $taskService,
-            registerMapper: $this->createMock(RegisterMapper::class),
-            schemaMapper: $this->createMock(SchemaMapper::class),
-            objectService: $this->createMock(ObjectService::class),
-            l10n: $this->buildL10n()
-        );
-    }//end buildTasksProvider()
+	private function buildTasksProvider(TaskService $taskService): TasksProvider {
+		return new TasksProvider(
+			taskService: $taskService,
+			registerMapper: $this->createMock(RegisterMapper::class),
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			objectService: $this->createMock(ObjectService::class),
+			l10n: $this->buildL10n()
+		);
+	}//end buildTasksProvider()
 
-    public function testTagsProviderMetadata(): void
-    {
-        $provider = new TagsProvider(
-            $this->createMock(ISystemTagManager::class),
-            $this->createMock(ISystemTagObjectMapper::class),
-            $this->buildL10n(),
-        );
+	public function testTagsProviderMetadata(): void {
+		$provider = new TagsProvider(
+			$this->createMock(ISystemTagManager::class),
+			$this->createMock(ISystemTagObjectMapper::class),
+			$this->buildL10n(),
+		);
 
-        $this->assertSame('tags', $provider->getId());
-        $this->assertSame('Tags', $provider->getLabel());
-        $this->assertSame('link-table', $provider->getStorageStrategy());
-        $this->assertNull($provider->getRequiredApp());
-        $this->assertSame('core', $provider->getGroup());
-    }//end testTagsProviderMetadata()
+		$this->assertSame('tags', $provider->getId());
+		$this->assertSame('Tags', $provider->getLabel());
+		$this->assertSame('link-table', $provider->getStorageStrategy());
+		$this->assertNull($provider->getRequiredApp());
+		$this->assertSame('core', $provider->getGroup());
+	}//end testTagsProviderMetadata()
 
-    public function testTagsProviderCreateThrowsNotImplemented(): void
-    {
-        $provider = new TagsProvider(
-            $this->createMock(ISystemTagManager::class),
-            $this->createMock(ISystemTagObjectMapper::class),
-            $this->buildL10n(),
-        );
-        $this->expectException(NotImplementedException::class);
-        $provider->create('r', 's', 'o', []);
-    }//end testTagsProviderCreateThrowsNotImplemented()
+	public function testTagsProviderCreateThrowsNotImplemented(): void {
+		$provider = new TagsProvider(
+			$this->createMock(ISystemTagManager::class),
+			$this->createMock(ISystemTagObjectMapper::class),
+			$this->buildL10n(),
+		);
+		$this->expectException(NotImplementedException::class);
+		$provider->create('r', 's', 'o', []);
+	}//end testTagsProviderCreateThrowsNotImplemented()
 
-    public function testAuditTrailProviderMetadata(): void
-    {
-        $provider = new AuditTrailProvider(
-            $this->createMock(AuditTrailMapper::class),
-            $this->buildL10n(),
-        );
+	public function testAuditTrailProviderMetadata(): void {
+		$provider = new AuditTrailProvider(
+			$this->createMock(AuditTrailMapper::class),
+			$this->buildL10n(),
+		);
 
-        $this->assertSame('audit-trail', $provider->getId());
-        $this->assertSame('Audit trail', $provider->getLabel());
-        $this->assertSame('query-time', $provider->getStorageStrategy());
-        $this->assertNull($provider->getRequiredApp());
-        $this->assertSame('core', $provider->getGroup());
-    }//end testAuditTrailProviderMetadata()
+		$this->assertSame('audit-trail', $provider->getId());
+		$this->assertSame('Audit trail', $provider->getLabel());
+		$this->assertSame('query-time', $provider->getStorageStrategy());
+		$this->assertNull($provider->getRequiredApp());
+		$this->assertSame('core', $provider->getGroup());
+	}//end testAuditTrailProviderMetadata()
 
-    public function testAuditTrailProviderListSurfacesEmptyOnError(): void
-    {
-        $mapper = $this->createMock(AuditTrailMapper::class);
-        // No method exists / no findAllByObject on mock — Should return [].
-        $provider = new AuditTrailProvider($mapper, $this->buildL10n());
+	public function testAuditTrailProviderListSurfacesEmptyOnError(): void {
+		$mapper = $this->createMock(AuditTrailMapper::class);
+		// No method exists / no findAllByObject on mock — Should return [].
+		$provider = new AuditTrailProvider($mapper, $this->buildL10n());
 
-        $this->assertSame([], $provider->list('r', 's', 'o'));
-    }//end testAuditTrailProviderListSurfacesEmptyOnError()
+		$this->assertSame([], $provider->list('r', 's', 'o'));
+	}//end testAuditTrailProviderListSurfacesEmptyOnError()
 
-    public function testAuditTrailProviderMutationsThrowNotImplemented(): void
-    {
-        $provider = new AuditTrailProvider(
-            $this->createMock(AuditTrailMapper::class),
-            $this->buildL10n(),
-        );
+	public function testAuditTrailProviderMutationsThrowNotImplemented(): void {
+		$provider = new AuditTrailProvider(
+			$this->createMock(AuditTrailMapper::class),
+			$this->buildL10n(),
+		);
 
-        $this->expectException(NotImplementedException::class);
-        $provider->create('r', 's', 'o', []);
-    }//end testAuditTrailProviderMutationsThrowNotImplemented()
+		$this->expectException(NotImplementedException::class);
+		$provider->create('r', 's', 'o', []);
+	}//end testAuditTrailProviderMutationsThrowNotImplemented()
 
 }//end class

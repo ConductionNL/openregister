@@ -34,43 +34,41 @@ use OCP\Migration\SimpleMigrationStep;
  * objects in the consuming app's register (e.g. DocuDesk's `base` schema).
  * OpenRegister stores the array verbatim; no UUID validation is performed.
  */
-class Version1Date20260603000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260603000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_entity_relations') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_entity_relations') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_entity_relations');
+		$table = $schema->getTable('openregister_entity_relations');
 
-        if ($table->hasColumn('bases') === true) {
-            return null;
-        }
+		if ($table->hasColumn('bases') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            name: 'bases',
-            typeName: Types::JSON,
-            options: [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			name: 'bases',
+			typeName: Types::JSON,
+			options: [
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        $output->info('Added bases column to openregister_entity_relations');
+		$output->info('Added bases column to openregister_entity_relations');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

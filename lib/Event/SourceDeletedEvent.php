@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when a source is deleted.
  */
-class SourceDeletedEvent extends Event
-{
+class SourceDeletedEvent extends Event {
 
-    /**
-     * The deleted source.
-     *
-     * @var Source The source that was deleted.
-     */
-    private Source $source;
+	/**
+	 * The deleted source.
+	 *
+	 * @var Source The source that was deleted.
+	 */
+	private Source $source;
 
-    /**
-     * Constructor for SourceDeletedEvent.
-     *
-     * @param Source $source The source that was deleted.
-     *
-     * @return void
-     */
-    public function __construct(Source $source)
-    {
-        parent::__construct();
-        $this->source = $source;
-    }//end __construct()
+	/**
+	 * Constructor for SourceDeletedEvent.
+	 *
+	 * @param Source $source The source that was deleted.
+	 *
+	 * @return void
+	 */
+	public function __construct(Source $source) {
+		parent::__construct();
+		$this->source = $source;
+	}//end __construct()
 
-    /**
-     * Get the deleted source.
-     *
-     * @return Source The source that was deleted.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getSource(): Source
-    {
-        return $this->source;
-    }//end getSource()
+	/**
+	 * Get the deleted source.
+	 *
+	 * @return Source The source that was deleted.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getSource(): Source {
+		return $this->source;
+	}//end getSource()
 }//end class

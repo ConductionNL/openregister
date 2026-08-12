@@ -32,68 +32,63 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for the importSource provenance persistence path.
  */
-class SchemaImportSourceConfigTest extends TestCase
-{
+class SchemaImportSourceConfigTest extends TestCase {
 
+	/**
+	 * An `importSource` block supplied under `configuration` survives the
+	 * hydrate round-trip unchanged (passThrough allowlist).
+	 *
+	 * @return void
+	 */
+	public function testImportSourceSurvivesHydrate(): void {
+		$importSource = [
+			'dialect' => 'schema.org',
+			'reference' => 'https://schema.org/Person',
+			'snapshotVersion' => '2026-01',
+			'baseline' => ['email' => ['type' => 'string']],
+		];
 
-    /**
-     * An `importSource` block supplied under `configuration` survives the
-     * hydrate round-trip unchanged (passThrough allowlist).
-     *
-     * @return void
-     */
-    public function testImportSourceSurvivesHydrate(): void
-    {
-        $importSource = [
-            'dialect'         => 'schema.org',
-            'reference'       => 'https://schema.org/Person',
-            'snapshotVersion' => '2026-01',
-            'baseline'        => ['email' => ['type' => 'string']],
-        ];
+		$schema = new Schema();
+		$schema->hydrate(
+			object: [
+				'title' => 'Person',
+				'properties' => ['email' => ['type' => 'string']],
+				'configuration' => [
+					'jsonld' => ['@vocab' => 'https://schema.org/'],
+					'importSource' => $importSource,
+				],
+			]
+		);
 
-        $schema = new Schema();
-        $schema->hydrate(
-            object: [
-                'title'         => 'Person',
-                'properties'    => ['email' => ['type' => 'string']],
-                'configuration' => [
-                    'jsonld'       => ['@vocab' => 'https://schema.org/'],
-                    'importSource' => $importSource,
-                ],
-            ]
-        );
+		$config = $schema->getConfiguration();
 
-        $config = $schema->getConfiguration();
+		$this->assertNotNull($config);
+		$this->assertArrayHasKey('importSource', $config);
+		$this->assertSame($importSource, $config['importSource']);
+		// The sibling jsonld block must also survive alongside it.
+		$this->assertArrayHasKey('jsonld', $config);
+	}//end testImportSourceSurvivesHydrate()
 
-        $this->assertNotNull($config);
-        $this->assertArrayHasKey('importSource', $config);
-        $this->assertSame($importSource, $config['importSource']);
-        // The sibling jsonld block must also survive alongside it.
-        $this->assertArrayHasKey('jsonld', $config);
-    }//end testImportSourceSurvivesHydrate()
+	/**
+	 * The provenance block round-trips through jsonSerialize() so the reimport
+	 * endpoint can read `configuration.importSource` back off a persisted schema.
+	 *
+	 * @return void
+	 */
+	public function testImportSourceSurvivesSerialization(): void {
+		$schema = new Schema();
+		$schema->hydrate(
+			object: [
+				'configuration' => [
+					'importSource' => ['dialect' => 'ggm', 'reference' => 'ZAAK'],
+				],
+			]
+		);
 
+		$serialized = $schema->jsonSerialize();
 
-    /**
-     * The provenance block round-trips through jsonSerialize() so the reimport
-     * endpoint can read `configuration.importSource` back off a persisted schema.
-     *
-     * @return void
-     */
-    public function testImportSourceSurvivesSerialization(): void
-    {
-        $schema = new Schema();
-        $schema->hydrate(
-            object: [
-                'configuration' => [
-                    'importSource' => ['dialect' => 'ggm', 'reference' => 'ZAAK'],
-                ],
-            ]
-        );
-
-        $serialized = $schema->jsonSerialize();
-
-        $this->assertIsArray($serialized['configuration']);
-        $this->assertArrayHasKey('importSource', $serialized['configuration']);
-        $this->assertSame('ggm', $serialized['configuration']['importSource']['dialect']);
-    }//end testImportSourceSurvivesSerialization()
+		$this->assertIsArray($serialized['configuration']);
+		$this->assertArrayHasKey('importSource', $serialized['configuration']);
+		$this->assertSame('ggm', $serialized['configuration']['importSource']['dialect']);
+	}//end testImportSourceSurvivesSerialization()
 }//end class

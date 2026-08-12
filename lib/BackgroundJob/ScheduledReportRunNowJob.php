@@ -41,60 +41,58 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class ScheduledReportRunNowJob extends QueuedJob
-{
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory           $time    Time factory.
-     * @param ScheduledReportMapper  $mapper  Scheduled report mapper.
-     * @param ScheduledReportService $service Execution logic.
-     * @param LoggerInterface        $logger  Logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ScheduledReportMapper $mapper,
-        private readonly ScheduledReportService $service,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-    }//end __construct()
+class ScheduledReportRunNowJob extends QueuedJob {
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
+	 * @param ScheduledReportService $service Execution logic.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ScheduledReportMapper $mapper,
+		private readonly ScheduledReportService $service,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+	}//end __construct()
 
-    /**
-     * Run the identified scheduled report immediately.
-     *
-     * @param mixed $argument Job argument: `['scheduledReportId' => int]`.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    protected function run($argument): void
-    {
-        $rawReportId = 0;
-        if (is_array($argument) === true) {
-            $rawReportId = ($argument['scheduledReportId'] ?? 0);
-        }
+	/**
+	 * Run the identified scheduled report immediately.
+	 *
+	 * @param mixed $argument Job argument: `['scheduledReportId' => int]`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	protected function run($argument): void {
+		$rawReportId = 0;
+		if (is_array($argument) === true) {
+			$rawReportId = ($argument['scheduledReportId'] ?? 0);
+		}
 
-        $reportId = (int) $rawReportId;
-        if ($reportId <= 0) {
-            $this->logger->warning(
-                message: '[ScheduledReportRunNowJob] Missing/invalid scheduledReportId argument',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'argument' => $argument]
-            );
-            return;
-        }
+		$reportId = (int)$rawReportId;
+		if ($reportId <= 0) {
+			$this->logger->warning(
+				message: '[ScheduledReportRunNowJob] Missing/invalid scheduledReportId argument',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'argument' => $argument]
+			);
+			return;
+		}
 
-        try {
-            $report = $this->mapper->find(id: $reportId);
-        } catch (DoesNotExistException $e) {
-            $this->logger->warning(
-                message: '[ScheduledReportRunNowJob] Scheduled report no longer exists',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $reportId]
-            );
-            return;
-        }
+		try {
+			$report = $this->mapper->find(id: $reportId);
+		} catch (DoesNotExistException $e) {
+			$this->logger->warning(
+				message: '[ScheduledReportRunNowJob] Scheduled report no longer exists',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $reportId]
+			);
+			return;
+		}
 
-        $this->service->runOne(report: $report);
-    }//end run()
+		$this->service->runOne(report: $report);
+	}//end run()
 }//end class

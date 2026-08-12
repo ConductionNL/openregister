@@ -41,122 +41,106 @@ use OCP\WorkflowEngine\IManager;
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class SwitchNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return 'openregister.switch';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return 'openregister.switch';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Switch');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Switch');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Send the flow down one of several branches, chosen by the condition on each.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/caret.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Send the flow down one of several branches, chosen by the condition on each.');
+	/**
+	 * Branching grants no privilege.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * A switch reads NO config — its conditions live on its outgoing edges.
+	 *
+	 * The empty list is a real statement, not a stub: any key at all on a
+	 * switch step is one nothing will ever read. An author who writes
+	 * `config.rules` here has written a route and drawn a switch, and the flow
+	 * will pass every item down the first edge without complaint.
+	 *
+	 * @return array<int, string> The accepted config keys — none.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return [];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/caret.svg');
+	/**
+	 * Nothing to validate on the node — the conditions live on its edges.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 */
+	public function validateConfig(array $config): void {
 
-    }//end getIcon()
+	}//end validateConfig()
 
-    /**
-     * Branching grants no privilege.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-
-    }//end isAvailableForScope()
-
-    /**
-     * A switch reads NO config — its conditions live on its outgoing edges.
-     *
-     * The empty list is a real statement, not a stub: any key at all on a
-     * switch step is one nothing will ever read. An author who writes
-     * `config.rules` here has written a route and drawn a switch, and the flow
-     * will pass every item down the first edge without complaint.
-     *
-     * @return array<int, string> The accepted config keys — none.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return [];
-
-    }//end configKeys()
-
-    /**
-     * Nothing to validate on the node — the conditions live on its edges.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
-     */
-    public function validateConfig(array $config): void
-    {
-
-    }//end validateConfig()
-
-    /**
-     * Pass items through untouched; the engine routes them.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, unchanged.
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        return $items;
-
-    }//end execute()
+	/**
+	 * Pass items through untouched; the engine routes them.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, unchanged.
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		return $items;
+	}//end execute()
 }//end class

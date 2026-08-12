@@ -45,62 +45,56 @@ use Twig\TwigFunction;
 /**
  * Collects Twig functions contributed by other apps.
  */
-class RegisterMappingFunctionsEvent extends Event
-{
+class RegisterMappingFunctionsEvent extends Event {
 
-    /**
-     * The contributed functions.
-     *
-     * @var array<int, TwigFunction>
-     */
-    private array $functions = [];
+	/**
+	 * The contributed functions.
+	 *
+	 * @var array<int, TwigFunction>
+	 */
+	private array $functions = [];
 
-    /**
-     * The names those functions are allowed to be called by, for the sandbox.
-     *
-     * @var array<int, string>
-     */
-    private array $allowedNames = [];
+	/**
+	 * The names those functions are allowed to be called by, for the sandbox.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $allowedNames = [];
 
-    /**
-     * Contribute one Twig function, and allowlist it for the sandbox.
-     *
-     * @param TwigFunction $function The function to expose to mapping templates.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function registerFunction(TwigFunction $function): void
-    {
-        $this->functions[]    = $function;
-        $this->allowedNames[] = $function->getName();
+	/**
+	 * Contribute one Twig function, and allowlist it for the sandbox.
+	 *
+	 * @param TwigFunction $function The function to expose to mapping templates.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function registerFunction(TwigFunction $function): void {
+		$this->functions[] = $function;
+		$this->allowedNames[] = $function->getName();
 
-    }//end registerFunction()
+	}//end registerFunction()
 
-    /**
-     * Every contributed function.
-     *
-     * @return array<int, TwigFunction> The functions.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getFunctions(): array
-    {
-        return $this->functions;
+	/**
+	 * Every contributed function.
+	 *
+	 * @return array<int, TwigFunction> The functions.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getFunctions(): array {
+		return $this->functions;
+	}//end getFunctions()
 
-    }//end getFunctions()
-
-    /**
-     * The names to add to the sandbox allowlist.
-     *
-     * @return array<int, string> The allowed function names.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getAllowedNames(): array
-    {
-        return $this->allowedNames;
-
-    }//end getAllowedNames()
+	/**
+	 * The names to add to the sandbox allowlist.
+	 *
+	 * @return array<int, string> The allowed function names.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getAllowedNames(): array {
+		return $this->allowedNames;
+	}//end getAllowedNames()
 }//end class

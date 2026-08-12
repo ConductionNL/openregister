@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "91c50e2149d26560ab8cada903ee52de",
+    "content-hash": "b91761870b0b3b4e242eee6912c58ed5",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -7048,16 +7048,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.7.0",
+            "version": "v1.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "b9c6520a648468ab2055ba4ce498348b31ab1f57"
+                "reference": "487e8d235b650a211328d5dfd1dbf90531b26436"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/b9c6520a648468ab2055ba4ce498348b31ab1f57",
-                "reference": "b9c6520a648468ab2055ba4ce498348b31ab1f57",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/487e8d235b650a211328d5dfd1dbf90531b26436",
+                "reference": "487e8d235b650a211328d5dfd1dbf90531b26436",
                 "shasum": ""
             },
             "require": {
@@ -7096,9 +7096,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.7.0"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.7.1"
             },
-            "time": "2026-08-12T09:38:06+00:00"
+            "time": "2026-08-12T12:57:31+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -8611,29 +8611,30 @@
         },
         {
             "name": "nextcloud/ocp",
-            "version": "v31.0.9",
+            "version": "v34.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nextcloud-deps/ocp.git",
-                "reference": "abd32429d794ede1d92b7b0a88a1070371c907b5"
+                "reference": "81cbb2c594afe0fa978885bf7accd0440199520a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/abd32429d794ede1d92b7b0a88a1070371c907b5",
-                "reference": "abd32429d794ede1d92b7b0a88a1070371c907b5",
+                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/81cbb2c594afe0fa978885bf7accd0440199520a",
+                "reference": "81cbb2c594afe0fa978885bf7accd0440199520a",
                 "shasum": ""
             },
             "require": {
-                "php": "~8.1 || ~8.2 || ~8.3 || ~8.4",
+                "php": "~8.2 || ~8.3 || ~8.4 || ~8.5",
                 "psr/clock": "^1.0",
                 "psr/container": "^2.0.2",
                 "psr/event-dispatcher": "^1.0",
+                "psr/http-client": "^1.0.3",
                 "psr/log": "^3.0.2"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-stable31": "31.0.0-dev"
+                    "dev-stable34": "34.0.0-dev"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -8653,9 +8654,9 @@
             "description": "Composer package containing Nextcloud's public OCP API and the unstable NCU API",
             "support": {
                 "issues": "https://github.com/nextcloud-deps/ocp/issues",
-                "source": "https://github.com/nextcloud-deps/ocp/tree/v31.0.9"
+                "source": "https://github.com/nextcloud-deps/ocp/tree/v34.0.2"
             },
-            "time": "2025-07-31T00:57:37+00:00"
+            "time": "2026-07-16T01:28:13+00:00"
         },
         {
             "name": "nikic/php-parser",

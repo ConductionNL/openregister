@@ -54,55 +54,53 @@ use OCP\IRequest;
 /**
  * Public case-token resolve controller.
  */
-class CaseTokenController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string           $appName      App name (injected by NC).
-     * @param IRequest         $request      Current request.
-     * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
-     *
-     * @return void
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private CaseTokenService $tokenService,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class CaseTokenController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name (injected by NC).
+	 * @param IRequest $request Current request.
+	 * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private CaseTokenService $tokenService,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * GET /api/public/case-tokens/{token}
-     *
-     * Resolves a public case token to an RBAC-scoped, public-safe view of
-     * the referenced object. Fails closed (404) on any unresolved token.
-     *
-     * @param string $token The opaque public token.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @PublicPage
-     *
-     * @return JSONResponse The public-safe object view, or 404.
-     *
-     * @spec openspec/specs/integration-leaf-foundation/spec.md
-     */
-    #[PublicPage]
-    #[NoCSRFRequired]
-    public function resolve(string $token): JSONResponse
-    {
-        $resolved = $this->tokenService->resolve($token);
-        if ($resolved === null) {
-            // Uniform 404 — never distinguish "unknown" from
-            // "revoked / expired / forbidden". No enumeration oracle.
-            return new JSONResponse(
-                ['message' => 'Not Found'],
-                Http::STATUS_NOT_FOUND
-            );
-        }
+	/**
+	 * GET /api/public/case-tokens/{token}
+	 *
+	 * Resolves a public case token to an RBAC-scoped, public-safe view of
+	 * the referenced object. Fails closed (404) on any unresolved token.
+	 *
+	 * @param string $token The opaque public token.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The public-safe object view, or 404.
+	 *
+	 * @spec openspec/specs/integration-leaf-foundation/spec.md
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	public function resolve(string $token): JSONResponse {
+		$resolved = $this->tokenService->resolve($token);
+		if ($resolved === null) {
+			// Uniform 404 — never distinguish "unknown" from
+			// "revoked / expired / forbidden". No enumeration oracle.
+			return new JSONResponse(
+				['message' => 'Not Found'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
 
-        return new JSONResponse($resolved);
-    }//end resolve()
+		return new JSONResponse($resolved);
+	}//end resolve()
 }//end class

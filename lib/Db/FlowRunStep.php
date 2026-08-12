@@ -67,181 +67,178 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
  */
-class FlowRunStep extends Entity implements JsonSerializable
-{
-    /**
-     * The step completed without error.
-     *
-     * @var string
-     */
-    public const STATUS_OK = 'ok';
+class FlowRunStep extends Entity implements JsonSerializable {
+	/**
+	 * The step completed without error.
+	 *
+	 * @var string
+	 */
+	public const STATUS_OK = 'ok';
 
-    /**
-     * The step threw, or its node could not be resolved.
-     *
-     * @var string
-     */
-    public const STATUS_FAILED = 'failed';
+	/**
+	 * The step threw, or its node could not be resolved.
+	 *
+	 * @var string
+	 */
+	public const STATUS_FAILED = 'failed';
 
-    /**
-     * The step suspended the run (a wait node).
-     *
-     * @var string
-     */
-    public const STATUS_SUSPENDED = 'suspended';
+	/**
+	 * The step suspended the run (a wait node).
+	 *
+	 * @var string
+	 */
+	public const STATUS_SUSPENDED = 'suspended';
 
-    /**
-     * The step stopped the walk (a stop node, or a limit ceiling).
-     *
-     * @var string
-     */
-    public const STATUS_STOPPED = 'stopped';
+	/**
+	 * The step stopped the walk (a stop node, or a limit ceiling).
+	 *
+	 * @var string
+	 */
+	public const STATUS_STOPPED = 'stopped';
 
-    /**
-     * The run this step belongs to, by uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $runUuid = null;
+	/**
+	 * The run this step belongs to, by uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $runUuid = null;
 
-    /**
-     * The flow this step's run executes, denormalised so per-flow history and
-     * per-flow retention do not have to join through the run table.
-     *
-     * @var string|null
-     */
-    protected ?string $flowId = null;
+	/**
+	 * The flow this step's run executes, denormalised so per-flow history and
+	 * per-flow retention do not have to join through the run table.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $flowId = null;
 
-    /**
-     * The node's id within the graph.
-     *
-     * @var string|null
-     */
-    protected ?string $nodeId = null;
+	/**
+	 * The node's id within the graph.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $nodeId = null;
 
-    /**
-     * The node's catalogue id, exactly as the registry publishes it
-     * (`{app}.{node}`).
-     *
-     * @var string|null
-     */
-    protected ?string $nodeType = null;
+	/**
+	 * The node's catalogue id, exactly as the registry publishes it
+	 * (`{app}.{node}`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $nodeType = null;
 
-    /**
-     * Position in the walk; continues across a resume.
-     *
-     * @var integer|null
-     */
-    protected ?int $sequence = 0;
+	/**
+	 * Position in the walk; continues across a resume.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $sequence = 0;
 
-    /**
-     * Outcome of this hop.
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * Outcome of this hop.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * When the hop started.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $started = null;
+	/**
+	 * When the hop started.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $started = null;
 
-    /**
-     * When the hop finished.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $finished = null;
+	/**
+	 * When the hop finished.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $finished = null;
 
-    /**
-     * How long the hop took, in milliseconds.
-     *
-     * @var integer|null
-     */
-    protected ?int $durationMs = null;
+	/**
+	 * How long the hop took, in milliseconds.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $durationMs = null;
 
-    /**
-     * What the node produced.
-     *
-     * @var array|null
-     */
-    protected ?array $output = null;
+	/**
+	 * What the node produced.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $output = null;
 
-    /**
-     * The failure message, when this hop failed.
-     *
-     * @var string|null
-     */
-    protected ?string $error = null;
+	/**
+	 * The failure message, when this hop failed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $error = null;
 
-    /**
-     * Row creation timestamp; retention prunes on this.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Row creation timestamp; retention prunes on this.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Constructor: declare field types so the mapper hydrates them correctly.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'runUuid', type: 'string');
-        $this->addType(fieldName: 'flowId', type: 'string');
-        $this->addType(fieldName: 'nodeId', type: 'string');
-        $this->addType(fieldName: 'nodeType', type: 'string');
-        $this->addType(fieldName: 'sequence', type: 'integer');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'started', type: 'datetime');
-        $this->addType(fieldName: 'finished', type: 'datetime');
-        $this->addType(fieldName: 'durationMs', type: 'integer');
-        $this->addType(fieldName: 'output', type: 'json');
-        $this->addType(fieldName: 'error', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
+	/**
+	 * Constructor: declare field types so the mapper hydrates them correctly.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'runUuid', type: 'string');
+		$this->addType(fieldName: 'flowId', type: 'string');
+		$this->addType(fieldName: 'nodeId', type: 'string');
+		$this->addType(fieldName: 'nodeType', type: 'string');
+		$this->addType(fieldName: 'sequence', type: 'integer');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'started', type: 'datetime');
+		$this->addType(fieldName: 'finished', type: 'datetime');
+		$this->addType(fieldName: 'durationMs', type: 'integer');
+		$this->addType(fieldName: 'output', type: 'json');
+		$this->addType(fieldName: 'error', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Serialise for the API.
-     *
-     * @return array<string, mixed> The step as plain data.
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
-     */
-    public function jsonSerialize(): array
-    {
-        $started = null;
-        if ($this->started !== null) {
-            $started = $this->started->format('c');
-        }
+	/**
+	 * Serialise for the API.
+	 *
+	 * @return array<string, mixed> The step as plain data.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+	 */
+	public function jsonSerialize(): array {
+		$started = null;
+		if ($this->started !== null) {
+			$started = $this->started->format('c');
+		}
 
-        $finished = null;
-        if ($this->finished !== null) {
-            $finished = $this->finished->format('c');
-        }
+		$finished = null;
+		if ($this->finished !== null) {
+			$finished = $this->finished->format('c');
+		}
 
-        $created = null;
-        if ($this->created !== null) {
-            $created = $this->created->format('c');
-        }
+		$created = null;
+		if ($this->created !== null) {
+			$created = $this->created->format('c');
+		}
 
-        return [
-            'id'         => $this->id,
-            'runUuid'    => $this->runUuid,
-            'flowId'     => $this->flowId,
-            'nodeId'     => $this->nodeId,
-            'nodeType'   => $this->nodeType,
-            'sequence'   => (int) $this->sequence,
-            'status'     => $this->status,
-            'started'    => $started,
-            'finished'   => $finished,
-            'durationMs' => $this->durationMs,
-            'output'     => $this->output,
-            'error'      => $this->error,
-            'created'    => $created,
-        ];
+		return [
+			'id' => $this->id,
+			'runUuid' => $this->runUuid,
+			'flowId' => $this->flowId,
+			'nodeId' => $this->nodeId,
+			'nodeType' => $this->nodeType,
+			'sequence' => (int)$this->sequence,
+			'status' => $this->status,
+			'started' => $started,
+			'finished' => $finished,
+			'durationMs' => $this->durationMs,
+			'output' => $this->output,
+			'error' => $this->error,
+			'created' => $created,
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

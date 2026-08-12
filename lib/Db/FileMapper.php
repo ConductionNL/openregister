@@ -68,14 +68,14 @@ use OCP\IURLGenerator;
  *   published: string|null
  * }
  *
- * @method         \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
- * @method         \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
- * @method         \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
- * @method         \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
- * @method         \OCP\AppFramework\Db\Entity find(int|string $id)
- * @method         \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
- * @method         File[] findAll(int|null $limit=null, int|null $offset=null)
- * @method         File[] findEntities(IQueryBuilder $query)
+ * @method \OCP\AppFramework\Db\Entity insert(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity update(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity insertOrUpdate(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity delete(\OCP\AppFramework\Db\Entity $entity)
+ * @method \OCP\AppFramework\Db\Entity find(int|string $id)
+ * @method \OCP\AppFramework\Db\Entity findEntity(IQueryBuilder $query)
+ * @method File[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method File[] findEntities(IQueryBuilder $query)
  * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
  *
  * @template-extends QBMapper<Entity>
@@ -86,1179 +86,1152 @@ use OCP\IURLGenerator;
  *   each method is one focused query, splitting the mapper would scatter it without
  *   reducing complexity.
  */
-class FileMapper extends QBMapper
-{
-
-    /**
-     * The URL generator for creating share links
-     *
-     * @var IURLGenerator
-     */
-    private readonly IURLGenerator $urlGenerator;
-
-    /**
-     * Constructor
-     *
-     * @param IDBConnection $db           Database connection
-     * @param IURLGenerator $urlGenerator URL generator
-     */
-    public function __construct(
-        IDBConnection $db,
-        IURLGenerator $urlGenerator
-    ) {
-        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
-        $this->urlGenerator = $urlGenerator;
-    }//end __construct()
-
-    /**
-     * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
-     *
-     * @param int $fileId The Nextcloud filecache fileid to look up.
-     *
-     * @return File|null The OR-side metadata row, or null when no row exists yet.
-     */
-    public function findByFileId(int $fileId): ?File
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_files')
-            ->where(
-                $qb->expr()->eq(
-                    'file_id',
-                    $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)
-                )
-            );
-
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByFileId()
-
-    /**
-     * Find or lazily create an OR-side `File` row for the given
-     * Nextcloud `filecache.fileid`. Useful when a write path
-     * (set description, increment download_count, acquire lock)
-     * needs an entity to mutate but the row may not exist yet.
-     *
-     * @param int $fileId The Nextcloud filecache fileid.
-     *
-     * @return File The persisted entity (existing or freshly created).
-     */
-    public function findOrCreateByFileId(int $fileId): File
-    {
-        $existing = $this->findByFileId(fileId: $fileId);
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        $file = new File();
-        $file->setFileId($fileId);
-        $file->setDownloadCount(0);
-        $file->setCreated(new DateTime());
-
-        return $this->insert(entity: $file);
-    }//end findOrCreateByFileId()
-
-    /**
-     * Set the OR-side description metadata for a Nextcloud file.
-     *
-     * @param int         $fileId      The Nextcloud filecache fileid.
-     * @param string|null $description The description, or null to clear.
-     *
-     * @return File The updated entity.
-     */
-    public function setDescriptionForFile(int $fileId, ?string $description): File
-    {
-        $file = $this->findOrCreateByFileId(fileId: $fileId);
-        $file->setDescription($description);
-        $file->setUpdated(new DateTime());
-        return $this->update(entity: $file);
-    }//end setDescriptionForFile()
-
-    /**
-     * Set the OR-side category for a Nextcloud file.
-     *
-     * @param int         $fileId   The Nextcloud filecache fileid.
-     * @param string|null $category The category, or null to clear.
-     *
-     * @return File The updated entity.
-     */
-    public function setCategoryForFile(int $fileId, ?string $category): File
-    {
-        $file = $this->findOrCreateByFileId(fileId: $fileId);
-        $file->setCategory($category);
-        $file->setUpdated(new DateTime());
-        return $this->update(entity: $file);
-    }//end setCategoryForFile()
-
-    /**
-     * Set the OR-side labels for a Nextcloud file.
-     *
-     * @param int        $fileId The Nextcloud filecache fileid.
-     * @param array|null $labels Labels (JSON-serialisable), or null to clear.
-     *
-     * @return File The updated entity.
-     */
-    public function setLabelsForFile(int $fileId, ?array $labels): File
-    {
-        $file = $this->findOrCreateByFileId(fileId: $fileId);
-        $file->setLabels($labels);
-        $file->setUpdated(new DateTime());
-        return $this->update(entity: $file);
-    }//end setLabelsForFile()
-
-    /**
-     * Increment the cached download count for a Nextcloud file.
-     * Idempotent: creates the row on first download.
-     *
-     * @param int $fileId The Nextcloud filecache fileid.
-     *
-     * @return File The updated entity with the incremented counter.
-     */
-    public function incrementDownloadCount(int $fileId): File
-    {
-        $file    = $this->findOrCreateByFileId(fileId: $fileId);
-        $current = ($file->getDownloadCount() ?? 0);
-        $file->setDownloadCount($current + 1);
-        $file->setUpdated(new DateTime());
-        return $this->update(entity: $file);
-    }//end incrementDownloadCount()
-
-    /**
-     * Acquire a DB-backed lock on a Nextcloud file. Pass null for
-     * `lockedBy` to release. The cache-backed `FileLockHandler` is
-     * the canonical lock mechanism today; this surface lets operators
-     * who prefer DB persistence over the distributed-cache TTL pattern
-     * opt in.
-     *
-     * @param int            $fileId      The Nextcloud filecache fileid.
-     * @param string|null    $lockedBy    User ID acquiring the lock, or null to release.
-     * @param \DateTime|null $lockedAt    Acquisition timestamp, or null to release.
-     * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
-     *
-     * @return File The updated entity.
-     */
-    public function setLockForFile(
-        int $fileId,
-        ?string $lockedBy,
-        ?\DateTime $lockedAt,
-        ?\DateTime $lockExpires
-    ): File {
-        $file = $this->findOrCreateByFileId(fileId: $fileId);
-        $file->setLockedBy($lockedBy);
-        $file->setLockedAt($lockedAt);
-        $file->setLockExpires($lockExpires);
-        $file->setUpdated(new DateTime());
-        return $this->update(entity: $file);
-    }//end setLockForFile()
-
-    /**
-     * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
-     * One round trip vs. N+1.
-     *
-     * @param int[] $fileIds The Nextcloud filecache fileids to look up.
-     *
-     * @return array<int, File> Map of fileId => File for rows that exist.
-     */
-    public function findByFileIds(array $fileIds): array
-    {
-        if (empty($fileIds) === true) {
-            return [];
-        }
-
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_files')
-            ->where(
-                $qb->expr()->in(
-                    'file_id',
-                    $qb->createNamedParameter($fileIds, IQueryBuilder::PARAM_INT_ARRAY)
-                )
-            );
-
-        $entities = $this->findEntities(query: $qb);
-        $map      = [];
-        foreach ($entities as $entity) {
-            $map[(int) $entity->getFileId()] = $entity;
-        }
-
-        return $map;
-    }//end findByFileIds()
-
-    /**
-     * Get all files for a given node (parent) and/or file IDs with share information and owner data.
-     *
-     * @param int|null   $node The parent node ID (optional)
-     * @param array|null $ids  The file IDs to filter (optional)
-     *
-     * @return array<int, array> List of files as associative arrays with share information and owner data
-     *
-     * @phpstan-param  int|null $node
-     * @phpstan-param  array<int>|null $ids
-     * @phpstan-return list<File>
-     */
-    public function getFiles(?int $node=null, ?array $ids=null): array
-    {
-        // Create a new query builder instance.
-        $qb = $this->db->getQueryBuilder();
-
-        // Select all filecache fields, share information, mimetype strings, and owner information.
-        $qb->select(
-            'fc.fileid',
-            'fc.storage',
-            'fc.path',
-            'fc.path_hash',
-            'fc.parent',
-            'fc.name',
-            'mt.mimetype',
-            'mp.mimetype as mimepart',
-            'fc.size',
-            'fc.mtime',
-            'fc.storage_mtime',
-            'fc.encrypted',
-            'fc.unencrypted_size',
-            'fc.etag',
-            'fc.permissions',
-            'fc.checksum',
-            's.token as share_token',
-            's.stime as share_stime',
-            'st.id as storage_id'
-        )
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
-            ->leftJoin(
-                'fc',
-                'share',
-                's',
-                $qb->expr()->andX(
-                    $qb->expr()->eq('s.file_source', 'fc.fileid'),
-                    $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-                    // 3 = public link.
-                )
-            )
-            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
-
-        // Add condition for node/parent if provided.
-        if ($node !== null) {
-            $qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
-        }
-
-        // Add condition for file IDs if provided.
-        if ($ids !== null && count($ids) > 0) {
-            $qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
-        }
-
-        // Execute the query and fetch all results using proper Nextcloud method.
-        $result = $qb->executeQuery();
-        $files  = [];
-
-        // Fetch all rows manually and process share information and owner data.
-        $row = $result->fetch();
-        while ($row !== false) {
-            // Add share-related fields (public URLs if shared).
-            // Add authenticated URLs for non-shared files (requires login).
-            $row['accessUrl']   = $this->generateAuthenticatedAccessUrl(fileId: $row['fileid']);
-            $row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $row['fileid']);
-            if (empty($row['share_token']) === false) {
-                $row['accessUrl']   = $this->generateShareUrl(token: $row['share_token']);
-                $row['downloadUrl'] = $this->generateShareUrl(token: $row['share_token']).'/download';
-            }
-
-            $row['published'] = null;
-            if (empty($row['share_stime']) === false) {
-                $row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
-            }
-
-            // Extract owner from storage ID (format is usually "home::username").
-            $row['owner'] = null;
-            if (empty($row['storage_id']) === false) {
-                // Fallback to full storage ID.
-                $row['owner'] = $row['storage_id'];
-                if (str_starts_with($row['storage_id'], 'home::') === true) {
-                    // Remove "home::" prefix.
-                    $row['owner'] = substr($row['storage_id'], 6);
-                }
-            }
-
-            $files[] = $row;
-            $row     = $result->fetch();
-        }//end while
-
-        $result->closeCursor();
-
-        // Return the list of files with share information.
-        return $files;
-    }//end getFiles()
-
-    /**
-     * Get a single file by its fileid with share information and owner data.
-     *
-     * @param int $fileId The file ID
-     *
-     * @return array|null The file as an associative array with share information and owner data, or null if not found
-     *
-     * @phpstan-param  int $fileId
-     * @phpstan-return File|null
-     */
-    public function getFile(int $fileId): ?array
-    {
-        // Create a new query builder instance.
-        $qb = $this->db->getQueryBuilder();
-
-        // Select all filecache fields, share information, mimetype strings, and owner information.
-        $qb->select(
-            'fc.fileid',
-            'fc.storage',
-            'fc.path',
-            'fc.path_hash',
-            'fc.parent',
-            'fc.name',
-            'mt.mimetype',
-            'mp.mimetype as mimepart',
-            'fc.size',
-            'fc.mtime',
-            'fc.storage_mtime',
-            'fc.encrypted',
-            'fc.unencrypted_size',
-            'fc.etag',
-            'fc.permissions',
-            'fc.checksum',
-            's.token as share_token',
-            's.stime as share_stime',
-            'st.id as storage_id'
-        )
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
-            ->leftJoin(
-                'fc',
-                'share',
-                's',
-                $qb->expr()->andX(
-                    $qb->expr()->eq('s.file_source', 'fc.fileid'),
-                    $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-                    // 3 = public link.
-                )
-            )
-            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-            ->where($qb->expr()->eq('fc.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
-
-        // Execute the query and fetch the result using proper Nextcloud method.
-        $result = $qb->executeQuery();
-        $file   = $result->fetch();
-        $result->closeCursor();
-
-        // Return null if file not found.
-        if ($file === false) {
-            return null;
-        }
-
-        // Add share-related fields (public URLs if shared).
-        // Add authenticated URLs for non-shared files (requires login).
-        $file['accessUrl']   = $this->generateAuthenticatedAccessUrl(fileId: $file['fileid']);
-        $file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $file['fileid']);
-        if (empty($file['share_token']) === false) {
-            $file['accessUrl']   = $this->generateShareUrl(token: $file['share_token']);
-            $file['downloadUrl'] = $this->generateShareUrl(token: $file['share_token']).'/download';
-        }
-
-        $file['published'] = null;
-        if (empty($file['share_stime']) === false) {
-            $file['published'] = (new DateTime())->setTimestamp($file['share_stime'])->format('c');
-        }
-
-        // Extract owner from storage ID (format is usually "home::username").
-        $file['owner'] = null;
-        if (empty($file['storage_id']) === false) {
-            // Fallback to full storage ID.
-            $file['owner'] = $file['storage_id'];
-            if (str_starts_with($file['storage_id'], 'home::') === true) {
-                // Remove "home::" prefix.
-                $file['owner'] = substr($file['storage_id'], 6);
-            }
-        }
-
-        return $file;
-    }//end getFile()
-
-    /**
-     * Batch-load multiple files by their fileids in a single query (PERF-1).
-     *
-     * Avoids the N+1 pattern of calling getFile() once per file during list rendering.
-     * Returns a map keyed by the (string) fileid so callers can do O(1) lookups, with
-     * the same per-file shape (share urls, owner, published, etc.) as getFile().
-     *
-     * @param array $fileIds List of file ids (int|string) to load
-     *
-     * @return array<string, array> Map of (string) fileid => file record
-     *
-     * @phpstan-param  array<int, int|string> $fileIds
-     * @phpstan-return array<string, File>
-     */
-    public function getFilesByIds(array $fileIds): array
-    {
-        // Normalise to unique positive integers; ignore non-numeric entries.
-        $normalisedIds = [];
-        foreach ($fileIds as $fileId) {
-            if (is_numeric($fileId) === true) {
-                $normalisedIds[(int) $fileId] = (int) $fileId;
-            }
-        }
-
-        if (empty($normalisedIds) === true) {
-            return [];
-        }
-
-        // Reuse the existing batch query (single WHERE fileid IN (...)).
-        $files = $this->getFiles(node: null, ids: array_values($normalisedIds));
-
-        $filesById = [];
-        foreach ($files as $file) {
-            $filesById[(string) $file['fileid']] = $file;
-        }
-
-        return $filesById;
-    }//end getFilesByIds()
-
-    /**
-     * Get all files for a given ObjectEntity by using its folder property as the node id.
-     * If the folder property is empty, search oc_filecache for a row where name matches the object's uuid.
-     * If one result, use its fileid as node id; if more than one, throw an error; if zero, return empty array.
-     *
-     * @param ObjectEntity $object The object entity whose folder property is used as node id
-     *
-     * @return array<int, array> List of files as associative arrays with share information
-     *
-     * @throws \RuntimeException If more than one node is found for the object's uuid
-     *
-     * @phpstan-param  ObjectEntity $object
-     * @phpstan-return list<File>
-     */
-    public function getFilesForObject(ObjectEntity $object): array
-    {
-        // Retrieve the folder property from the object entity.
-        $folder = $object->getFolder();
-
-        // If folder is set, use it as the node id.
-        if ($folder !== null) {
-            $nodeId = (int) $folder;
-            return $this->getFiles(node: $nodeId);
-        }
-
-        // If folder is not set, search oc_filecache for a node with name equal to the object's uuid.
-        $uuid = $object->getUuid();
-        if ($uuid === null) {
-            // If uuid is not set, return empty array.
-            return [];
-        }
-
-        // Create a new query builder instance.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('fileid')
-            ->from('filecache')
-            ->where($qb->expr()->eq('name', $qb->createNamedParameter($uuid)));
-
-        // Execute the query and fetch all matching rows using proper Nextcloud method.
-        $result = $qb->executeQuery();
-        $rows   = [];
-
-        // Fetch all rows manually.
-        $row = $result->fetch();
-        while ($row !== false) {
-            $rows[] = $row;
-            $row    = $result->fetch();
-        }
-
-        $result->closeCursor();
-
-        // Handle the number of results.
-        $count = count($rows);
-        if ($count === 1) {
-            // Use the fileid as the node id.
-            $nodeId = (int) $rows[0]['fileid'];
-            return $this->getFiles(node: $nodeId);
-        }
-
-        if ($count > 1) {
-            // Multiple folders found with same UUID - pick the oldest one (lowest fileid).
-            // TODO: Add nightly cron job to cleanup orphaned folders and logs.
-            usort(
-                $rows,
-                function ($a, $b) {
-                    return (int) $a['fileid'] - (int) $b['fileid'];
-                }
-            );
-            $oldestNodeId = (int) $rows[0]['fileid'];
-            return $this->getFiles(node: $oldestNodeId);
-        }
-
-        // No results found, return empty array.
-        return [];
-    }//end getFilesForObject()
-
-    /**
-     * Batched lookup: file IDs for a list of object UUIDs.
-     *
-     * Resolves UUID -> folder node via oc_filecache.name (matching the fallback path of
-     * getFilesForObject), then fetches all child file IDs in a second query. Total of
-     * two queries regardless of input size, vs. N+1 if callers loop over getFilesForObject.
-     *
-     * Note: this method does NOT consider an object's explicit `folder` property — only
-     * pass UUIDs. Full file metadata (renderFiles via _extend[]=@self.files) still uses
-     * getFilesForObject which respects the explicit folder property.
-     *
-     * @param string[] $uuids Object UUIDs to look up.
-     *
-     * @return array<string, int[]> Map of UUID -> list of file IDs (empty array if none).
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two-step batched lookup with input
-     *                                               validation; complexity is intrinsic.
-     */
-    public function getFileIdsForObjects(array $uuids): array
-    {
-        $result = [];
-        foreach ($uuids as $uuid) {
-            if (is_string($uuid) === true && $uuid !== '') {
-                $result[$uuid] = [];
-            }
-        }
-
-        if (empty($result) === true) {
-            return [];
-        }
-
-        // Step 1: resolve UUIDs to folder node IDs via filecache.name.
-        // Multiple folders may share a UUID name; the oldest (lowest fileid) wins,
-        // matching the resolution rule in getFilesForObject.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('fileid', 'name')
-            ->from('filecache')
-            ->where(
-                $qb->expr()->in(
-                    'name',
-                    $qb->createNamedParameter(array_keys($result), IQueryBuilder::PARAM_STR_ARRAY)
-                )
-            )
-            ->orderBy('fileid', 'ASC');
-
-        $stmt         = $qb->executeQuery();
-        $uuidToNodeId = [];
-        $row          = $stmt->fetch();
-        while ($row !== false) {
-            $name = (string) $row['name'];
-            // First (oldest) folder wins for duplicates.
-            if (isset($uuidToNodeId[$name]) === false) {
-                $uuidToNodeId[$name] = (int) $row['fileid'];
-            }
-
-            $row = $stmt->fetch();
-        }
-
-        $stmt->closeCursor();
-
-        if (empty($uuidToNodeId) === true) {
-            return $result;
-        }
-
-        // Step 2: fetch child file IDs for each folder node in one query.
-        $qb2 = $this->db->getQueryBuilder();
-        $qb2->select('fileid', 'parent')
-            ->from('filecache')
-            ->where(
-                $qb2->expr()->in(
-                    'parent',
-                    $qb2->createNamedParameter(array_values($uuidToNodeId), IQueryBuilder::PARAM_INT_ARRAY)
-                )
-            );
-
-        $stmt2           = $qb2->executeQuery();
-        $nodeIdToFileIds = [];
-        $childRow        = $stmt2->fetch();
-        while ($childRow !== false) {
-            $parent = (int) $childRow['parent'];
-            $nodeIdToFileIds[$parent][] = (int) $childRow['fileid'];
-            $childRow = $stmt2->fetch();
-        }
-
-        $stmt2->closeCursor();
-
-        // Step 3: project node IDs back to UUIDs.
-        foreach ($uuidToNodeId as $uuid => $nodeId) {
-            $result[$uuid] = $nodeIdToFileIds[$nodeId] ?? [];
-        }
-
-        return $result;
-    }//end getFileIdsForObjects()
-
-    /**
-     * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
-     *
-     * Inverse of the {@see getFilesForObject()} fallback path: an object's attached
-     * files live under a folder node whose `filecache.name` equals the object's UUID.
-     * This looks up the file's parent folder and returns that folder's name.
-     *
-     * Best-effort only: an object with an explicit `folder` property pointing at a
-     * node whose name is NOT the object UUID (e.g. a manually re-parented folder)
-     * will not resolve here. Callers MUST treat a `null` return as "no owning object
-     * found" and skip silently rather than error — this mirrors the same convention
-     * `getFilesForObject()` already relies on for its own fallback path.
-     *
-     * SECURITY BOUNDARY: this join is intentionally NOT scoped by storage / tenant /
-     * owner — `filecache.fileid` is globally unique across all storages and any
-     * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
-     * multitenancy safety net lives ONE layer up in
-     * {@see ContentSearchHandler::resolveOwningObject()}, which passes the UUID to
-     * `MagicMapper::find($uuid, _rbac: $callerRbac, _multitenancy: $callerMultitenancy)`.
-     * Those flags are propagated from the outer caller (see
-     * `QueryHandler::searchObjectsPaginatedDatabase`) and default to `true` on the
-     * ContentSearchHandler entry point. **When the outer caller opts out of either
-     * flag** (system contexts, batch jobs, some test paths using
-     * `searchObjectsPaginatedDatabase(_rbac: false, _multitenancy: false)`) **this
-     * method's join becomes an unbounded read across tenants and the caller must
-     * supply its own scope guard** — the built-in safety net collapses. Do NOT
-     * reuse this method in contexts that bypass the follow-up `MagicMapper::find()`
-     * call OR that call it with the RBAC/multitenancy flags disabled, or a
-     * low-privileged user could probe cross-tenant chunk-content by guessing
-     * monotonic fileids. Defence-in-depth (join in `oc_storages` and filter to
-     * accessible storages up-front) is a follow-up if we ever call this from a
-     * hotter path or expose it to callers that opt out of RBAC.
-     *
-     * @param int $fileId The Nextcloud filecache fileid to resolve.
-     *
-     * @return string|null The owning object's UUID, or null when it cannot be resolved.
-     *
-     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
-     */
-    public function findOwningObjectUuid(int $fileId): ?string
-    {
-        $qb = $this->db->getQueryBuilder();
-        // SECURITY: unscoped filecache join — see docblock. Safety comes from
-        // the MagicMapper::find() call in the sole caller (ContentSearchHandler).
-        $qb->select('parentNode.name')
-            ->from('filecache', 'file')
-            ->innerJoin('file', 'filecache', 'parentNode', $qb->expr()->eq('file.parent', 'parentNode.fileid'))
-            ->where($qb->expr()->eq('file.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
-
-        $result = $qb->executeQuery();
-        $name   = $result->fetchOne();
-        $result->closeCursor();
-
-        if ($name === false || $name === null || $name === '') {
-            return null;
-        }
-
-        return (string) $name;
-    }//end findOwningObjectUuid()
-
-    /**
-     * Generate a share URL from a share token.
-     *
-     * @param string $token The share token
-     *
-     * @phpstan-param string $token
-     *
-     * @return string
-     *
-     * @phpstan-return string
-     */
-    private function generateShareUrl(string $token): string
-    {
-        $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/s/'.$token;
-    }//end generateShareUrl()
-
-    /**
-     * Generate an authenticated access URL for a file (requires login).
-     *
-     * This URL uses Nextcloud's file preview/access endpoint which requires
-     * the user to be authenticated to access the file.
-     *
-     * @param int $fileId The file ID
-     *
-     * @phpstan-param int $fileId
-     *
-     * @return string
-     *
-     * @phpstan-return string
-     */
-    private function generateAuthenticatedAccessUrl(int $fileId): string
-    {
-        $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/core/preview?fileId='.$fileId.'&x=1920&y=1080&a=1';
-    }//end generateAuthenticatedAccessUrl()
-
-    /**
-     * Generate an authenticated download URL for a file (requires login).
-     *
-     * This URL uses Nextcloud's direct download endpoint which requires
-     * the user to be authenticated to download the file.
-     *
-     * @param int $fileId The file ID
-     *
-     * @phpstan-param int $fileId
-     *
-     * @return string
-     *
-     * @phpstan-return string
-     */
-    private function generateAuthenticatedDownloadUrl(int $fileId): string
-    {
-        $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/apps/openregister/api/files/'.$fileId.'/download';
-    }//end generateAuthenticatedDownloadUrl()
-
-    /**
-     * Publish a file by creating a public share directly in the database.
-     *
-     * @param int    $fileId      The file ID to publish
-     * @param string $sharedBy    The user who is sharing the file
-     * @param string $shareOwner  The owner of the file
-     * @param int    $permissions The permissions for the share (default: 1 = read)
-     *
-     * @return (int|string)[]
-     *
-     * @throws \Exception If the share creation fails
-     *
-     * @phpstan-param int $fileId
-     * @phpstan-param string $sharedBy
-     * @phpstan-param string $shareOwner
-     * @phpstan-param int $permissions
-     *
-     * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
-     *
-     * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
-     */
-    public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions=1): array
-    {
-        // Check if a public share already exists for this file.
-        $existingShare = $this->getPublicShare(fileId: $fileId);
-        if ($existingShare !== null) {
-            // Return existing share information.
-            return [
-                'id'          => $existingShare['id'],
-                'token'       => $existingShare['token'],
-                'accessUrl'   => $this->generateShareUrl(token: $existingShare['token']),
-                'downloadUrl' => $this->generateShareUrl(token: $existingShare['token']).'/download',
-                'published'   => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
-            ];
-        }
-
-        // Generate a unique token for the share.
-        $token       = $this->generateShareToken();
-        $currentTime = time();
-
-        // Insert the new share into the database.
-        $qb = $this->db->getQueryBuilder();
-        $qb->insert('share')
-            ->values(
-                values: [
-                    'share_type'    => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
-                // 3 = public link.
-                    'share_with'    => $qb->createNamedParameter(null),
-                    'password'      => $qb->createNamedParameter(null),
-                    'uid_owner'     => $qb->createNamedParameter($shareOwner),
-                    'uid_initiator' => $qb->createNamedParameter($sharedBy),
-                    'parent'        => $qb->createNamedParameter(null),
-                    'item_type'     => $qb->createNamedParameter('file'),
-                    'item_source'   => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-                    'item_target'   => $qb->createNamedParameter('/'.$fileId),
-                    'file_source'   => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-                    'file_target'   => $qb->createNamedParameter('/'.$fileId),
-                    'permissions'   => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
-                    'stime'         => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
-                    'accepted'      => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'expiration'    => $qb->createNamedParameter(null),
-                    'token'         => $qb->createNamedParameter($token),
-                    'mail_send'     => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                ]
-            );
-
-        $result = $qb->executeStatement();
-
-        if ($result !== 1) {
-            throw new Exception('Failed to create public share in database');
-        }
-
-        // Get the ID of the newly created share.
-        $shareId = $qb->getLastInsertId();
-
-        return [
-            'id'          => $shareId,
-            'token'       => $token,
-            'accessUrl'   => $this->generateShareUrl(token: $token),
-            'downloadUrl' => $this->generateShareUrl(token: $token).'/download',
-            'published'   => (new DateTime())->setTimestamp($currentTime)->format('c'),
-        ];
-    }//end publishFile()
-
-    /**
-     * Depublish a file by removing all public shares directly from the database.
-     *
-     * @param int $fileId The file ID to depublish
-     *
-     * @return array Information about the deletion operation
-     *
-     * @throws \Exception If the share deletion fails
-     *
-     * @phpstan-param  int $fileId
-     * @phpstan-return array{deleted_shares: int, file_id: int}
-     */
-    public function depublishFile(int $fileId): array
-    {
-        // Delete all public shares for this file.
-        $qb = $this->db->getQueryBuilder();
-        $qb->delete('share')
-            ->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)));
-        // 3 = public link.
-        $deletedCount = $qb->executeStatement();
-
-        return [
-            'deleted_shares' => $deletedCount,
-            'file_id'        => $fileId,
-        ];
-    }//end depublishFile()
-
-    /**
-     * Check whether a file has at least one active public share (share_type=3).
-     *
-     * Used by anonymous-accessible endpoints (e.g. preview, download)
-     * to gate access — only published files are exposed to unauthenticated
-     * callers.
-     *
-     * @param int $fileId The file ID to check.
-     *
-     * @return bool True when a public share exists, false otherwise.
-     *
-     * @phpstan-param  int $fileId
-     * @phpstan-return bool
-     */
-    public function isFilePublished(int $fileId): bool
-    {
-        return $this->getPublicShare(fileId: $fileId) !== null;
-    }//end isFilePublished()
-
-    /**
-     * Get an existing public share for a file.
-     *
-     * @param int $fileId The file ID
-     *
-     * @return array|null The share information or null if not found
-     *
-     * @phpstan-param  int $fileId
-     * @phpstan-return array{id: int, token: string, stime: int}|null
-     */
-    private function getPublicShare(int $fileId): ?array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('id', 'token', 'stime')
-            ->from('share')
-            ->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
-            ->setMaxResults(1);
-
-        $result = $qb->executeQuery();
-        $share  = $result->fetch();
-        $result->closeCursor();
-
-        if ($share === false) {
-            return null;
-        }
-
-        return $share;
-    }//end getPublicShare()
-
-    /**
-     * Generate a unique share token.
-     *
-     * @return string A unique share token
-     *
-     * @phpstan-return string
-     */
-    private function generateShareToken(): string
-    {
-        // Generate a random token similar to how Nextcloud does it.
-        // Using a combination of letters and numbers, 15 characters long.
-        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        $token      = '';
-        $max        = strlen($characters) - 1;
-
-        for ($i = 0; $i < 15; $i++) {
-            $token .= $characters[random_int(0, $max)];
-        }
-
-        // Ensure the token is unique by checking if it already exists.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('id')
-            ->from('share')
-            ->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
-
-        $result = $qb->executeQuery();
-        $exists = $result->fetch();
-        $result->closeCursor();
-
-        // If token exists, generate a new one recursively.
-        if ($exists !== false) {
-            return $this->generateShareToken();
-        }
-
-        return $token;
-    }//end generateShareToken()
-
-    /**
-     * Count all files in the Nextcloud installation
-     *
-     * @return int Total number of files in oc_filecache
-     *
-     * @phpstan-return int
-     */
-    public function countAllFiles(): int
-    {
-        $qb      = $this->db->getQueryBuilder();
-        $dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-        $qb->select($qb->func()->count('fc.fileid', 'count'))
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->where($qb->expr()->neq('mt.mimetype', $dirType));
-        // Exclude directories.
-        $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        $result->closeCursor();
-
-        return (int) ($row['count'] ?? 0);
-    }//end countAllFiles()
-
-    /**
-     * Get total storage size of all files in the Nextcloud installation
-     *
-     * @return int Total size in bytes of all files in oc_filecache
-     *
-     * @phpstan-return int
-     */
-    public function getTotalFilesSize(): int
-    {
-        $qb      = $this->db->getQueryBuilder();
-        $dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-        $qb->selectAlias($qb->createFunction('SUM(fc.size)'), 'total_size')
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->where($qb->expr()->neq('mt.mimetype', $dirType));
-        // Exclude directories.
-        $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        $result->closeCursor();
-
-        return (int) ($row['total_size'] ?? 0);
-    }//end getTotalFilesSize()
-
-    /**
-     * Find files in Nextcloud that are not tracked in the extraction system yet
-     *
-     * This queries oc_filecache for files that don't have a corresponding record
-     * in oc_openregister_file_texts. These are "untracked" files that need to be
-     * added to the extraction system.
-     *
-     * Only includes user files from home:: storages, excluding:
-     * - Directories
-     * - System files (appdata, previews, etc)
-     * - Trashed files
-     * - External/temporary storages
-     *
-     * @param int $limit Maximum number of untracked files to return
-     *
-     * @return array List of untracked files with basic metadata
-     *
-     * @phpstan-param  int $limit
-     * @phpstan-return list<array{
-     *     fileid: int, path: string, name: string, mimetype: string,
-     *     size: int, mtime: int, checksum: string|null
-     * }>
-     */
-    public function findUntrackedFiles(int $limit=100): array
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        // Pre-create common parameters for cleaner query building.
-        $dirType     = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-        $homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
-        $trashPat    = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
-        $appdataPat  = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
-        $versionPat  = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
-        $cachePat    = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
-        $thumbPat    = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
-        $filesPat    = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
-        $zeroSize    = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
-
-        // Select files from oc_filecache that don't exist in oc_openregister_file_texts.
-        $qb->select(
-            'fc.fileid',
-            'fc.path',
-            'fc.name',
-            'mt.mimetype',
-            'fc.size',
-            'fc.mtime',
-            'fc.checksum'
-        )
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-            ->leftJoin(
-                'fc',
-                'openregister_chunks',
-                'ch',
-                $qb->expr()->andX(
-                    $qb->expr()->eq('fc.fileid', 'ch.source_id'),
-                    $qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
-                )
-            )
-            ->where($qb->expr()->isNull('ch.id'))
-            // No corresponding record in chunks.
-            ->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
-            // Exclude directories.
-            ->andWhere($qb->expr()->like('st.id', $homePattern))
-            // Only user home storages.
-            ->andWhere($qb->expr()->notLike('fc.path', $trashPat))
-            // Exclude trash.
-            ->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
-            // Exclude system appdata.
-            ->andWhere($qb->expr()->notLike('fc.path', $versionPat))
-            // Exclude file versions.
-            ->andWhere($qb->expr()->notLike('fc.path', $cachePat))
-            // Exclude cache.
-            ->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
-            // Exclude thumbnails.
-            ->andWhere($qb->expr()->like('fc.path', $filesPat))
-            // Only files in 'files/' directory.
-            ->andWhere($qb->expr()->gt('fc.size', $zeroSize))
-            // Exclude empty files.
-            ->setMaxResults($limit)
-            ->orderBy('fc.fileid', 'ASC');
-
-        $result = $qb->executeQuery();
-        $files  = [];
-
-        $row = $result->fetch();
-        while ($row !== false) {
-            $files[] = $row;
-            $row     = $result->fetch();
-        }
-
-        $result->closeCursor();
-
-        return $files;
-    }//end findUntrackedFiles()
-
-    /**
-     * Count untracked files
-     *
-     * Count files that exist in Nextcloud but haven't been tracked in file_texts table
-     *
-     * @return int Number of untracked files
-     */
-    public function countUntrackedFiles(): int
-    {
-        $qb = $this->db->getQueryBuilder();
-
-        // Same query as findUntrackedFiles but with COUNT.
-        // Pre-create common parameters for cleaner query building.
-        $dirType     = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
-        $homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
-        $trashPat    = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
-        $appdataPat  = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
-        $versionPat  = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
-        $cachePat    = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
-        $thumbPat    = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
-        $filesPat    = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
-        $zeroSize    = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
-
-        $qb->select($qb->createFunction('COUNT(DISTINCT fc.fileid) as count'))
-            ->from('filecache', 'fc')
-            ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
-            ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
-            ->leftJoin(
-                'fc',
-                'openregister_chunks',
-                'ch',
-                $qb->expr()->andX(
-                    $qb->expr()->eq('fc.fileid', 'ch.source_id'),
-                    $qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
-                )
-            )
-            ->where($qb->expr()->isNull('ch.id'))
-            ->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
-            ->andWhere($qb->expr()->like('st.id', $homePattern))
-            ->andWhere($qb->expr()->notLike('fc.path', $trashPat))
-            ->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
-            ->andWhere($qb->expr()->notLike('fc.path', $versionPat))
-            ->andWhere($qb->expr()->notLike('fc.path', $cachePat))
-            ->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
-            ->andWhere($qb->expr()->like('fc.path', $filesPat))
-            ->andWhere($qb->expr()->gt('fc.size', $zeroSize));
-
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        return $count;
-    }//end countUntrackedFiles()
-
-    /**
-     * Set file ownership at database level.
-     *
-     * @param int    $fileId The file ID to change ownership for
-     * @param string $userId The user ID to set as owner
-     *
-     * @return bool True if ownership was updated successfully, false otherwise
-     *
-     * @throws \Exception If the ownership update fails
-     *
-     * @TODO: This is a hack to fix NextCloud file ownership issues on production
-     * @TODO: where files exist but can't be accessed due to permission problems.
-     * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-     */
-    public function setFileOwnership(int $fileId, string $userId): bool
-    {
-        // Get storage information for this file.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('storage')
-            ->from('filecache')
-            ->where($qb->expr()->eq('fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
-
-        $result   = $qb->executeQuery();
-        $fileInfo = $result->fetch();
-        $result->closeCursor();
-
-        if ($fileInfo === false || $fileInfo === null) {
-            throw new Exception("File with ID $fileId not found in filecache");
-        }
-
-        $storageId = $fileInfo['storage'];
-
-        // Update the storage owner in the oc_storages table.
-        $qb = $this->db->getQueryBuilder();
-        $qb->update('storages')
-            ->set('id', $qb->createNamedParameter("home::$userId"))
-            ->where($qb->expr()->eq('numeric_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
-
-        $storageResult = $qb->executeStatement();
-
-        // Also try to update any mounts table if it exists.
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->update('mounts')
-                ->set('user_id', $qb->createNamedParameter($userId))
-                ->where($qb->expr()->eq('storage_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
-
-            $qb->executeStatement();
-        } catch (\Exception $e) {
-            // Mounts table might not exist or might have different structure.
-            // This is not critical for the ownership fix.
-        }
-
-        return $storageResult > 0;
-    }//end setFileOwnership()
+class FileMapper extends QBMapper {
+
+	/**
+	 * The URL generator for creating share links
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
+	 * Constructor
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param IURLGenerator $urlGenerator URL generator
+	 */
+	public function __construct(
+		IDBConnection $db,
+		IURLGenerator $urlGenerator,
+	) {
+		parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
+		$this->urlGenerator = $urlGenerator;
+	}//end __construct()
+
+	/**
+	 * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid to look up.
+	 *
+	 * @return File|null The OR-side metadata row, or null when no row exists yet.
+	 */
+	public function findByFileId(int $fileId): ?File {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_files')
+			->where(
+				$qb->expr()->eq(
+					'file_id',
+					$qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)
+				)
+			);
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByFileId()
+
+	/**
+	 * Find or lazily create an OR-side `File` row for the given
+	 * Nextcloud `filecache.fileid`. Useful when a write path
+	 * (set description, increment download_count, acquire lock)
+	 * needs an entity to mutate but the row may not exist yet.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 *
+	 * @return File The persisted entity (existing or freshly created).
+	 */
+	public function findOrCreateByFileId(int $fileId): File {
+		$existing = $this->findByFileId(fileId: $fileId);
+		if ($existing !== null) {
+			return $existing;
+		}
+
+		$file = new File();
+		$file->setFileId($fileId);
+		$file->setDownloadCount(0);
+		$file->setCreated(new DateTime());
+
+		return $this->insert(entity: $file);
+	}//end findOrCreateByFileId()
+
+	/**
+	 * Set the OR-side description metadata for a Nextcloud file.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 * @param string|null $description The description, or null to clear.
+	 *
+	 * @return File The updated entity.
+	 */
+	public function setDescriptionForFile(int $fileId, ?string $description): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$file->setDescription($description);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end setDescriptionForFile()
+
+	/**
+	 * Set the OR-side category for a Nextcloud file.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 * @param string|null $category The category, or null to clear.
+	 *
+	 * @return File The updated entity.
+	 */
+	public function setCategoryForFile(int $fileId, ?string $category): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$file->setCategory($category);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end setCategoryForFile()
+
+	/**
+	 * Set the OR-side labels for a Nextcloud file.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 * @param array|null $labels Labels (JSON-serialisable), or null to clear.
+	 *
+	 * @return File The updated entity.
+	 */
+	public function setLabelsForFile(int $fileId, ?array $labels): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$file->setLabels($labels);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end setLabelsForFile()
+
+	/**
+	 * Increment the cached download count for a Nextcloud file.
+	 * Idempotent: creates the row on first download.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 *
+	 * @return File The updated entity with the incremented counter.
+	 */
+	public function incrementDownloadCount(int $fileId): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$current = ($file->getDownloadCount() ?? 0);
+		$file->setDownloadCount($current + 1);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end incrementDownloadCount()
+
+	/**
+	 * Acquire a DB-backed lock on a Nextcloud file. Pass null for
+	 * `lockedBy` to release. The cache-backed `FileLockHandler` is
+	 * the canonical lock mechanism today; this surface lets operators
+	 * who prefer DB persistence over the distributed-cache TTL pattern
+	 * opt in.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid.
+	 * @param string|null $lockedBy User ID acquiring the lock, or null to release.
+	 * @param \DateTime|null $lockedAt Acquisition timestamp, or null to release.
+	 * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
+	 *
+	 * @return File The updated entity.
+	 */
+	public function setLockForFile(
+		int $fileId,
+		?string $lockedBy,
+		?\DateTime $lockedAt,
+		?\DateTime $lockExpires,
+	): File {
+		$file = $this->findOrCreateByFileId(fileId: $fileId);
+		$file->setLockedBy($lockedBy);
+		$file->setLockedAt($lockedAt);
+		$file->setLockExpires($lockExpires);
+		$file->setUpdated(new DateTime());
+		return $this->update(entity: $file);
+	}//end setLockForFile()
+
+	/**
+	 * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
+	 * One round trip vs. N+1.
+	 *
+	 * @param int[] $fileIds The Nextcloud filecache fileids to look up.
+	 *
+	 * @return array<int, File> Map of fileId => File for rows that exist.
+	 */
+	public function findByFileIds(array $fileIds): array {
+		if (empty($fileIds) === true) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_files')
+			->where(
+				$qb->expr()->in(
+					'file_id',
+					$qb->createNamedParameter($fileIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		$entities = $this->findEntities(query: $qb);
+		$map = [];
+		foreach ($entities as $entity) {
+			$map[(int)$entity->getFileId()] = $entity;
+		}
+
+		return $map;
+	}//end findByFileIds()
+
+	/**
+	 * Get all files for a given node (parent) and/or file IDs with share information and owner data.
+	 *
+	 * @param int|null $node The parent node ID (optional)
+	 * @param array|null $ids The file IDs to filter (optional)
+	 *
+	 * @return array<int, array> List of files as associative arrays with share information and owner data
+	 *
+	 * @phpstan-param  int|null $node
+	 * @phpstan-param  array<int>|null $ids
+	 * @phpstan-return list<File>
+	 */
+	public function getFiles(?int $node = null, ?array $ids = null): array {
+		// Create a new query builder instance.
+		$qb = $this->db->getQueryBuilder();
+
+		// Select all filecache fields, share information, mimetype strings, and owner information.
+		$qb->select(
+			'fc.fileid',
+			'fc.storage',
+			'fc.path',
+			'fc.path_hash',
+			'fc.parent',
+			'fc.name',
+			'mt.mimetype',
+			'mp.mimetype as mimepart',
+			'fc.size',
+			'fc.mtime',
+			'fc.storage_mtime',
+			'fc.encrypted',
+			'fc.unencrypted_size',
+			'fc.etag',
+			'fc.permissions',
+			'fc.checksum',
+			's.token as share_token',
+			's.stime as share_stime',
+			'st.id as storage_id'
+		)
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
+			->leftJoin(
+				'fc',
+				'share',
+				's',
+				$qb->expr()->andX(
+					$qb->expr()->eq('s.file_source', 'fc.fileid'),
+					$qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
+					// 3 = public link.
+				)
+			)
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
+
+		// Add condition for node/parent if provided.
+		if ($node !== null) {
+			$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
+		}
+
+		// Add condition for file IDs if provided.
+		if ($ids !== null && count($ids) > 0) {
+			$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
+		}
+
+		// Execute the query and fetch all results using proper Nextcloud method.
+		$result = $qb->executeQuery();
+		$files = [];
+
+		// Fetch all rows manually and process share information and owner data.
+		$row = $result->fetch();
+		while ($row !== false) {
+			// Add share-related fields (public URLs if shared).
+			// Add authenticated URLs for non-shared files (requires login).
+			$row['accessUrl'] = $this->generateAuthenticatedAccessUrl(fileId: $row['fileid']);
+			$row['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $row['fileid']);
+			if (empty($row['share_token']) === false) {
+				$row['accessUrl'] = $this->generateShareUrl(token: $row['share_token']);
+				$row['downloadUrl'] = $this->generateShareUrl(token: $row['share_token']) . '/download';
+			}
+
+			$row['published'] = null;
+			if (empty($row['share_stime']) === false) {
+				$row['published'] = (new DateTime())->setTimestamp($row['share_stime'])->format('c');
+			}
+
+			// Extract owner from storage ID (format is usually "home::username").
+			$row['owner'] = null;
+			if (empty($row['storage_id']) === false) {
+				// Fallback to full storage ID.
+				$row['owner'] = $row['storage_id'];
+				if (str_starts_with($row['storage_id'], 'home::') === true) {
+					// Remove "home::" prefix.
+					$row['owner'] = substr($row['storage_id'], 6);
+				}
+			}
+
+			$files[] = $row;
+			$row = $result->fetch();
+		}//end while
+
+		$result->closeCursor();
+
+		// Return the list of files with share information.
+		return $files;
+	}//end getFiles()
+
+	/**
+	 * Get a single file by its fileid with share information and owner data.
+	 *
+	 * @param int $fileId The file ID
+	 *
+	 * @return array|null The file as an associative array with share information and owner data, or null if not found
+	 *
+	 * @phpstan-param  int $fileId
+	 * @phpstan-return File|null
+	 */
+	public function getFile(int $fileId): ?array {
+		// Create a new query builder instance.
+		$qb = $this->db->getQueryBuilder();
+
+		// Select all filecache fields, share information, mimetype strings, and owner information.
+		$qb->select(
+			'fc.fileid',
+			'fc.storage',
+			'fc.path',
+			'fc.path_hash',
+			'fc.parent',
+			'fc.name',
+			'mt.mimetype',
+			'mp.mimetype as mimepart',
+			'fc.size',
+			'fc.mtime',
+			'fc.storage_mtime',
+			'fc.encrypted',
+			'fc.unencrypted_size',
+			'fc.etag',
+			'fc.permissions',
+			'fc.checksum',
+			's.token as share_token',
+			's.stime as share_stime',
+			'st.id as storage_id'
+		)
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
+			->leftJoin(
+				'fc',
+				'share',
+				's',
+				$qb->expr()->andX(
+					$qb->expr()->eq('s.file_source', 'fc.fileid'),
+					$qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
+					// 3 = public link.
+				)
+			)
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
+			->where($qb->expr()->eq('fc.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+		// Execute the query and fetch the result using proper Nextcloud method.
+		$result = $qb->executeQuery();
+		$file = $result->fetch();
+		$result->closeCursor();
+
+		// Return null if file not found.
+		if ($file === false) {
+			return null;
+		}
+
+		// Add share-related fields (public URLs if shared).
+		// Add authenticated URLs for non-shared files (requires login).
+		$file['accessUrl'] = $this->generateAuthenticatedAccessUrl(fileId: $file['fileid']);
+		$file['downloadUrl'] = $this->generateAuthenticatedDownloadUrl(fileId: $file['fileid']);
+		if (empty($file['share_token']) === false) {
+			$file['accessUrl'] = $this->generateShareUrl(token: $file['share_token']);
+			$file['downloadUrl'] = $this->generateShareUrl(token: $file['share_token']) . '/download';
+		}
+
+		$file['published'] = null;
+		if (empty($file['share_stime']) === false) {
+			$file['published'] = (new DateTime())->setTimestamp($file['share_stime'])->format('c');
+		}
+
+		// Extract owner from storage ID (format is usually "home::username").
+		$file['owner'] = null;
+		if (empty($file['storage_id']) === false) {
+			// Fallback to full storage ID.
+			$file['owner'] = $file['storage_id'];
+			if (str_starts_with($file['storage_id'], 'home::') === true) {
+				// Remove "home::" prefix.
+				$file['owner'] = substr($file['storage_id'], 6);
+			}
+		}
+
+		return $file;
+	}//end getFile()
+
+	/**
+	 * Batch-load multiple files by their fileids in a single query (PERF-1).
+	 *
+	 * Avoids the N+1 pattern of calling getFile() once per file during list rendering.
+	 * Returns a map keyed by the (string) fileid so callers can do O(1) lookups, with
+	 * the same per-file shape (share urls, owner, published, etc.) as getFile().
+	 *
+	 * @param array $fileIds List of file ids (int|string) to load
+	 *
+	 * @return array<string, array> Map of (string) fileid => file record
+	 *
+	 * @phpstan-param  array<int, int|string> $fileIds
+	 * @phpstan-return array<string, File>
+	 */
+	public function getFilesByIds(array $fileIds): array {
+		// Normalise to unique positive integers; ignore non-numeric entries.
+		$normalisedIds = [];
+		foreach ($fileIds as $fileId) {
+			if (is_numeric($fileId) === true) {
+				$normalisedIds[(int)$fileId] = (int)$fileId;
+			}
+		}
+
+		if (empty($normalisedIds) === true) {
+			return [];
+		}
+
+		// Reuse the existing batch query (single WHERE fileid IN (...)).
+		$files = $this->getFiles(node: null, ids: array_values($normalisedIds));
+
+		$filesById = [];
+		foreach ($files as $file) {
+			$filesById[(string)$file['fileid']] = $file;
+		}
+
+		return $filesById;
+	}//end getFilesByIds()
+
+	/**
+	 * Get all files for a given ObjectEntity by using its folder property as the node id.
+	 * If the folder property is empty, search oc_filecache for a row where name matches the object's uuid.
+	 * If one result, use its fileid as node id; if more than one, throw an error; if zero, return empty array.
+	 *
+	 * @param ObjectEntity $object The object entity whose folder property is used as node id
+	 *
+	 * @return array<int, array> List of files as associative arrays with share information
+	 *
+	 * @throws \RuntimeException If more than one node is found for the object's uuid
+	 *
+	 * @phpstan-param  ObjectEntity $object
+	 * @phpstan-return list<File>
+	 */
+	public function getFilesForObject(ObjectEntity $object): array {
+		// Retrieve the folder property from the object entity.
+		$folder = $object->getFolder();
+
+		// If folder is set, use it as the node id.
+		if ($folder !== null) {
+			$nodeId = (int)$folder;
+			return $this->getFiles(node: $nodeId);
+		}
+
+		// If folder is not set, search oc_filecache for a node with name equal to the object's uuid.
+		$uuid = $object->getUuid();
+		if ($uuid === null) {
+			// If uuid is not set, return empty array.
+			return [];
+		}
+
+		// Create a new query builder instance.
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid')
+			->from('filecache')
+			->where($qb->expr()->eq('name', $qb->createNamedParameter($uuid)));
+
+		// Execute the query and fetch all matching rows using proper Nextcloud method.
+		$result = $qb->executeQuery();
+		$rows = [];
+
+		// Fetch all rows manually.
+		$row = $result->fetch();
+		while ($row !== false) {
+			$rows[] = $row;
+			$row = $result->fetch();
+		}
+
+		$result->closeCursor();
+
+		// Handle the number of results.
+		$count = count($rows);
+		if ($count === 1) {
+			// Use the fileid as the node id.
+			$nodeId = (int)$rows[0]['fileid'];
+			return $this->getFiles(node: $nodeId);
+		}
+
+		if ($count > 1) {
+			// Multiple folders found with same UUID - pick the oldest one (lowest fileid).
+			// TODO: Add nightly cron job to cleanup orphaned folders and logs.
+			usort(
+				$rows,
+				function ($a, $b) {
+					return (int)$a['fileid'] - (int)$b['fileid'];
+				}
+			);
+			$oldestNodeId = (int)$rows[0]['fileid'];
+			return $this->getFiles(node: $oldestNodeId);
+		}
+
+		// No results found, return empty array.
+		return [];
+	}//end getFilesForObject()
+
+	/**
+	 * Batched lookup: file IDs for a list of object UUIDs.
+	 *
+	 * Resolves UUID -> folder node via oc_filecache.name (matching the fallback path of
+	 * getFilesForObject), then fetches all child file IDs in a second query. Total of
+	 * two queries regardless of input size, vs. N+1 if callers loop over getFilesForObject.
+	 *
+	 * Note: this method does NOT consider an object's explicit `folder` property — only
+	 * pass UUIDs. Full file metadata (renderFiles via _extend[]=@self.files) still uses
+	 * getFilesForObject which respects the explicit folder property.
+	 *
+	 * @param string[] $uuids Object UUIDs to look up.
+	 *
+	 * @return array<string, int[]> Map of UUID -> list of file IDs (empty array if none).
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two-step batched lookup with input
+	 *                                               validation; complexity is intrinsic.
+	 */
+	public function getFileIdsForObjects(array $uuids): array {
+		$result = [];
+		foreach ($uuids as $uuid) {
+			if (is_string($uuid) === true && $uuid !== '') {
+				$result[$uuid] = [];
+			}
+		}
+
+		if (empty($result) === true) {
+			return [];
+		}
+
+		// Step 1: resolve UUIDs to folder node IDs via filecache.name.
+		// Multiple folders may share a UUID name; the oldest (lowest fileid) wins,
+		// matching the resolution rule in getFilesForObject.
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid', 'name')
+			->from('filecache')
+			->where(
+				$qb->expr()->in(
+					'name',
+					$qb->createNamedParameter(array_keys($result), IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			)
+			->orderBy('fileid', 'ASC');
+
+		$stmt = $qb->executeQuery();
+		$uuidToNodeId = [];
+		$row = $stmt->fetch();
+		while ($row !== false) {
+			$name = (string)$row['name'];
+			// First (oldest) folder wins for duplicates.
+			if (isset($uuidToNodeId[$name]) === false) {
+				$uuidToNodeId[$name] = (int)$row['fileid'];
+			}
+
+			$row = $stmt->fetch();
+		}
+
+		$stmt->closeCursor();
+
+		if (empty($uuidToNodeId) === true) {
+			return $result;
+		}
+
+		// Step 2: fetch child file IDs for each folder node in one query.
+		$qb2 = $this->db->getQueryBuilder();
+		$qb2->select('fileid', 'parent')
+			->from('filecache')
+			->where(
+				$qb2->expr()->in(
+					'parent',
+					$qb2->createNamedParameter(array_values($uuidToNodeId), IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		$stmt2 = $qb2->executeQuery();
+		$nodeIdToFileIds = [];
+		$childRow = $stmt2->fetch();
+		while ($childRow !== false) {
+			$parent = (int)$childRow['parent'];
+			$nodeIdToFileIds[$parent][] = (int)$childRow['fileid'];
+			$childRow = $stmt2->fetch();
+		}
+
+		$stmt2->closeCursor();
+
+		// Step 3: project node IDs back to UUIDs.
+		foreach ($uuidToNodeId as $uuid => $nodeId) {
+			$result[$uuid] = $nodeIdToFileIds[$nodeId] ?? [];
+		}
+
+		return $result;
+	}//end getFileIdsForObjects()
+
+	/**
+	 * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
+	 *
+	 * Inverse of the {@see getFilesForObject()} fallback path: an object's attached
+	 * files live under a folder node whose `filecache.name` equals the object's UUID.
+	 * This looks up the file's parent folder and returns that folder's name.
+	 *
+	 * Best-effort only: an object with an explicit `folder` property pointing at a
+	 * node whose name is NOT the object UUID (e.g. a manually re-parented folder)
+	 * will not resolve here. Callers MUST treat a `null` return as "no owning object
+	 * found" and skip silently rather than error — this mirrors the same convention
+	 * `getFilesForObject()` already relies on for its own fallback path.
+	 *
+	 * SECURITY BOUNDARY: this join is intentionally NOT scoped by storage / tenant /
+	 * owner — `filecache.fileid` is globally unique across all storages and any
+	 * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
+	 * multitenancy safety net lives ONE layer up in
+	 * {@see ContentSearchHandler::resolveOwningObject()}, which passes the UUID to
+	 * `MagicMapper::find($uuid, _rbac: $callerRbac, _multitenancy: $callerMultitenancy)`.
+	 * Those flags are propagated from the outer caller (see
+	 * `QueryHandler::searchObjectsPaginatedDatabase`) and default to `true` on the
+	 * ContentSearchHandler entry point. **When the outer caller opts out of either
+	 * flag** (system contexts, batch jobs, some test paths using
+	 * `searchObjectsPaginatedDatabase(_rbac: false, _multitenancy: false)`) **this
+	 * method's join becomes an unbounded read across tenants and the caller must
+	 * supply its own scope guard** — the built-in safety net collapses. Do NOT
+	 * reuse this method in contexts that bypass the follow-up `MagicMapper::find()`
+	 * call OR that call it with the RBAC/multitenancy flags disabled, or a
+	 * low-privileged user could probe cross-tenant chunk-content by guessing
+	 * monotonic fileids. Defence-in-depth (join in `oc_storages` and filter to
+	 * accessible storages up-front) is a follow-up if we ever call this from a
+	 * hotter path or expose it to callers that opt out of RBAC.
+	 *
+	 * @param int $fileId The Nextcloud filecache fileid to resolve.
+	 *
+	 * @return string|null The owning object's UUID, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 */
+	public function findOwningObjectUuid(int $fileId): ?string {
+		$qb = $this->db->getQueryBuilder();
+		// SECURITY: unscoped filecache join — see docblock. Safety comes from
+		// the MagicMapper::find() call in the sole caller (ContentSearchHandler).
+		$qb->select('parentNode.name')
+			->from('filecache', 'file')
+			->innerJoin('file', 'filecache', 'parentNode', $qb->expr()->eq('file.parent', 'parentNode.fileid'))
+			->where($qb->expr()->eq('file.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$name = $result->fetchOne();
+		$result->closeCursor();
+
+		if ($name === false || $name === null || $name === '') {
+			return null;
+		}
+
+		return (string)$name;
+	}//end findOwningObjectUuid()
+
+	/**
+	 * Generate a share URL from a share token.
+	 *
+	 * @param string $token The share token
+	 *
+	 * @phpstan-param string $token
+	 *
+	 * @return string
+	 *
+	 * @phpstan-return string
+	 */
+	private function generateShareUrl(string $token): string {
+		$baseUrl = $this->urlGenerator->getBaseUrl();
+		return $baseUrl . '/index.php/s/' . $token;
+	}//end generateShareUrl()
+
+	/**
+	 * Generate an authenticated access URL for a file (requires login).
+	 *
+	 * This URL uses Nextcloud's file preview/access endpoint which requires
+	 * the user to be authenticated to access the file.
+	 *
+	 * @param int $fileId The file ID
+	 *
+	 * @phpstan-param int $fileId
+	 *
+	 * @return string
+	 *
+	 * @phpstan-return string
+	 */
+	private function generateAuthenticatedAccessUrl(int $fileId): string {
+		$baseUrl = $this->urlGenerator->getBaseUrl();
+		return $baseUrl . '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1';
+	}//end generateAuthenticatedAccessUrl()
+
+	/**
+	 * Generate an authenticated download URL for a file (requires login).
+	 *
+	 * This URL uses Nextcloud's direct download endpoint which requires
+	 * the user to be authenticated to download the file.
+	 *
+	 * @param int $fileId The file ID
+	 *
+	 * @phpstan-param int $fileId
+	 *
+	 * @return string
+	 *
+	 * @phpstan-return string
+	 */
+	private function generateAuthenticatedDownloadUrl(int $fileId): string {
+		$baseUrl = $this->urlGenerator->getBaseUrl();
+		return $baseUrl . '/index.php/apps/openregister/api/files/' . $fileId . '/download';
+	}//end generateAuthenticatedDownloadUrl()
+
+	/**
+	 * Publish a file by creating a public share directly in the database.
+	 *
+	 * @param int $fileId The file ID to publish
+	 * @param string $sharedBy The user who is sharing the file
+	 * @param string $shareOwner The owner of the file
+	 * @param int $permissions The permissions for the share (default: 1 = read)
+	 *
+	 * @return (int|string)[]
+	 *
+	 * @throws \Exception If the share creation fails
+	 *
+	 * @phpstan-param int $fileId
+	 * @phpstan-param string $sharedBy
+	 * @phpstan-param string $shareOwner
+	 * @phpstan-param int $permissions
+	 *
+	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 *
+	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 */
+	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions = 1): array {
+		// Check if a public share already exists for this file.
+		$existingShare = $this->getPublicShare(fileId: $fileId);
+		if ($existingShare !== null) {
+			// Return existing share information.
+			return [
+				'id' => $existingShare['id'],
+				'token' => $existingShare['token'],
+				'accessUrl' => $this->generateShareUrl(token: $existingShare['token']),
+				'downloadUrl' => $this->generateShareUrl(token: $existingShare['token']) . '/download',
+				'published' => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
+			];
+		}
+
+		// Generate a unique token for the share.
+		$token = $this->generateShareToken();
+		$currentTime = time();
+
+		// Insert the new share into the database.
+		$qb = $this->db->getQueryBuilder();
+		$qb->insert('share')
+			->values(
+				values: [
+					'share_type' => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
+					// 3 = public link.
+					'share_with' => $qb->createNamedParameter(null),
+					'password' => $qb->createNamedParameter(null),
+					'uid_owner' => $qb->createNamedParameter($shareOwner),
+					'uid_initiator' => $qb->createNamedParameter($sharedBy),
+					'parent' => $qb->createNamedParameter(null),
+					'item_type' => $qb->createNamedParameter('file'),
+					'item_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
+					'item_target' => $qb->createNamedParameter('/' . $fileId),
+					'file_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
+					'file_target' => $qb->createNamedParameter('/' . $fileId),
+					'permissions' => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
+					'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
+					'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+					'expiration' => $qb->createNamedParameter(null),
+					'token' => $qb->createNamedParameter($token),
+					'mail_send' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+					'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+				]
+			);
+
+		$result = $qb->executeStatement();
+
+		if ($result !== 1) {
+			throw new Exception('Failed to create public share in database');
+		}
+
+		// Get the ID of the newly created share.
+		$shareId = $qb->getLastInsertId();
+
+		return [
+			'id' => $shareId,
+			'token' => $token,
+			'accessUrl' => $this->generateShareUrl(token: $token),
+			'downloadUrl' => $this->generateShareUrl(token: $token) . '/download',
+			'published' => (new DateTime())->setTimestamp($currentTime)->format('c'),
+		];
+	}//end publishFile()
+
+	/**
+	 * Depublish a file by removing all public shares directly from the database.
+	 *
+	 * @param int $fileId The file ID to depublish
+	 *
+	 * @return array Information about the deletion operation
+	 *
+	 * @throws \Exception If the share deletion fails
+	 *
+	 * @phpstan-param  int $fileId
+	 * @phpstan-return array{deleted_shares: int, file_id: int}
+	 */
+	public function depublishFile(int $fileId): array {
+		// Delete all public shares for this file.
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete('share')
+			->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)));
+		// 3 = public link.
+		$deletedCount = $qb->executeStatement();
+
+		return [
+			'deleted_shares' => $deletedCount,
+			'file_id' => $fileId,
+		];
+	}//end depublishFile()
+
+	/**
+	 * Check whether a file has at least one active public share (share_type=3).
+	 *
+	 * Used by anonymous-accessible endpoints (e.g. preview, download)
+	 * to gate access — only published files are exposed to unauthenticated
+	 * callers.
+	 *
+	 * @param int $fileId The file ID to check.
+	 *
+	 * @return bool True when a public share exists, false otherwise.
+	 *
+	 * @phpstan-param  int $fileId
+	 * @phpstan-return bool
+	 */
+	public function isFilePublished(int $fileId): bool {
+		return $this->getPublicShare(fileId: $fileId) !== null;
+	}//end isFilePublished()
+
+	/**
+	 * Get an existing public share for a file.
+	 *
+	 * @param int $fileId The file ID
+	 *
+	 * @return array|null The share information or null if not found
+	 *
+	 * @phpstan-param  int $fileId
+	 * @phpstan-return array{id: int, token: string, stime: int}|null
+	 */
+	private function getPublicShare(int $fileId): ?array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'token', 'stime')
+			->from('share')
+			->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$share = $result->fetch();
+		$result->closeCursor();
+
+		if ($share === false) {
+			return null;
+		}
+
+		return $share;
+	}//end getPublicShare()
+
+	/**
+	 * Generate a unique share token.
+	 *
+	 * @return string A unique share token
+	 *
+	 * @phpstan-return string
+	 */
+	private function generateShareToken(): string {
+		// Generate a random token similar to how Nextcloud does it.
+		// Using a combination of letters and numbers, 15 characters long.
+		$characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+		$token = '';
+		$max = strlen($characters) - 1;
+
+		for ($i = 0; $i < 15; $i++) {
+			$token .= $characters[random_int(0, $max)];
+		}
+
+		// Ensure the token is unique by checking if it already exists.
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('share')
+			->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
+
+		$result = $qb->executeQuery();
+		$exists = $result->fetch();
+		$result->closeCursor();
+
+		// If token exists, generate a new one recursively.
+		if ($exists !== false) {
+			return $this->generateShareToken();
+		}
+
+		return $token;
+	}//end generateShareToken()
+
+	/**
+	 * Count all files in the Nextcloud installation
+	 *
+	 * @return int Total number of files in oc_filecache
+	 *
+	 * @phpstan-return int
+	 */
+	public function countAllFiles(): int {
+		$qb = $this->db->getQueryBuilder();
+		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
+		$qb->select($qb->func()->count('fc.fileid', 'count'))
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->where($qb->expr()->neq('mt.mimetype', $dirType));
+		// Exclude directories.
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['count'] ?? 0);
+	}//end countAllFiles()
+
+	/**
+	 * Get total storage size of all files in the Nextcloud installation
+	 *
+	 * @return int Total size in bytes of all files in oc_filecache
+	 *
+	 * @phpstan-return int
+	 */
+	public function getTotalFilesSize(): int {
+		$qb = $this->db->getQueryBuilder();
+		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
+		$qb->selectAlias($qb->createFunction('SUM(fc.size)'), 'total_size')
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->where($qb->expr()->neq('mt.mimetype', $dirType));
+		// Exclude directories.
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return (int)($row['total_size'] ?? 0);
+	}//end getTotalFilesSize()
+
+	/**
+	 * Find files in Nextcloud that are not tracked in the extraction system yet
+	 *
+	 * This queries oc_filecache for files that don't have a corresponding record
+	 * in oc_openregister_file_texts. These are "untracked" files that need to be
+	 * added to the extraction system.
+	 *
+	 * Only includes user files from home:: storages, excluding:
+	 * - Directories
+	 * - System files (appdata, previews, etc)
+	 * - Trashed files
+	 * - External/temporary storages
+	 *
+	 * @param int $limit Maximum number of untracked files to return
+	 *
+	 * @return array List of untracked files with basic metadata
+	 *
+	 * @phpstan-param  int $limit
+	 * @phpstan-return list<array{
+	 *     fileid: int, path: string, name: string, mimetype: string,
+	 *     size: int, mtime: int, checksum: string|null
+	 * }>
+	 */
+	public function findUntrackedFiles(int $limit = 100): array {
+		$qb = $this->db->getQueryBuilder();
+
+		// Pre-create common parameters for cleaner query building.
+		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
+		$homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
+		$trashPat = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
+		$appdataPat = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
+		$versionPat = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
+		$cachePat = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
+		$thumbPat = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
+		$filesPat = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
+		$zeroSize = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
+
+		// Select files from oc_filecache that don't exist in oc_openregister_file_texts.
+		$qb->select(
+			'fc.fileid',
+			'fc.path',
+			'fc.name',
+			'mt.mimetype',
+			'fc.size',
+			'fc.mtime',
+			'fc.checksum'
+		)
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
+			->leftJoin(
+				'fc',
+				'openregister_chunks',
+				'ch',
+				$qb->expr()->andX(
+					$qb->expr()->eq('fc.fileid', 'ch.source_id'),
+					$qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
+				)
+			)
+			->where($qb->expr()->isNull('ch.id'))
+			// No corresponding record in chunks.
+			->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
+			// Exclude directories.
+			->andWhere($qb->expr()->like('st.id', $homePattern))
+			// Only user home storages.
+			->andWhere($qb->expr()->notLike('fc.path', $trashPat))
+			// Exclude trash.
+			->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
+			// Exclude system appdata.
+			->andWhere($qb->expr()->notLike('fc.path', $versionPat))
+			// Exclude file versions.
+			->andWhere($qb->expr()->notLike('fc.path', $cachePat))
+			// Exclude cache.
+			->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
+			// Exclude thumbnails.
+			->andWhere($qb->expr()->like('fc.path', $filesPat))
+			// Only files in 'files/' directory.
+			->andWhere($qb->expr()->gt('fc.size', $zeroSize))
+			// Exclude empty files.
+			->setMaxResults($limit)
+			->orderBy('fc.fileid', 'ASC');
+
+		$result = $qb->executeQuery();
+		$files = [];
+
+		$row = $result->fetch();
+		while ($row !== false) {
+			$files[] = $row;
+			$row = $result->fetch();
+		}
+
+		$result->closeCursor();
+
+		return $files;
+	}//end findUntrackedFiles()
+
+	/**
+	 * Count untracked files
+	 *
+	 * Count files that exist in Nextcloud but haven't been tracked in file_texts table
+	 *
+	 * @return int Number of untracked files
+	 */
+	public function countUntrackedFiles(): int {
+		$qb = $this->db->getQueryBuilder();
+
+		// Same query as findUntrackedFiles but with COUNT.
+		// Pre-create common parameters for cleaner query building.
+		$dirType = $qb->createNamedParameter('httpd/unix-directory', IQueryBuilder::PARAM_STR);
+		$homePattern = $qb->createNamedParameter('home::%', IQueryBuilder::PARAM_STR);
+		$trashPat = $qb->createNamedParameter('%files_trashbin%', IQueryBuilder::PARAM_STR);
+		$appdataPat = $qb->createNamedParameter('appdata_%', IQueryBuilder::PARAM_STR);
+		$versionPat = $qb->createNamedParameter('%files_versions%', IQueryBuilder::PARAM_STR);
+		$cachePat = $qb->createNamedParameter('%cache%', IQueryBuilder::PARAM_STR);
+		$thumbPat = $qb->createNamedParameter('%thumbnails%', IQueryBuilder::PARAM_STR);
+		$filesPat = $qb->createNamedParameter('files/%', IQueryBuilder::PARAM_STR);
+		$zeroSize = $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT);
+
+		$qb->select($qb->createFunction('COUNT(DISTINCT fc.fileid) as count'))
+			->from('filecache', 'fc')
+			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
+			->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
+			->leftJoin(
+				'fc',
+				'openregister_chunks',
+				'ch',
+				$qb->expr()->andX(
+					$qb->expr()->eq('fc.fileid', 'ch.source_id'),
+					$qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR))
+				)
+			)
+			->where($qb->expr()->isNull('ch.id'))
+			->andWhere($qb->expr()->neq('mt.mimetype', $dirType))
+			->andWhere($qb->expr()->like('st.id', $homePattern))
+			->andWhere($qb->expr()->notLike('fc.path', $trashPat))
+			->andWhere($qb->expr()->notLike('fc.path', $appdataPat))
+			->andWhere($qb->expr()->notLike('fc.path', $versionPat))
+			->andWhere($qb->expr()->notLike('fc.path', $cachePat))
+			->andWhere($qb->expr()->notLike('fc.path', $thumbPat))
+			->andWhere($qb->expr()->like('fc.path', $filesPat))
+			->andWhere($qb->expr()->gt('fc.size', $zeroSize));
+
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countUntrackedFiles()
+
+	/**
+	 * Set file ownership at database level.
+	 *
+	 * @param int $fileId The file ID to change ownership for
+	 * @param string $userId The user ID to set as owner
+	 *
+	 * @return bool True if ownership was updated successfully, false otherwise
+	 *
+	 * @throws \Exception If the ownership update fails
+	 *
+	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
+	 * @TODO: where files exist but can't be accessed due to permission problems.
+	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+	 */
+	public function setFileOwnership(int $fileId, string $userId): bool {
+		// Get storage information for this file.
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('storage')
+			->from('filecache')
+			->where($qb->expr()->eq('fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$fileInfo = $result->fetch();
+		$result->closeCursor();
+
+		if ($fileInfo === false || $fileInfo === null) {
+			throw new Exception("File with ID $fileId not found in filecache");
+		}
+
+		$storageId = $fileInfo['storage'];
+
+		// Update the storage owner in the oc_storages table.
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('storages')
+			->set('id', $qb->createNamedParameter("home::$userId"))
+			->where($qb->expr()->eq('numeric_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
+
+		$storageResult = $qb->executeStatement();
+
+		// Also try to update any mounts table if it exists.
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update('mounts')
+				->set('user_id', $qb->createNamedParameter($userId))
+				->where($qb->expr()->eq('storage_id', $qb->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
+
+			$qb->executeStatement();
+		} catch (\Exception $e) {
+			// Mounts table might not exist or might have different structure.
+			// This is not critical for the ownership fix.
+		}
+
+		return $storageResult > 0;
+	}//end setFileOwnership()
 }//end class

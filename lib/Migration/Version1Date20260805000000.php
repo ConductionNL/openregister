@@ -39,62 +39,59 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds `purged_at` to `openregister_audit_trails`.
  */
-class Version1Date20260805000000 extends SimpleMigrationStep
-{
-    /**
-     * Add the nullable `purged_at` column and an index for the purge sweep.
-     *
-     * Nullable with no default: `NULL` means "intact row", which is what every
-     * existing row is. No backfill is possible or wanted — rows purged before
-     * this migration were physically deleted and cannot be reconstructed.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260805000000 extends SimpleMigrationStep {
+	/**
+	 * Add the nullable `purged_at` column and an index for the purge sweep.
+	 *
+	 * Nullable with no default: `NULL` means "intact row", which is what every
+	 * existing row is. No backfill is possible or wanted — rows purged before
+	 * this migration were physically deleted and cannot be reconstructed.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_audit_trails') === false) {
-            $output->info('openregister_audit_trails does not exist yet; nothing to alter.');
-            return null;
-        }
+		if ($schema->hasTable('openregister_audit_trails') === false) {
+			$output->info('openregister_audit_trails does not exist yet; nothing to alter.');
+			return null;
+		}
 
-        $table   = $schema->getTable('openregister_audit_trails');
-        $changed = false;
+		$table = $schema->getTable('openregister_audit_trails');
+		$changed = false;
 
-        if ($table->hasColumn('purged_at') === false) {
-            $table->addColumn(
-                'purged_at',
-                Types::DATETIME,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                ]
-            );
-            $changed = true;
-            $output->info('Added openregister_audit_trails.purged_at (retention tombstone marker).');
-        }
+		if ($table->hasColumn('purged_at') === false) {
+			$table->addColumn(
+				'purged_at',
+				Types::DATETIME,
+				[
+					'notnull' => false,
+					'default' => null,
+				]
+			);
+			$changed = true;
+			$output->info('Added openregister_audit_trails.purged_at (retention tombstone marker).');
+		}
 
-        // The purge sweep and the "is this chain clean?" report both filter on
-        // this column across a table that is now expected to grow for years.
-        if ($table->hasIndex('or_audit_purged_at_idx') === false) {
-            $table->addIndex(['purged_at'], 'or_audit_purged_at_idx');
-            $changed = true;
-        }
+		// The purge sweep and the "is this chain clean?" report both filter on
+		// this column across a table that is now expected to grow for years.
+		if ($table->hasIndex('or_audit_purged_at_idx') === false) {
+			$table->addIndex(['purged_at'], 'or_audit_purged_at_idx');
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

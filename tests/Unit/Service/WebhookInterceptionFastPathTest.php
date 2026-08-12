@@ -47,348 +47,334 @@ use Psr\Log\LoggerInterface;
  * Unit tests for the interception-cache fast path and the interception
  * delivery timeout cap.
  */
-class WebhookInterceptionFastPathTest extends TestCase
-{
-    private WebhookMapper&MockObject $webhookMapper;
-    private WebhookLogMapper&MockObject $webhookLogMapper;
-    private MappingService&MockObject $mappingService;
-    private MappingMapper&MockObject $mappingMapper;
-    private IJobList&MockObject $jobList;
-    private LoggerInterface&MockObject $logger;
-    private WebhookInterceptionCache&MockObject $interceptionCache;
-    private WebhookService $service;
+class WebhookInterceptionFastPathTest extends TestCase {
+	private WebhookMapper&MockObject $webhookMapper;
+	private WebhookLogMapper&MockObject $webhookLogMapper;
+	private MappingService&MockObject $mappingService;
+	private MappingMapper&MockObject $mappingMapper;
+	private IJobList&MockObject $jobList;
+	private LoggerInterface&MockObject $logger;
+	private WebhookInterceptionCache&MockObject $interceptionCache;
+	private WebhookService $service;
 
-    /**
-     * Set up service with all dependencies mocked, including the cache.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up service with all dependencies mocked, including the cache.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->webhookMapper     = $this->createMock(WebhookMapper::class);
-        $this->webhookLogMapper  = $this->createMock(WebhookLogMapper::class);
-        $this->mappingService    = $this->createMock(MappingService::class);
-        $this->mappingMapper     = $this->createMock(MappingMapper::class);
-        $this->jobList           = $this->createMock(IJobList::class);
-        $this->logger            = $this->createMock(LoggerInterface::class);
-        $this->interceptionCache = $this->createMock(WebhookInterceptionCache::class);
+		$this->webhookMapper = $this->createMock(WebhookMapper::class);
+		$this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
+		$this->mappingService = $this->createMock(MappingService::class);
+		$this->mappingMapper = $this->createMock(MappingMapper::class);
+		$this->jobList = $this->createMock(IJobList::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->interceptionCache = $this->createMock(WebhookInterceptionCache::class);
 
-        $this->service = new WebhookService(
-            webhookMapper: $this->webhookMapper,
-            logger: $this->logger,
-            webhookLogMapper: $this->webhookLogMapper,
-            mappingService: $this->mappingService,
-            mappingMapper: $this->mappingMapper,
-            jobList: $this->jobList,
-            cloudEventFormatter: null,
-            interceptionCache: $this->interceptionCache
-        );
-    }//end setUp()
+		$this->service = new WebhookService(
+			webhookMapper: $this->webhookMapper,
+			logger: $this->logger,
+			webhookLogMapper: $this->webhookLogMapper,
+			mappingService: $this->mappingService,
+			mappingMapper: $this->mappingMapper,
+			jobList: $this->jobList,
+			cloudEventFormatter: null,
+			interceptionCache: $this->interceptionCache
+		);
+	}//end setUp()
 
-    /**
-     * Build a request mock with fixed params.
-     *
-     * @param array $params Request params.
-     *
-     * @return IRequest&MockObject
-     */
-    private function makeRequest(array $params=['key' => 'value']): IRequest&MockObject
-    {
-        $request = $this->createMock(IRequest::class);
-        $request->method('getParams')->willReturn($params);
-        $request->method('getMethod')->willReturn('POST');
-        $request->method('getPathInfo')->willReturn('/api/objects/1/2');
+	/**
+	 * Build a request mock with fixed params.
+	 *
+	 * @param array $params Request params.
+	 *
+	 * @return IRequest&MockObject
+	 */
+	private function makeRequest(array $params = ['key' => 'value']): IRequest&MockObject {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn($params);
+		$request->method('getMethod')->willReturn('POST');
+		$request->method('getPathInfo')->willReturn('/api/objects/1/2');
 
-        return $request;
-    }//end makeRequest()
+		return $request;
+	}//end makeRequest()
 
-    /**
-     * Build a real interception Webhook entity.
-     *
-     * @param int $timeout Per-webhook delivery timeout in seconds.
-     *
-     * @return Webhook
-     */
-    private function makeInterceptionWebhook(int $timeout=30): Webhook
-    {
-        $webhook = new Webhook();
-        $webhook->setId(1);
-        $webhook->setName('Intercepting hook');
-        $webhook->setUrl('https://example.com/hook');
-        $webhook->setMethod('POST');
-        $webhook->setEnabled(true);
-        $webhook->setTimeout($timeout);
-        $webhook->setMaxRetries(0);
-        $webhook->setConfiguration(json_encode(['interceptRequests' => true]));
+	/**
+	 * Build a real interception Webhook entity.
+	 *
+	 * @param int $timeout Per-webhook delivery timeout in seconds.
+	 *
+	 * @return Webhook
+	 */
+	private function makeInterceptionWebhook(int $timeout = 30): Webhook {
+		$webhook = new Webhook();
+		$webhook->setId(1);
+		$webhook->setName('Intercepting hook');
+		$webhook->setUrl('https://example.com/hook');
+		$webhook->setMethod('POST');
+		$webhook->setEnabled(true);
+		$webhook->setTimeout($timeout);
+		$webhook->setMaxRetries(0);
+		$webhook->setConfiguration(json_encode(['interceptRequests' => true]));
 
-        return $webhook;
-    }//end makeInterceptionWebhook()
+		return $webhook;
+	}//end makeInterceptionWebhook()
 
-    /**
-     * Inject a mock Guzzle client via reflection.
-     *
-     * @param GuzzleClient&MockObject $client Mock client.
-     *
-     * @return void
-     */
-    private function injectMockClient(GuzzleClient $client): void
-    {
-        $reflection = new \ReflectionClass($this->service);
-        $property   = $reflection->getProperty('client');
-        $property->setAccessible(true);
-        $property->setValue($this->service, $client);
-    }//end injectMockClient()
+	/**
+	 * Inject a mock Guzzle client via reflection.
+	 *
+	 * @param GuzzleClient&MockObject $client Mock client.
+	 *
+	 * @return void
+	 */
+	private function injectMockClient(GuzzleClient $client): void {
+		$reflection = new \ReflectionClass($this->service);
+		$property = $reflection->getProperty('client');
+		$property->setAccessible(true);
+		$property->setValue($this->service, $client);
+	}//end injectMockClient()
 
-    // ─── Cache hit: false ────────────────────────────────────────────
+	// ─── Cache hit: false ────────────────────────────────────────────
 
-    /**
-     * A cached "false" flag skips EVERY webhook table query — this is the
-     * zero-cost path object writes take on installs without interception
-     * webhooks.
-     *
-     * @return void
-     */
-    public function testCachedFalseSkipsAllWebhookQueries(): void
-    {
-        $this->interceptionCache->method('get')
-            ->with('object.creating')
-            ->willReturn(false);
+	/**
+	 * A cached "false" flag skips EVERY webhook table query — this is the
+	 * zero-cost path object writes take on installs without interception
+	 * webhooks.
+	 *
+	 * @return void
+	 */
+	public function testCachedFalseSkipsAllWebhookQueries(): void {
+		$this->interceptionCache->method('get')
+			->with('object.creating')
+			->willReturn(false);
 
-        $this->webhookMapper->expects($this->never())->method('findEnabled');
-        $this->webhookMapper->expects($this->never())->method('findEnabledForInterceptionScan');
-        $this->interceptionCache->expects($this->never())->method('set');
+		$this->webhookMapper->expects($this->never())->method('findEnabled');
+		$this->webhookMapper->expects($this->never())->method('findEnabledForInterceptionScan');
+		$this->interceptionCache->expects($this->never())->method('set');
 
-        $result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testCachedFalseSkipsAllWebhookQueries()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testCachedFalseSkipsAllWebhookQueries()
 
-    // ─── Cache hit: true ─────────────────────────────────────────────
+	// ─── Cache hit: true ─────────────────────────────────────────────
 
-    /**
-     * A cached "true" flag skips the tenant-agnostic scan but still runs the
-     * organisation-filtered lookup to select the applicable webhooks.
-     *
-     * @return void
-     */
-    public function testCachedTrueRunsOrganisationFilteredLookup(): void
-    {
-        $this->interceptionCache->method('get')
-            ->with('object.creating')
-            ->willReturn(true);
+	/**
+	 * A cached "true" flag skips the tenant-agnostic scan but still runs the
+	 * organisation-filtered lookup to select the applicable webhooks.
+	 *
+	 * @return void
+	 */
+	public function testCachedTrueRunsOrganisationFilteredLookup(): void {
+		$this->interceptionCache->method('get')
+			->with('object.creating')
+			->willReturn(true);
 
-        $this->webhookMapper->expects($this->never())->method('findEnabledForInterceptionScan');
-        $this->webhookMapper->expects($this->once())
-            ->method('findEnabled')
-            ->willReturn([]);
+		$this->webhookMapper->expects($this->never())->method('findEnabledForInterceptionScan');
+		$this->webhookMapper->expects($this->once())
+			->method('findEnabled')
+			->willReturn([]);
 
-        $result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testCachedTrueRunsOrganisationFilteredLookup()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testCachedTrueRunsOrganisationFilteredLookup()
 
-    // ─── Cache miss ──────────────────────────────────────────────────
+	// ─── Cache miss ──────────────────────────────────────────────────
 
-    /**
-     * On a cache miss with no interception webhooks anywhere, the flag is
-     * computed from the tenant-agnostic scan, cached as false, and the
-     * organisation-filtered lookup is skipped.
-     *
-     * @return void
-     */
-    public function testCacheMissComputesAndStoresFalse(): void
-    {
-        $this->interceptionCache->method('get')->willReturn(null);
+	/**
+	 * On a cache miss with no interception webhooks anywhere, the flag is
+	 * computed from the tenant-agnostic scan, cached as false, and the
+	 * organisation-filtered lookup is skipped.
+	 *
+	 * @return void
+	 */
+	public function testCacheMissComputesAndStoresFalse(): void {
+		$this->interceptionCache->method('get')->willReturn(null);
 
-        $this->webhookMapper->expects($this->once())
-            ->method('findEnabledForInterceptionScan')
-            ->willReturn([]);
-        $this->webhookMapper->expects($this->never())->method('findEnabled');
+		$this->webhookMapper->expects($this->once())
+			->method('findEnabledForInterceptionScan')
+			->willReturn([]);
+		$this->webhookMapper->expects($this->never())->method('findEnabled');
 
-        $this->interceptionCache->expects($this->once())
-            ->method('set')
-            ->with('object.creating', false);
+		$this->interceptionCache->expects($this->once())
+			->method('set')
+			->with('object.creating', false);
 
-        $result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testCacheMissComputesAndStoresFalse()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testCacheMissComputesAndStoresFalse()
 
-    /**
-     * On a cache miss with a matching interception webhook, the flag is
-     * cached as true and delivery proceeds through the organisation-filtered
-     * lookup.
-     *
-     * @return void
-     */
-    public function testCacheMissComputesAndStoresTrue(): void
-    {
-        $webhook = $this->makeInterceptionWebhook();
+	/**
+	 * On a cache miss with a matching interception webhook, the flag is
+	 * cached as true and delivery proceeds through the organisation-filtered
+	 * lookup.
+	 *
+	 * @return void
+	 */
+	public function testCacheMissComputesAndStoresTrue(): void {
+		$webhook = $this->makeInterceptionWebhook();
 
-        $this->interceptionCache->method('get')->willReturn(null);
-        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
-        $this->webhookMapper->expects($this->once())
-            ->method('findEnabled')
-            ->willReturn([$webhook]);
+		$this->interceptionCache->method('get')->willReturn(null);
+		$this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
+		$this->webhookMapper->expects($this->once())
+			->method('findEnabled')
+			->willReturn([$webhook]);
 
-        $this->interceptionCache->expects($this->once())
-            ->method('set')
-            ->with('object.creating', true);
+		$this->interceptionCache->expects($this->once())
+			->method('set')
+			->with('object.creating', true);
 
-        $mockClient = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturn(new GuzzleResponse(200, [], '{}'));
-        $this->injectMockClient($mockClient);
+		$mockClient = $this->createMock(GuzzleClient::class);
+		$mockClient->method('request')->willReturn(new GuzzleResponse(200, [], '{}'));
+		$this->injectMockClient($mockClient);
 
-        $result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testCacheMissComputesAndStoresTrue()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testCacheMissComputesAndStoresTrue()
 
-    /**
-     * A webhook that is enabled but NOT configured for interception yields a
-     * cached false — post-save-only webhooks must not un-fast-path writes.
-     *
-     * @return void
-     */
-    public function testNonInterceptionWebhookStillCachesFalse(): void
-    {
-        $webhook = $this->makeInterceptionWebhook();
-        $webhook->setConfiguration(json_encode(['interceptRequests' => false]));
+	/**
+	 * A webhook that is enabled but NOT configured for interception yields a
+	 * cached false — post-save-only webhooks must not un-fast-path writes.
+	 *
+	 * @return void
+	 */
+	public function testNonInterceptionWebhookStillCachesFalse(): void {
+		$webhook = $this->makeInterceptionWebhook();
+		$webhook->setConfiguration(json_encode(['interceptRequests' => false]));
 
-        $this->interceptionCache->method('get')->willReturn(null);
-        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
-        $this->webhookMapper->expects($this->never())->method('findEnabled');
+		$this->interceptionCache->method('get')->willReturn(null);
+		$this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
+		$this->webhookMapper->expects($this->never())->method('findEnabled');
 
-        $this->interceptionCache->expects($this->once())
-            ->method('set')
-            ->with('object.creating', false);
+		$this->interceptionCache->expects($this->once())
+			->method('set')
+			->with('object.creating', false);
 
-        $result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testNonInterceptionWebhookStillCachesFalse()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testNonInterceptionWebhookStillCachesFalse()
 
-    // ─── No cache backend ────────────────────────────────────────────
+	// ─── No cache backend ────────────────────────────────────────────
 
-    /**
-     * Without a cache backend the service still works: the flag is computed
-     * from the tenant-agnostic scan on every call (pre-cache behaviour).
-     *
-     * @return void
-     */
-    public function testWithoutCacheBackendFallsBackToScan(): void
-    {
-        $service = new WebhookService(
-            webhookMapper: $this->webhookMapper,
-            logger: $this->logger,
-            webhookLogMapper: $this->webhookLogMapper,
-            mappingService: $this->mappingService,
-            mappingMapper: $this->mappingMapper,
-            jobList: $this->jobList
-        );
+	/**
+	 * Without a cache backend the service still works: the flag is computed
+	 * from the tenant-agnostic scan on every call (pre-cache behaviour).
+	 *
+	 * @return void
+	 */
+	public function testWithoutCacheBackendFallsBackToScan(): void {
+		$service = new WebhookService(
+			webhookMapper: $this->webhookMapper,
+			logger: $this->logger,
+			webhookLogMapper: $this->webhookLogMapper,
+			mappingService: $this->mappingService,
+			mappingMapper: $this->mappingMapper,
+			jobList: $this->jobList
+		);
 
-        $this->webhookMapper->expects($this->once())
-            ->method('findEnabledForInterceptionScan')
-            ->willReturn([]);
+		$this->webhookMapper->expects($this->once())
+			->method('findEnabledForInterceptionScan')
+			->willReturn([]);
 
-        $result = $service->interceptRequest($this->makeRequest(), 'object.creating');
+		$result = $service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertSame(['key' => 'value'], $result);
-    }//end testWithoutCacheBackendFallsBackToScan()
+		$this->assertSame(['key' => 'value'], $result);
+	}//end testWithoutCacheBackendFallsBackToScan()
 
-    // ─── Interception timeout cap ────────────────────────────────────
+	// ─── Interception timeout cap ────────────────────────────────────
 
-    /**
-     * Interception deliveries are hard-capped at 2s connect + total: the
-     * webhook's own 30s timeout must NOT leak into the request-blocking
-     * interception path.
-     *
-     * @return void
-     */
-    public function testInterceptionDeliveryCapsTimeoutAtTwoSeconds(): void
-    {
-        $webhook = $this->makeInterceptionWebhook(timeout: 30);
+	/**
+	 * Interception deliveries are hard-capped at 2s connect + total: the
+	 * webhook's own 30s timeout must NOT leak into the request-blocking
+	 * interception path.
+	 *
+	 * @return void
+	 */
+	public function testInterceptionDeliveryCapsTimeoutAtTwoSeconds(): void {
+		$webhook = $this->makeInterceptionWebhook(timeout: 30);
 
-        $this->interceptionCache->method('get')->willReturn(true);
-        $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+		$this->interceptionCache->method('get')->willReturn(true);
+		$this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
 
-        $capturedOptions = null;
-        $mockClient      = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturnCallback(
-            function (string $method, $uri, array $options) use (&$capturedOptions) {
-                $capturedOptions = $options;
-                return new GuzzleResponse(200, [], '{}');
-            }
-        );
-        $this->injectMockClient($mockClient);
+		$capturedOptions = null;
+		$mockClient = $this->createMock(GuzzleClient::class);
+		$mockClient->method('request')->willReturnCallback(
+			function (string $method, $uri, array $options) use (&$capturedOptions) {
+				$capturedOptions = $options;
+				return new GuzzleResponse(200, [], '{}');
+			}
+		);
+		$this->injectMockClient($mockClient);
 
-        $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertNotNull($capturedOptions, 'Delivery request was never issued');
-        $this->assertSame(2, $capturedOptions['timeout']);
-        $this->assertSame(2, $capturedOptions['connect_timeout']);
-    }//end testInterceptionDeliveryCapsTimeoutAtTwoSeconds()
+		$this->assertNotNull($capturedOptions, 'Delivery request was never issued');
+		$this->assertSame(2, $capturedOptions['timeout']);
+		$this->assertSame(2, $capturedOptions['connect_timeout']);
+	}//end testInterceptionDeliveryCapsTimeoutAtTwoSeconds()
 
-    /**
-     * A webhook with a SHORTER timeout than the cap keeps its own timeout —
-     * the cap only lowers, never raises.
-     *
-     * @return void
-     */
-    public function testInterceptionCapNeverRaisesShorterWebhookTimeout(): void
-    {
-        $webhook = $this->makeInterceptionWebhook(timeout: 1);
+	/**
+	 * A webhook with a SHORTER timeout than the cap keeps its own timeout —
+	 * the cap only lowers, never raises.
+	 *
+	 * @return void
+	 */
+	public function testInterceptionCapNeverRaisesShorterWebhookTimeout(): void {
+		$webhook = $this->makeInterceptionWebhook(timeout: 1);
 
-        $this->interceptionCache->method('get')->willReturn(true);
-        $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+		$this->interceptionCache->method('get')->willReturn(true);
+		$this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
 
-        $capturedOptions = null;
-        $mockClient      = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturnCallback(
-            function (string $method, $uri, array $options) use (&$capturedOptions) {
-                $capturedOptions = $options;
-                return new GuzzleResponse(200, [], '{}');
-            }
-        );
-        $this->injectMockClient($mockClient);
+		$capturedOptions = null;
+		$mockClient = $this->createMock(GuzzleClient::class);
+		$mockClient->method('request')->willReturnCallback(
+			function (string $method, $uri, array $options) use (&$capturedOptions) {
+				$capturedOptions = $options;
+				return new GuzzleResponse(200, [], '{}');
+			}
+		);
+		$this->injectMockClient($mockClient);
 
-        $this->service->interceptRequest($this->makeRequest(), 'object.creating');
+		$this->service->interceptRequest($this->makeRequest(), 'object.creating');
 
-        $this->assertNotNull($capturedOptions, 'Delivery request was never issued');
-        $this->assertSame(1, $capturedOptions['timeout']);
-        $this->assertSame(2, $capturedOptions['connect_timeout']);
-    }//end testInterceptionCapNeverRaisesShorterWebhookTimeout()
+		$this->assertNotNull($capturedOptions, 'Delivery request was never issued');
+		$this->assertSame(1, $capturedOptions['timeout']);
+		$this->assertSame(2, $capturedOptions['connect_timeout']);
+	}//end testInterceptionCapNeverRaisesShorterWebhookTimeout()
 
-    /**
-     * Non-interception deliveries (async path) keep the per-webhook timeout
-     * and never receive the cap.
-     *
-     * @return void
-     */
-    public function testUncappedDeliveryKeepsPerWebhookTimeout(): void
-    {
-        $webhook = $this->makeInterceptionWebhook(timeout: 30);
+	/**
+	 * Non-interception deliveries (async path) keep the per-webhook timeout
+	 * and never receive the cap.
+	 *
+	 * @return void
+	 */
+	public function testUncappedDeliveryKeepsPerWebhookTimeout(): void {
+		$webhook = $this->makeInterceptionWebhook(timeout: 30);
 
-        $capturedOptions = null;
-        $mockClient      = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturnCallback(
-            function (string $method, $uri, array $options) use (&$capturedOptions) {
-                $capturedOptions = $options;
-                return new GuzzleResponse(200, [], '{}');
-            }
-        );
-        $this->injectMockClient($mockClient);
+		$capturedOptions = null;
+		$mockClient = $this->createMock(GuzzleClient::class);
+		$mockClient->method('request')->willReturnCallback(
+			function (string $method, $uri, array $options) use (&$capturedOptions) {
+				$capturedOptions = $options;
+				return new GuzzleResponse(200, [], '{}');
+			}
+		);
+		$this->injectMockClient($mockClient);
 
-        $this->service->deliverWebhook(
-            webhook: $webhook,
-            eventName: 'object.created',
-            payload: ['objectType' => 'object']
-        );
+		$this->service->deliverWebhook(
+			webhook: $webhook,
+			eventName: 'object.created',
+			payload: ['objectType' => 'object']
+		);
 
-        $this->assertNotNull($capturedOptions, 'Delivery request was never issued');
-        $this->assertSame(30, $capturedOptions['timeout']);
-        $this->assertArrayNotHasKey('connect_timeout', $capturedOptions);
-    }//end testUncappedDeliveryKeepsPerWebhookTimeout()
+		$this->assertNotNull($capturedOptions, 'Delivery request was never issued');
+		$this->assertSame(30, $capturedOptions['timeout']);
+		$this->assertArrayNotHasKey('connect_timeout', $capturedOptions);
+	}//end testUncappedDeliveryKeepsPerWebhookTimeout()
 }//end class

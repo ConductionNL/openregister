@@ -32,86 +32,80 @@ use OCP\Settings\IIconSection;
  * @category Section
  * @package  OCA\OpenRegister\Sections
  */
-class OpenRegisterAdmin implements IIconSection
-{
+class OpenRegisterAdmin implements IIconSection {
 
-    /**
-     * Localization service.
-     *
-     * @var IL10N
-     */
-    private IL10N $l;
+	/**
+	 * Localization service.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l;
 
-    /**
-     * URL generator service.
-     *
-     * @var IURLGenerator
-     */
-    private IURLGenerator $urlGenerator;
+	/**
+	 * URL generator service.
+	 *
+	 * @var IURLGenerator
+	 */
+	private IURLGenerator $urlGenerator;
 
-    /**
-     * Constructor for OpenRegisterAdmin section.
-     *
-     * @param IL10N         $l            Localization service
-     * @param IURLGenerator $urlGenerator URL generator service
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(IL10N $l, IURLGenerator $urlGenerator)
-    {
-        $this->l            = $l;
-        $this->urlGenerator = $urlGenerator;
-    }//end __construct()
+	/**
+	 * Constructor for OpenRegisterAdmin section.
+	 *
+	 * @param IL10N $l Localization service
+	 * @param IURLGenerator $urlGenerator URL generator service
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(IL10N $l, IURLGenerator $urlGenerator) {
+		$this->l = $l;
+		$this->urlGenerator = $urlGenerator;
+	}//end __construct()
 
-    /**
-     * Get the icon for this admin section.
-     *
-     * @return string Icon path
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getIcon(): string
-    {
-        return $this->urlGenerator->imagePath(appName: 'openregister', file: 'app-dark.svg');
-    }//end getIcon()
+	/**
+	 * Get the icon for this admin section.
+	 *
+	 * @return string Icon path
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getIcon(): string {
+		return $this->urlGenerator->imagePath(appName: 'openregister', file: 'app-dark.svg');
+	}//end getIcon()
 
-    /**
-     * Get the ID of this admin section.
-     *
-     * @return string Section ID
-     *
-     * @psalm-return 'openregister'
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getID(): string
-    {
-        return 'openregister';
-    }//end getID()
+	/**
+	 * Get the ID of this admin section.
+	 *
+	 * @return string Section ID
+	 *
+	 * @psalm-return 'openregister'
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getID(): string {
+		return 'openregister';
+	}//end getID()
 
-    /**
-     * Get the display name of this admin section.
-     *
-     * @return string Section name
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getName(): string
-    {
-        return $this->l->t('Open Register');
-    }//end getName()
+	/**
+	 * Get the display name of this admin section.
+	 *
+	 * @return string Section name
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string {
+		return $this->l->t('Open Register');
+	}//end getName()
 
-    /**
-     * Get the priority of this admin section.
-     *
-     * @return int Section priority
-     *
-     * @psalm-return 97
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getPriority(): int
-    {
-        return 97;
-    }//end getPriority()
+	/**
+	 * Get the priority of this admin section.
+	 *
+	 * @return int Section priority
+	 *
+	 * @psalm-return 97
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getPriority(): int {
+		return 97;
+	}//end getPriority()
 }//end class

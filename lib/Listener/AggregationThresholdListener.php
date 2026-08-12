@@ -57,130 +57,126 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.3
  */
-class AggregationThresholdListener implements IEventListener
-{
+class AggregationThresholdListener implements IEventListener {
 
-    /**
-     * Entries per enqueued evaluation job. Rarely reached thanks to the
-     * (register, schema) dedupe key.
-     *
-     * @var integer
-     */
-    private const CHUNK_SIZE = 100;
+	/**
+	 * Entries per enqueued evaluation job. Rarely reached thanks to the
+	 * (register, schema) dedupe key.
+	 *
+	 * @var integer
+	 */
+	private const CHUNK_SIZE = 100;
 
-    /**
-     * Wire collaborators.
-     *
-     * @param SchemaMapper               $schemaMapper Schema lookup mapper.
-     * @param ThresholdEvaluationService $evaluator    Shared threshold evaluation logic.
-     * @param ListenerDeferralService    $deferral     Actor-forwarding deferral service.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ThresholdEvaluationService $evaluator,
-        private readonly ListenerDeferralService $deferral
-    ) {
-    }//end __construct()
+	/**
+	 * Wire collaborators.
+	 *
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
+	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ThresholdEvaluationService $evaluator,
+		private readonly ListenerDeferralService $deferral,
+	) {
+	}//end __construct()
 
-    /**
-     * Defer (or evaluate inline) the schema's threshold notifications.
-     *
-     * @param Event $event Inbound dispatcher event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        $object = $this->extractObject(event: $event);
-        if ($object === null) {
-            return;
-        }
+	/**
+	 * Defer (or evaluate inline) the schema's threshold notifications.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		$object = $this->extractObject(event: $event);
+		if ($object === null) {
+			return;
+		}
 
-        $schema = $this->loadSchema(object: $object);
-        if ($schema === null) {
-            return;
-        }
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return;
+		}
 
-        if ($this->evaluator->hasThresholdNotifications($schema) === false) {
-            return;
-        }
+		if ($this->evaluator->hasThresholdNotifications($schema) === false) {
+			return;
+		}
 
-        // Deletes evaluate inline: the entity is not re-fetchable once the
-        // delete lands, so a deferred job could never dispatch for
-        // delete-driven crossings. The kill switch also forces inline.
-        if ($event instanceof ObjectDeletedEvent || $this->deferral->isDeferralEnabled() === false) {
-            $this->evaluator->evaluateSchema(schema: $schema, object: $object);
-            return;
-        }
+		// Deletes evaluate inline: the entity is not re-fetchable once the
+		// delete lands, so a deferred job could never dispatch for
+		// delete-driven crossings. The kill switch also forces inline.
+		if ($event instanceof ObjectDeletedEvent || $this->deferral->isDeferralEnabled() === false) {
+			$this->evaluator->evaluateSchema(schema: $schema, object: $object);
+			return;
+		}
 
-        $registerRef = (string) $object->getRegister();
-        $schemaRef   = (string) $object->getSchema();
-        $this->deferral->defer(
-            jobClass: AggregationThresholdJob::class,
-            entry: [
-                'uuid'     => (string) $object->getUuid(),
-                'register' => $registerRef,
-                'schema'   => $schemaRef,
-                'version'  => $object->getVersion(),
-            ],
-            chunkSize: self::CHUNK_SIZE,
-            dedupeKey: $registerRef.'|'.$schemaRef
-        );
-    }//end handle()
+		$registerRef = (string)$object->getRegister();
+		$schemaRef = (string)$object->getSchema();
+		$this->deferral->defer(
+			jobClass: AggregationThresholdJob::class,
+			entry: [
+				'uuid' => (string)$object->getUuid(),
+				'register' => $registerRef,
+				'schema' => $schemaRef,
+				'version' => $object->getVersion(),
+			],
+			chunkSize: self::CHUNK_SIZE,
+			dedupeKey: $registerRef . '|' . $schemaRef
+		);
+	}//end handle()
 
-    /**
-     * Resolve the underlying object for any of the supported event types.
-     *
-     * @param Event $event Inbound dispatcher event.
-     *
-     * @return ObjectEntity|null Object instance, or null when not resolvable.
-     */
-    private function extractObject(Event $event): ?ObjectEntity
-    {
-        if ($event instanceof ObjectTransitionedEvent) {
-            return $event->getObject();
-        }
+	/**
+	 * Resolve the underlying object for any of the supported event types.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return ObjectEntity|null Object instance, or null when not resolvable.
+	 */
+	private function extractObject(Event $event): ?ObjectEntity {
+		if ($event instanceof ObjectTransitionedEvent) {
+			return $event->getObject();
+		}
 
-        if (method_exists($event, 'getObject') === true) {
-            $obj = $event->getObject();
-            if ($obj instanceof ObjectEntity) {
-                return $obj;
-            }
-        }
+		if (method_exists($event, 'getObject') === true) {
+			$obj = $event->getObject();
+			if ($obj instanceof ObjectEntity) {
+				return $obj;
+			}
+		}
 
-        if (method_exists($event, 'getNewObject') === true) {
-            $obj = $event->getNewObject();
-            if ($obj instanceof ObjectEntity) {
-                return $obj;
-            }
-        }
+		if (method_exists($event, 'getNewObject') === true) {
+			$obj = $event->getNewObject();
+			if ($obj instanceof ObjectEntity) {
+				return $obj;
+			}
+		}
 
-        return null;
-    }//end extractObject()
+		return null;
+	}//end extractObject()
 
-    /**
-     * Look up the schema referenced by an object instance.
-     *
-     * @param ObjectEntity $object Object whose schema reference to resolve.
-     *
-     * @return Schema|null Resolved schema, or null on lookup failure.
-     */
-    private function loadSchema(ObjectEntity $object): ?Schema
-    {
-        $schemaRef = (string) $object->getSchema();
-        if ($schemaRef === '') {
-            return null;
-        }
+	/**
+	 * Look up the schema referenced by an object instance.
+	 *
+	 * @param ObjectEntity $object Object whose schema reference to resolve.
+	 *
+	 * @return Schema|null Resolved schema, or null on lookup failure.
+	 */
+	private function loadSchema(ObjectEntity $object): ?Schema {
+		$schemaRef = (string)$object->getSchema();
+		if ($schemaRef === '') {
+			return null;
+		}
 
-        // SchemaMapper resolves slug/uuid/id.
-        try {
-            return $this->schemaMapper->find($schemaRef);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end loadSchema()
+		// SchemaMapper resolves slug/uuid/id.
+		try {
+			return $this->schemaMapper->find($schemaRef);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end loadSchema()
 }//end class

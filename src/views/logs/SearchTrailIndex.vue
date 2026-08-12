@@ -636,6 +636,9 @@ export default {
 /* Specific column widths for search trail table */
 .searchTermColumn {
 	width: 200px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .timestampColumn {
@@ -652,12 +655,6 @@ export default {
 }
 
 /* Search term styling */
-.searchTermColumn {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
 .searchTermText {
 	font-weight: 500;
 	color: var(--color-main-text);

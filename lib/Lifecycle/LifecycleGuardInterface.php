@@ -34,18 +34,17 @@ namespace OCA\OpenRegister\Lifecycle;
  * (notifications, cascades, derived-field maintenance) belong on
  * `ObjectTransitionedEvent` listeners, not in the guard.
  */
-interface LifecycleGuardInterface
-{
-    /**
-     * Authorise (or deny) a transition.
-     *
-     * @param array<string, mixed> $object The loaded object payload at its current state.
-     * @param string               $action The transition action being applied.
-     * @param string               $userId The uid of the caller.
-     *
-     * @return GuardResult Allow or deny + optional message.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function check(array $object, string $action, string $userId): GuardResult;
+interface LifecycleGuardInterface {
+	/**
+	 * Authorise (or deny) a transition.
+	 *
+	 * @param array<string, mixed> $object The loaded object payload at its current state.
+	 * @param string $action The transition action being applied.
+	 * @param string $userId The uid of the caller.
+	 *
+	 * @return GuardResult Allow or deny + optional message.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function check(array $object, string $action, string $userId): GuardResult;
 }//end interface

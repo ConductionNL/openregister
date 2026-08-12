@@ -52,289 +52,277 @@ use Psr\Log\LoggerInterface;
 /**
  * Population revalidation orchestrator.
  */
-class SchemaRevalidationService
-{
+class SchemaRevalidationService {
 
-    /**
-     * Default per-batch object count.
-     *
-     * @var int
-     */
-    public const DEFAULT_BATCH = 100;
+	/**
+	 * Default per-batch object count.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_BATCH = 100;
 
-    /**
-     * Max per-object validation errors recorded.
-     *
-     * @var int
-     */
-    private const MAX_ERRORS_PER_OBJECT = 25;
+	/**
+	 * Max per-object validation errors recorded.
+	 *
+	 * @var int
+	 */
+	private const MAX_ERRORS_PER_OBJECT = 25;
 
-    /**
-     * Constructor.
-     *
-     * @param SchemaRunMapper      $runMapper      Run persistence.
-     * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
-     * @param SchemaMapper         $schemaMapper   Schema lookup.
-     * @param ObjectService        $objectService  Object read/save pipeline.
-     * @param ValidateObject       $validateObject Single write-path validator.
-     * @param LoggerInterface      $logger         Logger.
-     */
-    public function __construct(
-        private readonly SchemaRunMapper $runMapper,
-        private readonly SchemaRunEntryMapper $runEntryMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectService $objectService,
-        private readonly ValidateObject $validateObject,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param SchemaRunMapper $runMapper Run persistence.
+	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
+	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param ObjectService $objectService Object read/save pipeline.
+	 * @param ValidateObject $validateObject Single write-path validator.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunEntryMapper $runEntryMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ObjectService $objectService,
+		private readonly ValidateObject $validateObject,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Start a revalidation run.
-     *
-     * Creates the run record, refusing a second concurrent run on the same
-     * schema, and returns it ready for the background job to process.
-     *
-     * @param int                       $schemaId           The schema id.
-     * @param int                       $registerId         The register the objects live in.
-     * @param array<string, mixed>|null $proposedDefinition Optional proposed definition (dry-run).
-     * @param string|null               $startedBy          The starting user.
-     *
-     * @return SchemaRun The created run.
-     *
-     * @throws SchemaRunConcurrencyException When an active run already exists.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function start(int $schemaId, int $registerId, ?array $proposedDefinition=null, ?string $startedBy=null): SchemaRun
-    {
-        $this->assertNoActiveRun(schemaId: $schemaId);
+	/**
+	 * Start a revalidation run.
+	 *
+	 * Creates the run record, refusing a second concurrent run on the same
+	 * schema, and returns it ready for the background job to process.
+	 *
+	 * @param int $schemaId The schema id.
+	 * @param int $registerId The register the objects live in.
+	 * @param array<string, mixed>|null $proposedDefinition Optional proposed definition (dry-run).
+	 * @param string|null $startedBy The starting user.
+	 *
+	 * @return SchemaRun The created run.
+	 *
+	 * @throws SchemaRunConcurrencyException When an active run already exists.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun {
+		$this->assertNoActiveRun(schemaId: $schemaId);
 
-        $total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
+		$total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
 
-        return $this->runMapper->createFromArray(
-            [
-                'schemaId'           => $schemaId,
-                'registerId'         => $registerId,
-                'type'               => SchemaRun::TYPE_REVALIDATION,
-                'state'              => SchemaRun::STATE_RUNNING,
-                'proposedDefinition' => $proposedDefinition,
-                'total'              => $total,
-                'startedBy'          => $startedBy,
-                'report'             => ['valid' => 0, 'invalid' => 0],
-            ]
-        );
+		return $this->runMapper->createFromArray(
+			[
+				'schemaId' => $schemaId,
+				'registerId' => $registerId,
+				'type' => SchemaRun::TYPE_REVALIDATION,
+				'state' => SchemaRun::STATE_RUNNING,
+				'proposedDefinition' => $proposedDefinition,
+				'total' => $total,
+				'startedBy' => $startedBy,
+				'report' => ['valid' => 0, 'invalid' => 0],
+			]
+		);
 
-    }//end start()
+	}//end start()
 
-    /**
-     * Process one batch of a revalidation run, advancing its cursor.
-     *
-     * Returns true when more batches remain, false when the run is done.
-     * Guarantees zero mutation for a proposed-definition (dry-run) run; for
-     * a current-definition run, only a metadata-only validity stamp is
-     * written.
-     *
-     * @param SchemaRun $run       The run to advance.
-     * @param int       $batchSize The batch size.
-     *
-     * @return bool True when more work remains.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function processBatch(SchemaRun $run, int $batchSize=self::DEFAULT_BATCH): bool
-    {
-        $schema = $this->schemaMapper->find($run->getSchemaId());
+	/**
+	 * Process one batch of a revalidation run, advancing its cursor.
+	 *
+	 * Returns true when more batches remain, false when the run is done.
+	 * Guarantees zero mutation for a proposed-definition (dry-run) run; for
+	 * a current-definition run, only a metadata-only validity stamp is
+	 * written.
+	 *
+	 * @param SchemaRun $run The run to advance.
+	 * @param int $batchSize The batch size.
+	 *
+	 * @return bool True when more work remains.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function processBatch(SchemaRun $run, int $batchSize = self::DEFAULT_BATCH): bool {
+		$schema = $this->schemaMapper->find($run->getSchemaId());
 
-        $validationSchema = $schema;
-        $isDryRun         = ($run->getProposedDefinition() !== null);
-        if ($isDryRun === true) {
-            $validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
-        }
+		$validationSchema = $schema;
+		$isDryRun = ($run->getProposedDefinition() !== null);
+		if ($isDryRun === true) {
+			$validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
+		}
 
-        $objects = $this->loadBatch(run: $run, batchSize: $batchSize);
-        if (count($objects) === 0) {
-            $this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
-            return false;
-        }
+		$objects = $this->loadBatch(run: $run, batchSize: $batchSize);
+		if (count($objects) === 0) {
+			$this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
+			return false;
+		}
 
-        $report = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
-        $maxId  = $run->getCursor();
+		$report = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
+		$maxId = $run->getCursor();
 
-        foreach ($objects as $object) {
-            $maxId = max($maxId, (int) $object->getId());
+		foreach ($objects as $object) {
+			$maxId = max($maxId, (int)$object->getId());
 
-            $errors = $this->validate(object: $object, schema: $validationSchema);
-            if (count($errors) === 0) {
-                $report['valid'] = (($report['valid'] ?? 0) + 1);
-            } else {
-                $report['invalid'] = (($report['invalid'] ?? 0) + 1);
-                $this->runEntryMapper->createFromArray(
-                    [
-                        'runId'      => $run->getId(),
-                        'objectUuid' => $object->getUuid(),
-                        'outcome'    => SchemaRunEntry::OUTCOME_INVALID,
-                        'message'    => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
-                    ]
-                );
-            }
+			$errors = $this->validate(object: $object, schema: $validationSchema);
+			if (count($errors) === 0) {
+				$report['valid'] = (($report['valid'] ?? 0) + 1);
+			} else {
+				$report['invalid'] = (($report['invalid'] ?? 0) + 1);
+				$this->runEntryMapper->createFromArray(
+					[
+						'runId' => $run->getId(),
+						'objectUuid' => $object->getUuid(),
+						'outcome' => SchemaRunEntry::OUTCOME_INVALID,
+						'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
+					]
+				);
+			}
 
-            $run->setProcessed(($run->getProcessed() + 1));
-        }//end foreach
+			$run->setProcessed(($run->getProcessed() + 1));
+		}//end foreach
 
-        $run->setCursor($maxId);
-        $run->setReport($report);
-        $this->runMapper->save($run);
+		$run->setCursor($maxId);
+		$run->setReport($report);
+		$this->runMapper->save($run);
 
-        return true;
+		return true;
+	}//end processBatch()
 
-    }//end processBatch()
+	/**
+	 * Validate one object against a schema, returning a list of error strings.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param Schema $schema The schema (real or transient proposed).
+	 *
+	 * @return array<int, string> The validation error messages (empty when valid).
+	 */
+	private function validate(ObjectEntity $object, Schema $schema): array {
+		try {
+			$result = $this->validateObject->validateObject(
+				object: $object->getObject(),
+				schema: $schema
+			);
 
-    /**
-     * Validate one object against a schema, returning a list of error strings.
-     *
-     * @param ObjectEntity $object The object.
-     * @param Schema       $schema The schema (real or transient proposed).
-     *
-     * @return array<int, string> The validation error messages (empty when valid).
-     */
-    private function validate(ObjectEntity $object, Schema $schema): array
-    {
-        try {
-            $result = $this->validateObject->validateObject(
-                object: $object->getObject(),
-                schema: $schema
-            );
+			if ($result->isValid() === true) {
+				return [];
+			}
 
-            if ($result->isValid() === true) {
-                return [];
-            }
+			$error = $result->error();
+			if ($error === null) {
+				return ['Validation failed.'];
+			}
 
-            $error = $result->error();
-            if ($error === null) {
-                return ['Validation failed.'];
-            }
+			return [$error->message()];
+		} catch (\Throwable $e) {
+			return [$e->getMessage()];
+		}
 
-            return [$error->message()];
-        } catch (\Throwable $e) {
-            return [$e->getMessage()];
-        }
+	}//end validate()
 
-    }//end validate()
+	/**
+	 * Build a transient (unpersisted) Schema from a proposed definition.
+	 *
+	 * @param Schema $base The base schema (for slug/identity).
+	 * @param array<string, mixed> $proposed The proposed definition.
+	 *
+	 * @return Schema The transient schema.
+	 */
+	private function transientSchema(Schema $base, array $proposed): Schema {
+		$schema = new Schema();
+		$schema->hydrate(
+			[
+				'title' => $base->getTitle(),
+				'slug' => $base->getSlug(),
+				'version' => $base->getVersion(),
+				'properties' => ($proposed['properties'] ?? []),
+				'required' => ($proposed['required'] ?? []),
+			]
+		);
 
-    /**
-     * Build a transient (unpersisted) Schema from a proposed definition.
-     *
-     * @param Schema               $base     The base schema (for slug/identity).
-     * @param array<string, mixed> $proposed The proposed definition.
-     *
-     * @return Schema The transient schema.
-     */
-    private function transientSchema(Schema $base, array $proposed): Schema
-    {
-        $schema = new Schema();
-        $schema->hydrate(
-            [
-                'title'      => $base->getTitle(),
-                'slug'       => $base->getSlug(),
-                'version'    => $base->getVersion(),
-                'properties' => ($proposed['properties'] ?? []),
-                'required'   => ($proposed['required'] ?? []),
-            ]
-        );
+		return $schema;
+	}//end transientSchema()
 
-        return $schema;
+	/**
+	 * Load the next batch of non-deleted objects after the run's cursor.
+	 *
+	 * @param SchemaRun $run The run.
+	 * @param int $batchSize The batch size.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 */
+	private function loadBatch(SchemaRun $run, int $batchSize): array {
+		$config = [
+			'limit' => $batchSize,
+			'offset' => $run->getProcessed(),
+			'sort' => ['id' => 'ASC'],
+			'filters' => [
+				'register' => $run->getRegisterId(),
+				'schema' => $run->getSchemaId(),
+			],
+		];
 
-    }//end transientSchema()
+		$result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
 
-    /**
-     * Load the next batch of non-deleted objects after the run's cursor.
-     *
-     * @param SchemaRun $run       The run.
-     * @param int       $batchSize The batch size.
-     *
-     * @return ObjectEntity[] The objects.
-     */
-    private function loadBatch(SchemaRun $run, int $batchSize): array
-    {
-        $config = [
-            'limit'   => $batchSize,
-            'offset'  => $run->getProcessed(),
-            'sort'    => ['id' => 'ASC'],
-            'filters' => [
-                'register' => $run->getRegisterId(),
-                'schema'   => $run->getSchemaId(),
-            ],
-        ];
+		return array_values(array_filter($result, static fn ($o) => $o instanceof ObjectEntity));
+	}//end loadBatch()
 
-        $result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
+	/**
+	 * Count the non-deleted population for a schema in a register.
+	 *
+	 * @param int $schemaId The schema id.
+	 * @param int $registerId The register id.
+	 *
+	 * @return int The count.
+	 */
+	private function countPopulation(int $schemaId, int $registerId): int {
+		try {
+			return $this->objectService->count(
+				config: [
+					'filters' => [
+						'register' => $registerId,
+						'schema' => $schemaId,
+					],
+				]
+			);
+		} catch (\Throwable $e) {
+			return 0;
+		}
 
-        return array_values(array_filter($result, static fn($o) => $o instanceof ObjectEntity));
+	}//end countPopulation()
 
-    }//end loadBatch()
+	/**
+	 * Finish a run, persisting its terminal state.
+	 *
+	 * @param SchemaRun $run The run.
+	 * @param string $state The terminal state.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function finish(SchemaRun $run, string $state): void {
+		$run->setState($state);
+		$this->runMapper->save($run);
 
-    /**
-     * Count the non-deleted population for a schema in a register.
-     *
-     * @param int $schemaId   The schema id.
-     * @param int $registerId The register id.
-     *
-     * @return int The count.
-     */
-    private function countPopulation(int $schemaId, int $registerId): int
-    {
-        try {
-            return $this->objectService->count(
-                config: [
-                    'filters' => [
-                        'register' => $registerId,
-                        'schema'   => $schemaId,
-                    ],
-                ]
-            );
-        } catch (\Throwable $e) {
-            return 0;
-        }
+	}//end finish()
 
-    }//end countPopulation()
+	/**
+	 * Refuse a second concurrent run on the same schema.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return void
+	 *
+	 * @throws SchemaRunConcurrencyException When an active run exists.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function assertNoActiveRun(int $schemaId): void {
+		$active = $this->runMapper->findActiveForSchema($schemaId);
+		if ($active !== null) {
+			throw new SchemaRunConcurrencyException(
+				message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
+			);
+		}
 
-    /**
-     * Finish a run, persisting its terminal state.
-     *
-     * @param SchemaRun $run   The run.
-     * @param string    $state The terminal state.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function finish(SchemaRun $run, string $state): void
-    {
-        $run->setState($state);
-        $this->runMapper->save($run);
-
-    }//end finish()
-
-    /**
-     * Refuse a second concurrent run on the same schema.
-     *
-     * @param int $schemaId The schema id.
-     *
-     * @return void
-     *
-     * @throws SchemaRunConcurrencyException When an active run exists.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function assertNoActiveRun(int $schemaId): void
-    {
-        $active = $this->runMapper->findActiveForSchema($schemaId);
-        if ($active !== null) {
-            throw new SchemaRunConcurrencyException(
-                message: sprintf('An active run (#%d) already exists for schema %d.', $active->getId(), $schemaId)
-            );
-        }
-
-    }//end assertNoActiveRun()
+	}//end assertNoActiveRun()
 }//end class

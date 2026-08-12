@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Tests for whether a triggered flow is queued or run inline.
  *
@@ -14,159 +15,150 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
-use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowTriggerService
  */
-class FlowTriggerExecutionModeTest extends TestCase
-{
+class FlowTriggerExecutionModeTest extends TestCase {
 
-    /**
-     * Resolves flows wired to an event.
-     *
-     * @var FlowLocator
-     */
-    private FlowLocator $resolvers;
+	/**
+	 * Resolves flows wired to an event.
+	 *
+	 * @var FlowLocator
+	 */
+	private FlowLocator $resolvers;
 
-    /**
-     * Queues and executes runs.
-     *
-     * @var FlowRunService
-     */
-    private FlowRunService $runs;
+	/**
+	 * Queues and executes runs.
+	 *
+	 * @var FlowRunService
+	 */
+	private FlowRunService $runs;
 
-    /**
-     * The service under test.
-     *
-     * @var FlowTriggerService
-     */
-    private FlowTriggerService $service;
+	/**
+	 * The service under test.
+	 *
+	 * @var FlowTriggerService
+	 */
+	private FlowTriggerService $service;
 
-    /**
-     * Build the service over mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->resolvers = $this->createMock(FlowLocator::class);
-        $this->runs      = $this->createMock(FlowRunService::class);
+	/**
+	 * Build the service over mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->resolvers = $this->createMock(FlowLocator::class);
+		$this->runs = $this->createMock(FlowRunService::class);
 
-        $this->service = new FlowTriggerService(
-            $this->resolvers,
-            $this->runs,
-            $this->createMock(LoggerInterface::class)
-        );
+		$this->service = new FlowTriggerService(
+			$this->resolvers,
+			$this->runs,
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $this->resolvers->method('flowsForTrigger')->willReturn(['flow-1']);
-        $this->runs->method('queue')->willReturn(new FlowRun());
-        $this->resolvers->method('resolveSubject')->willReturn(new stdClass());
+		$this->resolvers->method('flowsForTrigger')->willReturn(['flow-1']);
+		$this->runs->method('queue')->willReturn(new FlowRun());
+		$this->resolvers->method('resolveSubject')->willReturn(new stdClass());
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A flow that declares nothing keeps today's behaviour: queued only.
-     *
-     * @return void
-     */
-    public function testAFlowWithoutAModeIsOnlyQueued(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'edges' => []]);
-        $this->runs->expects($this->never())->method('execute');
+	/**
+	 * A flow that declares nothing keeps today's behaviour: queued only.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithoutAModeIsOnlyQueued(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'edges' => []]);
+		$this->runs->expects($this->never())->method('execute');
 
-        $this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
+		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
-    }//end testAFlowWithoutAModeIsOnlyQueued()
+	}//end testAFlowWithoutAModeIsOnlyQueued()
 
-    /**
-     * An explicit async flow is queued.
-     *
-     * @return void
-     */
-    public function testAnAsyncFlowIsOnlyQueued(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'async']);
-        $this->runs->expects($this->never())->method('execute');
+	/**
+	 * An explicit async flow is queued.
+	 *
+	 * @return void
+	 */
+	public function testAnAsyncFlowIsOnlyQueued(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'async']);
+		$this->runs->expects($this->never())->method('execute');
 
-        $this->service->fire('object.created', ['uuid' => 'u-1']);
+		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
-    }//end testAnAsyncFlowIsOnlyQueued()
+	}//end testAnAsyncFlowIsOnlyQueued()
 
-    /**
-     * A mode that is neither value falls back to queueing rather than refusing.
-     *
-     * @return void
-     */
-    public function testAnInvalidModeFallsBackToQueueing(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'immediately']);
-        $this->runs->expects($this->never())->method('execute');
+	/**
+	 * A mode that is neither value falls back to queueing rather than refusing.
+	 *
+	 * @return void
+	 */
+	public function testAnInvalidModeFallsBackToQueueing(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'immediately']);
+		$this->runs->expects($this->never())->method('execute');
 
-        $this->service->fire('object.created', ['uuid' => 'u-1']);
+		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
-    }//end testAnInvalidModeFallsBackToQueueing()
+	}//end testAnInvalidModeFallsBackToQueueing()
 
-    /**
-     * A sync flow is executed within the triggering call.
-     *
-     * @return void
-     */
-    public function testASyncFlowIsExecutedInline(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
-        $this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
+	/**
+	 * A sync flow is executed within the triggering call.
+	 *
+	 * @return void
+	 */
+	public function testASyncFlowIsExecutedInline(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
+		$this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
 
-        $this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
+		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
-    }//end testASyncFlowIsExecutedInline()
+	}//end testASyncFlowIsExecutedInline()
 
-    /**
-     * The mode is read case-insensitively, so "Sync" is not silently async.
-     *
-     * @return void
-     */
-    public function testTheModeIsCaseInsensitive(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => ' SYNC ']);
-        $this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
+	/**
+	 * The mode is read case-insensitively, so "Sync" is not silently async.
+	 *
+	 * @return void
+	 */
+	public function testTheModeIsCaseInsensitive(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => ' SYNC ']);
+		$this->runs->expects($this->once())->method('execute')->willReturn(new FlowRun());
 
-        $this->service->fire('object.created', ['uuid' => 'u-1']);
+		$this->service->fire('object.created', ['uuid' => 'u-1']);
 
-    }//end testTheModeIsCaseInsensitive()
+	}//end testTheModeIsCaseInsensitive()
 
-    /**
-     * A throwing sync flow never unwinds the action that triggered it.
-     *
-     * This is the guarantee that makes inline execution safe to offer at all:
-     * the flow runs on a user's save, and a broken flow must not break the save.
-     *
-     * @return void
-     */
-    public function testAThrowingSyncFlowDoesNotEscapeTheTrigger(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
-        $this->runs->method('execute')->willThrowException(new RuntimeException('step blew up'));
+	/**
+	 * A throwing sync flow never unwinds the action that triggered it.
+	 *
+	 * This is the guarantee that makes inline execution safe to offer at all:
+	 * the flow runs on a user's save, and a broken flow must not break the save.
+	 *
+	 * @return void
+	 */
+	public function testAThrowingSyncFlowDoesNotEscapeTheTrigger(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'flow-1', 'executionMode' => 'sync']);
+		$this->runs->method('execute')->willThrowException(new RuntimeException('step blew up'));
 
-        // Swallowed and reported as zero, exactly as any other trigger failure.
-        $this->assertSame(0, $this->service->fire('object.created', ['uuid' => 'u-1']));
+		// Swallowed and reported as zero, exactly as any other trigger failure.
+		$this->assertSame(0, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
-    }//end testAThrowingSyncFlowDoesNotEscapeTheTrigger()
+	}//end testAThrowingSyncFlowDoesNotEscapeTheTrigger()
 
-    /**
-     * A flow no resolver owns is left queued for the worker's defensive path.
-     *
-     * @return void
-     */
-    public function testAnUnresolvableFlowIsLeftForTheWorker(): void
-    {
-        $this->resolvers->method('resolveFlow')->willReturn(null);
-        $this->runs->expects($this->never())->method('execute');
+	/**
+	 * A flow no resolver owns is left queued for the worker's defensive path.
+	 *
+	 * @return void
+	 */
+	public function testAnUnresolvableFlowIsLeftForTheWorker(): void {
+		$this->resolvers->method('resolveFlow')->willReturn(null);
+		$this->runs->expects($this->never())->method('execute');
 
-        $this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
+		$this->assertSame(1, $this->service->fire('object.created', ['uuid' => 'u-1']));
 
-    }//end testAnUnresolvableFlowIsLeftForTheWorker()
+	}//end testAnUnresolvableFlowIsLeftForTheWorker()
 }//end class

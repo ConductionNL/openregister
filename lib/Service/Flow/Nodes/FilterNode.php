@@ -41,185 +41,169 @@ use UnexpectedValueException;
 /**
  * Drops items that do not match.
  */
-class FilterNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class FilterNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return 'openregister.filter';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return 'openregister.filter';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Filter');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Filter');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Keep only the items matching a condition.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/filter.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Keep only the items matching a condition.');
+	/**
+	 * Filtering grants no privilege, so both scopes get it.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of a filter step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return ['condition'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/filter.svg');
+	/**
+	 * Reject a filter with no condition, or one that cannot be evaluated.
+	 *
+	 * A filter with no condition keeps everything, which is a step that does
+	 * nothing while looking like it does something.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the condition is missing or malformed.
+	 */
+	public function validateConfig(array $config): void {
+		$condition = ($config['condition'] ?? null);
+		if ($condition === null || $condition === []) {
+			throw new UnexpectedValueException($this->l10n->t('A filter needs a condition.'));
+		}
 
-    }//end getIcon()
+		// A CONSTANT is not a filter. `FlowExpression::isValid()` accepts any
+		// scalar because a bare literal is legal JSONLogic — true where a value
+		// is wanted, useless where a predicate is. Evaluated per item a constant
+		// gives the same answer every time, so the step keeps everything or
+		// drops everything while reading like a rule.
+		//
+		// Measured: a condition of `'{{ status == "synced" }}'` passed this
+		// guard and then kept all eleven items. The run was green end to end and
+		// the sweep flagged every object instead of the nine it meant to.
+		if (is_array($condition) === false) {
+			if (is_string($condition) === true && str_contains($condition, '{{') === true) {
+				throw new UnexpectedValueException(
+					$this->l10n->t(
+						'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
+						[
+							'example' => '{"==": [{"var": "json.status"}, "synced"]}',
+							'given' => $condition,
+						]
+					)
+				);
+			}
 
-    /**
-     * Filtering grants no privilege, so both scopes get it.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
+					['given' => var_export($condition, true)]
+				)
+			);
+		}
 
-    }//end isAvailableForScope()
+		if (FlowExpression::isValid(logic: $condition) === false) {
+			throw new UnexpectedValueException($this->l10n->t('That condition is not a valid expression.'));
+		}
 
-    /**
-     * The config vocabulary of a filter step.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['condition'];
+	}//end validateConfig()
 
-    }//end configKeys()
+	/**
+	 * Keep the matching items.
+	 *
+	 * Output items are re-paired to their ORIGINAL input index, not to their
+	 * new position, so provenance survives the drop: item 3 of the output can
+	 * still be traced to item 7 of the input.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items that matched.
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		$condition = ($config['condition'] ?? null);
+		$count = count($items);
 
-    /**
-     * Reject a filter with no condition, or one that cannot be evaluated.
-     *
-     * A filter with no condition keeps everything, which is a step that does
-     * nothing while looking like it does something.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When the condition is missing or malformed.
-     */
-    public function validateConfig(array $config): void
-    {
-        $condition = ($config['condition'] ?? null);
-        if ($condition === null || $condition === []) {
-            throw new UnexpectedValueException($this->l10n->t('A filter needs a condition.'));
-        }
+		$kept = [];
+		foreach ($items as $index => $item) {
+			$data = FlowExpression::dataFor(
+				item: $item,
+				itemIndex: $index,
+				itemCount: $count,
+				context: $context
+			);
 
-        // A CONSTANT is not a filter. `FlowExpression::isValid()` accepts any
-        // scalar because a bare literal is legal JSONLogic — true where a value
-        // is wanted, useless where a predicate is. Evaluated per item a constant
-        // gives the same answer every time, so the step keeps everything or
-        // drops everything while reading like a rule.
-        //
-        // Measured: a condition of `'{{ status == "synced" }}'` passed this
-        // guard and then kept all eleven items. The run was green end to end and
-        // the sweep flagged every object instead of the nine it meant to.
-        if (is_array($condition) === false) {
-            if (is_string($condition) === true && str_contains($condition, '{{') === true) {
-                throw new UnexpectedValueException(
-                    $this->l10n->t(
-                        'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
-                        [
-                            'example' => '{"==": [{"var": "json.status"}, "synced"]}',
-                            'given'   => $condition,
-                        ]
-                    )
-                );
-            }
+			if (FlowExpression::isTrue(logic: $condition, data: $data) === false) {
+				continue;
+			}
 
-            throw new UnexpectedValueException(
-                $this->l10n->t(
-                    'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
-                    ['given' => var_export($condition, true)]
-                )
-            );
-        }
+			$kept[] = FlowItems::item(
+				json: (array)($item[FlowItems::JSON] ?? []),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: $index
+			);
+		}
 
-        if (FlowExpression::isValid(logic: $condition) === false) {
-            throw new UnexpectedValueException($this->l10n->t('That condition is not a valid expression.'));
-        }
-
-    }//end validateConfig()
-
-    /**
-     * Keep the matching items.
-     *
-     * Output items are re-paired to their ORIGINAL input index, not to their
-     * new position, so provenance survives the drop: item 3 of the output can
-     * still be traced to item 7 of the input.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items that matched.
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        $condition = ($config['condition'] ?? null);
-        $count     = count($items);
-
-        $kept = [];
-        foreach ($items as $index => $item) {
-            $data = FlowExpression::dataFor(
-                item: $item,
-                itemIndex: $index,
-                itemCount: $count,
-                context: $context
-            );
-
-            if (FlowExpression::isTrue(logic: $condition, data: $data) === false) {
-                continue;
-            }
-
-            $kept[] = FlowItems::item(
-                json: (array) ($item[FlowItems::JSON] ?? []),
-                binary: (array) ($item[FlowItems::BINARY] ?? []),
-                fromItemIndex: $index
-            );
-        }
-
-        return $kept;
-
-    }//end execute()
+		return $kept;
+	}//end execute()
 }//end class

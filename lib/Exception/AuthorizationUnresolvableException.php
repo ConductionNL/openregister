@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister AuthorizationUnresolvableException.
  *
@@ -36,6 +37,5 @@ use Exception;
 /**
  * Raised when effective authorization cannot be resolved. Always means DENY.
  */
-class AuthorizationUnresolvableException extends Exception
-{
+class AuthorizationUnresolvableException extends Exception {
 }//end class

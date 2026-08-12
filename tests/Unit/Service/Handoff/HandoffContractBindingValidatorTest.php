@@ -35,165 +35,148 @@ use PHPUnit\Framework\TestCase;
 /**
  * HandoffContractBindingValidatorTest.
  */
-class HandoffContractBindingValidatorTest extends TestCase
-{
+class HandoffContractBindingValidatorTest extends TestCase {
 
-    private const CASE_URI = 'https://openregister.app/ns#Case';
+	private const CASE_URI = 'https://openregister.app/ns#Case';
 
-    private HandoffContractBindingValidator $validator;
+	private HandoffContractBindingValidator $validator;
 
+	protected function setUp(): void {
+		$this->validator = new HandoffContractBindingValidator();
 
-    protected function setUp(): void
-    {
-        $this->validator = new HandoffContractBindingValidator();
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * A binding covering every mandatory ns#Case field is accepted.
+	 *
+	 * @return void
+	 */
+	public function testCompleteBindingIsAccepted(): void {
+		$this->assertSame([], $this->validator->validate($this->shape()));
 
+	}//end testCompleteBindingIsAccepted()
 
-    /**
-     * A binding covering every mandatory ns#Case field is accepted.
-     *
-     * @return void
-     */
-    public function testCompleteBindingIsAccepted(): void
-    {
-        $this->assertSame([], $this->validator->validate($this->shape()));
+	/**
+	 * No binding block ⇒ not a handoff provider — never an error.
+	 *
+	 * @return void
+	 */
+	public function testNoBindingBlockPasses(): void {
+		$shape = $this->shape();
+		unset($shape['handoffContract']);
+		$this->assertSame([], $this->validator->validate($shape));
 
-    }//end testCompleteBindingIsAccepted()
+	}//end testNoBindingBlockPasses()
 
+	/**
+	 * Omitting a mandatory contract field → handoff-contract-incomplete,
+	 * message listing the missing field.
+	 *
+	 * @return void
+	 */
+	public function testMissingMandatoryFieldIsRejected(): void {
+		$shape = $this->shape();
+		unset($shape['handoffContract'][self::CASE_URI]['channel']);
 
-    /**
-     * No binding block ⇒ not a handoff provider — never an error.
-     *
-     * @return void
-     */
-    public function testNoBindingBlockPasses(): void
-    {
-        $shape = $this->shape();
-        unset($shape['handoffContract']);
-        $this->assertSame([], $this->validator->validate($shape));
+		$errors = $this->validator->validate($shape);
+		$this->assertNotSame([], $errors);
+		$this->assertSame('handoff-contract-incomplete', $errors[0]['code']);
+		$this->assertStringContainsString('channel', $errors[0]['message']);
 
-    }//end testNoBindingBlockPasses()
+	}//end testMissingMandatoryFieldIsRejected()
 
+	/**
+	 * Binding a contract field to a property the schema lacks is rejected.
+	 *
+	 * @return void
+	 */
+	public function testBindingToMissingPropertyIsRejected(): void {
+		$shape = $this->shape();
+		$shape['handoffContract'][self::CASE_URI]['title'] = 'ghost';
 
-    /**
-     * Omitting a mandatory contract field → handoff-contract-incomplete,
-     * message listing the missing field.
-     *
-     * @return void
-     */
-    public function testMissingMandatoryFieldIsRejected(): void
-    {
-        $shape = $this->shape();
-        unset($shape['handoffContract'][self::CASE_URI]['channel']);
+		$codes = array_map(static fn (array $e) => $e['code'], $this->validator->validate($shape));
+		$this->assertContains('handoff-contract-incomplete', $codes);
 
-        $errors = $this->validator->validate($shape);
-        $this->assertNotSame([], $errors);
-        $this->assertSame('handoff-contract-incomplete', $errors[0]['code']);
-        $this->assertStringContainsString('channel', $errors[0]['message']);
+	}//end testBindingToMissingPropertyIsRejected()
 
-    }//end testMissingMandatoryFieldIsRejected()
+	/**
+	 * Binding a kind the schema does not implement is rejected.
+	 *
+	 * @return void
+	 */
+	public function testBindingUnimplementedKindIsRejected(): void {
+		$shape = $this->shape();
+		$shape['implements'] = ['https://openregister.app/ns#Quote'];
 
+		$codes = array_map(static fn (array $e) => $e['code'], $this->validator->validate($shape));
+		$this->assertContains('handoff-contract-incomplete', $codes);
 
-    /**
-     * Binding a contract field to a property the schema lacks is rejected.
-     *
-     * @return void
-     */
-    public function testBindingToMissingPropertyIsRejected(): void
-    {
-        $shape = $this->shape();
-        $shape['handoffContract'][self::CASE_URI]['title'] = 'ghost';
+	}//end testBindingUnimplementedKindIsRejected()
 
-        $codes = array_map(static fn(array $e) => $e['code'], $this->validator->validate($shape));
-        $this->assertContains('handoff-contract-incomplete', $codes);
+	/**
+	 * `isCompleteBinding` — the engine's provider filter.
+	 *
+	 * @return void
+	 */
+	public function testIsCompleteBinding(): void {
+		$shape = $this->shape();
+		$this->assertTrue(
+			HandoffContractBindingValidator::isCompleteBinding(
+				kindUri: self::CASE_URI,
+				binding: $shape['handoffContract'],
+				properties: $shape['properties']
+			)
+		);
 
-    }//end testBindingToMissingPropertyIsRejected()
+		// Missing mandatory field → incomplete.
+		$incomplete = $shape['handoffContract'];
+		unset($incomplete[self::CASE_URI]['source']);
+		$this->assertFalse(
+			HandoffContractBindingValidator::isCompleteBinding(
+				kindUri: self::CASE_URI,
+				binding: $incomplete,
+				properties: $shape['properties']
+			)
+		);
 
+		// Kind not bound at all → incomplete.
+		$this->assertFalse(
+			HandoffContractBindingValidator::isCompleteBinding(
+				kindUri: 'https://openregister.app/ns#Quote',
+				binding: $shape['handoffContract'],
+				properties: $shape['properties']
+			)
+		);
 
-    /**
-     * Binding a kind the schema does not implement is rejected.
-     *
-     * @return void
-     */
-    public function testBindingUnimplementedKindIsRejected(): void
-    {
-        $shape = $this->shape();
-        $shape['implements'] = ['https://openregister.app/ns#Quote'];
+	}//end testIsCompleteBinding()
 
-        $codes = array_map(static fn(array $e) => $e['code'], $this->validator->validate($shape));
-        $this->assertContains('handoff-contract-incomplete', $codes);
+	/**
+	 * Build the canonical provider shape (procest-like `case` schema).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function shape(): array {
+		return [
+			'properties' => [
+				'onderwerp' => ['type' => 'string'],
+				'omschrijving' => ['type' => 'string'],
+				'aanvrager' => ['type' => 'string'],
+				'kanaal' => ['type' => 'string'],
+				'prioriteit' => ['type' => 'string'],
+				'herkomst' => ['type' => 'object'],
+			],
+			'implements' => [self::CASE_URI],
+			'handoffContract' => [
+				self::CASE_URI => [
+					'title' => 'onderwerp',
+					'summary' => 'omschrijving',
+					'requester' => 'aanvrager',
+					'channel' => 'kanaal',
+					'priority' => 'prioriteit',
+					'source' => 'herkomst',
+				],
+			],
+		];
 
-    }//end testBindingUnimplementedKindIsRejected()
-
-
-    /**
-     * `isCompleteBinding` — the engine's provider filter.
-     *
-     * @return void
-     */
-    public function testIsCompleteBinding(): void
-    {
-        $shape = $this->shape();
-        $this->assertTrue(
-            HandoffContractBindingValidator::isCompleteBinding(
-                kindUri: self::CASE_URI,
-                binding: $shape['handoffContract'],
-                properties: $shape['properties']
-            )
-        );
-
-        // Missing mandatory field → incomplete.
-        $incomplete = $shape['handoffContract'];
-        unset($incomplete[self::CASE_URI]['source']);
-        $this->assertFalse(
-            HandoffContractBindingValidator::isCompleteBinding(
-                kindUri: self::CASE_URI,
-                binding: $incomplete,
-                properties: $shape['properties']
-            )
-        );
-
-        // Kind not bound at all → incomplete.
-        $this->assertFalse(
-            HandoffContractBindingValidator::isCompleteBinding(
-                kindUri: 'https://openregister.app/ns#Quote',
-                binding: $shape['handoffContract'],
-                properties: $shape['properties']
-            )
-        );
-
-    }//end testIsCompleteBinding()
-
-
-    /**
-     * Build the canonical provider shape (procest-like `case` schema).
-     *
-     * @return array<string, mixed>
-     */
-    private function shape(): array
-    {
-        return [
-            'properties'      => [
-                'onderwerp'    => ['type' => 'string'],
-                'omschrijving' => ['type' => 'string'],
-                'aanvrager'    => ['type' => 'string'],
-                'kanaal'       => ['type' => 'string'],
-                'prioriteit'   => ['type' => 'string'],
-                'herkomst'     => ['type' => 'object'],
-            ],
-            'implements'      => [self::CASE_URI],
-            'handoffContract' => [
-                self::CASE_URI => [
-                    'title'     => 'onderwerp',
-                    'summary'   => 'omschrijving',
-                    'requester' => 'aanvrager',
-                    'channel'   => 'kanaal',
-                    'priority'  => 'prioriteit',
-                    'source'    => 'herkomst',
-                ],
-            ],
-        ];
-
-    }//end shape()
+	}//end shape()
 }//end class

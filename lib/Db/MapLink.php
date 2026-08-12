@@ -61,124 +61,121 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class MapLink extends Entity implements JsonSerializable
-{
+class MapLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The NC Maps favorite id (primary key in `maps_favorites`).
-     *
-     * @var integer|null
-     */
-    protected ?int $favoriteId = null;
+	/**
+	 * The NC Maps favorite id (primary key in `maps_favorites`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $favoriteId = null;
 
-    /**
-     * The POI display name (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * The POI display name (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * The POI category (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $category = null;
+	/**
+	 * The POI category (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $category = null;
 
-    /**
-     * The cached latitude.
-     *
-     * @var float|null
-     */
-    protected ?float $lat = null;
+	/**
+	 * The cached latitude.
+	 *
+	 * @var float|null
+	 */
+	protected ?float $lat = null;
 
-    /**
-     * The cached longitude.
-     *
-     * @var float|null
-     */
-    protected ?float $lng = null;
+	/**
+	 * The cached longitude.
+	 *
+	 * @var float|null
+	 */
+	protected ?float $lng = null;
 
-    /**
-     * The cached POI comment.
-     *
-     * @var string|null
-     */
-    protected ?string $comment = null;
+	/**
+	 * The cached POI comment.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $comment = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'favoriteId', type: 'integer');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'category', type: 'string');
-        $this->addType(fieldName: 'lat', type: 'float');
-        $this->addType(fieldName: 'lng', type: 'float');
-        $this->addType(fieldName: 'comment', type: 'string');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'favoriteId', type: 'integer');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'category', type: 'string');
+		$this->addType(fieldName: 'lat', type: 'float');
+		$this->addType(fieldName: 'lng', type: 'float');
+		$this->addType(fieldName: 'comment', type: 'string');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->id,
-            'objectUuid' => $this->objectUuid,
-            'registerId' => $this->registerId,
-            'schemaId'   => $this->schemaId,
-            'favoriteId' => $this->favoriteId,
-            'name'       => $this->name,
-            'category'   => $this->category,
-            'lat'        => $this->lat,
-            'lng'        => $this->lng,
-            'comment'    => $this->comment,
-            'linkedBy'   => $this->linkedBy,
-            'linkedAt'   => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'favoriteId' => $this->favoriteId,
+			'name' => $this->name,
+			'category' => $this->category,
+			'lat' => $this->lat,
+			'lng' => $this->lng,
+			'comment' => $this->comment,
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

@@ -51,170 +51,156 @@ use ReflectionProperty;
 /**
  * Round-trip tests for the declared-scope block on exported configurations.
  */
-class ExportHandlerDeclaredScopesTest extends TestCase
-{
+class ExportHandlerDeclaredScopesTest extends TestCase {
 
-    /**
-     * System under test.
-     *
-     * @var ExportHandler
-     */
-    private ExportHandler $handler;
+	/**
+	 * System under test.
+	 *
+	 * @var ExportHandler
+	 */
+	private ExportHandler $handler;
 
-    /**
-     * Mocked register mapper.
-     *
-     * @var RegisterMapper&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $registerMapper;
+	/**
+	 * Mocked register mapper.
+	 *
+	 * @var RegisterMapper&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $registerMapper;
 
-    /**
-     * Mocked schema mapper.
-     *
-     * @var SchemaMapper&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $schemaMapper;
+	/**
+	 * Mocked schema mapper.
+	 *
+	 * @var SchemaMapper&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $schemaMapper;
 
+	/**
+	 * Build the handler with mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Build the handler with mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
-        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->handler = new ExportHandler(
+			$this->schemaMapper,
+			$this->registerMapper,
+			$this->createMock(MagicMapper::class),
+			$this->createMock(ConfigurationMapper::class),
+			$this->createMock(MappingMapper::class),
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end setUp()
 
-        $this->handler = new ExportHandler(
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->createMock(MagicMapper::class),
-            $this->createMock(ConfigurationMapper::class),
-            $this->createMock(MappingMapper::class),
-            $this->createMock(LoggerInterface::class)
-        );
-    }//end setUp()
+	/**
+	 * Build a register carrying an authorization block.
+	 *
+	 * @param array $authorization The authorization block.
+	 *
+	 * @return Register The register entity.
+	 */
+	private function registerWithAuthorization(array $authorization): Register {
+		$register = new Register();
+		$id = new ReflectionProperty($register, 'id');
+		$id->setAccessible(true);
+		$id->setValue($register, 1);
 
+		$register->setTitle('Zaken');
+		$register->setSlug('zaken');
+		$register->setVersion('1.0.0');
+		$register->setAuthorization($authorization);
 
-    /**
-     * Build a register carrying an authorization block.
-     *
-     * @param array $authorization The authorization block.
-     *
-     * @return Register The register entity.
-     */
-    private function registerWithAuthorization(array $authorization): Register
-    {
-        $register = new Register();
-        $id       = new ReflectionProperty($register, 'id');
-        $id->setAccessible(true);
-        $id->setValue($register, 1);
+		return $register;
+	}//end registerWithAuthorization()
 
-        $register->setTitle('Zaken');
-        $register->setSlug('zaken');
-        $register->setVersion('1.0.0');
-        $register->setAuthorization($authorization);
+	/**
+	 * Build a schema carrying schema- and property-level authorization.
+	 *
+	 * @return Schema The schema entity.
+	 */
+	private function schemaWithAuthorization(): Schema {
+		$schema = new Schema();
+		$id = new ReflectionProperty($schema, 'id');
+		$id->setAccessible(true);
+		$id->setValue($schema, 10);
 
-        return $register;
-    }//end registerWithAuthorization()
+		$schema->setTitle('Zaak');
+		$schema->setSlug('zaak');
+		$schema->setVersion('1.0.0');
+		$schema->setAuthorization(['delete' => ['archivarissen']]);
+		$schema->setProperties(
+			[
+				'bsn' => [
+					'type' => 'string',
+					'authorization' => ['read' => ['privacy-officers']],
+				],
+			]
+		);
 
+		return $schema;
+	}//end schemaWithAuthorization()
 
-    /**
-     * Build a schema carrying schema- and property-level authorization.
-     *
-     * @return Schema The schema entity.
-     */
-    private function schemaWithAuthorization(): Schema
-    {
-        $schema = new Schema();
-        $id     = new ReflectionProperty($schema, 'id');
-        $id->setAccessible(true);
-        $id->setValue($schema, 10);
+	/**
+	 * Export the fixture configuration.
+	 *
+	 * @return array The exported document.
+	 */
+	private function exportFixture(): array {
+		$register = $this->registerWithAuthorization(['read' => ['medewerkers']]);
+		$schema = $this->schemaWithAuthorization();
 
-        $schema->setTitle('Zaak');
-        $schema->setSlug('zaak');
-        $schema->setVersion('1.0.0');
-        $schema->setAuthorization(['delete' => ['archivarissen']]);
-        $schema->setProperties(
-            [
-                'bsn' => [
-                    'type'          => 'string',
-                    'authorization' => ['read' => ['privacy-officers']],
-                ],
-            ]
-        );
+		$this->registerMapper->method('getSchemasByRegisterId')->with(1)->willReturn([$schema]);
+		$this->schemaMapper->method('getIdToSlugMap')->willReturn([10 => 'zaak']);
+		$this->registerMapper->method('getIdToSlugMap')->willReturn([1 => 'zaken']);
 
-        return $schema;
-    }//end schemaWithAuthorization()
+		return $this->handler->exportConfig($register);
+	}//end exportFixture()
 
+	/**
+	 * Every group the configuration depends on appears in the scope map —
+	 * including one that only gates a single property.
+	 *
+	 * @return void
+	 */
+	public function testExportDeclaresEveryGroupItDependsOn(): void {
+		$scopes = $this->exportFixture()['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'];
 
-    /**
-     * Export the fixture configuration.
-     *
-     * @return array The exported document.
-     */
-    private function exportFixture(): array
-    {
-        $register = $this->registerWithAuthorization(['read' => ['medewerkers']]);
-        $schema   = $this->schemaWithAuthorization();
+		$this->assertArrayHasKey('medewerkers', $scopes, 'register-level group');
+		$this->assertArrayHasKey('archivarissen', $scopes, 'schema-level group');
+		$this->assertArrayHasKey('privacy-officers', $scopes, 'property-level group');
+		$this->assertArrayHasKey('admin', $scopes, 'admin is always a valid scope');
+		$this->assertArrayNotHasKey(
+			'public',
+			$scopes,
+			'public is emitted only when the configuration actually grants anonymous access'
+		);
+	}//end testExportDeclaresEveryGroupItDependsOn()
 
-        $this->registerMapper->method('getSchemasByRegisterId')->with(1)->willReturn([$schema]);
-        $this->schemaMapper->method('getIdToSlugMap')->willReturn([10 => 'zaak']);
-        $this->registerMapper->method('getIdToSlugMap')->willReturn([1 => 'zaken']);
+	/**
+	 * The scope map is complete ON ITS OWN.
+	 *
+	 * Deliberately read through `fromScopeMap()` rather than `fromDocument()`.
+	 * `fromDocument()` also RE-DERIVES groups from the exported register and
+	 * schema definitions, so it recovers the full set whether or not the scope
+	 * map was written at all — an assertion through it stays green against the
+	 * lossy export it is supposed to be pinning, and proves nothing.
+	 *
+	 * What the scope map adds is an EXPLICIT declaration: a consumer that reads
+	 * only the security scheme — Swagger UI, an external client negotiating
+	 * scopes — sees every group without having to walk and understand every
+	 * authorization block first.
+	 *
+	 * @return void
+	 */
+	public function testScopeMapAloneCarriesEveryGroup(): void {
+		$fromScopeMapOnly = (new RbacGroupCollector())->fromScopeMap(document: $this->exportFixture());
 
-        return $this->handler->exportConfig($register);
-    }//end exportFixture()
-
-
-    /**
-     * Every group the configuration depends on appears in the scope map —
-     * including one that only gates a single property.
-     *
-     * @return void
-     */
-    public function testExportDeclaresEveryGroupItDependsOn(): void
-    {
-        $scopes = $this->exportFixture()['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'];
-
-        $this->assertArrayHasKey('medewerkers', $scopes, 'register-level group');
-        $this->assertArrayHasKey('archivarissen', $scopes, 'schema-level group');
-        $this->assertArrayHasKey('privacy-officers', $scopes, 'property-level group');
-        $this->assertArrayHasKey('admin', $scopes, 'admin is always a valid scope');
-        $this->assertArrayNotHasKey(
-            'public',
-            $scopes,
-            'public is emitted only when the configuration actually grants anonymous access'
-        );
-    }//end testExportDeclaresEveryGroupItDependsOn()
-
-
-    /**
-     * The scope map is complete ON ITS OWN.
-     *
-     * Deliberately read through `fromScopeMap()` rather than `fromDocument()`.
-     * `fromDocument()` also RE-DERIVES groups from the exported register and
-     * schema definitions, so it recovers the full set whether or not the scope
-     * map was written at all — an assertion through it stays green against the
-     * lossy export it is supposed to be pinning, and proves nothing.
-     *
-     * What the scope map adds is an EXPLICIT declaration: a consumer that reads
-     * only the security scheme — Swagger UI, an external client negotiating
-     * scopes — sees every group without having to walk and understand every
-     * authorization block first.
-     *
-     * @return void
-     */
-    public function testScopeMapAloneCarriesEveryGroup(): void
-    {
-        $fromScopeMapOnly = (new RbacGroupCollector())->fromScopeMap(document: $this->exportFixture());
-
-        $this->assertContains('medewerkers', $fromScopeMapOnly);
-        $this->assertContains('archivarissen', $fromScopeMapOnly);
-        $this->assertContains('privacy-officers', $fromScopeMapOnly, 'property-level group, declared explicitly');
-    }//end testScopeMapAloneCarriesEveryGroup()
-
+		$this->assertContains('medewerkers', $fromScopeMapOnly);
+		$this->assertContains('archivarissen', $fromScopeMapOnly);
+		$this->assertContains('privacy-officers', $fromScopeMapOnly, 'property-level group, declared explicitly');
+	}//end testScopeMapAloneCarriesEveryGroup()
 
 }//end class

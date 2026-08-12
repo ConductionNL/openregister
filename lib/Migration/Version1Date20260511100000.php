@@ -40,88 +40,85 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the openregister_tenant_keys table.
  */
-class Version1Date20260511100000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260511100000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_tenant_keys') === true) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_tenant_keys') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_tenant_keys');
+		$table = $schema->createTable(tableName: 'openregister_tenant_keys');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'tenant_id',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 255,
-                'comment' => 'Opaque tenant identifier (organisation UUID or similar)',
-            ]
-        );
+		$table->addColumn(
+			name: 'tenant_id',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 255,
+				'comment' => 'Opaque tenant identifier (organisation UUID or similar)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'encrypted_key',
-            typeName: Types::TEXT,
-            options: [
-                'notnull' => true,
-                'comment' => 'ICrypto-encrypted 256-bit HMAC key (AES-256-GCM ciphertext)',
-            ]
-        );
+		$table->addColumn(
+			name: 'encrypted_key',
+			typeName: Types::TEXT,
+			options: [
+				'notnull' => true,
+				'comment' => 'ICrypto-encrypted 256-bit HMAC key (AES-256-GCM ciphertext)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'status',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 16,
-                'default' => 'active',
-                'comment' => '"active" = current key; "retired" = superseded by rotation',
-            ]
-        );
+		$table->addColumn(
+			name: 'status',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 16,
+				'default' => 'active',
+				'comment' => '"active" = current key; "retired" = superseded by rotation',
+			]
+		);
 
-        $table->addColumn(
-            name: 'created_at',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 32,
-                'comment' => 'ISO-8601 key issuance / rotation timestamp',
-            ]
-        );
+		$table->addColumn(
+			name: 'created_at',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 32,
+				'comment' => 'ISO-8601 key issuance / rotation timestamp',
+			]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
-        $table->addIndex(
-            columnNames: ['tenant_id', 'status'],
-            indexName: 'idx_or_tkeys_tenant_status'
-        );
-        $table->addIndex(
-            columnNames: ['tenant_id'],
-            indexName: 'idx_or_tkeys_tenant_id'
-        );
+		$table->setPrimaryKey(columnNames: ['id']);
+		$table->addIndex(
+			columnNames: ['tenant_id', 'status'],
+			indexName: 'idx_or_tkeys_tenant_status'
+		);
+		$table->addIndex(
+			columnNames: ['tenant_id'],
+			indexName: 'idx_or_tkeys_tenant_id'
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

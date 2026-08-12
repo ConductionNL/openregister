@@ -28,89 +28,85 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Migration step for adding uuid and version columns to sources and schemas tables
  */
-class Version1Date20241019205009 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241019205009 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Update the openregister_sources table.
-        $table = $schema->getTable('openregister_sources');
-        if ($table->hasColumn('uuid') === false) {
-            $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-            $table->addIndex(['uuid'], 'openregister_sources_uuid_index');
-        }
+		// Update the openregister_sources table.
+		$table = $schema->getTable('openregister_sources');
+		if ($table->hasColumn('uuid') === false) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_sources_uuid_index');
+		}
 
-        if ($table->hasColumn('version') === false) {
-            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
-        }
+		if ($table->hasColumn('version') === false) {
+			$versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
+		}
 
-        // Update the openregister_schemas table.
-        $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('uuid') === false) {
-            $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-            $table->addIndex(['uuid'], 'openregister_schemas_uuid_index');
-        }
+		// Update the openregister_schemas table.
+		$table = $schema->getTable('openregister_schemas');
+		if ($table->hasColumn('uuid') === false) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_schemas_uuid_index');
+		}
 
-        // Update the openregister_registers table.
-        $table = $schema->getTable('openregister_registers');
-        if ($table->hasColumn('uuid') === false) {
-            $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
-            $table->addIndex(['uuid'], 'openregister_registers_uuid_index');
-        }
+		// Update the openregister_registers table.
+		$table = $schema->getTable('openregister_registers');
+		if ($table->hasColumn('uuid') === false) {
+			$table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
+			$table->addIndex(['uuid'], 'openregister_registers_uuid_index');
+		}
 
-        if ($table->hasColumn('version') === false) {
-            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
-        }
+		if ($table->hasColumn('version') === false) {
+			$versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
+		}
 
-        // Update the openregister_objects table.
-        $table = $schema->getTable('openregister_objects');
-        if ($table->hasColumn('version') === false) {
-            $versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
-            $table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
-        }
+		// Update the openregister_objects table.
+		$table = $schema->getTable('openregister_objects');
+		if ($table->hasColumn('version') === false) {
+			$versionOptions = ['notnull' => true, 'length' => 255, 'default' => '0.0.1'];
+			$table->addColumn(name: 'version', typeName: Types::STRING, options: $versionOptions);
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Execute actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Execute actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

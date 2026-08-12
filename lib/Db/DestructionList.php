@@ -57,189 +57,185 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class DestructionList extends Entity implements JsonSerializable
-{
+class DestructionList extends Entity implements JsonSerializable {
 
-    /**
-     * Valid status values for destruction lists.
-     */
-    public const STATUS_PENDING_REVIEW = 'pending_review';
-    public const STATUS_APPROVED       = 'approved';
-    public const STATUS_COMPLETED      = 'completed';
-    public const STATUS_CANCELLED      = 'cancelled';
+	/**
+	 * Valid status values for destruction lists.
+	 */
+	public const STATUS_PENDING_REVIEW = 'pending_review';
+	public const STATUS_APPROVED = 'approved';
+	public const STATUS_COMPLETED = 'completed';
+	public const STATUS_CANCELLED = 'cancelled';
 
-    /**
-     * All valid statuses.
-     */
-    public const VALID_STATUSES = [
-        self::STATUS_PENDING_REVIEW,
-        self::STATUS_APPROVED,
-        self::STATUS_COMPLETED,
-        self::STATUS_CANCELLED,
-    ];
+	/**
+	 * All valid statuses.
+	 */
+	public const VALID_STATUSES = [
+		self::STATUS_PENDING_REVIEW,
+		self::STATUS_APPROVED,
+		self::STATUS_COMPLETED,
+		self::STATUS_CANCELLED,
+	];
 
-    /**
-     * Unique identifier.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Unique identifier.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Human-readable name of the destruction list.
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * Human-readable name of the destruction list.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * Current workflow status.
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * Current workflow status.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * Array of object UUIDs included in this destruction list.
-     *
-     * @var array|null
-     */
-    protected ?array $objects = [];
+	/**
+	 * Array of object UUIDs included in this destruction list.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $objects = [];
 
-    /**
-     * User ID of the approver.
-     *
-     * @var string|null
-     */
-    protected ?string $approvedBy = null;
+	/**
+	 * User ID of the approver.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $approvedBy = null;
 
-    /**
-     * Timestamp of approval.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $approvedAt = null;
+	/**
+	 * Timestamp of approval.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $approvedAt = null;
 
-    /**
-     * Notes or comments on the destruction list.
-     *
-     * @var string|null
-     */
-    protected ?string $notes = null;
+	/**
+	 * Notes or comments on the destruction list.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $notes = null;
 
-    /**
-     * Organisation that owns this destruction list.
-     *
-     * @var string|null
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation that owns this destruction list.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Last update timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Initialize the entity and define field types.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'objects', type: 'json');
-        $this->addType(fieldName: 'approvedBy', type: 'string');
-        $this->addType(fieldName: 'approvedAt', type: 'datetime');
-        $this->addType(fieldName: 'notes', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Initialize the entity and define field types.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'objects', type: 'json');
+		$this->addType(fieldName: 'approvedBy', type: 'string');
+		$this->addType(fieldName: 'approvedAt', type: 'datetime');
+		$this->addType(fieldName: 'notes', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Serialize the entity to JSON format.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        $approvedAt = null;
-        if ($this->approvedAt instanceof DateTime) {
-            $approvedAt = $this->approvedAt->format('c');
-        }
+	/**
+	 * Serialize the entity to JSON format.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		$approvedAt = null;
+		if ($this->approvedAt instanceof DateTime) {
+			$approvedAt = $this->approvedAt->format('c');
+		}
 
-        $created = null;
-        if ($this->created instanceof DateTime) {
-            $created = $this->created->format('c');
-        }
+		$created = null;
+		if ($this->created instanceof DateTime) {
+			$created = $this->created->format('c');
+		}
 
-        $updated = null;
-        if ($this->updated instanceof DateTime) {
-            $updated = $this->updated->format('c');
-        }
+		$updated = null;
+		if ($this->updated instanceof DateTime) {
+			$updated = $this->updated->format('c');
+		}
 
-        return [
-            'id'           => $this->uuid,
-            'uuid'         => $this->uuid,
-            'name'         => $this->name,
-            'status'       => $this->status,
-            'objects'      => $this->objects ?? [],
-            'objectCount'  => count($this->objects ?? []),
-            'approvedBy'   => $this->approvedBy,
-            'approvedAt'   => $approvedAt,
-            'notes'        => $this->notes,
-            'organisation' => $this->organisation,
-            'created'      => $created,
-            'updated'      => $updated,
-        ];
-    }//end jsonSerialize()
+		return [
+			'id' => $this->uuid,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'status' => $this->status,
+			'objects' => $this->objects ?? [],
+			'objectCount' => count($this->objects ?? []),
+			'approvedBy' => $this->approvedBy,
+			'approvedAt' => $approvedAt,
+			'notes' => $this->notes,
+			'organisation' => $this->organisation,
+			'created' => $created,
+			'updated' => $updated,
+		];
+	}//end jsonSerialize()
 
-    /**
-     * Hydrate the entity from an array.
-     *
-     * @param array<string, mixed> $data The data array
-     *
-     * @return static
-     *
-     * @phpcs:disable Squiz.Functions.FunctionDeclarationArgumentSpacing -- Entity __call setters cannot use named args
-     */
-    public function hydrate(array $data): static
-    {
-        // phpcs:disable
-        if (isset($data['uuid']) === true) {
-            $this->setUuid($data['uuid']);
-        }
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * @param array<string, mixed> $data The data array
+	 *
+	 * @return static
+	 *
+	 * @phpcs:disable Squiz.Functions.FunctionDeclarationArgumentSpacing -- Entity __call setters cannot use named args
+	 */
+	public function hydrate(array $data): static {
+		// phpcs:disable
+		if (isset($data['uuid']) === true) {
+			$this->setUuid($data['uuid']);
+		}
 
-        if (isset($data['name']) === true) {
-            $this->setName($data['name']);
-        }
+		if (isset($data['name']) === true) {
+			$this->setName($data['name']);
+		}
 
-        if (isset($data['status']) === true) {
-            $this->setStatus($data['status']);
-        }
+		if (isset($data['status']) === true) {
+			$this->setStatus($data['status']);
+		}
 
-        if (isset($data['objects']) === true) {
-            $this->setObjects($data['objects']);
-        }
+		if (isset($data['objects']) === true) {
+			$this->setObjects($data['objects']);
+		}
 
-        if (isset($data['notes']) === true) {
-            $this->setNotes($data['notes']);
-        }
+		if (isset($data['notes']) === true) {
+			$this->setNotes($data['notes']);
+		}
 
-        if (isset($data['organisation']) === true) {
-            $this->setOrganisation($data['organisation']);
-        }
+		if (isset($data['organisation']) === true) {
+			$this->setOrganisation($data['organisation']);
+		}
 
-        // phpcs:enable
-        return $this;
-    }//end hydrate()
+		// phpcs:enable
+		return $this;
+	}//end hydrate()
 }//end class

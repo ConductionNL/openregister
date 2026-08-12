@@ -29,146 +29,144 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-class Version1Date20250410070338 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @phpstan-return ISchemaWrapper|null
-     *
-     * @psalm-return ISchemaWrapper|null
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @return                                        ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20250410070338 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @phpstan-return ISchemaWrapper|null
+	 *
+	 * @psalm-return ISchemaWrapper|null
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_configurations') === false) {
-            $table = $schema->createTable('openregister_configurations');
-            $table->addColumn(
-                'id',
-                'integer',
-                [
-                    'autoincrement' => true,
-                    'notnull'       => true,
-                ]
-            );
-            $table->addColumn(
-                'title',
-                'string',
-                [
-                    'notnull' => true,
-                    'length'  => 255,
-                ]
-            );
-            $table->addColumn(
-                'description',
-                'text',
-                [
-                    'notnull' => false,
-                    'default' => '',
-                ]
-            );
-            $table->addColumn(
-                'type',
-                'string',
-                [
-                    'notnull' => true,
-                    'length'  => 64,
-                ]
-            );
-            $table->addColumn(
-                'registers',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
-            $table->addColumn(
-                'version',
-                'string',
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                    'default' => '0.0.1',
-                ]
-            );
-            $table->addColumn(
-                'owner',
-                'string',
-                [
-                    'notnull' => false,
-                    'length'  => 64,
-                ]
-            );
-            $table->addColumn(
-                'created',
-                'datetime',
-                [
-                    'notnull' => true,
-                ]
-            );
-            $table->addColumn(
-                'updated',
-                'datetime',
-                [
-                    'notnull' => true,
-                ]
-            );
+		if ($schema->hasTable('openregister_configurations') === false) {
+			$table = $schema->createTable('openregister_configurations');
+			$table->addColumn(
+				'id',
+				'integer',
+				[
+					'autoincrement' => true,
+					'notnull' => true,
+				]
+			);
+			$table->addColumn(
+				'title',
+				'string',
+				[
+					'notnull' => true,
+					'length' => 255,
+				]
+			);
+			$table->addColumn(
+				'description',
+				'text',
+				[
+					'notnull' => false,
+					'default' => '',
+				]
+			);
+			$table->addColumn(
+				'type',
+				'string',
+				[
+					'notnull' => true,
+					'length' => 64,
+				]
+			);
+			$table->addColumn(
+				'registers',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
+			$table->addColumn(
+				'version',
+				'string',
+				[
+					'notnull' => false,
+					'length' => 255,
+					'default' => '0.0.1',
+				]
+			);
+			$table->addColumn(
+				'owner',
+				'string',
+				[
+					'notnull' => false,
+					'length' => 64,
+				]
+			);
+			$table->addColumn(
+				'created',
+				'datetime',
+				[
+					'notnull' => true,
+				]
+			);
+			$table->addColumn(
+				'updated',
+				'datetime',
+				[
+					'notnull' => true,
+				]
+			);
 
-            $table->setPrimaryKey(['id']);
-            $table->addIndex(['type'], 'openregister_config_type_idx');
-            $table->addIndex(['owner'], 'openregister_config_owner_idx');
-            $table->addIndex(['created'], 'openregister_config_created_idx');
-            $table->addIndex(['updated'], 'openregister_config_updated_idx');
-        }//end if
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['type'], 'openregister_config_type_idx');
+			$table->addIndex(['owner'], 'openregister_config_owner_idx');
+			$table->addIndex(['created'], 'openregister_config_created_idx');
+			$table->addIndex(['updated'], 'openregister_config_updated_idx');
+		}//end if
 
-        // Update the openregister_configurations table.
-        $table = $schema->getTable('openregister_schemas');
+		// Update the openregister_configurations table.
+		$table = $schema->getTable('openregister_schemas');
 
-        // Add the authorization column if it doesn't exist.
-        if ($table->hasColumn('authorization') === false) {
-            $table->addColumn(
-                'authorization',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
-            $table->addColumn(
-                'icon',
-                'string',
-                [
-                    'notnull' => false,
-                    'length'  => 255,
-                ]
-            );
-        }
+		// Add the authorization column if it doesn't exist.
+		if ($table->hasColumn('authorization') === false) {
+			$table->addColumn(
+				'authorization',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
+			$table->addColumn(
+				'icon',
+				'string',
+				[
+					'notnull' => false,
+					'length' => 255,
+				]
+			);
+		}
 
-        // Update the openregister_registers table.
-        $table = $schema->getTable('openregister_registers');
+		// Update the openregister_registers table.
+		$table = $schema->getTable('openregister_registers');
 
-        // Add the authorization column if it doesn't exist.
-        if ($table->hasColumn('authorization') === false) {
-            $table->addColumn(
-                'authorization',
-                Types::JSON,
-                [
-                    'notnull' => false,
-                ]
-            );
-        }
+		// Add the authorization column if it doesn't exist.
+		if ($table->hasColumn('authorization') === false) {
+			$table->addColumn(
+				'authorization',
+				Types::JSON,
+				[
+					'notnull' => false,
+				]
+			);
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class
