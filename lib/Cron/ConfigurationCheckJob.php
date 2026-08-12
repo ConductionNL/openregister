@@ -113,7 +113,7 @@ class ConfigurationCheckJob extends TimedJob
         if ($interval === 0) {
             $this->setInterval(seconds: 86400 * 365);
             // 1 year.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationCheckJob] Configuration check job is disabled (interval set to 0)',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -121,7 +121,7 @@ class ConfigurationCheckJob extends TimedJob
         }
 
         $this->setInterval(seconds: $interval);
-        $this->logger->info(
+        $this->logger->debug(
             message: "[ConfigurationCheckJob] Configuration check job interval set to {$interval} seconds",
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -143,7 +143,7 @@ class ConfigurationCheckJob extends TimedJob
      */
     protected function run($argument): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: '[ConfigurationCheckJob] Starting configuration check job',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -156,7 +156,7 @@ class ConfigurationCheckJob extends TimedJob
         try {
             // Get all configurations.
             $configurations = $this->configurationMapper->findAll();
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationCheckJob] Found '.count($configurations).' configurations to check',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -172,7 +172,7 @@ class ConfigurationCheckJob extends TimedJob
             $failed  = $stats['failed'];
             $msg     = "[ConfigurationCheckJob] Completed: {$checked} checked, {$updated} updated, {$failed} failed"
             ;
-            $this->logger->info(
+            $this->logger->debug(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -195,7 +195,7 @@ class ConfigurationCheckJob extends TimedJob
     {
         $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
         if ($interval === 0) {
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ConfigurationCheckJob] Configuration check job is disabled, skipping',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -224,7 +224,7 @@ class ConfigurationCheckJob extends TimedJob
             }
 
             $checkMsg = "[ConfigurationCheckJob] Checking {$configuration->getTitle()} (ID: {$configuration->getId()})";
-            $this->logger->info(
+            $this->logger->debug(
                 message: $checkMsg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -244,7 +244,7 @@ class ConfigurationCheckJob extends TimedJob
 
             // Check if update is available.
             if ($configuration->hasUpdateAvailable() === false) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ConfigurationCheckJob] Configuration {$configuration->getTitle()} is up to date",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -253,7 +253,7 @@ class ConfigurationCheckJob extends TimedJob
 
             $title        = $configuration->getTitle();
             $localVersion = $configuration->getLocalVersion();
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationCheckJob] Update available for {$title}: {$localVersion} → {$remoteVersion}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -286,7 +286,7 @@ class ConfigurationCheckJob extends TimedJob
      */
     private function handleAutoUpdate($configuration, array &$stats): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: "[ConfigurationCheckJob] Auto-update enabled, importing updates for {$configuration->getTitle()}",
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -300,7 +300,7 @@ class ConfigurationCheckJob extends TimedJob
             );
 
             $stats['updated']++;
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ConfigurationCheckJob] Successfully auto-updated configuration {$configuration->getTitle()}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -324,7 +324,7 @@ class ConfigurationCheckJob extends TimedJob
      */
     private function sendUpdateNotification($configuration): void
     {
-        $this->logger->info(
+        $this->logger->debug(
             message: "[ConfigurationCheckJob] Auto-update disabled for {$configuration->getTitle()}, sending notification",
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -332,6 +332,9 @@ class ConfigurationCheckJob extends TimedJob
         try {
             // Send notification to configured groups.
             $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
+            // Info: notifications reached real people. That is an outcome
+            // someone may need to account for later, unlike the steps that
+            // decided to send them.
             $this->logger->info(
                 message: "[ConfigurationCheckJob] Sent {$notificationCount} notifications",
                 context: ['file' => __FILE__, 'line' => __LINE__]

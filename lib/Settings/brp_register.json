@@ -5,6 +5,11 @@
     "description": "Mock BRP (Basisregistratie Personen) register with RVIG test data for development and testing. Contains fictional person records aligned to the Haal Centraal BRP Personen Bevragen API v2 data model.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "Haal Centraal BRP Personen Bevragen API v2 (RVIG test data)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "ingeschreven-persoon and its fields are the Haal Centraal resource and field names. Renaming them makes a connector built against this mock fail against the real BRP. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",

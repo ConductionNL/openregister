@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  */
 

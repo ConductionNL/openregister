@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
@@ -152,6 +153,28 @@ class MetricSourceTest extends TestCase
 
     // --- ProviderMetricSource ------------------------------------------------
 
+    /**
+     * A locator that hands back the given container for any app.
+     *
+     * The topology is INJECTED rather than reached for. Before this seam
+     * existed, `collect()` resolved the calling app's container through
+     * `\OC::$server` and never consulted the container these tests build — so
+     * this test read the REAL shillinq provider's metrics on any instance where
+     * shillinq was installed, and only passed where it was absent.
+     */
+    private function locatorReturning(?ContainerInterface $appContainer): AppContainerLocator
+    {
+        $locator = $this->createMock(AppContainerLocator::class);
+        $locator->method('find')->willReturn($appContainer);
+        $locator->method('findOr')->willReturnCallback(
+            static function (string $appId, ContainerInterface $fallback) use ($appContainer): ContainerInterface {
+                return ($appContainer ?? $fallback);
+            }
+        );
+
+        return $locator;
+    }
+
     public function testProviderEscapeHatchDiscoveredByAlias(): void
     {
         $provider = new class implements IMetricsProvider {
@@ -161,16 +184,84 @@ class MetricSourceTest extends TestCase
             }
         };
 
-        $alias     = IMetricsProvider::class.'::shillinq';
-        $container = $this->createMock(ContainerInterface::class);
-        $container->method('has')->willReturnMap([[$alias, true]]);
-        $container->method('get')->willReturnMap([[$alias, $provider]]);
+        $alias = IMetricsProvider::class.'::shillinq';
 
-        $source  = new ProviderMetricSource($container, $this->createMock(LoggerInterface::class));
+        // The APP's own container is where a leaf registers its alias.
+        $appContainer = $this->createMock(ContainerInterface::class);
+        $appContainer->method('has')->willReturnMap([[$alias, true]]);
+        $appContainer->method('get')->willReturnMap([[$alias, $provider]]);
+
+        $source  = new ProviderMetricSource(
+            $this->createMock(ContainerInterface::class),
+            $this->locatorReturning($appContainer),
+            $this->createMock(LoggerInterface::class)
+        );
         $samples = $source->collect('shillinq', $this->descriptor(['kind' => 'provider']));
 
         $this->assertCount(1, $samples);
         $this->assertSame('bridge_state', $samples[0]->name);
+    }
+
+    /**
+     * The alias is read from the APP's container, not OpenRegister's.
+     *
+     * This is the whole substance of #390: NC app containers are isolated, so a
+     * provider registered by a leaf is invisible in OpenRegister's container.
+     * Here OpenRegister's container would answer, and must not be asked.
+     */
+    public function testProviderIsResolvedFromTheAppsOwnContainerNotOpenRegisters(): void
+    {
+        $provider = new class implements IMetricsProvider {
+            public function metrics(): array
+            {
+                return [MetricSample::single('wrong_container', 'gauge', 'Wrong', 1)];
+            }
+        };
+
+        $alias = IMetricsProvider::class.'::shillinq';
+
+        // OpenRegister's own container CAN answer the alias...
+        $ownContainer = $this->createMock(ContainerInterface::class);
+        $ownContainer->method('has')->willReturnMap([[$alias, true]]);
+        $ownContainer->method('get')->willReturnMap([[$alias, $provider]]);
+
+        // ...but the app has its own container, which does not.
+        $appContainer = $this->createMock(ContainerInterface::class);
+        $appContainer->method('has')->willReturn(false);
+
+        $source  = new ProviderMetricSource(
+            $ownContainer,
+            $this->locatorReturning($appContainer),
+            $this->createMock(LoggerInterface::class)
+        );
+        $samples = $source->collect('shillinq', $this->descriptor(['kind' => 'provider']));
+
+        $this->assertSame(
+            [],
+            $samples,
+            'the provider was read from OpenRegister\'s container, which never sees a leaf app\'s registrations'
+        );
+    }
+
+    /**
+     * An app with NO registered container falls back rather than fataling.
+     *
+     * One app that was never bootstrapped must not take down a scrape that
+     * walks every installed app.
+     */
+    public function testAnAppWithoutItsOwnContainerFallsBack(): void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('has')->willReturn(false);
+
+        $source  = new ProviderMetricSource(
+            $container,
+            $this->locatorReturning(null),
+            $this->createMock(LoggerInterface::class)
+        );
+        $samples = $source->collect('neverbootstrapped', $this->descriptor(['kind' => 'provider']));
+
+        $this->assertSame([], $samples);
     }
 
     public function testProviderAbsentYieldsNoSamples(): void
@@ -178,7 +269,11 @@ class MetricSourceTest extends TestCase
         $container = $this->createMock(ContainerInterface::class);
         $container->method('has')->willReturn(false);
 
-        $source  = new ProviderMetricSource($container, $this->createMock(LoggerInterface::class));
+        $source  = new ProviderMetricSource(
+            $container,
+            $this->locatorReturning($container),
+            $this->createMock(LoggerInterface::class)
+        );
         $samples = $source->collect('appwithoutprovider', $this->descriptor(['kind' => 'provider']));
 
         $this->assertSame([], $samples);

@@ -661,18 +661,8 @@ class SettingsServiceGapTest extends TestCase
         $this->service->setDeckDefault('case', 4, 5);
     }
 
-    /**
-     * clearDeckDefault deletes the schema-scoped key.
-     *
-     * @return void
-     */
-    public function testClearDeckDefaultDeletesScopedKey(): void
-    {
-        $this->config
-            ->expects($this->once())
-            ->method('deleteAppValue')
-            ->with('openregister', 'integration.deck.default.case');
-
-        $this->service->clearDeckDefault('case');
-    }
+    // clearDeckDefault() was removed together with this test: it had no
+    // caller anywhere — no repair step, no occ command, no route, no UI — and
+    // the uninstall case its docblock claimed is handled by Nextcloud
+    // dropping the app's appconfig namespace.
 }

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<ruleset name="Unused formal parameters"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_xml_schema.xsd">
+
+    <description>
+        Second PHPMD leg: UnusedFormalParameter only.
+
+        This rule lives in its own ruleset because PHPMD honours &lt;exclude-pattern&gt;
+        ONLY as a direct child of &lt;ruleset&gt;; nested inside a &lt;rule&gt; it is parsed and
+        discarded (ConductionNL/.github#155). A direct child, however, is applied by
+        PDepend at file-collection time and drops the file from EVERY rule in the
+        ruleset. Isolating UnusedFormalParameter here means the lib/Migration
+        exclusion applies to this rule and this rule ALONE - every other rule still
+        analyses lib/Migration in the main leg.
+
+        Why lib/Migration is excluded from THIS rule: OCP\Migration\IMigrationStep
+        mandates changeSchema(IOutput $output, Closure $schemaClosure, array $options)
+        and preSchemaChange/postSchemaChange with the same three parameters. A step
+        that needs none of them still cannot drop them. The signature cannot change.
+
+        Both legs must always run - see the "phpmd" script in composer.json, which
+        keeps the worst exit code rather than letting the first leg short-circuit
+        the second.
+
+        WHY THE PATTERN IS `*/lib/Migration/*` AND NOT `*/Migration/*`
+        PDepend compiles an exclude-pattern into an UNANCHORED regex - see
+        Input\ExcludePathFilter::__construct, which preg_quote()s the pattern and
+        then turns `\*` into `.*`. `*/Migration/*` therefore matches ANY path with
+        a `/Migration/` segment anywhere in it, not just the app's migration steps:
+        `lib/Service/Migration/`, `lib/Command/Migration/` and any future
+        `lib/*/Migration/` would be silently dropped from this rule too. Those are
+        ordinary classes with no interface-mandated signature, so a genuine unused
+        parameter in one of them would never be reported and the run would still
+        look clean. This is not hypothetical - openconnector carried exactly such a
+        file (lib/Service/Migration/LegacyToRegisterMigrator.php) with a real
+        finding the broad form hid.
+
+        openregister has no `lib/*/Migration/` directory today, so the two patterns
+        currently select the same files. That is precisely why this had to be fixed
+        BEFORE one appears: the broad form fails silently and only on the day
+        someone adds the directory.
+
+        Measured on PHPMD 2.15.0 / PHP 8.4.22 with four probe classes:
+
+          probe                                   `*/Migration/*`   `*/lib/Migration/*`
+          lib/Migration/…            UFP          not reported      not reported  (intended)
+          lib/Migration/…            Else (leg 1) reported          reported      (leg 1 unaffected)
+          lib/Service/…              UFP          reported          reported
+          lib/Service/Migration/…    UFP          NOT REPORTED      reported      (the leak)
+
+        Note this is still a path pattern, not an anchor: a nested
+        `lib/Foo/lib/Migration/` would match. No such path exists here, and the
+        alternative - a top-level anchor - is not something PDepend's filter
+        offers.
+    </description>
+
+    <exclude-pattern>*/lib/Migration/*</exclude-pattern>
+
+    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter"/>
+</ruleset>

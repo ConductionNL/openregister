@@ -176,8 +176,9 @@ class FlowRunServiceTest extends TestCase
     {
         return [
             'id' => 'f1',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'hop', 'from' => 'a', 'to' => 'b', 'type' => 'test.wait']],
+            // The step is the NODE (or-flow-action-nodes).
+            'nodes' => [['id' => 'hop', 'type' => 'test.wait']],
+            'edges' => [],
         ];
     }
 
@@ -212,7 +213,10 @@ class FlowRunServiceTest extends TestCase
         $run = $this->service->queue('f1');
         $run = $this->service->execute($run, $this->waitFlow(), new RunSubject());
 
-        $this->assertSame(['a' => 1], $run->getMarking());
+        // The marking names the NODE the run is paused on. A suspending step
+        // does not advance the token, so it waits on its own place — which is
+        // the node's id, since a place is named after its node.
+        $this->assertSame(['hop' => 1], $run->getMarking());
     }
 
     public function testResumingCarriesTheStoredItemsRatherThanReseeding(): void
@@ -286,8 +290,8 @@ class FlowRunServiceTest extends TestCase
     {
         return [
             'id' => 'f1',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'hop', 'from' => 'a', 'to' => 'b', 'type' => 'test.capture']],
+            'nodes' => [['id' => 'hop', 'type' => 'test.capture']],
+            'edges' => [],
         ];
     }
 

@@ -95,6 +95,12 @@ class ScheduledWorkflowController extends Controller
     /**
      * Create a new scheduled workflow.
      *
+     * @auth admin-only A scheduled workflow is instance-wide: ScheduledWorkflow carries no owner
+     *       column, and the TimedJob that runs it runs for the whole instance, not for the caller.
+     *       There is therefore no per-object guard to write here — nothing scopes a row to a user —
+     *       so admin is the only posture that is not a privilege escalation. Adding
+     *       #[NoAdminRequired] would let any authenticated user schedule work on the instance.
+     *
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
@@ -127,6 +133,10 @@ class ScheduledWorkflowController extends Controller
      *
      * @param int $id Scheduled workflow ID
      *
+     * @auth admin-only ScheduledWorkflow has no owner column, so "the caller's own workflow" is not
+     *       a thing that can be expressed, let alone guarded. Rescheduling or re-pointing a job
+     *       changes instance-wide behaviour for every user, so admin is the correct posture.
+     *
      * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-17
@@ -158,6 +168,10 @@ class ScheduledWorkflowController extends Controller
      * Delete a scheduled workflow.
      *
      * @param int $id Scheduled workflow ID
+     *
+     * @auth admin-only Deletes an instance-wide scheduled job by id. ScheduledWorkflow has no owner
+     *       column, so a per-object guard has nothing to compare the caller against; under
+     *       #[NoAdminRequired] this would be a direct object reference any user could delete.
      *
      * @return JSONResponse
      *

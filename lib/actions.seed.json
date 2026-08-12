@@ -1,0 +1,10 @@
+{
+  "$comment": "ADR-023 action-authorization matrix seed for OpenRegister itself. Each entry maps a dot-separated action to the groups allowed to invoke it. 'admin' means Nextcloud admins, who always pass. '@authenticated' means any signed-in user — an explicit, revocable grant, not a default; an action with NO entry still denies. Admins narrow these under Admin Settings. One entry per ActionAuthService::requireAction() call site.",
+  "$why-flows-are-open-by-default": "Creating, editing and running a flow was open to every member of an organisation, gated only by organisation scoping — there was no per-action right at all, and no way to add one: the matrix could express admin-only or nothing, so naming these actions would have locked out every non-admin flow author on every instance. They are seeded '@authenticated' to preserve exactly the behaviour that exists today. Nothing changes on upgrade; what changes is that an admin can now SEE these rights and tighten them.",
+  "actions": {
+    "flow.create": ["@authenticated"],
+    "flow.update": ["@authenticated"],
+    "flow.delete": ["@authenticated"],
+    "flow.run": ["@authenticated"]
+  }
+}

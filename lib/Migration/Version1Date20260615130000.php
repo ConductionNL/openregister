@@ -51,8 +51,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_push_subscriptions table.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
  */
 class Version1Date20260615130000 extends SimpleMigrationStep

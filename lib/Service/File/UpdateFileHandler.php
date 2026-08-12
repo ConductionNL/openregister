@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
@@ -53,6 +53,16 @@ use Psr\Log\LoggerInterface;
  */
 class UpdateFileHandler
 {
+
+    /**
+     * Number of leading bytes read from a stream resource for the magic-byte
+     * executable check. Executable signatures live at offset 0, so a small
+     * bounded prefix gives full parity with the string path without buffering
+     * the whole file into memory.
+     *
+     * @var int
+     */
+    private const EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH = 512;
 
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -136,7 +146,7 @@ class UpdateFileHandler
             $entity = $this->fileMapper->setLabelsForFile(fileId: $fileId, labels: $labels);
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: "[UpdateFileHandler] OR-side metadata updated for file $fileId",
             context: [
                 'file'               => __FILE__,
@@ -169,10 +179,12 @@ class UpdateFileHandler
      * This method updates the content and/or tags of an existing file. When updating tags,
      * it preserves any existing 'object:' tags while replacing other user-defined tags.
      *
-     * @param string|int        $filePath The path or file ID.
-     * @param mixed             $content  Optional content of the file.
-     * @param array             $tags     Optional array of tags.
-     * @param ObjectEntity|null $object   Optional object entity.
+     * @param string|int           $filePath The path or file ID.
+     * @param string|resource|null $content  Optional content of the file: a byte string, a readable
+     *                                       stream resource (streamed straight to storage), or null
+     *                                       to update only metadata/tags.
+     * @param array                $tags     Optional array of tags.
+     * @param ObjectEntity|null    $object   Optional object entity.
      *
      * @return File The updated file.
      *
@@ -195,7 +207,7 @@ class UpdateFileHandler
     ): File {
         // Debug logging - original file path.
         $originalFilePath = $filePath;
-        $this->logger->info(
+        $this->logger->debug(
             message: "[UpdateFileHandler] updateFile: Original file path received: '$originalFilePath'",
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -206,7 +218,7 @@ class UpdateFileHandler
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: File ID provided: $filePath",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -218,7 +230,7 @@ class UpdateFileHandler
                     $fileName = $file->getName();
                     $fileId   = $file->getId();
                     $msg      = "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)";
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: $msg,
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -241,7 +253,7 @@ class UpdateFileHandler
                     $file     = $nodes[0];
                     $fileName = $file->getName();
                     $fid      = $file->getId();
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[UpdateFileHandler] updateFile: Found file by ID in user folder: $fileName (ID: $fid)",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -262,12 +274,12 @@ class UpdateFileHandler
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: After cleaning: '$filePath'",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             if ($fileName !== $filePath) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Extracted filename from path: '$fileName' (from '$filePath')",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -282,11 +294,11 @@ class UpdateFileHandler
                     $objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
 
                     if ($objectFolder !== null) {
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Object folder path: ".$objectFolder->getPath(),
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Object folder ID: ".$objectFolder->getId(),
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
@@ -296,7 +308,7 @@ class UpdateFileHandler
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
                             $fileList    = implode(', ', $fileNames);
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: "[UpdateFileHandler] updateFile: Files in object folder: $fileList",
                                 context: [
                                     'file' => __FILE__,
@@ -314,7 +326,7 @@ class UpdateFileHandler
                         try {
                             $file = $objectFolder->get($fileName);
                             $msg  = "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")";
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: "[UpdateFileHandler] ".$msg,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
@@ -328,7 +340,7 @@ class UpdateFileHandler
                             try {
                                 $file = $objectFolder->get($filePath);
                                 $msg  = "updateFile: Found file using full path in object folder: ".$file->getName();
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[UpdateFileHandler] ".$msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -358,7 +370,7 @@ class UpdateFileHandler
             }//end if
 
             if ($object === null) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -367,7 +379,7 @@ class UpdateFileHandler
             // If object wasn't provided or file wasn't found in object folder, try user folder.
             $userFolder = null;
             if ($file === null) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -377,7 +389,7 @@ class UpdateFileHandler
                     $fileId     = $file->getId();
                     $msg        = "[UpdateFileHandler] updateFile: Found file in user folder";
                     $msg       .= " at path: $filePath (ID: $fileId)";
-                    $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->debug(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(
                         message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.",
@@ -387,7 +399,7 @@ class UpdateFileHandler
                     // Try to find the file by ID if the path starts with a number.
                     if (preg_match('/^(\d+)\//', $filePath, $matches) === 1) {
                         $fileId = (int) $matches[1];
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[UpdateFileHandler] updateFile: Attempting to find file by ID: $fileId",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
@@ -399,7 +411,7 @@ class UpdateFileHandler
                                 $fileName = $file->getName();
                                 $path     = $file->getPath();
                                 $msg      = "updateFile: Found file by ID $fileId: $fileName at path: $path";
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[UpdateFileHandler] ".$msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -434,16 +446,42 @@ class UpdateFileHandler
             }//end if
         }//end if
 
+        // Compute the incoming content hash in a memory-bounded way so a re-synced,
+        // byte-identical file still skips the write (and its version bump) on both the
+        // string and the streamed (resource) paths. For a resource the md5 is computed
+        // via hash_update_stream (chunked read, never buffered into a string) and the
+        // stream is rewound afterwards.
+        $incomingMd5 = null;
+        if ($content !== null && $file instanceof File && is_resource($content) === true) {
+            $hashContext = hash_init('md5');
+            hash_update_stream($hashContext, $content);
+            $incomingMd5 = hash_final($hashContext);
+            rewind($content);
+        }
+
+        if ($content !== null && $file instanceof File && is_resource($content) === false) {
+            $incomingMd5 = md5(string: $content);
+        }
+
         // Update the file content if provided and content is not equal to the current content.
-        if ($content !== null && $file instanceof File && $file->hash(type: 'md5') !== md5(string: $content)) {
+        if ($incomingMd5 !== null && $file instanceof File && $file->hash(type: 'md5') !== $incomingMd5) {
             try {
-                    // Check if the content is base64 encoded and decode it if necessary.
-                if (base64_encode(base64_decode($content, true)) === $content) {
+                // Check if the content is base64 encoded and decode it if necessary.
+                // Skipped for a resource: the caller already produced decoded bytes.
+                if (is_resource($content) === false && base64_encode(base64_decode($content, true)) === $content) {
                     $content = base64_decode($content);
                 }
 
-                // Security: Block executable files.
-                $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
+                // Security: Block executable files. On the streamed (resource) path the
+                // magic-byte signatures live at offset 0, so we read a bounded prefix and
+                // rewind before writing. A string is checked directly.
+                $execCheckBytes = $content;
+                if (is_resource($content) === true) {
+                    $execCheckBytes = (string) fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
+                    rewind($content);
+                }
+
+                $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $execCheckBytes);
 
                 // Assert the session can reach the file (owned or shared).
                 $this->fileValidHandler->checkOwnership($file);
@@ -455,7 +493,7 @@ class UpdateFileHandler
                 }
 
                 $file->putContent(data: $content);
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[UpdateFileHandler] updateFile: Successfully updated file content: ".$file->getName(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -486,7 +524,7 @@ class UpdateFileHandler
             $allTags = array_unique(array_merge($objectTags, $tags));
 
             $this->fileService->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[UpdateFileHandler] updateFile: Successfully updated file tags: ".$file->getName(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );

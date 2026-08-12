@@ -1297,3 +1297,37 @@
     max-height: 300px;
   }
 }
+
+/* Reduced motion (WCAG 2.2 SC 2.3.3 Animation from Interactions).
+ *
+ * Every transition this stylesheet declares is listed here explicitly rather
+ * than being swept up by a `*` rule. A universal selector in an app stylesheet
+ * reaches Nextcloud's own components on the same page, so it would silently
+ * change the behaviour of code this app does not own.
+ *
+ * Only MOTION is removed. The two `transform: translateY(100%)` rules on
+ * .format-json-button and .error-message are static positioning — they place an
+ * element, they do not animate it — so disabling them would move those elements
+ * to the wrong place for exactly the users who asked for less motion.
+ *
+ * The hover transforms on .card and .detail-item are neutralised too: with the
+ * transition gone they would otherwise snap, which is the jump this preference
+ * exists to avoid. Their non-motion affordances (box-shadow, border, colour)
+ * are deliberately left alone, so hover is still visibly hover.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .nestedCardHeader,
+  .toggleButton,
+  .viewTableRow,
+  .viewTable td span,
+  .table-row-selectable,
+  .detail-item {
+    transition: none;
+  }
+
+  .card:hover,
+  .detail-item:hover {
+    transform: none;
+  }
+}

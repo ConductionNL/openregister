@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
+use OCP\AppFramework\Db\Entity;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -369,8 +370,29 @@ class ViewPresentationService
             return md5(serialize($object));
         }
 
-        if (is_object($object) === true && method_exists($object, 'getId') === true) {
-            return (string) $object->getId();
+        // Nextcloud entities serve get*() through Entity::__call() and declare the
+        // accessors only as `@method`, so method_exists($row, 'getId') is FALSE for
+        // every ObjectEntity searchObjectsPaginated() hands back. That sent both
+        // queries to spl_object_hash(), which is unique per PHP instance — so the
+        // same DB row, hydrated once by the "starting" query and once by the
+        // "spanning" query, produced TWO keys and rendered twice on the calendar.
+        //
+        // property_exists() is the membership test Entity::getter() itself uses.
+        // uuid is preferred over id so an entity row and an already-rendered array
+        // row of the SAME object collapse to one key: getObject()/jsonSerialize()
+        // publish the uuid under 'id', which is what the is_array() branch reads.
+        if ($object instanceof Entity) {
+            if (property_exists($object, 'uuid') === true) {
+                // @phpstan-ignore-next-line Entity::getUuid() is dispatched via __call.
+                $uuid = $object->getUuid();
+                if ($uuid !== null && $uuid !== '') {
+                    return (string) $uuid;
+                }
+            }
+
+            if (property_exists($object, 'id') === true && $object->getId() !== null) {
+                return (string) $object->getId();
+            }
         }
 
         return spl_object_hash((object) $object);

@@ -16,7 +16,7 @@ declare(strict_types=1);
  *
  * @link     https://OpenRegister.app
  *
- * @spec openspec/changes/data-import-export/tasks.md#task-error-csv
+ * @spec openspec/specs/data-import-export/spec.md#import-must-provide-detailed-error-reporting-with-downloadable-error-files
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service;

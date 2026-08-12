@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+require_once __DIR__.'/FiltersFlowLevelFindings.php';
+
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;
@@ -51,6 +53,8 @@ use Psr\Log\LoggerInterface;
  */
 class FlowNodePreflightRegressionTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * The graph of hydra/flows/hydra-file-findings.flow.json, verbatim.
@@ -61,16 +65,30 @@ class FlowNodePreflightRegressionTest extends TestCase
     {
         return [
             'name'  => 'hydra-file-findings',
+            // The real hydra-file-findings flow, in the action-node shape: the
+            // three STEPS are the nodes, and the places they met at are the
+            // edges between them. Their names carry over onto the lines.
             'nodes' => [
-                ['id' => 'in', 'name' => 'A completed review stage'],
-                ['id' => 'exploded', 'name' => 'One item per finding'],
-                ['id' => 'actionable', 'name' => 'Open WARNING / SUGGESTION only'],
-                ['id' => 'filed', 'name' => 'Issue filed'],
+                ['id' => 'explode-findings', 'type' => 'openregister.explode'],
+                ['id' => 'actionable-only', 'type' => 'openregister.filter'],
+                // Filing the issue is where this flow ends. Saying so keeps the
+                // fixture a complete document, so the assertions below count
+                // only the registry findings they are about.
+                ['id' => 'file-issue', 'type' => 'openconnector.source-call', 'exit' => true],
             ],
             'edges' => [
-                ['id' => 'explode-findings', 'from' => 'in', 'to' => 'exploded', 'type' => 'openregister.explode'],
-                ['id' => 'actionable-only', 'from' => 'exploded', 'to' => 'actionable', 'type' => 'openregister.filter'],
-                ['id' => 'file-issue', 'from' => 'actionable', 'to' => 'filed', 'type' => 'openconnector.source-call'],
+                [
+                    'id'    => 'exploded',
+                    'from'  => 'explode-findings',
+                    'to'    => 'actionable-only',
+                    'title' => 'One item per finding',
+                ],
+                [
+                    'id'    => 'actionable',
+                    'from'  => 'actionable-only',
+                    'to'    => 'file-issue',
+                    'title' => 'Open WARNING / SUGGESTION only',
+                ],
             ],
         ];
     }
@@ -151,7 +169,7 @@ class FlowNodePreflightRegressionTest extends TestCase
             'openregister.merge',
             'openregister.loop',
             'openregister.wait',
-            'openregister.stop',
+            'openregister.end',
             'openregister.set-fields',
             'openregister.sub-flow',
             'openregister.flow-state',
@@ -269,7 +287,7 @@ class FlowNodePreflightRegressionTest extends TestCase
         // source-call is owned by an app that is not enabled.
         $this->assertCount(1, $report['blocking']);
         $this->assertSame('openregister.filter', $report['blocking'][0]['type']);
-        $this->assertCount(1, $report['warnings']);
-        $this->assertSame('openconnector.source-call', $report['warnings'][0]['type']);
+        $this->assertCount(1, $this->nodeWarnings($report));
+        $this->assertSame('openconnector.source-call', $this->nodeWarnings($report)[0]['type']);
     }
 }

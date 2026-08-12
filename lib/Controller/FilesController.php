@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -178,7 +179,7 @@ class FilesController extends Controller
      *
      * @return string The translated string, or the source string when no IL10N is wired.
      */
-    private function t(string $text, array $parameters=[]): string
+    private function translate(string $text, array $parameters=[]): string
     {
         if ($this->l10n === null) {
             // No localisation service wired — return the source string verbatim.
@@ -191,7 +192,7 @@ class FilesController extends Controller
 
         return $this->l10n->t($text, $parameters);
 
-    }//end t()
+    }//end translate()
 
     /**
      * Enforce object-level RBAC before a file action runs (ADR-005 / gate-7).
@@ -234,7 +235,7 @@ class FilesController extends Controller
         // to keep their existing anonymous access.
         if ($this->isAnonymousRequest() === true) {
             if ($allowAnonymous === false) {
-                throw new \OCA\OpenRegister\Exception\NotAuthorizedException(
+                throw new NotAuthorizedException(
                     message: 'Authentication is required for this object action'
                 );
             }
@@ -331,11 +332,11 @@ class FilesController extends Controller
             return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                data: ['error' => $this->t(text: 'Object not found')],
+                data: ['error' => $this->translate(text: 'Object not found')],
                 statusCode: 404
             );
         } catch (NotFoundException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Files folder not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Files folder not found')], statusCode: 404);
         } catch (\Exception $e) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
             return $this->errorResponse(e: $e);
@@ -407,7 +408,7 @@ class FilesController extends Controller
 
             if ($file === null) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File not found')],
+                    data: ['error' => $this->translate(text: 'File not found')],
                     statusCode: 404
                 );
             }
@@ -418,7 +419,7 @@ class FilesController extends Controller
             if ($isAnonymous === true) {
                 if ($this->fileMapper === null || $this->fileMapper->isFilePublished((int) $file->getId()) === false) {
                     return new JSONResponse(
-                        data: ['error' => $this->t(text: 'File not available for anonymous access')],
+                        data: ['error' => $this->translate(text: 'File not available for anonymous access')],
                         statusCode: 403
                     );
                 }
@@ -435,10 +436,10 @@ class FilesController extends Controller
 
             return $response;
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
             // SEC-CTRL-5: read-permission denial maps to 403.
-            return new JSONResponse(data: ['error' => $this->t(text: 'Forbidden')], statusCode: 403);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Forbidden')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -555,7 +556,7 @@ class FilesController extends Controller
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'Object not found')],
+                    data: ['error' => $this->translate(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -567,14 +568,14 @@ class FilesController extends Controller
 
             if (empty($fileName) === true) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File name is required (use "name" or "filename")')],
+                    data: ['error' => $this->translate(text: 'File name is required (use "name" or "filename")')],
                     statusCode: 400
                 );
             }
 
             if (array_key_exists('content', $data) === false) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File content is required')],
+                    data: ['error' => $this->translate(text: 'File content is required')],
                     statusCode: 400
                 );
             }
@@ -591,9 +592,9 @@ class FilesController extends Controller
             );
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -644,7 +645,7 @@ class FilesController extends Controller
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'Object not found')],
+                    data: ['error' => $this->translate(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -654,7 +655,7 @@ class FilesController extends Controller
             // Validate required parameters.
             if (empty($data['name']) === true) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File name is required')],
+                    data: ['error' => $this->translate(text: 'File name is required')],
                     statusCode: 400
                 );
             }
@@ -664,7 +665,7 @@ class FilesController extends Controller
 
             if ($contentExists === true || $contentEmpty === true) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File content is required')],
+                    data: ['error' => $this->translate(text: 'File content is required')],
                     statusCode: 400
                 );
             }
@@ -674,7 +675,7 @@ class FilesController extends Controller
 
             if (empty($fileName) === true) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File name is required (use "name" or "filename")')],
+                    data: ['error' => $this->translate(text: 'File name is required (use "name" or "filename")')],
                     statusCode: 400
                 );
             }
@@ -704,9 +705,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -749,7 +750,7 @@ class FilesController extends Controller
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'Object not found')],
+                    data: ['error' => $this->translate(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -775,7 +776,7 @@ class FilesController extends Controller
 
             return new JSONResponse($formattedFiles['results']);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $this->t(text: 'You do not have access to this object')], 403);
+            return new JSONResponse(['error' => $this->translate(text: 'You do not have access to this object')], 403);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
@@ -789,6 +790,11 @@ class FilesController extends Controller
      * @param string $id       Object ID
      *
      * @return ObjectEntity|null Object entity or null if not found
+     *
+     * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
+     *         than caught: every call site already wraps this helper and translates it to a 404.
+     *         Swallowing it here would collapse "no such object" into the same null this method
+     *         returns for other reasons, which the caller could no longer tell apart.
      */
     private function validateAndGetObject(string $register, string $schema, string $id): ?ObjectEntity
     {
@@ -1088,9 +1094,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1141,9 +1147,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: ['success' => $result]);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
@@ -1188,7 +1194,7 @@ class FilesController extends Controller
         if ($isAnonymous === true) {
             if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
                 return new JSONResponse(
-                    data: ['error' => $this->t(text: 'File not available for anonymous access')],
+                    data: ['error' => $this->translate(text: 'File not available for anonymous access')],
                     statusCode: 403
                 );
             }
@@ -1199,7 +1205,7 @@ class FilesController extends Controller
             $file = $this->fileService->getFileById($fileId);
 
             if ($file === null) {
-                return new JSONResponse(data: ['error' => $this->t(text: 'File not found')], statusCode: 404);
+                return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
             }
 
             // L2: resolve parent object for audit context (best-effort).
@@ -1218,7 +1224,7 @@ class FilesController extends Controller
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
         } catch (NotFoundException $e) {
-            return new JSONResponse(data: ['error' => $this->t(text: 'File not found')], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
         } catch (Exception $e) {
             // SEC-CTRL-7: do not leak internal exception detail on 500.
             return $this->errorResponse(e: $e);
@@ -1407,7 +1413,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $data    = $this->request->getParams();
@@ -1434,7 +1440,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "already exists") => 409,
@@ -1477,7 +1483,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Source object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Source object not found')], statusCode: 404);
             }
 
             $data           = $this->request->getParams();
@@ -1486,7 +1492,7 @@ class FilesController extends Controller
             $targetSchema   = $data["targetSchema"] ?? $schema;
 
             if (empty($targetObjectId) === true) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Target object ID is required')], statusCode: 400);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Target object ID is required')], statusCode: 400);
             }
 
             // ADR-005 / gate-7: the caller must also have access to the target object.
@@ -1498,7 +1504,7 @@ class FilesController extends Controller
             $this->objectService->setObject($targetObjectId);
             $targetObject = $this->objectService->getObject();
             if ($targetObject === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Target object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Target object not found')], statusCode: 404);
             }
 
             $newFile = $this->fileService->copyFile(
@@ -1539,7 +1545,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1579,7 +1585,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Source object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Source object not found')], statusCode: 404);
             }
 
             $data           = $this->request->getParams();
@@ -1588,7 +1594,7 @@ class FilesController extends Controller
             $targetSchema   = $data["targetSchema"] ?? $schema;
 
             if (empty($targetObjectId) === true) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Target object ID is required')], statusCode: 400);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Target object ID is required')], statusCode: 400);
             }
 
             // ADR-005 / gate-7: the caller must also have access to the target object.
@@ -1599,7 +1605,7 @@ class FilesController extends Controller
             $this->objectService->setObject($targetObjectId);
             $targetObject = $this->objectService->getObject();
             if ($targetObject === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Target object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Target object not found')], statusCode: 404);
             }
 
             $movedFile = $this->fileService->moveFile(
@@ -1640,7 +1646,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($movedFile));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "not found") => 404,
@@ -1681,19 +1687,19 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'File not found')], statusCode: 404);
             }
 
             $result = $this->fileService->getVersioningHandler()->listVersions($file);
 
             return new JSONResponse(data: $result);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1734,12 +1740,12 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'File not found')], statusCode: 404);
             }
 
             $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
@@ -1762,7 +1768,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1802,7 +1808,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $result = $this->fileService->getLockHandler()->lockFile($fileId);
@@ -1825,7 +1831,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = 400;
             if (str_contains($e->getMessage(), 'locked') === true) {
@@ -1865,7 +1871,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $data  = $this->request->getParams();
@@ -1896,7 +1902,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "Only the lock owner") => 403,
@@ -1936,7 +1942,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $data    = $this->request->getParams();
@@ -1959,7 +1965,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1998,7 +2004,7 @@ class FilesController extends Controller
             if ($this->isAnonymousRequest() === true) {
                 if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
                     return new JSONResponse(
-                        data: ["error" => $this->t(text: 'Preview not available for unpublished files')],
+                        data: ["error" => $this->translate(text: 'Preview not available for unpublished files')],
                         statusCode: 403
                     );
                 }
@@ -2012,12 +2018,12 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'File not found')], statusCode: 404);
             }
 
             $width  = (int) ($this->request->getParam("width") ?? 256);
@@ -2032,7 +2038,7 @@ class FilesController extends Controller
 
             return $response;
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $fallbackIcon = "/core/img/filetypes/file.svg";
             return new JSONResponse(
@@ -2071,7 +2077,7 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->translate(text: 'Object not found')], statusCode: 404);
             }
 
             $data   = $this->request->getParams();
@@ -2091,7 +2097,7 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
+            return new JSONResponse(data: ["error" => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try

@@ -24,9 +24,15 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 						<table class="audit-trail-table">
 							<thead>
 								<tr>
-									<th>Field</th>
-									<th>Old Value</th>
-									<th>New Value</th>
+									<th scope="col">
+										Field
+									</th>
+									<th scope="col">
+										Old Value
+									</th>
+									<th scope="col">
+										New Value
+									</th>
 								</tr>
 							</thead>
 							<tbody>

@@ -28,12 +28,24 @@
 				<table class="mergeOperationsTable">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Survivor') }}</th>
-							<th>{{ t('openregister', 'Merged from') }}</th>
-							<th>{{ t('openregister', 'Reason') }}</th>
-							<th>{{ t('openregister', 'Merged at') }}</th>
-							<th>{{ t('openregister', 'Status') }}</th>
-							<th>{{ t('openregister', 'Actions') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Survivor') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Merged from') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Reason') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Merged at') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Status') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Actions') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>

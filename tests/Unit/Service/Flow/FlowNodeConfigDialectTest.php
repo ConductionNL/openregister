@@ -41,6 +41,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+// The suite matches `*Test.php` and there is no autoloader for the test
+// namespace, so a helper that is not itself a test case is only reachable if a
+// consumer pulls it in — the convention the AppHost and Mcp fixtures follow.
+require_once __DIR__.'/FiltersFlowLevelFindings.php';
+
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
@@ -60,6 +65,8 @@ use UnexpectedValueException;
  */
 class FlowNodeConfigDialectTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * A preflight over the REAL router and set-fields nodes.
@@ -108,12 +115,9 @@ class FlowNodeConfigDialectTest extends TestCase
     {
         $flow = [
             'name'  => 'hydra-analyze-verdicts',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
+            'nodes' => [
                 [
                     'id'     => 'derive',
-                    'from'   => 'a',
-                    'to'     => 'b',
                     'type'   => 'openregister.set-fields',
                     'config' => [
                         'fields' => ['codePass' => ['var' => 'labels']],
@@ -121,8 +125,6 @@ class FlowNodeConfigDialectTest extends TestCase
                 ],
                 [
                     'id'     => 'code-contradiction',
-                    'from'   => 'b',
-                    'to'     => 'c',
                     'type'   => 'openregister.route',
                     'config' => [
                         'routes'  => [
@@ -130,20 +132,25 @@ class FlowNodeConfigDialectTest extends TestCase
                         ],
                         'default' => 'skip-code-drop',
                     ],
+                    // The last node of the fixture ends it. Without this the
+                    // document is also a dead end, and a suite about config
+                    // DIALECT would be counting a connectivity warning too.
+                    'exit'   => true,
                 ],
             ],
+            'edges' => [['id' => 'onwards', 'from' => 'derive', 'to' => 'code-contradiction']],
         ];
 
         $report = $this->preflight()->inspect(flow: $flow);
 
-        $this->assertSame([], $report['warnings']);
+        $this->assertSame([], $this->nodeWarnings($report));
 
         foreach ($report['blocking'] as $finding) {
             $this->assertSame('openregister', $finding['app']);
             $this->assertNotSame('', ($finding['detail'] ?? ''));
         }
 
-        $edges = array_unique(array_column($report['blocking'], 'edge'));
+        $edges = array_unique(array_column($report['blocking'], 'step'));
         sort($edges);
         $this->assertSame(
             ['code-contradiction', 'derive'],
@@ -160,7 +167,7 @@ class FlowNodeConfigDialectTest extends TestCase
         //                             that ARE there will never be read
         //
         // The second is what the whole document would have needed if the first
-        // had had nothing to say, which is exactly the StopNode / SubFlowNode
+        // had had nothing to say, which is exactly the EndNode / SubFlowNode
         // case (see FlowNodeConfigVocabularyTest). Asserting both are present
         // keeps either from silently regressing behind the other.
         $reasons = array_unique(array_column($report['blocking'], 'reason'));
@@ -177,7 +184,7 @@ class FlowNodeConfigDialectTest extends TestCase
             $forEdge = array_values(
                 array_filter(
                     $report['blocking'],
-                    static fn (array $f): bool => ($f['edge'] === $edge)
+                    static fn (array $f): bool => ($f['step'] === $edge)
                 )
             );
             $this->assertCount(2, $forEdge, sprintf('Edge "%s" must be caught by both halves.', $edge));
@@ -193,16 +200,15 @@ class FlowNodeConfigDialectTest extends TestCase
     {
         $flow = [
             'name'  => 'hydra-analyze-verdicts',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [
+            'nodes' => [
                 [
                     'id'     => 'derive',
-                    'from'   => 'a',
-                    'to'     => 'b',
                     'type'   => 'openregister.set-fields',
                     'config' => ['fields' => ['x' => 1]],
+                    'exit'   => true,
                 ],
             ],
+            'edges' => [],
         ];
 
         $this->expectException(UnexpectedValueException::class);
@@ -222,12 +228,9 @@ class FlowNodeConfigDialectTest extends TestCase
     {
         $flow = [
             'name'  => 'hydra-analyze-verdicts (corrected)',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
+            'nodes' => [
                 [
                     'id'     => 'derive',
-                    'from'   => 'a',
-                    'to'     => 'b',
                     'type'   => 'openregister.set-fields',
                     'config' => [
                         'compute' => ['codePass' => ['var' => 'labels']],
@@ -235,8 +238,6 @@ class FlowNodeConfigDialectTest extends TestCase
                 ],
                 [
                     'id'     => 'code-contradiction',
-                    'from'   => 'b',
-                    'to'     => 'c',
                     'type'   => 'openregister.route',
                     'config' => [
                         'rules'   => [
@@ -244,13 +245,20 @@ class FlowNodeConfigDialectTest extends TestCase
                         ],
                         'default' => 'skip-code-drop',
                     ],
+                    // This is the POSITIVE CONTROL, and it asserts the report is
+                    // EXACTLY empty — so the fixture has to be a complete
+                    // document, ending deliberately, not merely one with the
+                    // right config.
+                    'exit'   => true,
                 ],
             ],
+            'edges' => [['id' => 'onwards', 'from' => 'derive', 'to' => 'code-contradiction']],
         ];
 
         $report = $this->preflight()->inspect(flow: $flow);
 
-        $this->assertSame(['blocking' => [], 'warnings' => []], $report);
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 
     /**
@@ -291,20 +299,19 @@ class FlowNodeConfigDialectTest extends TestCase
         $report = $preflight->inspect(
             flow: [
                 'name'  => 'partial',
-                'nodes' => [['id' => 'a'], ['id' => 'b']],
-                'edges' => [
+                'nodes' => [
                     [
                         'id'     => 'call',
-                        'from'   => 'a',
-                        'to'     => 'b',
                         'type'   => 'openconnector.source-call',
                         'config' => ['method' => 'GET'],
+                        'exit'   => true,
                     ],
                 ],
+                'edges' => [],
             ]
         );
 
         $this->assertSame([], $report['blocking']);
-        $this->assertCount(1, $report['warnings']);
+        $this->assertCount(1, $this->nodeWarnings($report));
     }
 }

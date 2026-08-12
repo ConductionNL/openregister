@@ -53,8 +53,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_sync_records table.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
 class Version1Date20260614110000 extends SimpleMigrationStep

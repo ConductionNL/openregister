@@ -307,23 +307,29 @@ class FacetCacheHandlerTest extends TestCase
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        // debug() is called multiple times; track messages and assert afterwards.
-        $debugMessages = [];
-        $this->logger->method('debug')
-            ->willReturnCallback(function (string $message) use (&$debugMessages) {
-                $debugMessages[] = $message;
+        // The message no longer claims the table "does not exist yet". No
+        // migration ever created it, so that state was permanent rather than
+        // transitional, and at default log level `debug` emitted nothing — the
+        // only trace was 22 `relation ... does not exist` errors per run in the
+        // Postgres server log. The table is created by
+        // Version1Date20260809000000, so this branch now means a real database
+        // failure and is logged as a warning.
+        $warnings = [];
+        $this->logger->method('warning')
+            ->willReturnCallback(function (string $message) use (&$warnings) {
+                $warnings[] = $message;
             });
 
         $this->handler->invalidateForSchemaChange(22);
 
         $found = false;
-        foreach ($debugMessages as $msg) {
-            if (str_contains($msg, 'does not exist yet')) {
+        foreach ($warnings as $msg) {
+            if (str_contains($msg, 'Failed to invalidate the database facet cache')) {
                 $found = true;
                 break;
             }
         }
-        $this->assertTrue($found, 'Expected a debug message containing "does not exist yet"');
+        $this->assertTrue($found, 'Expected a warning that the database facet cache could not be invalidated');
     }
 
     public function testInvalidateForSchemaChangeClearsDistributedCaches(): void

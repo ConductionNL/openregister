@@ -46,8 +46,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the case-token and analytics-series tables.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 class Version1Date20260615000000 extends SimpleMigrationStep

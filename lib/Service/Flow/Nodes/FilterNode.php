@@ -145,6 +145,36 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys
             throw new UnexpectedValueException($this->l10n->t('A filter needs a condition.'));
         }
 
+        // A CONSTANT is not a filter. `FlowExpression::isValid()` accepts any
+        // scalar because a bare literal is legal JSONLogic — true where a value
+        // is wanted, useless where a predicate is. Evaluated per item a constant
+        // gives the same answer every time, so the step keeps everything or
+        // drops everything while reading like a rule.
+        //
+        // Measured: a condition of `'{{ status == "synced" }}'` passed this
+        // guard and then kept all eleven items. The run was green end to end and
+        // the sweep flagged every object instead of the nine it meant to.
+        if (is_array($condition) === false) {
+            if (is_string($condition) === true && str_contains($condition, '{{') === true) {
+                throw new UnexpectedValueException(
+                    $this->l10n->t(
+                        'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
+                        [
+                            'example' => '{"==": [{"var": "json.status"}, "synced"]}',
+                            'given'   => $condition,
+                        ]
+                    )
+                );
+            }
+
+            throw new UnexpectedValueException(
+                $this->l10n->t(
+                    'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
+                    ['given' => var_export($condition, true)]
+                )
+            );
+        }
+
         if (FlowExpression::isValid(logic: $condition) === false) {
             throw new UnexpectedValueException($this->l10n->t('That condition is not a valid expression.'));
         }

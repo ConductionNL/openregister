@@ -5,7 +5,9 @@ TBD - created by archiving change apphost-boilerplate-controllers. Update Purpos
 ## Requirements
 ### Requirement: One-Call Bootstrap
 
-`AppHost\Bootstrap::register(IRegistrationContext, string $appId, array $options)` SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, lazily, such that Nextcloud bootstrap never fatals when OpenRegister is disabled.
+`AppHost\Bootstrap::register(IRegistrationContext, string $appId, array $options)` SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
+
+The laziness applies to the closure BODIES. It does NOT make reaching `Bootstrap::register()` safe: calling it requires resolving the symbol `OCA\OpenRegister\AppHost\Bootstrap`, which is an ordinary autoload. A leaf that has not satisfied the Autoload Prelude requirement below, and does not guard the call with `class_exists()`, WILL fatal out of its own `register()` when that symbol is unavailable.
 
 #### Scenario: Leaf controllers resolve to generics
 
@@ -16,10 +18,47 @@ TBD - created by archiving change apphost-boilerplate-controllers. Update Purpos
 
 #### Scenario: Disabled OpenRegister degrades, never fatals
 
-- **GIVEN** an adopted app with OpenRegister disabled
+- **GIVEN** an adopted app with OpenRegister disabled, whose `register()` guards the `Bootstrap::register()` call with `class_exists()`
 - **WHEN** Nextcloud boots and the app's routes are hit
 - **THEN** NC bootstrap MUST complete and the requests MUST fail with a 5xx JSON error, not a whitescreen
 - @e2e exclude failure-mode backend behaviour — integration-tested, no stable UI surface
+
+---
+
+### Requirement: Autoload Prelude for AppHost Adoption
+
+An app adopting AppHost SHALL register OpenRegister's autoload prefix as the first action of its `Application::register()`, before ANY reference to an `OCA\OpenRegister\AppHost\` symbol — including a `class_exists()` probe:
+
+```php
+try {
+    $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
+    \OC_App::registerAutoloading('openregister', $orPath);
+} catch (\Throwable) {
+    // OpenRegister absent/disabled — fall through to the degraded path.
+}
+```
+
+`OC_App::registerAutoloading()` touches only the autoloader and is idempotent (it early-returns on an `$alreadyRegistered` key).
+
+An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute a relative `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
+
+The prelude is required regardless of where the app id sorts. Sorting after `openregister` makes an app safe by alphabet alone, which is a property of its name rather than of its design.
+
+Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list calling `OC_App::registerAutoloading($appId, $path)` then `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
+
+#### Scenario: A leaf sorting before openregister still wires its AppHost plumbing
+
+- **GIVEN** an adopted app whose app id sorts before `openregister` (e.g. `docudesk`, `doriath`, `opencatalogi`), on an instance where OpenRegister is enabled
+- **WHEN** Nextcloud registers apps and the app's `register()` runs
+- **THEN** `class_exists('OCA\OpenRegister\AppHost\Bootstrap')` MUST answer TRUE inside that method, the AppHost aliases MUST be registered, and every registration below the AppHost call MUST still run
+- @e2e exclude app-registration ordering has no UI surface — asserted statically by hydra gate-64 and observable via the app's own health endpoint
+
+#### Scenario: Absent OpenRegister still degrades rather than aborting register()
+
+- **GIVEN** an adopted app on an instance where `openregister` is not installed
+- **WHEN** the app's `register()` runs
+- **THEN** the prelude's `catch (\Throwable)` MUST swallow the `AppPathNotFoundException`, the `class_exists()` guard MUST skip the AppHost plumbing, and every non-AppHost registration in that method MUST still complete
+- @e2e exclude failure-mode backend behaviour — no stable UI surface
 
 ---
 

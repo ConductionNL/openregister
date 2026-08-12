@@ -51,9 +51,41 @@ class FederationController extends Controller
     /**
      * Confidentiality values treated as public (servable through a schema share).
      *
+     * The empty string is present deliberately: an object that never had a
+     * confidentiality set is public. That is also why reading the WRONG
+     * property name fails OPEN rather than closed — see CONFIDENTIALITY_KEYS.
+     *
      * @var string[]
      */
     private const PUBLIC_CONFIDENTIALITY = ['', 'openbaar', 'public', 'open'];
+
+    /**
+     * Every property name under which this one concept is stored.
+     *
+     * One concept, three spellings, written by three different producers:
+     *
+     *   - `confidentiality`              — what this controller has always read;
+     *   - `confidentialityLevel`         — what the ZGW migration mapping pack
+     *                                      writes (SeedZgwZakenMigrationPack maps
+     *                                      `/vertrouwelijkheidaanduiding` to it);
+     *   - `vertrouwelijkheidaanduiding`  — the ZGW/GGM schema property itself.
+     *
+     * Reading only the first is not a cosmetic miss. `?? ''` yields the empty
+     * string for an object that stores its level under either of the other two,
+     * and the empty string is in PUBLIC_CONFIDENTIALITY above — so an object
+     * marked `zeer_geheim` under a name this guard did not read was served as
+     * public. The guard failed OPEN on a vocabulary mismatch.
+     *
+     * Ordered most- to least-canonical; the first key actually present wins.
+     * Adding a spelling here is safe, removing one is not.
+     *
+     * @var string[]
+     */
+    private const CONFIDENTIALITY_KEYS = [
+        'confidentiality',
+        'confidentialityLevel',
+        'vertrouwelijkheidaanduiding',
+    ];
 
     /**
      * Constructor.
@@ -78,6 +110,17 @@ class FederationController extends Controller
 
     /**
      * List the active organisation's federated shares.
+     *
+     * @no-admin-idor-exempt Tenancy is enforced in the query, not in this body:
+     *       `FederationShareService::listShares()` reads through
+     *       `FederatedShareMapper::findAll()`, which applies
+     *       `MultiTenancyTrait::applyOrganisationFilter()` and fails CLOSED
+     *       (`1 = 0`) when the session has no active organisation. There is no
+     *       caller-supplied object reference here to substitute, and a guard
+     *       repeated in the controller would only be a second, weaker copy of the
+     *       one that actually runs. Pinned by
+     *       tests/Unit/Db/FederatedShareMapperTenancyTest.php, which goes red if
+     *       that filter call is removed.
      *
      * @return JSONResponse `{ results, total }`.
      */
@@ -131,6 +174,17 @@ class FederationController extends Controller
      * @param int $id The share id.
      *
      * @return JSONResponse The revoked share, or an error.
+     *
+     * @no-admin-idor-exempt The id IS caller-supplied, and it is checked — one
+     *       layer down. `FederationShareService::setStatus()` writes through
+     *       `FederatedShareMapper::updateFromArray()`, which loads the row with
+     *       `find()` FIRST, and `find()` applies
+     *       `MultiTenancyTrait::applyOrganisationFilter()`. Another
+     *       organisation's id therefore raises `DoesNotExistException` and is
+     *       answered 404, deliberately rather than 403: a 403 would confirm the
+     *       id exists and turn this endpoint into an existence oracle for
+     *       another tenant's shares. Pinned by
+     *       tests/Unit/Db/FederatedShareMapperTenancyTest.php.
      */
     #[NoAdminRequired]
     public function revokeShare(int $id): JSONResponse
@@ -193,6 +247,8 @@ class FederationController extends Controller
      * @param string $id         The object id or uuid.
      *
      * @return JSONResponse The object or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -201,6 +257,10 @@ class FederationController extends Controller
         $share = $this->resolveAcceptedShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid, unaccepted or revoked share'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         try {
@@ -273,6 +333,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse The updated object, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -281,6 +343,10 @@ class FederationController extends Controller
         $share = $this->resolveWritableShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         $data = (array) $this->request->getParams();
@@ -311,6 +377,8 @@ class FederationController extends Controller
      * @param string $id         The object id/uuid.
      *
      * @return JSONResponse Success, or an error.
+     *
+     * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]
@@ -319,6 +387,10 @@ class FederationController extends Controller
         $share = $this->resolveWritableShare(shareToken: $shareToken);
         if ($share === null) {
             return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
+        }
+
+        if ($this->scopeCoversObject(share: $share, id: $id) === false) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
         }
 
         try {
@@ -353,6 +425,45 @@ class FederationController extends Controller
 
         return $share;
     }//end resolveWritableShare()
+
+    /**
+     * Whether a share's scope actually covers the single object being addressed.
+     *
+     * An OBJECT-scope share grants exactly one object — the one the sharer
+     * picked — and that is what the collection endpoint serves, because
+     * `buildScopeConfig()` pins `filters['uuid']` to the share's `objectUri`.
+     * The single-object endpoints took `{id}` straight from the URL and never
+     * compared it to the grant, so the item path was strictly wider than the
+     * list path that guards it: a token for one object read (and, on a
+     * read-write share, overwrote or deleted) ANY object in the same
+     * register/schema. `applyShareVisibility()` does not close that, because it
+     * deliberately skips the confidentiality filter for object scope — so the
+     * widened reach also reached objects the register/schema scopes may never
+     * serve.
+     *
+     * Non-object scopes are unchanged: their breadth IS the grant, and
+     * `applyShareVisibility()` remains the guard there.
+     *
+     * @param FederatedShare $share The share being served.
+     * @param string         $id    The object id/uuid taken from the URL.
+     *
+     * @return boolean Whether the share covers this object.
+     */
+    private function scopeCoversObject(FederatedShare $share, string $id): bool
+    {
+        if ($share->getScope() !== 'object') {
+            return true;
+        }
+
+        $granted = (string) $share->getObjectUri();
+        if ($granted === '') {
+            // An object-scope share that names no object grants nothing. Failing
+            // closed here is the only safe reading of a malformed grant.
+            return false;
+        }
+
+        return ($this->uuidFromUri(uri: $granted) === $id);
+    }//end scopeCoversObject()
 
     /**
      * Describe a share (scope, register/schema, permissions) so the receiving
@@ -444,9 +555,17 @@ class FederationController extends Controller
     /**
      * Set the register/schema context on ObjectService for a share.
      *
+     * `setRegister()` / `setSchema()` resolve a slug or uuid through the
+     * mappers, so a share naming a register or schema that has since been
+     * deleted throws rather than returning null. The only caller wraps this in
+     * its own try/catch; declaring it here so that is a documented contract
+     * rather than an accident of where the call happens to sit.
+     *
      * @param FederatedShare $share The share being served.
      *
      * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the share names a register or schema that no longer exists.
      */
     private function setServeContext(FederatedShare $share): void
     {
@@ -515,7 +634,7 @@ class FederationController extends Controller
                     // Confidentiality guard for non-object scopes (object shares
                     // serve exactly the one object the sharer chose).
                     if ($share->getScope() !== 'object') {
-                        $confidentiality = strtolower((string) ($object['confidentiality'] ?? ''));
+                        $confidentiality = $this->readConfidentiality(object: $object);
                         if (in_array($confidentiality, self::PUBLIC_CONFIDENTIALITY, true) === false) {
                             return false;
                         }
@@ -526,6 +645,36 @@ class FederationController extends Controller
             )
         );
     }//end applyShareVisibility()
+
+    /**
+     * Read an object's confidentiality under any of its known property names.
+     *
+     * Returns the lowercased value of the FIRST key in CONFIDENTIALITY_KEYS that
+     * is present and non-empty, or '' when the object genuinely carries none.
+     *
+     * "Present and non-empty", not merely present: a schema sync can add an
+     * empty column for a property before anything writes to it, and an empty
+     * `confidentiality` sitting in front of a populated `confidentialityLevel`
+     * would reinstate exactly the fail-open this method exists to close.
+     *
+     * @param array<string, mixed> $object The rendered object.
+     *
+     * @return string Lowercased confidentiality, or '' when none is set.
+     *
+     * @spec openspec/specs/federation/spec.md
+     */
+    private function readConfidentiality(array $object): string
+    {
+        foreach (self::CONFIDENTIALITY_KEYS as $key) {
+            $value = strtolower(trim((string) ($object[$key] ?? '')));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+
+    }//end readConfidentiality()
 
     /**
      * Extract the trailing uuid from a canonical object uri (or return it as-is).

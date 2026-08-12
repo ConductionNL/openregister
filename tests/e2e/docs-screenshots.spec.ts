@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Documentation screenshot capture suite — openregister.
  *
@@ -88,8 +88,17 @@ async function go(page: Page, route: string): Promise<void> {
 	const url = route.startsWith('/apps/') || route.startsWith('/settings/')
 		? `/index.php${route}`
 		: `/index.php${APP}/#${route}`
-	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
-	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
+	// `networkidle` NEVER settles on Nextcloud (ADR-074 rule 4): the
+	// notification long-poll keeps a request in flight for the life of the
+	// page, so this wait always ran to its timeout and the `.catch()` hid
+	// that it was doing nothing but costing 30s per route.
+	await page.goto(url, { waitUntil: 'domcontentloaded' })
+		.catch(() => { /* tolerate a 404 — caller decides */ })
+	// Wait for the app to have painted SOMETHING addressable rather than for
+	// the network: `#content` is Nextcloud's own main region and is present
+	// on every route this harness visits, including the settings pages.
+	await page.locator('#content').first().waitFor({ state: 'visible', timeout: 15_000 })
+		.catch(() => { /* a 404/blank route is the caller's decision, as above */ })
 	await dismissOverlays(page)
 	await page.waitForTimeout(900)
 }

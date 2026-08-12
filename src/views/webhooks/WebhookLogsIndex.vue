@@ -73,14 +73,28 @@
 				<table v-else class="webhooksTable">
 					<thead>
 						<tr>
-							<th>{{ t('openregister', 'Webhook') }}</th>
-							<th>{{ t('openregister', 'Event') }}</th>
-							<th>{{ t('openregister', 'Status') }}</th>
-							<th>{{ t('openregister', 'Status Code') }}</th>
-							<th>{{ t('openregister', 'Attempt') }}</th>
-							<th>{{ t('openregister', 'Created') }}</th>
-							<th>{{ t('openregister', 'Error') }}</th>
-							<th class="column-actions">
+							<th scope="col">
+								{{ t('openregister', 'Webhook') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Event') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Status') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Status Code') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Attempt') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Created') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Error') }}
+							</th>
+							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
 							</th>
 						</tr>

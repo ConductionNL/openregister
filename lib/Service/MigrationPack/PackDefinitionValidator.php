@@ -73,7 +73,7 @@ class PackDefinitionValidator
      *
      * @return string[] List of validation error messages. Empty when valid.
      *
-     * @spec openspec/specs/migration-mapping-packs/spec.md#validation
+     * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
      */
     public function validate(array $definition): array
     {
@@ -100,7 +100,7 @@ class PackDefinitionValidator
      *
      * @throws InvalidArgumentException When the definition is invalid. The message joins every error found.
      *
-     * @spec openspec/specs/migration-mapping-packs/spec.md#validation
+     * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
      */
     public function assertValid(array $definition): void
     {

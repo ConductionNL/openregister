@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
@@ -184,28 +184,12 @@ class FilePropertyHandler
             $schemaProperties = $schema->getProperties() ?? [];
 
             if (isset($schemaProperties[$propertyName]) === false) {
-                $this->logger->debug(
-                    message: '[FilePropertyHandler] isFileProperty: Property not in schema',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'property' => $propertyName]
-                );
-                return false;
                 // Property not in schema, not a file.
+                return false;
             }
 
             $propertyConfig = $schemaProperties[$propertyName];
             $propertyType   = $propertyConfig['type'] ?? '';
-
-            $this->logger->debug(
-                message: '[FilePropertyHandler] isFileProperty: Checking property type',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'app'      => 'openregister',
-                    'property' => $propertyName,
-                    'type'     => $propertyType,
-                    'isFile'   => ($propertyType === 'file'),
-                ]
-            );
 
             // Check if it's a direct file property.
             if ($propertyType === 'file') {

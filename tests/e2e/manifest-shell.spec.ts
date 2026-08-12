@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Manifest-driven shell e2e tests (browser-based).
  *
@@ -118,11 +118,30 @@ test.describe('openregister-app-manifest — registry dispatch', () => {
 		// than an exact count so adding a KPI card is not a false regression.
 		expect(await page.locator('.kpi-card').count()).toBeGreaterThanOrEqual(4)
 
-		// A list widget renders either its data table or its empty-state placeholder
-		// (the dashboard always paints the widget body for popular-terms /
-		// objects-by-register / objects-by-schema, regardless of data presence).
+		// A list widget renders either its data table or its empty-state
+		// placeholder — never an unpainted body.
+		//
+		// ⚠️ This asserted `.list-widget-content .stats-table, .list-widget-content
+		// .widget-empty`, and NEITHER half could ever match: `.list-widget-content`
+		// appears nowhere in src/, and `.stats-table` only in
+		// views/settings/sections/StatisticsOverview.vue, which is not the
+		// dashboard. A populated widget renders `CnDataTable`, an empty one
+		// `div.widget-empty` (DashboardIndex.vue, `#widget-objects-by-register`).
+		// The selector went unnoticed because CI never executed this file.
+		//
+		// Scoped to the dashboard by the stable testid CnDashboardPage renders
+		// on its root. Guessing the per-widget wrapper class was the previous
+		// mistake and it is not needed: assert the widget's own TITLE (an item,
+		// and one that only exists if the manifest's widget list reached the
+		// page), then that the dashboard body paints real rows or an explicit
+		// empty state rather than an unpainted panel.
+		const dash = page.locator('[data-testid="cn-dashboard-page"]').first()
+		await expect(dash).toBeVisible({ timeout: 15_000 })
 		await expect(
-			page.locator('.list-widget-content .stats-table, .list-widget-content .widget-empty').first(),
+			dash.getByText('Objects by Register', { exact: true }).first(),
+		).toBeVisible({ timeout: 15_000 })
+		await expect(
+			dash.locator('table tbody tr, .widget-empty').first(),
 		).toBeVisible({ timeout: 15_000 })
 	})
 

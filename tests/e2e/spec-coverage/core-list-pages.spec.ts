@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * GENUINE behavioural UI e2e for OpenRegister's CORE LIST pages — every
  * "Index" view reachable from the main nav. Goes deeper than shell-render:
@@ -49,6 +49,17 @@ const NOISE = [
 	// errors surface as named messages (e.g. "[reports.fetchDashboards]
 	// AxiosError"), which are NOT matched here and still fail the test.
 	'Failed to load resource: the server responded with a status of 5',
+	// Same argument, same shape, for 404: the mirrored line names no URL, so it
+	// cannot be attributed to OpenRegister. 404s are now tracked BY URL in the
+	// response collector below, where they CAN be named — see the note there.
+	'Failed to load resource: the server responded with a status of 404',
+	// OR probes the OPTIONAL hermiq app's chat health on every page (the OR
+	// chat surface was decommissioned to hermiq in ffafd1c14). hermiq is a
+	// separate ExApp and is absent on a stock CI instance, so this 404s on
+	// every route — it was the single cause of 14 of 16 failures on the first
+	// run of this suite in CI. Filtered BY URL, not by status: any OTHER 404
+	// still fails the test.
+	'/apps/hermiq/',
 ]
 
 function isNoise(text: string): boolean {
@@ -63,8 +74,13 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 		const t = m.text()
 		if (!isNoise(t)) errors.console.push(t.slice(0, 160))
 	})
+	// >= 400, not >= 500. Suppressing the anonymous 404 console line without
+	// this would have made the suite BLIND to 404s — the exact trade the
+	// 5xx entry above already makes, and it only holds because the failure is
+	// still caught here, by URL. This is strictly stronger than before: a
+	// genuine 404 now fails the test and NAMES the endpoint.
 	page.on('response', (r) => {
-		if (r.status() < 500) return
+		if (r.status() < 400) return
 		const u = r.url()
 		if (!isNoise(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})

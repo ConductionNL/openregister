@@ -8,6 +8,7 @@
 		<div class="search-section">
 			<NcTextField
 				v-model="localSearch"
+				:aria-label="t('openregister', 'Search by file name or path')"
 				:placeholder="t('openregister', 'Search by file name or path')"
 				@update:modelValue="handleSearchInput">
 				<Magnify :size="20" />

@@ -3,6 +3,13 @@
 /**
  * SourceRecordChangeListener unit tests — reverse-FK source-change recompute.
  *
+ * The recompute is DEFERRED (openregister#2420 / ADR-078), so the assertions
+ * below are about what the listener ENQUEUES, not about a synchronous save.
+ * The inline branch — reached only when the `openregister.listener_deferral`
+ * kill switch is set to `inline` — is covered separately, because a test that
+ * only exercised the deferred path could not tell a listener that defers
+ * correctly from one that has stopped recomputing at all.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -20,12 +27,15 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -36,31 +46,45 @@ class SourceRecordChangeListenerTest extends TestCase
 
     private SchemaMapper&MockObject $schemaMapper;
 
-    private ObjectService&MockObject $objectService;
-
     private LoggerInterface&MockObject $logger;
 
     private ICacheFactory&MockObject $cacheFactory;
 
-    private SourceRecordChangeListener $listener;
+    private ListenerDeferralService&MockObject $deferral;
+
+    private MasterRecomputeService&MockObject $recompute;
 
     protected function setUp(): void
     {
-        $this->schemaMapper  = $this->createMock(SchemaMapper::class);
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->cacheFactory  = $this->createMock(ICacheFactory::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->cacheFactory = $this->createMock(ICacheFactory::class);
+        $this->deferral     = $this->createMock(ListenerDeferralService::class);
+        $this->recompute    = $this->createMock(MasterRecomputeService::class);
         // No distributed cache in unit tests — the listener falls back to
         // its per-instance memoisation when cache creation fails.
         $this->cacheFactory->method('createDistributed')
             ->willThrowException(new \RuntimeException('no cache in tests'));
-        $this->listener = new SourceRecordChangeListener(
-            $this->schemaMapper,
-            $this->objectService,
-            $this->logger,
-            $this->cacheFactory
-        );
     }//end setUp()
+
+    /**
+     * Build the listener with the deferral kill switch in a chosen position.
+     *
+     * @param bool $deferralEnabled Whether deferral is on (the default in production).
+     *
+     * @return SourceRecordChangeListener
+     */
+    private function listener(bool $deferralEnabled): SourceRecordChangeListener
+    {
+        $this->deferral->method('isDeferralEnabled')->willReturn($deferralEnabled);
+        return new SourceRecordChangeListener(
+            $this->schemaMapper,
+            $this->logger,
+            $this->cacheFactory,
+            $this->deferral,
+            $this->recompute
+        );
+    }//end listener()
 
     /**
      * A master schema declaring a reverse-FK sourceLink onto `sourceRecord`.
@@ -115,24 +139,86 @@ class SourceRecordChangeListenerTest extends TestCase
         return $object;
     }//end source()
 
-    public function testSourceSaveRecomputesReferencedMaster(): void
+    /**
+     * The referenced master is ENQUEUED for recompute, not saved in-request.
+     *
+     * The dedupe key is asserted explicitly because it is what turns N source
+     * writes against one master into ONE recompute — a job enqueued without it
+     * would still pass a bare "defer was called" assertion while restoring the
+     * per-source fan-out this change exists to remove.
+     *
+     * @return void
+     */
+    public function testSourceSaveDefersReferencedMasterRecompute(): void
     {
         $this->schemaMapper->method('findAll')->willReturn([$this->masterSchema()]);
         $this->schemaMapper->method('find')->willReturn($this->schemaWith('sourceRecord'));
 
-        $master = new ObjectEntity();
-        $master->setObject(['goldenRecord' => []]);
+        // NOT recomputed inline — that is the defect this change closes.
+        $this->recompute->expects($this->never())->method('recompute');
 
-        // The referenced master is loaded and re-persisted (triggering recompute).
-        $this->objectService->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo('master-1'))
-            ->willReturn($master);
-        $this->objectService->expects($this->once())->method('saveObject');
+        $this->deferral->expects($this->once())
+            ->method('defer')
+            ->with(
+                $this->equalTo(SourceRecordRecomputeJob::class),
+                $this->equalTo(['masterUuid' => 'master-1']),
+                $this->anything(),
+                $this->equalTo('master-1')
+            );
 
         $source = $this->source('106', ['currentMasterEntity' => 'master-1', 'mappedAttributes' => ['name' => 'Acme']]);
-        $this->listener->handle(new ObjectCreatedEvent($source));
-    }//end testSourceSaveRecomputesReferencedMaster()
+        $this->listener(true)->handle(new ObjectCreatedEvent($source));
+    }//end testSourceSaveDefersReferencedMasterRecompute()
+
+    /**
+     * Reassigning a source to another master enqueues BOTH masters.
+     *
+     * A four-way gradient is not available here, so the control is the pair:
+     * an implementation that only enqueued the new master would pass a
+     * one-call assertion, and this one names both uuids.
+     *
+     * @return void
+     */
+    public function testReassignmentDefersBothOldAndNewMaster(): void
+    {
+        $this->schemaMapper->method('findAll')->willReturn([$this->masterSchema()]);
+        $this->schemaMapper->method('find')->willReturn($this->schemaWith('sourceRecord'));
+
+        $deferred = [];
+        $this->deferral->expects($this->exactly(2))
+            ->method('defer')
+            ->willReturnCallback(
+                function (string $jobClass, array $entry) use (&$deferred): void {
+                    $deferred[] = $entry['masterUuid'];
+                }
+            );
+
+        $new = $this->source('106', ['currentMasterEntity' => 'master-2']);
+        $old = $this->source('106', ['currentMasterEntity' => 'master-1']);
+        $this->listener(true)->handle(new ObjectUpdatedEvent($new, $old));
+
+        sort($deferred);
+        $this->assertSame(['master-1', 'master-2'], $deferred);
+    }//end testReassignmentDefersBothOldAndNewMaster()
+
+    /**
+     * With the kill switch at `inline`, the recompute runs in-request again.
+     *
+     * @return void
+     */
+    public function testInlineKillSwitchRecomputesSynchronously(): void
+    {
+        $this->schemaMapper->method('findAll')->willReturn([$this->masterSchema()]);
+        $this->schemaMapper->method('find')->willReturn($this->schemaWith('sourceRecord'));
+
+        $this->deferral->expects($this->never())->method('defer');
+        $this->recompute->expects($this->once())
+            ->method('recompute')
+            ->with($this->equalTo('master-1'));
+
+        $source = $this->source('106', ['currentMasterEntity' => 'master-1']);
+        $this->listener(false)->handle(new ObjectCreatedEvent($source));
+    }//end testInlineKillSwitchRecomputesSynchronously()
 
     public function testNonSourceObjectIsIgnored(): void
     {
@@ -140,25 +226,29 @@ class SourceRecordChangeListenerTest extends TestCase
         // The saved object's schema is not the reverse-FK source schema.
         $this->schemaMapper->method('find')->willReturn($this->schemaWith('contact'));
 
-        $this->objectService->expects($this->never())->method('find');
-        $this->objectService->expects($this->never())->method('saveObject');
+        $this->deferral->expects($this->never())->method('defer');
+        $this->recompute->expects($this->never())->method('recompute');
 
         $object = $this->source('999', ['currentMasterEntity' => 'master-1']);
-        $this->listener->handle(new ObjectCreatedEvent($object));
+        $this->listener(true)->handle(new ObjectCreatedEvent($object));
     }//end testNonSourceObjectIsIgnored()
 
-    public function testRecomputeFailureIsSwallowed(): void
+    /**
+     * An enqueue failure must never abort the source object's own write.
+     *
+     * @return void
+     */
+    public function testDeferFailureIsSwallowed(): void
     {
         $this->schemaMapper->method('findAll')->willReturn([$this->masterSchema()]);
         $this->schemaMapper->method('find')->willReturn($this->schemaWith('sourceRecord'));
 
-        // The master lookup throws — must be logged, never re-thrown.
-        $this->objectService->method('find')->willThrowException(new \RuntimeException('boom'));
+        $this->deferral->method('defer')->willThrowException(new \RuntimeException('boom'));
         $this->logger->expects($this->atLeastOnce())->method('warning');
 
         $source = $this->source('106', ['currentMasterEntity' => 'master-1']);
         // No exception escapes.
-        $this->listener->handle(new ObjectCreatedEvent($source));
+        $this->listener(true)->handle(new ObjectCreatedEvent($source));
         $this->addToAssertionCount(1);
-    }//end testRecomputeFailureIsSwallowed()
+    }//end testDeferFailureIsSwallowed()
 }//end class

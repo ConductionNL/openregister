@@ -22,8 +22,7 @@ use DateTime;
 use OCA\OpenRegister\Cron\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -34,7 +33,7 @@ class FlowRunWorkerStaleTest extends TestCase
 {
     private FlowRunMapper&MockObject $mapper;
 
-    private FlowRunService&MockObject $runner;
+    private FlowRunAdvancer&MockObject $advancer;
 
     private IAppConfig&MockObject $appConfig;
 
@@ -45,7 +44,7 @@ class FlowRunWorkerStaleTest extends TestCase
         parent::setUp();
 
         $this->mapper    = $this->createMock(FlowRunMapper::class);
-        $this->runner    = $this->createMock(FlowRunService::class);
+        $this->advancer  = $this->createMock(FlowRunAdvancer::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
 
         // Nothing queued, nothing due, and pruning off — this suite is only
@@ -56,8 +55,7 @@ class FlowRunWorkerStaleTest extends TestCase
         $this->worker = new FlowRunWorker(
             $this->createMock(ITimeFactory::class),
             $this->mapper,
-            $this->runner,
-            $this->createMock(FlowResolverRegistry::class),
+            $this->advancer,
             $this->appConfig,
             new NullLogger()
         );
@@ -120,8 +118,8 @@ class FlowRunWorkerStaleTest extends TestCase
         $this->mapper->method('findStale')->willReturn([$this->runningRun()]);
         $this->mapper->method('update')->willReturnArgument(0);
 
-        $this->runner->expects($this->never())->method('retry');
-        $this->runner->expects($this->never())->method('execute');
+        // `FlowRunAdvancer::advance()` is the worker's only execution path.
+        $this->advancer->expects($this->never())->method('advance');
 
         $this->pass();
     }
@@ -136,6 +134,72 @@ class FlowRunWorkerStaleTest extends TestCase
                     $minutesAgo = ((time() - $before->getTimestamp()) / 60);
                     // ~90 minutes ago, with room for the test's own runtime.
                     return $minutesAgo > 89 && $minutesAgo < 92;
+                }),
+                $this->anything()
+            )
+            ->willReturn([]);
+
+        $this->pass();
+    }
+
+    /**
+     * The reaper waits at least as long as a run was ALLOWED to take.
+     *
+     * The two settings used to be independent and contradicted each other by
+     * default: a run was granted an hour and declared abandoned at fifteen
+     * minutes, so every walk between those numbers was failed while working
+     * perfectly. Measured on the dev instance — a run reaped at 09:20:03 went on
+     * to import every record it was asked for.
+     *
+     * With the defaults (15 stale, 60 runtime) the cutoff must therefore be 65
+     * minutes ago, not 15.
+     */
+    public function testTheStaleWindowNeverUndercutsTheRuntimeCeiling(): void
+    {
+        $this->config(
+            [
+                'flow_run_retention_days'   => '0',
+                'flow_run_stale_minutes'    => '15',
+                'flow_max_runtime_minutes'  => '60',
+            ]
+        );
+
+        $this->mapper->expects($this->once())->method('findStale')
+            ->with(
+                $this->callback(static function (DateTime $before): bool {
+                    $minutesAgo = ((time() - $before->getTimestamp()) / 60);
+
+                    return $minutesAgo > 64 && $minutesAgo < 67;
+                }),
+                $this->anything()
+            )
+            ->willReturn([]);
+
+        $this->pass();
+    }
+
+    /**
+     * An unlimited runtime leaves the stale window as the operator set it.
+     *
+     * Zero means "no ceiling", and there is nothing to derive patience from — the
+     * reaper cannot wait forever, so the explicit stale setting stands.
+     */
+    public function testAnUnlimitedRuntimeLeavesTheStaleWindowAlone(): void
+    {
+        $this->config(
+            [
+                'flow_run_retention_days'  => '0',
+                'flow_run_stale_minutes'   => '15',
+                'flow_max_runtime_minutes' => '0',
+            ]
+        );
+
+        $this->mapper->expects($this->once())->method('findStale')
+            ->with(
+                $this->callback(static function (DateTime $before): bool {
+                    $minutesAgo = ((time() - $before->getTimestamp()) / 60);
+
+                    return $minutesAgo > 14 && $minutesAgo < 17;
                 }),
                 $this->anything()
             )

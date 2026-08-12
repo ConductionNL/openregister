@@ -945,4 +945,10 @@ export default {
 :deep(.v-select) {
 	margin-bottom: 8px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.actionProgressBar {
+		transition: none;
+	}
+}
 </style>

@@ -50,6 +50,56 @@ class FlowNodeRegistry
     private array $nodes = [];
 
     /**
+     * Node ids that were corrected, mapped old => new.
+     *
+     * A node id is a reference the SYSTEM writes into a flow definition, unlike
+     * a Twig function name which a person types into a template — so unlike
+     * those, an id can be corrected and the stored data migrated. A migration
+     * rewrites existing rows; this alias covers the tail the migration cannot
+     * reach: a flow exported before the rename and imported after it.
+     *
+     * Resolving through here is LOGGED, so the size of that tail is observable
+     * rather than assumed to be zero. The alias is removed one release after the
+     * rename.
+     *
+     * @var array<string, string>
+     */
+    private const RENAMED = [
+        // Renamed because it never looped: it splits items into fixed-size
+        // batches. Sitting next to the real `openregister.iterate`, the old name
+        // was a trap that re-armed for every new reader.
+        'openregister.loop' => 'openregister.batch',
+        // Renamed so one word carries the concept everywhere. The node ended a
+        // path and called itself "Stop", the interface said "terminal" and the
+        // palette badge said "ends" — three names for one idea. It is `end`
+        // now, in the id, the class, the display name and the badge.
+        'openregister.stop' => 'openregister.end',
+    ];
+
+    /**
+     * The rename map, for the one caller that has to REWRITE rather than resolve.
+     *
+     * Resolution is this class's job and stays here. `MigrateRenamedFlowNodeTypes`
+     * exists to make the alias table redundant — it rewrites stored definitions
+     * to the new names — and it must not carry a second copy of the pairs, or
+     * removing an alias here would leave the migration rewriting a name nothing
+     * answers to.
+     *
+     * Reading it from here also makes the retirement order right by
+     * construction: drop a pair from `RENAMED` and the migration stops
+     * rewriting it in the same commit.
+     *
+     * @return array<string, string> Old type id => new type id.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    public static function renamedTypes(): array
+    {
+        return self::RENAMED;
+
+    }//end renamedTypes()
+
+    /**
      * Whether contribution has already been collected this request.
      *
      * @var boolean
@@ -161,6 +211,21 @@ class FlowNodeRegistry
                     'displayName' => $node->getDisplayName(),
                     'description' => $node->getDescription(),
                     'icon'        => $node->getIcon(),
+                    // ALWAYS present, and always one of trigger/step/end. An
+                    // editor that had to infer this fell back to matching the
+                    // id against a naming convention, which mis-labels every
+                    // node another app contributes under a name that does not
+                    // fit the pattern. The engine knows; it says so.
+                    'role'        => $this->roleFor(node: $node),
+                    // Ids that used to mean this node. An editor resolving a
+                    // STORED flow looks its types up in this catalogue, so
+                    // without the aliases a flow saved before a rename shows a
+                    // raw type id where its name should be — the engine
+                    // resolves it perfectly well through RENAMED and only the
+                    // display breaks, which is the sort of half-failure nobody
+                    // files. Published rather than duplicated in each editor,
+                    // so the map has one home.
+                    'aliases'     => $this->aliasesFor(type: $id),
                 ];
 
                 // The node's config vocabulary, when it declares one. This is
@@ -177,6 +242,16 @@ class FlowNodeRegistry
                 // read as a licence to reject its keys.
                 if (($node instanceof IFlowNodeConfigKeys) === true) {
                     $entry['configKeys'] = array_values($node->configKeys());
+                }
+
+                // The node's own form, when it describes one. Absent — not
+                // empty — when it does not, for the same reason `configKeys`
+                // is: the editor must be able to tell "this node described no
+                // form, fall back to raw JSON" from "this node has no fields",
+                // and an empty array would say the second while meaning the
+                // first.
+                if (($node instanceof IFlowNodeConfigForm) === true) {
+                    $entry['configForm'] = array_values($node->configForm());
                 }
 
                 $palette[] = $entry;
@@ -196,6 +271,53 @@ class FlowNodeRegistry
     }//end palette()
 
     /**
+     * The links one run-log entry earns, from the node that wrote it.
+     *
+     * Asked of the node NOW rather than read from the entry: an href frozen
+     * into a log at write time rots when the target moves, and these records
+     * live for months.
+     *
+     * An entry whose node is unknown — a type an app stopped contributing, or
+     * a log older than the node's removal — yields no links rather than an
+     * error. A run log is history, and history routinely names things that no
+     * longer exist; refusing to render it would lose the rest of the entry too.
+     *
+     * A node whose `logActions()` throws is skipped for the same reason
+     * `palette()` skips one whose metadata throws: one broken provider must not
+     * take out the log an operator is trying to read.
+     *
+     * @param array<string, mixed> $entry One entry from a run's log.
+     *
+     * @return array<int, array<string, mixed>> The links.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+     */
+    public function logActions(array $entry): array
+    {
+        $type = trim((string) ($entry['type'] ?? ''));
+        if ($type === '') {
+            return [];
+        }
+
+        $node = ($this->all()[$type] ?? null);
+        if ($node === null || ($node instanceof IFlowNodeLogActions) === false) {
+            return [];
+        }
+
+        try {
+            return array_values($node->logActions(entry: $entry));
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[FlowNodeRegistry] A node\'s log actions failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type]
+            );
+
+            return [];
+        }
+
+    }//end logActions()
+
+    /**
      * Resolve a step's `type` to its node.
      *
      * An unknown type throws rather than being skipped. A silently skipped step
@@ -213,6 +335,21 @@ class FlowNodeRegistry
     public function get(string $type): IFlowNode
     {
         $this->load();
+
+        if (isset($this->nodes[$type]) === false && isset(self::RENAMED[$type]) === true) {
+            $this->logger->info(
+                message: sprintf(
+                    '[FlowNodeRegistry] Flow node "%s" was renamed to "%s"; resolving via the '
+                    .'compatibility alias. A flow definition still references the old id.',
+                    $type,
+                    self::RENAMED[$type]
+                ),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            $type = self::RENAMED[$type];
+        }
+
         if (isset($this->nodes[$type]) === false) {
             throw new UnexpectedValueException(
                 sprintf('No app provides the flow node type "%s". Is the app that owns it installed and enabled?', $type)
@@ -222,6 +359,151 @@ class FlowNodeRegistry
         return $this->nodes[$type];
 
     }//end get()
+
+    /**
+     * Whether a node TYPE ends a path deliberately.
+     *
+     * Resolved through the registry rather than against a hardcoded list, so a
+     * stop step contributed by another app — openconnector, hermiq, or one
+     * not written yet — needs no OpenRegister change to be recognised. A
+     * hardcoded list would silently report every contributed stop node as a
+     * dead end, and the warning would train authors to ignore it.
+     *
+     * An unknown type does NOT stop. It is already reported by its own
+     * preflight finding, and guessing "probably stops" here would suppress
+     * the dead-end warning for exactly the documents most likely to have one.
+     *
+     * @param string $type The node type id.
+     *
+     * @return bool True when the type is registered and marks itself an end.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
+     */
+    public function isEnd(string $type): bool
+    {
+        if (trim($type) === '') {
+            return false;
+        }
+
+        try {
+            return ($this->get(type: $type) instanceof IFlowEndNode);
+        } catch (UnexpectedValueException) {
+            return false;
+        }
+
+    }//end isEnd()
+
+    /**
+     * Whether a run may BEGIN at a node TYPE.
+     *
+     * The mirror of {@see isEnd()}, and resolved the same way and for the same
+     * reason: a start node contributed by another app is a start node, and no
+     * consumer should have to recognise it by the shape of its id.
+     *
+     * @param string $type The node type id.
+     *
+     * @return bool True when the type is registered and marks itself a trigger.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
+     */
+    public function isTrigger(string $type): bool
+    {
+        if (trim($type) === '') {
+            return false;
+        }
+
+        try {
+            return ($this->get(type: $type) instanceof IFlowTriggerNode);
+        } catch (UnexpectedValueException) {
+            return false;
+        }
+
+    }//end isTrigger()
+
+    /**
+     * A node type's ROLE in a flow: `trigger`, `step` or `end`.
+     *
+     * One word per concept, decided HERE and shipped to every consumer, so the
+     * palette, the canvas and the connectivity check cannot disagree about what
+     * a node is. Consumers used to infer this from the id
+     * (`id.includes('.trigger-')`, `id.endsWith('.stop')`) — a convention that
+     * mis-labels every node another app contributes under a different name.
+     *
+     * A type that marks itself BOTH is reported as a trigger: a node a run can
+     * begin at is a trigger whatever else it does, and the canvas has to draw
+     * it at the top of the flow.
+     *
+     * @param string $type The node type id.
+     *
+     * @return string `'trigger'`, `'end'` or `'step'`.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
+     */
+    public function roleOf(string $type): string
+    {
+        if (trim($type) === '') {
+            return 'step';
+        }
+
+        try {
+            return $this->roleFor(node: $this->get(type: $type));
+        } catch (UnexpectedValueException) {
+            // An unregistered type is a STEP, not a guess at something else.
+            // Its own preflight finding already reports that it is unknown.
+            return 'step';
+        }
+
+    }//end roleOf()
+
+    /**
+     * The old ids that still resolve to a type.
+     *
+     * The reverse of {@see RENAMED}. Empty for almost every node, which is why
+     * it is computed rather than stored: the map is small and read once per
+     * palette build.
+     *
+     * @param string $type The current type id.
+     *
+     * @return array<int, string> The ids that used to mean this node.
+     */
+    private function aliasesFor(string $type): array
+    {
+        $aliases = [];
+        foreach (self::RENAMED as $old => $new) {
+            if ($new === $type) {
+                $aliases[] = $old;
+            }
+        }
+
+        return $aliases;
+
+    }//end aliasesFor()
+
+    /**
+     * The role of a node INSTANCE the caller already holds.
+     *
+     * The one place the two marker interfaces are read, so `roleOf()`,
+     * `palette()` and anything added later cannot answer differently.
+     *
+     * @param IFlowNode $node The node.
+     *
+     * @return string `'trigger'`, `'end'` or `'step'`.
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-declares-whether-it-triggers-or-ends-a-path
+     */
+    private function roleFor(IFlowNode $node): string
+    {
+        if (($node instanceof IFlowTriggerNode) === true) {
+            return 'trigger';
+        }
+
+        if (($node instanceof IFlowEndNode) === true) {
+            return 'end';
+        }
+
+        return 'step';
+
+    }//end roleFor()
 
     /**
      * Collect contributions once per request.

@@ -680,11 +680,34 @@ trait MultiTenancyTrait
     protected function setOwnerOnCreate(Entity $entity): void
     {
         // Only set owner if the entity has an owner property.
-        if (method_exists($entity, 'getOwner') === false || method_exists($entity, 'setOwner') === false) {
+        //
+        // property_exists(), NOT method_exists() — for exactly the reason spelled
+        // out in setOrganisationOnCreate() thirty lines above: Nextcloud's Entity
+        // serves getters and setters through __call, declaring them only as
+        // `@method`, and method_exists() is FALSE for those.
+        //
+        // Every entity in lib/Db declares its owner accessors that way — not one
+        // has a real getOwner() — so this guard returned early for EVERY entity
+        // and this method had never once set an owner. It read as a safety net
+        // and was a no-op.
+        //
+        // Nothing visibly broke because the services that care set the owner
+        // explicitly (SaveObject, FlowService, ViewService, OrganisationService,
+        // …). The hazard is anything created straight through a mapper — repair
+        // steps, imports, new code — which silently got a NULL owner in the one
+        // field half the private-scope predicate is built on
+        // (owner OR admin OR granted).
+        if (property_exists($entity, 'owner') === false) {
             return;
         }
 
         // Only set owner if not already set (allow explicit owner assignment).
+        //
+        // The parameter is typed `Entity`, whose owner accessors exist only as
+        // `@method` on the subclasses, so static analysis cannot see them. The
+        // property_exists() guard above is what makes the call safe at runtime;
+        // this is the same false positive SystemEntityObjectAdapter documents.
+        // @phpstan-ignore-next-line Entity::getOwner() is dispatched via __call.
         if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
             return;
         }
@@ -696,6 +719,7 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user !== null) {
+            // @phpstan-ignore-next-line Entity::setOwner() is dispatched via __call.
             $entity->setOwner($user->getUID());
         }
     }//end setOwnerOnCreate()
@@ -715,10 +739,29 @@ trait MultiTenancyTrait
     protected function verifyOrganisationAccess(Entity $entity): void
     {
         // Check if entity has organisation property.
-        if (method_exists($entity, 'getOrganisation') === false) {
+        //
+        // property_exists(), NOT method_exists() — the same reason spelled out in
+        // setOrganisationOnCreate() and setOwnerOnCreate() above. Nextcloud's Entity
+        // serves get*() through __call(), and Entity::getter() resolves the name with
+        // property_exists() exactly as this line does, so method_exists() is FALSE for
+        // every accessor declared only as `@method`.
+        //
+        // Eight of the twelve mappers using this trait hold entities in that shape —
+        // Schema, Register, Configuration, Action, Mapping, Webhook, Agent (all
+        // `@method`) and Endpoint (no declaration at all) — so this guard returned
+        // early and cross-tenant enforcement was silently OFF for them: no
+        // organisation comparison, no cross_tenant_access_denied audit line, no 403.
+        // It was live only for Source, View and Application, whose getOrganisation()
+        // is concrete. All twelve declare `protected $organisation`, which is what
+        // this probe reads, and what __call() would have read.
+        if (property_exists($entity, 'organisation') === false) {
             return;
         }
 
+        // The parameter is typed Entity, whose organisation accessor exists only as
+        // `@method` on the subclasses, so static analysis cannot see it. The
+        // property_exists() guard above is what makes this call safe at runtime.
+        // @phpstan-ignore-next-line Entity::getOrganisation() is dispatched via __call.
         $entityOrgUuid = $entity->getOrganisation();
         $activeOrgUuid = $this->getActiveOrganisationUuid();
 

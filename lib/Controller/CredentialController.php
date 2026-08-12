@@ -584,9 +584,13 @@ class CredentialController extends Controller
      *
      * @return JSONResponse `{appId, secret}` once, or a static error.
      *
+     * @auth admin-only Mints a signing secret a consuming app uses to authenticate every later
+     *       broker call, returned once and never retrievable again. The body already required
+     *       admin; the #[NoAdminRequired] that used to sit here declared the opposite, so the
+     *       posture on the method contradicted the posture in the docblock and in the code.
+     *
      * @spec openspec/specs/credential-broker/spec.md
      */
-    #[NoAdminRequired]
     public function registerApp(string $appId): JSONResponse
     {
         $uid = $this->currentUid();

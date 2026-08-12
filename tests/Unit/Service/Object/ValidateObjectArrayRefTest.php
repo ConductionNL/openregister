@@ -16,7 +16,7 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  */
 
@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -56,7 +57,8 @@ class ValidateObjectArrayRefTest extends TestCase
             $this->createMock(MagicMapper::class),
             $this->createMock(SchemaMapper::class),
             $urlGenerator,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IUserManager::class)
         );
     }//end setUp()
 

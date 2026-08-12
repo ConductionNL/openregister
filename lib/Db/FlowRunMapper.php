@@ -30,6 +30,13 @@ use OCP\IDBConnection;
 /**
  * Reads and writes flow runs.
  *
+ * A mapper's public methods are its query vocabulary: each one is a distinct
+ * question the scheduler, the worker or retention asks of the run table, and
+ * they exist as named methods precisely so those questions are not rebuilt as
+ * ad-hoc query builders at each call site.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
  * @template-extends QBMapper<FlowRun>
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
@@ -105,6 +112,7 @@ class FlowRunMapper extends QBMapper
      * @return array<int, FlowRun> The runs.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
     public function findAllRuns(
         ?string $flowId=null,
@@ -149,6 +157,213 @@ class FlowRunMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAllRuns()
+
+    /**
+     * Delete terminal runs older than a cutoff, optionally for one flow only.
+     *
+     * Only TERMINAL runs are swept. A `queued` or `suspended` run is work that
+     * has not happened yet — a flow waiting on a timer can legitimately be
+     * older than the retention window, and deleting it would silently cancel
+     * it rather than expire its history.
+     *
+     * `$flowId` is what makes a per-flow override work: the sweep applies the
+     * instance cutoff to everything EXCEPT the flows declaring their own, then
+     * applies each of those flows' cutoff by id.
+     *
+     * @param DateTime    $cutoff Runs updated before this are removed.
+     * @param string|null $flowId Restrict the deletion to one flow.
+     *
+     * @return array<int, string> The uuids of the deleted runs, so their step
+     *                            rows can be removed too.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThan(DateTime $cutoff, ?string $flowId=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if ($flowId !== null && $flowId !== '') {
+            $qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThan()
+
+    /**
+     * Mark a running run as still alive.
+     *
+     * The stale reaper fails any run left `running` with an `updated` older than
+     * its threshold, on the stated premise that "a pass that is still going has
+     * touched its row far more recently than this". Nothing made that true:
+     * `updated` was written once when the run entered `running` and not again
+     * until it finished, so the reaper was not measuring liveness at all — it was
+     * measuring how long the run had been going. Any walk longer than the
+     * threshold was failed underneath a healthy executor, which then carried on
+     * and completed. Measured on the dev instance at low load: a run started
+     * 09:00:56 was marked abandoned 09:20:03 and went on to import every record.
+     *
+     * This is the write that makes the premise true. It is deliberately a narrow
+     * UPDATE rather than an entity save: the executor holds a FlowRun loaded
+     * before the walk, and persisting that would write back its whole stale row.
+     *
+     * @param string   $uuid The run uuid.
+     * @param DateTime $when The moment to record.
+     *
+     * @return boolean Whether a running row was updated.
+     *
+     * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+     */
+    public function touch(string $uuid, DateTime $when): bool
+    {
+        if ($uuid === '') {
+            return false;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($this->getTableName())
+            ->set('updated', $qb->createNamedParameter($when, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+            // Only while it is RUNNING. Without this a late beat from an executor
+            // that has already been reaped would push `updated` forward on a row
+            // the reaper has marked failed, hiding the abandonment it just
+            // recorded — and a beat arriving after a legitimate finish would
+            // disturb a terminal row for no reason.
+            ->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_RUNNING)));
+
+        return $qb->executeStatement() > 0;
+
+    }//end touch()
+
+    /**
+     * Delete every run of one flow, returning their uuids.
+     *
+     * @param string $flowId The flow uuid.
+     *
+     * @return array<int, string> The deleted runs' uuids.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteByFlow(string $flowId): array
+    {
+        if ($flowId === '') {
+            // Never let an empty id widen into "every run on the instance".
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteByFlow()
+
+    /**
+     * Delete terminal runs older than a cutoff, EXCLUDING a set of flows.
+     *
+     * The instance-wide half of the sweep: every flow that does not declare its
+     * own retention.
+     *
+     * @param DateTime           $cutoff         Runs updated before this are removed.
+     * @param array<int, string> $excludeFlowIds Flow ids with their own retention.
+     *
+     * @return array<int, string> The uuids of the deleted runs.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThanExcluding(DateTime $cutoff, array $excludeFlowIds): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if (empty($excludeFlowIds) === false) {
+            $qb->andWhere(
+                $qb->expr()->notIn(
+                    'flow_id',
+                    $qb->createNamedParameter($excludeFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThanExcluding()
 
     /**
      * The runs that are still going, newest first.

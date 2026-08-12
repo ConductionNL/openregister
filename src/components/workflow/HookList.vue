@@ -7,13 +7,27 @@
 		<table v-else class="hook-table">
 			<thead>
 				<tr>
-					<th>Event</th>
-					<th>Engine</th>
-					<th>Workflow</th>
-					<th>Mode</th>
-					<th>Order</th>
-					<th>Enabled</th>
-					<th>Actions</th>
+					<th scope="col">
+						Event
+					</th>
+					<th scope="col">
+						Engine
+					</th>
+					<th scope="col">
+						Workflow
+					</th>
+					<th scope="col">
+						Mode
+					</th>
+					<th scope="col">
+						Order
+					</th>
+					<th scope="col">
+						Enabled
+					</th>
+					<th scope="col">
+						Actions
+					</th>
 				</tr>
 			</thead>
 			<tbody>

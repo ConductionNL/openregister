@@ -50,8 +50,6 @@ class Version1Date20260706000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null The updated schema, or null if no changes.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
      *   (Scenario: No provider installed, queue mode)
      */

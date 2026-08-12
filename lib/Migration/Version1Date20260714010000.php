@@ -46,8 +46,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add `requester_id` to `openregister_approval_steps`.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec openspec/specs/approval-workflow/spec.md
  */
 class Version1Date20260714010000 extends SimpleMigrationStep

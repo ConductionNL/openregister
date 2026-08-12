@@ -14,7 +14,7 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
-use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -41,7 +41,7 @@ class TrackingDispatcher implements FlowStepDispatcher
             $this->ran[] = $type;
         }
 
-        // A stop step ends the run, like the real StopNode.
+        // A stop step ends the run, like the real EndNode.
         if ($type === 'stop') {
             throw new FlowStop(reason: (string) ($step['config']['message'] ?? 'stopped'), isError: (($step['config']['error'] ?? false) === true));
         }
@@ -76,24 +76,44 @@ class FlowLogicTest extends TestCase
      */
     public function testASwitchTakesTheBranchWhoseConditionHolds(): void
     {
+        // The branches are declared on the NODE as named exits, and each edge
+        // says which exit it leaves from. That is what gives a node more than
+        // one exit point — and what lets an editor draw a port per branch,
+        // since the branches exist before any line is drawn.
         $flow = [
             'id' => 'switch',
-            'nodes' => [['id' => 's'], ['id' => 'hi'], ['id' => 'lo']],
+            'nodes' => [
+                [
+                    'id'    => 's',
+                    'type'  => 'switch',
+                    // `low` is the ELSE, not a second condition. The two would
+                    // be exhaustive to a reader, but the engine cannot prove
+                    // that — and a token that matches nothing has nowhere to go
+                    // and stops the run silently. So every branching node
+                    // declares an unconditioned exit.
+                    'exits' => [
+                        ['id' => 'high', 'condition' => ['>' => [['var' => 'json.n'], 10]]],
+                        ['id' => 'low'],
+                    ],
+                ],
+                ['id' => 'hi', 'type' => 'high'],
+                ['id' => 'lo', 'type' => 'low'],
+            ],
             'edges' => [
-                ['id' => 'toHigh', 'from' => 's', 'to' => 'hi', 'type' => 'high',
-                 'condition' => ['>' => [['var' => 'json.n'], 10]]],
-                ['id' => 'toLow', 'from' => 's', 'to' => 'lo', 'type' => 'low',
-                 'condition' => ['<=' => [['var' => 'json.n'], 10]]],
+                ['id' => 'toHigh', 'from' => 's', 'fromExit' => 'high', 'to' => 'hi'],
+                ['id' => 'toLow', 'from' => 's', 'fromExit' => 'low', 'to' => 'lo'],
             ],
         ];
 
+        // The switch node itself runs — it is an action now, not a bare place —
+        // and then exactly one branch does.
         $d = new TrackingDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['n' => 42])], $d);
-        $this->assertSame(['high'], $d->ran);
+        $this->assertSame(['switch', 'high'], $d->ran);
 
         $d = new TrackingDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['n' => 3])], $d);
-        $this->assertSame(['low'], $d->ran);
+        $this->assertSame(['switch', 'low'], $d->ran);
     }
 
     /**
@@ -101,23 +121,34 @@ class FlowLogicTest extends TestCase
      */
     public function testAnUnconditionedEdgeIsTheDefault(): void
     {
+        // An exit that declares no condition is the default/else.
         $flow = [
             'id' => 'default',
-            'nodes' => [['id' => 's'], ['id' => 'match'], ['id' => 'else']],
+            'nodes' => [
+                [
+                    'id'    => 's',
+                    'type'  => 'switch',
+                    'exits' => [
+                        ['id' => 'hit', 'condition' => ['==' => [['var' => 'json.kind'], 'special']]],
+                        ['id' => 'otherwise'],
+                    ],
+                ],
+                ['id' => 'match', 'type' => 'matched'],
+                ['id' => 'else', 'type' => 'fell-through'],
+            ],
             'edges' => [
-                ['id' => 'toMatch', 'from' => 's', 'to' => 'match', 'type' => 'matched',
-                 'condition' => ['==' => [['var' => 'json.kind'], 'special']]],
-                ['id' => 'toElse', 'from' => 's', 'to' => 'else', 'type' => 'fell-through'],
+                ['id' => 'toMatch', 'from' => 's', 'fromExit' => 'hit', 'to' => 'match'],
+                ['id' => 'toElse', 'from' => 's', 'fromExit' => 'otherwise', 'to' => 'else'],
             ],
         ];
 
         $d = new TrackingDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['kind' => 'ordinary'])], $d);
-        $this->assertSame(['fell-through'], $d->ran);
+        $this->assertSame(['switch', 'fell-through'], $d->ran);
 
         $d = new TrackingDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['kind' => 'special'])], $d);
-        $this->assertSame(['matched'], $d->ran);
+        $this->assertSame(['switch', 'matched'], $d->ran);
     }
 
     /**
@@ -127,40 +158,94 @@ class FlowLogicTest extends TestCase
     {
         $flow = [
             'id' => 'order',
-            'nodes' => [['id' => 's'], ['id' => 'a'], ['id' => 'b']],
+            'nodes' => [
+                [
+                    'id'    => 's',
+                    'type'  => 'switch',
+                    // Else declared FIRST; the conditioned match must still win.
+                    'exits' => [
+                        ['id' => 'otherwise'],
+                        ['id' => 'hit', 'condition' => ['==' => [['var' => 'json.go'], true]]],
+                    ],
+                ],
+                ['id' => 'a', 'type' => 'default'],
+                ['id' => 'b', 'type' => 'matched'],
+            ],
             'edges' => [
-                // Default declared FIRST; the conditioned match must still win.
-                ['id' => 'toDefault', 'from' => 's', 'to' => 'a', 'type' => 'default'],
-                ['id' => 'toMatch', 'from' => 's', 'to' => 'b', 'type' => 'matched',
-                 'condition' => ['==' => [['var' => 'json.go'], true]]],
+                ['id' => 'toDefault', 'from' => 's', 'fromExit' => 'otherwise', 'to' => 'a'],
+                ['id' => 'toMatch', 'from' => 's', 'fromExit' => 'hit', 'to' => 'b'],
             ],
         ];
 
         $d = new TrackingDispatcher();
         $this->walk($flow, [FlowItems::item(json: ['go' => true])], $d);
-        $this->assertSame(['matched'], $d->ran);
+        $this->assertSame(['switch', 'matched'], $d->ran);
     }
 
     /**
-     * A switch with no matching case and no default ends the run cleanly,
-     * rather than spinning on un-fireable transitions until the ceiling.
+     * A switch with no else is refused, because its token could be stranded.
+     *
+     * This used to assert that such a flow "ends the run cleanly" with nothing
+     * dispatched — a run that reports COMPLETED having done no work, which is
+     * exactly what a finished flow reports. The two were indistinguishable, so
+     * a scheduled flow could stop doing its job and nothing would say so.
+     *
+     * A token is unique and exclusive, so it must always have somewhere to go:
+     * a node that conditions its exits must declare an else.
      */
-    public function testNoMatchingCaseAndNoDefaultEndsTheRun(): void
+    public function testASwitchWithNoElseIsRefusedRatherThanSilentlyStranding(): void
     {
         $flow = [
             'id' => 'deadend',
-            'nodes' => [['id' => 's'], ['id' => 'never']],
+            'nodes' => [
+                [
+                    'id'    => 's',
+                    'type'  => 'switch',
+                    'exits' => [['id' => 'gated', 'condition' => ['==' => [['var' => 'json.x'], 'impossible']]]],
+                ],
+                ['id' => 'never', 'type' => 'never'],
+            ],
+            'edges' => [['id' => 'gated', 'from' => 's', 'fromExit' => 'gated', 'to' => 'never']],
+        ];
+
+        $d      = new TrackingDispatcher();
+        $result = $this->walk($flow, [FlowItems::item(json: ['x' => 'something-else'])], $d);
+
+        $this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+        $this->assertStringContainsString('declares no else', $result['error']);
+        $this->assertSame([], $d->ran, 'A refused flow must not run any step.');
+    }
+
+    /**
+     * Positive control for the refusal: the same flow builds once it has an else.
+     */
+    public function testTheSameSwitchRunsOnceItDeclaresAnElse(): void
+    {
+        $flow = [
+            'id' => 'deadend',
+            'nodes' => [
+                [
+                    'id'    => 's',
+                    'type'  => 'switch',
+                    'exits' => [
+                        ['id' => 'gated', 'condition' => ['==' => [['var' => 'json.x'], 'impossible']]],
+                        ['id' => 'otherwise'],
+                    ],
+                ],
+                ['id' => 'never', 'type' => 'never'],
+                ['id' => 'fallback', 'type' => 'fallback'],
+            ],
             'edges' => [
-                ['id' => 'gated', 'from' => 's', 'to' => 'never', 'type' => 'never',
-                 'condition' => ['==' => [['var' => 'json.x'], 'impossible']]],
+                ['id' => 'gated', 'from' => 's', 'fromExit' => 'gated', 'to' => 'never'],
+                ['id' => 'else', 'from' => 's', 'fromExit' => 'otherwise', 'to' => 'fallback'],
             ],
         ];
 
-        $d = new TrackingDispatcher();
+        $d      = new TrackingDispatcher();
         $result = $this->walk($flow, [FlowItems::item(json: ['x' => 'something-else'])], $d);
 
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
-        $this->assertSame([], $d->ran);
+        $this->assertSame(['switch', 'fallback'], $d->ran);
     }
 
     /**
@@ -170,11 +255,11 @@ class FlowLogicTest extends TestCase
     {
         $flow = [
             'id' => 'stop',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
-                ['id' => 'toStop', 'from' => 'a', 'to' => 'b', 'type' => 'stop', 'config' => ['message' => 'guard failed']],
-                ['id' => 'past', 'from' => 'b', 'to' => 'c', 'type' => 'never-reached'],
+            'nodes' => [
+                ['id' => 'stop', 'type' => 'stop', 'config' => ['message' => 'guard failed']],
+                ['id' => 'past', 'type' => 'never-reached'],
             ],
+            'edges' => [['id' => 'onwards', 'from' => 'stop', 'to' => 'past']],
         ];
 
         $d = new TrackingDispatcher();
@@ -193,11 +278,10 @@ class FlowLogicTest extends TestCase
     {
         $flow = [
             'id' => 'errstop',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [
-                ['id' => 'toStop', 'from' => 'a', 'to' => 'b', 'type' => 'stop',
-                 'config' => ['error' => true, 'message' => 'invariant broken']],
+            'nodes' => [
+                ['id' => 'stop', 'type' => 'stop', 'config' => ['error' => true, 'message' => 'invariant broken']],
             ],
+            'edges' => [],
         ];
 
         $result = $this->walk($flow, [FlowItems::item(json: ['a' => 1])], new TrackingDispatcher());
@@ -207,7 +291,7 @@ class FlowLogicTest extends TestCase
     }
 }
 
-class SwitchAndStopNodeTest extends TestCase
+class SwitchAndEndNodeTest extends TestCase
 {
     private function l10n(): IL10N
     {
@@ -227,7 +311,7 @@ class SwitchAndStopNodeTest extends TestCase
 
     public function testStopThrowsFlowStop(): void
     {
-        $node = new StopNode($this->l10n(), $this->createMock(IURLGenerator::class));
+        $node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
         $this->expectException(FlowStop::class);
         $node->execute([], ['message' => 'halt'], []);
@@ -235,7 +319,7 @@ class SwitchAndStopNodeTest extends TestCase
 
     public function testStopCarriesTheErrorFlag(): void
     {
-        $node = new StopNode($this->l10n(), $this->createMock(IURLGenerator::class));
+        $node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
         try {
             $node->execute([], ['error' => true, 'message' => 'bad'], []);

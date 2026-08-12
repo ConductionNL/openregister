@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\File
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  */
 
@@ -102,7 +102,7 @@ class UpdateFileHandlerTest extends TestCase
         $this->readFileHandler      = $this->createMock(ReadFileHandler::class);
         $this->systemTagManager     = $this->createMock(ISystemTagManager::class);
         $this->systemTagMapper      = $this->createMock(ISystemTagObjectMapper::class);
-        $this->logger               = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->handler = new UpdateFileHandler(
             $this->rootFolder,
@@ -140,7 +140,6 @@ class UpdateFileHandlerTest extends TestCase
     // =========================================================================
     // updateFile - write-permission gate
     // =========================================================================
-
     public function testUpdateRefusedWithoutWritePermission(): void
     {
         // checkOwnership() (readability) passes; isUpdateable() fails, so the
@@ -178,4 +177,89 @@ class UpdateFileHandlerTest extends TestCase
 
         $this->assertSame($file, $result);
     }//end testUpdateWritesWhenUpdateable()
+
+    // =========================================================================
+    // updateFile - streamed (resource) content path (stream-file-content #110)
+    // =========================================================================
+    public function testUpdateStreamsResourceWhenUpdateable(): void
+    {
+        // A stream resource whose md5 differs from the stored file MUST be written
+        // straight through to putContent() as a resource, never buffered to a string.
+        $file = $this->fileResolvedById(updateable: true);
+        $file->expects($this->once())
+            ->method('putContent')
+            ->with(data: $this->callback(static fn ($arg): bool => is_resource($arg) === true));
+
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'streamed-bytes');
+        rewind($stream);
+
+        $result = $this->handler->updateFile(
+            filePath: 42,
+            content: $stream,
+            tags: [],
+            object: $this->createMock(ObjectEntity::class)
+        );
+
+        $this->assertSame($file, $result);
+        fclose($stream);
+    }//end testUpdateStreamsResourceWhenUpdateable()
+
+    public function testUpdateSkipsWriteWhenResourceContentUnchanged(): void
+    {
+        // A re-synced, byte-identical file (incoming stream md5 == stored md5) MUST NOT
+        // be rewritten — the version-bump-avoiding skip works on the streamed path too.
+        $unchanged = 'unchanged-bytes';
+
+        $file = $this->createMock(File::class);
+        $file->method('getId')->willReturn(42);
+        $file->method('getName')->willReturn('test.pdf');
+        $file->method('isUpdateable')->willReturn(true);
+        $file->method('hash')->willReturn(md5($unchanged));
+        $file->expects($this->never())->method('putContent');
+        $this->readFileHandler->method('getFile')->willReturn($file);
+
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, $unchanged);
+        rewind($stream);
+
+        $result = $this->handler->updateFile(
+            filePath: 42,
+            content: $stream,
+            tags: [],
+            object: $this->createMock(ObjectEntity::class)
+        );
+
+        $this->assertSame($file, $result);
+        fclose($stream);
+    }//end testUpdateSkipsWriteWhenResourceContentUnchanged()
+
+    public function testUpdateBlocksExecutableResourceByMagicBytes(): void
+    {
+        // On the streamed path the executable guard reads a bounded prefix and runs the
+        // same check; a blocked signature MUST abort before putContent() is reached.
+        $file = $this->fileResolvedById(updateable: true);
+        $file->expects($this->never())->method('putContent');
+
+        $this->fileValidHandler->method('blockExecutableFile')
+            ->willThrowException(new Exception('is an executable file'));
+
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, "MZ\x90\x00executable-header");
+        rewind($stream);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('executable');
+
+        try {
+            $this->handler->updateFile(
+                filePath: 42,
+                content: $stream,
+                tags: [],
+                object: $this->createMock(ObjectEntity::class)
+            );
+        } finally {
+            fclose($stream);
+        }
+    }//end testUpdateBlocksExecutableResourceByMagicBytes()
 }//end class

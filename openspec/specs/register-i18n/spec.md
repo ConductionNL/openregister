@@ -192,6 +192,26 @@ The app UI (labels, buttons, error messages, navigation) MUST use Nextcloud's `I
 
 ### Requirement: The UI MUST provide a language-aware object editor with translation status
 
+> **NOT DELIVERED as of 2026-08-09 — the components exist but nothing mounts them.**
+>
+> `TranslationFieldEditor`, `TranslationCompletenessBadge` and `BulkTranslateDialog`
+> each have **zero imports** outside their own `.spec.js`, and `TranslationStatusChip`
+> is reachable only through `TranslationFieldEditor`, which is itself unmounted. The
+> Pinia store and the REST surface underneath them are live and tested; what is
+> missing is a host that renders them in the object edit form.
+>
+> None of the five scenarios below can currently be performed by a user: there are no
+> language tabs, no missing-translation badge, and no side-by-side mode.
+>
+> This was recorded as complete in `openspec/changes/archive/2026-05-01-register-i18n/tasks.md`
+> because the components were built. The boxes have been unticked. The sibling
+> requirement "Admin UI MUST provide register language management" IS delivered —
+> `RegisterLanguagesEditor` is mounted in `RegisterSideBar` — which is what makes the
+> difference visible.
+>
+> The components are deliberately kept: they are the only implementation of this
+> requirement, and deleting them would make this spec less true, not more.
+
 The object edit form MUST display language tabs for translatable properties, allowing users to switch between languages. Non-translatable properties SHALL remain visible regardless of the selected language tab. The editor MUST indicate translation completeness per language.
 
 #### Scenario: Edit translations via language tabs
@@ -359,6 +379,12 @@ Full-text search MUST be able to search across all language variants of translat
 - **AND** facet counts SHALL aggregate across all language variants (a single object with `categorie.nl` and `categorie.en` counts once)
 
 ### Requirement: RTL language support MUST be handled in the UI
+
+> **NOT DELIVERED as of 2026-08-09.** The `RTL_LANGUAGES` set and `isRtlLanguage()`
+> helper are live in the translations store, but the only thing that applies `dir="rtl"`
+> is `TranslationFieldEditor.dirFor()`, and that component is never mounted — see the
+> note under "The UI MUST provide a language-aware object editor with translation
+> status" above. No RTL text is rendered anywhere in the UI today.
 
 When a register includes RTL (right-to-left) languages such as Arabic (`ar`) or Hebrew (`he`), the UI MUST render those language tabs and input fields with appropriate text direction.
 

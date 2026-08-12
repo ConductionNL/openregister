@@ -25,9 +25,13 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\TestCase;
 
@@ -59,12 +63,32 @@ class FlowControllerTest extends TestCase
     private FlowNodePreflight $preflight;
 
     /**
+     * The flow CRUD surface, mocked.
+     *
+     * @var \OCA\OpenRegister\Service\Flow\FlowService
+     */
+    private $flows;
+
+    /**
+     * The mocked user session, used to resolve the caller.
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * The mocked group manager, used to answer "is the caller an admin".
+     *
+     * @var IGroupManager
+     */
+    private IGroupManager $groupManager;
+
+    /**
      * The controller under test.
      *
      * @var FlowController
      */
     private FlowController $controller;
-
 
     /**
      * Build the controller over mocked collaborators.
@@ -79,17 +103,64 @@ class FlowControllerTest extends TestCase
         $this->nodes     = $this->createMock(FlowNodeRegistry::class);
         $this->preflight = $this->createMock(FlowNodePreflight::class);
 
+        $this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
+
+        $this->actionAuth = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
+        $this->actionAuth->method('can')->willReturn(true);
+
+        // Default to an ADMIN caller so the pre-existing tests keep exercising
+        // the palette they were written against; the escalation tests below
+        // override this with a non-admin.
+        $this->userSession  = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $adminUser          = $this->createMock(IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($adminUser);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new FlowController(
             'openregister',
             $this->request,
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
-            $this->preflight
+            $this->preflight,
+            $this->flows,
+            // A REAL FlowAccess over the same three mocks the controller used
+            // to take directly, not a mock of it. The extraction moved where
+            // these live, not what they decide, and every assertion below still
+            // exercises the same session / group / rights logic end to end.
+            //
+            // The action-auth ALLOWS by default, so the pre-existing tests keep
+            // asserting what they were written to assert. The rights themselves
+            // are covered in ActionAuthEveryoneTest, and the refusal path below
+            // overrides this.
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
     }//end setUp()
 
+    /**
+     * A real FlowAccess over the given collaborators.
+     *
+     * @param IUserSession                                            $userSession  The session.
+     * @param IGroupManager                                           $groupManager The group manager.
+     * @param \OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth   The rights matrix.
+     *
+     * @return FlowAccess The access service.
+     */
+    private function access(
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        \OCA\OpenRegister\Service\OpenRegisterActionAuthService $actionAuth
+    ): FlowAccess {
+        return new FlowAccess(
+            userSession: $userSession,
+            groupManager: $groupManager,
+            actionAuth: $actionAuth
+        );
+
+    }//end access()
 
     /**
      * The catalog surfaces the registry's palette in the documented envelope.
@@ -112,7 +183,6 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogReturnsThePaletteWithATotal()
 
-
     /**
      * An app-contributed leaf is visible — the whole point of the endpoint.
      *
@@ -130,9 +200,14 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogSurfacesAppContributedLeaves()
 
-
     /**
-     * Admin scope is the default, so a builder never has to ask for it.
+     * An ADMIN caller gets the admin palette without asking for it.
+     *
+     * The name says "defaults" because that is what it means for an
+     * administrator. It is no longer a property of the request: the scope is
+     * derived from the caller, and this test's caller is an admin because
+     * setUp() makes one. The non-admin half is covered at the bottom of this
+     * class.
      *
      * @return void
      */
@@ -147,7 +222,6 @@ class FlowControllerTest extends TestCase
         $this->controller->nodeCatalog();
 
     }//end testNodeCatalogDefaultsToAdminScope()
-
 
     /**
      * `?scope=user` filters to what a non-administrator may actually run —
@@ -168,7 +242,6 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogHonoursTheUserScope()
 
-
     /**
      * An empty registry is a legal answer, not an error.
      *
@@ -185,6 +258,7 @@ class FlowControllerTest extends TestCase
         $this->assertSame(0, $data['total']);
 
     }//end testNodeCatalogHandlesAnEmptyRegistry()
+
     /**
      * `?list=slots` serves the slot table as rows a manifest table can render.
      *
@@ -218,7 +292,9 @@ class FlowControllerTest extends TestCase
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $mapper,
-            $this->preflight
+            $this->preflight,
+            $this->flows,
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -235,6 +311,86 @@ class FlowControllerTest extends TestCase
 
     }//end testStateCanServeOneKeyAsAList()
 
+    /**
+     * THE SECURITY PROPERTY for `state()`.
+     *
+     * `GET /api/flow/{flowId}/state` is `@NoAdminRequired`, and it used to hand
+     * the client-supplied uuid straight to `FlowStateMapper::findByFlow()`,
+     * which applies no organisation scoping whatsoever. Any authenticated user
+     * could therefore read any other organisation's flow state — arbitrary data
+     * written by flow nodes (slot holders, external ids, run bookkeeping) — by
+     * naming its uuid. It was also the only method in the class that broke the
+     * invariant its own file header states.
+     *
+     * Two assertions, because either alone is satisfiable without the fix:
+     * the mapper must not be consulted at all, AND the caller must get a 404
+     * rather than an empty-but-200 body that reads like "this flow has no
+     * state".
+     *
+     * @return void
+     */
+    public function testStateRefusesAFlowTheCallerMayNotSee(): void
+    {
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->expects($this->never())->method('findByFlow');
+
+        $this->flows->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('No such flow'));
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper,
+            $this->preflight,
+            $this->flows,
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
+        );
+
+        $response = $controller->state(flowId: 'someone-elses-flow');
+
+        $this->assertSame(404, $response->getStatus());
+        $this->assertSame(['error' => 'No such flow'], $response->getData());
+
+    }//end testStateRefusesAFlowTheCallerMayNotSee()
+
+    /**
+     * The positive control for the test above: a flow the caller CAN see still
+     * serves its state. A refusal test that cannot be shown to pass on the
+     * allowed path is only evidence about the refusal.
+     *
+     * @return void
+     */
+    public function testStateStillServesAFlowTheCallerCanSee(): void
+    {
+        $state = new \OCA\OpenRegister\Db\FlowState();
+        $state->setFlowId('flow-1');
+        $state->setState(['slots' => ['1' => ['holder' => 'issue-7']]]);
+
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->expects($this->once())->method('findByFlow')->willReturn($state);
+
+        $this->flows->method('find')->willReturn(new \OCA\OpenRegister\Db\Flow());
+        $this->request->method('getParam')->willReturn('');
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper,
+            $this->preflight,
+            $this->flows,
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
+        );
+
+        $response = $controller->state(flowId: 'flow-1');
+
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame(['1' => ['holder' => 'issue-7']], $response->getData()['state']['slots']);
+
+    }//end testStateStillServesAFlowTheCallerCanSee()
 
     /**
      * Without `?list=`, the payload is unchanged — no `results`, no `total`.
@@ -254,7 +410,9 @@ class FlowControllerTest extends TestCase
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $mapper,
-            $this->preflight
+            $this->preflight,
+            $this->flows,
+            $this->access($this->userSession, $this->groupManager, $this->actionAuth)
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -263,7 +421,6 @@ class FlowControllerTest extends TestCase
         $this->assertArrayNotHasKey('results', $data);
 
     }//end testStateWithoutListIsUnchanged()
-
 
     /**
      * Preflighting a document that cannot run answers 200 with a verdict.
@@ -310,7 +467,6 @@ class FlowControllerTest extends TestCase
 
     }//end testValidateReportsBlockingFindings()
 
-
     /**
      * An absent optional app is a warning, and the document stays valid.
      *
@@ -342,7 +498,6 @@ class FlowControllerTest extends TestCase
 
     }//end testValidateTreatsAnAbsentAppAsAWarning()
 
-
     /**
      * A body that is not a graph is a 400, not a silent pass.
      *
@@ -359,4 +514,161 @@ class FlowControllerTest extends TestCase
         $this->assertFalse($response->getData()['valid']);
 
     }//end testValidateRejectsANonFlowBody()
+
+    /**
+     * A non-administrator must never receive the admin palette.
+     *
+     * This is the regression test for the actual defect. The scope used to come
+     * from `?scope=`, which is the caller's to set, so it could never have been
+     * a privilege check — and because it DEFAULTED to SCOPE_ADMIN, the failure
+     * mode was the dangerous one: a non-administrator who simply did not send
+     * the parameter got the admin palette. Omitting it is the normal case.
+     *
+     * @return void
+     */
+    public function testANonAdminNeverReceivesTheAdminPaletteWhenNoScopeIsSent(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $plainUser    = $this->createMock(IUser::class);
+        $plainUser->method('getUID')->willReturn('jan');
+        $userSession->method('getUser')->willReturn($plainUser);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        // No scope parameter — the normal case, and the one that used to leak.
+        $this->request->method('getParam')->willReturn(null);
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $this->access($userSession, $groupManager, $this->actionAuth)
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testANonAdminNeverReceivesTheAdminPaletteWhenNoScopeIsSent()
+
+    /**
+     * A non-administrator cannot escalate by ASKING for the admin scope.
+     *
+     * @return void
+     */
+    public function testANonAdminCannotRequestTheAdminScope(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $plainUser    = $this->createMock(IUser::class);
+        $plainUser->method('getUID')->willReturn('jan');
+        $userSession->method('getUser')->willReturn($plainUser);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $this->request->method('getParam')->willReturn('admin');
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $this->access($userSession, $groupManager, $this->actionAuth)
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testANonAdminCannotRequestTheAdminScope()
+
+    /**
+     * An unresolvable session fails CLOSED, onto the reduced palette.
+     *
+     * @return void
+     */
+    public function testAnUnresolvableSessionGetsTheUserPalette(): void
+    {
+        $userSession  = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $userSession->method('getUser')->willReturn(null);
+        $groupManager->expects($this->never())->method('isAdmin');
+
+        $this->request->method('getParam')->willReturn(null);
+        $this->nodes->expects($this->once())
+            ->method('palette')
+            ->with(IManager::SCOPE_USER)
+            ->willReturn([]);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $this->access($userSession, $groupManager, $this->actionAuth)
+        );
+
+        $controller->nodeCatalog();
+
+    }//end testAnUnresolvableSessionGetsTheUserPalette()
+
+    /**
+     * A caller without the right is refused with 403, not 500.
+     *
+     * The four flow rights are seeded open, so this path only fires once an
+     * admin has narrowed them — which makes it exactly the one nobody
+     * exercises by accident. It returns a RESPONSE rather than letting an OCS
+     * exception escape a plain Controller, because that surfaces as a 500, and
+     * a right that reads as a server fault is one nobody can act on.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+     */
+    public function testAWriteIsRefusedWhenTheRightIsNotHeld(): void
+    {
+        $denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
+        $denying->method('can')->willReturn(false);
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight,
+            $this->flows,
+            $this->access($this->userSession, $this->groupManager, $denying)
+        );
+
+        // The flow service must never be reached: a refusal that still wrote
+        // would be a right in name only.
+        $this->flows->expects($this->never())->method('save');
+        $this->flows->expects($this->never())->method('run');
+
+        $responses = [
+            $controller->create(),
+            $controller->update('x'),
+            $controller->destroy('x'),
+            $controller->run('x'),
+        ];
+
+        foreach ($responses as $response) {
+            $this->assertSame(403, $response->getStatus());
+        }
+
+    }//end testAWriteIsRefusedWhenTheRightIsNotHeld()
 }//end class

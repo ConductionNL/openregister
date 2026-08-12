@@ -44,8 +44,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the nullable `user_quota` / `group_quota` allocations to applications.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- *
  * @spec exclude Additive columns backing two quota allocations the applications
  *     API already published as null. No behavioural contract of its own —
  *     enforcement belongs to the tenant-quotas capability.

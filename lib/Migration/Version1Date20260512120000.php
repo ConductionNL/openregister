@@ -54,8 +54,6 @@ use OCP\Migration\SimpleMigrationStep;
  * Adds the `bases` and `skip_anonymization` decision-metadata columns
  * to the entity_relations table. Both columns are nullable-or-defaulted
  * so existing rows pick up sensible defaults without backfill.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260512120000 extends SimpleMigrationStep
 {

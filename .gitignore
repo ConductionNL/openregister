@@ -28,6 +28,11 @@
 quality-baseline.json
 /phpmetrics/
 /phpmetrics-deps/
+# PHPMD's incremental result cache. Generated output, and a correctness hazard if
+# committed: `composer quality:phpmd-score` passes --cache, so a stale cache checked
+# into the tree makes PHPMD replay a verdict for code that has since changed. That is
+# a gate reporting a result it never computed.
+.phpmd.result-cache.php
 
 # PHPCS/Psalm output files (not config files)
 phpcs-*.json
@@ -70,6 +75,15 @@ phpqa_output.log
 **/update*Settings*
 **/rebase*
 **/setup*
+# ...and must not match legitimate Vue components either. eslint-plugin-n's
+# `n/no-unpublished-import` reads this file with CASE-INSENSITIVE matching, so
+# `**/clearCache*` swallows `src/dialogs/settings/ClearCacheDialog.vue` even
+# though git itself (case-sensitive here) does not ignore it. The file is
+# committed and lints clean; the IMPORT of it fails. Measured on PR #2414:
+# renaming the component made the error disappear with its contents unchanged.
+# A `*Dialog.vue` / `*.vue` negation cannot re-admit the scratch output these
+# patterns exist to catch — those have no extension at all.
+!**/*.vue
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
@@ -105,8 +119,10 @@ bom-npm.cdx.json
 # Playwright e2e artefacts (ADR-030 / journeydoc)
 tests/e2e/.auth/
 tests/e2e/playwright-report/
+# Both the root and the CI subset config write here. The CI config used to
+# write to `test-results-ci/` instead, which the shared workflow's trace upload
+# does not glob — so red runs uploaded no traces at all. Keep them in step.
 tests/e2e/test-results/
-# The CI subset config writes here, and `test-results/` above does not match it.
 tests/e2e/test-results-ci/
 tests/e2e/.mdm-seed.json
 .hydra

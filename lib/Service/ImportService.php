@@ -44,6 +44,7 @@ use Symfony\Component\Uid\Uuid;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use DateTime;
+use DateTimeZone;
 use InvalidArgumentException;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -211,7 +212,7 @@ class ImportService
      *     errors: list<array{uuid: string, error: string}>
      * }
      *
-     * @spec openspec/specs/data-import-export/spec.md#import-rollback-on-critical-failure (rolls back an import
+     * @spec openspec/specs/data-import-export/spec.md#import-must-support-rollback-on-critical-failure (rolls back an import
      *       unit: finds every create-audited object for the import job UUID and soft-deletes them, reporting
      *       per-object outcomes)
      */
@@ -1852,7 +1853,7 @@ class ImportService
                 // an offset-bearing timestamp persists the correct instant
                 // instead of its local wall-clock reading (e.g. +05:00 input
                 // must shift back five hours, not just drop the offset).
-                $dateTime->setTimezone(new \DateTimeZone('UTC'));
+                $dateTime->setTimezone(new DateTimeZone('UTC'));
                 return $dateTime->format(format: 'Y-m-d H:i:s');
             } catch (Exception $e) {
                 // Fallback to original value if parsing fails.
@@ -2356,7 +2357,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/data-import-export/tasks.md#task-error-csv
+     * @spec openspec/specs/data-import-export/spec.md#import-must-provide-detailed-error-reporting-with-downloadable-error-files
      */
     public function serializeErrorsToCsv(array $summary): string
     {

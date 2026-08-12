@@ -390,51 +390,38 @@ class RegisterService
      *
      * @throws Exception If register creation fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (after mapper create, assigns the active/default organisation for multi-tenancy
      *   and provisions the register's backing folder)
      */
     public function createFromArray(array $data): Register
     {
-        $this->logger->info(
-            message: '[RegisterService] 🔹 RegisterService: Starting createFromArray',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
         // Create the register first.
         $register = $this->registerMapper->createFromArray(object: $data);
-        $this->logger->info(
-            message: '[RegisterService] 🔹 RegisterService: Register created with ID: '.$register->getId(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
 
         // Set organisation from active organisation for multi-tenancy (if not already set).
         if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
-            $this->logger->info(
-                message: '[RegisterService] 🔹 RegisterService: Getting organisation for new entity',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $this->logger->info(
-                message: '[RegisterService] 🔹 RegisterService: Got organisation UUID: '.$organisationUuid,
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
             $register->setOrganisation($organisationUuid);
             $register = $this->registerMapper->update($register);
-            $this->logger->info(
-                message: '[RegisterService] 🔹 RegisterService: Updated register with organisation',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
         }
 
         // Ensure folder exists for the new register.
-        $this->logger->info(
-            message: '[RegisterService] 🔹 RegisterService: Calling ensureRegisterFolderExists',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
         $this->ensureRegisterFolderExists(entity: $register);
+
+        // ONE line, at the end, saying what was created — replacing seven that
+        // narrated the steps ("Starting", "Calling ensureRegisterFolderExists",
+        // "Folder creation completed"). Creating a register IS worth info: it is
+        // rare and structural. Each intermediate step of doing so is not, and
+        // reporting them at info made the interesting line harder to find, not
+        // easier. On failure the exception carries the location anyway.
         $this->logger->info(
-            message: '[RegisterService] 🔹 RegisterService: Folder creation completed',
+            message: sprintf(
+                '[RegisterService] Created register %d (%s) in organisation %s',
+                $register->getId(),
+                ($register->getSlug() ?? $register->getTitle() ?? ''),
+                ($register->getOrganisation() ?? 'none')
+            ),
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -451,7 +438,7 @@ class RegisterService
      *
      * @throws Exception If register update fails
      *
-     * @spec openspec/specs/file-actions/spec.md#object-register-folder-management
+     * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
      *   (after mapper update, ensures the register's backing folder exists,
      *   healing legacy null/string folder properties)
      */
@@ -553,7 +540,7 @@ class RegisterService
      *
      * @psalm-return array<int, array{total: int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     * @spec openspec/specs/runtime-schema-api/spec.md
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query
      * across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL),

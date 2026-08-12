@@ -98,6 +98,35 @@ class ObjectSharingService
     ];
 
     /**
+     * Share types {@see listGrants()} reports.
+     *
+     * A SUPERSET of GRANTABLE_TYPES, and deliberately a separate constant.
+     * Links and email invitations are created by their own endpoints
+     * ({@see createLink()}, {@see inviteByEmail()}) rather than by
+     * {@see grant()}, so they must NOT become grantable — `type=link` posted to
+     * the grant endpoint would bypass the link surface's own rules. But they
+     * must be LISTED, because a capability you cannot see is a capability you
+     * cannot revoke.
+     *
+     * While this listed principals only, links and email invitations were
+     * write-only: `createLink()` minted a working public link that never
+     * appeared in the panel, so the revoke control for it did not exist and the
+     * only way to withdraw it was raw SQL or core's Files UI. Caught by driving
+     * the link control through the browser (task 10.3) — the create and the
+     * anonymous redeem both passed, and the revoke had nothing to click.
+     *
+     * @var array<string, int>
+     */
+    private const LISTABLE_TYPES = [
+        'user'         => IShare::TYPE_USER,
+        'group'        => IShare::TYPE_GROUP,
+        'remote'       => IShare::TYPE_REMOTE,
+        'remote_group' => IShare::TYPE_REMOTE_GROUP,
+        'link'         => IShare::TYPE_LINK,
+        'email'        => IShare::TYPE_EMAIL,
+    ];
+
+    /**
      * Constructor.
      *
      * @param MagicMapper             $mapper        Object mapper.
@@ -200,7 +229,7 @@ class ObjectSharingService
 
         $grants = [];
         foreach ($sharers as $sharer) {
-            foreach (self::GRANTABLE_TYPES as $label => $shareType) {
+            foreach (self::LISTABLE_TYPES as $label => $shareType) {
                 try {
                     $shares = $this->shareManager->getSharesBy($sharer, $shareType, $folder, false, -1);
                 } catch (Throwable $e) {

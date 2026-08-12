@@ -163,8 +163,17 @@ class AuditTrailMapperBulkInsertTest extends TestCase
     /**
      * Two entries produce ONE multi-row INSERT whose parameters carry the
      * exact buildAuditTrail() row content (create with no diff-source, and
-     * update with a real old→new changeset), ids are read back onto the
-     * returned entities, and the chunk is sealed in one sealRows() call.
+     * update with a real old→new changeset), and ids are read back onto the
+     * returned entities.
+     *
+     * The write path must NOT seal. Sealing takes an exclusive lock, so under
+     * concurrency some rows sealed and some fell through unsealed; a row sealed
+     * after a gap chained onto the newest SEALED row, so filling that gap later
+     * gave two rows one predecessor — a fan-out, indistinguishable from
+     * tampering. Leaving every row for AuditSealJob keeps unsealed rows a
+     * contiguous tail, which is what makes the fan-out unreachable rather than
+     * merely unlikely. Hence the `never()` below: it is the invariant, not an
+     * omission.
      */
     public function testInsertAuditTrailsSingleChunk(): void
     {
@@ -175,15 +184,7 @@ class AuditTrailMapperBulkInsertTest extends TestCase
         $uuidToId = [];
         $this->mockIdReadback($uuidToId);
 
-        $sealedIds = null;
-        $this->hashService->expects($this->once())
-            ->method('sealRows')
-            ->willReturnCallback(
-                function (array $ids) use (&$sealedIds): int {
-                    $sealedIds = $ids;
-                    return count($ids);
-                }
-            );
+        $this->hashService->expects($this->never())->method('sealRows');
 
         $trails = $this->mapper->insertAuditTrails(
             entries: [
@@ -227,18 +228,25 @@ class AuditTrailMapperBulkInsertTest extends TestCase
         $this->assertSame('obj-1', $trails[1]->getObjectUuid());
         $this->assertSame('System', $trails[0]->getUser());
         $this->assertNotNull($trails[0]->getCreated());
-        $this->assertNotNull($trails[0]->getExpires());
         $this->assertGreaterThanOrEqual(14, $trails[0]->getSize());
+
+        // Expiry follows the OBJECT's retention (or#2265). These fixtures carry
+        // no retention metadata and the container in this test resolves nothing
+        // but AuditHashService, so the resolver is unavailable — both routes
+        // land on the same fail-SAFE outcome: retain indefinitely. `null` here
+        // is the assertion, not the absence of one: it used to be a hardcoded
+        // `+30 days` on every row regardless of the object.
+        $this->assertNull($trails[0]->getExpires());
+        $this->assertSame('resolver-unavailable:indefinite', $trails[0]->getRetentionPeriod());
 
         // Ids read back and sealed in one batch.
         $this->assertSame(100, $trails[0]->getId());
         $this->assertSame(101, $trails[1]->getId());
-        $this->assertSame([100, 101], $sealedIds);
     }//end testInsertAuditTrailsSingleChunk()
 
     /**
-     * Entries beyond the chunk size split into multiple INSERT statements
-     * (and one sealRows() call per chunk).
+     * Entries beyond the chunk size split into multiple INSERT statements,
+     * and none of those chunks seals.
      */
     public function testInsertAuditTrailsChunksInserts(): void
     {
@@ -253,7 +261,9 @@ class AuditTrailMapperBulkInsertTest extends TestCase
 
         $uuidToId = [];
         $this->mockIdReadback($uuidToId);
-        $this->hashService->expects($this->exactly(3))->method('sealRows')->willReturn(0);
+        // Chunking must not reintroduce sealing by the back door: more chunks
+        // would simply mean more chances to punch a gap into the chain.
+        $this->hashService->expects($this->never())->method('sealRows');
 
         $trails = $this->mapper->insertAuditTrails(entries: $entries, chunkSize: 2);
 

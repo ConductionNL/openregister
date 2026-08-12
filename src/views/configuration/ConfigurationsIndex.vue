@@ -116,15 +116,28 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 										<NcCheckboxRadioSwitch
 											:model-value="allSelected"
 											:indeterminate="someSelected"
+											:aria-label="t('openregister', 'Select All')"
 											@update:modelValue="toggleSelectAll" />
 									</th>
-									<th>{{ t('openregister', 'Title') }}</th>
-									<th>{{ t('openregister', 'Source') }}</th>
-									<th>{{ t('openregister', 'Local Version') }}</th>
-									<th>{{ t('openregister', 'Remote Version') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Updated') }}</th>
-									<th class="tableColumnActions">
+									<th scope="col">
+										{{ t('openregister', 'Title') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Source') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Local Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Remote Version') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Status') }}
+									</th>
+									<th scope="col">
+										{{ t('openregister', 'Updated') }}
+									</th>
+									<th scope="col" class="tableColumnActions">
 										{{ t('openregister', 'Actions') }}
 									</th>
 								</tr>
@@ -137,9 +150,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:model-value="selectedConfigurations.includes(configuration.id)"
+											:aria-labelledby="`configuration-row-title-${configuration.id}`"
 											@update:modelValue="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
 									</td>
-									<td class="tableColumnTitle">
+									<td :id="`configuration-row-title-${configuration.id}`" class="tableColumnTitle">
 										<div class="titleContent">
 											<strong>{{ configuration.title }}</strong>
 											<span v-if="configuration.description" class="textDescription textEllipsis">{{ configuration.description }}</span>

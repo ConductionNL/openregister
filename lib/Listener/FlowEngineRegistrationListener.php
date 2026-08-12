@@ -62,6 +62,13 @@ class FlowEngineRegistrationListener implements IEventListener
      * @param Event $event The dispatched registration event.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript is the
+     *     canonical Nextcloud API for enqueuing scripts and has no injectable
+     *     DI equivalent in the AppFramework — a listener is handed only the
+     *     event, and Nextcloud ships no service form of the asset API. Wrapping
+     *     the call in a seam class would relocate the identical static call
+     *     rather than remove it. Mirrors ScriptManifestLoader::addEntryScripts().
      */
     public function handle(Event $event): void
     {
@@ -72,6 +79,11 @@ class FlowEngineRegistrationListener implements IEventListener
 
         if ($event instanceof RegisterOperationsEvent) {
             $event->registerOperation($this->container->get(RunFlowOperation::class));
+            // Load the operator's frontend settings component on the Flow admin
+            // page so the flow-name value is enterable. Mirrors how core apps
+            // (bookmarks/analytics) ship their *-flow.js operator UI. Harmless
+            // off the settings page — addScript only queues for a page render.
+            \OCP\Util::addScript('openregister', 'openregister-flow-operator');
             return;
         }
     }//end handle()

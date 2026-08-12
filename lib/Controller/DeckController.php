@@ -212,6 +212,11 @@ class DeckController extends Controller
      * @return \OCA\OpenRegister\Db\ObjectEntity|null
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
+     *
+     * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
+     *         than caught: every call site already wraps this helper and translates it to a 404.
+     *         Swallowing it here would collapse "no such object" into the same null this method
+     *         returns for other reasons, which the caller could no longer tell apart.
      */
     private function validateObject(
         string $register,

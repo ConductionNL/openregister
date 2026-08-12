@@ -27,8 +27,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops deprecated file_texts and object_texts tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20251118000000 extends SimpleMigrationStep
 {
@@ -42,8 +40,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
      * @return ISchemaWrapper Updated schema.
      *
      * @psalm-suppress UnusedParam $options is required by interface but not used
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

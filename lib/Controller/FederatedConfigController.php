@@ -87,12 +87,10 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{types: [{id, name, topic}]}`.
      *
-     * @NoAdminRequired
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function types(): JSONResponse
     {
@@ -103,17 +101,25 @@ class FederatedConfigController extends Controller
     /**
      * Package a selection of a type's configuration into a portable bundle.
      *
-     * @return JSONResponse The bundle, or a 4xx.
+     * Gated on `canPublish`, exactly like `publish()`. A bundle IS the payload
+     * `publish()` pushes out — the same `serialise()` call, the same bytes,
+     * minus the GitHub round-trip. Gating one and not the other made the
+     * publish gate decorative: anyone refused by `canPublish` could call
+     * `bundle` and receive the identical export to do what they liked with.
      *
-     * @NoAdminRequired
+     * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function bundle(): JSONResponse
     {
+        if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
+        }
+
         $type = trim((string) $this->request->getParam('type', ''));
         if ($type === '') {
             return new JSONResponse(['error' => 'A bundle needs a type.'], Http::STATUS_BAD_REQUEST);
@@ -142,7 +148,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function install(): JSONResponse
     {
@@ -197,7 +202,6 @@ class FederatedConfigController extends Controller
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function publish(): JSONResponse
     {
@@ -255,12 +259,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
      *
-     * @NoAdminRequired
+     * @auth admin-only Returns the instance's federation trust configuration — the source
+     *       allowlist and the trusted publisher keys. The body rejects non-admins, and #2342
+     *       removed the #[NoAdminRequired] that used to contradict it; this states the posture so
+     *       "admin-only by Nextcloud default" stays distinguishable from a forgotten attribute.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function trust(): JSONResponse
     {
@@ -281,12 +288,15 @@ class FederatedConfigController extends Controller
      *
      * @return JSONResponse The updated trust configuration, or a 4xx.
      *
-     * @NoAdminRequired
+     * @auth admin-only Writes the federation trust configuration: it can append a public key to the
+     *       trusted-keys list, which decides whose published configuration this instance will
+     *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
+     *       to contradict it; this states the posture rather than leaving it to a default.
+     *
      * @NoCSRFRequired
      *
      * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
      */
-    #[NoAdminRequired]
     #[NoCSRFRequired]
     public function setTrust(): JSONResponse
     {
@@ -330,7 +340,17 @@ class FederatedConfigController extends Controller
     /**
      * Discover published bundles across GitHub by a type's discovery topic.
      *
-     * @return JSONResponse `{results: [{repo, name, description, url, stars, updated, topics}]}`.
+     * Gated on `canInstall`, exactly like `install()` — for the reason `bundle()`
+     * is gated like `publish()`. Discovery and fetch are the two steps that
+     * PRECEDE an install, and both drive this server's GitHub client with the
+     * caller's chosen store credential. That credential is held by reference: the
+     * broker signs the request and the caller never sees the secret. Leaving
+     * these two ungated therefore handed anyone who may NOT install a
+     * credentialed GitHub proxy, which is more than the install they were
+     * refused. Orgs that have not curated `federated_config_install_groups` are
+     * unaffected — an empty list still means "any signed-in user".
+     *
+     * @return JSONResponse `{results: [...]}`, or 403 when the caller may not install.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -341,6 +361,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function discover(): JSONResponse
     {
+        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to browse shared configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
         $topic = trim((string) $this->request->getParam('topic', ''));
         if ($topic === '') {
             return new JSONResponse(['error' => 'Discovery needs a topic.'], Http::STATUS_BAD_REQUEST);
@@ -365,7 +389,12 @@ class FederatedConfigController extends Controller
      * Fetch a published bundle file from a GitHub repo (the bridge from discover
      * to install).
      *
-     * @return JSONResponse The decoded bundle, or a 4xx.
+     * Gated on `canInstall` for the reason given on `discover()`: this method
+     * takes a caller-supplied `repo` and `path` and has the broker sign the
+     * request with the caller's store credential, so ungated it is an arbitrary
+     * credentialed GitHub read for anyone the install gate would have refused.
+     *
+     * @return JSONResponse The decoded bundle, 403 when the caller may not install, or a 4xx.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -376,6 +405,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function fetch(): JSONResponse
     {
+        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to fetch shared configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
         $repo = trim((string) $this->request->getParam('repo', ''));
         $path = trim((string) $this->request->getParam('path', ''));
         if ($repo === '' || $path === '') {

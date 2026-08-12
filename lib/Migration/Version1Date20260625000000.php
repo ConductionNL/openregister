@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the `openregister_sequences` table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260625000000 extends SimpleMigrationStep
 {

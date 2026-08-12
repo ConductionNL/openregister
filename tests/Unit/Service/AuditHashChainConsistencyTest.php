@@ -58,7 +58,8 @@ class AuditHashChainConsistencyTest extends TestCase
         $this->service = new AuditHashService(
             $this->db,
             $this->createMock(ILockingProvider::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(\OCP\IAppConfig::class)
         );
     }
 

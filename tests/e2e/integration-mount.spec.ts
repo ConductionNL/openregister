@@ -1,6 +1,6 @@
 /*
  * SPDX-FileCopyrightText: 2026 Open Register Contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  *
  * Integration mount-check fixture — Phase K / K3 regression guard for
  * the Phase-A "bespoke UI is dead code" wiring bug (ADR-019).
@@ -134,8 +134,12 @@ async function openObjectDetail(
 	// ObjectsIndex and its param-watch primes the object store.
 	await page.goto(
 		`${baseURL}/index.php/apps/openregister/#/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
+		// `networkidle` never settles on Nextcloud (ADR-074 rule 4): the
+		// long-poll / notification channels keep a request in flight for the
+		// life of the page, so it always burns its timeout. The readiness
+		// signal that matters is the registry flush asserted just below.
+		{ waitUntil: 'domcontentloaded' },
 	)
-	await page.waitForLoadState('networkidle')
 
 	// Wait until nc-vue's in-page registry has been drained onto window.
 	// (installIntegrationRegistry + registerBuiltin + registerLeaf run in

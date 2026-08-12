@@ -17,6 +17,16 @@
  * master recompute is best-effort: a failure is logged and never aborts the
  * source object's own save/delete.
  *
+ * The recompute itself is DEFERRED to `SourceRecordRecomputeJob` (ADR-078,
+ * openregister#2420). It used to run synchronously here — a full
+ * `ObjectService::saveObject()` nested inside the write that triggered it,
+ * twice on a reassigning update — which is the write-inside-a-write shape
+ * that serialised every object write on a live instance on 2026-08-11.
+ * Deferring also coalesces: entries are deduped on the master uuid, so N
+ * sources of one master enqueue ONE recompute instead of N. Setting
+ * `openregister.listener_deferral` to `inline` restores the old synchronous
+ * behaviour for debugging.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -45,8 +55,9 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Merge\MergeService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\ICache;
@@ -89,6 +100,16 @@ class SourceRecordChangeListener implements IEventListener
     private const REVERSE_INDEX_CACHE_TTL = 3600;
 
     /**
+     * Maximum master uuids carried by one deferred recompute job.
+     *
+     * Entries are deduped on the master uuid, so this is a bound on DISTINCT
+     * masters touched by one request, not on the number of source writes.
+     *
+     * @var int
+     */
+    private const CHUNK_SIZE = 50;
+
+    /**
      * Memoised reverse index: source-schema identifier (slug or id, as
      * strings) => list of reference-field names that carry the master uuid.
      * Built lazily from the schema registry, cached per listener instance
@@ -110,10 +131,11 @@ class SourceRecordChangeListener implements IEventListener
     /**
      * Wire collaborators.
      *
-     * @param SchemaMapper    $schemaMapper  Schema registry (to build the reverse index).
-     * @param ObjectService   $objectService Object read/write path (RBAC + tenant scoped).
-     * @param LoggerInterface $logger        PSR logger for warnings.
-     * @param ICacheFactory   $cacheFactory  Distributed-cache factory for the reverse index.
+     * @param SchemaMapper            $schemaMapper Schema registry (to build the reverse index).
+     * @param LoggerInterface         $logger       PSR logger for warnings.
+     * @param ICacheFactory           $cacheFactory Distributed-cache factory for the reverse index.
+     * @param ListenerDeferralService $deferral     Actor-forwarding deferral service (ADR-078).
+     * @param MasterRecomputeService  $recompute    Golden-record recompute, used on the inline fallback only.
      *
      * @return void
      *
@@ -121,9 +143,10 @@ class SourceRecordChangeListener implements IEventListener
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger,
-        ICacheFactory $cacheFactory
+        ICacheFactory $cacheFactory,
+        private readonly ListenerDeferralService $deferral,
+        private readonly MasterRecomputeService $recompute
     ) {
         try {
             $this->indexCache = $cacheFactory->createDistributed('openregister_reverse_fk');
@@ -200,8 +223,26 @@ class SourceRecordChangeListener implements IEventListener
             $masterUuids[] = (string) ($oldData[$referenceField] ?? '');
         }
 
+        // ADR-078 / openregister#2420: the recompute is a full
+        // ObjectService::saveObject(), so it MUST NOT run inside the write
+        // that triggered it. Deferring also lets the buffer coalesce on the
+        // master uuid — N sources of one master become ONE recompute, which
+        // is the ordinary shape of a reverse-FK relationship. The inline
+        // branch exists only for the `inline` kill switch.
+        $deferralEnabled = $this->deferral->isDeferralEnabled();
+
         foreach (array_unique(array_filter($masterUuids)) as $masterUuid) {
-            $this->recomputeMaster(masterUuid: (string) $masterUuid);
+            if ($deferralEnabled === false) {
+                $this->recompute->recompute(masterUuid: (string) $masterUuid);
+                continue;
+            }
+
+            $this->deferral->defer(
+                jobClass: SourceRecordRecomputeJob::class,
+                entry: ['masterUuid' => (string) $masterUuid],
+                chunkSize: self::CHUNK_SIZE,
+                dedupeKey: (string) $masterUuid
+            );
         }
     }//end processSource()
 
@@ -322,53 +363,6 @@ class SourceRecordChangeListener implements IEventListener
 
         return $links;
     }//end reverseLinksFor()
-
-    /**
-     * Recompute a master's golden record by re-persisting it, which re-runs
-     * the survivorship recompute listener over the master's (reverse-FK)
-     * source set. Best-effort — a failure is logged and swallowed.
-     *
-     * @param string $masterUuid Referenced master uuid.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) `MergeService::normaliseRoundTripDates`
-     *   is a pure stateless date-format utility shared with the merge relink;
-     *   a static call is the lightest way to reuse it without injecting the
-     *   whole MergeService (which would raise coupling for one helper).
-     */
-    private function recomputeMaster(string $masterUuid): void
-    {
-        if ($masterUuid === '') {
-            return;
-        }
-
-        try {
-            $master = $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true);
-            if ($master === null) {
-                return;
-            }
-
-            // Re-persist: the survivorship recompute listener fires on the
-            // resulting update event and rematerialises the golden record. Date
-            // fields are normalised back to ISO first — OR stores them in a
-            // space-separated form its own validation rejects on a round-trip
-            // save (see MergeService::normaliseRoundTripDates).
-            $master->setObject(MergeService::normaliseRoundTripDates(data: ($master->getObject() ?? [])));
-            $this->objectService->saveObject(
-                object: $master,
-                register: $master->getRegister(),
-                schema: $master->getSchema(),
-                uuid: $master->getUuid()
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                sprintf('Source-record change: could not recompute master "%s": %s', $masterUuid, $e->getMessage())
-            );
-        }//end try
-    }//end recomputeMaster()
 
     /**
      * Resolve a schema by reference (id/uuid/slug), or null on failure.

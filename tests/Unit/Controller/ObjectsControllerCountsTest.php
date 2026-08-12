@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-batched-object-counts/specs/batched-object-counts/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 
 declare(strict_types=1);

@@ -1560,6 +1560,115 @@ class PrivateScopeParityIntegrationTest extends TestCase
      *
      * @return string[]
      */
+    /**
+     * Keys visible through the UNION path with multitenancy REQUESTED.
+     *
+     * The default helper passes `_multitenancy => false` because the scope tests
+     * want the scope predicate to be the only filter. This one asks for tenancy,
+     * so the answer tells us whether the union path honours it at all.
+     *
+     * @param Register $register The register.
+     * @param Schema   $schema   The schema.
+     *
+     * @return string[]
+     */
+    private function visibleKeysViaUnionWithTenancy(Register $register, Schema $schema): array
+    {
+        if ($this->unionPartner === null) {
+            $this->unionPartner = $this->createFixtureTable(partner: true);
+        }
+
+        $rows = $this->mapper->searchAcrossMultipleTables(
+            ['_multitenancy' => true],
+            [
+                ['register' => $register, 'schema' => $schema],
+                ['register' => $this->unionPartner[0], 'schema' => $this->unionPartner[1]],
+            ]
+        );
+
+        return $this->keysOf($rows);
+    }//end visibleKeysViaUnionWithTenancy()
+
+
+    /**
+     * CHARACTERISATION: does the UNION path enforce the tenant edge?
+     *
+     * `testAGrantDoesNotCrossTheTenantEdge` proves the SINGLE-table path does.
+     * That test calls `searchObjectsInRegisterSchemaTable()`, so it says nothing
+     * about `searchAcrossMultipleTables()` — and `ObjectsController` carries a
+     * standing `TODO(SEC-CTRL-1)` asserting that the cross-table builders apply
+     * NO RBAC or multitenancy filter and "must be wired there before cross-table
+     * search is exposed to non-admins".
+     *
+     * This matters concretely: a cross-register "shared with me" read (task 6.3)
+     * is exactly such an exposure. Before building one, the posture has to be a
+     * measured fact rather than an inference from a comment that may be stale —
+     * the scope-and-grant half of that TODO IS stale, because the union emitter
+     * does now carry the predicate.
+     *
+     * The test asserts what is TRUE today so the answer is recorded and any
+     * change to it is deliberate. If the union path does filter, the assertion
+     * documents the guarantee; if it does not, it documents the gap and fails the
+     * moment somebody fixes it — at which point the expectation flips and 6.3
+     * becomes safe to build on.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+     */
+    public function testUnionPathTenantEdgeIsCharacterised(): void
+    {
+        [$register, $schema] = $this->createFixtureTable(readRule: $this->tenantGroup);
+
+        $activeOrg = $this->activeOrganisationUuid();
+        if ($activeOrg === null) {
+            $this->markTestSkipped('the session user has no active organisation, so the org filter denies everything');
+        }
+
+        // Same construction as the single-table tenant-edge test: two private
+        // rows, both granted to the caller, differing ONLY in organisation.
+        $this->insertFixture($register, $schema, 'union-same', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $this->insertFixture($register, $schema, 'union-other', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $this->setOrganisation($register, $schema, 'union-same', $activeOrg);
+        $this->setOrganisation($register, $schema, 'union-other', '00000000-0000-4000-8000-00000000dead');
+
+        $stored = $this->readBackByKey($register, $schema);
+        $this->grantTo($stored['union-same'], $this->testUid);
+        $this->grantTo($stored['union-other'], $this->testUid);
+        $this->grantResolver()->forget();
+
+        $visible = $this->visibleKeysViaUnionWithTenancy($register, $schema);
+
+        // CONTROL: the in-tenant row must be there, or the assertion below would
+        // pass simply because the query returned nothing at all.
+        $this->assertContains(
+            'union-same',
+            $visible,
+            'control: the in-tenant granted row must be visible, or this test proves nothing'
+        );
+
+        // MEASURED, 2026-08-03: the union path returns the other organisation's
+        // row. The scope-and-grant predicate IS applied there (the tests above
+        // prove that), but the ORGANISATION filter is not — so
+        // `TODO(SEC-CTRL-1)` in ObjectsController is accurate for multitenancy
+        // and stale for RBAC.
+        //
+        // This asserts the CURRENT behaviour on purpose. It is a characterisation,
+        // not an endorsement: the moment somebody wires tenancy into
+        // `searchAcrossMultipleTables()` this test FAILS, which is the signal to
+        // flip the expectation to `assertNotContains` and to revisit the
+        // cross-register reads that were blocked on it — a `shared-with-me` list
+        // (task 6.3) above all, which must not be built over this path until then.
+        $this->assertContains(
+            'union-other',
+            $visible,
+            'If this now FAILS, tenancy has been wired into the union path — flip this assertion to '
+            .'assertNotContains and unblock the cross-register reads that were waiting on it (task 6.3).'
+        );
+    }//end testUnionPathTenantEdgeIsCharacterised()
+
+
     private function visibleKeysViaUnion(Register $register, Schema $schema): array
     {
         if ($this->unionPartner === null) {

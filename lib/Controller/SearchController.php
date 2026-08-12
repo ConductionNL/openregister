@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Service\ObjectService;
@@ -136,13 +137,28 @@ class SearchController extends Controller
              */
 
             function ($object): array {
-                if (is_object($object) === true && method_exists($object, 'getUuid') === true) {
+                // Probe the PROPERTY, not the method. searchObjectsPaginated()
+                // returns ObjectEntity rows, and ObjectEntity declares getUuid() and
+                // getName() only as `@method` — Nextcloud's Entity serves them through
+                // __call(). method_exists() is FALSE for both, so every row fell past
+                // this branch, and the array branch below cannot read an object either:
+                // $objectArr stayed [] and EVERY search hit was returned as
+                // `id: null, name: 'Unknown'`.
+                //
+                // There is no fallback to recover it here: unlike the getUuid probes
+                // elsewhere in this app, nothing on this path routes through
+                // getObject(), which is the concrete method that injects the uuid
+                // under 'id'. property_exists() is the same test Entity::getter() runs
+                // before returning the value, so it cannot throw.
+                if ($object instanceof Entity && property_exists($object, 'uuid') === true) {
                     $name = null;
-                    if (method_exists($object, 'getName') === true) {
+                    if (property_exists($object, 'name') === true) {
+                        // @phpstan-ignore-next-line Entity::getName() is dispatched via __call.
                         $name = $object->getName();
                     }
 
                     return [
+                        // @phpstan-ignore-next-line Entity::getUuid() is dispatched via __call.
                         'id'     => $object->getUuid(),
                         'name'   => $name ?? 'Unknown',
                         'type'   => 'object',

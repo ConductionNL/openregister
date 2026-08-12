@@ -29,8 +29,6 @@ use OCP\IDBConnection;
 
 /**
  * Migration to add is_default column to organisations table
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250723110323 extends SimpleMigrationStep
 {
@@ -61,8 +59,6 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
      * @param array                     $options       Migration options.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
@@ -80,8 +76,6 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      * @return ISchemaWrapper The modified schema.
      *
      * @psalm-suppress UnusedParam $options is required by interface but not used
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -117,8 +111,6 @@ class Version1Date20250723110323 extends SimpleMigrationStep
      * @param array                     $options       Migration options.
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

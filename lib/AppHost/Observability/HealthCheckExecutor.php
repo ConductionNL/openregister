@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
@@ -53,12 +54,13 @@ class HealthCheckExecutor
     /**
      * Constructor.
      *
-     * @param IDBConnection      $db          Database connection (database check).
-     * @param ITempManager       $tempManager Temp-file manager (filesystem check).
-     * @param IAppManager        $appManager  App manager (appEnabled check).
-     * @param IAppConfig         $appConfig   App config (appConfig check).
-     * @param ContainerInterface $container   DI container (lazy orAvailable + provider lookup).
-     * @param LoggerInterface    $logger      PSR logger (exception messages logged, never returned).
+     * @param IDBConnection       $db          Database connection (database check).
+     * @param ITempManager        $tempManager Temp-file manager (filesystem check).
+     * @param IAppManager         $appManager  App manager (appEnabled check).
+     * @param IAppConfig          $appConfig   App config (appConfig check).
+     * @param ContainerInterface  $container   DI container (lazy orAvailable + fallback provider lookup).
+     * @param AppContainerLocator $locator     Reaches the calling app's own container.
+     * @param LoggerInterface     $logger      PSR logger (exception messages logged, never returned).
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -66,6 +68,7 @@ class HealthCheckExecutor
         private readonly IAppManager $appManager,
         private readonly IAppConfig $appConfig,
         private readonly ContainerInterface $container,
+        private readonly AppContainerLocator $locator,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -287,7 +290,7 @@ class HealthCheckExecutor
             // registered its `IHealthCheckProvider::<appId>` alias — not from
             // OpenRegister's container, which cannot see another app's DI
             // registrations (same root cause as the MCP-provider fix, #390).
-            $container = $this->resolveAppContainer(appId: $appId);
+            $container = $this->locator->findOr(appId: $appId, fallback: $this->container);
 
             if ($container->has($alias) === false) {
                 return [];
@@ -307,37 +310,6 @@ class HealthCheckExecutor
             return [];
         }//end try
     }//end resolveProviderResults()
-
-    /**
-     * Resolve the calling app's OWN DI container so its
-     * `IHealthCheckProvider::<appId>` alias resolves from where the leaf app
-     * actually registered it (#390). Fail-soft to OpenRegister's container.
-     *
-     * @param string $appId The calling app id.
-     *
-     * @return ContainerInterface The app's own container, or OpenRegister's as a fallback.
-     */
-    private function resolveAppContainer(string $appId): ContainerInterface
-    {
-        try {
-            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
-            // resolves the server container only. The sniff says this is removed in NC 34,
-            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
-            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
-            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
-            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
-            if ($appContainer instanceof ContainerInterface) {
-                return $appContainer;
-            }
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                message: sprintf('[AppHost\\Health] no registered app container for "%s": %s', $appId, $e->getMessage()),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId]
-            );
-        }//end try
-
-        return $this->container;
-    }//end resolveAppContainer()
 
     /**
      * Escalate the running status given a failed check's severity.

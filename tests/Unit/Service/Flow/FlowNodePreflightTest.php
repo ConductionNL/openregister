@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+require_once __DIR__.'/FiltersFlowLevelFindings.php';
+
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -39,6 +41,8 @@ use UnexpectedValueException;
  */
 class FlowNodePreflightTest extends TestCase
 {
+    use FiltersFlowLevelFindings;
+
 
     /**
      * Build a preflight over a fixed set of known types and enabled apps.
@@ -82,8 +86,16 @@ class FlowNodePreflightTest extends TestCase
     {
         return [
             'name'  => 'test-flow',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => $type]],
+            // The step is on the NODE (or-flow-action-nodes). The preflight
+            // walks nodes for the same reason: left on edges it would inspect a
+            // list where nothing carries a type, find nothing, and report the
+            // document valid without having looked at it.
+            // Only ONE typed node, so a fixture built for "is this one type
+            // resolvable" yields exactly one finding. A second typed node would
+            // add a second finding and make every count assertion below wrong
+            // for a reason that has nothing to do with what is being tested.
+            'nodes' => [['id' => 'a', 'type' => $type], ['id' => 'b']],
+            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
         ];
     }
 
@@ -117,9 +129,9 @@ class FlowNodePreflightTest extends TestCase
 
         $report = $preflight->inspect(flow: $this->flowWith('openconnector.source-call'));
         $this->assertSame([], $report['blocking']);
-        $this->assertCount(1, $report['warnings']);
-        $this->assertSame(FlowNodePreflight::REASON_OWNER_NOT_ENABLED, $report['warnings'][0]['reason']);
-        $this->assertSame('openconnector', $report['warnings'][0]['app']);
+        $this->assertCount(1, $this->nodeWarnings($report));
+        $this->assertSame(FlowNodePreflight::REASON_OWNER_NOT_ENABLED, $this->nodeWarnings($report)[0]['reason']);
+        $this->assertSame('openconnector', $this->nodeWarnings($report)[0]['app']);
     }
 
     /**
@@ -142,10 +154,14 @@ class FlowNodePreflightTest extends TestCase
         $preflight = $this->preflight(known: [], enabled: ['openregister']);
         $flow      = [
             'name'  => 'multi',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
+            'nodes' => [
+                ['id' => 'a', 'type' => 'openregister.explode'],
+                ['id' => 'b', 'type' => 'openregister.teleport'],
+                ['id' => 'c', 'type' => 'openregister.end'],
+            ],
             'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.explode'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'c', 'type' => 'openregister.teleport'],
+                ['id' => 'e1', 'from' => 'a', 'to' => 'b'],
+                ['id' => 'e2', 'from' => 'b', 'to' => 'c'],
             ],
         ];
 
@@ -160,22 +176,28 @@ class FlowNodePreflightTest extends TestCase
     }
 
     /**
-     * A registered type passes, and a typeless edge is a pass-through.
+     * A registered type passes, and a typeless node is left to the builder.
+     *
+     * The preflight's job is "can this instance run these step types", not "is
+     * this document well-formed" — `FlowDefinitionBuilder` refuses a typeless
+     * node, and duplicating that here would give one rule two owners.
      */
-    public function testKnownAndTypelessEdgesPass(): void
+    public function testKnownTypesPassAndATypelessNodeIsNotThePreflightsToJudge(): void
     {
         $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
         $flow      = [
             'name'  => 'ok',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.route'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'c'],
+            'nodes' => [
+                ['id' => 'a', 'type' => 'openregister.route'],
+                ['id' => 'b'],
             ],
+            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
         ];
 
         $preflight->assertRunnable(flow: $flow);
-        $this->assertSame(['blocking' => [], 'warnings' => []], $preflight->inspect(flow: $flow));
+        $report = $preflight->inspect(flow: $flow);
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 
     /**
@@ -227,5 +249,61 @@ class FlowNodePreflightTest extends TestCase
                 ]
             )
         );
+    }
+
+    /**
+     * A pre-inversion document is REFUSED, not reported valid.
+     *
+     * Measured on the live Hydra sequencer: after the preflight moved to walking
+     * nodes, an un-migrated flow — whose steps are all on edges — produced zero
+     * findings and validated clean, while being exactly the shape the builder
+     * refuses. Walking nodes closed one hole by opening another, and the author
+     * reading "the flow engine accepts this graph" in the editor is precisely
+     * who needed telling otherwise.
+     *
+     * @return void
+     */
+    public function testAPreInversionDocumentIsRefusedRatherThanReportedValid(): void
+    {
+        $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
+        $report    = $preflight->inspect(
+            flow: [
+                'name'  => 'un-migrated',
+                'nodes' => [['id' => 'a'], ['id' => 'b']],
+                'edges' => [['id' => 'scope', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.route']],
+            ]
+        );
+
+        $this->assertCount(1, $report['blocking']);
+        $this->assertSame(FlowNodePreflight::REASON_PRE_INVERSION_SHAPE, $report['blocking'][0]['reason']);
+        $this->assertSame('scope', $report['blocking'][0]['step']);
+    }
+
+    /**
+     * Positive control: the same flow validates once the step is on the node.
+     *
+     * Without this, the refusal above is satisfied by a preflight that refuses
+     * everything it is shown.
+     *
+     * @return void
+     */
+    public function testTheSameFlowValidatesOnceTheStepIsOnTheNode(): void
+    {
+        $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
+        $report    = $preflight->inspect(
+            flow: [
+                'name'  => 'migrated',
+                // `exit` so the one-node fixture is a COMPLETE document. This
+                // asserts an EXACTLY empty report, and a lone node with no
+                // outgoing edge is a dead end however correct its step is —
+                // the connectivity warning would be right, and would make this
+                // positive control fail for a reason it is not about.
+                'nodes' => [['id' => 'scope', 'type' => 'openregister.route', 'exit' => true]],
+                'edges' => [],
+            ]
+        );
+
+        $this->assertSame([], $report['blocking']);
+        $this->assertSame([], $this->nodeWarnings($report));
     }
 }

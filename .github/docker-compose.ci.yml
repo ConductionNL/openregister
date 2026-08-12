@@ -24,8 +24,18 @@ services:
       retries: 12
 
   nextcloud:
-    # NC 32+ for OCP\DB\Types::DATETIME_IMMUTABLE; matches stable32 in code-quality.yml
-    # and openregister's info.xml min-version=28 max-version=34.
+    # Pinned to 32 because that is what code-quality.yml's matrix exercises,
+    # NOT because the app requires it. info.xml declares min-version=28.
+    #
+    # Both reasons the previous comment gave for a 32 floor were checked and
+    # neither holds:
+    #   OCP\DB\Types::DATETIME_IMMUTABLE — present in stable31 as well as 32.
+    #   OCP\ContextChat\*               — genuinely 32+, but #2372 made every
+    #                                     reference lazy and guarded, so the
+    #                                     feature is inert below 32 rather than
+    #                                     fatal.
+    # Eight fleet repos install this app while testing stable31, and procest's
+    # e2e proved a stable31 install green after #2372.
     image: nextcloud:32-apache
     container_name: nextcloud
     user: root

@@ -53,8 +53,6 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
@@ -229,6 +227,31 @@ class SaveObject
      * @var array<string, bool>
      */
     private array $referenceValidationCache = [];
+
+    /**
+     * How the most recently completed `saveObject()` actually resolved.
+     *
+     * One of `created`, `updated`, `unchanged`, or null before the first save.
+     * `saveObject()` returns an ObjectEntity, which carries no verdict — an
+     * updated row and a created one are indistinguishable in the return value —
+     * so a batching caller had to GUESS from whether the input carried a uuid.
+     * That guess is wrong in both directions: a row supplying a uuid for an
+     * object that does not exist yet is a CREATE reported as an update, and a
+     * write that changed nothing is an UPDATE reported as a change.
+     *
+     * Both terminal paths already hold the answer at no extra cost —
+     * `handleObjectUpdate()` clones the pre-update state for the audit trail —
+     * so this records it instead of re-deriving it. It is deliberately written
+     * at the very END of each path: a cascade descendant runs INSIDE that path
+     * and sets its own verdict first, so the outermost frame's write is the one
+     * that survives, which is the frame the caller asked about.
+     *
+     * Per-request, single-slot and read immediately after the call that set it.
+     * Nothing may hold it across saves.
+     *
+     * @var string|null
+     */
+    private ?string $lastSaveOutcome = null;
 
     /**
      * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
@@ -3266,13 +3289,16 @@ class SaveObject
             currentUser: $currentUser
         );
 
-        // If not persisting, return the prepared object.
+        // If not persisting, return the prepared object. Nothing reached
+        // storage, so from a batching caller's point of view the row changed
+        // nothing.
         if ($persist === false) {
+            $this->lastSaveOutcome = 'unchanged';
             return $preparedObject;
         }
 
         // Update the object, passing the captured old state.
-        return $this->updateObject(
+        $updatedObject = $this->updateObject(
             register: $register,
             schema: $schema,
             data: $data,
@@ -3281,6 +3307,23 @@ class SaveObject
             silent: $silent,
             oldObject: $oldObject
         );
+
+        // Record the verdict AFTER the write, so a cascade descendant saved
+        // inside updateObject() cannot leave its own outcome behind as this
+        // frame's answer.
+        //
+        // STRICT comparison, and the asymmetry is the point. `===` on arrays
+        // also requires the same key ORDER, so a property merely reordered by
+        // normalisation reads as a change. That errs toward `updated`, never
+        // toward `unchanged` — the bucket a caller acts on by SKIPPING work.
+        // Over-reporting a change costs a redundant downstream refresh;
+        // under-reporting one would let a real edit be silently ignored.
+        $this->lastSaveOutcome = 'updated';
+        if ($updatedObject->getObject() === $oldObject->getObject()) {
+            $this->lastSaveOutcome = 'unchanged';
+        }
+
+        return $updatedObject;
     }//end handleObjectUpdate()
 
     /**
@@ -3375,6 +3418,21 @@ class SaveObject
         );
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
+        // Capture the MAPPER's verdict for this row NOW, into a local. Two
+        // reasons it cannot be read at the end of this method instead:
+        // file-property processing and inverse-relation maintenance both write
+        // OTHER objects further down, so by then `getLastWriteAction()` answers
+        // about one of those rows rather than this one.
+        //
+        // The mapper is the authority rather than this method's name, for the
+        // reason spelled out at the audit-trail block below: we arrived here
+        // because the service-level lookup found nothing, but the mapper looks
+        // again and a concurrent writer can land the row in between — in which
+        // case the mapper took its UPDATE branch on what this path calls a
+        // create. Believing the method name here is what recorded three
+        // "created" audit entries for one insert (#2212/#2217).
+        $mapperWriteAction = $this->unifiedObjectMapper->getLastWriteAction();
+
         // Update the name cache with the saved object's name.
         // This ensures the name is available for subsequent operations and relation resolution.
         $savedName = $savedEntity->getName();
@@ -3431,6 +3489,15 @@ class SaveObject
         if ($silent === false) {
             $this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
+        }
+
+        // Publish the verdict last, from the local captured right after THIS
+        // row's insert. Written here rather than earlier so that the cascade and
+        // inverse-relation saves above — which run through saveObject() again
+        // and set their own outcome — cannot be mistaken for this frame's.
+        $this->lastSaveOutcome = 'created';
+        if ($mapperWriteAction === 'update') {
+            $this->lastSaveOutcome = 'updated';
         }
 
         return $savedEntity;
@@ -4647,6 +4714,36 @@ class SaveObject
     }//end clearReferenceValidationCache()
 
     /**
+     * Read and clear the verdict the last completed save published.
+     *
+     * A single-slot handover, read exactly once by the row that caused it. The
+     * clear-on-read is what stops a row that reaches neither terminal path from
+     * being classified with the PREVIOUS row's answer — a stale verdict is
+     * indistinguishable from a real one, where a null falls through to a
+     * fallback derived from the row in hand.
+     *
+     * A METHOD rather than a bare property read, deliberately. Reading the
+     * property inline defeats static analysis: PHPStan sees the slot set to null
+     * just before `saveObject()` is called, does not track that the callee
+     * writes it, and concludes the `unchanged` branch is unreachable — which is
+     * how a live branch gets reported as dead code and then deleted. The
+     * declared `?string` return states the contract that is actually true.
+     *
+     * @return string|null `created`, `updated`, `unchanged`, or null when unset.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function consumeLastSaveOutcome(): ?string
+    {
+        $outcome = $this->lastSaveOutcome;
+
+        $this->lastSaveOutcome = null;
+
+        return $outcome;
+
+    }//end consumeLastSaveOutcome()
+
+    /**
      * Streaming bulk-upsert primitive — closes 2c on the
      * `reference-existence-validation` change.
      *
@@ -4707,6 +4804,13 @@ class SaveObject
                     $rowData = $row;
                 }
 
+                // Clear the slot first. Without this, a row that reaches neither
+                // terminal path would be classified with the PREVIOUS row's
+                // verdict — a stale answer that reads exactly like a real one,
+                // where a null falls through to the fallback and is at least
+                // derived from this row.
+                $this->lastSaveOutcome = null;
+
                 $entity = $this->saveObject(
                     register: $register,
                     schema: $schema,
@@ -4715,27 +4819,47 @@ class SaveObject
 
                 $uuid = ((string) $entity->getUuid());
 
-                // Outcome bucket — distinguishing create vs update
-                // requires comparing the input UUID to the resulting
-                // entity's UUID. When the input has no UUID, the save
-                // path generates one — that's a create. When the
-                // input carries a UUID and an existing object was
-                // matched, that's an update. The unchanged bucket is
-                // a future enhancement (would need a deep diff against
-                // the previous state) and is out of scope here; for
-                // now treat all non-create paths as updates.
-                $hadUuid = (
-                    is_array($row) === true
-                    && (isset($row['@self']['id']) === true
-                    || isset($row['id']) === true
-                    || isset($row['uuid']) === true)
-                );
-                if ($hadUuid === true) {
+                // Outcome bucket — from the save path's own verdict, not from
+                // the shape of the input. This used to guess: "the row carried a
+                // uuid, so it must be an update". The guess is wrong in both
+                // directions. A row supplying a uuid for an object that does not
+                // exist yet is a CREATE counted as an update, and a write that
+                // changed nothing is an UPDATE counted as a change — which is
+                // why `unchanged` was described here as a future enhancement
+                // needing "a deep diff against the previous state". No such diff
+                // is needed: handleObjectUpdate() already clones the pre-update
+                // state for the audit trail and handleObjectCreation() already
+                // has the mapper's write action, so both paths know the answer
+                // and now record it.
+                //
+                // The fallback is the old heuristic, kept for the one case that
+                // can still leave the verdict unset — a `persist: false` prepare
+                // reaching neither terminal path — so a null can never be
+                // silently dropped from the totals.
+                $outcome = $this->consumeLastSaveOutcome();
+                if ($outcome === null) {
+                    $hadUuid = (
+                        is_array($row) === true
+                        && (isset($row['@self']['id']) === true
+                        || isset($row['id']) === true
+                        || isset($row['uuid']) === true)
+                    );
+                    $outcome = 'created';
+                    if ($hadUuid === true) {
+                        $outcome = 'updated';
+                    }
+                }
+
+                if ($outcome === 'created') {
+                    $status->recordCreated(uuid: $uuid);
+                }
+
+                if ($outcome === 'updated') {
                     $status->recordUpdated(uuid: $uuid);
                 }
 
-                if ($hadUuid === false) {
-                    $status->recordCreated(uuid: $uuid);
+                if ($outcome === 'unchanged') {
+                    $status->recordUnchanged(uuid: $uuid);
                 }
             } catch (Exception $e) {
                 $rowUuid = null;
@@ -5304,7 +5428,10 @@ class SaveObject
             );
         }
 
-        $this->logger->info(
+        // Debug: "an object was updated" is the single most routine event this
+        // application has. At info it is not a signal, it IS the noise floor.
+        // A FAILED update is what warrants attention, and that path logs already.
+        $this->logger->debug(
             message: '[SaveObject] Object updated successfully',
             context: [
                 'file' => __FILE__,
@@ -5646,7 +5773,7 @@ class SaveObject
         $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
         if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 sprintf(
                     'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
                     (string) $schema->getSlug(),

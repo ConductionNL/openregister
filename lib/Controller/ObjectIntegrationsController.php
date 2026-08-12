@@ -128,6 +128,15 @@ class ObjectIntegrationsController extends Controller
      * resolves to null and the request is refused with 404 (existence is not
      * leaked).
      *
+     * `setObject()` IS INSIDE THE TRY, and that is the whole point of the
+     * shape. It is not a setter: it calls `objectMapper->find()`, which throws
+     * `DoesNotExistException` when nothing matches. Left outside, a request for
+     * an object that does not exist escaped as a 500 — "Object not found in
+     * magic table" — rather than the 404 this method's own docblock promises.
+     * The `getObject()` call it guarded can only be reached once `setObject()`
+     * has already succeeded, so the catch was placed one line past the throw it
+     * needed to cover.
+     *
      * @param string $register Register slug or numeric id.
      * @param string $schema   Schema slug or numeric id.
      * @param string $id       Object uuid.
@@ -136,11 +145,11 @@ class ObjectIntegrationsController extends Controller
      */
     private function guardObjectAccess(string $register, string $schema, string $id): ?JSONResponse
     {
-        $this->objectService->setRegister($register);
-        $this->objectService->setSchema($schema);
-        $this->objectService->setObject($id);
-
         try {
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+            $this->objectService->setObject($id);
+
             $object = $this->objectService->getObject();
         } catch (\Throwable $e) {
             return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

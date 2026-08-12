@@ -333,10 +333,6 @@ class MagicRbacHandler
         // schema with explicit authorization rules would clamp every CLI query
         // to `1 = 0` and hide all rows from background calcs / list views.
         if ($user === null && PHP_SAPI === 'cli') {
-            $this->logger->debug(
-                message: '[MagicRbacHandler] CLI/system context — bypassing RBAC filter',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
             return;
         }
 

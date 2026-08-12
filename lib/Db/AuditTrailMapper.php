@@ -31,6 +31,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Exception;
+use InvalidArgumentException;
 use RuntimeException;
 use stdClass;
 use ReflectionClass;
@@ -119,23 +120,29 @@ class AuditTrailMapper extends QBMapper
      */
     private function insertHashChained(AuditTrail $auditTrail): AuditTrail
     {
-        $auditTrail = $this->insert(entity: $auditTrail);
-
-        // Seal the persisted row into the hash chain. AuditHashService computes
-        // the hash over the row using the SAME row->entity->canonical path as
-        // verifyChain(), so the stored hash re-verifies exactly. Fail-soft: a
-        // hashing/DB hiccup logs and leaves the row unhashed rather than losing
-        // the audit record.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRow(id: (int) $auditTrail->getId());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] hash-chain seal failed for id '.$auditTrail->getId().': '.$e->getMessage()
-            );
-        }
-
-        return $auditTrail;
+        // Sealing is DELIBERATELY not done here. It is left to AuditSealJob.
+        //
+        // Inline sealing was not merely slow (~15 ms of lock acquisition and
+        // hashing on every audited write); it was the direct cause of chain
+        // corruption. Sealing takes an exclusive lock, so under concurrency some
+        // rows sealed and some fell through the fail-soft path unsealed. A row
+        // sealed AFTER a gap chained onto the newest SEALED row, skipping the
+        // gap — so when the sweep later filled that gap, the gap and the row
+        // after it shared one predecessor. That is a fan-out, indistinguishable
+        // from tampering to verifyChain(). Observed live on this very path: rows
+        // 455956 and 455957 both chained onto 455955.
+        //
+        // With no inline sealing there is exactly one sealer, and unsealed rows
+        // are therefore always a contiguous TAIL rather than holes punched
+        // through the middle. The sweep walks that tail in id order, chaining
+        // each row onto the row genuinely before it, so the fan-out is not
+        // handled — it is made unreachable.
+        //
+        // Cost of the delay: a row is unvouched-for until the next sweep (five
+        // minutes). verifyChain() skips unsealed rows and carries the last
+        // sealed hash forward, so a tail of them is a smaller claim, never a
+        // false alarm.
+        return $this->insert(entity: $auditTrail);
     }//end insertHashChained()
 
     /**
@@ -567,11 +574,85 @@ class AuditTrailMapper extends QBMapper
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
 
-        // Set default expiration date (30 days from now).
-        $auditTrail->setExpires(new DateTime('+30 days'));
+        // Expiry follows the RETENTION OF THE OBJECT the row describes, not a
+        // flat window (or#2265). The unconditional `+30 days` that stood here
+        // destroyed the evidence of a retention decision long before the
+        // decision expired: on the procest case register 311 of 330
+        // soft-deleted cases had lost their delete audit row, and all 258,240
+        // rows carrying an expiry carried exactly a 30-day one.
+        //
+        // `null` means retain indefinitely — clearLogs() has always filtered on
+        // `expires IS NOT NULL` — and is the resolver's outcome for an object
+        // with no retention policy, under legal hold, or nominated `bewaren` /
+        // `nog_niet_bepaald`. The 30-day constant survives inside the resolver
+        // as a FLOOR rather than a ceiling. See AuditRetentionResolver.
+        //
+        // The resolved source token is stamped into `retentionPeriod` so a
+        // future purge is explainable from the row itself. Both fields are set
+        // BEFORE the row is sealed: `expires` is part of the canonical JSON the
+        // hash covers, so writing it after sealing would invalidate the hash.
+        $resolvedRetention = $this->resolveAuditExpiry(
+            objectEntity: $objectEntity,
+            createdAt: ($auditTrail->getCreated() ?? new DateTime())
+        );
+        $auditTrail->setExpires($resolvedRetention['expires']);
+        $auditTrail->setRetentionPeriod($resolvedRetention['source']);
 
         return $auditTrail;
     }//end buildAuditTrail()
+
+    /**
+     * Resolve the audit row's expiry from the object's retention policy.
+     *
+     * Delegates to {@see AuditRetentionResolver}, resolved lazily through the
+     * container for the same reason the sibling AVG and hash-chain lookups are:
+     * this runs inside the audit write path and must degrade rather than break
+     * it. Fail-safe direction matters here — when the resolver is unavailable
+     * the row is retained INDEFINITELY rather than given a short life, because
+     * the failure mode being fixed is evidence disappearing, not disk filling.
+     *
+     * @param ObjectEntity $objectEntity The object the audit row describes.
+     * @param \DateTime    $createdAt    The audit row's creation instant.
+     *
+     * @return array{expires: \DateTime|null, source: string|null}
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTime::createFromInterface is the standard immutable-to-mutable bridge
+     */
+    private function resolveAuditExpiry(ObjectEntity $objectEntity, \DateTime $createdAt): array
+    {
+        try {
+            $resolver = $this->container->get(\OCA\OpenRegister\Service\AuditRetentionResolver::class);
+
+            $resolved = $resolver->resolve(object: $objectEntity, createdAt: $createdAt);
+
+            // The resolver works in DateTimeImmutable; the entity's `expires`
+            // setter is typed to the mutable DateTime that QBMapper binds.
+            $expires = $resolved['expires'];
+            if ($expires !== null) {
+                $expires = DateTime::createFromInterface($expires);
+            }
+
+            return [
+                'expires' => $expires,
+                'source'  => $resolved['source'],
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[AuditTrailMapper] Retention resolution failed; retaining the audit row '
+                    .'indefinitely: '.$e->getMessage(),
+                context: [
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
+            );
+
+            return [
+                'expires' => null,
+                'source'  => 'resolver-unavailable:indefinite',
+            ];
+        }//end try
+
+    }//end resolveAuditExpiry()
 
     /**
      * Create audit trail rows for many object changes with batched inserts.
@@ -612,7 +693,7 @@ class AuditTrailMapper extends QBMapper
             // through the shared row logic so both shapes yield identical rows.
             if ($entry instanceof AuditTrail) {
                 if ($entry->getUuid() === null || $entry->getUuid() === '') {
-                    throw new \InvalidArgumentException('insertAuditTrails() requires every pre-built row to carry a uuid.');
+                    throw new InvalidArgumentException('insertAuditTrails() requires every pre-built row to carry a uuid.');
                 }
 
                 $auditTrails[] = $entry;
@@ -620,7 +701,7 @@ class AuditTrailMapper extends QBMapper
             }
 
             if (is_array($entry) === false) {
-                throw new \InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
+                throw new InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
             }
 
             $auditTrails[] = $this->buildAuditTrail(
@@ -733,17 +814,10 @@ class AuditTrailMapper extends QBMapper
 
         $result->closeCursor();
 
-        // Seal the persisted rows into the hash chain in one batched pass.
-        // Fail-soft, matching insertHashChained(): the audit rows are already
-        // inserted; a sealing hiccup logs and leaves them unhashed.
-        try {
-            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
-            $hashService->sealRows(ids: $ids);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[AuditTrailMapper] batched hash-chain seal failed for '.count($ids).' rows: '.$e->getMessage()
-            );
-        }
+        // Sealing is left to AuditSealJob, exactly as on the single-row path.
+        // See insertHashChained() for why: one sealer means unsealed rows form a
+        // contiguous tail, which is the property that makes a fan-out
+        // impossible rather than merely unlikely.
     }//end insertAuditTrailChunk()
 
     /**
@@ -1664,14 +1738,31 @@ class AuditTrailMapper extends QBMapper
     }//end getMostActiveObjects()
 
     /**
-     * Clear expired logs from the database
+     * Purge expired audit rows, leaving a verifiable chain tombstone.
      *
-     * This method deletes all audit trail logs that have expired
-     * (i.e., their 'expires' date is earlier than the current date and time)
-     * and have the 'expires' column set. This helps maintain database performance
-     * by removing old log entries that are no longer needed.
+     * Rows whose `expires` has passed have their PAYLOAD destroyed — the
+     * `changed` diff and the actor/session/network identifiers — and are
+     * stamped with `purged_at`. The row itself survives.
      *
-     * @return bool True if any logs were deleted, false otherwise
+     * It is an UPDATE, not a DELETE, and that is the whole point. The table
+     * carries a SHA-256 `hash`/`previous_hash` chain that
+     * {@see \OCA\OpenRegister\Service\AuditHashService::verifyChain()} walks in
+     * id order, each row's hash covering the previous row's hash. Physically
+     * removing a row mid-chain therefore breaks verification at the row AFTER
+     * it — which is exactly what tampering looks like. Under the old hard
+     * delete a lawful retention purge and an attack were indistinguishable
+     * (or#2265). Keeping id, `created`, `hash` and `previous_hash` preserves
+     * the link, and the `purged_at` stamp lets verification report a DECLARED
+     * tombstone instead of a break.
+     *
+     * `expires IS NULL` still means "never purge" and is now the resolver's
+     * outcome for objects with no retention policy, under legal hold, or
+     * nominated `bewaren` — see {@see \OCA\OpenRegister\Service\AuditRetentionResolver}.
+     *
+     * Already-tombstoned rows are excluded so repeated sweeps are idempotent
+     * and do not keep rewriting the same rows every hour.
+     *
+     * @return bool True if any rows were tombstoned, false otherwise
      *
      * @throws \Exception Database operation exceptions
      *
@@ -1684,15 +1775,28 @@ class AuditTrailMapper extends QBMapper
             // Get the query builder for database operations.
             $qb = $this->db->getQueryBuilder();
 
-            // Build the delete query to remove expired audit trail logs that have the 'expires' column set.
-            $qb->delete('openregister_audit_trails')
+            // Tombstone rather than delete: destroy the payload, keep the row
+            // and its chain links. `changed` holds the actual before/after
+            // data; user/session/request/ip are the personal identifiers a
+            // retention purge is meant to remove. Everything retained here is
+            // structural: which register/schema/object was acted on, when, and
+            // the hash pair that proves the row was not substituted.
+            $qb->update('openregister_audit_trails')
+                ->set('purged_at', $qb->createFunction('NOW()'))
+                ->set('changed', $qb->createNamedParameter(null))
+                ->set('user', $qb->createNamedParameter(null))
+                ->set('user_name', $qb->createNamedParameter(null))
+                ->set('session', $qb->createNamedParameter(null))
+                ->set('request', $qb->createNamedParameter(null))
+                ->set('ip_address', $qb->createNamedParameter(null))
                 ->where($qb->expr()->isNotNull('expires'))
-                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')))
+                ->andWhere($qb->expr()->isNull('purged_at'));
 
             // Execute the query and get the number of affected rows.
             $result = $qb->executeStatement();
 
-            // Return true if any rows were affected (i.e., any logs were deleted).
+            // Return true if any rows were affected (i.e., any logs were tombstoned).
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes.

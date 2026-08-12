@@ -46,7 +46,9 @@ use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -1231,7 +1233,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      */
     public function insert(Register $register, Schema $schema, array $data, array $config=[]): ObjectEntity
     {
-        [$source, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: false);
+        [, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: false);
 
         $values    = $this->writeValues(data: $data, columns: $columns, config: $config);
         $idColumns = $this->idColumns(config: $config);
@@ -1281,7 +1283,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      */
     public function update(Register $register, Schema $schema, string $id, array $data, array $config=[]): ObjectEntity
     {
-        [$source, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+        [, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: true);
 
         $idColumns = $this->idColumns(config: $config);
         $values    = $this->writeValues(data: $data, columns: $columns, config: $config);
@@ -1308,7 +1310,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         }
 
         if ($affected === 0) {
-            throw new \OCP\AppFramework\Db\DoesNotExistException('No external row matches id '.$id);
+            throw new DoesNotExistException('No external row matches id '.$id);
         }
 
         $updated = $this->find(register: $register, schema: $schema, id: $id, config: $config);
@@ -1336,7 +1338,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      */
     public function remove(Register $register, Schema $schema, string $id, array $config=[]): bool
     {
-        [$source, $connection] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+        [, $connection] = $this->writeContext(schema: $schema, config: $config, needsId: true);
 
         $idColumns = $this->idColumns(config: $config);
 
@@ -1379,7 +1381,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         );
 
         if (($config['isView'] ?? false) === true || $this->isQueryBacked(config: $config) === true) {
-            throw new \RuntimeException($readOnlyError);
+            throw new RuntimeException($readOnlyError);
         }
 
         if ($needsId === true && $this->idColumns(config: $config) === []) {
@@ -1389,12 +1391,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         $source = $this->resolveSource(config: $config);
         if ($source === null) {
             // Fail closed: an unresolvable source can never authorize a write.
-            throw new \RuntimeException($readOnlyError);
+            throw new RuntimeException($readOnlyError);
         }
 
         $authConfig = ($source->getAuthConfig() ?? []);
         if (($authConfig['writable'] ?? false) !== true) {
-            throw new \RuntimeException($readOnlyError);
+            throw new RuntimeException($readOnlyError);
         }
 
         try {

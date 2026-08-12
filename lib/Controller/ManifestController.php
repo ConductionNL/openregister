@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/manifest-user-context/tasks.md
+ * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-012
  *
  * @psalm-suppress UnusedClass
  */
@@ -49,7 +49,7 @@ use Throwable;
  * can still load a manifest and receive `runtime.user = null`; public pages
  * are filtered by nc-vue using that null signal.
  *
- * @spec openspec/changes/manifest-user-context/tasks.md
+ * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-012
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -89,7 +89,7 @@ class ManifestController extends Controller
      * @NoCSRFRequired
      * @PublicPage
      *
-     * @spec openspec/changes/manifest-user-context/tasks.md
+     * @spec openspec/specs/openregister-app-manifest/spec.md#req-or-man-012
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -143,7 +143,7 @@ class ManifestController extends Controller
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
      * @spec exclude Private helper: loads + JSON-decodes a host app's bundled manifest.json; the manifest endpoint
-     *              contract is owned by manifest-user-context/tasks.md.
+     *              contract is owned by openregister-app-manifest REQ-OR-MAN-012.
      */
     private function loadBundledManifest(string $appId): ?array
     {

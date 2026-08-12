@@ -5,6 +5,11 @@
     "description": "Mock KVK (Kamer van Koophandel) register with Disney-themed test data from the official KVK test environment, supplemented with realistic fictional Dutch businesses.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "KVK — Kamer van Koophandel (official KVK test environment)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "maatschappelijke-activiteit and vestiging are the KVK API's own resource names, and the seed data comes from KVK's official test environment. Renaming them makes a connector built here fail against the real KVK. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",

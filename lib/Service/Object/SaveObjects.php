@@ -363,7 +363,7 @@ class SaveObjects
                 $opType  = 'mixed-schema';
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 $opLabel,
                 [
                     'totalObjects' => count($objects),
@@ -628,11 +628,27 @@ class SaveObjects
         // controls a defence-in-depth schema check that authors opt in to
         // when they want bulk-import payloads to be schema-validated.
         $effectiveValidation = $_validation;
-        // Resolve default register/schema entities once for the loop. These
-        // are used when an individual object does not carry an explicit
-        // register/schema in `@self`.
-        $defaultRegister = $this->resolveSafeguardRegister(register: $register);
-        $defaultSchema   = $this->resolveSafeguardSchema(schema: $schema);
+        // Resolve the default schema entity once for the loop. It is used when
+        // an individual object does not carry an explicit schema in `@self`.
+        //
+        // "The caller named no schema" (mixed-schema bulk) and "the caller
+        // named a schema and it could not be loaded" are kept APART. Both used
+        // to arrive at the loop as a bare null, and the loop's `$rowSchema ===
+        // null` branch lets a row through UNCHECKED — so a transient failure
+        // inside `loadSchemaWithCache()` silently skipped the RBAC gate for
+        // every row of the batch while the write itself still went ahead (the
+        // fast path re-resolves `$schema` downstream). That is the fail-open
+        // shape CWE-863 describes: the caller read "could not resolve" as
+        // "nothing to check".
+        $defaultSchema           = null;
+        $defaultSchemaUnresolved = false;
+        if ($schema !== null && $schema !== 0 && $schema !== '0') {
+            try {
+                $defaultSchema = $this->loadSafeguardSchema(schema: $schema);
+            } catch (\Throwable $e) {
+                $defaultSchemaUnresolved = true;
+            }
+        }
 
         $passed = [];
         foreach ($objects as $index => $object) {
@@ -653,10 +669,25 @@ class SaveObjects
                 defaultSchema: $defaultSchema
             );
 
-            // No schema → can't enforce schema-bound rules. Allow through; the
-            // downstream prep will record an "invalid" with the proper error
-            // shape. This preserves wave-11 behaviour for malformed payloads.
+            // No schema → can't enforce schema-bound rules.
+            //
+            // A row that names no schema at all in a mixed-schema batch is a
+            // malformed payload: allow it through so the downstream prep
+            // records an "invalid" with the proper error shape (wave-11
+            // behaviour). But a row with no schema BECAUSE the schema the
+            // caller named could not be loaded is a different thing entirely —
+            // the RBAC gate below is the check, and skipping it is a decision
+            // to write without one. Refuse instead.
             if ($rowSchema === null) {
+                if ($effectiveRbac === true && $defaultSchemaUnresolved === true) {
+                    $this->recordSafeguardRejection(
+                        object: $sanitised,
+                        reason: 'Schema could not be resolved; refusing to write a row whose permissions cannot be checked.',
+                        result: $result
+                    );
+                    continue;
+                }
+
                 $passed[] = $sanitised;
                 continue;
             }
@@ -768,52 +799,34 @@ class SaveObjects
     }//end stripSelfInjectionFields()
 
     /**
-     * Resolve the register entity to use as the per-row default.
+     * Load the schema entity to use as the per-row default.
      *
-     * @param Register|string|int|null $register The bulk-call register argument.
+     * Deliberately does NOT catch. Its predecessor turned every failure into a
+     * null, and the caller's null branch meant "no schema-bound rules to
+     * enforce, let the row through" — so a load failure and a mixed-schema
+     * batch were indistinguishable, and the first one silently disabled the
+     * per-row RBAC check. The caller now catches and REFUSES those rows, which
+     * it can only do if the failure reaches it.
      *
-     * @return Register|null Resolved entity, or null if no default register was given.
+     * `resolveSafeguardRegister()` used to sit beside this one with the same
+     * catch-and-null shape. It is gone rather than fixed: its result was
+     * assigned to `$defaultRegister` and never read, so it enforced nothing
+     * either way.
+     *
+     * @param Schema|string|int $schema The bulk-call schema argument.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \Throwable When the schema cannot be loaded.
      */
-    private function resolveSafeguardRegister(Register|string|int|null $register): ?Register
+    private function loadSafeguardSchema(Schema|string|int $schema): Schema
     {
-        if ($register === null) {
-            return null;
-        }
-
-        if ($register instanceof Register === true) {
-            return $register;
-        }
-
-        try {
-            return $this->loadRegisterWithCache(registerId: $register);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end resolveSafeguardRegister()
-
-    /**
-     * Resolve the schema entity to use as the per-row default.
-     *
-     * @param Schema|string|int|null $schema The bulk-call schema argument (null = mixed-schema).
-     *
-     * @return Schema|null Resolved entity, or null for mixed-schema operations.
-     */
-    private function resolveSafeguardSchema(Schema|string|int|null $schema): ?Schema
-    {
-        if ($schema === null || $schema === 0 || $schema === '0') {
-            return null;
-        }
-
         if ($schema instanceof Schema === true) {
             return $schema;
         }
 
-        try {
-            return $this->loadSchemaWithCache(schemaId: $schema);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }//end resolveSafeguardSchema()
+        return $this->loadSchemaWithCache(schemaId: $schema);
+    }//end loadSafeguardSchema()
 
     /**
      * Determine which schema applies to a single bulk row.
@@ -892,6 +905,8 @@ class SaveObjects
         $result['statistics']['invalid']++;
         $result['statistics']['errors']++;
 
+        // Info: a safeguard REFUSED to write a row. A refusal is exactly the
+        // kind of thing someone comes to the log to find.
         $this->logger->info(
             message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
             context: ['file' => __FILE__, 'line' => __LINE__, 'reason' => $reason]
@@ -1294,7 +1309,7 @@ class SaveObjects
             $selfKeys = array_keys($object['@self']);
         }
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] DEBUG - Single schema object structure",
                 [
                     'available_keys'      => array_keys($object),
@@ -1312,7 +1327,7 @@ class SaveObjects
         $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schemaObj);
         $selfData['relations'] = $relations;
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Relations scanned in preparation (single schema)",
                 [
                     'uuid'             => $selfData['uuid'] ?? 'unknown',
@@ -1654,6 +1669,18 @@ class SaveObjects
             return;
         }
 
+        // A system operation withholds lifecycle events, exactly as the
+        // single-object path does in MagicMapper::suppressLifecycleEvents().
+        //
+        // This bulk path is the reason the first attempt at that gate did not
+        // work: gating MagicMapper's insert()/update() alone left the BULK
+        // dispatchers untouched, and a configuration import reaches objects
+        // through here too — so the fan-out carried on firing and the "fix"
+        // looked applied while eight apps kept waking per object.
+        if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+            return;
+        }
+
         // Created objects → ObjectCreatedEvent.
         foreach ($createdEntities as $entity) {
             try {
@@ -1777,7 +1804,7 @@ class SaveObjects
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null
     ): mixed {
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Using single-call bulk processing (no pre-lookup needed)",
                 [
                     'objects_to_process' => count($transformedObjects),
@@ -1898,7 +1925,7 @@ class SaveObjects
      */
     private function classifyDatabaseComputedResults(array $bulkResult, array &$result): array
     {
-        $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
+        $this->logger->debug("[SaveObjects] Processing complete objects with database-computed classification");
 
         $sideEffects = [
             'created' => [],
@@ -1974,7 +2001,7 @@ class SaveObjects
             }//end switch
         }//end foreach
 
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Database-computed classification completed",
                 [
                     'total_processed'       => count($bulkResult),
@@ -2004,7 +2031,7 @@ class SaveObjects
      */
     private function classifyLegacyResults(array $bulkResult, array $transformedObjects, array &$result): void
     {
-        $this->logger->info("[SaveObjects] Processing UUID array (legacy mode)");
+        $this->logger->debug("[SaveObjects] Processing UUID array (legacy mode)");
 
         // Fallback: Use traditional object reconstruction.
         $savedObjects = $this->reconstructSavedObjects(
@@ -2019,7 +2046,7 @@ class SaveObjects
             $result['statistics']['saved']++;
         }
 
-        $this->logger->info("[SaveObjects] Using fallback object reconstruction");
+        $this->logger->debug("[SaveObjects] Using fallback object reconstruction");
     }//end classifyLegacyResults()
 
     /**
@@ -2356,7 +2383,7 @@ class SaveObjects
             $selfData = $this->hydrateObjectMetadataFields(selfData: $selfData);
 
             // DEBUG: Log mixed schema object structure.
-            $this->logger->info(
+            $this->logger->debug(
                     "[SaveObjects] DEBUG - Mixed schema object structure",
                     [
                         'available_keys'      => array_keys($object),
@@ -2371,7 +2398,7 @@ class SaveObjects
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
             if (isset($selfData['relations']) === true && empty($selfData['relations']) === false) {
-                $this->logger->info(
+                $this->logger->debug(
                         "[SaveObjects] Relations already set from preparation",
                         [
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
@@ -2383,7 +2410,7 @@ class SaveObjects
                 $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
                 $selfData['relations'] = $relations;
 
-                $this->logger->info(
+                $this->logger->debug(
                         "[SaveObjects] Relations scanned in transformation",
                         [
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
@@ -2554,7 +2581,7 @@ class SaveObjects
     {
         if (isset($object['object']) === true && is_array($object['object']) === true) {
             // NEW STRUCTURE: object property contains business data.
-            $this->logger->info("[SaveObjects] Using object property for business data (mixed)");
+            $this->logger->debug("[SaveObjects] Using object property for business data (mixed)");
             return $object['object'];
         }
 
@@ -2582,7 +2609,7 @@ class SaveObjects
         }
 
         // CRITICAL DEBUG: Log what we're removing and what remains.
-        $this->logger->info(
+        $this->logger->debug(
                 "[SaveObjects] Metadata removal applied (mixed)",
                 [
                     'removed_fields'       => array_intersect($metadataFields, array_keys($object)),

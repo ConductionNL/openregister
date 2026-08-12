@@ -329,9 +329,17 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|401|403, array{error?: string,
-     *     total?: int, create?: int, update?: int, delete?: int, read?: int},
-     *     array<never, never>>
+     * Written as a UNION OF CONCRETE JSONResponse TYPES rather than one
+     * JSONResponse whose template arguments are themselves unions: the
+     * template parameters of JSONResponse are invariant, so a single
+     * `JSONResponse<200|401|403, array{error?: string, total?: int, ...}>`
+     * is satisfied by no return statement at all — not even the ones it
+     * was written to describe. One member per branch is the expressible
+     * form, and each member is the exact type its branch produces.
+     *
+     * @psalm-return JSONResponse<200, array{total: int, create: int, update: int, delete: int, read: int}, array{}>
+     *     |JSONResponse<401, array{error: string}, array{}>
+     *     |JSONResponse<403, array{error: string}, array{}>
      *
      * @spec exclude Read-only aggregation passthrough: delegates straight to
      *     AuditTrailMapper::getActionCounts() behind the shared admin gate and
@@ -653,6 +661,41 @@ class AuditTrailController extends Controller
             );
         }//end try
     }//end clearAll()
+
+    /**
+     * Report hash-chain seal coverage without verifying it.
+     *
+     * Backs the log-integrity card in admin settings. Separate from verify()
+     * because they cost wildly different amounts: this is three COUNT queries,
+     * verify() rehashes the entire table. Binding the page to verify() would
+     * make opening settings an expensive operation, and would tempt an admin to
+     * stop opening it.
+     *
+     * Admin-only at the framework level, matching verify()/export()/clearAll().
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Seal coverage counts.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function integrity(): JSONResponse
+    {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
+        try {
+            return new JSONResponse(data: $this->auditHashService->getIntegrityStatus());
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Integrity status failed: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }
+
+    }//end integrity()
 
     /**
      * Verify the integrity of the audit trail hash chain.

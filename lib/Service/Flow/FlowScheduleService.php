@@ -68,13 +68,13 @@ class FlowScheduleService
     /**
      * Constructor.
      *
-     * @param FlowResolverRegistry $resolvers Lists the scheduled flows every app owns.
-     * @param FlowRunService       $runs      Queues a run for a due flow.
-     * @param IAppConfig           $appConfig Remembers last-fire.
-     * @param LoggerInterface      $logger    The logger.
+     * @param FlowLocator     $resolvers Lists the scheduled flows every app owns.
+     * @param FlowRunService  $runs      Queues a run for a due flow.
+     * @param IAppConfig      $appConfig Remembers last-fire.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runs,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
@@ -149,7 +149,28 @@ class FlowScheduleService
                 $owner = (string) $owner;
             }
 
-            $this->fire(uuid: $uuid, now: $now, owner: $owner);
+            // Per flow, not around the loop. A refused flow must not stop the
+            // ones after it from firing — one broken definition silently
+            // disabling every later schedule is a far bigger outage than the
+            // one being reported, and it would present as "cron stopped
+            // working" rather than as a fault in a specific flow.
+            try {
+                $this->fire(uuid: $uuid, now: $now, owner: $owner);
+            } catch (FlowDeadEnd $e) {
+                // The refusal already recorded status/status_message on the
+                // flow itself, so the author can see why without reading logs.
+                $this->logger->warning(
+                    message: '[FlowSchedule] Skipping due flow — it is not runnable: '.$e->getMessage(),
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'flow'  => $uuid,
+                        'nodes' => $e->getNodeIds(),
+                    ]
+                );
+                continue;
+            }
+
             $fired[] = $uuid;
         }//end foreach
 

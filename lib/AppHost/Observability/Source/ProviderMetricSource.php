@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability\Source;
 
+use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
@@ -46,11 +47,13 @@ class ProviderMetricSource implements MetricSourceInterface
     /**
      * Constructor.
      *
-     * @param ContainerInterface $container DI container (alias lookup).
-     * @param LoggerInterface    $logger    PSR logger.
+     * @param ContainerInterface  $container DI container (fallback alias lookup).
+     * @param AppContainerLocator $locator   Reaches the calling app's own container.
+     * @param LoggerInterface     $logger    PSR logger.
      */
     public function __construct(
         private readonly ContainerInterface $container,
+        private readonly AppContainerLocator $locator,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -88,7 +91,7 @@ class ProviderMetricSource implements MetricSourceInterface
             // registrations (Nextcloud app containers are isolated). Resolving
             // against `$this->container` here silently returned [] for every
             // consuming app (same root cause as the MCP-provider fix, #390).
-            $container = $this->resolveAppContainer(appId: $appId);
+            $container = $this->locator->findOr(appId: $appId, fallback: $this->container);
 
             if ($container->has($alias) === false) {
                 return [];
@@ -115,40 +118,4 @@ class ProviderMetricSource implements MetricSourceInterface
             return [];
         }//end try
     }//end collect()
-
-    /**
-     * Resolve the calling app's OWN DI container so its
-     * `IMetricsProvider::<appId>` alias resolves from where the leaf app
-     * actually registered it (#390).
-     *
-     * Wraps `\OC::$server->getRegisteredAppContainer($appId)`, which throws
-     * when the app has no bootstrapped container. Fail-soft: on any error the
-     * OpenRegister container is returned so a single misbehaving app never
-     * fatals a metrics scrape (its alias simply will not resolve there).
-     *
-     * @param string $appId The calling app id.
-     *
-     * @return ContainerInterface The app's own container, or OpenRegister's as a fallback.
-     */
-    private function resolveAppContainer(string $appId): ContainerInterface
-    {
-        try {
-            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
-            // resolves the server container only. The sniff says this is removed in NC 34,
-            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
-            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
-            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
-            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
-            if ($appContainer instanceof ContainerInterface) {
-                return $appContainer;
-            }
-        } catch (Throwable $e) {
-            $this->logger->debug(
-                message: sprintf('[AppHost\\Metrics] no registered app container for "%s": %s', $appId, $e->getMessage()),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }//end try
-
-        return $this->container;
-    }//end resolveAppContainer()
 }//end class

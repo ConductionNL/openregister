@@ -36,9 +36,7 @@ namespace OCA\OpenRegister\Cron;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -85,6 +83,29 @@ class FlowRunWorker extends TimedJob
     private const DEFAULT_STALE_MINUTES = 15;
 
     /**
+     * The instance-wide runtime ceiling this reaper must not undercut.
+     *
+     * Kept in step with FlowRunService::DEFAULT_MAX_RUNTIME_MINUTES: the reaper
+     * reads the same setting so its patience is derived from what runs are
+     * actually allowed, rather than being a second, contradictory number.
+     *
+     * @var int
+     */
+    private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
+
+    /**
+     * Slack between a run's deadline and the reaper's.
+     *
+     * A run that hits its ceiling fails itself at the next checkpoint, which may
+     * be a little after the deadline. Reaping the instant the budget expires
+     * would race that, and produce the abandonment message for a run that was
+     * about to record a perfectly accurate one of its own.
+     *
+     * @var int
+     */
+    private const REAP_GRACE_MINUTES = 5;
+
+    /**
      * How long a run may sit in `queued` before it is too late to run it.
      *
      * A queued run says "do this now". Twenty-four hours later that is no
@@ -114,18 +135,16 @@ class FlowRunWorker extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory         $time      Job scheduling clock.
-     * @param FlowRunMapper        $mapper    Reads and prunes runs.
-     * @param FlowRunService       $runner    Executes a run.
-     * @param FlowResolverRegistry $resolvers Loads a run's flow and subject.
-     * @param IAppConfig           $appConfig Reads the retention setting.
-     * @param LoggerInterface      $logger    The logger.
+     * @param ITimeFactory    $time      Job scheduling clock.
+     * @param FlowRunMapper   $mapper    Reads and prunes runs.
+     * @param FlowRunAdvancer $advancer  Advances one run (shared with sync runs).
+     * @param IAppConfig      $appConfig Reads the retention setting.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
         ITimeFactory $time,
         private readonly FlowRunMapper $mapper,
-        private readonly FlowRunService $runner,
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowRunAdvancer $advancer,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
@@ -205,6 +224,28 @@ class FlowRunWorker extends TimedJob
             // An operator who runs very long single steps can switch the reaper
             // off rather than have it fail work that is still going.
             return;
+        }
+
+        // The reaper must never call a run abandoned while that run is still
+        // inside the time it was GRANTED. Those two numbers used to be set
+        // independently and contradicted each other by default: runs were allowed
+        // an hour and declared dead at fifteen minutes, so any walk between the
+        // two was failed while working perfectly — measured on the dev instance,
+        // a run reaped at 09:20 that went on to import everything it was asked
+        // for.
+        //
+        // The executor beats at every checkpoint, so a run that has gone quiet for
+        // longer than its whole budget really is gone. Waiting that long is the
+        // price of not being able to distinguish "dead" from "inside one long
+        // step" any faster.
+        $maxRuntime = (int) $this->appConfig->getValueString(
+            'openregister',
+            'flow_max_runtime_minutes',
+            (string) self::DEFAULT_MAX_RUNTIME_MINUTES
+        );
+
+        if ($maxRuntime > 0) {
+            $minutes = max($minutes, ($maxRuntime + self::REAP_GRACE_MINUTES));
         }
 
         $cutoff = (clone $now)->modify('-'.$minutes.' minutes');
@@ -310,76 +351,21 @@ class FlowRunWorker extends TimedJob
     /**
      * Advance one run, never letting its failure stop the batch.
      *
+     * The body lives in {@see FlowRunAdvancer} so a synchronous run executes
+     * through exactly this path rather than a parallel implementation that
+     * could drift from it.
+     *
      * @param FlowRun $run The run.
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is a pure value
-     * constructor with no state to inject; a factory collaborator would add a
-     * dependency to say the same thing.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
     private function advance(FlowRun $run): void
     {
-        try {
-            $flow = $this->resolvers->resolveFlow((string) $run->getFlowId());
-            if ($flow === null) {
-                // No installed app owns this flow — it was deleted, or the app
-                // that stored it was removed. The run cannot proceed; fail it
-                // with a clear reason rather than leaving it queued forever.
-                $run->setStatus(FlowRun::STATUS_FAILED);
-                $run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
-                $this->mapper->update($run);
-                return;
-            }
-
-            // A run may legitimately have no subject (a manual or webhook run
-            // seeded from its payload). Only resolve one when the run names it.
-            $subject = null;
-            if (trim((string) $run->getSubjectUuid()) !== '') {
-                $subject = $this->resolvers->resolveSubject(
-                    (string) $run->getSubjectUuid(),
-                    (string) $run->getSubjectRegister(),
-                    (string) $run->getSubjectSchema()
-                );
-
-                if ($subject === null) {
-                    $run->setStatus(FlowRun::STATUS_FAILED);
-                    $run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
-                    $this->mapper->update($run);
-                    return;
-                }
-            }
-
-            // A subjectless run still needs an object to carry the marking; a
-            // bare holder does, since the marking store keeps the marking on the
-            // run itself ({@see FlowRunMarkingStore}). Such a run is seeded from
-            // its payload instead of an object: a non-object trigger (a file, a
-            // user) puts what it is about under `payload` on the run context, and
-            // that becomes the first item, so the flow reads a file's path or a
-            // user's id exactly as it would an object's fields.
-            $seed = null;
-            if ($subject === null) {
-                $subject = new stdClass();
-                $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
-                if ($payload !== []) {
-                    $seed = [FlowItems::item(json: $payload)];
-                }
-            }
-
-            $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
-        } catch (Throwable $e) {
-            $this->logger->error(
-                message: '[FlowRunWorker] Failed to advance a run',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'run'   => $run->getUuid(),
-                    'error' => $e->getMessage(),
-                ]
-            );
-        }//end try
+        // Swallowing is deliberate here and NOT in the synchronous path: one
+        // poisoned run must not stop the queue draining for every other flow.
+        $this->advancer->advance(run: $run, rethrow: false);
 
     }//end advance()
 

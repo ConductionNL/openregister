@@ -303,7 +303,7 @@ class LanguageService
      *
      * @return string[] Ordered array of language codes (highest priority first)
      *
-     * @spec openspec/specs/register-i18n/spec.md#language-negotiation-accept-language (parses the Accept-Language
+     * @spec openspec/specs/register-i18n/spec.md#the-api-must-support-language-negotiation-via-accept-language-header (parses the Accept-Language
      *       header per RFC 9110, ordering language tags by descending q-value then appearance)
      */
     public static function parseAcceptLanguageHeader(string $headerValue): array

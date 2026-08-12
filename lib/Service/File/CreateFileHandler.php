@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
@@ -54,6 +54,16 @@ use Psr\Log\LoggerInterface;
  */
 class CreateFileHandler
 {
+
+    /**
+     * Number of leading bytes read from a stream resource for the magic-byte
+     * executable check. Executable signatures live at offset 0, so a small
+     * bounded prefix gives full parity with the string path without buffering
+     * the whole file into memory.
+     *
+     * @var int
+     */
+    private const EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH = 512;
 
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -102,7 +112,7 @@ class CreateFileHandler
      *
      * @param ObjectEntity|string      $objectEntity The object entity to add the file to.
      * @param string                   $fileName     The name of the file to create.
-     * @param string                   $content      The content to write to the file.
+     * @param string|resource          $content      File content: a byte string, or a readable stream resource.
      * @param bool                     $share        Whether to create a share link for the file.
      * @param array                    $tags         Optional array of tags to attach to the file.
      * @param int|string|Schema|null   $_schema      The register of the object to add the file to (unused).
@@ -127,7 +137,7 @@ class CreateFileHandler
     public function addFile(
         ObjectEntity|string $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[],
         Schema|int|string|null $_schema=null,
@@ -149,22 +159,28 @@ class CreateFileHandler
             // Use the new ID-based folder approach.
             $folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
 
-            // Check if content is a data URI and extract the base64 content.
-            if (str_starts_with($content, 'data:') === true) {
-                // Extract the base64 content from the data URI.
-                // Format: data:mime/type;base64,actual-base64-data.
-                $parts = explode(',', $content, 2);
-                if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
-                    $content = $parts[1];
+            // String-only preprocessing (data-URI extraction and base64 auto-decode)
+            // is skipped for a stream resource: the caller has already produced decoded
+            // bytes on the streamed (binary-download) path, so there is nothing to
+            // decode. This is a behaviour-preserving skip, not a security control.
+            if (is_resource($content) === false) {
+                // Check if content is a data URI and extract the base64 content.
+                if (str_starts_with($content, 'data:') === true) {
+                    // Extract the base64 content from the data URI.
+                    // Format: data:mime/type;base64,actual-base64-data.
+                    $parts = explode(',', $content, 2);
+                    if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
+                        $content = $parts[1];
+                    }
+
+                    // If it's not base64-encoded data URI, leave it as is (it might be URL-encoded).
                 }
 
-                // If it's not base64-encoded data URI, leave it as is (it might be URL-encoded).
-            }
-
-            // Check if the content is base64 encoded and decode it if necessary.
-            $decodedContent = base64_decode($content, true);
-            if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
-                $content = $decodedContent;
+                // Check if the content is base64 encoded and decode it if necessary.
+                $decodedContent = base64_decode($content, true);
+                if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
+                    $content = $decodedContent;
+                }
             }
 
             // Check if the file name is empty.
@@ -173,8 +189,17 @@ class CreateFileHandler
                 throw new Exception("Failed to create file because no filename has been provided for object ".$objectId);
             }
 
-            // Security: Block executable files.
-            $this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $content);
+            // Security: Block executable files. Executable magic-byte signatures live at
+            // offset 0, so on the streamed (resource) path we read a bounded prefix and
+            // rewind before writing — full parity with the string path at a fixed, small
+            // memory cost. A string is checked directly.
+            $execCheckBytes = $content;
+            if (is_resource($content) === true) {
+                $execCheckBytes = (string) fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
+                rewind($content);
+            }
+
+            $this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $execCheckBytes);
 
             // The newFile() call already enforces create permission on the folder; it
             // creates the node owned by the folder's mount owner (the openregister
@@ -238,11 +263,11 @@ class CreateFileHandler
      * be created. This is particularly useful for synchronization scenarios where you want
      * to "upsert" files.
      *
-     * @param ObjectEntity $objectEntity The object entity to save the file to.
-     * @param string       $fileName     The name of the file to save.
-     * @param string       $content      The content to write to the file.
-     * @param bool         $share        Whether to create a share link for the file (only for new files).
-     * @param array        $tags         Optional array of tags to attach to the file.
+     * @param ObjectEntity    $objectEntity The object entity to save the file to.
+     * @param string          $fileName     The name of the file to save.
+     * @param string|resource $content      File content: a byte string, or a readable stream resource.
+     * @param bool            $share        Whether to create a share link for the file (only for new files).
+     * @param array           $tags         Optional array of tags to attach to the file.
      *
      * @return File The saved file.
      *
@@ -259,7 +284,7 @@ class CreateFileHandler
     public function saveFile(
         ObjectEntity $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[]
     ): File {

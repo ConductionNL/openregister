@@ -176,16 +176,16 @@
 						<table class="performance-table">
 							<thead>
 								<tr>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Metric
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Current
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Target
 									</th>
-									<th class="performance-table-header">
+									<th scope="col" class="performance-table-header">
 										Status
 									</th>
 								</tr>
@@ -285,76 +285,14 @@
 		</SettingsSection>
 
 		<!-- Clear Cache Confirmation Dialog -->
-		<NcDialog
+		<ClearCacheDialog
 			v-if="showClearCacheConfirmation"
-			name="Clear Cache"
-			:can-close="!clearingCache"
-			@closing="hideClearCacheDialog">
-			<div class="clear-cache-dialog">
-				<div class="clear-cache-options">
-					<h3>🗑️ Clear Cache</h3>
-					<p class="warning-text">
-						Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.
-					</p>
-
-					<div class="cache-type-selection">
-						<h4>Cache Type:</h4>
-						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
-							name="cache_type"
-							value="all"
-							type="radio">
-							Clear All Cache (Recommended)
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
-							name="cache_type"
-							value="object"
-							type="radio">
-							Object Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
-							name="cache_type"
-							value="schema"
-							type="radio">
-							Schema Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
-							name="cache_type"
-							value="facet"
-							type="radio">
-							Facet Cache Only
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="clearCacheType"
-							name="cache_type"
-							value="distributed"
-							type="radio">
-							Distributed Cache Only
-						</NcCheckboxRadioSwitch>
-					</div>
-				</div>
-				<div class="dialog-actions">
-					<NcButton
-						:disabled="clearingCache"
-						@click="hideClearCacheDialog">
-						Cancel
-					</NcButton>
-					<NcButton
-						variant="error"
-						:disabled="clearingCache"
-						@click="performClearCache">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingCache" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingCache ? 'Clearing...' : 'Clear Cache' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:open="showClearCacheConfirmation"
+			:clearing="clearingCache"
+			:cache-type="clearCacheType"
+			@update:cache-type="clearCacheType = $event"
+			@closing="hideClearCacheDialog"
+			@confirm="performClearCache" />
 	</div>
 </template>
 
@@ -362,7 +300,8 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcDialog, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
+import { NcButton, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
@@ -371,10 +310,9 @@ export default {
 
 	components: {
 		SettingsSection,
+		ClearCacheDialog,
 		NcButton,
 		NcLoadingIcon,
-		NcDialog,
-		NcCheckboxRadioSwitch,
 		NcSelect,
 		Refresh,
 		Delete,
@@ -931,34 +869,6 @@ export default {
 
 .status-disabled {
 	color: var(--color-text-maxcontrast) !important;
-}
-
-/* Dialog styles */
-.clear-cache-dialog {
-	padding: 20px;
-}
-
-.clear-cache-options h3 {
-	margin: 0 0 16px 0;
-	color: var(--color-text-light);
-}
-
-.warning-text {
-	color: var(--color-text-light);
-	margin: 0 0 20px 0;
-	line-height: 1.5;
-}
-
-.cache-type-selection h4 {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 20px;
 }
 
 @media (max-width: 768px) {

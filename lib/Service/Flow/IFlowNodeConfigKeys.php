@@ -9,7 +9,7 @@
  * cannot answer "is anything here that I will silently ignore", and the second
  * question is the one that produced the measured failures.
  *
- * `StopNode::validateConfig()` has an empty body: it requires nothing, so it
+ * `EndNode::validateConfig()` has an empty body: it requires nothing, so it
  * accepts `{"status": "...", "reason": "..."}` — keys it never reads; it reads
  * `error` / `message` — and then stops the run with the generic "Flow stopped"
  * and `isError=false`. `SubFlowNode` requires only `flow`/`flowId`, so it

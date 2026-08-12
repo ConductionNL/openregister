@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use Psr\Log\LoggerInterface;
@@ -28,9 +28,9 @@ class FlowTriggerExecutionModeTest extends TestCase
     /**
      * Resolves flows wired to an event.
      *
-     * @var FlowResolverRegistry
+     * @var FlowLocator
      */
-    private FlowResolverRegistry $resolvers;
+    private FlowLocator $resolvers;
 
     /**
      * Queues and executes runs.
@@ -53,7 +53,7 @@ class FlowTriggerExecutionModeTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->resolvers = $this->createMock(FlowResolverRegistry::class);
+        $this->resolvers = $this->createMock(FlowLocator::class);
         $this->runs      = $this->createMock(FlowRunService::class);
 
         $this->service = new FlowTriggerService(

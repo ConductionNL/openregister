@@ -694,3 +694,54 @@ with a clear `NotPermittedException` rather than an opaque storage error.
 - **WHEN** `UpdateFileHandler` updates its content
 - **THEN** `File::putContent()` MUST be called with the new content
 
+### Requirement: Object and register folder provisioning
+
+`FileService` MUST expose the folder-provisioning entry points that the file
+pipeline and the object save path depend on, because files are always stored
+under a folder belonging to a `Register` or an `ObjectEntity`. Each entry point
+is a facade over `FolderManagementHandler`.
+
+- `FileService::createEntityFolder(Register|ObjectEntity $entity)` MUST be the
+  unified entry point: a `Register` MUST be dispatched to
+  `createRegisterFolderById()` and an `ObjectEntity` to `createObjectFolderById()`,
+  both with the current user resolved by `FileService::getCurrentUser()`. It MUST
+  re-throw `FolderAccessDeniedException` unchanged so the controller can map it to
+  HTTP 403 with a structured body (see the `self-folder-access-control` spec), and
+  it MUST log and return `null` for any other exception rather than propagating it.
+- `FileService::createFolder(string $folderPath)` MUST be an idempotent
+  get-or-create for a folder at `$folderPath`: the path MUST be trimmed of leading
+  and trailing `/`, the OpenRegister root folder MUST be created when absent —
+  creating the `openregister` group when that too is absent — and an existing
+  folder at the path MUST be returned as-is rather than replaced.
+- `FileService::createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null)`
+  MUST provision the object's folder beneath its register/schema folders and
+  return the folder ID **without** writing that ID back onto the entity, so a
+  caller can set the folder ID and persist the object in a single save.
+
+#### Scenario: Register and object dispatch to their own provisioning paths
+- **GIVEN** a `Register` and an `ObjectEntity`
+- **WHEN** `createEntityFolder()` is called with each in turn
+- **THEN** the `Register` MUST be routed to `createRegisterFolderById()` and the `ObjectEntity` to `createObjectFolderById()`
+
+#### Scenario: A folder access denial is not swallowed
+- **GIVEN** `createObjectFolderById()` throws `FolderAccessDeniedException`
+- **WHEN** `createEntityFolder()` handles it
+- **THEN** the exception MUST propagate unchanged
+- **AND** the method MUST NOT return `null`
+
+#### Scenario: Any other provisioning failure degrades to null
+- **GIVEN** the underlying provisioning throws a generic `Exception`
+- **WHEN** `createEntityFolder()` handles it
+- **THEN** the failure MUST be logged and `null` MUST be returned
+
+#### Scenario: Creating an existing folder returns the existing node
+- **GIVEN** a folder already exists at `$folderPath`
+- **WHEN** `createFolder($folderPath)` is called
+- **THEN** the existing folder node MUST be returned and MUST NOT be replaced
+
+#### Scenario: Folder ID is returned without mutating the entity
+- **GIVEN** an `ObjectEntity` with no folder yet
+- **WHEN** `createObjectFolderWithoutUpdate()` provisions its folder
+- **THEN** the new folder ID MUST be returned
+- **AND** the entity's own folder property MUST NOT have been written
+

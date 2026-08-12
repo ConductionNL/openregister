@@ -58,8 +58,6 @@ class Version1Date20260724000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null The updated schema, or null if no changes were needed
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
      * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper

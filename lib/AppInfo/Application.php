@@ -57,19 +57,13 @@ use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\UserService;
-use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
-use OCA\OpenRegister\Service\Objects\DeleteObject;
-use OCA\OpenRegister\Service\Objects\GetObject;
-use OCA\OpenRegister\Service\Objects\PerformanceHandler;
-use OCA\OpenRegister\Service\Objects\PermissionHandler;
-use OCA\OpenRegister\Service\Objects\RenderObject;
-use OCA\OpenRegister\Service\Objects\SaveObject;
-use OCA\OpenRegister\Service\Objects\SaveObject\FilePropertyHandler;
-use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
+// Thirteen imports from OCA\OpenRegister\Service\Objects\ stood here — a
+// namespace that DOES NOT EXIST. Those classes live under Service\Object\
+// (singular); the plural was left behind by the rename. Every one was unused, so
+// PHP never resolved them and they were inert — which is why nothing ever
+// failed. The first person to actually reference one would have got a fatal at
+// boot, in the app's own bootstrap, from a line that looks like every other
+// import in the file.
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService\FacetHandler;
@@ -84,7 +78,6 @@ use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
 use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
 use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
 use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -141,10 +134,11 @@ use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\EventCatalogListener;
-use OCA\OpenRegister\Listener\FlowActionListener;
+use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
@@ -306,6 +300,43 @@ use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\TimeProvider;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\AppHost\AppContainerLocator;
+use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
+use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
+use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
+use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
+use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
+use OCA\OpenRegister\Controller\AnalyticsSeriesController;
+use OCA\OpenRegister\Controller\CaseTokenController;
+use OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent;
+use OCA\OpenRegister\Service\AnalyticsSeriesService;
+use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
+use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
+use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
+use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
+use OCA\OpenRegister\Service\Schema\SchemaDiffService;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
+use OCA\OpenRegister\Service\WebPush\HexIconService;
 
 /**
  * Class Application
@@ -316,7 +347,7 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  * @package  OCA\OpenRegister\AppInfo
  *
  * @author  Nextcloud Dev Team
- * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
@@ -509,8 +540,23 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
             function () {
-                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+                return new NullNcOfficeConverter();
             }
+        );
+
+        // The loop node's step dispatcher. `IterateNode` resolves the INTERFACE
+        // — correctly, it should not know which dispatcher runs its body — but
+        // nothing ever bound it, and an interface cannot be instantiated. So
+        // every repeat step failed the moment it executed:
+        //
+        // > Could not resolve …\FlowStepDispatcher! Class can not be instantiated
+        //
+        // The node validated, appeared in the palette and drew on the canvas
+        // throughout, which is why this survived: nothing short of RUNNING a
+        // flow that contains one can see it, and no flow on the instance did.
+        $context->registerServiceAlias(
+            \OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
+            \OCA\OpenRegister\Service\Flow\RegistryStepDispatcher::class
         );
 
         // DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
@@ -524,7 +570,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner();
+                return new UnsignedPadesSigner();
             }
         );
 
@@ -535,7 +581,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry(
+                return new EvidenceSourceRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -551,13 +597,13 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider();
+                return new NullIdentityVerifyProvider();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry(
+                return new IdentityVerifyRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     default: $container->get(\OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class)
                 );
@@ -566,13 +612,13 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class,
             function () {
-                return new \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider();
+                return new NullRegulatorEscalateProvider();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry(
+                return new RegulatorEscalateRegistry(
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     default: $container->get(\OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class)
                 );
@@ -585,10 +631,10 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\WebPush\HexIconService::class,
             function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
-                return new \OCA\OpenRegister\Service\WebPush\HexIconService(
-                    $c->get(\OCP\App\IAppManager::class),
-                    $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
-                    $c->get(\Psr\Log\LoggerInterface::class)
+                return new HexIconService(
+                    appManager: $c->get(\OCP\App\IAppManager::class),
+                    appData: $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
+                    logger: $c->get(\Psr\Log\LoggerInterface::class)
                 );
             }
         );
@@ -599,7 +645,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
             function ($c) {
-                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry = new SourceFetcherRegistry();
                 $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
                 return $registry;
             }
@@ -612,9 +658,9 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
             function () {
-                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
-                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
-                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                return new SchemaImportService(
+                    detector: new DialectDetector(),
+                    merge: new ThreeWayMerge()
                 );
             }
         );
@@ -1163,7 +1209,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\TimeProvider::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                return new IntegrationTimeProvider(
                     appConfig: $container->get('OCP\IAppConfig')
                 );
             }
@@ -1454,7 +1500,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory(
+                return new DbalConnectionFactory(
                     credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -1464,7 +1510,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\SqlTypeMapper(
+                return new SqlTypeMapper(
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -1473,7 +1519,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService(
+                return new DatabaseIntrospectionService(
                     connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
                     typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
                     registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
@@ -1916,7 +1962,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\CaseTokenService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\CaseTokenService(
+                return new CaseTokenService(
                     mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
                     secureRandom: $container->get('OCP\Security\ISecureRandom'),
                     userSession: $container->get('OCP\IUserSession'),
@@ -1930,7 +1976,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Controller\CaseTokenController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                return new CaseTokenController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
@@ -1945,7 +1991,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                return new AnalyticsSeriesService(
                     mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
@@ -1959,7 +2005,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                return new AnalyticsSeriesController(
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
@@ -2320,19 +2366,19 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+                return new SchemaDiffService();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+                return new SchemaMigrationPlanner();
             }
         );
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                return new SchemaVersioningService(
                     diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
                     changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
@@ -2345,7 +2391,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                return new SchemaRevalidationService(
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
                     runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -2358,7 +2404,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                return new SchemaMigrationService(
                     planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
                     runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
                     runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
@@ -2393,13 +2439,18 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
         );
 
-        // Flow resolution. OpenRegister resolves flows stored as its own objects
-        // (a `flows` register / `flow` schema by default), so a flow can live in
-        // OpenRegister itself and not only in a consuming app — contributed
-        // through the same resolver event.
+        // Flow oversight. Apps contribute the checks that may STOP a run — a
+        // kill switch, a spend budget, a maintenance window — through the same
+        // idiom as flow nodes. The engine hardcodes none of them, which is what
+        // keeps app-specific safety logic out of it.
+        //
+        // There is deliberately no resolver event beside these two. Flows live
+        // in one native table, so "which app owns this flow id" has a single
+        // answer and `FlowLocator` reads it directly; the resolver registry
+        // existed only to arbitrate between per-app object stores.
         $context->registerEventListener(
-            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
-            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+            \OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent::class,
+            \OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
         );
 
         // Federated configuration sharing. Any app declares its shareable config
@@ -2487,6 +2538,15 @@ class Application extends App implements IBootstrap
         // steps are all approved. Registered immediately after
         // LifecycleValidationListener: transition legality must be established
         // before approval-chain gating runs against it.
+        // Declared flows (`x-openregister-flows`) are MATERIALISED into the flow
+        // store on schema save, because a flow lives in its own table rather
+        // than being read off the schema at runtime like every other
+        // x-openregister-* extension. Importing on save (not only on register
+        // import) means a declared flow and a builder-authored one land in the
+        // same place, and a re-import updates rather than duplicates.
+        $context->registerEventListener(SchemaCreatedEvent::class, SchemaFlowImportListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SchemaFlowImportListener::class);
+
         $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
@@ -2554,12 +2614,13 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-        // Declarative flow engine — runs x-openregister-flows actions (calendar
-        // agenda tasks, email, ...) declared on the schema when an object's
-        // create/update/delete lifecycle event fires.
-        $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+        // Object-CRUD flow triggers. These route through EventCatalogListener
+        // like every other catalog event, so there is ONE path from a dispatched
+        // event to a queued run — the action-list engine that used to handle
+        // create/update/delete separately is gone.
+        $context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
 
         // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
         // transition). Routed by EventCatalogListener so create/update/delete are
@@ -2598,6 +2659,18 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SourceUpdatedEvent::class,         SystemEntityNotificationListener::class);
         $context->registerEventListener(AgentCreatedEvent::class,          SystemEntityNotificationListener::class);
         $context->registerEventListener(AgentUpdatedEvent::class,          SystemEntityNotificationListener::class);
+
+        // Authorization cache eviction when the POLICY behind a memoised verdict
+        // is rewritten. PermissionHandler::clearInheritFromPublicCache() has
+        // always documented that "any path that mutates authorization and then
+        // re-reads it within the same request must bust this cache"; until this
+        // registration, nothing in production called it or its sibling
+        // clearPermissionCache(), so the invariant was stated and unenforced —
+        // in the repo every other app inherits its RBAC from.
+        $context->registerEventListener(SchemaUpdatedEvent::class,   AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class,   AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, AuthorizationCacheInvalidationListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, AuthorizationCacheInvalidationListener::class);
 
         // Aggregation cache eviction on every object write.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
@@ -2752,7 +2825,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\ManifestLoader::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\ManifestLoader(
+                return new ManifestLoader(
                     appManager: $container->get('OCP\App\IAppManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2762,12 +2835,13 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor(
+                return new HealthCheckExecutor(
                     db: $container->get('OCP\IDBConnection'),
                     tempManager: $container->get('OCP\ITempManager'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
                     container: $container,
+                    locator: $container->get(AppContainerLocator::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2776,7 +2850,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource(
+                return new ObjectMetricSource(
                     objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -2788,7 +2862,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource(
+                return new TableMetricSource(
                     db: $container->get('OCP\IDBConnection'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
@@ -2798,7 +2872,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource(
+                return new AppConfigMetricSource(
                     appConfig: $container->get('OCP\IAppConfig')
                 );
             }
@@ -2807,8 +2881,9 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource(
+                return new ProviderMetricSource(
                     container: $container,
+                    locator: $container->get(AppContainerLocator::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2817,14 +2892,14 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer();
+                return new PrometheusRenderer();
             }
         );
 
         $context->registerService(
             \OCA\OpenRegister\AppHost\Observability\MetricsEngine::class,
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Observability\MetricsEngine(
+                return new MetricsEngine(
                     objectSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
                     tableSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
                     appConfigSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
@@ -2861,7 +2936,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'AppHost\\Controller\\GenericHealthController',
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                return new GenericHealthController(
                     appName: self::APP_ID,
                     request: $container->get('OCP\IRequest'),
                     manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -2873,7 +2948,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'AppHost\\Controller\\GenericMetricsController',
             function (ContainerInterface $container) {
-                return new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                return new GenericMetricsController(
                     appName: self::APP_ID,
                     request: $container->get('OCP\IRequest'),
                     manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -3275,26 +3350,12 @@ class Application extends App implements IBootstrap
         string $appId,
         \Psr\Log\LoggerInterface $logger
     ): ?ContainerInterface {
-        try {
-            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
-            // resolves the server container only. The sniff says this is removed in NC 34,
-            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
-            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
-            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
-            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
-        } catch (\Throwable $e) {
-            $logger->debug(
-                '[Application] No registered app container',
-                ['appId' => $appId, 'error' => $e->getMessage()]
-            );
-            return null;
-        }
-
-        if ($appContainer instanceof ContainerInterface) {
-            return $appContainer;
-        }
-
-        return null;
+        // Delegated so the `\OC::$server` reach lives in exactly one place.
+        // It used to be inlined here AND in ProviderMetricSource AND in
+        // HealthCheckExecutor — three copies of one rule, none of them
+        // substitutable, which is what made the tests around them depend on
+        // which apps happened to be installed.
+        return (new AppContainerLocator(logger: $logger))->find(appId: $appId);
 
     }//end getRegisteredAppContainer()
 
@@ -3498,7 +3559,7 @@ class Application extends App implements IBootstrap
     ): void {
         try {
             $dispatcher = $container->get(\OCP\EventDispatcher\IEventDispatcher::class);
-            $event      = new \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent();
+            $event      = new RegisterMcpToolProvidersEvent();
             $dispatcher->dispatchTyped($event);
 
             $seen = [];

@@ -168,6 +168,17 @@ It is enforced by a test, not just asserted.
 An email invitation carries no object data in the message. The recipient follows
 it to reach the object, so revoking still works after the mail has been sent.
 
+Links and invitations appear in the same list as the principal grants, and are
+revoked the same way — `GET .../shares` reports them, and `DELETE
+.../shares/{shareId}` withdraws them. They are listed but **not** grantable:
+`POST .../shares` with `type: "link"` is refused, because a link is created by
+the link endpoint above, with the rules that belong to it.
+
+That split matters. While the listing covered principals only, a public link
+could be minted and never seen again — the panel showed nothing, so there was no
+revoke control, and withdrawing it meant raw SQL or core's Files UI. A capability
+you cannot see is a capability you cannot revoke.
+
 ---
 
 ## What sharing an object also shares
@@ -201,6 +212,50 @@ The whole rule, as one line:
 ```
 owner OR admin OR ((not private OR granted to me) AND the schema's rules)
 ```
+
+---
+
+## Upgrading: flows became private
+
+One shipped schema changed behaviour when this landed, so an existing instance
+sees a difference on `occ upgrade` without anybody editing anything.
+
+The `flow` schema previously carried **no** authorization block. Under
+OpenRegister's RBAC an absent block means "no schema-level restriction", so every
+authenticated user in the tenant could list, read, edit and delete every other
+user's flows. It now declares `scope: private`, plus the four action rules that
+keep the capability exactly as it was — any authenticated user may still author
+flows. What narrowed is *which* flows those verbs see: your own, plus anything
+granted to you.
+
+**What breaks.** Anything that relied on tenant-wide flow visibility. A user who
+did not create a flow no longer sees it in the list or through
+`GET /api/objects/{flowRegister}/{flowSchema}`, and gets a **404**, not a 403 —
+deliberately, because a distinguishable 403 is an id-enumeration oracle. Team
+flows that were shared only *by being visible to everyone* are the case to look
+for; they were never actually shared.
+
+**What to do.** Grant them, once, with the primitive documented above:
+
+```
+POST /api/objects/{register}/{schema}/{flowId}/shares
+     { "type": "group", "shareWith": "flow-authors", "permissions": 1 }
+```
+
+`permissions: 1` (read) restores list and read visibility; add `update` /
+`delete` bits for a principal that should also maintain the flow. The
+[Shares tab](#grants-inviting-one-principal-to-one-object) on the flow's detail
+page does the same thing without a request.
+
+**How it lands.** The existing `ImportFlowRegister` repair step applies it on
+`occ upgrade` — no manual import, no `--force`. The import gate is
+content-authoritative rather than version-gated: it compares `properties`,
+`required` *and* `authorization`, so the block applies even on an instance whose
+stored schema version already matches the descriptor's.
+
+To see the effect before upgrading, list the flows whose owner is not the person
+who needs them; that set is exactly what will need a grant afterwards. The full
+entry, including the reasoning, is in `CHANGELOG.md` under **Breaking Changes**.
 
 ---
 
