@@ -51,9 +51,41 @@ class FederationController extends Controller
     /**
      * Confidentiality values treated as public (servable through a schema share).
      *
+     * The empty string is present deliberately: an object that never had a
+     * confidentiality set is public. That is also why reading the WRONG
+     * property name fails OPEN rather than closed — see CONFIDENTIALITY_KEYS.
+     *
      * @var string[]
      */
     private const PUBLIC_CONFIDENTIALITY = ['', 'openbaar', 'public', 'open'];
+
+    /**
+     * Every property name under which this one concept is stored.
+     *
+     * One concept, three spellings, written by three different producers:
+     *
+     *   - `confidentiality`              — what this controller has always read;
+     *   - `confidentialityLevel`         — what the ZGW migration mapping pack
+     *                                      writes (SeedZgwZakenMigrationPack maps
+     *                                      `/vertrouwelijkheidaanduiding` to it);
+     *   - `vertrouwelijkheidaanduiding`  — the ZGW/GGM schema property itself.
+     *
+     * Reading only the first is not a cosmetic miss. `?? ''` yields the empty
+     * string for an object that stores its level under either of the other two,
+     * and the empty string is in PUBLIC_CONFIDENTIALITY above — so an object
+     * marked `zeer_geheim` under a name this guard did not read was served as
+     * public. The guard failed OPEN on a vocabulary mismatch.
+     *
+     * Ordered most- to least-canonical; the first key actually present wins.
+     * Adding a spelling here is safe, removing one is not.
+     *
+     * @var string[]
+     */
+    private const CONFIDENTIALITY_KEYS = [
+        'confidentiality',
+        'confidentialityLevel',
+        'vertrouwelijkheidaanduiding',
+    ];
 
     /**
      * Constructor.
@@ -602,7 +634,7 @@ class FederationController extends Controller
                     // Confidentiality guard for non-object scopes (object shares
                     // serve exactly the one object the sharer chose).
                     if ($share->getScope() !== 'object') {
-                        $confidentiality = strtolower((string) ($object['confidentiality'] ?? ''));
+                        $confidentiality = $this->readConfidentiality(object: $object);
                         if (in_array($confidentiality, self::PUBLIC_CONFIDENTIALITY, true) === false) {
                             return false;
                         }
@@ -613,6 +645,36 @@ class FederationController extends Controller
             )
         );
     }//end applyShareVisibility()
+
+    /**
+     * Read an object's confidentiality under any of its known property names.
+     *
+     * Returns the lowercased value of the FIRST key in CONFIDENTIALITY_KEYS that
+     * is present and non-empty, or '' when the object genuinely carries none.
+     *
+     * "Present and non-empty", not merely present: a schema sync can add an
+     * empty column for a property before anything writes to it, and an empty
+     * `confidentiality` sitting in front of a populated `confidentialityLevel`
+     * would reinstate exactly the fail-open this method exists to close.
+     *
+     * @param array<string, mixed> $object The rendered object.
+     *
+     * @return string Lowercased confidentiality, or '' when none is set.
+     *
+     * @spec openspec/specs/federation/spec.md
+     */
+    private function readConfidentiality(array $object): string
+    {
+        foreach (self::CONFIDENTIALITY_KEYS as $key) {
+            $value = strtolower(trim((string) ($object[$key] ?? '')));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+
+    }//end readConfidentiality()
 
     /**
      * Extract the trailing uuid from a canonical object uri (or return it as-is).
