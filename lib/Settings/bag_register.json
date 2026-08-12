@@ -5,6 +5,11 @@
     "description": "Mock BAG (Basisregistratie Adressen en Gebouwen) register with realistic Dutch address and building data from PDOK",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "BAG — Basisregistratie Adressen en Gebouwen (PDOK)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "Every schema and property name here is BAG's own. nummeraanduiding, verblijfsobject and pand are the standard's object types. This register exists so a connector developed against it works against the real BAG, so internationalising these names destroys the only property that makes it useful. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",

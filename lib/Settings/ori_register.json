@@ -5,6 +5,11 @@
     "description": "Mock ORI (Open Raadsinformatie) register with fictional council data for the municipality of Voorbeeldstad. Based on the VNG ODS-Open-Raadsinformatie specification and Open State Foundation data model.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "ORI — VNG ODS-Open-Raadsinformatie specification (Open State Foundation data model)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "vergadering, agendapunt, raadsdocument, stemming, raadslid and fractie are the ODS specification's own object types. ⚠️ procest declares the same six slugs in its own operational ori_register.json, and $ref slug resolution is instance-global — the two must be resolved together at fleet level, not renamed on one side. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",
