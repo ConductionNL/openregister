@@ -77,6 +77,29 @@ class FlowNodeRegistry
     ];
 
     /**
+     * The rename map, for the one caller that has to REWRITE rather than resolve.
+     *
+     * Resolution is this class's job and stays here. `MigrateRenamedFlowNodeTypes`
+     * exists to make the alias table redundant — it rewrites stored definitions
+     * to the new names — and it must not carry a second copy of the pairs, or
+     * removing an alias here would leave the migration rewriting a name nothing
+     * answers to.
+     *
+     * Reading it from here also makes the retirement order right by
+     * construction: drop a pair from `RENAMED` and the migration stops
+     * rewriting it in the same commit.
+     *
+     * @return array<string, string> Old type id => new type id.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    public static function renamedTypes(): array
+    {
+        return self::RENAMED;
+
+    }//end renamedTypes()
+
+    /**
      * Whether contribution has already been collected this request.
      *
      * @var boolean

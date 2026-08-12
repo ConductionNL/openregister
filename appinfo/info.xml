@@ -123,6 +123,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- Rewrite before the index is derived: the index is built FROM node
+			     types, so the types should already be the current ones. -->
+			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
@@ -141,6 +144,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<!-- Rewrite before the index is derived: the index is built FROM node
+			     types, so the types should already be the current ones. -->
+			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
