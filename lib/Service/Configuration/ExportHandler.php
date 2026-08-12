@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -403,8 +404,84 @@ class ExportHandler
             }//end foreach
         }//end if
 
+        // Declare the RBAC groups this configuration depends on, in the OAS-native
+        // slot. Without this the export is LOSSY: OasService emits the same scope
+        // map for API consumers, but the configuration document never carried it,
+        // so exporting a register and re-importing it silently dropped every group
+        // declaration and left the importer nothing to provision.
+        $openApiSpec = $this->attachDeclaredScopes(openApiSpec: $openApiSpec);
+
         return $openApiSpec;
     }//end exportConfig()
+
+    /**
+     * Attach the declared-group scope map to an exported configuration document.
+     *
+     * Group ids come from the exported registers and schemas themselves, so the
+     * map can never drift from the authorization blocks it accompanies. Reserved
+     * principals are re-added for parity with {@see \OCA\OpenRegister\Service\OasService}:
+     * `admin` is always a valid scope, and `public` is emitted only when the
+     * configuration actually grants anonymous access.
+     *
+     * @param array<string, mixed> $openApiSpec The assembled export document.
+     *
+     * @return array<string, mixed> The document with `components.securitySchemes` populated.
+     *
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     */
+    private function attachDeclaredScopes(array $openApiSpec): array
+    {
+        $collector = new RbacGroupCollector();
+
+        $raw = array_merge(
+            $collector->fromAuthorizationOwners(owners: ($openApiSpec['components']['registers'] ?? [])),
+            $collector->fromSchemaDefinitions(schemas: ($openApiSpec['components']['schemas'] ?? []))
+        );
+
+        $groups = $collector->provisionable(groups: $raw);
+
+        // `admin` always has access to every operation; `public` only appears when
+        // the configuration itself named it as a principal.
+        $scopeNames = array_merge(['admin'], $groups);
+        if (in_array('public', $raw, true) === true) {
+            $scopeNames[] = 'public';
+        }
+
+        $scopes = [];
+        foreach ($scopeNames as $group) {
+            $scopes[$group] = $this->describeScope(group: $group);
+        }
+
+        $openApiSpec['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
+
+        return $openApiSpec;
+    }//end attachDeclaredScopes()
+
+    /**
+     * Human-readable description for one OAuth2 scope.
+     *
+     * Mirrors {@see \OCA\OpenRegister\Service\OasService::getScopeDescription()} so
+     * an exported configuration and a generated API spec describe the same group
+     * identically.
+     *
+     * @param string $group The Nextcloud group id.
+     *
+     * @return string The scope description.
+     *
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     */
+    private function describeScope(string $group): string
+    {
+        if ($group === 'admin') {
+            return 'Full administrative access';
+        }
+
+        if ($group === 'public') {
+            return 'Public (unauthenticated) access';
+        }
+
+        return 'Access for '.$group.' group';
+    }//end describeScope()
 
     /**
      * Export a register to OpenAPI format.

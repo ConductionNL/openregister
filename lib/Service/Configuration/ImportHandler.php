@@ -50,6 +50,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 
+use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
+use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -278,6 +280,23 @@ class ImportHandler
     private ?IUserManager $userManager = null;
 
     /**
+     * Optional provisioner that creates the Nextcloud groups this configuration
+     * declares. Null on hosts where it could not be resolved — provisioning is
+     * then skipped and the import proceeds unchanged.
+     *
+     * @var GroupProvisioner|null
+     */
+    private ?GroupProvisioner $groupProvisioner = null;
+
+    /**
+     * Collector for declared RBAC group ids. Dependency-free value object,
+     * created lazily via {@see self::rbacGroupCollector()}.
+     *
+     * @var RbacGroupCollector|null
+     */
+    private ?RbacGroupCollector $rbacGroupCollector = null;
+
+    /**
      * Constructor for ImportHandler.
      *
      * @param SchemaMapper                                       $schemaMapper         The schema mapper.
@@ -456,6 +475,91 @@ class ImportHandler
     {
         $this->userManager = $userManager;
     }//end setUserManager()
+
+    /**
+     * Set the declared-group provisioner.
+     *
+     * Optional: when null, imports run exactly as before and declare no groups.
+     *
+     * @param GroupProvisioner|null $groupProvisioner Optional group provisioner.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     */
+    public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void
+    {
+        $this->groupProvisioner = $groupProvisioner;
+    }//end setGroupProvisioner()
+
+    /**
+     * Lazily resolve the dependency-free RBAC group collector.
+     *
+     * @return RbacGroupCollector The collector instance.
+     *
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     */
+    private function rbacGroupCollector(): RbacGroupCollector
+    {
+        if ($this->rbacGroupCollector === null) {
+            $this->rbacGroupCollector = new RbacGroupCollector();
+        }
+
+        return $this->rbacGroupCollector;
+    }//end rbacGroupCollector()
+
+    /**
+     * Create every Nextcloud group this configuration declares.
+     *
+     * Runs BEFORE the content-hash skip check on purpose. Provisioning is a
+     * membership-free `groupExists()`/`createGroup()` pass, so re-running it on
+     * an unchanged configuration costs one existence check per group — and
+     * placing it after the skip would mean a group an administrator deleted by
+     * hand is never restored, because the very configuration that declares it
+     * is the one being skipped.
+     *
+     * The declared set is persisted to app config so the reconciler can restore
+     * groups for apps whose declaration is not readable from disk (a virtual
+     * OpenBuild app ships no `register.json`).
+     *
+     * Never throws: a configuration import that succeeded must not be reported
+     * as failed because a group backend refused a write.
+     *
+     * @param array<string, mixed> $data  The decoded configuration document.
+     * @param string|null          $appId The declaring app id, when known.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/declared-group-provisioning/specs/rbac-scopes/spec.md
+     */
+    private function provisionDeclaredGroups(array $data, ?string $appId): void
+    {
+        if ($this->groupProvisioner === null) {
+            return;
+        }
+
+        try {
+            $declared = $this->rbacGroupCollector()->fromDocument(document: $data);
+            if (empty($declared) === true) {
+                return;
+            }
+
+            $this->groupProvisioner->provision(groups: $declared, declaredBy: ($appId ?? 'unknown'));
+
+            if ($appId !== null) {
+                $this->appConfig->setValueString(
+                    'openregister',
+                    "declared_groups_{$appId}",
+                    json_encode(array_values($declared))
+                );
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                message: '[ImportHandler] declared-group provisioning failed: '.$e->getMessage(),
+                context: ['exception' => $e, 'appId' => $appId]
+            );
+        }//end try
+    }//end provisionDeclaredGroups()
 
     /**
      * Resolve the acting user for import-time object/folder operations.
@@ -1976,6 +2080,12 @@ class ImportHandler
         // for the post-import store, so an unchanged release always produces an
         // identical hash on the next run.
         $definitionHash = $this->computeDefinitionHash(data: $data);
+
+        // Create the Nextcloud groups this configuration declares. Deliberately
+        // ahead of the content-hash skip below: the skip means "the stored data
+        // already matches", which says nothing about whether the GROUPS those
+        // authorization blocks name still exist.
+        $this->provisionDeclaredGroups(data: $data, appId: $appId);
 
         // Perform version check if appId and version are available (unless force is enabled).
         if ($appId !== null && $version !== null && $force === false) {
