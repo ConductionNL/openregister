@@ -94,6 +94,12 @@ const setup = {
 				externalId: { type: 'integer' },
 				status: { type: 'string' },
 				note: { type: 'string' },
+				// Only the synchronization case writes `email`: it maps the source
+				// record's fields straight across, while every other case sets an
+				// explicit field list that has never included one. That makes an
+				// email-bearing row an unambiguous fingerprint of the sync having
+				// run, which a shared `status` value could not be.
+				email: { type: 'string' },
 			},
 		}, [
 			"pm.collectionVariables.set('schema', pm.response.json().id)",
@@ -134,6 +140,29 @@ const setup = {
 		// persist happily and are then ignored by the call path, so the source
 		// reads as correctly configured while every call it makes comes back
 		// 401 — measured against the notifications endpoint.
+		// Synchronizations are OpenRegister OBJECTS, like sources — there is no
+		// /apps/openconnector/api/synchronizations route and it answers 404.
+		//
+		// AFTER the external source, because it references it. Created before it,
+		// `{{extSource}}` is still the empty string, the object persists happily
+		// with a blank sourceId, and the failure surfaces two folders later as
+		// "sourceId of synchronization cannot be empty" from inside the run.
+		req('create synchronization', 'POST', '/apps/openregister/api/objects/openconnector/synchronization', {
+			name: 'flow-engine-sync-{{stamp}}',
+			sourceId: '{{extSource}}',
+			sourceType: 'api',
+			// resultsPosition '_root' means "the body IS the array". /users returns a
+			// bare array, and without it every run dies on "Cannot determine the
+			// position of objects in the return body."
+			sourceConfig: { endpoint: '/users', resultsPosition: '_root' },
+			targetType: 'register/schema',
+			targetId: '{{register}}/{{schema}}',
+		}, [
+			"const b = pm.response.json()",
+			"pm.collectionVariables.set('synchronization', (b['@self'] && b['@self'].id) || b.id || '')",
+			"pm.test('synchronization created', () => pm.expect(pm.collectionVariables.get('synchronization')).to.be.a('string'))",
+			"pm.test('synchronization carries its source', () => pm.expect(String(b.sourceId || ''), 'a blank sourceId persists fine and only fails at run time').to.not.eql(''))",
+		]),
 		req('create nextcloud source', 'POST', '/apps/openregister/api/objects/openconnector/source', {
 			name: 'flow-engine-nc-{{stamp}}',
 			location: 'http://localhost',
@@ -319,6 +348,14 @@ const caseFolder = (c) => {
 							'})',
 						]
 						: []),
+					...(c.expect.present !== undefined
+						? [
+							`const bearingField = objects.filter((o) => String(o[${JSON.stringify(c.expect.present.name)}] || '') !== '')`,
+							`pm.test('${c.key}: at least ${c.expect.present.atLeast} row(s) carry ${c.expect.present.name}', () => {`,
+							`    pm.expect(bearingField.length, 'the run was green but imported nothing').to.be.at.least(${c.expect.present.atLeast})`,
+							'})',
+						]
+						: []),
 					...(c.expect.step !== undefined
 						? [
 							`const named = steps.filter((s) => s.transition === ${JSON.stringify(c.expect.step.node)})[0]`,
@@ -401,6 +438,9 @@ const teardown = {
 		req('delete register', 'DELETE', '/apps/openregister/api/registers/{{register}}', undefined, [
 			"pm.test('register deleted', () => pm.expect([200, 204, 404], JSON.stringify(pm.response.json())).to.include(pm.response.code))",
 		]),
+		req('delete synchronization', 'DELETE', '/apps/openregister/api/objects/openconnector/synchronization/{{synchronization}}', undefined, [
+			"pm.test('synchronization deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
+		]),
 		req('delete mapping', 'DELETE', '/apps/openregister/api/mappings/{{mappingId}}', undefined, [
 			"pm.test('mapping deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
 		]),
@@ -443,6 +483,7 @@ const collection = {
 		{ key: 'agent', value: '' },
 		{ key: 'mappingId', value: '' },
 		{ key: 'mappingUuid', value: '' },
+		{ key: 'synchronization', value: '' },
 		{ key: 'flows', value: '' },
 		{ key: 'deleteQueue', value: '[]' },
 		{ key: 'deleteHead', value: '' },
