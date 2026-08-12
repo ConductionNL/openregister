@@ -317,4 +317,19 @@ export const CASES = [
 		// set would have demanded exactly that broken behaviour.
 		expect: { terminal: ['suspended'], step: { node: 'wa1', status: 'suspended' } },
 	},
+	{
+		key: 'synchronization-run',
+		title: '15 — Run a configured synchronization from a flow',
+		description: 'Hand a whole configured synchronization to one node and let it import the collection.',
+		nodes: [
+			{ id: 't1', type: 'openregister.trigger-manual', config: {} },
+			{ id: 'sr1', type: 'openconnector.synchronization-run', config: { synchronization: '{{synchronization}}' } },
+			{ id: 'e1', type: 'openregister.end', config: {} },
+		],
+		edges: [{ id: 'a', from: 't1', to: 'sr1' }, { id: 'b', from: 'sr1', to: 'e1' }],
+		// jsonplaceholder /users is a fixed fixture of 10, and only this case writes
+		// `email` — every other case sets an explicit field list without one. So the
+		// count of email-bearing rows is this node's effect and nobody else's.
+		expect: { present: { name: 'email', atLeast: 10 } },
+	},
 ]
