@@ -40,45 +40,134 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
+use Throwable;
 
 /**
  * Adds `openregister_flows.comment`.
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class Version1Date20260812100000 extends SimpleMigrationStep {
-	/**
-	 * Add the comment column.
-	 *
-	 * @param IOutput $output Migration output.
-	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-	 * @param array $options Migration options.
-	 *
-	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/*
-		 * @var ISchemaWrapper $schema
-		 */
+class Version1Date20260812100000 extends SimpleMigrationStep
+{
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Used to index the existing sharded tables.
+     */
+    public function __construct(private readonly IDBConnection $connection)
+    {
 
-		$schema = $schemaClosure();
+    }//end __construct()
 
-		if ($schema->hasTable('openregister_flows') === false) {
-			return null;
-		}
+    /**
+     * Add the two identity indexes to the sharded tables ALREADY on disk.
+     *
+     * `MagicMapper::createTableIndexes()` gained `_slug` and `_uri`, but it only
+     * runs on the table-creation path — every table already stored keeps the old
+     * index set, which is most of them on any instance that has been used.
+     *
+     * Why it matters: the single-object read ORs all four identity columns
+     * together (`_id OR _uuid OR _slug OR _uri`), and Postgres will not use an
+     * index for a disjunction unless it can use one for EVERY branch. With two
+     * of the four unindexed it served a primary-key-shaped read as a sequential
+     * scan. Measured on the contract register (2,962 rows): 2.5ms as a Seq Scan
+     * against 0.107ms by `_uuid` alone, and the plan becomes a BitmapOr across
+     * all four once both indexes exist.
+     *
+     * Per-table try/catch on purpose: a single table that refuses an index —
+     * `_uri` is TEXT, and btree rejects an entry over roughly 8KB — must not
+     * abort the migration and leave the remaining tables unindexed. The failure
+     * is reported and the sweep continues.
+     *
+     * @param IOutput $output        Migration output.
+     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+     * @param array   $options       Migration options.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+        $platform = $this->connection->getDatabasePlatform();
+        if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+            // `CREATE INDEX IF NOT EXISTS` is Postgres-only, and this mirrors
+            // createTableIndexes(), which makes the same assumption.
+            $output->info('Skipping sharded-table identity indexes: PostgreSQL only.');
+            return;
+        }
 
-		$table = $schema->getTable('openregister_flows');
+        $tables = $this->connection->executeQuery(
+            "SELECT tablename FROM pg_tables WHERE tablename LIKE '%openregister\\_table\\_%'"
+        )->fetchAll();
 
-		if ($table->hasColumn('comment') === true) {
-			return null;
-		}
+        $indexed = 0;
+        $failed  = 0;
+        foreach ($tables as $row) {
+            $table = ($row['tablename'] ?? '');
+            if ($table === '') {
+                continue;
+            }
 
-		$table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
+            foreach (['slug', 'uri'] as $column) {
+                try {
+                    $this->connection->executeStatement(
+                        'CREATE INDEX IF NOT EXISTS "'.$table.'_'.$column.'_idx" ON "'.$table.'" (_'.$column.')'
+                    );
+                    $indexed++;
+                } catch (Throwable $e) {
+                    $failed++;
+                    $output->warning('Could not index '.$table.'._'.$column.': '.$e->getMessage());
+                }
+            }
+        }
 
-		return $schema;
-	}//end changeSchema()
+        $output->info(
+            sprintf(
+                'Sharded-table identity indexes: %d created or already present across %d table(s), %d refused.',
+                $indexed,
+                count($tables),
+                $failed
+            )
+        );
+
+    }//end postSchemaChange()
+
+    /**
+     * Add the comment column.
+     *
+     * @param IOutput $output        Migration output.
+     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+     * @param array   $options       Migration options.
+     *
+     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+     *
+     * @spec openspec/specs/flow-engine/spec.md
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
+        $schema = $schemaClosure();
+
+        if ($schema->hasTable('openregister_flows') === false) {
+            return null;
+        }
+
+        $table = $schema->getTable('openregister_flows');
+
+        if ($table->hasColumn('comment') === true) {
+            return null;
+        }
+
+        $table->addColumn('comment', Types::TEXT, ['notnull' => false, 'default' => null]);
+
+        return $schema;
+
+    }//end changeSchema()
 }//end class
