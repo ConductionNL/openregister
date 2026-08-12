@@ -549,7 +549,7 @@ class Application extends App implements IBootstrap
         // nothing ever bound it, and an interface cannot be instantiated. So
         // every repeat step failed the moment it executed:
         //
-        //   Could not resolve …\FlowStepDispatcher! Class can not be instantiated
+        // > Could not resolve …\FlowStepDispatcher! Class can not be instantiated
         //
         // The node validated, appeared in the palette and drew on the canvas
         // throughout, which is why this survived: nothing short of RUNNING a
