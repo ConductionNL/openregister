@@ -74,9 +74,17 @@ class FlowRunAdvancer
      *
      * @throws Throwable When $rethrow is true and the run could not be advanced.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is a pure value
-     * constructor with no state to inject; a factory collaborator would add a
-     * dependency to say the same thing.
+     * FlowItems::item is a pure value constructor with no state to inject; a
+     * factory collaborator would add a dependency to say the same thing.
+     *
+     * $rethrow selects who handles a failure, not what the method does. The cron
+     * worker must swallow and record it so one bad run cannot stop the queue; a
+     * synchronous run must let it out so the caller's HTTP response can carry it.
+     * Splitting that into two methods would duplicate the whole advance path to
+     * vary its final catch block.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */

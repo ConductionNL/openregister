@@ -1441,6 +1441,11 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
      * @return array<int, array{property: string, value: mixed}> The pairs.
      *
      * @throws UnexpectedValueException When a pair is malformed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branches are one per
+     * REJECTED shape, each with its own message naming what the author wrote and
+     * what to write instead. Collapsing them would trade a specific diagnostic
+     * for a generic one on a config that is authored by hand.
      */
     private function matchPairs(array $config): array
     {

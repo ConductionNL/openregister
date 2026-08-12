@@ -230,6 +230,11 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
      *
      * @return array<int, mixed> The items the source runs against.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is the item
+     * constructor every node in the engine uses. Injecting a factory here would
+     * give the engine two ways to build an item and no way to tell which one a
+     * node used.
+     *
      * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
      */
     private function seedFor(int $index, array $upstream, array $iteration): array

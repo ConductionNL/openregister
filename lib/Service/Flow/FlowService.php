@@ -50,6 +50,14 @@ use Throwable;
 /**
  * Reads, writes and runs flows on behalf of a request.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The service is the single seam
+ * between the flow API and the five stores a flow touches — flows, runs, steps,
+ * state and the resolvers — plus the advancer that executes one. Splitting it to
+ * satisfy the count would only move the same collaborators behind a facade that
+ * itself depends on all of them.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
+ * an injected collaborator; Nextcloud's container wires them by type.
+ *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowService
@@ -474,6 +482,11 @@ class FlowService
      *
      * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
      * @throws FlowDeadEnd          When a node's token has nowhere to go, so the run is refused.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $sync chooses WHO advances the
+     * run, not what running means: the same run row is queued either way, and
+     * synchronously this method simply advances it itself instead of leaving it
+     * for the cron worker. Two methods would be two names for one operation.
      *
      * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
