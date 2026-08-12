@@ -34,6 +34,16 @@ parameters:
         # hiding a finding.
         - lib/ContextChat/ContentProvider.php
 
+        # `vendor-bin` USED to be excluded by the shared base. It left the base in
+        # conduction/hydra-gates v1.7.3, because a conditional path has no spelling
+        # that is safe on both PHPStan majors: plain aborts 2.x (it validates the
+        # entry), the `(?)` marker makes NEON parse it as an entity and aborts 2.x
+        # differently, and quoting stops 1.x stripping the marker so the exclusion
+        # silently matches nothing. openregister is the ONLY fleet app that has this
+        # directory, so it carries the path itself — where it exists, needs no
+        # marker, and behaves identically on 1.x and 2.x.
+        - vendor-bin
+
     ignoreErrors:
         # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
         # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
