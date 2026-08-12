@@ -40,78 +40,75 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20260511130000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema — add the context column.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null if no changes
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260511130000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema — add the context column.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null if no changes
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_messages') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_messages') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_messages');
+		$table = $schema->getTable(tableName: 'openregister_messages');
 
-        if ($table->hasColumn(name: 'context') === true) {
-            // Column already exists — idempotent.
-            return null;
-        }
+		if ($table->hasColumn(name: 'context') === true) {
+			// Column already exists — idempotent.
+			return null;
+		}
 
-        $table->addColumn(
-            name: 'context',
-            typeName: Types::TEXT,
-            options: [
-                'notnull' => false,
-                'default' => '{}',
-                'comment' => 'CnAiContext JSON snapshot at the time the user message was sent',
-            ]
-        );
+		$table->addColumn(
+			name: 'context',
+			typeName: Types::TEXT,
+			options: [
+				'notnull' => false,
+				'default' => '{}',
+				'comment' => 'CnAiContext JSON snapshot at the time the user message was sent',
+			]
+		);
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Rollback: remove the context column.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper Updated schema or null if no changes
-     */
-    public function down(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Rollback: remove the context column.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper Updated schema or null if no changes
+	 */
+	public function down(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_messages') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_messages') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_messages');
+		$table = $schema->getTable(tableName: 'openregister_messages');
 
-        if ($table->hasColumn(name: 'context') === false) {
-            return null;
-        }
+		if ($table->hasColumn(name: 'context') === false) {
+			return null;
+		}
 
-        $table->dropColumn(name: 'context');
+		$table->dropColumn(name: 'context');
 
-        return $schema;
-    }//end down()
+		return $schema;
+	}//end down()
 }//end class

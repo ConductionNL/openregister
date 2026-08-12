@@ -42,74 +42,71 @@ use OCP\Migration\SimpleMigrationStep;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
-class Version1Date20251201120000 extends SimpleMigrationStep
-{
-    /**
-     * Change database schema
-     *
-     * @param IOutput $output        Output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251201120000 extends SimpleMigrationStep {
+	/**
+	 * Change database schema
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Add organisation column to openregister_views table.
-        if ($schema->hasTable('openregister_views') === true) {
-            $table = $schema->getTable('openregister_views');
+		// Add organisation column to openregister_views table.
+		if ($schema->hasTable('openregister_views') === true) {
+			$table = $schema->getTable('openregister_views');
 
-            // Add organisation column if it doesn't exist.
-            if ($table->hasColumn('organisation') === false) {
-                $output->info('🔧 Adding organisation column to openregister_views table...');
+			// Add organisation column if it doesn't exist.
+			if ($table->hasColumn('organisation') === false) {
+				$output->info('🔧 Adding organisation column to openregister_views table...');
 
-                $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
-                        'notnull' => false,
-                        'length'  => 36,
-                        'default' => null,
-                        'comment' => 'Organisation UUID for multi-tenancy',
-                    ]
-                );
+				$table->addColumn(
+					'organisation',
+					Types::STRING,
+					[
+						'notnull' => false,
+						'length' => 36,
+						'default' => null,
+						'comment' => 'Organisation UUID for multi-tenancy',
+					]
+				);
 
-                // Add index for performance.
-                $table->addIndex(['organisation'], 'views_organisation_index');
+				// Add index for performance.
+				$table->addIndex(['organisation'], 'views_organisation_index');
 
-                $output->info('✅ Added organisation column to openregister_views table');
-            }
+				$output->info('✅ Added organisation column to openregister_views table');
+			}
 
-            if ($table->hasColumn('organisation') === true) {
-                $output->info('ℹ️  Organisation column already exists in openregister_views table');
-            }//end if
-        }//end if
+			if ($table->hasColumn('organisation') === true) {
+				$output->info('ℹ️  Organisation column already exists in openregister_views table');
+			}//end if
+		}//end if
 
-        if ($schema->hasTable('openregister_views') === false) {
-            $output->info('ℹ️  openregister_views table does not exist, skipping...');
-        }
+		if ($schema->hasTable('openregister_views') === false) {
+			$output->info('ℹ️  openregister_views table does not exist, skipping...');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema change hook
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info('✅ Views multi-tenancy migration complete');
-        $output->info('   Views can now be filtered by organisation');
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change hook
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info('✅ Views multi-tenancy migration complete');
+		$output->info('   Views can now be filtered by organisation');
+	}//end postSchemaChange()
 }//end class

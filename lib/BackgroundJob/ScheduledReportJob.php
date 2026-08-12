@@ -48,99 +48,97 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class ScheduledReportJob extends TimedJob
-{
+class ScheduledReportJob extends TimedJob {
 
-    /**
-     * Hourly cadence — runs once every hour, so due reports are caught
-     * within an hour of their period elapsing (and any downtime is caught
-     * up on the next tick — see ScheduledReportService::isDue()).
-     *
-     * @var int
-     */
-    private const RUN_INTERVAL_SECONDS = 3600;
+	/**
+	 * Hourly cadence — runs once every hour, so due reports are caught
+	 * within an hour of their period elapsing (and any downtime is caught
+	 * up on the next tick — see ScheduledReportService::isDue()).
+	 *
+	 * @var int
+	 */
+	private const RUN_INTERVAL_SECONDS = 3600;
 
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory           $time    Time factory.
-     * @param ScheduledReportMapper  $mapper  Scheduled report mapper.
-     * @param ScheduledReportService $service Due-check + execution logic.
-     * @param LoggerInterface        $logger  Logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ScheduledReportMapper $mapper,
-        private readonly ScheduledReportService $service,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
+	 * @param ScheduledReportService $service Due-check + execution logic.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ScheduledReportMapper $mapper,
+		private readonly ScheduledReportService $service,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
+	}//end __construct()
 
-    /**
-     * Drive the scheduled report deliveries.
-     *
-     * @param mixed $argument Job arguments (unused).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    protected function run($argument): void
-    {
-        $candidates = [];
-        try {
-            $candidates = $this->mapper->findEnabled();
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[ScheduledReportJob] Failed to enumerate enabled scheduled reports',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return;
-        }
+	/**
+	 * Drive the scheduled report deliveries.
+	 *
+	 * @param mixed $argument Job arguments (unused).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	protected function run($argument): void {
+		$candidates = [];
+		try {
+			$candidates = $this->mapper->findEnabled();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ScheduledReportJob] Failed to enumerate enabled scheduled reports',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return;
+		}
 
-        $now  = new DateTime();
-        $ran  = 0;
-        $skip = 0;
-        foreach ($candidates as $report) {
-            if ($this->service->isDue(report: $report, now: $now) === false) {
-                $skip++;
-                continue;
-            }
+		$now = new DateTime();
+		$ran = 0;
+		$skip = 0;
+		foreach ($candidates as $report) {
+			if ($this->service->isDue(report: $report, now: $now) === false) {
+				$skip++;
+				continue;
+			}
 
-            try {
-                // Per-report isolation: ScheduledReportService::runOne() already
-                // catches everything internally and never throws, but this
-                // try/catch is defence in depth so an unexpected error in a
-                // future refactor still can't abort the batch (mirrors
-                // ReportRenderJob::run()'s per-dashboard loop).
-                $this->service->runOne(report: $report);
-                $ran++;
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[ScheduledReportJob] Run failed for scheduled report',
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'reportId' => $report->getId(),
-                        'error'    => $e->getMessage(),
-                    ]
-                );
-            }
-        }//end foreach
+			try {
+				// Per-report isolation: ScheduledReportService::runOne() already
+				// catches everything internally and never throws, but this
+				// try/catch is defence in depth so an unexpected error in a
+				// future refactor still can't abort the batch (mirrors
+				// ReportRenderJob::run()'s per-dashboard loop).
+				$this->service->runOne(report: $report);
+				$ran++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[ScheduledReportJob] Run failed for scheduled report',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'reportId' => $report->getId(),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
 
-        $this->logger->info(
-            message: '[ScheduledReportJob] Scheduled-report pass complete',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'candidates' => count($candidates),
-                'ran'        => $ran,
-                'skipped'    => $skip,
-            ]
-        );
-    }//end run()
+		$this->logger->info(
+			message: '[ScheduledReportJob] Scheduled-report pass complete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'candidates' => count($candidates),
+				'ran' => $ran,
+				'skipped' => $skip,
+			]
+		);
+	}//end run()
 }//end class

@@ -38,75 +38,73 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class TenantDeprovisionJob extends TimedJob
-{
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory           $time                   Time factory
-     * @param OrganisationMapper     $organisationMapper     Organisation mapper
-     * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
-     * @param LoggerInterface        $logger                 Logger
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly OrganisationMapper $organisationMapper,
-        private readonly TenantLifecycleService $tenantLifecycleService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        // Run every hour.
-        $this->setInterval(seconds: 3600);
-    }//end __construct()
+class TenantDeprovisionJob extends TimedJob {
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly OrganisationMapper $organisationMapper,
+		private readonly TenantLifecycleService $tenantLifecycleService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		// Run every hour.
+		$this->setInterval(seconds: 3600);
+	}//end __construct()
 
-    /**
-     * Execute the background job.
-     *
-     * @param mixed $argument Job argument (unused)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
-     * @spec openspec/specs/tenant-lifecycle/spec.md
-     */
-    protected function run(mixed $argument): void
-    {
-        $this->logger->info('[TenantDeprovisionJob] Starting deprovisioning check');
+	/**
+	 * Execute the background job.
+	 *
+	 * @param mixed $argument Job argument (unused)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
+	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 */
+	protected function run(mixed $argument): void {
+		$this->logger->info('[TenantDeprovisionJob] Starting deprovisioning check');
 
-        try {
-            $organisations = $this->organisationMapper->findAll(
-                filters: ['status' => TenantLifecycleService::STATUS_DEPROVISIONING]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                '[TenantDeprovisionJob] Failed to query deprovisioning organisations',
-                ['error' => $e->getMessage()]
-            );
-            return;
-        }
+		try {
+			$organisations = $this->organisationMapper->findAll(
+				filters: ['status' => TenantLifecycleService::STATUS_DEPROVISIONING]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'[TenantDeprovisionJob] Failed to query deprovisioning organisations',
+				['error' => $e->getMessage()]
+			);
+			return;
+		}
 
-        foreach ($organisations as $organisation) {
-            try {
-                // Transition to archived — actual data cleanup is handled by
-                // the purge job after the retention period expires.
-                $this->tenantLifecycleService->archive($organisation);
+		foreach ($organisations as $organisation) {
+			try {
+				// Transition to archived — actual data cleanup is handled by
+				// the purge job after the retention period expires.
+				$this->tenantLifecycleService->archive($organisation);
 
-                $this->logger->info(
-                    '[TenantDeprovisionJob] Organisation archived',
-                    ['uuid' => $organisation->getUuid()]
-                );
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    '[TenantDeprovisionJob] Failed to archive organisation',
-                    ['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
-                );
-            }
-        }
+				$this->logger->info(
+					'[TenantDeprovisionJob] Organisation archived',
+					['uuid' => $organisation->getUuid()]
+				);
+			} catch (\Exception $e) {
+				$this->logger->error(
+					'[TenantDeprovisionJob] Failed to archive organisation',
+					['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
+				);
+			}
+		}
 
-        $this->logger->info(
-            '[TenantDeprovisionJob] Completed, processed '.count($organisations).' organisations'
-        );
-    }//end run()
+		$this->logger->info(
+			'[TenantDeprovisionJob] Completed, processed ' . count($organisations) . ' organisations'
+		);
+	}//end run()
 }//end class

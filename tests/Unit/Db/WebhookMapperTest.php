@@ -18,43 +18,39 @@ use PHPUnit\Framework\TestCase;
  * with mocked dependencies. Most methods are DB-heavy and require
  * integration tests; here we verify wiring only.
  */
-class WebhookMapperTest extends TestCase
-{
-    private IDBConnection&MockObject $db;
-    private OrganisationMapper&MockObject $organisationMapper;
-    private IUserSession&MockObject $userSession;
-    private IGroupManager&MockObject $groupManager;
-    private IAppConfig&MockObject $appConfig;
-    private WebhookMapper $mapper;
+class WebhookMapperTest extends TestCase {
+	private IDBConnection&MockObject $db;
+	private OrganisationMapper&MockObject $organisationMapper;
+	private IUserSession&MockObject $userSession;
+	private IGroupManager&MockObject $groupManager;
+	private IAppConfig&MockObject $appConfig;
+	private WebhookMapper $mapper;
 
-    protected function setUp(): void
-    {
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
+	protected function setUp(): void {
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
 
-        $this->mapper = new WebhookMapper(
-            $this->db,
-            $this->organisationMapper,
-            $this->userSession,
-            $this->groupManager,
-            $this->appConfig
-        );
-    }
+		$this->mapper = new WebhookMapper(
+			$this->db,
+			$this->organisationMapper,
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig
+		);
+	}
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Construction
+	// -------------------------------------------------------------------------
 
-    public function testConstructorCreatesInstance(): void
-    {
-        $this->assertInstanceOf(WebhookMapper::class, $this->mapper);
-    }
+	public function testConstructorCreatesInstance(): void {
+		$this->assertInstanceOf(WebhookMapper::class, $this->mapper);
+	}
 
-    public function testGetTableNameReturnsCorrectValue(): void
-    {
-        $this->assertStringContainsString('openregister_webhooks', $this->mapper->getTableName());
-    }
+	public function testGetTableNameReturnsCorrectValue(): void {
+		$this->assertStringContainsString('openregister_webhooks', $this->mapper->getTableName());
+	}
 }

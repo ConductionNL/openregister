@@ -27,13 +27,13 @@ declare(strict_types=1);
 // Doctrine\DBAL\ParameterType  (backed enum in DBAL 4.x)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\ParameterType::class) === false
-    && interface_exists(\Doctrine\DBAL\ParameterType::class) === false
+	&& interface_exists(\Doctrine\DBAL\ParameterType::class) === false
 ) {
-    // DBAL 4 turned this into a backed int enum.  The OCP IQueryBuilder
-    // interface uses it only for constant initialisation
-    // (PARAM_NULL = ParameterType::NULL, etc.) so the stub only needs to
-    // expose the correct enum cases with integer values that match DBAL 4.
-    eval('namespace Doctrine\DBAL;
+	// DBAL 4 turned this into a backed int enum.  The OCP IQueryBuilder
+	// interface uses it only for constant initialisation
+	// (PARAM_NULL = ParameterType::NULL, etc.) so the stub only needs to
+	// expose the correct enum cases with integer values that match DBAL 4.
+	eval('namespace Doctrine\DBAL;
     enum ParameterType: int {
         case NULL         = 0;
         case INTEGER      = 1;
@@ -48,9 +48,9 @@ if (class_exists(\Doctrine\DBAL\ParameterType::class) === false
 // Doctrine\DBAL\ArrayParameterType  (backed enum in DBAL 4.x)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\ArrayParameterType::class) === false
-    && interface_exists(\Doctrine\DBAL\ArrayParameterType::class) === false
+	&& interface_exists(\Doctrine\DBAL\ArrayParameterType::class) === false
 ) {
-    eval('namespace Doctrine\DBAL;
+	eval('namespace Doctrine\DBAL;
     enum ArrayParameterType: int {
         case INTEGER = 101;
         case STRING  = 102;
@@ -63,7 +63,7 @@ if (class_exists(\Doctrine\DBAL\ArrayParameterType::class) === false
 // Doctrine\DBAL\Types\Types  (class with string constants in DBAL 3+)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Types\Types::class) === false) {
-    eval('namespace Doctrine\DBAL\Types;
+	eval('namespace Doctrine\DBAL\Types;
     final class Types {
         public const ARRAY              = "array";
         public const ASCII_STRING       = "ascii_string";
@@ -97,7 +97,7 @@ if (class_exists(\Doctrine\DBAL\Types\Types::class) === false) {
 // Doctrine\DBAL\Exception
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Exception::class) === false) {
-    eval('namespace Doctrine\DBAL;
+	eval('namespace Doctrine\DBAL;
     class Exception extends \RuntimeException {}');
 }//end if
 
@@ -105,7 +105,7 @@ if (class_exists(\Doctrine\DBAL\Exception::class) === false) {
 // Doctrine\DBAL\Connection  (used only in type-hints / @throws)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Connection::class) === false) {
-    eval('namespace Doctrine\DBAL;
+	eval('namespace Doctrine\DBAL;
     class Connection {}');
 }//end if
 
@@ -113,7 +113,7 @@ if (class_exists(\Doctrine\DBAL\Connection::class) === false) {
 // Doctrine\DBAL\Platforms\AbstractPlatform
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Platforms\AbstractPlatform::class) === false) {
-    eval('namespace Doctrine\DBAL\Platforms;
+	eval('namespace Doctrine\DBAL\Platforms;
     abstract class AbstractPlatform {
         /** @deprecated */
         public function getName(): string { return ""; }
@@ -126,7 +126,7 @@ if (class_exists(\Doctrine\DBAL\Platforms\AbstractPlatform::class) === false) {
 // IExpressionBuilder interface constants.
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Query\Expression\ExpressionBuilder::class) === false) {
-    eval('namespace Doctrine\DBAL\Query\Expression;
+	eval('namespace Doctrine\DBAL\Query\Expression;
     class ExpressionBuilder {
         public const EQ  = "=";
         public const NEQ = "<>";
@@ -141,7 +141,7 @@ if (class_exists(\Doctrine\DBAL\Query\Expression\ExpressionBuilder::class) === f
 // Doctrine\DBAL\Schema\Schema
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Schema\Schema::class) === false) {
-    eval('namespace Doctrine\DBAL\Schema;
+	eval('namespace Doctrine\DBAL\Schema;
     class Schema {}');
 }//end if
 
@@ -149,7 +149,7 @@ if (class_exists(\Doctrine\DBAL\Schema\Schema::class) === false) {
 // Doctrine\DBAL\Types\Type
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Types\Type::class) === false) {
-    eval('namespace Doctrine\DBAL\Types;
+	eval('namespace Doctrine\DBAL\Types;
     abstract class Type {}');
 }//end if
 
@@ -157,19 +157,19 @@ if (class_exists(\Doctrine\DBAL\Types\Type::class) === false) {
 // Doctrine\DBAL\Platforms\* — various platform stubs for mocking
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class) === false) {
-    eval('namespace Doctrine\DBAL\Platforms;
+	eval('namespace Doctrine\DBAL\Platforms;
     class PostgreSQLPlatform extends AbstractPlatform {}');
 }//end if
 if (class_exists(\Doctrine\DBAL\Platforms\MySQLPlatform::class) === false) {
-    eval('namespace Doctrine\DBAL\Platforms;
+	eval('namespace Doctrine\DBAL\Platforms;
     class MySQLPlatform extends AbstractPlatform {}');
 }//end if
 if (class_exists(\Doctrine\DBAL\Platforms\MariaDBPlatform::class) === false) {
-    eval('namespace Doctrine\DBAL\Platforms;
+	eval('namespace Doctrine\DBAL\Platforms;
     class MariaDBPlatform extends AbstractPlatform {}');
 }//end if
 if (class_exists(\Doctrine\DBAL\Platforms\SqlitePlatform::class) === false) {
-    eval('namespace Doctrine\DBAL\Platforms;
+	eval('namespace Doctrine\DBAL\Platforms;
     class SqlitePlatform extends AbstractPlatform {}');
 }//end if
 
@@ -177,7 +177,7 @@ if (class_exists(\Doctrine\DBAL\Platforms\SqlitePlatform::class) === false) {
 // Doctrine\DBAL\Query\QueryBuilder  (used in mocks)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Query\QueryBuilder::class) === false) {
-    eval('namespace Doctrine\DBAL\Query;
+	eval('namespace Doctrine\DBAL\Query;
     class QueryBuilder {}');
 }//end if
 
@@ -185,7 +185,7 @@ if (class_exists(\Doctrine\DBAL\Query\QueryBuilder::class) === false) {
 // Doctrine\DBAL\Schema\Table  (used in mocks for migration tests)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Schema\Table::class) === false) {
-    eval('namespace Doctrine\DBAL\Schema;
+	eval('namespace Doctrine\DBAL\Schema;
     class Table {
         public function hasColumn(string $name): bool { return false; }
         /** @return static|Column */
@@ -206,7 +206,7 @@ if (class_exists(\Doctrine\DBAL\Schema\Table::class) === false) {
 // Doctrine\DBAL\Schema\Column  (used by Table stub and mocks)
 // -----------------------------------------------------------------
 if (class_exists(\Doctrine\DBAL\Schema\Column::class) === false) {
-    eval('namespace Doctrine\DBAL\Schema;
+	eval('namespace Doctrine\DBAL\Schema;
     class Column {
         private string $name;
         private string $type;
@@ -226,9 +226,9 @@ if (class_exists(\Doctrine\DBAL\Schema\Column::class) === false) {
 // Doctrine\DBAL\Logging\SQLLogger
 // -----------------------------------------------------------------
 if (interface_exists(\Doctrine\DBAL\Logging\SQLLogger::class) === false
-    && class_exists(\Doctrine\DBAL\Logging\SQLLogger::class) === false
+	&& class_exists(\Doctrine\DBAL\Logging\SQLLogger::class) === false
 ) {
-    eval('namespace Doctrine\DBAL\Logging;
+	eval('namespace Doctrine\DBAL\Logging;
     interface SQLLogger {
         public function startQuery($sql, ?array $params = null, ?array $types = null): void;
         public function stopQuery(): void;

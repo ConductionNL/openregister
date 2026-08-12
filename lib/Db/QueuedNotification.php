@@ -65,139 +65,134 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class QueuedNotification extends Entity implements JsonSerializable
-{
+class QueuedNotification extends Entity implements JsonSerializable {
 
-    /**
-     * `reason` value when the row was queued because the recipient is
-     * inside an active quiet-hours delivery window.
-     */
-    public const REASON_QUIET_HOURS = 'quiet-hours';
+	/**
+	 * `reason` value when the row was queued because the recipient is
+	 * inside an active quiet-hours delivery window.
+	 */
+	public const REASON_QUIET_HOURS = 'quiet-hours';
 
-    /**
-     * `reason` value when the row was queued because the rule's fixed-time
-     * `digest` schedule has not yet reached its next fire time.
-     */
-    public const REASON_DIGEST_SCHEDULE = 'digest-schedule';
+	/**
+	 * `reason` value when the row was queued because the rule's fixed-time
+	 * `digest` schedule has not yet reached its next fire time.
+	 */
+	public const REASON_DIGEST_SCHEDULE = 'digest-schedule';
 
-    /**
-     * `reason` value when BOTH conditions applied at enqueue time (the
-     * recipient was inside their window AND the rule's digest schedule
-     * had not yet fired). Flush still waits for both to clear.
-     */
-    public const REASON_BOTH = 'quiet-hours+digest-schedule';
+	/**
+	 * `reason` value when BOTH conditions applied at enqueue time (the
+	 * recipient was inside their window AND the rule's digest schedule
+	 * had not yet fired). Flush still waits for both to clear.
+	 */
+	public const REASON_BOTH = 'quiet-hours+digest-schedule';
 
-    /**
-     * Owning schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * Owning schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * Notification annotation key (rule key in `x-openregister-notifications`).
-     *
-     * @var string|null
-     */
-    protected ?string $ruleKey = null;
+	/**
+	 * Notification annotation key (rule key in `x-openregister-notifications`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $ruleKey = null;
 
-    /**
-     * Recipient user UID.
-     *
-     * @var string|null
-     */
-    protected ?string $recipient = null;
+	/**
+	 * Recipient user UID.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $recipient = null;
 
-    /**
-     * Why the row was queued: `quiet-hours` | `digest-schedule` |
-     * `quiet-hours+digest-schedule`. Advisory only — the flush job always
-     * re-evaluates live rather than trusting this label (see design.md
-     * "Live re-evaluation at flush time").
-     *
-     * @var string|null
-     */
-    protected ?string $reason = null;
+	/**
+	 * Why the row was queued: `quiet-hours` | `digest-schedule` |
+	 * `quiet-hours+digest-schedule`. Advisory only — the flush job always
+	 * re-evaluates live rather than trusting this label (see design.md
+	 * "Live re-evaluation at flush time").
+	 *
+	 * @var string|null
+	 */
+	protected ?string $reason = null;
 
-    /**
-     * The triggering object's UUID, when applicable.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The triggering object's UUID, when applicable.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * Pre-resolved subject/message/channels/context, JSON-encoded, so the
-     * eventual flush does not need to re-run recipient/template resolution.
-     *
-     * @var string|null
-     */
-    protected ?string $payload = null;
+	/**
+	 * Pre-resolved subject/message/channels/context, JSON-encoded, so the
+	 * eventual flush does not need to re-run recipient/template resolution.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $payload = null;
 
-    /**
-     * Advisory "roughly when this should flush" timestamp, for operator
-     * visibility only — never the sole flush trigger (see design.md).
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $dueAtHint = null;
+	/**
+	 * Advisory "roughly when this should flush" timestamp, for operator
+	 * visibility only — never the sole flush trigger (see design.md).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $dueAtHint = null;
 
-    /**
-     * Row creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * Row creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'ruleKey', type: 'string');
-        $this->addType(fieldName: 'recipient', type: 'string');
-        $this->addType(fieldName: 'reason', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'payload', type: 'string');
-        $this->addType(fieldName: 'dueAtHint', type: 'datetime');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'ruleKey', type: 'string');
+		$this->addType(fieldName: 'recipient', type: 'string');
+		$this->addType(fieldName: 'reason', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'payload', type: 'string');
+		$this->addType(fieldName: 'dueAtHint', type: 'datetime');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Decode the JSON `payload` column into an array.
-     *
-     * @return array<string, mixed>
-     */
-    public function getDecodedPayload(): array
-    {
-        $decoded = json_decode((string) $this->payload, true);
-        if (is_array($decoded) === false) {
-            return [];
-        }
+	/**
+	 * Decode the JSON `payload` column into an array.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function getDecodedPayload(): array {
+		$decoded = json_decode((string)$this->payload, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
 
-        return $decoded;
+		return $decoded;
+	}//end getDecodedPayload()
 
-    }//end getDecodedPayload()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'schemaId' => $this->schemaId,
+			'ruleKey' => $this->ruleKey,
+			'recipient' => $this->recipient,
+			'reason' => $this->reason,
+			'objectUuid' => $this->objectUuid,
+			'payload' => $this->getDecodedPayload(),
+			'dueAtHint' => $this->dueAtHint?->format(DateTime::ATOM),
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+		];
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->id,
-            'schemaId'   => $this->schemaId,
-            'ruleKey'    => $this->ruleKey,
-            'recipient'  => $this->recipient,
-            'reason'     => $this->reason,
-            'objectUuid' => $this->objectUuid,
-            'payload'    => $this->getDecodedPayload(),
-            'dueAtHint'  => $this->dueAtHint?->format(DateTime::ATOM),
-            'createdAt'  => $this->createdAt?->format(DateTime::ATOM),
-        ];
-
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

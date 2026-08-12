@@ -52,161 +52,157 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
-class ApprovalStep extends Entity implements JsonSerializable
-{
+class ApprovalStep extends Entity implements JsonSerializable {
 
-    /**
-     * The uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * The uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * The chain id.
-     *
-     * @var integer|null
-     */
-    protected ?int $chainId = null;
+	/**
+	 * The chain id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $chainId = null;
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The step order.
-     *
-     * @var integer
-     */
-    protected int $stepOrder = 0;
+	/**
+	 * The step order.
+	 *
+	 * @var integer
+	 */
+	protected int $stepOrder = 0;
 
-    /**
-     * The role.
-     *
-     * @var string|null
-     */
-    protected ?string $role = null;
+	/**
+	 * The role.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $role = null;
 
-    /**
-     * The status.
-     *
-     * @var string|null
-     */
-    protected ?string $status = 'pending';
+	/**
+	 * The status.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = 'pending';
 
-    /**
-     * The decided by.
-     *
-     * @var string|null
-     */
-    protected ?string $decidedBy = null;
+	/**
+	 * The decided by.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $decidedBy = null;
 
-    /**
-     * The comment.
-     *
-     * @var string|null
-     */
-    protected ?string $comment = null;
+	/**
+	 * The comment.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $comment = null;
 
-    /**
-     * The decided at.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $decidedAt = null;
+	/**
+	 * The decided at.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $decidedAt = null;
 
-    /**
-     * The created.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * The created.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Uid of the user whose attempted transition provisioned this step, when the
-     * step was created via the declarative approval-chains gate. `null` for steps
-     * created through the pure `POST /api/approval-chains` CRUD flow. Used by
-     * `ApprovalService::resolveSeparationOfDuties()` to reject a decision made by
-     * the same user who triggered the gate.
-     *
-     * @var string|null
-     */
-    protected ?string $requesterId = null;
+	/**
+	 * Uid of the user whose attempted transition provisioned this step, when the
+	 * step was created via the declarative approval-chains gate. `null` for steps
+	 * created through the pure `POST /api/approval-chains` CRUD flow. Used by
+	 * `ApprovalService::resolveSeparationOfDuties()` to reject a decision made by
+	 * the same user who triggered the gate.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $requesterId = null;
 
-    /**
-     * Constructor for ApprovalStep entity.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'chainId', type: 'integer');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'stepOrder', type: 'integer');
-        $this->addType(fieldName: 'role', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'decidedBy', type: 'string');
-        $this->addType(fieldName: 'comment', type: 'string');
-        $this->addType(fieldName: 'decidedAt', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'requesterId', type: 'string');
-    }//end __construct()
+	/**
+	 * Constructor for ApprovalStep entity.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'chainId', type: 'integer');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'stepOrder', type: 'integer');
+		$this->addType(fieldName: 'role', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'decidedBy', type: 'string');
+		$this->addType(fieldName: 'comment', type: 'string');
+		$this->addType(fieldName: 'decidedAt', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'requesterId', type: 'string');
+	}//end __construct()
 
-    /**
-     * Hydrate entity from array.
-     *
-     * @param array<string, mixed> $object Data to hydrate from
-     *
-     * @return self
-     */
-    public function hydrate(array $object): self
-    {
-        $fields = [
-            'uuid',
-            'chainId',
-            'objectUuid',
-            'stepOrder',
-            'role',
-            'status',
-            'decidedBy',
-            'comment',
-            'decidedAt',
-            'created',
-            'requesterId',
-        ];
+	/**
+	 * Hydrate entity from array.
+	 *
+	 * @param array<string, mixed> $object Data to hydrate from
+	 *
+	 * @return self
+	 */
+	public function hydrate(array $object): self {
+		$fields = [
+			'uuid',
+			'chainId',
+			'objectUuid',
+			'stepOrder',
+			'role',
+			'status',
+			'decidedBy',
+			'comment',
+			'decidedAt',
+			'created',
+			'requesterId',
+		];
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $fields, true) === true) {
-                $setter = 'set'.ucfirst($key);
-                $this->$setter($value);
-            }
-        }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $fields, true) === true) {
+				$setter = 'set' . ucfirst($key);
+				$this->$setter($value);
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize to JSON.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'          => $this->id,
-            'uuid'        => $this->uuid,
-            'chainId'     => $this->chainId,
-            'objectUuid'  => $this->objectUuid,
-            'stepOrder'   => $this->stepOrder,
-            'role'        => $this->role,
-            'status'      => $this->status,
-            'decidedBy'   => $this->decidedBy,
-            'comment'     => $this->comment,
-            'decidedAt'   => $this->decidedAt?->format('c'),
-            'created'     => $this->created?->format('c'),
-            'requesterId' => $this->requesterId,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialize to JSON.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'chainId' => $this->chainId,
+			'objectUuid' => $this->objectUuid,
+			'stepOrder' => $this->stepOrder,
+			'role' => $this->role,
+			'status' => $this->status,
+			'decidedBy' => $this->decidedBy,
+			'comment' => $this->comment,
+			'decidedAt' => $this->decidedAt?->format('c'),
+			'created' => $this->created?->format('c'),
+			'requesterId' => $this->requesterId,
+		];
+	}//end jsonSerialize()
 }//end class

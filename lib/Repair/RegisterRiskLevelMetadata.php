@@ -34,44 +34,41 @@ use OCP\Migration\IRepairStep;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
-class RegisterRiskLevelMetadata implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param RiskLevelService $riskLevelService Risk level service
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(
-        private readonly RiskLevelService $riskLevelService
-    ) {
-    }//end __construct()
+class RegisterRiskLevelMetadata implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param RiskLevelService $riskLevelService Risk level service
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly RiskLevelService $riskLevelService,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getName(): string
-    {
-        return 'Register OpenRegister risk level file metadata';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string {
+		return 'Register OpenRegister risk level file metadata';
+	}//end getName()
 
-    /**
-     * Run the repair step.
-     *
-     * @param IOutput $output Output interface for status messages
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function run(IOutput $output): void
-    {
-        $this->riskLevelService->initMetadataKey();
-        $output->info('Registered openregister-risk-level metadata key');
-    }//end run()
+	/**
+	 * Run the repair step.
+	 *
+	 * @param IOutput $output Output interface for status messages
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function run(IOutput $output): void {
+		$this->riskLevelService->initMetadataKey();
+		$output->info('Registered openregister-risk-level metadata key');
+	}//end run()
 }//end class

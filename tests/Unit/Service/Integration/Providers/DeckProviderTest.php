@@ -49,196 +49,169 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Many small AAA tests, one per behaviour.
  */
-class DeckProviderTest extends TestCase
-{
+class DeckProviderTest extends TestCase {
 
+	private function buildL10n(): IL10N {
+		$mock = $this->createMock(IL10N::class);
+		$mock->method('t')->willReturnArgument(0);
+		return $mock;
+	}//end buildL10n()
 
-    private function buildL10n(): IL10N
-    {
-        $mock = $this->createMock(IL10N::class);
-        $mock->method('t')->willReturnArgument(0);
-        return $mock;
-    }//end buildL10n()
+	private function buildAppManager(): IAppManager {
+		return $this->createMock(IAppManager::class);
+	}//end buildAppManager()
 
+	private function buildDeckLink(int $cardId = 42): DeckLink {
+		$link = new DeckLink();
+		$link->setObjectUuid('obj-uuid');
+		$link->setCardId($cardId);
+		$link->setBoardId(1);
+		$link->setStackId(2);
+		$link->setRegisterId(3);
+		$link->setSchemaId(4);
+		return $link;
+	}//end buildDeckLink()
 
-    private function buildAppManager(): IAppManager
-    {
-        return $this->createMock(IAppManager::class);
-    }//end buildAppManager()
+	public function testMetadataGetters(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('isDeckAvailable')->willReturn(true);
 
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-    private function buildDeckLink(int $cardId=42): DeckLink
-    {
-        $link = new DeckLink();
-        $link->setObjectUuid('obj-uuid');
-        $link->setCardId($cardId);
-        $link->setBoardId(1);
-        $link->setStackId(2);
-        $link->setRegisterId(3);
-        $link->setSchemaId(4);
-        return $link;
-    }//end buildDeckLink()
+		$this->assertSame('deck', $provider->getId());
+		$this->assertSame('Cards', $provider->getLabel());
+		$this->assertSame('ViewColumnOutline', $provider->getIcon());
+		$this->assertSame('workflow', $provider->getGroup());
+		$this->assertSame('deck', $provider->getRequiredApp());
+		$this->assertSame('link-table', $provider->getStorageStrategy());
+		$this->assertTrue($provider->isEnabled());
+	}//end testMetadataGetters()
 
+	public function testIsEnabledFalseWhenDeckUnavailable(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('isDeckAvailable')->willReturn(false);
 
-    public function testMetadataGetters(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('isDeckAvailable')->willReturn(true);
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+		$this->assertFalse($provider->isEnabled());
+	}//end testIsEnabledFalseWhenDeckUnavailable()
 
-        $this->assertSame('deck', $provider->getId());
-        $this->assertSame('Cards', $provider->getLabel());
-        $this->assertSame('ViewColumnOutline', $provider->getIcon());
-        $this->assertSame('workflow', $provider->getGroup());
-        $this->assertSame('deck', $provider->getRequiredApp());
-        $this->assertSame('link-table', $provider->getStorageStrategy());
-        $this->assertTrue($provider->isEnabled());
-    }//end testMetadataGetters()
+	public function testListReturnsLinkedCards(): void {
+		$expected = [['id' => 1, 'title' => 'Card A']];
 
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('getLinkedCards')->with('obj-uuid')->willReturn($expected);
 
-    public function testIsEnabledFalseWhenDeckUnavailable(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('isDeckAvailable')->willReturn(false);
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+		$this->assertSame($expected, $provider->list('reg', 'sch', 'obj-uuid'));
+	}//end testListReturnsLinkedCards()
 
-        $this->assertFalse($provider->isEnabled());
-    }//end testIsEnabledFalseWhenDeckUnavailable()
+	public function testListSwallowsThrowableAndReturnsEmpty(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('getLinkedCards')->willThrowException(new RuntimeException('boom'));
 
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-    public function testListReturnsLinkedCards(): void
-    {
-        $expected = [['id' => 1, 'title' => 'Card A']];
+		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+	}//end testListSwallowsThrowableAndReturnsEmpty()
 
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('getLinkedCards')->with('obj-uuid')->willReturn($expected);
+	public function testCreateLinksExistingCardWhenCardIdPresent(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService
+			->expects($this->once())
+			->method('linkCard')
+			->with('obj-uuid', 10, 20, 42)
+			->willReturn($this->buildDeckLink(42));
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+		$linkService->expects($this->never())->method('createAndLinkCard');
 
-        $this->assertSame($expected, $provider->list('reg', 'sch', 'obj-uuid'));
-    }//end testListReturnsLinkedCards()
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
+		$result = $provider->create(
+			'reg',
+			'sch',
+			'obj-uuid',
+			[
+				'cardId' => 42,
+				'registerId' => 10,
+				'schemaId' => 20,
+			]
+		);
 
-    public function testListSwallowsThrowableAndReturnsEmpty(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('getLinkedCards')->willThrowException(new RuntimeException('boom'));
+		$this->assertIsArray($result);
+		$this->assertSame(42, $result['cardId']);
+	}//end testCreateLinksExistingCardWhenCardIdPresent()
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+	public function testCreateCreatesAndLinksWhenBoardStackPresent(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->never())->method('linkCard');
+		$linkService
+			->expects($this->once())
+			->method('createAndLinkCard')
+			->with('obj-uuid', 10, 20, 1, 2, 'Hello', 'desc', '2026-12-31')
+			->willReturn($this->buildDeckLink(99));
 
-        $this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
-    }//end testListSwallowsThrowableAndReturnsEmpty()
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
+		$result = $provider->create(
+			'reg',
+			'sch',
+			'obj-uuid',
+			[
+				'boardId' => 1,
+				'stackId' => 2,
+				'title' => 'Hello',
+				'description' => 'desc',
+				'duedate' => '2026-12-31',
+				'registerId' => 10,
+				'schemaId' => 20,
+			]
+		);
 
-    public function testCreateLinksExistingCardWhenCardIdPresent(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService
-            ->expects($this->once())
-            ->method('linkCard')
-            ->with('obj-uuid', 10, 20, 42)
-            ->willReturn($this->buildDeckLink(42));
+		$this->assertIsArray($result);
+		$this->assertSame(99, $result['cardId']);
+	}//end testCreateCreatesAndLinksWhenBoardStackPresent()
 
-        $linkService->expects($this->never())->method('createAndLinkCard');
+	public function testCreateThrowsWhenPayloadMissing(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+		$this->expectException(Exception::class);
 
-        $result = $provider->create(
-            'reg',
-            'sch',
-            'obj-uuid',
-            [
-                'cardId'     => 42,
-                'registerId' => 10,
-                'schemaId'   => 20,
-            ]
-        );
+		$provider->create('reg', 'sch', 'obj-uuid', []);
+	}//end testCreateThrowsWhenPayloadMissing()
 
-        $this->assertIsArray($result);
-        $this->assertSame(42, $result['cardId']);
-    }//end testCreateLinksExistingCardWhenCardIdPresent()
+	public function testDeleteDelegatesToUnlinkCard(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->once())->method('unlinkCard')->with('obj-uuid', 42);
 
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-    public function testCreateCreatesAndLinksWhenBoardStackPresent(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->expects($this->never())->method('linkCard');
-        $linkService
-            ->expects($this->once())
-            ->method('createAndLinkCard')
-            ->with('obj-uuid', 10, 20, 1, 2, 'Hello', 'desc', '2026-12-31')
-            ->willReturn($this->buildDeckLink(99));
+		$provider->delete('reg', 'sch', 'obj-uuid', '42');
+	}//end testDeleteDelegatesToUnlinkCard()
 
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+	public function testHealthReportsOkWhenAvailable(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('isDeckAvailable')->willReturn(true);
 
-        $result = $provider->create(
-            'reg',
-            'sch',
-            'obj-uuid',
-            [
-                'boardId'     => 1,
-                'stackId'     => 2,
-                'title'       => 'Hello',
-                'description' => 'desc',
-                'duedate'     => '2026-12-31',
-                'registerId'  => 10,
-                'schemaId'    => 20,
-            ]
-        );
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-        $this->assertIsArray($result);
-        $this->assertSame(99, $result['cardId']);
-    }//end testCreateCreatesAndLinksWhenBoardStackPresent()
+		$health = $provider->health();
 
+		$this->assertSame('ok', $health['status']);
+		$this->assertNull($health['message']);
+	}//end testHealthReportsOkWhenAvailable()
 
-    public function testCreateThrowsWhenPayloadMissing(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $provider    = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+	public function testHealthReportsUnavailableWhenDeckMissing(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->method('isDeckAvailable')->willReturn(false);
 
-        $this->expectException(Exception::class);
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
 
-        $provider->create('reg', 'sch', 'obj-uuid', []);
-    }//end testCreateThrowsWhenPayloadMissing()
+		$health = $provider->health();
 
-
-    public function testDeleteDelegatesToUnlinkCard(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->expects($this->once())->method('unlinkCard')->with('obj-uuid', 42);
-
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
-
-        $provider->delete('reg', 'sch', 'obj-uuid', '42');
-    }//end testDeleteDelegatesToUnlinkCard()
-
-
-    public function testHealthReportsOkWhenAvailable(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('isDeckAvailable')->willReturn(true);
-
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
-
-        $health = $provider->health();
-
-        $this->assertSame('ok', $health['status']);
-        $this->assertNull($health['message']);
-    }//end testHealthReportsOkWhenAvailable()
-
-
-    public function testHealthReportsUnavailableWhenDeckMissing(): void
-    {
-        $linkService = $this->createMock(DeckLinkService::class);
-        $linkService->method('isDeckAvailable')->willReturn(false);
-
-        $provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
-
-        $health = $provider->health();
-
-        $this->assertSame('unavailable', $health['status']);
-        $this->assertSame('NC Deck app is not installed', $health['message']);
-    }//end testHealthReportsUnavailableWhenDeckMissing()
+		$this->assertSame('unavailable', $health['status']);
+		$this->assertSame('NC Deck app is not installed', $health['message']);
+	}//end testHealthReportsUnavailableWhenDeckMissing()
 }//end class

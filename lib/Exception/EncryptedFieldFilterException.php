@@ -48,39 +48,37 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class EncryptedFieldFilterException extends Exception
-{
-    /**
-     * Constructor for EncryptedFieldFilterException.
-     *
-     * @param string         $property The encrypted property name that was targeted.
-     * @param int            $code     The error code (default: 400).
-     * @param Throwable|null $previous The previous exception that caused this one.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly string $property,
-        int $code=400,
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(
-            message: sprintf(
-                'Property "%s" is encrypted at rest and cannot be filtered, searched or faceted server-side.',
-                $property
-            ),
-            code: $code,
-            previous: $previous
-        );
-    }//end __construct()
+class EncryptedFieldFilterException extends Exception {
+	/**
+	 * Constructor for EncryptedFieldFilterException.
+	 *
+	 * @param string $property The encrypted property name that was targeted.
+	 * @param int $code The error code (default: 400).
+	 * @param Throwable|null $previous The previous exception that caused this one.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly string $property,
+		int $code = 400,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(
+			message: sprintf(
+				'Property "%s" is encrypted at rest and cannot be filtered, searched or faceted server-side.',
+				$property
+			),
+			code: $code,
+			previous: $previous
+		);
+	}//end __construct()
 
-    /**
-     * The encrypted property name that triggered this exception.
-     *
-     * @return string The property name.
-     */
-    public function getProperty(): string
-    {
-        return $this->property;
-    }//end getProperty()
+	/**
+	 * The encrypted property name that triggered this exception.
+	 *
+	 * @return string The property name.
+	 */
+	public function getProperty(): string {
+		return $this->property;
+	}//end getProperty()
 }//end class

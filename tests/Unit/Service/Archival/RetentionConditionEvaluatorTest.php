@@ -19,90 +19,75 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Archival\RetentionConditionEvaluator;
 use PHPUnit\Framework\TestCase;
 
-final class RetentionConditionEvaluatorTest extends TestCase
-{
+final class RetentionConditionEvaluatorTest extends TestCase {
 
-    private RetentionConditionEvaluator $evaluator;
+	private RetentionConditionEvaluator $evaluator;
 
-    protected function setUp(): void
-    {
-        $this->evaluator = new RetentionConditionEvaluator();
-    }//end setUp()
+	protected function setUp(): void {
+		$this->evaluator = new RetentionConditionEvaluator();
+	}//end setUp()
 
-    public function testNumericLessThanTrue(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('statusCode < 400', ['statusCode' => 200]));
-    }//end testNumericLessThanTrue()
+	public function testNumericLessThanTrue(): void {
+		self::assertTrue($this->evaluator->evaluate('statusCode < 400', ['statusCode' => 200]));
+	}//end testNumericLessThanTrue()
 
-    public function testNumericLessThanFalse(): void
-    {
-        self::assertFalse($this->evaluator->evaluate('statusCode < 400', ['statusCode' => 500]));
-    }//end testNumericLessThanFalse()
+	public function testNumericLessThanFalse(): void {
+		self::assertFalse($this->evaluator->evaluate('statusCode < 400', ['statusCode' => 500]));
+	}//end testNumericLessThanFalse()
 
-    public function testGreaterOrEqual(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 500]));
-        self::assertTrue($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 400]));
-        self::assertFalse($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 399]));
-    }//end testGreaterOrEqual()
+	public function testGreaterOrEqual(): void {
+		self::assertTrue($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 500]));
+		self::assertTrue($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 400]));
+		self::assertFalse($this->evaluator->evaluate('statusCode >= 400', ['statusCode' => 399]));
+	}//end testGreaterOrEqual()
 
-    public function testEqualityStringDoubleQuoted(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('status == "success"', ['status' => 'success']));
-        self::assertFalse($this->evaluator->evaluate('status == "success"', ['status' => 'failed']));
-    }//end testEqualityStringDoubleQuoted()
+	public function testEqualityStringDoubleQuoted(): void {
+		self::assertTrue($this->evaluator->evaluate('status == "success"', ['status' => 'success']));
+		self::assertFalse($this->evaluator->evaluate('status == "success"', ['status' => 'failed']));
+	}//end testEqualityStringDoubleQuoted()
 
-    public function testEqualityStringSingleQuoted(): void
-    {
-        self::assertTrue($this->evaluator->evaluate("status == 'success'", ['status' => 'success']));
-    }//end testEqualityStringSingleQuoted()
+	public function testEqualityStringSingleQuoted(): void {
+		self::assertTrue($this->evaluator->evaluate("status == 'success'", ['status' => 'success']));
+	}//end testEqualityStringSingleQuoted()
 
-    public function testInequality(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('status != "success"', ['status' => 'failed']));
-        self::assertFalse($this->evaluator->evaluate('status != "success"', ['status' => 'success']));
-    }//end testInequality()
+	public function testInequality(): void {
+		self::assertTrue($this->evaluator->evaluate('status != "success"', ['status' => 'failed']));
+		self::assertFalse($this->evaluator->evaluate('status != "success"', ['status' => 'success']));
+	}//end testInequality()
 
-    public function testBoolLiteral(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('archived == true', ['archived' => true]));
-        self::assertTrue($this->evaluator->evaluate('archived != true', ['archived' => false]));
-    }//end testBoolLiteral()
+	public function testBoolLiteral(): void {
+		self::assertTrue($this->evaluator->evaluate('archived == true', ['archived' => true]));
+		self::assertTrue($this->evaluator->evaluate('archived != true', ['archived' => false]));
+	}//end testBoolLiteral()
 
-    public function testNullLiteral(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('foo == null', ['foo' => null]));
-        self::assertFalse($this->evaluator->evaluate('foo == null', ['foo' => 'x']));
-    }//end testNullLiteral()
+	public function testNullLiteral(): void {
+		self::assertTrue($this->evaluator->evaluate('foo == null', ['foo' => null]));
+		self::assertFalse($this->evaluator->evaluate('foo == null', ['foo' => 'x']));
+	}//end testNullLiteral()
 
-    public function testFloatLiteral(): void
-    {
-        self::assertTrue($this->evaluator->evaluate('latency < 1.5', ['latency' => 0.7]));
-        self::assertFalse($this->evaluator->evaluate('latency < 1.5', ['latency' => 2.1]));
-    }//end testFloatLiteral()
+	public function testFloatLiteral(): void {
+		self::assertTrue($this->evaluator->evaluate('latency < 1.5', ['latency' => 0.7]));
+		self::assertFalse($this->evaluator->evaluate('latency < 1.5', ['latency' => 2.1]));
+	}//end testFloatLiteral()
 
-    public function testMissingFieldReturnsFalse(): void
-    {
-        self::assertFalse($this->evaluator->evaluate('statusCode < 400', ['foo' => 'bar']));
-    }//end testMissingFieldReturnsFalse()
+	public function testMissingFieldReturnsFalse(): void {
+		self::assertFalse($this->evaluator->evaluate('statusCode < 400', ['foo' => 'bar']));
+	}//end testMissingFieldReturnsFalse()
 
-    public function testMalformedConditionThrows(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->evaluator->evaluate('statusCode 400', ['statusCode' => 200]);
-    }//end testMalformedConditionThrows()
+	public function testMalformedConditionThrows(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->evaluator->evaluate('statusCode 400', ['statusCode' => 200]);
+	}//end testMalformedConditionThrows()
 
-    public function testUnknownLiteralThrows(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->evaluator->evaluate('status == bareword', ['status' => 'x']);
-    }//end testUnknownLiteralThrows()
+	public function testUnknownLiteralThrows(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->evaluator->evaluate('status == bareword', ['status' => 'x']);
+	}//end testUnknownLiteralThrows()
 
-    public function testTwoCharOpDoesNotGetEatenByOneCharPrefix(): void
-    {
-        // <= must not match as <; >= must not match as >; == must not be eaten.
-        self::assertTrue($this->evaluator->evaluate('n <= 5', ['n' => 5]));
-        self::assertTrue($this->evaluator->evaluate('n >= 5', ['n' => 5]));
-        self::assertTrue($this->evaluator->evaluate('n == 5', ['n' => 5]));
-    }//end testTwoCharOpDoesNotGetEatenByOneCharPrefix()
+	public function testTwoCharOpDoesNotGetEatenByOneCharPrefix(): void {
+		// <= must not match as <; >= must not match as >; == must not be eaten.
+		self::assertTrue($this->evaluator->evaluate('n <= 5', ['n' => 5]));
+		self::assertTrue($this->evaluator->evaluate('n >= 5', ['n' => 5]));
+		self::assertTrue($this->evaluator->evaluate('n == 5', ['n' => 5]));
+	}//end testTwoCharOpDoesNotGetEatenByOneCharPrefix()
 }//end class

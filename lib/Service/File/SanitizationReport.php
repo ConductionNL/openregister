@@ -48,57 +48,55 @@ use JsonSerializable;
  *
  * @spec openspec/specs/office-document-sanitization/spec.md
  */
-final class SanitizationReport implements JsonSerializable
-{
-    /**
-     * Constructor.
-     *
-     * @param int    $commentsRemoved            Distinct comments/annotations removed.
-     * @param int    $trackedChangesAccepted     Insert ranges accepted (unwrapped).
-     * @param int    $trackedChangesDropped      Delete ranges dropped.
-     * @param int    $revisionAttributesStripped Revision (rsid) attributes removed.
-     * @param int    $hyperlinksFlattened        Hyperlinks flattened to plain text.
-     * @param int    $metadataFieldsScrubbed     Metadata fields replaced with sentinel.
-     * @param int    $customXmlPartsDropped      Custom XML parts removed.
-     * @param int    $fieldCodesStripped         Person-identity field codes removed.
-     * @param string $sentinelApplied            The sentinel string used for scrubbing.
-     *
-     * @SuppressWarnings(PHPMD.LongVariable) Property names are the stable audit-report JSON keys (design D9).
-     *
-     * @spec openspec/specs/office-document-sanitization/spec.md
-     */
-    public function __construct(
-        public readonly int $commentsRemoved=0,
-        public readonly int $trackedChangesAccepted=0,
-        public readonly int $trackedChangesDropped=0,
-        public readonly int $revisionAttributesStripped=0,
-        public readonly int $hyperlinksFlattened=0,
-        public readonly int $metadataFieldsScrubbed=0,
-        public readonly int $customXmlPartsDropped=0,
-        public readonly int $fieldCodesStripped=0,
-        public readonly string $sentinelApplied=''
-    ) {
-    }//end __construct()
+final class SanitizationReport implements JsonSerializable {
+	/**
+	 * Constructor.
+	 *
+	 * @param int $commentsRemoved Distinct comments/annotations removed.
+	 * @param int $trackedChangesAccepted Insert ranges accepted (unwrapped).
+	 * @param int $trackedChangesDropped Delete ranges dropped.
+	 * @param int $revisionAttributesStripped Revision (rsid) attributes removed.
+	 * @param int $hyperlinksFlattened Hyperlinks flattened to plain text.
+	 * @param int $metadataFieldsScrubbed Metadata fields replaced with sentinel.
+	 * @param int $customXmlPartsDropped Custom XML parts removed.
+	 * @param int $fieldCodesStripped Person-identity field codes removed.
+	 * @param string $sentinelApplied The sentinel string used for scrubbing.
+	 *
+	 * @SuppressWarnings(PHPMD.LongVariable) Property names are the stable audit-report JSON keys (design D9).
+	 *
+	 * @spec openspec/specs/office-document-sanitization/spec.md
+	 */
+	public function __construct(
+		public readonly int $commentsRemoved = 0,
+		public readonly int $trackedChangesAccepted = 0,
+		public readonly int $trackedChangesDropped = 0,
+		public readonly int $revisionAttributesStripped = 0,
+		public readonly int $hyperlinksFlattened = 0,
+		public readonly int $metadataFieldsScrubbed = 0,
+		public readonly int $customXmlPartsDropped = 0,
+		public readonly int $fieldCodesStripped = 0,
+		public readonly string $sentinelApplied = '',
+	) {
+	}//end __construct()
 
-    /**
-     * Serialise to a stable, ordered associative array.
-     *
-     * @return array<string, int|string>
-     *
-     * @spec openspec/specs/office-document-sanitization/spec.md
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'commentsRemoved'            => $this->commentsRemoved,
-            'trackedChangesAccepted'     => $this->trackedChangesAccepted,
-            'trackedChangesDropped'      => $this->trackedChangesDropped,
-            'revisionAttributesStripped' => $this->revisionAttributesStripped,
-            'hyperlinksFlattened'        => $this->hyperlinksFlattened,
-            'metadataFieldsScrubbed'     => $this->metadataFieldsScrubbed,
-            'customXmlPartsDropped'      => $this->customXmlPartsDropped,
-            'fieldCodesStripped'         => $this->fieldCodesStripped,
-            'sentinelApplied'            => $this->sentinelApplied,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * Serialise to a stable, ordered associative array.
+	 *
+	 * @return array<string, int|string>
+	 *
+	 * @spec openspec/specs/office-document-sanitization/spec.md
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'commentsRemoved' => $this->commentsRemoved,
+			'trackedChangesAccepted' => $this->trackedChangesAccepted,
+			'trackedChangesDropped' => $this->trackedChangesDropped,
+			'revisionAttributesStripped' => $this->revisionAttributesStripped,
+			'hyperlinksFlattened' => $this->hyperlinksFlattened,
+			'metadataFieldsScrubbed' => $this->metadataFieldsScrubbed,
+			'customXmlPartsDropped' => $this->customXmlPartsDropped,
+			'fieldCodesStripped' => $this->fieldCodesStripped,
+			'sentinelApplied' => $this->sentinelApplied,
+		];
+	}//end jsonSerialize()
 }//end class

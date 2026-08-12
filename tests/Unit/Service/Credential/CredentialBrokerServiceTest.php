@@ -38,364 +38,345 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  */
-class CredentialBrokerServiceTest extends TestCase
-{
-    /** @var array<string, mixed>|null Captured client->request() options. */
-    private ?array $capturedOptions = null;
+class CredentialBrokerServiceTest extends TestCase {
+	/** @var array<string, mixed>|null Captured client->request() options. */
+	private ?array $capturedOptions = null;
 
-    /**
-     * The github catalogue entry used across the happy-path tests.
-     *
-     * @return array<string, mixed>
-     */
-    private function githubProvider(): array
-    {
-        return [
-            'identifier' => 'github',
-            'baseUrl'    => 'https://api.github.com',
-            'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
-            'allowRules' => [
-                ['method' => 'GET', 'pathPattern' => '/repos/*'],
-                ['method' => 'GET', 'pathPattern' => '/user/repos'],
-            ],
-        ];
-    }
+	/**
+	 * The github catalogue entry used across the happy-path tests.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function githubProvider(): array {
+		return [
+			'identifier' => 'github',
+			'baseUrl' => 'https://api.github.com',
+			'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
+			'allowRules' => [
+				['method' => 'GET', 'pathPattern' => '/repos/*'],
+				['method' => 'GET', 'pathPattern' => '/user/repos'],
+			],
+		];
+	}
 
-    /**
-     * Wire a broker with fully-mocked collaborators.
-     *
-     * @param array<string, mixed> $credData
-     */
-    private function makeService(
-        string $sessionUid,
-        string $ownerUid,
-        array $credData,
-        ?array $provider,
-        ?string $secret
-    ): CredentialBrokerService {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($sessionUid);
-        $session = $this->createMock(IUserSession::class);
-        $session->method('getUser')->willReturn($user);
+	/**
+	 * Wire a broker with fully-mocked collaborators.
+	 *
+	 * @param array<string, mixed> $credData
+	 */
+	private function makeService(
+		string $sessionUid,
+		string $ownerUid,
+		array $credData,
+		?array $provider,
+		?string $secret,
+	): CredentialBrokerService {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($sessionUid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
 
-        // A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors
-        // that cannot be stubbed on a mock.
-        $entity = new ObjectEntity();
-        $entity->setOwner($ownerUid);
-        $entity->setObject($credData);
+		// A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors
+		// that cannot be stubbed on a mock.
+		$entity = new ObjectEntity();
+		$entity->setOwner($ownerUid);
+		$entity->setObject($credData);
 
-        $objectService = $this->createMock(ObjectService::class);
-        $objectService->method('find')->willReturn($entity);
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('find')->willReturn($entity);
 
-        $catalogue = $this->createMock(ProviderCatalogue::class);
-        $catalogue->method('get')->willReturn($provider);
+		$catalogue = $this->createMock(ProviderCatalogue::class);
+		$catalogue->method('get')->willReturn($provider);
 
-        $store = $this->createMock(CredentialStore::class);
-        $store->method('get')->willReturn($secret);
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('get')->willReturn($secret);
 
-        $response = $this->createMock(IResponse::class);
-        $response->method('getStatusCode')->willReturn(200);
-        $response->method('getHeaders')->willReturn(['Content-Type' => ['application/json']]);
-        $response->method('getBody')->willReturn('{"full_name":"Conduction/openregister"}');
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
+		$response->method('getHeaders')->willReturn(['Content-Type' => ['application/json']]);
+		$response->method('getBody')->willReturn('{"full_name":"Conduction/openregister"}');
 
-        $client = $this->createMock(IClient::class);
-        $client->method('request')->willReturnCallback(
-            function (string $method, string $uri, array $options) use ($response) {
-                $this->capturedOptions = $options;
-                return $response;
-            }
-        );
-        $clientService = $this->createMock(IClientService::class);
-        $clientService->method('newClient')->willReturn($client);
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willReturnCallback(
+			function (string $method, string $uri, array $options) use ($response) {
+				$this->capturedOptions = $options;
+				return $response;
+			}
+		);
+		$clientService = $this->createMock(IClientService::class);
+		$clientService->method('newClient')->willReturn($client);
 
-        return new CredentialBrokerService(
-            $objectService,
-            $store,
-            $catalogue,
-            $session,
-            $clientService,
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(OrganisationService::class)
-        );
-    }
+		return new CredentialBrokerService(
+			$objectService,
+			$store,
+			$catalogue,
+			$session,
+			$clientService,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(OrganisationService::class)
+		);
+	}
 
-    public function testOwnerGuardRejectsNonOwner(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'bob',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testOwnerGuardRejectsNonOwner(): void {
+		$service = $this->makeService(
+			'alice',
+			'bob',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+	}
 
-    public function testDisallowedAppRejected(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['someoneelse']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testDisallowedAppRejected(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['someoneelse']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+	}
 
-    public function testDisallowedMethodPathRejected(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testDisallowedMethodPathRejected(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        // DELETE is not in the github allow-rules.
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'DELETE', '/repos/Conduction/openregister');
-    }
+		// DELETE is not in the github allow-rules.
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'DELETE', '/repos/Conduction/openregister');
+	}
 
-    public function testPathTraversalRejected(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testPathTraversalRejected(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'GET', '/repos/../../admin');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'GET', '/repos/../../admin');
+	}
 
-    public function testHappyPathInjectsAuthAndReturnsUpstream(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testHappyPathInjectsAuthAndReturnsUpstream(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+		$result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
 
-        $this->assertSame(200, $result['status']);
-        $this->assertStringContainsString('full_name', $result['body']);
+		$this->assertSame(200, $result['status']);
+		$this->assertStringContainsString('full_name', $result['body']);
 
-        // The provider auth scheme injected the secret into the Authorization header.
-        $this->assertSame('token SECRET123', $this->capturedOptions['headers']['Authorization']);
-    }
+		// The provider auth scheme injected the secret into the Authorization header.
+		$this->assertSame('token SECRET123', $this->capturedOptions['headers']['Authorization']);
+	}
 
-    public function testSecretNeverAppearsInReturnValue(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SUPERSECRETTOKEN'
-        );
+	public function testSecretNeverAppearsInReturnValue(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SUPERSECRETTOKEN'
+		);
 
-        $result  = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
-        $encoded = json_encode($result);
+		$result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/openregister');
+		$encoded = json_encode($result);
 
-        $this->assertIsString($encoded);
-        $this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
-    }
+		$this->assertIsString($encoded);
+		$this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
+	}
 
-    /**
-     * A generic inject-only catalogue entry (no baseUrl, no allowRules).
-     *
-     * @return array<string, mixed>
-     */
-    private function genericProvider(): array
-    {
-        return [
-            'identifier'  => 'generic-apikey',
-            'inject_only' => true,
-            'authScheme'  => ['header' => 'Authorization', 'template' => '{secret}'],
-        ];
-    }
+	/**
+	 * A generic inject-only catalogue entry (no baseUrl, no allowRules).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function genericProvider(): array {
+		return [
+			'identifier' => 'generic-apikey',
+			'inject_only' => true,
+			'authScheme' => ['header' => 'Authorization', 'template' => '{secret}'],
+		];
+	}
 
-    public function testResolveInjectableReturnsSecretForOwnerAndAllowedApp(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
-            $this->genericProvider(),
-            'VAULT-KEY-XYZ'
-        );
+	public function testResolveInjectableReturnsSecretForOwnerAndAllowedApp(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+			$this->genericProvider(),
+			'VAULT-KEY-XYZ'
+		);
 
-        $secret = $service->resolveInjectable('cred-1', 'openconnector');
+		$secret = $service->resolveInjectable('cred-1', 'openconnector');
 
-        $this->assertSame('VAULT-KEY-XYZ', $secret);
-    }
+		$this->assertSame('VAULT-KEY-XYZ', $secret);
+	}
 
-    public function testResolveInjectableEnforcesOwnerGuard(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'bob',
-            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
-            $this->genericProvider(),
-            'VAULT-KEY-XYZ'
-        );
+	public function testResolveInjectableEnforcesOwnerGuard(): void {
+		$service = $this->makeService(
+			'alice',
+			'bob',
+			['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+			$this->genericProvider(),
+			'VAULT-KEY-XYZ'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->resolveInjectable('cred-1', 'openconnector');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->resolveInjectable('cred-1', 'openconnector');
+	}
 
-    public function testResolveInjectableEnforcesAllowedAppsGuard(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'generic-apikey', 'allowedApps' => ['someoneelse']],
-            $this->genericProvider(),
-            'VAULT-KEY-XYZ'
-        );
+	public function testResolveInjectableEnforcesAllowedAppsGuard(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'generic-apikey', 'allowedApps' => ['someoneelse']],
+			$this->genericProvider(),
+			'VAULT-KEY-XYZ'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->resolveInjectable('cred-1', 'openconnector');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->resolveInjectable('cred-1', 'openconnector');
+	}
 
-    public function testResolveInjectableReturnsNullForProxyCredential(): void
-    {
-        // A normal host-locked provider is NOT inject-only: its secret stays inside OR,
-        // so resolveInjectable signals "use the proxy path" by returning null.
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['openconnector']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	public function testResolveInjectableReturnsNullForProxyCredential(): void {
+		// A normal host-locked provider is NOT inject-only: its secret stays inside OR,
+		// so resolveInjectable signals "use the proxy path" by returning null.
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['openconnector']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->assertNull($service->resolveInjectable('cred-1', 'openconnector'));
-    }
+		$this->assertNull($service->resolveInjectable('cred-1', 'openconnector'));
+	}
 
-    public function testResolveInjectableDeniesWhenNoSecretStored(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
-            $this->genericProvider(),
-            null
-        );
+	public function testResolveInjectableDeniesWhenNoSecretStored(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+			$this->genericProvider(),
+			null
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->resolveInjectable('cred-1', 'openconnector');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->resolveInjectable('cred-1', 'openconnector');
+	}
 
-    public function testRequestRefusesToProxyAnInjectOnlyProvider(): void
-    {
-        // Guards 1 + 2 pass, but an inject-only provider must never be proxied — it has no
-        // host to lock, so request() fails closed rather than becoming an open proxy.
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
-            $this->genericProvider(),
-            'VAULT-KEY-XYZ'
-        );
+	public function testRequestRefusesToProxyAnInjectOnlyProvider(): void {
+		// Guards 1 + 2 pass, but an inject-only provider must never be proxied — it has no
+		// host to lock, so request() fails closed rather than becoming an open proxy.
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+			$this->genericProvider(),
+			'VAULT-KEY-XYZ'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'openconnector', 'GET', '/anything');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'openconnector', 'GET', '/anything');
+	}
 
-    /**
-     * A commit COMPARISON is not traversal, and it is the path the safety rail needs.
-     *
-     * GitHub's diff endpoint is `/repos/{o}/{r}/compare/{base}...{head}`. The
-     * guard used to reject any `..` SUBSTRING, so every commit comparison was
-     * denied — which made `hydra-flows-first-port` task 2.5's mandatory rail
-     * ("diff the produced tree against the base before moving the ref")
-     * impossible to build over the brokered path.
-     */
-    public function testACommitComparisonIsNotTraversal(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	/**
+	 * A commit COMPARISON is not traversal, and it is the path the safety rail needs.
+	 *
+	 * GitHub's diff endpoint is `/repos/{o}/{r}/compare/{base}...{head}`. The
+	 * guard used to reject any `..` SUBSTRING, so every commit comparison was
+	 * denied — which made `hydra-flows-first-port` task 2.5's mandatory rail
+	 * ("diff the produced tree against the base before moving the ref")
+	 * impossible to build over the brokered path.
+	 */
+	public function testACommitComparisonIsNotTraversal(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $result = $service->request(
-            'cred-1',
-            'hermiq',
-            'GET',
-            '/repos/Conduction/openregister/compare/ba3ed4f4...4f75bc84'
-        );
+		$result = $service->request(
+			'cred-1',
+			'hermiq',
+			'GET',
+			'/repos/Conduction/openregister/compare/ba3ed4f4...4f75bc84'
+		);
 
-        $this->assertSame(200, $result['status']);
-    }
+		$this->assertSame(200, $result['status']);
+	}
 
-    /**
-     * Real traversal is still denied — a segment that IS `..`.
-     */
-    public function testTraversalSegmentIsStillDenied(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	/**
+	 * Real traversal is still denied — a segment that IS `..`.
+	 */
+	public function testTraversalSegmentIsStillDenied(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/../../etc/passwd');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/../../etc/passwd');
+	}
 
-    /**
-     * And still denied when the traversal segment arrives percent-encoded.
-     *
-     * The guard decodes ONCE before checking, so `%2e%2e` is caught. Pinned
-     * separately because a segment-based check would be trivially bypassable
-     * if it ran before the decode.
-     */
-    public function testEncodedTraversalSegmentIsStillDenied(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	/**
+	 * And still denied when the traversal segment arrives percent-encoded.
+	 *
+	 * The guard decodes ONCE before checking, so `%2e%2e` is caught. Pinned
+	 * separately because a segment-based check would be trivially bypassable
+	 * if it ran before the decode.
+	 */
+	public function testEncodedTraversalSegmentIsStillDenied(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $this->expectException(CredentialAccessDeniedException::class);
-        $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/%2e%2e/%2e%2e/etc/passwd');
-    }
+		$this->expectException(CredentialAccessDeniedException::class);
+		$service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/%2e%2e/%2e%2e/etc/passwd');
+	}
 
-    /**
-     * A segment that merely CONTAINS dots is a literal name and is allowed.
-     */
-    public function testASegmentContainingDotsIsAllowed(): void
-    {
-        $service = $this->makeService(
-            'alice',
-            'alice',
-            ['provider' => 'github', 'allowedApps' => ['hermiq']],
-            $this->githubProvider(),
-            'SECRET123'
-        );
+	/**
+	 * A segment that merely CONTAINS dots is a literal name and is allowed.
+	 */
+	public function testASegmentContainingDotsIsAllowed(): void {
+		$service = $this->makeService(
+			'alice',
+			'alice',
+			['provider' => 'github', 'allowedApps' => ['hermiq']],
+			$this->githubProvider(),
+			'SECRET123'
+		);
 
-        $result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/some..name');
+		$result = $service->request('cred-1', 'hermiq', 'GET', '/repos/Conduction/some..name');
 
-        $this->assertSame(200, $result['status']);
-    }
+		$this->assertSame(200, $result['status']);
+	}
 }//end class

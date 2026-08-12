@@ -34,21 +34,19 @@ use OCP\IGroupManager;
 /**
  * The action matrix, bound to the `openregister` app id.
  */
-class OpenRegisterActionAuthService extends GenericActionAuthService
-{
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig    $appConfig    App config store for the matrix.
-     * @param IGroupManager $groupManager Resolves the user's groups.
-     */
-    public function __construct(IAppConfig $appConfig, IGroupManager $groupManager)
-    {
-        parent::__construct(
-            appId: 'openregister',
-            appConfig: $appConfig,
-            groupManager: $groupManager
-        );
+class OpenRegisterActionAuthService extends GenericActionAuthService {
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig App config store for the matrix.
+	 * @param IGroupManager $groupManager Resolves the user's groups.
+	 */
+	public function __construct(IAppConfig $appConfig, IGroupManager $groupManager) {
+		parent::__construct(
+			appId: 'openregister',
+			appConfig: $appConfig,
+			groupManager: $groupManager
+		);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

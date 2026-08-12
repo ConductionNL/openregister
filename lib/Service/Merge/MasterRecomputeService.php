@@ -55,72 +55,70 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class MasterRecomputeService
-{
-    /**
-     * Wire collaborators.
-     *
-     * @param ObjectService   $objectService Object read/write path (RBAC + tenant scoped).
-     * @param LoggerInterface $logger        PSR logger for warnings.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class MasterRecomputeService {
+	/**
+	 * Wire collaborators.
+	 *
+	 * @param ObjectService $objectService Object read/write path (RBAC + tenant scoped).
+	 * @param LoggerInterface $logger PSR logger for warnings.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Recompute a master's golden record by re-persisting it, which re-runs
-     * the survivorship recompute listener over the master's (reverse-FK)
-     * source set. Best-effort — a failure is logged and swallowed.
-     *
-     * A master that no longer resolves is a stale no-op, not an error: the
-     * source object may have been reassigned or the master deleted between
-     * the triggering write and this call.
-     *
-     * @param string $masterUuid Referenced master uuid.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) `MergeService::normaliseRoundTripDates`
-     *   is a pure stateless date-format utility shared with the merge relink;
-     *   a static call is the lightest way to reuse it without injecting the
-     *   whole MergeService (which would raise coupling for one helper).
-     */
-    public function recompute(string $masterUuid): void
-    {
-        if ($masterUuid === '') {
-            return;
-        }
+	/**
+	 * Recompute a master's golden record by re-persisting it, which re-runs
+	 * the survivorship recompute listener over the master's (reverse-FK)
+	 * source set. Best-effort — a failure is logged and swallowed.
+	 *
+	 * A master that no longer resolves is a stale no-op, not an error: the
+	 * source object may have been reassigned or the master deleted between
+	 * the triggering write and this call.
+	 *
+	 * @param string $masterUuid Referenced master uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `MergeService::normaliseRoundTripDates`
+	 *   is a pure stateless date-format utility shared with the merge relink;
+	 *   a static call is the lightest way to reuse it without injecting the
+	 *   whole MergeService (which would raise coupling for one helper).
+	 */
+	public function recompute(string $masterUuid): void {
+		if ($masterUuid === '') {
+			return;
+		}
 
-        try {
-            $master = $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true);
-            if ($master === null) {
-                return;
-            }
+		try {
+			$master = $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true);
+			if ($master === null) {
+				return;
+			}
 
-            // Re-persist: the survivorship recompute listener fires on the
-            // resulting update event and rematerialises the golden record. Date
-            // fields are normalised back to ISO first — OR stores them in a
-            // space-separated form its own validation rejects on a round-trip
-            // save (see MergeService::normaliseRoundTripDates).
-            $master->setObject(MergeService::normaliseRoundTripDates(data: ($master->getObject() ?? [])));
-            $this->objectService->saveObject(
-                object: $master,
-                register: $master->getRegister(),
-                schema: $master->getSchema(),
-                uuid: $master->getUuid()
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                sprintf('Source-record change: could not recompute master "%s": %s', $masterUuid, $e->getMessage())
-            );
-        }//end try
-    }//end recompute()
+			// Re-persist: the survivorship recompute listener fires on the
+			// resulting update event and rematerialises the golden record. Date
+			// fields are normalised back to ISO first — OR stores them in a
+			// space-separated form its own validation rejects on a round-trip
+			// save (see MergeService::normaliseRoundTripDates).
+			$master->setObject(MergeService::normaliseRoundTripDates(data: ($master->getObject() ?? [])));
+			$this->objectService->saveObject(
+				object: $master,
+				register: $master->getRegister(),
+				schema: $master->getSchema(),
+				uuid: $master->getUuid()
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('Source-record change: could not recompute master "%s": %s', $masterUuid, $e->getMessage())
+			);
+		}//end try
+	}//end recompute()
 }//end class

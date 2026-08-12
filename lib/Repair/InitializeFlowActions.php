@@ -42,26 +42,25 @@ use Psr\Log\LoggerInterface;
 /**
  * Seeds the `openregister` action matrix from lib/actions.seed.json.
  */
-class InitializeFlowActions extends GenericInitializeActions
-{
-    /**
-     * Constructor.
-     *
-     * @param OpenRegisterActionAuthService $actionAuth The action-auth service.
-     * @param IAppManager                   $appManager Resolves the app path for the seed file.
-     * @param LoggerInterface               $logger     PSR logger.
-     */
-    public function __construct(
-        OpenRegisterActionAuthService $actionAuth,
-        IAppManager $appManager,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(
-            appId: 'openregister',
-            actionAuth: $actionAuth,
-            appManager: $appManager,
-            logger: $logger
-        );
+class InitializeFlowActions extends GenericInitializeActions {
+	/**
+	 * Constructor.
+	 *
+	 * @param OpenRegisterActionAuthService $actionAuth The action-auth service.
+	 * @param IAppManager $appManager Resolves the app path for the seed file.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		OpenRegisterActionAuthService $actionAuth,
+		IAppManager $appManager,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(
+			appId: 'openregister',
+			actionAuth: $actionAuth,
+			appManager: $appManager,
+			logger: $logger
+		);
 
-    }//end __construct()
+	}//end __construct()
 }//end class

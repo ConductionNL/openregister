@@ -58,58 +58,56 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class SourceRecordRecomputeJob extends ActorForwardedJob
-{
-    /**
-     * Wire the recompute collaborator on top of the actor plumbing.
-     *
-     * @param ITimeFactory           $time         Time factory for the parent job class.
-     * @param IUserSession           $userSession  Session to impersonate on / restore.
-     * @param IUserManager           $userManager  Resolver for the captured user id.
-     * @param OrganisationService    $organisation Active-organisation resolver.
-     * @param LoggerInterface        $logger       PSR logger.
-     * @param MasterRecomputeService $recompute    Shared golden-record recompute.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IUserSession $userSession,
-        IUserManager $userManager,
-        OrganisationService $organisation,
-        LoggerInterface $logger,
-        private readonly MasterRecomputeService $recompute
-    ) {
-        parent::__construct(
-            time: $time,
-            userSession: $userSession,
-            userManager: $userManager,
-            organisation: $organisation,
-            logger: $logger
-        );
-    }//end __construct()
+class SourceRecordRecomputeJob extends ActorForwardedJob {
+	/**
+	 * Wire the recompute collaborator on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param MasterRecomputeService $recompute Shared golden-record recompute.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		OrganisationService $organisation,
+		LoggerInterface $logger,
+		private readonly MasterRecomputeService $recompute,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $userSession,
+			userManager: $userManager,
+			organisation: $organisation,
+			logger: $logger
+		);
+	}//end __construct()
 
-    /**
-     * Recompute every buffered master's golden record.
-     *
-     * `MasterRecomputeService::recompute()` already swallows and logs its own
-     * failures, so one unresolvable master cannot abort the chunk.
-     *
-     * @param DeferredListenerContext $context The captured dispatch-time context.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    protected function runDeferred(DeferredListenerContext $context): void
-    {
-        foreach ($context->getEntries() as $entry) {
-            $masterUuid = (string) ($entry['masterUuid'] ?? '');
-            if ($masterUuid === '') {
-                continue;
-            }
+	/**
+	 * Recompute every buffered master's golden record.
+	 *
+	 * `MasterRecomputeService::recompute()` already swallows and logs its own
+	 * failures, so one unresolvable master cannot abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$masterUuid = (string)($entry['masterUuid'] ?? '');
+			if ($masterUuid === '') {
+				continue;
+			}
 
-            $this->recompute->recompute(masterUuid: $masterUuid);
-        }//end foreach
-    }//end runDeferred()
+			$this->recompute->recompute(masterUuid: $masterUuid);
+		}//end foreach
+	}//end runDeferred()
 }//end class

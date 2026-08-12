@@ -31,6 +31,5 @@ use RuntimeException;
 /**
  * Raised when a DBAL virtual-register connection cannot be established.
  */
-class DbalConnectionException extends RuntimeException
-{
+class DbalConnectionException extends RuntimeException {
 }//end class

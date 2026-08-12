@@ -62,125 +62,122 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class CospendLink extends Entity implements JsonSerializable
-{
+class CospendLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The entry type — `project` or `bill`.
-     *
-     * @var string|null
-     */
-    protected ?string $entryType = null;
+	/**
+	 * The entry type — `project` or `bill`.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $entryType = null;
 
-    /**
-     * The NC Cospend project id (primary key in `cospend_projects`).
-     *
-     * @var string|null
-     */
-    protected ?string $projectId = null;
+	/**
+	 * The NC Cospend project id (primary key in `cospend_projects`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $projectId = null;
 
-    /**
-     * The NC Cospend bill id (primary key in `cospend_bills`); null for
-     * project rows.
-     *
-     * @var integer|null
-     */
-    protected ?int $billId = null;
+	/**
+	 * The NC Cospend bill id (primary key in `cospend_bills`); null for
+	 * project rows.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $billId = null;
 
-    /**
-     * The cached display name (project name or bill `what`).
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * The cached display name (project name or bill `what`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * The cached bill amount (null for projects).
-     *
-     * @var float|null
-     */
-    protected ?float $amount = null;
+	/**
+	 * The cached bill amount (null for projects).
+	 *
+	 * @var float|null
+	 */
+	protected ?float $amount = null;
 
-    /**
-     * The cached currency name (owned by the project).
-     *
-     * @var string|null
-     */
-    protected ?string $currency = null;
+	/**
+	 * The cached currency name (owned by the project).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $currency = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'entryType', type: 'string');
-        $this->addType(fieldName: 'projectId', type: 'string');
-        $this->addType(fieldName: 'billId', type: 'integer');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'amount', type: 'float');
-        $this->addType(fieldName: 'currency', type: 'string');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'entryType', type: 'string');
+		$this->addType(fieldName: 'projectId', type: 'string');
+		$this->addType(fieldName: 'billId', type: 'integer');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'amount', type: 'float');
+		$this->addType(fieldName: 'currency', type: 'string');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'         => $this->id,
-            'objectUuid' => $this->objectUuid,
-            'registerId' => $this->registerId,
-            'schemaId'   => $this->schemaId,
-            'entryType'  => $this->entryType,
-            'projectId'  => $this->projectId,
-            'billId'     => $this->billId,
-            'name'       => $this->name,
-            'amount'     => $this->amount,
-            'currency'   => $this->currency,
-            'linkedBy'   => $this->linkedBy,
-            'linkedAt'   => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'entryType' => $this->entryType,
+			'projectId' => $this->projectId,
+			'billId' => $this->billId,
+			'name' => $this->name,
+			'amount' => $this->amount,
+			'currency' => $this->currency,
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

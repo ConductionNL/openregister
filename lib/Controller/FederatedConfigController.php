@@ -44,411 +44,390 @@ use UnexpectedValueException;
 /**
  * REST surface for sharing, bundling and installing configuration.
  */
-class FederatedConfigController extends Controller
-{
+class FederatedConfigController extends Controller {
 
-    /**
-     * The app its user preferences live under.
-     */
-    private const APP_ID = 'openregister';
+	/**
+	 * The app its user preferences live under.
+	 */
+	private const APP_ID = 'openregister';
 
-    /**
-     * User-preference key holding the chosen store GitHub credential (written by
-     * the nc-vue Configuration store settings pane via /api/preferences).
-     */
-    private const CREDENTIAL_PREF = 'pref_federated-config-credential';
+	/**
+	 * User-preference key holding the chosen store GitHub credential (written by
+	 * the nc-vue Configuration store settings pane via /api/preferences).
+	 */
+	private const CREDENTIAL_PREF = 'pref_federated-config-credential';
 
-    /**
-     * Constructor.
-     *
-     * @param string                 $appName      The app id.
-     * @param IRequest               $request      The request.
-     * @param FederatedConfigService $service      The federation engine.
-     * @param FederatedConfigAccess  $access       Per-org publish/install gating.
-     * @param IUserSession           $userSession  The current user.
-     * @param IConfig                $config       Reads the user's chosen store credential.
-     * @param IGroupManager          $groupManager Gates the trust-governance endpoints to admins.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly FederatedConfigService $service,
-        private readonly FederatedConfigAccess $access,
-        private readonly IUserSession $userSession,
-        private readonly IConfig $config,
-        private readonly IGroupManager $groupManager
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app id.
+	 * @param IRequest $request The request.
+	 * @param FederatedConfigService $service The federation engine.
+	 * @param FederatedConfigAccess $access Per-org publish/install gating.
+	 * @param IUserSession $userSession The current user.
+	 * @param IConfig $config Reads the user's chosen store credential.
+	 * @param IGroupManager $groupManager Gates the trust-governance endpoints to admins.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly FederatedConfigService $service,
+		private readonly FederatedConfigAccess $access,
+		private readonly IUserSession $userSession,
+		private readonly IConfig $config,
+		private readonly IGroupManager $groupManager,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The shareable configuration types every app has contributed.
-     *
-     * @return JSONResponse `{types: [{id, name, topic}]}`.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function types(): JSONResponse
-    {
-        return new JSONResponse(['types' => $this->service->types()]);
+	/**
+	 * The shareable configuration types every app has contributed.
+	 *
+	 * @return JSONResponse `{types: [{id, name, topic}]}`.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function types(): JSONResponse {
+		return new JSONResponse(['types' => $this->service->types()]);
+	}//end types()
 
-    }//end types()
+	/**
+	 * Package a selection of a type's configuration into a portable bundle.
+	 *
+	 * Gated on `canPublish`, exactly like `publish()`. A bundle IS the payload
+	 * `publish()` pushes out — the same `serialise()` call, the same bytes,
+	 * minus the GitHub round-trip. Gating one and not the other made the
+	 * publish gate decorative: anyone refused by `canPublish` could call
+	 * `bundle` and receive the identical export to do what they liked with.
+	 *
+	 * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function bundle(): JSONResponse {
+		if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
+			return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
+		}
 
-    /**
-     * Package a selection of a type's configuration into a portable bundle.
-     *
-     * Gated on `canPublish`, exactly like `publish()`. A bundle IS the payload
-     * `publish()` pushes out — the same `serialise()` call, the same bytes,
-     * minus the GitHub round-trip. Gating one and not the other made the
-     * publish gate decorative: anyone refused by `canPublish` could call
-     * `bundle` and receive the identical export to do what they liked with.
-     *
-     * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function bundle(): JSONResponse
-    {
-        if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
-            return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
-        }
+		$type = trim((string)$this->request->getParam('type', ''));
+		if ($type === '') {
+			return new JSONResponse(['error' => 'A bundle needs a type.'], Http::STATUS_BAD_REQUEST);
+		}
 
-        $type = trim((string) $this->request->getParam('type', ''));
-        if ($type === '') {
-            return new JSONResponse(['error' => 'A bundle needs a type.'], Http::STATUS_BAD_REQUEST);
-        }
+		try {
+			$bundle = $this->service->bundle(typeId: $type, selection: (array)$this->request->getParam('selection', []));
+		} catch (UnexpectedValueException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
 
-        try {
-            $bundle = $this->service->bundle(typeId: $type, selection: (array) $this->request->getParam('selection', []));
-        } catch (UnexpectedValueException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        } catch (Throwable $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
-        }
+		return new JSONResponse($bundle);
+	}//end bundle()
 
-        return new JSONResponse($bundle);
+	/**
+	 * Install a bundle, subject to the organisation's source allowlist.
+	 *
+	 * @return JSONResponse The install result, 404 unknown type, or 403 when the
+	 *                      source is not allowlisted.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function install(): JSONResponse {
+		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+			return new JSONResponse(['error' => 'You are not allowed to install shared configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-    }//end bundle()
+		$type = trim((string)$this->request->getParam('type', ''));
+		if ($type === '') {
+			return new JSONResponse(['error' => 'An install needs a type.'], Http::STATUS_BAD_REQUEST);
+		}
 
-    /**
-     * Install a bundle, subject to the organisation's source allowlist.
-     *
-     * @return JSONResponse The install result, 404 unknown type, or 403 when the
-     *                      source is not allowlisted.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function install(): JSONResponse
-    {
-        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
-            return new JSONResponse(['error' => 'You are not allowed to install shared configuration.'], Http::STATUS_FORBIDDEN);
-        }
+		try {
+			$result = $this->service->install(
+				typeId: $type,
+				bundle: (array)$this->request->getParam('bundle', []),
+				source: trim((string)$this->request->getParam('source', ''))
+			);
+		} catch (UnexpectedValueException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (Throwable $e) {
+			// A blocked source, an untrusted key, or a bad signature is a 403;
+			// anything else a 500.
+			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
+			$message = $e->getMessage();
+			if (str_contains($message, 'allowlist') === true
+				|| str_contains($message, 'trusted') === true
+				|| str_contains($message, 'signature') === true
+			) {
+				$status = Http::STATUS_FORBIDDEN;
+			}
 
-        $type = trim((string) $this->request->getParam('type', ''));
-        if ($type === '') {
-            return new JSONResponse(['error' => 'An install needs a type.'], Http::STATUS_BAD_REQUEST);
-        }
+			return new JSONResponse(['error' => $message], $status);
+		}//end try
 
-        try {
-            $result = $this->service->install(
-                typeId: $type,
-                bundle: (array) $this->request->getParam('bundle', []),
-                source: trim((string) $this->request->getParam('source', ''))
-            );
-        } catch (UnexpectedValueException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        } catch (Throwable $e) {
-            // A blocked source, an untrusted key, or a bad signature is a 403;
-            // anything else a 500.
-            $status  = Http::STATUS_INTERNAL_SERVER_ERROR;
-            $message = $e->getMessage();
-            if (str_contains($message, 'allowlist') === true
-                || str_contains($message, 'trusted') === true
-                || str_contains($message, 'signature') === true
-            ) {
-                $status = Http::STATUS_FORBIDDEN;
-            }
+		return new JSONResponse($result);
+	}//end install()
 
-            return new JSONResponse(['error' => $message], $status);
-        }//end try
+	/**
+	 * Publish a selection to a GitHub repository, using the user's chosen store
+	 * credential and signing the bundle.
+	 *
+	 * The credential is NOT taken from the request — it is the one the user
+	 * selected in the Configuration store settings pane — so a caller can never
+	 * publish with a credential they did not choose.
+	 *
+	 * @return JSONResponse `{published, path, status}`, or a 4xx.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function publish(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($this->access->canPublish(user: $user) === false) {
+			return new JSONResponse(['error' => 'You are not allowed to publish configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-        return new JSONResponse($result);
+		$type = trim((string)$this->request->getParam('type', ''));
+		$repo = trim((string)$this->request->getParam('repo', ''));
+		$path = trim((string)$this->request->getParam('path', ''));
+		if ($type === '' || $repo === '' || $path === '') {
+			return new JSONResponse(['error' => 'A publish needs a type, repo and path.'], Http::STATUS_BAD_REQUEST);
+		}
 
-    }//end install()
+		$credentialId = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+		if ($credentialId === '') {
+			return new JSONResponse(
+				['error' => 'No store credential selected. Choose a GitHub credential in the Configuration store settings.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
 
-    /**
-     * Publish a selection to a GitHub repository, using the user's chosen store
-     * credential and signing the bundle.
-     *
-     * The credential is NOT taken from the request — it is the one the user
-     * selected in the Configuration store settings pane — so a caller can never
-     * publish with a credential they did not choose.
-     *
-     * @return JSONResponse `{published, path, status}`, or a 4xx.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function publish(): JSONResponse
-    {
-        $user = $this->userSession->getUser();
-        if ($this->access->canPublish(user: $user) === false) {
-            return new JSONResponse(['error' => 'You are not allowed to publish configuration.'], Http::STATUS_FORBIDDEN);
-        }
+		$branch = trim((string)$this->request->getParam('branch', ''));
+		if ($branch === '') {
+			$branch = 'main';
+		}
 
-        $type = trim((string) $this->request->getParam('type', ''));
-        $repo = trim((string) $this->request->getParam('repo', ''));
-        $path = trim((string) $this->request->getParam('path', ''));
-        if ($type === '' || $repo === '' || $path === '') {
-            return new JSONResponse(['error' => 'A publish needs a type, repo and path.'], Http::STATUS_BAD_REQUEST);
-        }
+		// A newly created store repo is public by default; `visibility: private`
+		// makes it private (the token must have rights to create private repos).
+		$private = (trim((string)$this->request->getParam('visibility', 'public')) === 'private');
 
-        $credentialId = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
-        if ($credentialId === '') {
-            return new JSONResponse(
-                ['error' => 'No store credential selected. Choose a GitHub credential in the Configuration store settings.'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
+		try {
+			$result = $this->service->publish(
+				typeId: $type,
+				selection: (array)$this->request->getParam('selection', []),
+				repo: $repo,
+				path: $path,
+				credentialId: $credentialId,
+				branch: $branch,
+				private: $private
+			);
+		} catch (UnexpectedValueException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
 
-        $branch = trim((string) $this->request->getParam('branch', ''));
-        if ($branch === '') {
-            $branch = 'main';
-        }
+		return new JSONResponse($result);
+	}//end publish()
 
-        // A newly created store repo is public by default; `visibility: private`
-        // makes it private (the token must have rights to create private repos).
-        $private = (trim((string) $this->request->getParam('visibility', 'public')) === 'private');
+	/**
+	 * The organisation's trust configuration (admin only).
+	 *
+	 * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
+	 *
+	 * @auth admin-only Returns the instance's federation trust configuration — the source
+	 *       allowlist and the trusted publisher keys. The body rejects non-admins, and #2342
+	 *       removed the #[NoAdminRequired] that used to contradict it; this states the posture so
+	 *       "admin-only by Nextcloud default" stays distinguishable from a forgotten attribute.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function trust(): JSONResponse {
+		if ($this->isAdmin() === false) {
+			return new JSONResponse(['error' => 'Only an administrator may read the trust configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-        try {
-            $result = $this->service->publish(
-                typeId: $type,
-                selection: (array) $this->request->getParam('selection', []),
-                repo: $repo,
-                path: $path,
-                credentialId: $credentialId,
-                branch: $branch,
-                private: $private
-            );
-        } catch (UnexpectedValueException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        } catch (Throwable $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
-        }
+		return new JSONResponse($this->service->getTrustConfig());
+	}//end trust()
 
-        return new JSONResponse($result);
+	/**
+	 * Set one trust-configuration value, or trust a publisher key (admin only).
+	 *
+	 * Accepts either `{field, value}` (field ∈ sourceAllowlist|trustedKeys|
+	 * publishGroups|installGroups) or `{trustKey}` to append a public key to the
+	 * trusted-keys list.
+	 *
+	 * @return JSONResponse The updated trust configuration, or a 4xx.
+	 *
+	 * @auth admin-only Writes the federation trust configuration: it can append a public key to the
+	 *       trusted-keys list, which decides whose published configuration this instance will
+	 *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
+	 *       to contradict it; this states the posture rather than leaving it to a default.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoCSRFRequired]
+	public function setTrust(): JSONResponse {
+		if ($this->isAdmin() === false) {
+			return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-    }//end publish()
+		$trustKey = trim((string)$this->request->getParam('trustKey', ''));
+		if ($trustKey !== '') {
+			$this->service->trustPublisherKey(publicKey: $trustKey);
+			return new JSONResponse($this->service->getTrustConfig());
+		}
 
-    /**
-     * The organisation's trust configuration (admin only).
-     *
-     * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
-     *
-     * @auth admin-only Returns the instance's federation trust configuration — the source
-     *       allowlist and the trusted publisher keys. The body rejects non-admins, and #2342
-     *       removed the #[NoAdminRequired] that used to contradict it; this states the posture so
-     *       "admin-only by Nextcloud default" stays distinguishable from a forgotten attribute.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function trust(): JSONResponse
-    {
-        if ($this->isAdmin() === false) {
-            return new JSONResponse(['error' => 'Only an administrator may read the trust configuration.'], Http::STATUS_FORBIDDEN);
-        }
+		$field = trim((string)$this->request->getParam('field', ''));
+		if ($field === '') {
+			return new JSONResponse(['error' => 'A trust update needs a field or a trustKey.'], Http::STATUS_BAD_REQUEST);
+		}
 
-        return new JSONResponse($this->service->getTrustConfig());
+		try {
+			$this->service->setTrustValue(field: $field, value: (string)$this->request->getParam('value', ''));
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
 
-    }//end trust()
+		return new JSONResponse($this->service->getTrustConfig());
+	}//end setTrust()
 
-    /**
-     * Set one trust-configuration value, or trust a publisher key (admin only).
-     *
-     * Accepts either `{field, value}` (field ∈ sourceAllowlist|trustedKeys|
-     * publishGroups|installGroups) or `{trustKey}` to append a public key to the
-     * trusted-keys list.
-     *
-     * @return JSONResponse The updated trust configuration, or a 4xx.
-     *
-     * @auth admin-only Writes the federation trust configuration: it can append a public key to the
-     *       trusted-keys list, which decides whose published configuration this instance will
-     *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
-     *       to contradict it; this states the posture rather than leaving it to a default.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoCSRFRequired]
-    public function setTrust(): JSONResponse
-    {
-        if ($this->isAdmin() === false) {
-            return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);
-        }
+	/**
+	 * Whether the current user is a Nextcloud administrator.
+	 *
+	 * @return boolean Whether the caller is an admin.
+	 */
+	private function isAdmin(): bool {
+		$user = $this->userSession->getUser();
+		return $user !== null && $this->groupManager->isAdmin($user->getUID());
+	}//end isAdmin()
 
-        $trustKey = trim((string) $this->request->getParam('trustKey', ''));
-        if ($trustKey !== '') {
-            $this->service->trustPublisherKey(publicKey: $trustKey);
-            return new JSONResponse($this->service->getTrustConfig());
-        }
+	/**
+	 * Discover published bundles across GitHub by a type's discovery topic.
+	 *
+	 * Gated on `canInstall`, exactly like `install()` — for the reason `bundle()`
+	 * is gated like `publish()`. Discovery and fetch are the two steps that
+	 * PRECEDE an install, and both drive this server's GitHub client with the
+	 * caller's chosen store credential. That credential is held by reference: the
+	 * broker signs the request and the caller never sees the secret. Leaving
+	 * these two ungated therefore handed anyone who may NOT install a
+	 * credentialed GitHub proxy, which is more than the install they were
+	 * refused. Orgs that have not curated `federated_config_install_groups` are
+	 * unaffected — an empty list still means "any signed-in user".
+	 *
+	 * @return JSONResponse `{results: [...]}`, or 403 when the caller may not install.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function discover(): JSONResponse {
+		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+			return new JSONResponse(['error' => 'You are not allowed to browse shared configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-        $field = trim((string) $this->request->getParam('field', ''));
-        if ($field === '') {
-            return new JSONResponse(['error' => 'A trust update needs a field or a trustKey.'], Http::STATUS_BAD_REQUEST);
-        }
+		$topic = trim((string)$this->request->getParam('topic', ''));
+		if ($topic === '') {
+			return new JSONResponse(['error' => 'Discovery needs a topic.'], Http::STATUS_BAD_REQUEST);
+		}
 
-        try {
-            $this->service->setTrustValue(field: $field, value: (string) $this->request->getParam('value', ''));
-        } catch (Throwable $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        }
+		// An authenticated search (higher rate limit) uses the user's chosen
+		// store credential when they have one; otherwise it is anonymous.
+		$credentialId = null;
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+			if ($stored !== '') {
+				$credentialId = $stored;
+			}
+		}
 
-        return new JSONResponse($this->service->getTrustConfig());
+		return new JSONResponse(['results' => $this->service->discover(topic: $topic, credentialId: $credentialId)]);
+	}//end discover()
 
-    }//end setTrust()
+	/**
+	 * Fetch a published bundle file from a GitHub repo (the bridge from discover
+	 * to install).
+	 *
+	 * Gated on `canInstall` for the reason given on `discover()`: this method
+	 * takes a caller-supplied `repo` and `path` and has the broker sign the
+	 * request with the caller's store credential, so ungated it is an arbitrary
+	 * credentialed GitHub read for anyone the install gate would have refused.
+	 *
+	 * @return JSONResponse The decoded bundle, 403 when the caller may not install, or a 4xx.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function fetch(): JSONResponse {
+		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+			return new JSONResponse(['error' => 'You are not allowed to fetch shared configuration.'], Http::STATUS_FORBIDDEN);
+		}
 
-    /**
-     * Whether the current user is a Nextcloud administrator.
-     *
-     * @return boolean Whether the caller is an admin.
-     */
-    private function isAdmin(): bool
-    {
-        $user = $this->userSession->getUser();
-        return $user !== null && $this->groupManager->isAdmin($user->getUID());
+		$repo = trim((string)$this->request->getParam('repo', ''));
+		$path = trim((string)$this->request->getParam('path', ''));
+		if ($repo === '' || $path === '') {
+			return new JSONResponse(['error' => 'A fetch needs a repo and a path.'], Http::STATUS_BAD_REQUEST);
+		}
 
-    }//end isAdmin()
+		$credentialId = null;
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+			if ($stored !== '') {
+				$credentialId = $stored;
+			}
+		}
 
-    /**
-     * Discover published bundles across GitHub by a type's discovery topic.
-     *
-     * Gated on `canInstall`, exactly like `install()` — for the reason `bundle()`
-     * is gated like `publish()`. Discovery and fetch are the two steps that
-     * PRECEDE an install, and both drive this server's GitHub client with the
-     * caller's chosen store credential. That credential is held by reference: the
-     * broker signs the request and the caller never sees the secret. Leaving
-     * these two ungated therefore handed anyone who may NOT install a
-     * credentialed GitHub proxy, which is more than the install they were
-     * refused. Orgs that have not curated `federated_config_install_groups` are
-     * unaffected — an empty list still means "any signed-in user".
-     *
-     * @return JSONResponse `{results: [...]}`, or 403 when the caller may not install.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function discover(): JSONResponse
-    {
-        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
-            return new JSONResponse(['error' => 'You are not allowed to browse shared configuration.'], Http::STATUS_FORBIDDEN);
-        }
+		try {
+			$bundle = $this->service->fetchBundle(repo: $repo, path: $path, credentialId: $credentialId);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
 
-        $topic = trim((string) $this->request->getParam('topic', ''));
-        if ($topic === '') {
-            return new JSONResponse(['error' => 'Discovery needs a topic.'], Http::STATUS_BAD_REQUEST);
-        }
+		return new JSONResponse(['bundle' => $bundle]);
+	}//end fetch()
 
-        // An authenticated search (higher rate limit) uses the user's chosen
-        // store credential when they have one; otherwise it is anonymous.
-        $credentialId = null;
-        $user         = $this->userSession->getUser();
-        if ($user !== null) {
-            $stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
-            if ($stored !== '') {
-                $credentialId = $stored;
-            }
-        }
-
-        return new JSONResponse(['results' => $this->service->discover(topic: $topic, credentialId: $credentialId)]);
-
-    }//end discover()
-
-    /**
-     * Fetch a published bundle file from a GitHub repo (the bridge from discover
-     * to install).
-     *
-     * Gated on `canInstall` for the reason given on `discover()`: this method
-     * takes a caller-supplied `repo` and `path` and has the broker sign the
-     * request with the caller's store credential, so ungated it is an arbitrary
-     * credentialed GitHub read for anyone the install gate would have refused.
-     *
-     * @return JSONResponse The decoded bundle, 403 when the caller may not install, or a 4xx.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function fetch(): JSONResponse
-    {
-        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
-            return new JSONResponse(['error' => 'You are not allowed to fetch shared configuration.'], Http::STATUS_FORBIDDEN);
-        }
-
-        $repo = trim((string) $this->request->getParam('repo', ''));
-        $path = trim((string) $this->request->getParam('path', ''));
-        if ($repo === '' || $path === '') {
-            return new JSONResponse(['error' => 'A fetch needs a repo and a path.'], Http::STATUS_BAD_REQUEST);
-        }
-
-        $credentialId = null;
-        $user         = $this->userSession->getUser();
-        if ($user !== null) {
-            $stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
-            if ($stored !== '') {
-                $credentialId = $stored;
-            }
-        }
-
-        try {
-            $bundle = $this->service->fetchBundle(repo: $repo, path: $path, credentialId: $credentialId);
-        } catch (Throwable $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        }
-
-        return new JSONResponse(['bundle' => $bundle]);
-
-    }//end fetch()
-
-    /**
-     * This instance's signing public key, for other orgs to add to their trust list.
-     *
-     * @return JSONResponse `{publicKey}`.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function publicKey(): JSONResponse
-    {
-        return new JSONResponse(['publicKey' => $this->service->publicKey()]);
-
-    }//end publicKey()
+	/**
+	 * This instance's signing public key, for other orgs to add to their trust list.
+	 *
+	 * @return JSONResponse `{publicKey}`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function publicKey(): JSONResponse {
+		return new JSONResponse(['publicKey' => $this->service->publicKey()]);
+	}//end publicKey()
 }//end class

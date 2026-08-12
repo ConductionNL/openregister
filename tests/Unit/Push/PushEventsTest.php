@@ -31,67 +31,61 @@ use PHPUnit\Framework\TestCase;
  *
  * @coversDefaultClass \OCA\OpenRegister\Push\PushEvents
  */
-class PushEventsTest extends TestCase
-{
-    /**
-     * Test that OR_OBJECT equals the expected event string.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-8
-     */
-    public function testOrObjectConstantValue(): void
-    {
-        $this->assertSame('or-object', PushEvents::OR_OBJECT);
-    }//end testOrObjectConstantValue()
+class PushEventsTest extends TestCase {
+	/**
+	 * Test that OR_OBJECT equals the expected event string.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-live-updates/tasks.md#task-8
+	 */
+	public function testOrObjectConstantValue(): void {
+		$this->assertSame('or-object', PushEvents::OR_OBJECT);
+	}//end testOrObjectConstantValue()
 
-    /**
-     * Test that OR_COLLECTION equals the expected event string.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-8
-     */
-    public function testOrCollectionConstantValue(): void
-    {
-        $this->assertSame('or-collection', PushEvents::OR_COLLECTION);
-    }//end testOrCollectionConstantValue()
+	/**
+	 * Test that OR_COLLECTION equals the expected event string.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-live-updates/tasks.md#task-8
+	 */
+	public function testOrCollectionConstantValue(): void {
+		$this->assertSame('or-collection', PushEvents::OR_COLLECTION);
+	}//end testOrCollectionConstantValue()
 
-    /**
-     * Test that OR_OBJECT is a non-empty string.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-8
-     */
-    public function testOrObjectIsNonEmptyString(): void
-    {
-        $this->assertIsString(PushEvents::OR_OBJECT);
-        $this->assertNotEmpty(PushEvents::OR_OBJECT);
-    }//end testOrObjectIsNonEmptyString()
+	/**
+	 * Test that OR_OBJECT is a non-empty string.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-live-updates/tasks.md#task-8
+	 */
+	public function testOrObjectIsNonEmptyString(): void {
+		$this->assertIsString(PushEvents::OR_OBJECT);
+		$this->assertNotEmpty(PushEvents::OR_OBJECT);
+	}//end testOrObjectIsNonEmptyString()
 
-    /**
-     * Test that OR_COLLECTION is a non-empty string.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-8
-     */
-    public function testOrCollectionIsNonEmptyString(): void
-    {
-        $this->assertIsString(PushEvents::OR_COLLECTION);
-        $this->assertNotEmpty(PushEvents::OR_COLLECTION);
-    }//end testOrCollectionIsNonEmptyString()
+	/**
+	 * Test that OR_COLLECTION is a non-empty string.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-live-updates/tasks.md#task-8
+	 */
+	public function testOrCollectionIsNonEmptyString(): void {
+		$this->assertIsString(PushEvents::OR_COLLECTION);
+		$this->assertNotEmpty(PushEvents::OR_COLLECTION);
+	}//end testOrCollectionIsNonEmptyString()
 
-    /**
-     * Test that OR_OBJECT and OR_COLLECTION are distinct values.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-8
-     */
-    public function testConstantsAreDistinct(): void
-    {
-        $this->assertNotSame(PushEvents::OR_OBJECT, PushEvents::OR_COLLECTION);
-    }//end testConstantsAreDistinct()
+	/**
+	 * Test that OR_OBJECT and OR_COLLECTION are distinct values.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-live-updates/tasks.md#task-8
+	 */
+	public function testConstantsAreDistinct(): void {
+		$this->assertNotSame(PushEvents::OR_OBJECT, PushEvents::OR_COLLECTION);
+	}//end testConstantsAreDistinct()
 }//end class

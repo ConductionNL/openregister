@@ -59,61 +59,57 @@ use Exception;
  *
  * @phpstan-consistent-constructor
  */
-class FolderAccessDeniedException extends Exception
-{
+class FolderAccessDeniedException extends Exception {
 
-    /**
-     * The HTTP status code controllers MUST map this exception to.
-     *
-     * Exposed as a class constant rather than as the exception's `code`
-     * value because `Exception::getCode()` is an application-level error
-     * code, not an HTTP status — conflating the two is brittle (future
-     * callers using `getCode()` for routing decisions get an HTTP number
-     * instead of a domain error number). Controllers reading this constant
-     * remain explicit about the HTTP mapping happening at the controller
-     * layer; the exception itself stays HTTP-agnostic.
-     *
-     * @var int
-     */
-    public const HTTP_STATUS = 403;
+	/**
+	 * The HTTP status code controllers MUST map this exception to.
+	 *
+	 * Exposed as a class constant rather than as the exception's `code`
+	 * value because `Exception::getCode()` is an application-level error
+	 * code, not an HTTP status — conflating the two is brittle (future
+	 * callers using `getCode()` for routing decisions get an HTTP number
+	 * instead of a domain error number). Controllers reading this constant
+	 * remain explicit about the HTTP mapping happening at the controller
+	 * layer; the exception itself stays HTTP-agnostic.
+	 *
+	 * @var int
+	 */
+	public const HTTP_STATUS = 403;
 
-    /**
-     * The folder ID the caller attempted to bind to.
-     *
-     * @var string
-     */
-    private string $attemptedFolderId;
+	/**
+	 * The folder ID the caller attempted to bind to.
+	 *
+	 * @var string
+	 */
+	private string $attemptedFolderId;
 
-    /**
-     * FolderAccessDeniedException constructor.
-     *
-     * @param string         $attemptedFolderId The folder ID the caller attempted to bind to.
-     * @param int            $code              Application error code; 0 by default. Controllers
-     *                                          MUST use `self::HTTP_STATUS` for the HTTP mapping,
-     *                                          not this code.
-     * @param Exception|null $previous          The previous exception that caused this one, if any.
-     */
-    public function __construct(string $attemptedFolderId, int $code=0, ?Exception $previous=null)
-    {
-        $this->attemptedFolderId = $attemptedFolderId;
+	/**
+	 * FolderAccessDeniedException constructor.
+	 *
+	 * @param string $attemptedFolderId The folder ID the caller attempted to bind to.
+	 * @param int $code Application error code; 0 by default. Controllers
+	 *                  MUST use `self::HTTP_STATUS` for the HTTP mapping,
+	 *                  not this code.
+	 * @param Exception|null $previous The previous exception that caused this one, if any.
+	 */
+	public function __construct(string $attemptedFolderId, int $code = 0, ?Exception $previous = null) {
+		$this->attemptedFolderId = $attemptedFolderId;
 
-        $message = "Access to folder '".$attemptedFolderId."' is denied for the acting user.";
-        parent::__construct(message: $message, code: $code, previous: $previous);
+		$message = "Access to folder '" . $attemptedFolderId . "' is denied for the acting user.";
+		parent::__construct(message: $message, code: $code, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the folder ID the caller attempted to bind to.
-     *
-     * **Server-side use only** — for audit-trail entries and structured
-     * log lines. MUST NOT be included in the HTTP response body (see the
-     * class docblock for the enumeration-oracle rationale).
-     *
-     * @return string
-     */
-    public function getAttemptedFolderId(): string
-    {
-        return $this->attemptedFolderId;
-
-    }//end getAttemptedFolderId()
+	/**
+	 * Get the folder ID the caller attempted to bind to.
+	 *
+	 * **Server-side use only** — for audit-trail entries and structured
+	 * log lines. MUST NOT be included in the HTTP response body (see the
+	 * class docblock for the enumeration-oracle rationale).
+	 *
+	 * @return string
+	 */
+	public function getAttemptedFolderId(): string {
+		return $this->attemptedFolderId;
+	}//end getAttemptedFolderId()
 }//end class

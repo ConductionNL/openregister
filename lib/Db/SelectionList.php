@@ -55,164 +55,160 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class SelectionList extends Entity implements JsonSerializable
-{
+class SelectionList extends Entity implements JsonSerializable {
 
-    /**
-     * Unique identifier for the selection list entry.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Unique identifier for the selection list entry.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Classification category code (e.g. B1, A1).
-     *
-     * @var string|null
-     */
-    protected ?string $category = null;
+	/**
+	 * Classification category code (e.g. B1, A1).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $category = null;
 
-    /**
-     * Number of years to retain objects in this category.
-     *
-     * @var integer|null
-     */
-    protected ?int $retentionYears = null;
+	/**
+	 * Number of years to retain objects in this category.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $retentionYears = null;
 
-    /**
-     * Archival action: 'vernietigen' or 'bewaren'.
-     *
-     * @var string|null
-     */
-    protected ?string $action = null;
+	/**
+	 * Archival action: 'vernietigen' or 'bewaren'.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $action = null;
 
-    /**
-     * Human-readable description of this selection list entry.
-     *
-     * @var string|null
-     */
-    protected ?string $description = null;
+	/**
+	 * Human-readable description of this selection list entry.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $description = null;
 
-    /**
-     * Schema-level overrides for retention years.
-     * JSON map of schema UUID to override retention years.
-     *
-     * @var array|null
-     */
-    protected ?array $schemaOverrides = [];
+	/**
+	 * Schema-level overrides for retention years.
+	 * JSON map of schema UUID to override retention years.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $schemaOverrides = [];
 
-    /**
-     * Organisation that owns this selection list entry.
-     *
-     * @var string|null
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation that owns this selection list entry.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Last update timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Valid archival actions.
-     */
-    public const VALID_ACTIONS = ['vernietigen', 'bewaren'];
+	/**
+	 * Valid archival actions.
+	 */
+	public const VALID_ACTIONS = ['vernietigen', 'bewaren'];
 
-    /**
-     * Initialize the entity and define field types.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'category', type: 'string');
-        $this->addType(fieldName: 'retentionYears', type: 'integer');
-        $this->addType(fieldName: 'action', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'schemaOverrides', type: 'json');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Initialize the entity and define field types.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'category', type: 'string');
+		$this->addType(fieldName: 'retentionYears', type: 'integer');
+		$this->addType(fieldName: 'action', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'schemaOverrides', type: 'json');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Serialize the entity to JSON format.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        $created = null;
-        if ($this->created instanceof DateTime) {
-            $created = $this->created->format('c');
-        }
+	/**
+	 * Serialize the entity to JSON format.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		$created = null;
+		if ($this->created instanceof DateTime) {
+			$created = $this->created->format('c');
+		}
 
-        $updated = null;
-        if ($this->updated instanceof DateTime) {
-            $updated = $this->updated->format('c');
-        }
+		$updated = null;
+		if ($this->updated instanceof DateTime) {
+			$updated = $this->updated->format('c');
+		}
 
-        return [
-            'id'              => $this->uuid,
-            'uuid'            => $this->uuid,
-            'category'        => $this->category,
-            'retentionYears'  => $this->retentionYears,
-            'action'          => $this->action,
-            'description'     => $this->description,
-            'schemaOverrides' => $this->schemaOverrides ?? [],
-            'organisation'    => $this->organisation,
-            'created'         => $created,
-            'updated'         => $updated,
-        ];
-    }//end jsonSerialize()
+		return [
+			'id' => $this->uuid,
+			'uuid' => $this->uuid,
+			'category' => $this->category,
+			'retentionYears' => $this->retentionYears,
+			'action' => $this->action,
+			'description' => $this->description,
+			'schemaOverrides' => $this->schemaOverrides ?? [],
+			'organisation' => $this->organisation,
+			'created' => $created,
+			'updated' => $updated,
+		];
+	}//end jsonSerialize()
 
-    /**
-     * Hydrate the entity from an array.
-     *
-     * @param array<string, mixed> $data The data array
-     *
-     * @return static
-     */
-    public function hydrate(array $data): static
-    {
-        // phpcs:disable -- Entity __call setters cannot use named args.
-        if (isset($data['uuid']) === true) {
-            $this->setUuid($data['uuid']);
-        }
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * @param array<string, mixed> $data The data array
+	 *
+	 * @return static
+	 */
+	public function hydrate(array $data): static {
+		// phpcs:disable -- Entity __call setters cannot use named args.
+		if (isset($data['uuid']) === true) {
+			$this->setUuid($data['uuid']);
+		}
 
-        if (isset($data['category']) === true) {
-            $this->setCategory($data['category']);
-        }
+		if (isset($data['category']) === true) {
+			$this->setCategory($data['category']);
+		}
 
-        if (isset($data['retentionYears']) === true) {
-            $this->setRetentionYears((int) $data['retentionYears']);
-        }
+		if (isset($data['retentionYears']) === true) {
+			$this->setRetentionYears((int)$data['retentionYears']);
+		}
 
-        if (isset($data['action']) === true) {
-            $this->setAction($data['action']);
-        }
+		if (isset($data['action']) === true) {
+			$this->setAction($data['action']);
+		}
 
-        if (isset($data['description']) === true) {
-            $this->setDescription($data['description']);
-        }
+		if (isset($data['description']) === true) {
+			$this->setDescription($data['description']);
+		}
 
-        if (isset($data['schemaOverrides']) === true) {
-            $this->setSchemaOverrides($data['schemaOverrides']);
-        }
+		if (isset($data['schemaOverrides']) === true) {
+			$this->setSchemaOverrides($data['schemaOverrides']);
+		}
 
-        if (isset($data['organisation']) === true) {
-            $this->setOrganisation($data['organisation']);
-        }
+		if (isset($data['organisation']) === true) {
+			$this->setOrganisation($data['organisation']);
+		}
 
-        // phpcs:enable
-        return $this;
-    }//end hydrate()
+		// phpcs:enable
+		return $this;
+	}//end hydrate()
 }//end class

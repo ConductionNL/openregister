@@ -44,105 +44,101 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
  */
-class GenericInitializeActions implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param string                   $appId      The leaf app id.
-     * @param GenericActionAuthService $actionAuth App-scoped action-auth service.
-     * @param IAppManager              $appManager App path resolution for the seed file.
-     * @param LoggerInterface          $logger     PSR logger.
-     */
-    public function __construct(
-        protected readonly string $appId,
-        protected readonly GenericActionAuthService $actionAuth,
-        protected readonly IAppManager $appManager,
-        protected readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class GenericInitializeActions implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appId The leaf app id.
+	 * @param GenericActionAuthService $actionAuth App-scoped action-auth service.
+	 * @param IAppManager $appManager App path resolution for the seed file.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		protected readonly string $appId,
+		protected readonly GenericActionAuthService $actionAuth,
+		protected readonly IAppManager $appManager,
+		protected readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Repair-step name.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return sprintf('Initialize %s action-authorization matrix (ADR-023)', $this->appId);
-    }//end getName()
+	/**
+	 * Repair-step name.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return sprintf('Initialize %s action-authorization matrix (ADR-023)', $this->appId);
+	}//end getName()
 
-    /**
-     * Seed the matrix if empty; preserve any existing admin-customised matrix.
-     *
-     * @param IOutput $output Repair output channel.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
-     */
-    public function run(IOutput $output): void
-    {
-        $existing = $this->actionAuth->getMatrix();
-        if (count($existing) > 0) {
-            $output->info(sprintf('Action matrix already has %d entries — preserving.', count($existing)));
-            return;
-        }
+	/**
+	 * Seed the matrix if empty; preserve any existing admin-customised matrix.
+	 *
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
+	 */
+	public function run(IOutput $output): void {
+		$existing = $this->actionAuth->getMatrix();
+		if (count($existing) > 0) {
+			$output->info(sprintf('Action matrix already has %d entries — preserving.', count($existing)));
+			return;
+		}
 
-        $seedPath = $this->resolveSeedPath();
-        if ($seedPath === null || file_exists($seedPath) === false) {
-            $output->warning('actions.seed.json not found — matrix left empty (default-deny).');
-            $this->logger->warning(sprintf('[AppHost:%s] ADR-023 seed file missing', $this->appId));
-            return;
-        }
+		$seedPath = $this->resolveSeedPath();
+		if ($seedPath === null || file_exists($seedPath) === false) {
+			$output->warning('actions.seed.json not found — matrix left empty (default-deny).');
+			$this->logger->warning(sprintf('[AppHost:%s] ADR-023 seed file missing', $this->appId));
+			return;
+		}
 
-        $raw = file_get_contents($seedPath);
-        if ($raw === false) {
-            $output->warning('Could not read actions.seed.json — matrix left empty (default-deny).');
-            return;
-        }
+		$raw = file_get_contents($seedPath);
+		if ($raw === false) {
+			$output->warning('Could not read actions.seed.json — matrix left empty (default-deny).');
+			return;
+		}
 
-        try {
-            $parsed = json_decode($raw, associative: true, depth: 512, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            $output->warning('actions.seed.json invalid JSON: '.$e->getMessage());
-            $this->logger->error(sprintf('[AppHost:%s] ADR-023 seed malformed: %s', $this->appId, $e->getMessage()));
-            return;
-        }
+		try {
+			$parsed = json_decode($raw, associative: true, depth: 512, flags: JSON_THROW_ON_ERROR);
+		} catch (\JsonException $e) {
+			$output->warning('actions.seed.json invalid JSON: ' . $e->getMessage());
+			$this->logger->error(sprintf('[AppHost:%s] ADR-023 seed malformed: %s', $this->appId, $e->getMessage()));
+			return;
+		}
 
-        $actions = ($parsed['actions'] ?? null);
-        if (is_array($actions) === false) {
-            $output->warning('actions.seed.json missing `actions` object — matrix left empty.');
-            return;
-        }
+		$actions = ($parsed['actions'] ?? null);
+		if (is_array($actions) === false) {
+			$output->warning('actions.seed.json missing `actions` object — matrix left empty.');
+			return;
+		}
 
-        try {
-            $this->actionAuth->setMatrix($actions);
-        } catch (\JsonException $e) {
-            $output->warning('Failed to write matrix: '.$e->getMessage());
-            return;
-        }
+		try {
+			$this->actionAuth->setMatrix($actions);
+		} catch (\JsonException $e) {
+			$output->warning('Failed to write matrix: ' . $e->getMessage());
+			return;
+		}
 
-        $output->info(sprintf('Seeded action matrix with %d actions (default: admin-only).', count($actions)));
-    }//end run()
+		$output->info(sprintf('Seeded action matrix with %d actions (default: admin-only).', count($actions)));
+	}//end run()
 
-    /**
-     * Resolve the leaf app's `lib/actions.seed.json` path. Overridable hook.
-     *
-     * @return string|null Absolute path, or null when the app path is unresolvable.
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     */
-    protected function resolveSeedPath(): ?string
-    {
-        try {
-            $appPath = $this->appManager->getAppPath(appId: $this->appId);
-        } catch (Throwable $e) {
-            return null;
-        }
+	/**
+	 * Resolve the leaf app's `lib/actions.seed.json` path. Overridable hook.
+	 *
+	 * @return string|null Absolute path, or null when the app path is unresolvable.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	protected function resolveSeedPath(): ?string {
+		try {
+			$appPath = $this->appManager->getAppPath(appId: $this->appId);
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        return $appPath.'/lib/actions.seed.json';
-    }//end resolveSeedPath()
+		return $appPath . '/lib/actions.seed.json';
+	}//end resolveSeedPath()
 }//end class

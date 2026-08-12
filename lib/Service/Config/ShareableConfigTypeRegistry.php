@@ -33,102 +33,95 @@ use Psr\Log\LoggerInterface;
 /**
  * Holds the registered shareable configuration types.
  */
-class ShareableConfigTypeRegistry
-{
+class ShareableConfigTypeRegistry {
 
-    /**
-     * Registered types, keyed by id.
-     *
-     * @var array<string, IShareableConfigType>
-     */
-    private array $types = [];
+	/**
+	 * Registered types, keyed by id.
+	 *
+	 * @var array<string, IShareableConfigType>
+	 */
+	private array $types = [];
 
-    /**
-     * Whether the registration event has been dispatched yet.
-     *
-     * @var boolean
-     */
-    private bool $loaded = false;
+	/**
+	 * Whether the registration event has been dispatched yet.
+	 *
+	 * @var boolean
+	 */
+	private bool $loaded = false;
 
-    /**
-     * Constructor.
-     *
-     * @param IEventDispatcher $dispatcher Dispatches the registration event.
-     * @param LoggerInterface  $logger     The logger.
-     */
-    public function __construct(
-        private readonly IEventDispatcher $dispatcher,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param IEventDispatcher $dispatcher Dispatches the registration event.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private readonly IEventDispatcher $dispatcher,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Add a type. A later registration of the same id wins (last write), which
-     * lets an instance override a built-in with its own.
-     *
-     * @param IShareableConfigType $type The type.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function register(IShareableConfigType $type): void
-    {
-        $this->types[$type->getId()] = $type;
+	/**
+	 * Add a type. A later registration of the same id wins (last write), which
+	 * lets an instance override a built-in with its own.
+	 *
+	 * @param IShareableConfigType $type The type.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function register(IShareableConfigType $type): void {
+		$this->types[$type->getId()] = $type;
 
-    }//end register()
+	}//end register()
 
-    /**
-     * Every registered type.
-     *
-     * @return array<string, IShareableConfigType> The types, keyed by id.
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function all(): array
-    {
-        $this->load();
-        return $this->types;
+	/**
+	 * Every registered type.
+	 *
+	 * @return array<string, IShareableConfigType> The types, keyed by id.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function all(): array {
+		$this->load();
+		return $this->types;
+	}//end all()
 
-    }//end all()
+	/**
+	 * One type by id, or null when nothing owns it.
+	 *
+	 * @param string $id The type id.
+	 *
+	 * @return IShareableConfigType|null The type, or null.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function get(string $id): ?IShareableConfigType {
+		$this->load();
+		return ($this->types[$id] ?? null);
+	}//end get()
 
-    /**
-     * One type by id, or null when nothing owns it.
-     *
-     * @param string $id The type id.
-     *
-     * @return IShareableConfigType|null The type, or null.
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function get(string $id): ?IShareableConfigType
-    {
-        $this->load();
-        return ($this->types[$id] ?? null);
+	/**
+	 * Dispatch the registration event once, so every app contributes its types.
+	 *
+	 * @return void
+	 */
+	private function load(): void {
+		if ($this->loaded === true) {
+			return;
+		}
 
-    }//end get()
+		$this->loaded = true;
+		try {
+			$this->dispatcher->dispatchTyped(new RegisterShareableConfigTypesEvent(registry: $this));
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[ShareableConfigTypeRegistry] Failed to collect types: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
 
-    /**
-     * Dispatch the registration event once, so every app contributes its types.
-     *
-     * @return void
-     */
-    private function load(): void
-    {
-        if ($this->loaded === true) {
-            return;
-        }
-
-        $this->loaded = true;
-        try {
-            $this->dispatcher->dispatchTyped(new RegisterShareableConfigTypesEvent(registry: $this));
-        } catch (\Throwable $e) {
-            $this->logger->error(
-                message: '[ShareableConfigTypeRegistry] Failed to collect types: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-
-    }//end load()
+	}//end load()
 }//end class

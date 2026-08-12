@@ -42,56 +42,53 @@ use Exception;
  *
  * @link https://OpenRegister.app
  */
-class CustomValidationException extends Exception
-{
+class CustomValidationException extends Exception {
 
-    /**
-     * The validation errors array
-     *
-     * Associative array containing validation errors, typically keyed by
-     * field names or error codes. Each value contains error message(s)
-     * for that field or error type.
-     *
-     * @var array<string, string|array<string>> Validation errors array
-     */
-    private readonly array $errors;
+	/**
+	 * The validation errors array
+	 *
+	 * Associative array containing validation errors, typically keyed by
+	 * field names or error codes. Each value contains error message(s)
+	 * for that field or error type.
+	 *
+	 * @var array<string, string|array<string>> Validation errors array
+	 */
+	private readonly array $errors;
 
-    /**
-     * Constructor for CustomValidationException
-     *
-     * Initializes exception with custom validation error message and
-     * detailed error array. Calls parent constructor to set message.
-     *
-     * @param string                              $message The error message describing validation failure
-     * @param array<string, string|array<string>> $errors  The validation errors array,
-     *                                                     typically keyed by field
-     *                                                     names
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(string $message, array $errors)
-    {
-        // Store validation errors for detailed error reporting.
-        $this->errors = $errors;
+	/**
+	 * Constructor for CustomValidationException
+	 *
+	 * Initializes exception with custom validation error message and
+	 * detailed error array. Calls parent constructor to set message.
+	 *
+	 * @param string $message The error message describing validation failure
+	 * @param array<string, string|array<string>> $errors The validation errors array,
+	 *                                                    typically keyed by field
+	 *                                                    names
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(string $message, array $errors) {
+		// Store validation errors for detailed error reporting.
+		$this->errors = $errors;
 
-        // Call parent constructor to initialize base exception properties.
-        parent::__construct(message: $message);
-    }//end __construct()
+		// Call parent constructor to initialize base exception properties.
+		parent::__construct(message: $message);
+	}//end __construct()
 
-    /**
-     * Retrieves the errors to display them
-     *
-     * Returns the validation errors array for display to users or API clients.
-     * Errors are typically formatted as field => error message(s) pairs.
-     *
-     * @return array<string, string|array<string>> The errors array
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }//end getErrors()
+	/**
+	 * Retrieves the errors to display them
+	 *
+	 * Returns the validation errors array for display to users or API clients.
+	 * Errors are typically formatted as field => error message(s) pairs.
+	 *
+	 * @return array<string, string|array<string>> The errors array
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getErrors(): array {
+		return $this->errors;
+	}//end getErrors()
 }//end class

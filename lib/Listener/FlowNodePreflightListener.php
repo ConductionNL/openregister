@@ -49,72 +49,70 @@ use UnexpectedValueException;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
-class FlowNodePreflightListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowNodePreflight $preflight Resolves step types against the registry.
-     * @param LoggerInterface   $logger    The logger.
-     */
-    public function __construct(
-        private readonly FlowNodePreflight $preflight,
-        private readonly LoggerInterface $logger
-    ) {
+class FlowNodePreflightListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowNodePreflight $preflight Resolves step types against the registry.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private readonly FlowNodePreflight $preflight,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Reject a save whose flow document names an unrunnable step type.
-     *
-     * @param Event $event The inbound event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectCreatingEvent) {
-            $object = $event->getObject();
-        } else if ($event instanceof ObjectUpdatingEvent) {
-            $object = $event->getNewObject();
-        } else {
-            return;
-        }
+	/**
+	 * Reject a save whose flow document names an unrunnable step type.
+	 *
+	 * @param Event $event The inbound event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatingEvent) {
+			$object = $event->getObject();
+		} elseif ($event instanceof ObjectUpdatingEvent) {
+			$object = $event->getNewObject();
+		} else {
+			return;
+		}
 
-        $data = $object->getObject();
-        if (is_array($data) === false || $data === []) {
-            return;
-        }
+		$data = $object->getObject();
+		if (is_array($data) === false || $data === []) {
+			return;
+		}
 
-        if ($this->preflight->looksLikeFlow(data: $data) === false) {
-            return;
-        }
+		if ($this->preflight->looksLikeFlow(data: $data) === false) {
+			return;
+		}
 
-        try {
-            $this->preflight->assertRunnable(
-                flow: $data,
-                label: (string) ($data['name'] ?? $object->getUuid() ?? 'flow')
-            );
-        } catch (UnexpectedValueException $e) {
-            $event->setErrors(
-                [
-                    'code'    => 'flow-node-type-unavailable',
-                    'message' => $e->getMessage(),
-                ]
-            );
-            $event->stopPropagation();
-        } catch (Throwable $e) {
-            // Preflight is a guard, not a gate on unrelated saves. If it fails
-            // for a reason of its own the save proceeds — the run-time refusal
-            // in FlowNodeRegistry::get() is still there as the backstop, which
-            // is exactly the situation before this listener existed.
-            $this->logger->warning(
-                message: '[FlowNodePreflightListener] Preflight itself failed, allowing the save: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($e)]
-            );
-        }//end try
+		try {
+			$this->preflight->assertRunnable(
+				flow: $data,
+				label: (string)($data['name'] ?? $object->getUuid() ?? 'flow')
+			);
+		} catch (UnexpectedValueException $e) {
+			$event->setErrors(
+				[
+					'code' => 'flow-node-type-unavailable',
+					'message' => $e->getMessage(),
+				]
+			);
+			$event->stopPropagation();
+		} catch (Throwable $e) {
+			// Preflight is a guard, not a gate on unrelated saves. If it fails
+			// for a reason of its own the save proceeds — the run-time refusal
+			// in FlowNodeRegistry::get() is still there as the backstop, which
+			// is exactly the situation before this listener existed.
+			$this->logger->warning(
+				message: '[FlowNodePreflightListener] Preflight itself failed, allowing the save: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($e)]
+			);
+		}//end try
 
-    }//end handle()
+	}//end handle()
 }//end class

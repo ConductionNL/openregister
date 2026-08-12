@@ -49,365 +49,344 @@ use Psr\Log\LoggerInterface;
 /**
  * Controller for schema versioning, revalidation and migration.
  */
-class SchemaMigrationController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                    $appName             App name.
-     * @param IRequest                  $request             Request.
-     * @param SchemaMapper              $schemaMapper        Schema lookup.
-     * @param RegisterMapper            $registerMapper      Register lookup (resolve population register).
-     * @param SchemaChangelogMapper     $changelogMapper     Changelog read.
-     * @param SchemaRunMapper           $runMapper           Run read.
-     * @param SchemaRunEntryMapper      $runEntryMapper      Run entry read.
-     * @param SchemaRevalidationService $revalidationService Revalidation engine.
-     * @param SchemaMigrationService    $migrationService    Migration engine.
-     * @param IJobList                  $jobList             Job list (enqueue runs).
-     * @param IUserSession              $userSession         Current user.
-     * @param LoggerInterface           $logger              Logger.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaChangelogMapper $changelogMapper,
-        private readonly SchemaRunMapper $runMapper,
-        private readonly SchemaRunEntryMapper $runEntryMapper,
-        private readonly SchemaRevalidationService $revalidationService,
-        private readonly SchemaMigrationService $migrationService,
-        private readonly IJobList $jobList,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class SchemaMigrationController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param SchemaMapper $schemaMapper Schema lookup.
+	 * @param RegisterMapper $registerMapper Register lookup (resolve population register).
+	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
+	 * @param SchemaRunMapper $runMapper Run read.
+	 * @param SchemaRunEntryMapper $runEntryMapper Run entry read.
+	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
+	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param IJobList $jobList Job list (enqueue runs).
+	 * @param IUserSession $userSession Current user.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaChangelogMapper $changelogMapper,
+		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunEntryMapper $runEntryMapper,
+		private readonly SchemaRevalidationService $revalidationService,
+		private readonly SchemaMigrationService $migrationService,
+		private readonly IJobList $jobList,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get a schema's classified changelog, newest-first.
-     *
-     * @param int $id The schema id.
-     *
-     * @return JSONResponse The changelog entries.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function changelog(int $id): JSONResponse
-    {
-        $limit  = $this->intParam(name: '_limit');
-        $offset = $this->intParam(name: '_offset');
+	/**
+	 * Get a schema's classified changelog, newest-first.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The changelog entries.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function changelog(int $id): JSONResponse {
+		$limit = $this->intParam(name: '_limit');
+		$offset = $this->intParam(name: '_offset');
 
-        $entries = $this->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
+		$entries = $this->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
 
-        return new JSONResponse(['results' => array_map(static fn($e) => $e->jsonSerialize(), $entries)]);
+		return new JSONResponse(['results' => array_map(static fn ($e) => $e->jsonSerialize(), $entries)]);
+	}//end changelog()
 
-    }//end changelog()
+	/**
+	 * Start a revalidation (impact-analysis) run for a schema.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The created run, or an error.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function revalidate(int $id): JSONResponse {
+		try {
+			$this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], 404);
+		}
 
-    /**
-     * Start a revalidation (impact-analysis) run for a schema.
-     *
-     * @param int $id The schema id.
-     *
-     * @return JSONResponse The created run, or an error.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function revalidate(int $id): JSONResponse
-    {
-        try {
-            $this->schemaMapper->find($id);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Schema not found'], 404);
-        }
+		$registerId = $this->resolveRegisterId(schemaId: $id);
+		if ($registerId === null) {
+			return new JSONResponse(['error' => 'No register contains this schema'], 422);
+		}
 
-        $registerId = $this->resolveRegisterId(schemaId: $id);
-        if ($registerId === null) {
-            return new JSONResponse(['error' => 'No register contains this schema'], 422);
-        }
+		$proposed = $this->request->getParam('proposedDefinition');
+		if (is_array($proposed) === false) {
+			$proposed = null;
+		}
 
-        $proposed = $this->request->getParam('proposedDefinition');
-        if (is_array($proposed) === false) {
-            $proposed = null;
-        }
+		try {
+			$run = $this->revalidationService->start(
+				schemaId: $id,
+				registerId: $registerId,
+				proposedDefinition: $proposed,
+				startedBy: $this->currentUid()
+			);
+		} catch (SchemaRunConcurrencyException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 409);
+		}
 
-        try {
-            $run = $this->revalidationService->start(
-                schemaId: $id,
-                registerId: $registerId,
-                proposedDefinition: $proposed,
-                startedBy: $this->currentUid()
-            );
-        } catch (SchemaRunConcurrencyException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 409);
-        }
+		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\SchemaRunJob::class, ['run_id' => $run->getId()]);
 
-        $this->jobList->add(\OCA\OpenRegister\BackgroundJob\SchemaRunJob::class, ['run_id' => $run->getId()]);
+		return new JSONResponse($run->jsonSerialize(), 201);
+	}//end revalidate()
 
-        return new JSONResponse($run->jsonSerialize(), 201);
+	/**
+	 * List runs for a schema.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The runs.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function runs(int $id): JSONResponse {
+		$runs = $this->runMapper->findBySchema(
+			schemaId: $id,
+			limit: $this->intParam(name: '_limit'),
+			offset: $this->intParam(name: '_offset')
+		);
 
-    }//end revalidate()
+		return new JSONResponse(['results' => array_map(static fn ($r) => $r->jsonSerialize(), $runs)]);
+	}//end runs()
 
-    /**
-     * List runs for a schema.
-     *
-     * @param int $id The schema id.
-     *
-     * @return JSONResponse The runs.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function runs(int $id): JSONResponse
-    {
-        $runs = $this->runMapper->findBySchema(
-            schemaId: $id,
-            limit: $this->intParam(name: '_limit'),
-            offset: $this->intParam(name: '_offset')
-        );
+	/**
+	 * Get a single run's status + report (with per-object entries).
+	 *
+	 * @param int $id The schema id.
+	 * @param int $run The run id.
+	 *
+	 * @return JSONResponse The run + entries.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function run(int $id, int $run): JSONResponse {
+		try {
+			$entity = $this->runMapper->find($run);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Run not found'], 404);
+		}
 
-        return new JSONResponse(['results' => array_map(static fn($r) => $r->jsonSerialize(), $runs)]);
+		if ($entity->getSchemaId() !== $id) {
+			return new JSONResponse(['error' => 'Run does not belong to this schema'], 404);
+		}
 
-    }//end runs()
+		$outcome = $this->request->getParam('outcome');
+		if (is_string($outcome) === false) {
+			$outcome = null;
+		}
 
-    /**
-     * Get a single run's status + report (with per-object entries).
-     *
-     * @param int $id  The schema id.
-     * @param int $run The run id.
-     *
-     * @return JSONResponse The run + entries.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function run(int $id, int $run): JSONResponse
-    {
-        try {
-            $entity = $this->runMapper->find($run);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Run not found'], 404);
-        }
+		$entries = $this->runEntryMapper->findByRun(
+			runId: $run,
+			outcome: $outcome,
+			limit: $this->intParam(name: '_limit'),
+			offset: $this->intParam(name: '_offset')
+		);
 
-        if ($entity->getSchemaId() !== $id) {
-            return new JSONResponse(['error' => 'Run does not belong to this schema'], 404);
-        }
+		$payload = $entity->jsonSerialize();
+		$payload['entries'] = array_map(static fn ($e) => $e->jsonSerialize(), $entries);
 
-        $outcome = $this->request->getParam('outcome');
-        if (is_string($outcome) === false) {
-            $outcome = null;
-        }
+		return new JSONResponse($payload);
+	}//end run()
 
-        $entries = $this->runEntryMapper->findByRun(
-            runId: $run,
-            outcome: $outcome,
-            limit: $this->intParam(name: '_limit'),
-            offset: $this->intParam(name: '_offset')
-        );
+	/**
+	 * Preview a migration plan against a bounded sample.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse Before/after pairs, or a plan-validation error.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function previewMigration(int $id): JSONResponse {
+		try {
+			$this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], 404);
+		}
 
-        $payload            = $entity->jsonSerialize();
-        $payload['entries'] = array_map(static fn($e) => $e->jsonSerialize(), $entries);
+		$plan = $this->request->getParam('plan');
+		if (is_array($plan) === false) {
+			return new JSONResponse(['error' => 'A "plan" array is required'], 422);
+		}
 
-        return new JSONResponse($payload);
+		$problems = $this->migrationService->validatePlan($plan);
+		if (count($problems) > 0) {
+			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
+		}
 
-    }//end run()
+		$registerId = $this->resolveRegisterId(schemaId: $id);
+		if ($registerId === null) {
+			return new JSONResponse(['error' => 'No register contains this schema'], 422);
+		}
 
-    /**
-     * Preview a migration plan against a bounded sample.
-     *
-     * @param int $id The schema id.
-     *
-     * @return JSONResponse Before/after pairs, or a plan-validation error.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function previewMigration(int $id): JSONResponse
-    {
-        try {
-            $this->schemaMapper->find($id);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Schema not found'], 404);
-        }
+		$sample = (int)($this->request->getParam('sample') ?? SchemaMigrationService::DEFAULT_PREVIEW_SAMPLE);
 
-        $plan = $this->request->getParam('plan');
-        if (is_array($plan) === false) {
-            return new JSONResponse(['error' => 'A "plan" array is required'], 422);
-        }
+		$pairs = $this->migrationService->preview($id, $registerId, $plan, $sample);
 
-        $problems = $this->migrationService->validatePlan($plan);
-        if (count($problems) > 0) {
-            return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => $problems], 422);
-        }
+		return new JSONResponse(['results' => $pairs]);
+	}//end previewMigration()
 
-        $registerId = $this->resolveRegisterId(schemaId: $id);
-        if ($registerId === null) {
-            return new JSONResponse(['error' => 'No register contains this schema'], 422);
-        }
+	/**
+	 * Execute a migration plan over a schema's population (background).
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return JSONResponse The created run, or an error.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function migrate(int $id): JSONResponse {
+		try {
+			$this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], 404);
+		}
 
-        $sample = (int) ($this->request->getParam('sample') ?? SchemaMigrationService::DEFAULT_PREVIEW_SAMPLE);
+		$plan = $this->request->getParam('plan');
+		if (is_array($plan) === false) {
+			return new JSONResponse(['error' => 'A "plan" array is required'], 422);
+		}
 
-        $pairs = $this->migrationService->preview($id, $registerId, $plan, $sample);
+		$registerId = $this->resolveRegisterId(schemaId: $id);
+		if ($registerId === null) {
+			return new JSONResponse(['error' => 'No register contains this schema'], 422);
+		}
 
-        return new JSONResponse(['results' => $pairs]);
+		$options = $this->request->getParam('options');
+		if (is_array($options) === false) {
+			$options = [];
+		}
 
-    }//end previewMigration()
+		try {
+			$run = $this->migrationService->start(
+				schemaId: $id,
+				registerId: $registerId,
+				plan: $plan,
+				options: $options,
+				startedBy: $this->currentUid()
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => [$e->getMessage()]], 422);
+		} catch (SchemaRunConcurrencyException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 409);
+		}
 
-    /**
-     * Execute a migration plan over a schema's population (background).
-     *
-     * @param int $id The schema id.
-     *
-     * @return JSONResponse The created run, or an error.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function migrate(int $id): JSONResponse
-    {
-        try {
-            $this->schemaMapper->find($id);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Schema not found'], 404);
-        }
+		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\SchemaRunJob::class, ['run_id' => $run->getId()]);
 
-        $plan = $this->request->getParam('plan');
-        if (is_array($plan) === false) {
-            return new JSONResponse(['error' => 'A "plan" array is required'], 422);
-        }
+		return new JSONResponse($run->jsonSerialize(), 201);
+	}//end migrate()
 
-        $registerId = $this->resolveRegisterId(schemaId: $id);
-        if ($registerId === null) {
-            return new JSONResponse(['error' => 'No register contains this schema'], 422);
-        }
+	/**
+	 * Roll a migration run back.
+	 *
+	 * @param int $id The schema id.
+	 * @param int $run The migration run id.
+	 *
+	 * @return JSONResponse The rolled-back run, or an error.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function rollback(int $id, int $run): JSONResponse {
+		try {
+			$entity = $this->runMapper->find($run);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Run not found'], 404);
+		}
 
-        $options = $this->request->getParam('options');
-        if (is_array($options) === false) {
-            $options = [];
-        }
+		if ($entity->getSchemaId() !== $id) {
+			return new JSONResponse(['error' => 'Run does not belong to this schema'], 404);
+		}
 
-        try {
-            $run = $this->migrationService->start(
-                schemaId: $id,
-                registerId: $registerId,
-                plan: $plan,
-                options: $options,
-                startedBy: $this->currentUid()
-            );
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => [$e->getMessage()]], 422);
-        } catch (SchemaRunConcurrencyException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 409);
-        }
+		try {
+			$result = $this->migrationService->rollback($run, $this->currentUid());
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 422);
+		} catch (SchemaRunConcurrencyException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 409);
+		}
 
-        $this->jobList->add(\OCA\OpenRegister\BackgroundJob\SchemaRunJob::class, ['run_id' => $run->getId()]);
+		return new JSONResponse($result->jsonSerialize());
+	}//end rollback()
 
-        return new JSONResponse($run->jsonSerialize(), 201);
+	/**
+	 * Resolve a register id that contains the given schema.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return int|null A register id, or null when none contains the schema.
+	 */
+	private function resolveRegisterId(int $schemaId): ?int {
+		$explicit = $this->request->getParam('registerId');
+		if ($explicit !== null && is_numeric($explicit) === true) {
+			return (int)$explicit;
+		}
 
-    }//end migrate()
+		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		foreach ($registers as $register) {
+			$schemas = array_map('strval', ($register->getSchemas() ?? []));
+			if (in_array((string)$schemaId, $schemas, true) === true) {
+				return (int)$register->getId();
+			}
+		}
 
-    /**
-     * Roll a migration run back.
-     *
-     * @param int $id  The schema id.
-     * @param int $run The migration run id.
-     *
-     * @return JSONResponse The rolled-back run, or an error.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function rollback(int $id, int $run): JSONResponse
-    {
-        try {
-            $entity = $this->runMapper->find($run);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Run not found'], 404);
-        }
+		return null;
+	}//end resolveRegisterId()
 
-        if ($entity->getSchemaId() !== $id) {
-            return new JSONResponse(['error' => 'Run does not belong to this schema'], 404);
-        }
+	/**
+	 * Read an optional integer query parameter.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return int|null The value, or null when absent.
+	 */
+	private function intParam(string $name): ?int {
+		$value = $this->request->getParam($name);
+		if ($value === null || is_numeric($value) === false) {
+			return null;
+		}
 
-        try {
-            $result = $this->migrationService->rollback($run, $this->currentUid());
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 422);
-        } catch (SchemaRunConcurrencyException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 409);
-        }
+		return (int)$value;
+	}//end intParam()
 
-        return new JSONResponse($result->jsonSerialize());
+	/**
+	 * The current user id, or null.
+	 *
+	 * @return string|null The uid.
+	 */
+	private function currentUid(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			return $user->getUID();
+		}
 
-    }//end rollback()
-
-    /**
-     * Resolve a register id that contains the given schema.
-     *
-     * @param int $schemaId The schema id.
-     *
-     * @return int|null A register id, or null when none contains the schema.
-     */
-    private function resolveRegisterId(int $schemaId): ?int
-    {
-        $explicit = $this->request->getParam('registerId');
-        if ($explicit !== null && is_numeric($explicit) === true) {
-            return (int) $explicit;
-        }
-
-        $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-        foreach ($registers as $register) {
-            $schemas = array_map('strval', ($register->getSchemas() ?? []));
-            if (in_array((string) $schemaId, $schemas, true) === true) {
-                return (int) $register->getId();
-            }
-        }
-
-        return null;
-
-    }//end resolveRegisterId()
-
-    /**
-     * Read an optional integer query parameter.
-     *
-     * @param string $name The parameter name.
-     *
-     * @return int|null The value, or null when absent.
-     */
-    private function intParam(string $name): ?int
-    {
-        $value = $this->request->getParam($name);
-        if ($value === null || is_numeric($value) === false) {
-            return null;
-        }
-
-        return (int) $value;
-
-    }//end intParam()
-
-    /**
-     * The current user id, or null.
-     *
-     * @return string|null The uid.
-     */
-    private function currentUid(): ?string
-    {
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            return $user->getUID();
-        }
-
-        return null;
-
-    }//end currentUid()
+		return null;
+	}//end currentUid()
 }//end class

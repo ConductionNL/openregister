@@ -1,4 +1,5 @@
 <?php
+
 /**
  * The cutover's one promise: no flow changes which events it fires on.
  *
@@ -42,216 +43,195 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowLocator
  */
-class FlowLocatorTriggerCutoverTest extends TestCase
-{
+class FlowLocatorTriggerCutoverTest extends TestCase {
 
-    private FlowMapper|MockObject $mapper;
+	private FlowMapper|MockObject $mapper;
 
-    private FlowTriggerMapper|MockObject $triggerMapper;
+	private FlowTriggerMapper|MockObject $triggerMapper;
 
-    private LoggerInterface|MockObject $logger;
+	private LoggerInterface|MockObject $logger;
 
-    private FlowLocator $locator;
+	private FlowLocator $locator;
 
+	/**
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->mapper = $this->createMock(FlowMapper::class);
+		$this->triggerMapper = $this->createMock(FlowTriggerMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->mapper        = $this->createMock(FlowMapper::class);
-        $this->triggerMapper = $this->createMock(FlowTriggerMapper::class);
-        $this->logger        = $this->createMock(LoggerInterface::class);
+		$this->locator = new FlowLocator(
+			mapper: $this->mapper,
+			triggerMapper: $this->triggerMapper,
+			objectService: $this->createMock(ObjectService::class),
+			logger: $this->logger
+		);
 
-        $this->locator = new FlowLocator(
-            mapper: $this->mapper,
-            triggerMapper: $this->triggerMapper,
-            objectService: $this->createMock(ObjectService::class),
-            logger: $this->logger
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * A dispatchable flow with the given uuid.
+	 *
+	 * @param string $uuid The flow uuid.
+	 *
+	 * @return Flow The flow.
+	 */
+	private function flow(string $uuid): Flow {
+		$flow = new Flow();
+		$flow->setUuid($uuid);
+		$flow->setEnabled(true);
+		// canDispatch() needs an owner — a trigger has no acting user.
+		$flow->setOwner('alice');
 
+		return $flow;
+	}//end flow()
 
-    /**
-     * A dispatchable flow with the given uuid.
-     *
-     * @param string $uuid The flow uuid.
-     *
-     * @return Flow The flow.
-     */
-    private function flow(string $uuid): Flow
-    {
-        $flow = new Flow();
-        $flow->setUuid($uuid);
-        $flow->setEnabled(true);
-        // canDispatch() needs an owner — a trigger has no acting user.
-        $flow->setOwner('alice');
+	/**
+	 * An UNCONVERTED flow keeps firing through its columns.
+	 *
+	 * This is the case every flow in a real instance is in the moment the
+	 * cutover ships, and the one that would break loudest.
+	 *
+	 * @return void
+	 */
+	public function testAnUnconvertedFlowStillFiresThroughItsColumns(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
-        return $flow;
+		$this->assertSame(
+			['legacy-1'],
+			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			'an unconverted flow stopped firing — the column fallback did not apply'
+		);
 
-    }//end flow()
+	}//end testAnUnconvertedFlowStillFiresThroughItsColumns()
 
+	/**
+	 * A CONVERTED flow fires from its nodes.
+	 *
+	 * @return void
+	 */
+	public function testAConvertedFlowFiresFromTheIndex(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn(['converted-1']);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
+		$this->mapper->method('findByTrigger')->willReturn([]);
+		$this->mapper->method('findByUuid')->willReturn($this->flow('converted-1'));
 
-    /**
-     * An UNCONVERTED flow keeps firing through its columns.
-     *
-     * This is the case every flow in a real instance is in the moment the
-     * cutover ships, and the one that would break loudest.
-     *
-     * @return void
-     */
-    public function testAnUnconvertedFlowStillFiresThroughItsColumns(): void
-    {
-        $this->triggerMapper->method('flowUuidsFor')->willReturn([]);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn([]);
-        $this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
+		$this->assertSame(
+			['converted-1'],
+			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding')
+		);
 
-        $this->assertSame(
-            ['legacy-1'],
-            $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
-            'an unconverted flow stopped firing — the column fallback did not apply'
-        );
+	}//end testAConvertedFlowFiresFromTheIndex()
 
-    }//end testAnUnconvertedFlowStillFiresThroughItsColumns()
+	/**
+	 * THE CASE THE FALLBACK MUST NOT COVER: a converted flow whose stale
+	 * columns still name this event does NOT fire.
+	 *
+	 * Deleting a trigger node has to actually unsubscribe the flow. If the
+	 * columns were consulted for a converted flow, the removed node would keep
+	 * firing forever through a column nobody edits.
+	 *
+	 * @return void
+	 */
+	public function testAConvertedFlowDoesNotFireFromItsStaleColumns(): void {
+		// The index knows this flow, but NOT for this event.
+		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
 
+		// Its old column still matches.
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('converted-1')]);
 
-    /**
-     * A CONVERTED flow fires from its nodes.
-     *
-     * @return void
-     */
-    public function testAConvertedFlowFiresFromTheIndex(): void
-    {
-        $this->triggerMapper->method('flowUuidsFor')->willReturn(['converted-1']);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
-        $this->mapper->method('findByTrigger')->willReturn([]);
-        $this->mapper->method('findByUuid')->willReturn($this->flow('converted-1'));
+		$this->assertSame(
+			[],
+			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			'a converted flow fired from a trigger column its nodes no longer declare'
+		);
 
-        $this->assertSame(
-            ['converted-1'],
-            $this->locator->flowsForTrigger('object.created', 'hydra', 'finding')
-        );
+	}//end testAConvertedFlowDoesNotFireFromItsStaleColumns()
 
-    }//end testAConvertedFlowFiresFromTheIndex()
+	/**
+	 * A flow matched by BOTH sources is started once, not twice.
+	 *
+	 * @return void
+	 */
+	public function testAFlowMatchedByBothSourcesIsReturnedOnce(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn(['both-1']);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('both-1')]);
+		$this->mapper->method('findByUuid')->willReturn($this->flow('both-1'));
 
+		$this->assertSame(
+			['both-1'],
+			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			'one flow was started twice by a single event'
+		);
 
-    /**
-     * THE CASE THE FALLBACK MUST NOT COVER: a converted flow whose stale
-     * columns still name this event does NOT fire.
-     *
-     * Deleting a trigger node has to actually unsubscribe the flow. If the
-     * columns were consulted for a converted flow, the removed node would keep
-     * firing forever through a column nobody edits.
-     *
-     * @return void
-     */
-    public function testAConvertedFlowDoesNotFireFromItsStaleColumns(): void
-    {
-        // The index knows this flow, but NOT for this event.
-        $this->triggerMapper->method('flowUuidsFor')->willReturn([]);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
+	}//end testAFlowMatchedByBothSourcesIsReturnedOnce()
 
-        // Its old column still matches.
-        $this->mapper->method('findByTrigger')->willReturn([$this->flow('converted-1')]);
+	/**
+	 * An UNREADABLE index degrades to the columns, not to silence.
+	 *
+	 * During the upgrade that creates the table the index does not exist yet.
+	 * Returning "no flow was interested" there would stop the entire engine,
+	 * and would look exactly like a quiet afternoon.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow(): void {
+		$this->triggerMapper->method('flowUuidsFor')
+			->willThrowException(new RuntimeException('no such table'));
+		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
-        $this->assertSame(
-            [],
-            $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
-            'a converted flow fired from a trigger column its nodes no longer declare'
-        );
+		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-    }//end testAConvertedFlowDoesNotFireFromItsStaleColumns()
+		$this->assertSame(
+			['legacy-1'],
+			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			'an unreadable index silenced the engine instead of falling back'
+		);
 
+	}//end testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow()
 
-    /**
-     * A flow matched by BOTH sources is started once, not twice.
-     *
-     * @return void
-     */
-    public function testAFlowMatchedByBothSourcesIsReturnedOnce(): void
-    {
-        $this->triggerMapper->method('flowUuidsFor')->willReturn(['both-1']);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn([]);
-        $this->mapper->method('findByTrigger')->willReturn([$this->flow('both-1')]);
-        $this->mapper->method('findByUuid')->willReturn($this->flow('both-1'));
+	/**
+	 * An index row naming a flow that no longer exists is reported, not
+	 * silently skipped — it means a delete did not reach the index.
+	 *
+	 * @return void
+	 */
+	public function testAStaleIndexRowIsReported(): void {
+		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ghost-1']);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ghost-1']);
+		$this->mapper->method('findByTrigger')->willReturn([]);
+		$this->mapper->method('findByUuid')->willThrowException(new RuntimeException('gone'));
 
-        $this->assertSame(
-            ['both-1'],
-            $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
-            'one flow was started twice by a single event'
-        );
+		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-    }//end testAFlowMatchedByBothSourcesIsReturnedOnce()
+		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
 
+	}//end testAStaleIndexRowIsReported()
 
-    /**
-     * An UNREADABLE index degrades to the columns, not to silence.
-     *
-     * During the upgrade that creates the table the index does not exist yet.
-     * Returning "no flow was interested" there would stop the entire engine,
-     * and would look exactly like a quiet afternoon.
-     *
-     * @return void
-     */
-    public function testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow(): void
-    {
-        $this->triggerMapper->method('flowUuidsFor')
-            ->willThrowException(new RuntimeException('no such table'));
-        $this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
+	/**
+	 * An ownerless flow is still refused OUT LOUD, whichever source matched it.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched(): void {
+		$ownerless = new Flow();
+		$ownerless->setUuid('ownerless-1');
+		$ownerless->setEnabled(true);
 
-        $this->logger->expects($this->atLeastOnce())->method('warning');
+		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ownerless-1']);
+		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ownerless-1']);
+		$this->mapper->method('findByTrigger')->willReturn([]);
+		$this->mapper->method('findByUuid')->willReturn($ownerless);
 
-        $this->assertSame(
-            ['legacy-1'],
-            $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
-            'an unreadable index silenced the engine instead of falling back'
-        );
+		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-    }//end testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow()
+		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
 
-
-    /**
-     * An index row naming a flow that no longer exists is reported, not
-     * silently skipped — it means a delete did not reach the index.
-     *
-     * @return void
-     */
-    public function testAStaleIndexRowIsReported(): void
-    {
-        $this->triggerMapper->method('flowUuidsFor')->willReturn(['ghost-1']);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn(['ghost-1']);
-        $this->mapper->method('findByTrigger')->willReturn([]);
-        $this->mapper->method('findByUuid')->willThrowException(new RuntimeException('gone'));
-
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
-        $this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
-
-    }//end testAStaleIndexRowIsReported()
-
-
-    /**
-     * An ownerless flow is still refused OUT LOUD, whichever source matched it.
-     *
-     * @return void
-     */
-    public function testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched(): void
-    {
-        $ownerless = new Flow();
-        $ownerless->setUuid('ownerless-1');
-        $ownerless->setEnabled(true);
-
-        $this->triggerMapper->method('flowUuidsFor')->willReturn(['ownerless-1']);
-        $this->triggerMapper->method('representedFlowUuids')->willReturn(['ownerless-1']);
-        $this->mapper->method('findByTrigger')->willReturn([]);
-        $this->mapper->method('findByUuid')->willReturn($ownerless);
-
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
-        $this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
-
-    }//end testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched()
-
+	}//end testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched()
 
 }//end class

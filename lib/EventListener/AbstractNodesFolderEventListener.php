@@ -38,82 +38,78 @@ use OCP\Files\FileInfo;
  *
  * @template-implements IEventListener<Event>
  */
-class AbstractNodesFolderEventListener implements IEventListener
-{
-    /**
-     * Constructor for AbstractNodesFolderEventListener
-     *
-     * @param ObjectService $objectService Service for handling object operations
-     * @param FileService   $fileService   Service for handling file operations
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly FileService $fileService,
-    ) {
-    }//end __construct()
+class AbstractNodesFolderEventListener implements IEventListener {
+	/**
+	 * Constructor for AbstractNodesFolderEventListener
+	 *
+	 * @param ObjectService $objectService Service for handling object operations
+	 * @param FileService $fileService Service for handling file operations
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly FileService $fileService,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle incoming events.
-     *
-     * @param Event $event The event to be handled
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof AbstractNodesEvent === false) {
-            return;
-        }
+	/**
+	 * Handle incoming events.
+	 *
+	 * @param Event $event The event to be handled
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof AbstractNodesEvent === false) {
+			return;
+		}
 
-        $sourceNode = $event->getSource();
-        if ($sourceNode->getType() === FileInfo::TYPE_FOLDER) {
-            return;
-        }
+		$sourceNode = $event->getSource();
+		if ($sourceNode->getType() === FileInfo::TYPE_FOLDER) {
+			return;
+		}
 
-        match (true) {
-            $event instanceof NodeCopiedEvent => $this->handleNodeCopied(_event: $event),
-            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(_event: $event),
-            default => throw new InvalidArgumentException(
-                'Unsupported event type: '.get_class($event)
-            ),
-        };
-    }//end handle()
+		match (true) {
+			$event instanceof NodeCopiedEvent => $this->handleNodeCopied(_event: $event),
+			$event instanceof NodeRenamedEvent => $this->handleNodeRenamed(_event: $event),
+			default => throw new InvalidArgumentException(
+				'Unsupported event type: ' . get_class($event)
+			),
+		};
+	}//end handle()
 
-    /**
-     * Handle when a node is copied.
-     *
-     * @param NodeCopiedEvent $_event The node copied event
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    private function handleNodeCopied(NodeCopiedEvent $_event): void
-    {
-        // $this->objectService->nodeCopiedEventFunction();
-    }//end handleNodeCopied()
+	/**
+	 * Handle when a node is copied.
+	 *
+	 * @param NodeCopiedEvent $_event The node copied event
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function handleNodeCopied(NodeCopiedEvent $_event): void {
+		// $this->objectService->nodeCopiedEventFunction();
+	}//end handleNodeCopied()
 
-    /**
-     * Handle when a node is renamed.
-     *
-     * @param NodeRenamedEvent $_event The node renamed event
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    private function handleNodeRenamed(NodeRenamedEvent $_event): void
-    {
-        // $this->objectService->nodeRenamedEventFunction();
-    }//end handleNodeRenamed()
+	/**
+	 * Handle when a node is renamed.
+	 *
+	 * @param NodeRenamedEvent $_event The node renamed event
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function handleNodeRenamed(NodeRenamedEvent $_event): void {
+		// $this->objectService->nodeRenamedEventFunction();
+	}//end handleNodeRenamed()
 }//end class

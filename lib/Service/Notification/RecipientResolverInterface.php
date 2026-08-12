@@ -38,17 +38,16 @@ use OCA\OpenRegister\Db\ObjectEntity;
  * called inline on every notification dispatch, so they should be fast
  * (sub-100ms) or coordinate their own caching.
  */
-interface RecipientResolverInterface
-{
-    /**
-     * Resolve the recipient uids for a notification dispatch.
-     *
-     * @param ObjectEntity         $object  The object the event happened on.
-     * @param array<string, mixed> $context Trigger-specific extras (action, from, to, aggregation, ...).
-     *
-     * @return array<int, string> List of Nextcloud uids.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-11
-     */
-    public function resolve(ObjectEntity $object, array $context): array;
+interface RecipientResolverInterface {
+	/**
+	 * Resolve the recipient uids for a notification dispatch.
+	 *
+	 * @param ObjectEntity $object The object the event happened on.
+	 * @param array<string, mixed> $context Trigger-specific extras (action, from, to, aggregation, ...).
+	 *
+	 * @return array<int, string> List of Nextcloud uids.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-11
+	 */
+	public function resolve(ObjectEntity $object, array $context): array;
 }//end interface

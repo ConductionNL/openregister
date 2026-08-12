@@ -39,93 +39,90 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20251107180000 extends SimpleMigrationStep
-{
-    /**
-     * Modify the database schema
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return ISchemaWrapper|null The modified schema or null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251107180000 extends SimpleMigrationStep {
+	/**
+	 * Modify the database schema
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return ISchemaWrapper|null The modified schema or null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $updated = false;
+		$schema = $schemaClosure();
+		$updated = false;
 
-        if ($schema->hasTable('openregister_agents') === true) {
-            $table = $schema->getTable('openregister_agents');
+		if ($schema->hasTable('openregister_agents') === true) {
+			$table = $schema->getTable('openregister_agents');
 
-            // Add tools column (JSON array of enabled tool names).
-            if ($table->hasColumn('tools') === false) {
-                $table->addColumn(
-                    'tools',
-                    Types::TEXT,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'JSON array of enabled tool names for agent function calling',
-                    ]
-                );
-                $output->info(message: '✅ Added tools column to agents table');
-                $updated = true;
-            }
+			// Add tools column (JSON array of enabled tool names).
+			if ($table->hasColumn('tools') === false) {
+				$table->addColumn(
+					'tools',
+					Types::TEXT,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => 'JSON array of enabled tool names for agent function calling',
+					]
+				);
+				$output->info(message: '✅ Added tools column to agents table');
+				$updated = true;
+			}
 
-            if ($table->hasColumn('tools') === true && $updated === false) {
-                $output->info(message: 'ℹ️  tools column already exists in agents table');
-            }
+			if ($table->hasColumn('tools') === true && $updated === false) {
+				$output->info(message: 'ℹ️  tools column already exists in agents table');
+			}
 
-            // Add user column (for cron/background job scenarios).
-            if ($table->hasColumn('user') === false) {
-                $table->addColumn(
-                    'user',
-                    Types::STRING,
-                    [
-                        'notnull' => false,
-                        'length'  => 255,
-                        'default' => null,
-                        'comment' => 'User ID for running agent in cron/background scenarios',
-                    ]
-                );
-                $output->info(message: '✅ Added user column to agents table');
-                $updated = true;
-            }
+			// Add user column (for cron/background job scenarios).
+			if ($table->hasColumn('user') === false) {
+				$table->addColumn(
+					'user',
+					Types::STRING,
+					[
+						'notnull' => false,
+						'length' => 255,
+						'default' => null,
+						'comment' => 'User ID for running agent in cron/background scenarios',
+					]
+				);
+				$output->info(message: '✅ Added user column to agents table');
+				$updated = true;
+			}
 
-            if ($table->hasColumn('user') === true) {
-                $output->info(message: 'ℹ️  user column already exists in agents table');
-            }
-        }//end if
+			if ($table->hasColumn('user') === true) {
+				$output->info(message: 'ℹ️  user column already exists in agents table');
+			}
+		}//end if
 
-        if ($schema->hasTable('openregister_agents') === false) {
-            $output->warning(message: '⚠️  openregister_agents table does not exist');
-        }//end if
+		if ($schema->hasTable('openregister_agents') === false) {
+			$output->warning(message: '⚠️  openregister_agents table does not exist');
+		}//end if
 
-        if ($updated === false) {
-            return null;
-        }
+		if ($updated === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema change hook
-     *
-     * @param IOutput $output        Output handler
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '✅ Migration complete - Agents can now use LLphant function tools');
-        $output->info('   Available tools: RegisterTool, SchemaTool, ObjectsTool');
-        $output->info(message: '   Tools can be enabled per agent via the Edit Agent modal');
-    }//end postSchemaChange()
+	/**
+	 * Post-schema change hook
+	 *
+	 * @param IOutput $output Output handler
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '✅ Migration complete - Agents can now use LLphant function tools');
+		$output->info('   Available tools: RegisterTool, SchemaTool, ObjectsTool');
+		$output->info(message: '   Tools can be enabled per agent via the Edit Agent modal');
+	}//end postSchemaChange()
 }//end class

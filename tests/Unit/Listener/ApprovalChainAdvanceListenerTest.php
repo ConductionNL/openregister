@@ -43,97 +43,91 @@ use Psr\Log\LoggerInterface;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\ApprovalChainAdvanceListener
  */
-class ApprovalChainAdvanceListenerTest extends TestCase
-{
-    private SchemaMapper&MockObject $schemaMapper;
-    private TransitionEngine&MockObject $transitionEngine;
-    private ApprovalChainAdvanceListener $listener;
+class ApprovalChainAdvanceListenerTest extends TestCase {
+	private SchemaMapper&MockObject $schemaMapper;
+	private TransitionEngine&MockObject $transitionEngine;
+	private ApprovalChainAdvanceListener $listener;
 
-    protected function setUp(): void
-    {
-        $this->schemaMapper     = $this->createMock(SchemaMapper::class);
-        $this->transitionEngine = $this->createMock(TransitionEngine::class);
-        $logger                 = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->transitionEngine = $this->createMock(TransitionEngine::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $this->listener = new ApprovalChainAdvanceListener(
-            $this->schemaMapper,
-            $this->transitionEngine,
-            $logger
-        );
-    }//end setUp()
+		$this->listener = new ApprovalChainAdvanceListener(
+			$this->schemaMapper,
+			$this->transitionEngine,
+			$logger
+		);
+	}//end setUp()
 
-    private function completedEvent(int $schemaId, string $chainName): ApprovalStepCompletedEvent
-    {
-        $chain = new ApprovalChain();
-        $chain->setId(10);
-        $chain->hydrate(['name' => $chainName, 'schemaId' => $schemaId]);
+	private function completedEvent(int $schemaId, string $chainName): ApprovalStepCompletedEvent {
+		$chain = new ApprovalChain();
+		$chain->setId(10);
+		$chain->hydrate(['name' => $chainName, 'schemaId' => $schemaId]);
 
-        $step = new ApprovalStep();
-        $step->hydrate(['objectUuid' => 'obj-1', 'stepOrder' => 1]);
+		$step = new ApprovalStep();
+		$step->hydrate(['objectUuid' => 'obj-1', 'stepOrder' => 1]);
 
-        return new ApprovalStepCompletedEvent(
-            chain: $chain,
-            finalStep: $step,
-            userId: 'director-1',
-            statusOnApprove: 'approved'
-        );
-    }//end completedEvent()
+		return new ApprovalStepCompletedEvent(
+			chain: $chain,
+			finalStep: $step,
+			userId: 'director-1',
+			statusOnApprove: 'approved'
+		);
+	}//end completedEvent()
 
-    public function testAdvanceTransitionInvokesTransitionEngine(): void
-    {
-        $schema = new Schema();
-        $schema->setId(5);
-        $schema->setConfiguration(
-            [
-                'x-openregister-approval-chains' => [
-                    'submit-approval' => [
-                        'transition' => 'submit',
-                        'approvers'  => [['role' => 'finance-clerks', 'min' => 1]],
-                        'onApprove'  => 'advanceTransition',
-                    ],
-                ],
-            ]
-        );
-        $this->schemaMapper->method('find')->willReturn($schema);
+	public function testAdvanceTransitionInvokesTransitionEngine(): void {
+		$schema = new Schema();
+		$schema->setId(5);
+		$schema->setConfiguration(
+			[
+				'x-openregister-approval-chains' => [
+					'submit-approval' => [
+						'transition' => 'submit',
+						'approvers' => [['role' => 'finance-clerks', 'min' => 1]],
+						'onApprove' => 'advanceTransition',
+					],
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->transitionEngine->expects($this->once())
-            ->method('transition')
-            ->with(objectId: 'obj-1', action: 'submit');
+		$this->transitionEngine->expects($this->once())
+			->method('transition')
+			->with(objectId: 'obj-1', action: 'submit');
 
-        $this->listener->handle($this->completedEvent(5, 'submit-approval'));
-    }//end testAdvanceTransitionInvokesTransitionEngine()
+		$this->listener->handle($this->completedEvent(5, 'submit-approval'));
+	}//end testAdvanceTransitionInvokesTransitionEngine()
 
-    public function testNoMatchingDeclarativeEntryDoesNotAdvance(): void
-    {
-        $schema = new Schema();
-        $schema->setId(5);
-        $schema->setConfiguration([]);
-        $this->schemaMapper->method('find')->willReturn($schema);
+	public function testNoMatchingDeclarativeEntryDoesNotAdvance(): void {
+		$schema = new Schema();
+		$schema->setId(5);
+		$schema->setConfiguration([]);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->transitionEngine->expects($this->never())->method('transition');
+		$this->transitionEngine->expects($this->never())->method('transition');
 
-        $this->listener->handle($this->completedEvent(5, 'legacy-crud-chain'));
-    }//end testNoMatchingDeclarativeEntryDoesNotAdvance()
+		$this->listener->handle($this->completedEvent(5, 'legacy-crud-chain'));
+	}//end testNoMatchingDeclarativeEntryDoesNotAdvance()
 
-    public function testDifferentOnApproveValueDoesNotAdvance(): void
-    {
-        $schema = new Schema();
-        $schema->setId(5);
-        $schema->setConfiguration(
-            [
-                'x-openregister-approval-chains' => [
-                    'submit-approval' => [
-                        'transition' => 'submit',
-                        'approvers'  => [['role' => 'finance-clerks', 'min' => 1]],
-                        'onApprove'  => 'notifyOnly',
-                    ],
-                ],
-            ]
-        );
-        $this->schemaMapper->method('find')->willReturn($schema);
+	public function testDifferentOnApproveValueDoesNotAdvance(): void {
+		$schema = new Schema();
+		$schema->setId(5);
+		$schema->setConfiguration(
+			[
+				'x-openregister-approval-chains' => [
+					'submit-approval' => [
+						'transition' => 'submit',
+						'approvers' => [['role' => 'finance-clerks', 'min' => 1]],
+						'onApprove' => 'notifyOnly',
+					],
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->transitionEngine->expects($this->never())->method('transition');
+		$this->transitionEngine->expects($this->never())->method('transition');
 
-        $this->listener->handle($this->completedEvent(5, 'submit-approval'));
-    }//end testDifferentOnApproveValueDoesNotAdvance()
+		$this->listener->handle($this->completedEvent(5, 'submit-approval'));
+	}//end testDifferentOnApproveValueDoesNotAdvance()
 }//end class

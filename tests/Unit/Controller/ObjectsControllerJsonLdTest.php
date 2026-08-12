@@ -31,7 +31,6 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -42,156 +41,144 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
-use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
-class ObjectsControllerJsonLdTest extends TestCase
-{
-    private IRequest $request;
-    private ObjectService $objectService;
-    private IUserSession $userSession;
-    private IGroupManager $groupManager;
-    private ?JsonLdSerializer $serializer;
+class ObjectsControllerJsonLdTest extends TestCase {
+	private IRequest $request;
+	private ObjectService $objectService;
+	private IUserSession $userSession;
+	private IGroupManager $groupManager;
+	private ?JsonLdSerializer $serializer;
 
+	private function buildController(bool $withJsonLd): ObjectsController {
+		$this->request = $this->createMock(IRequest::class);
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
-    private function buildController(bool $withJsonLd): ObjectsController
-    {
-        $this->request       = $this->createMock(IRequest::class);
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->userSession   = $this->createMock(IUserSession::class);
-        $this->groupManager  = $this->createMock(IGroupManager::class);
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/x');
+		$contextService = new JsonLdContextService($urlGenerator);
+		$this->serializer = $withJsonLd ? new JsonLdSerializer($contextService, $urlGenerator) : null;
 
-        $urlGenerator = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/x');
-        $contextService   = new JsonLdContextService($urlGenerator);
-        $this->serializer = $withJsonLd ? new JsonLdSerializer($contextService, $urlGenerator) : null;
+		return new ObjectsController(
+			'openregister',
+			$this->request,
+			$this->createMock(IAppConfig::class),
+			$this->createMock(IAppManager::class),
+			$this->createMock(ContainerInterface::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->objectService,
+			$this->userSession,
+			$this->groupManager,
+			$this->createMock(ExportService::class),
+			$this->createMock(ImportService::class),
+			$this->createMock(WebhookService::class),
+			$this->createMock(LoggerInterface::class),
+			null,
+			null,
+			$this->serializer,
+			$withJsonLd ? $contextService : null
+		);
+	}
 
-        return new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->createMock(IAppConfig::class),
-            $this->createMock(IAppManager::class),
-            $this->createMock(ContainerInterface::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(AuditTrailMapper::class),
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->createMock(ExportService::class),
-            $this->createMock(ImportService::class),
-            $this->createMock(WebhookService::class),
-            $this->createMock(LoggerInterface::class),
-            null,
-            null,
-            $this->serializer,
-            $withJsonLd ? $contextService : null
-        );
-    }
+	private function requireOcServer(): void {
+		if (class_exists('\OC', false) === false || isset(\OC::$server) === false) {
+			$this->markTestSkipped('Requires the Nextcloud container (\OC::$server) for entity resolution.');
+		}
+	}
 
+	private function setupAdmin(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+	}
 
-    private function requireOcServer(): void
-    {
-        if (class_exists('\OC', false) === false || isset(\OC::$server) === false) {
-            $this->markTestSkipped('Requires the Nextcloud container (\OC::$server) for entity resolution.');
-        }
-    }
+	public function testShowDefaultJsonUnaffectedByLdAcceptWhenServicesUnwired(): void {
+		$this->requireOcServer();
+		$controller = $this->buildController(withJsonLd: false);
+		$this->setupAdmin();
 
+		// Entity getters return null (mock default) → entities null → JSON-LD
+		// never fires regardless.
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getHeader')->willReturn('application/ld+json');
 
-    private function setupAdmin(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
-    }
+		$entity = new ObjectEntity();
+		$entity->setUuid('uuid-1');
+		$entity->setObject(['title' => 'Test']);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(2);
+		$this->objectService->method('find')->willReturn($entity);
+		$this->objectService->method('renderEntity')->willReturn(['title' => 'Test', '@self' => ['id' => 'uuid-1']]);
+		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
+		$result = $controller->show('uuid-1', '1', '2', $this->objectService);
 
-    public function testShowDefaultJsonUnaffectedByLdAcceptWhenServicesUnwired(): void
-    {
-        $this->requireOcServer();
-        $controller = $this->buildController(withJsonLd: false);
-        $this->setupAdmin();
+		$this->assertSame(200, $result->getStatus());
+		// Plain JSON: no JSON-LD content type, body keeps the @self envelope.
+		$this->assertArrayNotHasKey('Content-Type', array_filter(
+			$result->getHeaders(),
+			fn ($v, $k) => $k === 'Content-Type' && $v === 'application/ld+json',
+			ARRAY_FILTER_USE_BOTH
+		));
+		$this->assertArrayHasKey('@self', $result->getData());
+	}
 
-        // Entity getters return null (mock default) → entities null → JSON-LD
-        // never fires regardless.
-        $this->request->method('getParams')->willReturn([]);
-        $this->request->method('getHeader')->willReturn('application/ld+json');
+	public function testShowEmitsJsonLdWhenNegotiatedAndEntitiesResolve(): void {
+		$this->requireOcServer();
+		$controller = $this->buildController(withJsonLd: true);
+		$this->setupAdmin();
 
-        $entity = new ObjectEntity();
-        $entity->setUuid('uuid-1');
-        $entity->setObject(['title' => 'Test']);
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('getRegister')->willReturn(1);
-        $this->objectService->method('getSchema')->willReturn(2);
-        $this->objectService->method('find')->willReturn($entity);
-        $this->objectService->method('renderEntity')->willReturn(['title' => 'Test', '@self' => ['id' => 'uuid-1']]);
-        $this->objectService->method('getExtendedObjects')->willReturn([]);
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setSlug('personen');
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(1);
+		$schema->setSlug('persoon');
+		$schema->setProperties(['title' => ['type' => 'string']]);
 
-        $result = $controller->show('uuid-1', '1', '2', $this->objectService);
+		// resolveRegisterSchemaIds() reuses the entities already resolved by
+		// ObjectService::setRegister()/setSchema().
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
 
-        $this->assertSame(200, $result->getStatus());
-        // Plain JSON: no JSON-LD content type, body keeps the @self envelope.
-        $this->assertArrayNotHasKey('Content-Type', array_filter(
-            $result->getHeaders(),
-            fn($v, $k) => $k === 'Content-Type' && $v === 'application/ld+json',
-            ARRAY_FILTER_USE_BOTH
-        ));
-        $this->assertArrayHasKey('@self', $result->getData());
-    }
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getHeader')->willReturn('application/ld+json');
 
+		$entity = new ObjectEntity();
+		$entity->setUuid('uuid-1');
+		$entity->setObject(['title' => 'Test']);
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('getSchema')->willReturn(1);
+		$this->objectService->method('find')->willReturn($entity);
+		$this->objectService->method('renderEntity')->willReturn([
+			'title' => 'Test',
+			'@self' => ['id' => 'uuid-1', 'uri' => 'https://nc.test/o/uuid-1', 'register' => 'personen', 'schema' => 'persoon'],
+		]);
+		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
-    public function testShowEmitsJsonLdWhenNegotiatedAndEntitiesResolve(): void
-    {
-        $this->requireOcServer();
-        $controller = $this->buildController(withJsonLd: true);
-        $this->setupAdmin();
+		$result = $controller->show('uuid-1', 'personen', 'persoon', $this->objectService);
 
-        $register = new \OCA\OpenRegister\Db\Register();
-        $register->setSlug('personen');
-        $schema = new \OCA\OpenRegister\Db\Schema();
-        $schema->setId(1);
-        $schema->setSlug('persoon');
-        $schema->setProperties(['title' => ['type' => 'string']]);
-
-        // resolveRegisterSchemaIds() reuses the entities already resolved by
-        // ObjectService::setRegister()/setSchema().
-        $this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
-        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
-
-        $this->request->method('getParams')->willReturn([]);
-        $this->request->method('getHeader')->willReturn('application/ld+json');
-
-        $entity = new ObjectEntity();
-        $entity->setUuid('uuid-1');
-        $entity->setObject(['title' => 'Test']);
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('getRegister')->willReturn(1);
-        $this->objectService->method('getSchema')->willReturn(1);
-        $this->objectService->method('find')->willReturn($entity);
-        $this->objectService->method('renderEntity')->willReturn([
-            'title' => 'Test',
-            '@self' => ['id' => 'uuid-1', 'uri' => 'https://nc.test/o/uuid-1', 'register' => 'personen', 'schema' => 'persoon'],
-        ]);
-        $this->objectService->method('getExtendedObjects')->willReturn([]);
-
-        $result = $controller->show('uuid-1', 'personen', 'persoon', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-        $this->assertSame('application/ld+json', $result->getHeaders()['Content-Type']);
-        $this->assertSame('Accept', $result->getHeaders()['Vary']);
-        $data = $result->getData();
-        $this->assertArrayHasKey('@context', $data);
-        $this->assertSame('https://nc.test/o/uuid-1', $data['@id']);
-        $this->assertArrayNotHasKey('@self', $data);
-    }
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame('application/ld+json', $result->getHeaders()['Content-Type']);
+		$this->assertSame('Accept', $result->getHeaders()['Vary']);
+		$data = $result->getData();
+		$this->assertArrayHasKey('@context', $data);
+		$this->assertSame('https://nc.test/o/uuid-1', $data['@id']);
+		$this->assertArrayNotHasKey('@self', $data);
+	}
 }

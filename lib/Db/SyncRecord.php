@@ -60,199 +60,194 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class SyncRecord extends Entity implements JsonSerializable
-{
+class SyncRecord extends Entity implements JsonSerializable {
 
-    /**
-     * Unique identifier for the sync record.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Unique identifier for the sync record.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Owning source id.
-     *
-     * @var integer|null
-     */
-    protected ?int $sourceId = null;
+	/**
+	 * Owning source id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $sourceId = null;
 
-    /**
-     * Sync execution id this record belongs to (groups one run).
-     *
-     * @var string|null
-     */
-    protected ?string $executionId = null;
+	/**
+	 * Sync execution id this record belongs to (groups one run).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $executionId = null;
 
-    /**
-     * External identifier of the source record.
-     *
-     * @var string|null
-     */
-    protected ?string $externalId = null;
+	/**
+	 * External identifier of the source record.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $externalId = null;
 
-    /**
-     * Pipeline status (see SyncRecordStatus).
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * Pipeline status (see SyncRecordStatus).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * UUID of the local object created/updated from this record.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * UUID of the local object created/updated from this record.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * Content hash used to detect changes between syncs.
-     *
-     * @var string|null
-     */
-    protected ?string $contentHash = null;
+	/**
+	 * Content hash used to detect changes between syncs.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $contentHash = null;
 
-    /**
-     * Raw fetched data for this record.
-     *
-     * @var array|null
-     */
-    protected ?array $rawData = null;
+	/**
+	 * Raw fetched data for this record.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $rawData = null;
 
-    /**
-     * Error message when the record failed.
-     *
-     * @var string|null
-     */
-    protected ?string $errorMessage = null;
+	/**
+	 * Error message when the record failed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $errorMessage = null;
 
-    /**
-     * Number of processing attempts (for retry/backoff).
-     *
-     * @var integer|null
-     */
-    protected ?int $attempts = null;
+	/**
+	 * Number of processing attempts (for retry/backoff).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $attempts = null;
 
-    /**
-     * Organisation UUID this record belongs to.
-     *
-     * @var string|null
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation UUID this record belongs to.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Last update timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Constructor: register field types.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'sourceId', type: 'integer');
-        $this->addType(fieldName: 'executionId', type: 'string');
-        $this->addType(fieldName: 'externalId', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'contentHash', type: 'string');
-        $this->addType(fieldName: 'rawData', type: 'json');
-        $this->addType(fieldName: 'errorMessage', type: 'string');
-        $this->addType(fieldName: 'attempts', type: 'integer');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor: register field types.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'sourceId', type: 'integer');
+		$this->addType(fieldName: 'executionId', type: 'string');
+		$this->addType(fieldName: 'externalId', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'contentHash', type: 'string');
+		$this->addType(fieldName: 'rawData', type: 'json');
+		$this->addType(fieldName: 'errorMessage', type: 'string');
+		$this->addType(fieldName: 'attempts', type: 'integer');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * Get JSON field names.
-     *
-     * @return string[] List of JSON field names
-     *
-     * @psalm-return list<string>
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                static function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
+	/**
+	 * Get JSON field names.
+	 *
+	 * @return string[] List of JSON field names
+	 *
+	 * @psalm-return list<string>
+	 */
+	public function getJsonFields(): array {
+		return array_keys(
+			array_filter(
+				$this->getFieldTypes(),
+				static function ($field) {
+					return $field === 'json';
+				}
+			)
+		);
+	}//end getJsonFields()
 
-    /**
-     * Hydrate the entity from an array.
-     *
-     * @param array $object The data array
-     *
-     * @return static
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * @param array $object The data array
+	 *
+	 * @return static
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields, true) === true && $value === []) {
-                $value = null;
-            }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields, true) === true && $value === []) {
+				$value = null;
+			}
 
-            $method = 'set'.ucfirst($key);
+			$method = 'set' . ucfirst($key);
 
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Serialize to a JSON-friendly array.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        $updated = null;
-        if ($this->updated !== null) {
-            $updated = $this->updated->format('c');
-        }
+	/**
+	 * Serialize to a JSON-friendly array.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		$updated = null;
+		if ($this->updated !== null) {
+			$updated = $this->updated->format('c');
+		}
 
-        $created = null;
-        if ($this->created !== null) {
-            $created = $this->created->format('c');
-        }
+		$created = null;
+		if ($this->created !== null) {
+			$created = $this->created->format('c');
+		}
 
-        return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'sourceId'     => $this->sourceId,
-            'executionId'  => $this->executionId,
-            'externalId'   => $this->externalId,
-            'status'       => $this->status,
-            'objectUuid'   => $this->objectUuid,
-            'contentHash'  => $this->contentHash,
-            'rawData'      => $this->rawData,
-            'errorMessage' => $this->errorMessage,
-            'attempts'     => $this->attempts,
-            'organisation' => $this->organisation,
-            'updated'      => $updated,
-            'created'      => $created,
-        ];
-    }//end jsonSerialize()
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'sourceId' => $this->sourceId,
+			'executionId' => $this->executionId,
+			'externalId' => $this->externalId,
+			'status' => $this->status,
+			'objectUuid' => $this->objectUuid,
+			'contentHash' => $this->contentHash,
+			'rawData' => $this->rawData,
+			'errorMessage' => $this->errorMessage,
+			'attempts' => $this->attempts,
+			'organisation' => $this->organisation,
+			'updated' => $updated,
+			'created' => $created,
+		];
+	}//end jsonSerialize()
 }//end class

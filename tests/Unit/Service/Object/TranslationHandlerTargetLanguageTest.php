@@ -32,87 +32,81 @@ use Psr\Log\NullLogger;
 /**
  * Verifies the write-side wrap behaviour.
  */
-class TranslationHandlerTargetLanguageTest extends TestCase
-{
+class TranslationHandlerTargetLanguageTest extends TestCase {
 
-    private Schema $schema;
-    private Register $register;
+	private Schema $schema;
+	private Register $register;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->schema = new Schema();
-        $this->schema->setProperties([
-            'title' => ['type' => 'string', 'translatable' => true],
-        ]);
-        $this->register = new Register();
-        $this->register->setLanguages(['nl', 'en']);
-    }//end setUp()
+	protected function setUp(): void {
+		parent::setUp();
+		$this->schema = new Schema();
+		$this->schema->setProperties([
+			'title' => ['type' => 'string', 'translatable' => true],
+		]);
+		$this->register = new Register();
+		$this->register->setLanguages(['nl', 'en']);
+	}//end setUp()
 
-    public function testScalarBodyAndHeaderWrapsUnderTarget(): void
-    {
-        $languageService = new LanguageService();
-        $languageService->setTargetLanguage('en');
+	public function testScalarBodyAndHeaderWrapsUnderTarget(): void {
+		$languageService = new LanguageService();
+		$languageService->setTargetLanguage('en');
 
-        $handler = new TranslationHandler($languageService, new NullLogger());
+		$handler = new TranslationHandler($languageService, new NullLogger());
 
-        $normalised = $handler->normalizeTranslationsForSave(
-            objectData: ['title' => 'Welcome'],
-            schema: $this->schema,
-            register: $this->register
-        );
+		$normalised = $handler->normalizeTranslationsForSave(
+			objectData: ['title' => 'Welcome'],
+			schema: $this->schema,
+			register: $this->register
+		);
 
-        $this->assertSame(['en' => 'Welcome'], $normalised['title']);
-    }//end testScalarBodyAndHeaderWrapsUnderTarget()
+		$this->assertSame(['en' => 'Welcome'], $normalised['title']);
+	}//end testScalarBodyAndHeaderWrapsUnderTarget()
 
-    public function testFullLanguageBodyAndHeaderThrowsConflict(): void
-    {
-        $languageService = new LanguageService();
-        $languageService->setTargetLanguage('en');
+	public function testFullLanguageBodyAndHeaderThrowsConflict(): void {
+		$languageService = new LanguageService();
+		$languageService->setTargetLanguage('en');
 
-        $handler = new TranslationHandler($languageService, new NullLogger());
+		$handler = new TranslationHandler($languageService, new NullLogger());
 
-        $this->expectException(TranslationTargetConflictException::class);
+		$this->expectException(TranslationTargetConflictException::class);
 
-        $handler->normalizeTranslationsForSave(
-            objectData: ['title' => ['nl' => 'Hallo', 'en' => 'Hello']],
-            schema: $this->schema,
-            register: $this->register
-        );
-    }//end testFullLanguageBodyAndHeaderThrowsConflict()
+		$handler->normalizeTranslationsForSave(
+			objectData: ['title' => ['nl' => 'Hallo', 'en' => 'Hello']],
+			schema: $this->schema,
+			register: $this->register
+		);
+	}//end testFullLanguageBodyAndHeaderThrowsConflict()
 
-    public function testScalarBodyWithoutHeaderWrapsUnderRegisterDefault(): void
-    {
-        $languageService = new LanguageService();
-        // No setTargetLanguage call — legacy behaviour.
+	public function testScalarBodyWithoutHeaderWrapsUnderRegisterDefault(): void {
+		$languageService = new LanguageService();
+		// No setTargetLanguage call — legacy behaviour.
 
-        $handler = new TranslationHandler($languageService, new NullLogger());
+		$handler = new TranslationHandler($languageService, new NullLogger());
 
-        $normalised = $handler->normalizeTranslationsForSave(
-            objectData: ['title' => 'Welkom'],
-            schema: $this->schema,
-            register: $this->register
-        );
+		$normalised = $handler->normalizeTranslationsForSave(
+			objectData: ['title' => 'Welkom'],
+			schema: $this->schema,
+			register: $this->register
+		);
 
-        $this->assertSame(['nl' => 'Welkom'], $normalised['title']);
-    }//end testScalarBodyWithoutHeaderWrapsUnderRegisterDefault()
+		$this->assertSame(['nl' => 'Welkom'], $normalised['title']);
+	}//end testScalarBodyWithoutHeaderWrapsUnderRegisterDefault()
 
-    public function testConflictExceptionCarriesPropertyAndTarget(): void
-    {
-        $exception = new TranslationTargetConflictException('title', 'en');
+	public function testConflictExceptionCarriesPropertyAndTarget(): void {
+		$exception = new TranslationTargetConflictException('title', 'en');
 
-        $this->assertSame('title', $exception->getProperty());
-        $this->assertSame('en', $exception->getTargetLanguage());
+		$this->assertSame('title', $exception->getProperty());
+		$this->assertSame('en', $exception->getTargetLanguage());
 
-        $body = $exception->toErrorBody();
-        $this->assertSame('TRANSLATION_TARGET_CONFLICT', $body['error']['code']);
-        $this->assertSame('title', $body['error']['property']);
-        $this->assertSame('en', $body['error']['targetLanguage']);
+		$body = $exception->toErrorBody();
+		$this->assertSame('TRANSLATION_TARGET_CONFLICT', $body['error']['code']);
+		$this->assertSame('title', $body['error']['property']);
+		$this->assertSame('en', $body['error']['targetLanguage']);
 
-        // CustomValidationException carries structured errors via getErrors().
-        $errors = $exception->getErrors();
-        $this->assertSame('TRANSLATION_TARGET_CONFLICT', $errors['code']);
-        $this->assertSame('title', $errors['property']);
-        $this->assertSame('en', $errors['targetLanguage']);
-    }//end testConflictExceptionCarriesPropertyAndTarget()
+		// CustomValidationException carries structured errors via getErrors().
+		$errors = $exception->getErrors();
+		$this->assertSame('TRANSLATION_TARGET_CONFLICT', $errors['code']);
+		$this->assertSame('title', $errors['property']);
+		$this->assertSame('en', $errors['targetLanguage']);
+	}//end testConflictExceptionCarriesPropertyAndTarget()
 }//end class

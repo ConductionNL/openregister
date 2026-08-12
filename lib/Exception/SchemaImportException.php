@@ -34,63 +34,59 @@ use Throwable;
 /**
  * Signals a failed standards import, with an HTTP status hint.
  */
-class SchemaImportException extends RuntimeException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $message    The human-readable error.
-     * @param int            $httpStatus The HTTP status the controller should return (default 400).
-     * @param Throwable|null $previous   The previous throwable, if any.
-     */
-    public function __construct(
-        string $message,
-        private readonly int $httpStatus=400,
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-    }//end __construct()
+class SchemaImportException extends RuntimeException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message The human-readable error.
+	 * @param int $httpStatus The HTTP status the controller should return (default 400).
+	 * @param Throwable|null $previous The previous throwable, if any.
+	 */
+	public function __construct(
+		string $message,
+		private readonly int $httpStatus = 400,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+	}//end __construct()
 
-    /**
-     * The HTTP status hint for this failure.
-     *
-     * @return int The HTTP status code.
-     */
-    public function getHttpStatus(): int
-    {
-        return $this->httpStatus;
-    }//end getHttpStatus()
+	/**
+	 * The HTTP status hint for this failure.
+	 *
+	 * @return int The HTTP status code.
+	 */
+	public function getHttpStatus(): int {
+		return $this->httpStatus;
+	}//end getHttpStatus()
 
-    /**
-     * Build a 404 "unknown reference" exception.
-     *
-     * @param string $reference The unresolved reference.
-     * @param string $dialect   The dialect that was searched.
-     *
-     * @return self The exception.
-     */
-    public static function unknownReference(string $reference, string $dialect): self
-    {
-        return new self(
-            sprintf('Unknown %s reference: %s', $dialect, $reference),
-            404
-        );
-    }//end unknownReference()
+	/**
+	 * Build a 404 "unknown reference" exception.
+	 *
+	 * @param string $reference The unresolved reference.
+	 * @param string $dialect The dialect that was searched.
+	 *
+	 * @return self The exception.
+	 */
+	public static function unknownReference(string $reference, string $dialect): self {
+		return new self(
+			sprintf('Unknown %s reference: %s', $dialect, $reference),
+			404
+		);
+	}//end unknownReference()
 
-    /**
-     * Build a 422 "undetectable / unsupported dialect" exception.
-     *
-     * @param array<int, string> $supported The supported dialect keys.
-     *
-     * @return self The exception.
-     */
-    public static function undetectableDialect(array $supported): self
-    {
-        return new self(
-            'Could not determine the schema dialect of the uploaded document. '
-            .'Pass an explicit "dialect" parameter. Supported dialects: '
-            .implode(', ', $supported).'.',
-            422
-        );
-    }//end undetectableDialect()
+	/**
+	 * Build a 422 "undetectable / unsupported dialect" exception.
+	 *
+	 * @param array<int, string> $supported The supported dialect keys.
+	 *
+	 * @return self The exception.
+	 */
+	public static function undetectableDialect(array $supported): self {
+		return new self(
+			'Could not determine the schema dialect of the uploaded document. '
+			. 'Pass an explicit "dialect" parameter. Supported dialects: '
+			. implode(', ', $supported) . '.',
+			422
+		);
+	}//end undetectableDialect()
 }//end class

@@ -31,68 +31,65 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for {@see SanitizationReport}.
  */
-class SanitizationReportTest extends TestCase
-{
+class SanitizationReportTest extends TestCase {
 
-    /**
-     * jsonSerialize() returns all keys in the documented order with values.
-     *
-     * @return void
-     */
-    public function testJsonSerializeKeyOrderAndValues(): void
-    {
-        $report = new SanitizationReport(
-            commentsRemoved: 3,
-            trackedChangesAccepted: 2,
-            trackedChangesDropped: 1,
-            revisionAttributesStripped: 7,
-            hyperlinksFlattened: 4,
-            metadataFieldsScrubbed: 5,
-            customXmlPartsDropped: 1,
-            fieldCodesStripped: 2,
-            sentinelApplied: 'DocuDesk Anonymisation'
-        );
+	/**
+	 * jsonSerialize() returns all keys in the documented order with values.
+	 *
+	 * @return void
+	 */
+	public function testJsonSerializeKeyOrderAndValues(): void {
+		$report = new SanitizationReport(
+			commentsRemoved: 3,
+			trackedChangesAccepted: 2,
+			trackedChangesDropped: 1,
+			revisionAttributesStripped: 7,
+			hyperlinksFlattened: 4,
+			metadataFieldsScrubbed: 5,
+			customXmlPartsDropped: 1,
+			fieldCodesStripped: 2,
+			sentinelApplied: 'DocuDesk Anonymisation'
+		);
 
-        $json = $report->jsonSerialize();
+		$json = $report->jsonSerialize();
 
-        $expectedKeys = [
-            'commentsRemoved',
-            'trackedChangesAccepted',
-            'trackedChangesDropped',
-            'revisionAttributesStripped',
-            'hyperlinksFlattened',
-            'metadataFieldsScrubbed',
-            'customXmlPartsDropped',
-            'fieldCodesStripped',
-            'sentinelApplied',
-        ];
+		$expectedKeys = [
+			'commentsRemoved',
+			'trackedChangesAccepted',
+			'trackedChangesDropped',
+			'revisionAttributesStripped',
+			'hyperlinksFlattened',
+			'metadataFieldsScrubbed',
+			'customXmlPartsDropped',
+			'fieldCodesStripped',
+			'sentinelApplied',
+		];
 
-        $this->assertSame($expectedKeys, array_keys($json));
-        $this->assertSame(3, $json['commentsRemoved']);
-        $this->assertSame(2, $json['trackedChangesAccepted']);
-        $this->assertSame(1, $json['trackedChangesDropped']);
-        $this->assertSame(7, $json['revisionAttributesStripped']);
-        $this->assertSame(4, $json['hyperlinksFlattened']);
-        $this->assertSame(5, $json['metadataFieldsScrubbed']);
-        $this->assertSame(1, $json['customXmlPartsDropped']);
-        $this->assertSame(2, $json['fieldCodesStripped']);
-        $this->assertSame('DocuDesk Anonymisation', $json['sentinelApplied']);
-    }//end testJsonSerializeKeyOrderAndValues()
+		$this->assertSame($expectedKeys, array_keys($json));
+		$this->assertSame(3, $json['commentsRemoved']);
+		$this->assertSame(2, $json['trackedChangesAccepted']);
+		$this->assertSame(1, $json['trackedChangesDropped']);
+		$this->assertSame(7, $json['revisionAttributesStripped']);
+		$this->assertSame(4, $json['hyperlinksFlattened']);
+		$this->assertSame(5, $json['metadataFieldsScrubbed']);
+		$this->assertSame(1, $json['customXmlPartsDropped']);
+		$this->assertSame(2, $json['fieldCodesStripped']);
+		$this->assertSame('DocuDesk Anonymisation', $json['sentinelApplied']);
+	}//end testJsonSerializeKeyOrderAndValues()
 
-    /**
-     * Defaults are all-zero with an empty sentinel.
-     *
-     * @return void
-     */
-    public function testDefaults(): void
-    {
-        $report = new SanitizationReport();
-        $json   = $report->jsonSerialize();
+	/**
+	 * Defaults are all-zero with an empty sentinel.
+	 *
+	 * @return void
+	 */
+	public function testDefaults(): void {
+		$report = new SanitizationReport();
+		$json = $report->jsonSerialize();
 
-        foreach (['commentsRemoved', 'trackedChangesAccepted', 'trackedChangesDropped', 'revisionAttributesStripped', 'hyperlinksFlattened', 'metadataFieldsScrubbed', 'customXmlPartsDropped', 'fieldCodesStripped'] as $key) {
-            $this->assertSame(0, $json[$key]);
-        }
+		foreach (['commentsRemoved', 'trackedChangesAccepted', 'trackedChangesDropped', 'revisionAttributesStripped', 'hyperlinksFlattened', 'metadataFieldsScrubbed', 'customXmlPartsDropped', 'fieldCodesStripped'] as $key) {
+			$this->assertSame(0, $json[$key]);
+		}
 
-        $this->assertSame('', $json['sentinelApplied']);
-    }//end testDefaults()
+		$this->assertSame('', $json['sentinelApplied']);
+	}//end testDefaults()
 }//end class

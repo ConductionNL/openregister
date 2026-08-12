@@ -36,98 +36,90 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 
-class ScheduledReportJobTest extends TestCase
-{
-    private ScheduledReportMapper&MockObject $mapper;
-    private ScheduledReportService&MockObject $service;
-    private ScheduledReportJob $job;
+class ScheduledReportJobTest extends TestCase {
+	private ScheduledReportMapper&MockObject $mapper;
+	private ScheduledReportService&MockObject $service;
+	private ScheduledReportJob $job;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->mapper  = $this->createMock(ScheduledReportMapper::class);
-        $this->service = $this->createMock(ScheduledReportService::class);
+		$this->mapper = $this->createMock(ScheduledReportMapper::class);
+		$this->service = $this->createMock(ScheduledReportService::class);
 
-        $this->job = new ScheduledReportJob(
-            $this->createMock(ITimeFactory::class),
-            $this->mapper,
-            $this->service,
-            $this->createMock(LoggerInterface::class)
-        );
-    }
+		$this->job = new ScheduledReportJob(
+			$this->createMock(ITimeFactory::class),
+			$this->mapper,
+			$this->service,
+			$this->createMock(LoggerInterface::class)
+		);
+	}
 
-    private function makeReport(int $id): ScheduledReport
-    {
-        $report = new ScheduledReport();
-        $ref = new \ReflectionClass($report);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($report, $id);
-        $report->setEnabled(true);
+	private function makeReport(int $id): ScheduledReport {
+		$report = new ScheduledReport();
+		$ref = new \ReflectionClass($report);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($report, $id);
+		$report->setEnabled(true);
 
-        return $report;
-    }
+		return $report;
+	}
 
-    private function runJob(): void
-    {
-        $method = new ReflectionMethod(ScheduledReportJob::class, 'run');
-        $method->setAccessible(true);
-        $method->invoke($this->job, null);
-    }
+	private function runJob(): void {
+		$method = new ReflectionMethod(ScheduledReportJob::class, 'run');
+		$method->setAccessible(true);
+		$method->invoke($this->job, null);
+	}
 
-    public function testOneReportFailingDoesNotBlockTheOther(): void
-    {
-        $reportA = $this->makeReport(1);
-        $reportB = $this->makeReport(2);
+	public function testOneReportFailingDoesNotBlockTheOther(): void {
+		$reportA = $this->makeReport(1);
+		$reportB = $this->makeReport(2);
 
-        $this->mapper->method('findEnabled')->willReturn([$reportA, $reportB]);
-        $this->service->method('isDue')->willReturn(true);
+		$this->mapper->method('findEnabled')->willReturn([$reportA, $reportB]);
+		$this->service->method('isDue')->willReturn(true);
 
-        $calledWith = [];
-        $this->service->expects(self::exactly(2))
-            ->method('runOne')
-            ->willReturnCallback(function (ScheduledReport $report) use (&$calledWith): void {
-                $calledWith[] = $report->getId();
-                if ($report->getId() === 1) {
-                    throw new \RuntimeException('boom');
-                }
-            });
+		$calledWith = [];
+		$this->service->expects(self::exactly(2))
+			->method('runOne')
+			->willReturnCallback(function (ScheduledReport $report) use (&$calledWith): void {
+				$calledWith[] = $report->getId();
+				if ($report->getId() === 1) {
+					throw new \RuntimeException('boom');
+				}
+			});
 
-        $this->runJob();
+		$this->runJob();
 
-        self::assertSame([1, 2], $calledWith);
-    }
+		self::assertSame([1, 2], $calledWith);
+	}
 
-    public function testNotDueReportsAreSkipped(): void
-    {
-        $due    = $this->makeReport(1);
-        $notDue = $this->makeReport(2);
+	public function testNotDueReportsAreSkipped(): void {
+		$due = $this->makeReport(1);
+		$notDue = $this->makeReport(2);
 
-        $this->mapper->method('findEnabled')->willReturn([$due, $notDue]);
-        $this->service->method('isDue')->willReturnCallback(
-            static fn(ScheduledReport $r): bool => $r->getId() === 1
-        );
+		$this->mapper->method('findEnabled')->willReturn([$due, $notDue]);
+		$this->service->method('isDue')->willReturnCallback(
+			static fn (ScheduledReport $r): bool => $r->getId() === 1
+		);
 
-        $this->service->expects(self::once())->method('runOne')->with($due);
+		$this->service->expects(self::once())->method('runOne')->with($due);
 
-        $this->runJob();
-    }
+		$this->runJob();
+	}
 
-    public function testEmptyCandidateListRunsNothing(): void
-    {
-        $this->mapper->method('findEnabled')->willReturn([]);
-        $this->service->expects(self::never())->method('runOne');
+	public function testEmptyCandidateListRunsNothing(): void {
+		$this->mapper->method('findEnabled')->willReturn([]);
+		$this->service->expects(self::never())->method('runOne');
 
-        $this->runJob();
-    }
+		$this->runJob();
+	}
 
-    public function testMapperFailureIsHandledGracefully(): void
-    {
-        $this->mapper->method('findEnabled')->willThrowException(new \RuntimeException('db down'));
-        $this->service->expects(self::never())->method('runOne');
+	public function testMapperFailureIsHandledGracefully(): void {
+		$this->mapper->method('findEnabled')->willThrowException(new \RuntimeException('db down'));
+		$this->service->expects(self::never())->method('runOne');
 
-        // Must not throw.
-        $this->runJob();
-    }
+		// Must not throw.
+		$this->runJob();
+	}
 }//end class

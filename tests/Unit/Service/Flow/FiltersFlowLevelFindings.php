@@ -39,32 +39,29 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 /**
  * Filters document-level findings out of a preflight report.
  */
-trait FiltersFlowLevelFindings
-{
+trait FiltersFlowLevelFindings {
 
+	/**
+	 * A report's warnings, minus the two document-level ones.
+	 *
+	 * @param array $report The preflight report.
+	 *
+	 * @return array<int, array<string, mixed>> The per-node warnings.
+	 */
+	private function nodeWarnings(array $report): array {
+		$documentLevel = [
+			FlowNodePreflight::REASON_NO_TRIGGER,
+			FlowNodePreflight::REASON_NO_END,
+		];
 
-    /**
-     * A report's warnings, minus the two document-level ones.
-     *
-     * @param array $report The preflight report.
-     *
-     * @return array<int, array<string, mixed>> The per-node warnings.
-     */
-    private function nodeWarnings(array $report): array
-    {
-        $documentLevel = [
-            FlowNodePreflight::REASON_NO_TRIGGER,
-            FlowNodePreflight::REASON_NO_END,
-        ];
+		return array_values(
+			array_filter(
+				($report['warnings'] ?? []),
+				static function (array $warning) use ($documentLevel): bool {
+					return in_array(($warning['reason'] ?? ''), $documentLevel, true) === false;
+				}
+			)
+		);
 
-        return array_values(
-            array_filter(
-                ($report['warnings'] ?? []),
-                static function (array $warning) use ($documentLevel): bool {
-                    return in_array(($warning['reason'] ?? ''), $documentLevel, true) === false;
-                }
-            )
-        );
-
-    }//end nodeWarnings()
+	}//end nodeWarnings()
 }//end trait

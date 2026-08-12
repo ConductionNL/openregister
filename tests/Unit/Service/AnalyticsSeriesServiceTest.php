@@ -52,311 +52,285 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class AnalyticsSeriesServiceTest extends TestCase
-{
-    private function buildUserSession(?string $uid): IUserSession
-    {
-        $session = $this->createMock(IUserSession::class);
-        if ($uid === null) {
-            $session->method('getUser')->willReturn(null);
-            return $session;
-        }
+class AnalyticsSeriesServiceTest extends TestCase {
+	private function buildUserSession(?string $uid): IUserSession {
+		$session = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$session->method('getUser')->willReturn(null);
+			return $session;
+		}
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $session->method('getUser')->willReturn($user);
-        return $session;
-    }//end buildUserSession()
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session->method('getUser')->willReturn($user);
+		return $session;
+	}//end buildUserSession()
 
+	private function buildGroupManager(bool $isAdmin): IGroupManager {
+		$gm = $this->createMock(IGroupManager::class);
+		$gm->method('isAdmin')->willReturn($isAdmin);
+		return $gm;
+	}//end buildGroupManager()
 
-    private function buildGroupManager(bool $isAdmin): IGroupManager
-    {
-        $gm = $this->createMock(IGroupManager::class);
-        $gm->method('isAdmin')->willReturn($isAdmin);
-        return $gm;
-    }//end buildGroupManager()
+	private function buildRegistry(): IntegrationRegistry {
+		return new IntegrationRegistry(logger: $this->createMock(LoggerInterface::class));
+	}//end buildRegistry()
 
+	/**
+	 * register() persists the series, records the creator and declares
+	 * the page widget on the registry.
+	 *
+	 * @return void
+	 */
+	public function testRegisterPersistsAndDeclaresWidget(): void {
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn(null);
+		$mapper->expects($this->once())->method('insert')->willReturnCallback(
+			static function (AnalyticsSeries $s): AnalyticsSeries {
+				$s->setId(1);
+				return $s;
+			}
+		);
 
-    private function buildRegistry(): IntegrationRegistry
-    {
-        return new IntegrationRegistry(logger: $this->createMock(LoggerInterface::class));
-    }//end buildRegistry()
+		$registry = $this->buildRegistry();
 
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $registry,
+			userSession: $this->buildUserSession('alice'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-    /**
-     * register() persists the series, records the creator and declares
-     * the page widget on the registry.
-     *
-     * @return void
-     */
-    public function testRegisterPersistsAndDeclaresWidget(): void
-    {
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn(null);
-        $mapper->expects($this->once())->method('insert')->willReturnCallback(
-            static function (AnalyticsSeries $s): AnalyticsSeries {
-                $s->setId(1);
-                return $s;
-            }
-        );
+		$result = $service->register(
+			seriesKey: 'sla-breaches',
+			labels: ['Wk1', 'Wk2'],
+			datasets: [['label' => 'Breaches', 'data' => [3, 5]]],
+			title: 'SLA breaches',
+			chartType: 'bar',
+			visibility: 'group',
+			registerId: 2,
+			schemaId: 4
+		);
 
-        $registry = $this->buildRegistry();
+		$this->assertSame('sla-breaches', $result['seriesKey']);
+		$this->assertSame(['Wk1', 'Wk2'], $result['labels']);
+		$this->assertSame([['label' => 'Breaches', 'data' => [3, 5]]], $result['datasets']);
+		$this->assertSame('alice', $result['createdBy']);
 
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $registry,
-            userSession: $this->buildUserSession('alice'),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$widget = $registry->getPageWidget('analytics-series:sla-breaches');
+		$this->assertNotNull($widget, 'page widget must be declared on the registry');
+		$this->assertSame('chart', $widget['type']);
+		$this->assertSame('analytics-series', $widget['providerId']);
+		$this->assertSame('sla-breaches', $widget['config']['seriesKey']);
+	}//end testRegisterPersistsAndDeclaresWidget()
 
-        $result = $service->register(
-            seriesKey: 'sla-breaches',
-            labels: ['Wk1', 'Wk2'],
-            datasets: [['label' => 'Breaches', 'data' => [3, 5]]],
-            title: 'SLA breaches',
-            chartType: 'bar',
-            visibility: 'group',
-            registerId: 2,
-            schemaId: 4
-        );
+	/**
+	 * register() upserts an existing key (update, not duplicate insert).
+	 *
+	 * @return void
+	 */
+	public function testRegisterUpsertsExisting(): void {
+		$existing = new AnalyticsSeries();
+		$existing->setId(9);
+		$existing->setSeriesKey('sla-breaches');
+		$existing->setCreatedBy('bob');
 
-        $this->assertSame('sla-breaches', $result['seriesKey']);
-        $this->assertSame(['Wk1', 'Wk2'], $result['labels']);
-        $this->assertSame([['label' => 'Breaches', 'data' => [3, 5]]], $result['datasets']);
-        $this->assertSame('alice', $result['createdBy']);
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn($existing);
+		$mapper->expects($this->never())->method('insert');
+		$mapper->expects($this->once())->method('update')->willReturnCallback(
+			static fn (AnalyticsSeries $s): AnalyticsSeries => $s
+		);
 
-        $widget = $registry->getPageWidget('analytics-series:sla-breaches');
-        $this->assertNotNull($widget, 'page widget must be declared on the registry');
-        $this->assertSame('chart', $widget['type']);
-        $this->assertSame('analytics-series', $widget['providerId']);
-        $this->assertSame('sla-breaches', $widget['config']['seriesKey']);
-    }//end testRegisterPersistsAndDeclaresWidget()
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('alice'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
+		$result = $service->register(
+			seriesKey: 'sla-breaches',
+			labels: ['Wk1'],
+			datasets: [['label' => 'x', 'data' => [1]]],
+		);
 
-    /**
-     * register() upserts an existing key (update, not duplicate insert).
-     *
-     * @return void
-     */
-    public function testRegisterUpsertsExisting(): void
-    {
-        $existing = new AnalyticsSeries();
-        $existing->setId(9);
-        $existing->setSeriesKey('sla-breaches');
-        $existing->setCreatedBy('bob');
+		// Creator is preserved from the existing row (not overwritten).
+		$this->assertSame('bob', $result['createdBy']);
+	}//end testRegisterUpsertsExisting()
 
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn($existing);
-        $mapper->expects($this->never())->method('insert');
-        $mapper->expects($this->once())->method('update')->willReturnCallback(
-            static fn (AnalyticsSeries $s): AnalyticsSeries => $s
-        );
+	/**
+	 * register() rejects an invalid visibility.
+	 *
+	 * @return void
+	 */
+	public function testRegisterRejectsInvalidVisibility(): void {
+		$service = new AnalyticsSeriesService(
+			mapper: $this->createMock(AnalyticsSeriesMapper::class),
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('alice'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('alice'),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$this->expectException(InvalidArgumentException::class);
+		$service->register(seriesKey: 'k', labels: [], datasets: [], visibility: 'world');
+	}//end testRegisterRejectsInvalidVisibility()
 
-        $result = $service->register(
-            seriesKey: 'sla-breaches',
-            labels: ['Wk1'],
-            datasets: [['label' => 'x', 'data' => [1]]],
-        );
+	/**
+	 * register() rejects an invalid chart type.
+	 *
+	 * @return void
+	 */
+	public function testRegisterRejectsInvalidChartType(): void {
+		$service = new AnalyticsSeriesService(
+			mapper: $this->createMock(AnalyticsSeriesMapper::class),
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('alice'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-        // Creator is preserved from the existing row (not overwritten).
-        $this->assertSame('bob', $result['createdBy']);
-    }//end testRegisterUpsertsExisting()
+		$this->expectException(InvalidArgumentException::class);
+		$service->register(seriesKey: 'k', labels: [], datasets: [], chartType: 'sankey');
+	}//end testRegisterRejectsInvalidChartType()
 
+	/**
+	 * register() rejects an anonymous caller.
+	 *
+	 * @return void
+	 */
+	public function testRegisterRejectsAnonymous(): void {
+		$service = new AnalyticsSeriesService(
+			mapper: $this->createMock(AnalyticsSeriesMapper::class),
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession(null),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-    /**
-     * register() rejects an invalid visibility.
-     *
-     * @return void
-     */
-    public function testRegisterRejectsInvalidVisibility(): void
-    {
-        $service = new AnalyticsSeriesService(
-            mapper: $this->createMock(AnalyticsSeriesMapper::class),
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('alice'),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$this->expectException(InvalidArgumentException::class);
+		$service->register(seriesKey: 'k', labels: [], datasets: []);
+	}//end testRegisterRejectsAnonymous()
 
-        $this->expectException(InvalidArgumentException::class);
-        $service->register(seriesKey: 'k', labels: [], datasets: [], visibility: 'world');
-    }//end testRegisterRejectsInvalidVisibility()
+	/**
+	 * fetch() returns a public series to anyone (anonymous included).
+	 *
+	 * @return void
+	 */
+	public function testFetchPublicSeriesReadableByAnyone(): void {
+		$series = new AnalyticsSeries();
+		$series->setSeriesKey('pub');
+		$series->setVisibility('public');
+		$series->setCreatedBy('bob');
+		$series->setLabels(json_encode(['A']));
+		$series->setDatasets(json_encode([['data' => [1]]]));
 
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn($series);
 
-    /**
-     * register() rejects an invalid chart type.
-     *
-     * @return void
-     */
-    public function testRegisterRejectsInvalidChartType(): void
-    {
-        $service = new AnalyticsSeriesService(
-            mapper: $this->createMock(AnalyticsSeriesMapper::class),
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('alice'),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession(null),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-        $this->expectException(InvalidArgumentException::class);
-        $service->register(seriesKey: 'k', labels: [], datasets: [], chartType: 'sankey');
-    }//end testRegisterRejectsInvalidChartType()
+		$result = $service->fetch('pub');
+		$this->assertNotNull($result);
+		$this->assertSame(['A'], $result['labels']);
+	}//end testFetchPublicSeriesReadableByAnyone()
 
+	/**
+	 * fetch() denies a private series to a non-creator non-admin (null,
+	 * no oracle).
+	 *
+	 * @return void
+	 */
+	public function testFetchPrivateSeriesDeniedToOther(): void {
+		$series = new AnalyticsSeries();
+		$series->setSeriesKey('priv');
+		$series->setVisibility('private');
+		$series->setCreatedBy('bob');
 
-    /**
-     * register() rejects an anonymous caller.
-     *
-     * @return void
-     */
-    public function testRegisterRejectsAnonymous(): void
-    {
-        $service = new AnalyticsSeriesService(
-            mapper: $this->createMock(AnalyticsSeriesMapper::class),
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession(null),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn($series);
 
-        $this->expectException(InvalidArgumentException::class);
-        $service->register(seriesKey: 'k', labels: [], datasets: []);
-    }//end testRegisterRejectsAnonymous()
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('mallory'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
+		$this->assertNull($service->fetch('priv'));
+	}//end testFetchPrivateSeriesDeniedToOther()
 
-    /**
-     * fetch() returns a public series to anyone (anonymous included).
-     *
-     * @return void
-     */
-    public function testFetchPublicSeriesReadableByAnyone(): void
-    {
-        $series = new AnalyticsSeries();
-        $series->setSeriesKey('pub');
-        $series->setVisibility('public');
-        $series->setCreatedBy('bob');
-        $series->setLabels(json_encode(['A']));
-        $series->setDatasets(json_encode([['data' => [1]]]));
+	/**
+	 * fetch() allows the creator to read their own private series.
+	 *
+	 * @return void
+	 */
+	public function testFetchPrivateSeriesAllowedToCreator(): void {
+		$series = new AnalyticsSeries();
+		$series->setSeriesKey('priv');
+		$series->setVisibility('private');
+		$series->setCreatedBy('bob');
+		$series->setLabels(json_encode([]));
+		$series->setDatasets(json_encode([]));
 
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn($series);
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn($series);
 
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession(null),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('bob'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-        $result = $service->fetch('pub');
-        $this->assertNotNull($result);
-        $this->assertSame(['A'], $result['labels']);
-    }//end testFetchPublicSeriesReadableByAnyone()
+		$this->assertNotNull($service->fetch('priv'));
+	}//end testFetchPrivateSeriesAllowedToCreator()
 
+	/**
+	 * fetch() allows an admin to read a private series.
+	 *
+	 * @return void
+	 */
+	public function testFetchPrivateSeriesAllowedToAdmin(): void {
+		$series = new AnalyticsSeries();
+		$series->setSeriesKey('priv');
+		$series->setVisibility('private');
+		$series->setCreatedBy('bob');
+		$series->setLabels(json_encode([]));
+		$series->setDatasets(json_encode([]));
 
-    /**
-     * fetch() denies a private series to a non-creator non-admin (null,
-     * no oracle).
-     *
-     * @return void
-     */
-    public function testFetchPrivateSeriesDeniedToOther(): void
-    {
-        $series = new AnalyticsSeries();
-        $series->setSeriesKey('priv');
-        $series->setVisibility('private');
-        $series->setCreatedBy('bob');
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn($series);
 
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn($series);
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('root'),
+			groupManager: $this->buildGroupManager(true),
+		);
 
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('mallory'),
-            groupManager: $this->buildGroupManager(false),
-        );
+		$this->assertNotNull($service->fetch('priv'));
+	}//end testFetchPrivateSeriesAllowedToAdmin()
 
-        $this->assertNull($service->fetch('priv'));
-    }//end testFetchPrivateSeriesDeniedToOther()
+	/**
+	 * fetch() returns null for an unknown key.
+	 *
+	 * @return void
+	 */
+	public function testFetchUnknownReturnsNull(): void {
+		$mapper = $this->createMock(AnalyticsSeriesMapper::class);
+		$mapper->method('findByKey')->willReturn(null);
 
+		$service = new AnalyticsSeriesService(
+			mapper: $mapper,
+			registry: $this->buildRegistry(),
+			userSession: $this->buildUserSession('alice'),
+			groupManager: $this->buildGroupManager(false),
+		);
 
-    /**
-     * fetch() allows the creator to read their own private series.
-     *
-     * @return void
-     */
-    public function testFetchPrivateSeriesAllowedToCreator(): void
-    {
-        $series = new AnalyticsSeries();
-        $series->setSeriesKey('priv');
-        $series->setVisibility('private');
-        $series->setCreatedBy('bob');
-        $series->setLabels(json_encode([]));
-        $series->setDatasets(json_encode([]));
-
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn($series);
-
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('bob'),
-            groupManager: $this->buildGroupManager(false),
-        );
-
-        $this->assertNotNull($service->fetch('priv'));
-    }//end testFetchPrivateSeriesAllowedToCreator()
-
-
-    /**
-     * fetch() allows an admin to read a private series.
-     *
-     * @return void
-     */
-    public function testFetchPrivateSeriesAllowedToAdmin(): void
-    {
-        $series = new AnalyticsSeries();
-        $series->setSeriesKey('priv');
-        $series->setVisibility('private');
-        $series->setCreatedBy('bob');
-        $series->setLabels(json_encode([]));
-        $series->setDatasets(json_encode([]));
-
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn($series);
-
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('root'),
-            groupManager: $this->buildGroupManager(true),
-        );
-
-        $this->assertNotNull($service->fetch('priv'));
-    }//end testFetchPrivateSeriesAllowedToAdmin()
-
-
-    /**
-     * fetch() returns null for an unknown key.
-     *
-     * @return void
-     */
-    public function testFetchUnknownReturnsNull(): void
-    {
-        $mapper = $this->createMock(AnalyticsSeriesMapper::class);
-        $mapper->method('findByKey')->willReturn(null);
-
-        $service = new AnalyticsSeriesService(
-            mapper: $mapper,
-            registry: $this->buildRegistry(),
-            userSession: $this->buildUserSession('alice'),
-            groupManager: $this->buildGroupManager(false),
-        );
-
-        $this->assertNull($service->fetch('nope'));
-    }//end testFetchUnknownReturnsNull()
+		$this->assertNull($service->fetch('nope'));
+	}//end testFetchUnknownReturnsNull()
 }//end class

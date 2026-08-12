@@ -1,13 +1,14 @@
 <?php
+
 /**
  * Default Organisation Management Unit Tests
  *
  * This test class covers all scenarios related to default organisation creation,
  * user auto-assignment, and preventing multiple default organisations.
- * 
+ *
  * Test Coverage:
  * - Test 1.1: Default Organisation Creation on Empty Database
- * - Test 1.2: User Auto-Assignment to Default Organisation  
+ * - Test 1.2: User Auto-Assignment to Default Organisation
  * - Test 1.3: Multiple Default Organisations Prevention
  *
  * Key Features Tested:
@@ -33,507 +34,494 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCP\IUserSession;
-use OCP\IUser;
-use OCP\ISession;
-use OCP\IConfig;
-use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IAppConfig;
+use OCP\IConfig;
+use OCP\IGroupManager;
+use OCP\ISession;
+use OCP\IUser;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
  * Test class for Default Organisation Management
  */
-class DefaultOrganisationManagementTest extends TestCase
-{
-    /**
-     * @var OrganisationService
-     */
-    private OrganisationService $organisationService;
-    
-    /**
-     * @var OrganisationMapper|MockObject
-     */
-    private $organisationMapper;
-    
-    /**
-     * @var IUserSession|MockObject
-     */
-    private $userSession;
-    
-    /**
-     * @var ISession|MockObject
-     */
-    private $session;
-    
-    /**
-     * @var IConfig|MockObject
-     */
-    private $config;
+class DefaultOrganisationManagementTest extends TestCase {
+	/**
+	 * @var OrganisationService
+	 */
+	private OrganisationService $organisationService;
 
-    /**
-     * @var IAppConfig|MockObject
-     */
-    private $appConfig;
+	/**
+	 * @var OrganisationMapper|MockObject
+	 */
+	private $organisationMapper;
 
-    /**
-     * @var IGroupManager|MockObject
-     */
-    private $groupManager;
+	/**
+	 * @var IUserSession|MockObject
+	 */
+	private $userSession;
 
-    /**
-     * @var IUserManager|MockObject
-     */
-    private $userManager;
+	/**
+	 * @var ISession|MockObject
+	 */
+	private $session;
 
-    /**
-     * @var LoggerInterface|MockObject
-     */
-    private $logger;
+	/**
+	 * @var IConfig|MockObject
+	 */
+	private $config;
 
-    /**
-     * @var IUser|MockObject
-     */
-    private $mockUser;
+	/**
+	 * @var IAppConfig|MockObject
+	 */
+	private $appConfig;
 
-    /**
-     * Set up test environment before each test
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Create mock objects.
-        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->session = $this->createMock(ISession::class);
-        $this->config = $this->createMock(IConfig::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->userManager = $this->createMock(IUserManager::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->mockUser = $this->createMock(IUser::class);
+	/**
+	 * @var IGroupManager|MockObject
+	 */
+	private $groupManager;
 
-        // Create service instance with mocked dependencies.
-        $this->organisationService = new OrganisationService(
-            organisationMapper: $this->organisationMapper,
-            userSession: $this->userSession,
-            session: $this->session,
-            config: $this->config,
-            appConfig: $this->appConfig,
-            groupManager: $this->groupManager,
-            userManager: $this->userManager,
-            logger: $this->logger
-        );
-    }
+	/**
+	 * @var IUserManager|MockObject
+	 */
+	private $userManager;
 
-    /**
-     * Clean up after each test
-     *
-     * @return void
-     */
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        unset(
-            $this->organisationService,
-            $this->organisationMapper,
-            $this->userSession,
-            $this->session,
-            $this->config,
-            $this->appConfig,
-            $this->groupManager,
-            $this->userManager,
-            $this->logger,
-            $this->mockUser
-        );
-    }
+	/**
+	 * @var LoggerInterface|MockObject
+	 */
+	private $logger;
 
-    /**
-     * Test 1.1: Default Organisation Creation on Empty Database
-     * 
-     * Scenario: System creates default organisation when none exists
-     * Expected: Default organisation is created with proper metadata
-     *
-     * @return void
-     */
-    public function testDefaultOrganisationCreationOnEmptyDatabase(): void
-    {
-        // Arrange: Create default organisation entity with proper metadata.
-        $defaultOrg = new Organisation();
-        $defaultOrg->setName('Default Organisation');
-        $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
-        $defaultOrg->setOwner('system');
-        $defaultOrg->setUuid('default-uuid-123');
-        $defaultOrg->setUsers(['alice']);
+	/**
+	 * @var IUser|MockObject
+	 */
+	private $mockUser;
 
-        // Assert: Organisation entity was created with correct metadata.
-        $this->assertInstanceOf(Organisation::class, $defaultOrg);
-        $this->assertEquals('Default Organisation', $defaultOrg->getName());
-        $this->assertEquals('Default organisation for users without specific organisation membership', $defaultOrg->getDescription());
-        $this->assertTrue($defaultOrg->hasUser('alice'));
-        $this->assertEquals('system', $defaultOrg->getOwner());
-        $this->assertEquals('default-uuid-123', $defaultOrg->getUuid());
-    }
+	/**
+	 * Set up test environment before each test
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Test 1.2: User Auto-Assignment to Default Organisation
-     *
-     * Scenario: New user automatically gets assigned to default organisation
-     * Expected: User is added to existing default organisation
-     *
-     * @return void
-     */
-    public function testUserAutoAssignmentToDefaultOrganisation(): void
-    {
-        // Arrange: Create a default organisation entity and verify user management.
-        $defaultOrg = new Organisation();
-        $defaultOrg->setName('Default Organisation');
-        $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
-        $defaultOrg->setOwner('system');
-        $defaultOrg->setUuid('default-uuid-123');
-        $defaultOrg->setUsers(['alice']); // Alice already in default org
+		// Create mock objects.
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->session = $this->createMock(ISession::class);
+		$this->config = $this->createMock(IConfig::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->mockUser = $this->createMock(IUser::class);
 
-        // Act: Add Bob to the organisation.
-        $defaultOrg->addUser('bob');
+		// Create service instance with mocked dependencies.
+		$this->organisationService = new OrganisationService(
+			organisationMapper: $this->organisationMapper,
+			userSession: $this->userSession,
+			session: $this->session,
+			config: $this->config,
+			appConfig: $this->appConfig,
+			groupManager: $this->groupManager,
+			userManager: $this->userManager,
+			logger: $this->logger
+		);
+	}
 
-        // Assert: Both users are assigned to the organisation.
-        $this->assertInstanceOf(Organisation::class, $defaultOrg);
-        $this->assertEquals('Default Organisation', $defaultOrg->getName());
-        $this->assertTrue($defaultOrg->hasUser('bob'));
-        $this->assertTrue($defaultOrg->hasUser('alice'));
-    }
+	/**
+	 * Clean up after each test
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		parent::tearDown();
+		unset(
+			$this->organisationService,
+			$this->organisationMapper,
+			$this->userSession,
+			$this->session,
+			$this->config,
+			$this->appConfig,
+			$this->groupManager,
+			$this->userManager,
+			$this->logger,
+			$this->mockUser
+		);
+	}
 
-    /**
-     * Test 1.3: Multiple Default Organisations Prevention
-     *
-     * Scenario: System prevents creation of multiple default organisations
-     * Expected: Attempt to create second default organisation should fail
-     *
-     * @return void
-     */
-    public function testMultipleDefaultOrganisationsPrevention(): void
-    {
-        // Arrange: Create an existing default organisation entity.
-        $existingDefaultOrg = new Organisation();
-        $existingDefaultOrg->setName('Default Organisation');
-        $existingDefaultOrg->setOwner('system');
-        $existingDefaultOrg->setUuid('existing-default-uuid');
+	/**
+	 * Test 1.1: Default Organisation Creation on Empty Database
+	 *
+	 * Scenario: System creates default organisation when none exists
+	 * Expected: Default organisation is created with proper metadata
+	 *
+	 * @return void
+	 */
+	public function testDefaultOrganisationCreationOnEmptyDatabase(): void {
+		// Arrange: Create default organisation entity with proper metadata.
+		$defaultOrg = new Organisation();
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setDescription('Default organisation for users without specific organisation membership');
+		$defaultOrg->setOwner('system');
+		$defaultOrg->setUuid('default-uuid-123');
+		$defaultOrg->setUsers(['alice']);
 
-        // Assert: Existing organisation has correct metadata.
-        $this->assertInstanceOf(Organisation::class, $existingDefaultOrg);
-        $this->assertEquals('existing-default-uuid', $existingDefaultOrg->getUuid());
-        $this->assertEquals('system', $existingDefaultOrg->getOwner());
-        $this->assertEquals('Default Organisation', $existingDefaultOrg->getName());
-    }
+		// Assert: Organisation entity was created with correct metadata.
+		$this->assertInstanceOf(Organisation::class, $defaultOrg);
+		$this->assertEquals('Default Organisation', $defaultOrg->getName());
+		$this->assertEquals('Default organisation for users without specific organisation membership', $defaultOrg->getDescription());
+		$this->assertTrue($defaultOrg->hasUser('alice'));
+		$this->assertEquals('system', $defaultOrg->getOwner());
+		$this->assertEquals('default-uuid-123', $defaultOrg->getUuid());
+	}
 
-    /**
-     * Test 1.3b: Database Constraint Prevention of Multiple Defaults
-     *
-     * Scenario: Database constraints prevent multiple default organisations
-     * Expected: Database should enforce uniqueness constraint
-     *
-     * @return void
-     */
-    public function testDatabaseConstraintPreventionOfMultipleDefaults(): void
-    {
-        // Arrange: Create an existing default organisation entity.
-        $existingDefault = new Organisation();
-        $existingDefault->setName('Default Organisation');
-        $existingDefault->setUuid('existing-default-uuid-456');
+	/**
+	 * Test 1.2: User Auto-Assignment to Default Organisation
+	 *
+	 * Scenario: New user automatically gets assigned to default organisation
+	 * Expected: User is added to existing default organisation
+	 *
+	 * @return void
+	 */
+	public function testUserAutoAssignmentToDefaultOrganisation(): void {
+		// Arrange: Create a default organisation entity and verify user management.
+		$defaultOrg = new Organisation();
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setDescription('Default organisation for users without specific organisation membership');
+		$defaultOrg->setOwner('system');
+		$defaultOrg->setUuid('default-uuid-123');
+		$defaultOrg->setUsers(['alice']); // Alice already in default org
 
-        // Assert: Existing default organisation has correct metadata.
-        $this->assertInstanceOf(Organisation::class, $existingDefault);
-        $this->assertEquals('existing-default-uuid-456', $existingDefault->getUuid());
-        $this->assertEquals('Default Organisation', $existingDefault->getName());
-    }
+		// Act: Add Bob to the organisation.
+		$defaultOrg->addUser('bob');
 
-    /**
-     * Test active organisation auto-setting with default organisation
-     *
-     * Scenario: When user has no active organisation, default should be set as active
-     * Expected: Default organisation becomes active automatically
-     *
-     * @return void
-     */
-    public function testActiveOrganisationAutoSettingWithDefault(): void
-    {
-        // Arrange: Create a default organisation entity.
-        $defaultOrg = new Organisation();
-        $defaultOrg->setName('Default Organisation');
-        $defaultOrg->setUuid('default-uuid-456');
-        $defaultOrg->setUsers(['charlie']);
-        $defaultOrg->setCreated(new \DateTime('2024-01-01'));
+		// Assert: Both users are assigned to the organisation.
+		$this->assertInstanceOf(Organisation::class, $defaultOrg);
+		$this->assertEquals('Default Organisation', $defaultOrg->getName());
+		$this->assertTrue($defaultOrg->hasUser('bob'));
+		$this->assertTrue($defaultOrg->hasUser('alice'));
+	}
 
-        // Assert: Organisation has correct metadata for active setting.
-        $this->assertInstanceOf(Organisation::class, $defaultOrg);
-        $this->assertEquals('default-uuid-456', $defaultOrg->getUuid());
-        $this->assertTrue($defaultOrg->hasUser('charlie'));
-        $this->assertEquals('Default Organisation', $defaultOrg->getName());
-    }
+	/**
+	 * Test 1.3: Multiple Default Organisations Prevention
+	 *
+	 * Scenario: System prevents creation of multiple default organisations
+	 * Expected: Attempt to create second default organisation should fail
+	 *
+	 * @return void
+	 */
+	public function testMultipleDefaultOrganisationsPrevention(): void {
+		// Arrange: Create an existing default organisation entity.
+		$existingDefaultOrg = new Organisation();
+		$existingDefaultOrg->setName('Default Organisation');
+		$existingDefaultOrg->setOwner('system');
+		$existingDefaultOrg->setUuid('existing-default-uuid');
 
-    /**
-     * Test ensureDefaultOrganisation fetches from DB when UUID is configured
-     *
-     * Scenario: Default organisation UUID is set in config, org exists in DB
-     * Expected: Organisation is fetched and cached
-     *
-     * @return void
-     */
-    public function testEnsureDefaultOrganisationFetchesFromDb(): void
-    {
-        // Arrange: Clear static cache.
-        $reflection = new \ReflectionClass(OrganisationService::class);
-        $cacheProperty = $reflection->getProperty('defaultOrgCache');
-        $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null, null);
-        $tsProperty = $reflection->getProperty('defaultOrgCacheTs');
-        $tsProperty->setAccessible(true);
-        $tsProperty->setValue(null, null);
+		// Assert: Existing organisation has correct metadata.
+		$this->assertInstanceOf(Organisation::class, $existingDefaultOrg);
+		$this->assertEquals('existing-default-uuid', $existingDefaultOrg->getUuid());
+		$this->assertEquals('system', $existingDefaultOrg->getOwner());
+		$this->assertEquals('Default Organisation', $existingDefaultOrg->getName());
+	}
 
-        // Mock: appConfig returns default org UUID.
-        $this->appConfig->method('getValueString')
-            ->willReturnMap([
-                ['openregister', 'defaultOrganisation', '', 'db-default-uuid'],
-                ['openregister', 'organisation', '', ''],
-            ]);
+	/**
+	 * Test 1.3b: Database Constraint Prevention of Multiple Defaults
+	 *
+	 * Scenario: Database constraints prevent multiple default organisations
+	 * Expected: Database should enforce uniqueness constraint
+	 *
+	 * @return void
+	 */
+	public function testDatabaseConstraintPreventionOfMultipleDefaults(): void {
+		// Arrange: Create an existing default organisation entity.
+		$existingDefault = new Organisation();
+		$existingDefault->setName('Default Organisation');
+		$existingDefault->setUuid('existing-default-uuid-456');
 
-        // Mock: org exists in DB.
-        $dbOrg = new Organisation();
-        $dbOrg->setUuid('db-default-uuid');
-        $dbOrg->setName('DB Default Org');
-        $dbOrg->setUsers(['admin']);
+		// Assert: Existing default organisation has correct metadata.
+		$this->assertInstanceOf(Organisation::class, $existingDefault);
+		$this->assertEquals('existing-default-uuid-456', $existingDefault->getUuid());
+		$this->assertEquals('Default Organisation', $existingDefault->getName());
+	}
 
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('findByUuid')
-            ->with('db-default-uuid')
-            ->willReturn($dbOrg);
+	/**
+	 * Test active organisation auto-setting with default organisation
+	 *
+	 * Scenario: When user has no active organisation, default should be set as active
+	 * Expected: Default organisation becomes active automatically
+	 *
+	 * @return void
+	 */
+	public function testActiveOrganisationAutoSettingWithDefault(): void {
+		// Arrange: Create a default organisation entity.
+		$defaultOrg = new Organisation();
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setUuid('default-uuid-456');
+		$defaultOrg->setUsers(['charlie']);
+		$defaultOrg->setCreated(new \DateTime('2024-01-01'));
 
-        // Act.
-        $result = $this->organisationService->ensureDefaultOrganisation();
+		// Assert: Organisation has correct metadata for active setting.
+		$this->assertInstanceOf(Organisation::class, $defaultOrg);
+		$this->assertEquals('default-uuid-456', $defaultOrg->getUuid());
+		$this->assertTrue($defaultOrg->hasUser('charlie'));
+		$this->assertEquals('Default Organisation', $defaultOrg->getName());
+	}
 
-        // Assert.
-        $this->assertInstanceOf(Organisation::class, $result);
-        $this->assertEquals('db-default-uuid', $result->getUuid());
-        $this->assertEquals('DB Default Org', $result->getName());
+	/**
+	 * Test ensureDefaultOrganisation fetches from DB when UUID is configured
+	 *
+	 * Scenario: Default organisation UUID is set in config, org exists in DB
+	 * Expected: Organisation is fetched and cached
+	 *
+	 * @return void
+	 */
+	public function testEnsureDefaultOrganisationFetchesFromDb(): void {
+		// Arrange: Clear static cache.
+		$reflection = new \ReflectionClass(OrganisationService::class);
+		$cacheProperty = $reflection->getProperty('defaultOrgCache');
+		$cacheProperty->setAccessible(true);
+		$cacheProperty->setValue(null, null);
+		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
+		$tsProperty->setAccessible(true);
+		$tsProperty->setValue(null, null);
 
-        // Verify it was cached.
-        $this->assertNotNull($cacheProperty->getValue());
-        $this->assertNotNull($tsProperty->getValue());
-    }
+		// Mock: appConfig returns default org UUID.
+		$this->appConfig->method('getValueString')
+			->willReturnMap([
+				['openregister', 'defaultOrganisation', '', 'db-default-uuid'],
+				['openregister', 'organisation', '', ''],
+			]);
 
-    /**
-     * Test ensureDefaultOrganisation creates new org when UUID not found in DB
-     *
-     * Scenario: Default organisation UUID is set in config but org does not exist
-     * Expected: New default organisation is created
-     *
-     * @return void
-     */
-    public function testEnsureDefaultOrganisationCreatesWhenUuidNotFound(): void
-    {
-        // Arrange: Clear static cache.
-        $reflection = new \ReflectionClass(OrganisationService::class);
-        $cacheProperty = $reflection->getProperty('defaultOrgCache');
-        $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null, null);
-        $tsProperty = $reflection->getProperty('defaultOrgCacheTs');
-        $tsProperty->setAccessible(true);
-        $tsProperty->setValue(null, null);
+		// Mock: org exists in DB.
+		$dbOrg = new Organisation();
+		$dbOrg->setUuid('db-default-uuid');
+		$dbOrg->setName('DB Default Org');
+		$dbOrg->setUsers(['admin']);
 
-        // Mock: no user logged in.
-        $this->userSession->method('getUser')->willReturn(null);
+		$this->organisationMapper
+			->expects($this->once())
+			->method('findByUuid')
+			->with('db-default-uuid')
+			->willReturn($dbOrg);
 
-        // Mock: appConfig returns a UUID that doesn't exist.
-        $this->appConfig->method('getValueString')
-            ->willReturnMap([
-                ['openregister', 'defaultOrganisation', '', 'stale-uuid'],
-                ['openregister', 'organisation', '', ''],
-            ]);
+		// Act.
+		$result = $this->organisationService->ensureDefaultOrganisation();
 
-        // Mock: findByUuid throws for the stale UUID.
-        $this->organisationMapper
-            ->method('findByUuid')
-            ->with('stale-uuid')
-            ->willThrowException(new DoesNotExistException('Not found'));
+		// Assert.
+		$this->assertInstanceOf(Organisation::class, $result);
+		$this->assertEquals('db-default-uuid', $result->getUuid());
+		$this->assertEquals('DB Default Org', $result->getName());
 
-        // Mock: save for createOrganisation.
-        $createdOrg = new Organisation();
-        $createdOrg->setUuid('new-default-uuid');
-        $createdOrg->setName('Default Organisation');
-        $createdOrg->setDescription('Auto-generated default organisation');
+		// Verify it was cached.
+		$this->assertNotNull($cacheProperty->getValue());
+		$this->assertNotNull($tsProperty->getValue());
+	}
 
-        $this->organisationMapper
-            ->method('save')
-            ->willReturn($createdOrg);
+	/**
+	 * Test ensureDefaultOrganisation creates new org when UUID not found in DB
+	 *
+	 * Scenario: Default organisation UUID is set in config but org does not exist
+	 * Expected: New default organisation is created
+	 *
+	 * @return void
+	 */
+	public function testEnsureDefaultOrganisationCreatesWhenUuidNotFound(): void {
+		// Arrange: Clear static cache.
+		$reflection = new \ReflectionClass(OrganisationService::class);
+		$cacheProperty = $reflection->getProperty('defaultOrgCache');
+		$cacheProperty->setAccessible(true);
+		$cacheProperty->setValue(null, null);
+		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
+		$tsProperty->setAccessible(true);
+		$tsProperty->setValue(null, null);
 
-        // Mock: update for admin user addition.
-        $this->organisationMapper
-            ->method('update')
-            ->willReturn($createdOrg);
+		// Mock: no user logged in.
+		$this->userSession->method('getUser')->willReturn(null);
 
-        // Mock: groupManager for admin users.
-        $this->groupManager->method('get')->willReturn(null);
+		// Mock: appConfig returns a UUID that doesn't exist.
+		$this->appConfig->method('getValueString')
+			->willReturnMap([
+				['openregister', 'defaultOrganisation', '', 'stale-uuid'],
+				['openregister', 'organisation', '', ''],
+			]);
 
-        // Mock: appConfig setValueString for storing new default UUID.
-        $this->appConfig->expects($this->atLeastOnce())
-            ->method('setValueString');
+		// Mock: findByUuid throws for the stale UUID.
+		$this->organisationMapper
+			->method('findByUuid')
+			->with('stale-uuid')
+			->willThrowException(new DoesNotExistException('Not found'));
 
-        // Act.
-        $result = $this->organisationService->ensureDefaultOrganisation();
+		// Mock: save for createOrganisation.
+		$createdOrg = new Organisation();
+		$createdOrg->setUuid('new-default-uuid');
+		$createdOrg->setName('Default Organisation');
+		$createdOrg->setDescription('Auto-generated default organisation');
 
-        // Assert.
-        $this->assertInstanceOf(Organisation::class, $result);
-    }
+		$this->organisationMapper
+			->method('save')
+			->willReturn($createdOrg);
 
-    /**
-     * Test ensureDefaultOrganisation creates new org when no UUID is configured
-     *
-     * Scenario: No default organisation UUID in config at all
-     * Expected: New default organisation is created and stored in config
-     *
-     * @return void
-     */
-    public function testEnsureDefaultOrganisationCreatesWhenNoUuidConfigured(): void
-    {
-        // Arrange: Clear static cache.
-        $reflection = new \ReflectionClass(OrganisationService::class);
-        $cacheProperty = $reflection->getProperty('defaultOrgCache');
-        $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue(null, null);
-        $tsProperty = $reflection->getProperty('defaultOrgCacheTs');
-        $tsProperty->setAccessible(true);
-        $tsProperty->setValue(null, null);
+		// Mock: update for admin user addition.
+		$this->organisationMapper
+			->method('update')
+			->willReturn($createdOrg);
 
-        // Mock: no user logged in.
-        $this->userSession->method('getUser')->willReturn(null);
+		// Mock: groupManager for admin users.
+		$this->groupManager->method('get')->willReturn(null);
 
-        // Mock: no default UUID configured.
-        $this->appConfig->method('getValueString')
-            ->willReturnMap([
-                ['openregister', 'defaultOrganisation', '', ''],
-                ['openregister', 'organisation', '', ''],
-            ]);
+		// Mock: appConfig setValueString for storing new default UUID.
+		$this->appConfig->expects($this->atLeastOnce())
+			->method('setValueString');
 
-        // Mock: save for createOrganisation.
-        $createdOrg = new Organisation();
-        $createdOrg->setUuid('brand-new-default-uuid');
-        $createdOrg->setName('Default Organisation');
+		// Act.
+		$result = $this->organisationService->ensureDefaultOrganisation();
 
-        $this->organisationMapper
-            ->method('save')
-            ->willReturn($createdOrg);
+		// Assert.
+		$this->assertInstanceOf(Organisation::class, $result);
+	}
 
-        // Mock: update for admin user addition.
-        $this->organisationMapper
-            ->method('update')
-            ->willReturn($createdOrg);
+	/**
+	 * Test ensureDefaultOrganisation creates new org when no UUID is configured
+	 *
+	 * Scenario: No default organisation UUID in config at all
+	 * Expected: New default organisation is created and stored in config
+	 *
+	 * @return void
+	 */
+	public function testEnsureDefaultOrganisationCreatesWhenNoUuidConfigured(): void {
+		// Arrange: Clear static cache.
+		$reflection = new \ReflectionClass(OrganisationService::class);
+		$cacheProperty = $reflection->getProperty('defaultOrgCache');
+		$cacheProperty->setAccessible(true);
+		$cacheProperty->setValue(null, null);
+		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
+		$tsProperty->setAccessible(true);
+		$tsProperty->setValue(null, null);
 
-        // Mock: no admin group.
-        $this->groupManager->method('get')->willReturn(null);
+		// Mock: no user logged in.
+		$this->userSession->method('getUser')->willReturn(null);
 
-        // Expect: setValueString called to store the new default UUID.
-        $this->appConfig->expects($this->atLeastOnce())
-            ->method('setValueString');
+		// Mock: no default UUID configured.
+		$this->appConfig->method('getValueString')
+			->willReturnMap([
+				['openregister', 'defaultOrganisation', '', ''],
+				['openregister', 'organisation', '', ''],
+			]);
 
-        // Act.
-        $result = $this->organisationService->ensureDefaultOrganisation();
+		// Mock: save for createOrganisation.
+		$createdOrg = new Organisation();
+		$createdOrg->setUuid('brand-new-default-uuid');
+		$createdOrg->setName('Default Organisation');
 
-        // Assert.
-        $this->assertInstanceOf(Organisation::class, $result);
-        $this->assertEquals('brand-new-default-uuid', $result->getUuid());
-    }
+		$this->organisationMapper
+			->method('save')
+			->willReturn($createdOrg);
 
-    /**
-     * Test getUserOrganisations auto-assigns user to default org when user has none
-     *
-     * Scenario: User exists but belongs to no organisations
-     * Expected: User is added to default organisation automatically
-     *
-     * @return void
-     */
-    public function testGetUserOrganisationsAutoAssignsToDefault(): void
-    {
-        // Arrange: Reset static user orgs cache.
-        $reflection = new \ReflectionClass(OrganisationService::class);
-        $userOrgsCache = $reflection->getProperty('userOrgsCache');
-        $userOrgsCache->setAccessible(true);
-        $userOrgsCache->setValue(null, []);
+		// Mock: update for admin user addition.
+		$this->organisationMapper
+			->method('update')
+			->willReturn($createdOrg);
 
-        // Mock user session.
-        $this->mockUser->method('getUID')->willReturn('newuser');
-        $this->userSession->method('getUser')->willReturn($this->mockUser);
+		// Mock: no admin group.
+		$this->groupManager->method('get')->willReturn(null);
 
-        // Mock: user has no organisations initially.
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('findByUserId')
-            ->with('newuser')
-            ->willReturn([]);
+		// Expect: setValueString called to store the new default UUID.
+		$this->appConfig->expects($this->atLeastOnce())
+			->method('setValueString');
 
-        // Mock: default org from static cache.
-        $defaultOrg = new Organisation();
-        $defaultOrg->setUuid('auto-assign-default-uuid');
-        $defaultOrg->setName('Default Organisation');
-        $defaultOrg->setUsers([]);
+		// Act.
+		$result = $this->organisationService->ensureDefaultOrganisation();
 
-        $cacheProperty = $reflection->getProperty('defaultOrgCache');
-        $cacheProperty->setAccessible(true);
-        $cacheProperty->setValue($defaultOrg);
-        $tsProperty = $reflection->getProperty('defaultOrgCacheTs');
-        $tsProperty->setAccessible(true);
-        $tsProperty->setValue(time());
+		// Assert.
+		$this->assertInstanceOf(Organisation::class, $result);
+		$this->assertEquals('brand-new-default-uuid', $result->getUuid());
+	}
 
-        // Mock: update called to save user addition.
-        $this->organisationMapper
-            ->expects($this->once())
-            ->method('update')
-            ->willReturn($defaultOrg);
+	/**
+	 * Test getUserOrganisations auto-assigns user to default org when user has none
+	 *
+	 * Scenario: User exists but belongs to no organisations
+	 * Expected: User is added to default organisation automatically
+	 *
+	 * @return void
+	 */
+	public function testGetUserOrganisationsAutoAssignsToDefault(): void {
+		// Arrange: Reset static user orgs cache.
+		$reflection = new \ReflectionClass(OrganisationService::class);
+		$userOrgsCache = $reflection->getProperty('userOrgsCache');
+		$userOrgsCache->setAccessible(true);
+		$userOrgsCache->setValue(null, []);
 
-        // Act.
-        $result = $this->organisationService->getUserOrganisations();
+		// Mock user session.
+		$this->mockUser->method('getUID')->willReturn('newuser');
+		$this->userSession->method('getUser')->willReturn($this->mockUser);
 
-        // Assert: returns one org (the default).
-        $this->assertCount(1, $result);
-        $this->assertEquals('auto-assign-default-uuid', $result[0]->getUuid());
-    }
+		// Mock: user has no organisations initially.
+		$this->organisationMapper
+			->expects($this->once())
+			->method('findByUserId')
+			->with('newuser')
+			->willReturn([]);
 
-    /**
-     * Test default organisation metadata validation
-     *
-     * Scenario: Default organisation should have correct metadata
-     * Expected: Proper name, description, owner, and flags
-     *
-     * @return void
-     */
-    public function testDefaultOrganisationMetadataValidation(): void
-    {
-        // Arrange: Create default organisation with proper metadata.
-        $defaultOrg = new Organisation();
-        $defaultOrg->setName('Default Organisation');
-        $defaultOrg->setDescription('Default organisation for users without specific organisation membership');
-        $defaultOrg->setOwner('system');
-        $defaultOrg->setUuid('metadata-test-uuid');
-        $createdDate = new \DateTime();
-        $defaultOrg->setCreated($createdDate);
-        $defaultOrg->setUpdated($createdDate);
+		// Mock: default org from static cache.
+		$defaultOrg = new Organisation();
+		$defaultOrg->setUuid('auto-assign-default-uuid');
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setUsers([]);
 
-        // Assert: Metadata is correct.
-        $this->assertEquals('Default Organisation', $defaultOrg->getName());
-        $this->assertEquals('Default organisation for users without specific organisation membership', $defaultOrg->getDescription());
-        $this->assertEquals('system', $defaultOrg->getOwner());
-        $this->assertNotNull($defaultOrg->getUuid());
-        $this->assertInstanceOf(\DateTime::class, $defaultOrg->getCreated());
-        $this->assertInstanceOf(\DateTime::class, $defaultOrg->getUpdated());
-    }
-} 
+		$cacheProperty = $reflection->getProperty('defaultOrgCache');
+		$cacheProperty->setAccessible(true);
+		$cacheProperty->setValue($defaultOrg);
+		$tsProperty = $reflection->getProperty('defaultOrgCacheTs');
+		$tsProperty->setAccessible(true);
+		$tsProperty->setValue(time());
+
+		// Mock: update called to save user addition.
+		$this->organisationMapper
+			->expects($this->once())
+			->method('update')
+			->willReturn($defaultOrg);
+
+		// Act.
+		$result = $this->organisationService->getUserOrganisations();
+
+		// Assert: returns one org (the default).
+		$this->assertCount(1, $result);
+		$this->assertEquals('auto-assign-default-uuid', $result[0]->getUuid());
+	}
+
+	/**
+	 * Test default organisation metadata validation
+	 *
+	 * Scenario: Default organisation should have correct metadata
+	 * Expected: Proper name, description, owner, and flags
+	 *
+	 * @return void
+	 */
+	public function testDefaultOrganisationMetadataValidation(): void {
+		// Arrange: Create default organisation with proper metadata.
+		$defaultOrg = new Organisation();
+		$defaultOrg->setName('Default Organisation');
+		$defaultOrg->setDescription('Default organisation for users without specific organisation membership');
+		$defaultOrg->setOwner('system');
+		$defaultOrg->setUuid('metadata-test-uuid');
+		$createdDate = new \DateTime();
+		$defaultOrg->setCreated($createdDate);
+		$defaultOrg->setUpdated($createdDate);
+
+		// Assert: Metadata is correct.
+		$this->assertEquals('Default Organisation', $defaultOrg->getName());
+		$this->assertEquals('Default organisation for users without specific organisation membership', $defaultOrg->getDescription());
+		$this->assertEquals('system', $defaultOrg->getOwner());
+		$this->assertNotNull($defaultOrg->getUuid());
+		$this->assertInstanceOf(\DateTime::class, $defaultOrg->getCreated());
+		$this->assertInstanceOf(\DateTime::class, $defaultOrg->getUpdated());
+	}
+}

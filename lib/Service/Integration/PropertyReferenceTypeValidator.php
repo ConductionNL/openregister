@@ -43,126 +43,122 @@ use InvalidArgumentException;
 /**
  * Validate the optional `referenceType` marker on schema properties.
  */
-class PropertyReferenceTypeValidator
-{
-    /**
-     * Constructor.
-     *
-     * @param IntegrationRegistry $registry The integration registry —
-     *                                      used to look up valid ids.
-     *
-     * @return void
-     */
-    public function __construct(
-        private IntegrationRegistry $registry,
-    ) {
-    }//end __construct()
+class PropertyReferenceTypeValidator {
+	/**
+	 * Constructor.
+	 *
+	 * @param IntegrationRegistry $registry The integration registry —
+	 *                                      used to look up valid ids.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private IntegrationRegistry $registry,
+	) {
+	}//end __construct()
 
-    /**
-     * Validate a single property definition.
-     *
-     * Properties without a `referenceType` key pass through. Properties
-     * with one MUST carry a string that matches a currently-registered
-     * integration id; otherwise this throws.
-     *
-     * @param array<string,mixed> $property     Schema property definition.
-     * @param string|null         $propertyName Optional property name
-     *                                          for error messages.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException When referenceType is non-string
-     *                                  or refers to an unregistered id.
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
-     */
-    public function validate(array $property, ?string $propertyName=null): void
-    {
-        if (array_key_exists('referenceType', $property) === false) {
-            return;
-        }
+	/**
+	 * Validate a single property definition.
+	 *
+	 * Properties without a `referenceType` key pass through. Properties
+	 * with one MUST carry a string that matches a currently-registered
+	 * integration id; otherwise this throws.
+	 *
+	 * @param array<string,mixed> $property Schema property definition.
+	 * @param string|null $propertyName Optional property name
+	 *                                  for error messages.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When referenceType is non-string
+	 *                                  or refers to an unregistered id.
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
+	 */
+	public function validate(array $property, ?string $propertyName = null): void {
+		if (array_key_exists('referenceType', $property) === false) {
+			return;
+		}
 
-        $value = $property['referenceType'];
-        if ($value === null) {
-            return;
-        }
+		$value = $property['referenceType'];
+		if ($value === null) {
+			return;
+		}
 
-        if (is_string($value) === false) {
-            throw new InvalidArgumentException(
-                $this->formatError(propertyName: $propertyName, detail: 'must be a string or null')
-            );
-        }
+		if (is_string($value) === false) {
+			throw new InvalidArgumentException(
+				$this->formatError(propertyName: $propertyName, detail: 'must be a string or null')
+			);
+		}
 
-        if ($value === '') {
-            throw new InvalidArgumentException(
-                $this->formatError(propertyName: $propertyName, detail: 'must not be empty')
-            );
-        }
+		if ($value === '') {
+			throw new InvalidArgumentException(
+				$this->formatError(propertyName: $propertyName, detail: 'must not be empty')
+			);
+		}
 
-        if ($this->registry->isValidIntegrationId($value) === false) {
-            $validIds = $this->registry->listIds();
-            sort($validIds);
-            $idList = '(none)';
-            if ($validIds !== []) {
-                $idList = implode(', ', $validIds);
-            }
+		if ($this->registry->isValidIntegrationId($value) === false) {
+			$validIds = $this->registry->listIds();
+			sort($validIds);
+			$idList = '(none)';
+			if ($validIds !== []) {
+				$idList = implode(', ', $validIds);
+			}
 
-            throw new InvalidArgumentException(
-                $this->formatError(
-                    propertyName: $propertyName,
-                    detail: sprintf(
-                        "refers to unregistered integration '%s'. Registered ids: %s",
-                        $value,
-                        $idList
-                    )
-                )
-            );
-        }
-    }//end validate()
+			throw new InvalidArgumentException(
+				$this->formatError(
+					propertyName: $propertyName,
+					detail: sprintf(
+						"refers to unregistered integration '%s'. Registered ids: %s",
+						$value,
+						$idList
+					)
+				)
+			);
+		}
+	}//end validate()
 
-    /**
-     * Validate every property in a schema's `properties` map.
-     *
-     * Convenience wrapper for the per-schema validation path.
-     *
-     * @param array<string,array<string,mixed>> $properties Property map.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException On the first invalid property.
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
-     */
-    public function validateAll(array $properties): void
-    {
-        foreach ($properties as $name => $definition) {
-            if (is_array($definition) === true) {
-                $resolvedName = null;
-                if (is_string($name) === true) {
-                    $resolvedName = $name;
-                }
+	/**
+	 * Validate every property in a schema's `properties` map.
+	 *
+	 * Convenience wrapper for the per-schema validation path.
+	 *
+	 * @param array<string,array<string,mixed>> $properties Property map.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On the first invalid property.
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-10
+	 */
+	public function validateAll(array $properties): void {
+		foreach ($properties as $name => $definition) {
+			if (is_array($definition) === true) {
+				$resolvedName = null;
+				if (is_string($name) === true) {
+					$resolvedName = $name;
+				}
 
-                $this->validate(property: $definition, propertyName: $resolvedName);
-            }
-        }
-    }//end validateAll()
+				$this->validate(property: $definition, propertyName: $resolvedName);
+			}
+		}
+	}//end validateAll()
 
-    /**
-     * Build the standard error-message prefix.
-     *
-     * @param string|null $propertyName Property name (or null for
-     *                                  schema-level errors).
-     * @param string      $detail       Specific failure detail.
-     *
-     * @return string
-     */
-    private function formatError(?string $propertyName, string $detail): string
-    {
-        $prefix = 'referenceType';
-        if ($propertyName !== null) {
-            $prefix = sprintf("Property '%s' referenceType", $propertyName);
-        }
+	/**
+	 * Build the standard error-message prefix.
+	 *
+	 * @param string|null $propertyName Property name (or null for
+	 *                                  schema-level errors).
+	 * @param string $detail Specific failure detail.
+	 *
+	 * @return string
+	 */
+	private function formatError(?string $propertyName, string $detail): string {
+		$prefix = 'referenceType';
+		if ($propertyName !== null) {
+			$prefix = sprintf("Property '%s' referenceType", $propertyName);
+		}
 
-        return sprintf('%s %s', $prefix, $detail);
-    }//end formatError()
+		return sprintf('%s %s', $prefix, $detail);
+	}//end formatError()
 }//end class

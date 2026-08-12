@@ -40,60 +40,56 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-class KillSwitchCheck implements IFlowOversightCheck
-{
-    /**
-     * App-config key holding the kill switch.
-     *
-     * @var string
-     */
-    public const CONFIG_KEY = 'flow_kill_switch';
+class KillSwitchCheck implements IFlowOversightCheck {
+	/**
+	 * App-config key holding the kill switch.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_KEY = 'flow_kill_switch';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig $appConfig Reads the kill switch.
-     */
-    public function __construct(private readonly IAppConfig $appConfig)
-    {
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig Reads the kill switch.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * This check's id.
-     *
-     * @return string The namespaced id.
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function getId(): string
-    {
-        return 'openregister.kill-switch';
+	/**
+	 * This check's id.
+	 *
+	 * @return string The namespaced id.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function getId(): string {
+		return 'openregister.kill-switch';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Refuse the hop when the kill switch is set.
+	 *
+	 * @param array<string, mixed> $context The run context (unused — the switch
+	 *                                      is instance-wide by design; a
+	 *                                      per-flow off-switch is `enabled`).
+	 *
+	 * @return string|null The reason for refusing, or null to allow the hop.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function veto(array $context): ?string {
+		$thrown = $this->appConfig->getValueBool('openregister', self::CONFIG_KEY, false);
 
-    /**
-     * Refuse the hop when the kill switch is set.
-     *
-     * @param array<string, mixed> $context The run context (unused — the switch
-     *                                      is instance-wide by design; a
-     *                                      per-flow off-switch is `enabled`).
-     *
-     * @return string|null The reason for refusing, or null to allow the hop.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function veto(array $context): ?string
-    {
-        $thrown = $this->appConfig->getValueBool('openregister', self::CONFIG_KEY, false);
+		if ($thrown === false) {
+			return null;
+		}
 
-        if ($thrown === false) {
-            return null;
-        }
-
-        return 'The instance flow kill switch is set, so no flow step may run.';
-
-    }//end veto()
+		return 'The instance flow kill switch is set, so no flow step may run.';
+	}//end veto()
 }//end class

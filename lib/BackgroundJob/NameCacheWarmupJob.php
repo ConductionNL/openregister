@@ -29,9 +29,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
-use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,89 +48,86 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and monitoring
  * - Automatic error handling
  */
-class NameCacheWarmupJob extends TimedJob
-{
-    /**
-     * Default interval: 24 hours (daily)
-     */
-    private const DEFAULT_INTERVAL = 24 * 60 * 60;
+class NameCacheWarmupJob extends TimedJob {
+	/**
+	 * Default interval: 24 hours (daily)
+	 */
+	private const DEFAULT_INTERVAL = 24 * 60 * 60;
 
-    /**
-     * Constructor
-     *
-     * Initializes the timed job with the time factory and sets the interval.
-     *
-     * @param ITimeFactory $time Time factory for parent class
-     */
-    public function __construct(ITimeFactory $time)
-    {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
-        // Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
-        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * Initializes the timed job with the time factory and sets the interval.
+	 *
+	 * @param ITimeFactory $time Time factory for parent class
+	 */
+	public function __construct(ITimeFactory $time) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
+		// Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
+		$this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
+	}//end __construct()
 
-    /**
-     * Execute the nightly name cache warmup job
-     *
-     * @param mixed $argument Job arguments (unused for recurring jobs)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/specs/faceting-configuration/spec.md
-     */
-    protected function run($argument): void
-    {
-        $startTime = microtime(true);
+	/**
+	 * Execute the nightly name cache warmup job
+	 *
+	 * @param mixed $argument Job arguments (unused for recurring jobs)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md
+	 */
+	protected function run($argument): void {
+		$startTime = microtime(true);
 
-        // @var LoggerInterface $logger.
-        $logger = \OC::$server->get(LoggerInterface::class);
+		// @var LoggerInterface $logger.
+		$logger = \OC::$server->get(LoggerInterface::class);
 
-        $logger->info(
-            message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
-            context: [
-                'file'           => __FILE__,
-                'line'           => __LINE__,
-                'job_id'         => $this->getId(),
-                'scheduled_time' => date('Y-m-d H:i:s'),
-                'timezone'       => date_default_timezone_get(),
-            ]
-        );
+		$logger->info(
+			message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job_id' => $this->getId(),
+				'scheduled_time' => date('Y-m-d H:i:s'),
+				'timezone' => date_default_timezone_get(),
+			]
+		);
 
-        try {
-            // @var CacheHandler $cacheHandler.
-            $cacheHandler = \OC::$server->get(CacheHandler::class);
+		try {
+			// @var CacheHandler $cacheHandler.
+			$cacheHandler = \OC::$server->get(CacheHandler::class);
 
-            // Perform cache warmup.
-            $namesLoaded = $cacheHandler->warmupNameCache();
+			// Perform cache warmup.
+			$namesLoaded = $cacheHandler->warmupNameCache();
 
-            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $logger->info(
-                message: '[NameCacheWarmupJob] ✅ Name Cache Nightly Warmup Job Completed',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'job_id'         => $this->getId(),
-                    'names_loaded'   => $namesLoaded,
-                    'execution_time' => $executionTime.'ms',
-                ]
-            );
-        } catch (\Exception $e) {
-            $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+			$logger->info(
+				message: '[NameCacheWarmupJob] ✅ Name Cache Nightly Warmup Job Completed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'job_id' => $this->getId(),
+					'names_loaded' => $namesLoaded,
+					'execution_time' => $executionTime . 'ms',
+				]
+			);
+		} catch (\Exception $e) {
+			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $logger->error(
-                message: '[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'job_id'         => $this->getId(),
-                    'error'          => $e->getMessage(),
-                    'execution_time' => $executionTime.'ms',
-                ]
-            );
-        }//end try
-    }//end run()
+			$logger->error(
+				message: '[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'job_id' => $this->getId(),
+					'error' => $e->getMessage(),
+					'execution_time' => $executionTime . 'ms',
+				]
+			);
+		}//end try
+	}//end run()
 }//end class

@@ -41,98 +41,94 @@ use Psr\Log\LoggerInterface;
 /**
  * Background executor for schema runs.
  */
-class SchemaRunJob extends QueuedJob
-{
-    /**
-     * Constructor.
-     *
-     * @param ITimeFactory              $time                Time factory.
-     * @param SchemaRunMapper           $runMapper           Run persistence.
-     * @param SchemaRevalidationService $revalidationService Revalidation engine.
-     * @param SchemaMigrationService    $migrationService    Migration engine.
-     * @param IJobList                  $jobList             Job list for re-enqueue.
-     * @param LoggerInterface           $logger              Logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly SchemaRunMapper $runMapper,
-        private readonly SchemaRevalidationService $revalidationService,
-        private readonly SchemaMigrationService $migrationService,
-        private readonly IJobList $jobList,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
+class SchemaRunJob extends QueuedJob {
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param SchemaRunMapper $runMapper Run persistence.
+	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
+	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param IJobList $jobList Job list for re-enqueue.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRevalidationService $revalidationService,
+		private readonly SchemaMigrationService $migrationService,
+		private readonly IJobList $jobList,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Run one batch of a schema run.
-     *
-     * @param array<string, mixed> $argument Job arguments: run_id (required),
-     *                                       batch_size (optional).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    protected function run($argument): void
-    {
-        $runId = ($argument['run_id'] ?? null);
-        if ($runId === null) {
-            $this->logger->error('[SchemaRunJob] Missing run_id argument', ['argument' => $argument]);
-            return;
-        }
+	/**
+	 * Run one batch of a schema run.
+	 *
+	 * @param array<string, mixed> $argument Job arguments: run_id (required),
+	 *                                       batch_size (optional).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	protected function run($argument): void {
+		$runId = ($argument['run_id'] ?? null);
+		if ($runId === null) {
+			$this->logger->error('[SchemaRunJob] Missing run_id argument', ['argument' => $argument]);
+			return;
+		}
 
-        $batchSize = (int) ($argument['batch_size'] ?? 100);
+		$batchSize = (int)($argument['batch_size'] ?? 100);
 
-        try {
-            $run = $this->runMapper->find((int) $runId);
-        } catch (\Throwable $e) {
-            $this->logger->error('[SchemaRunJob] Run not found', ['run_id' => $runId, 'error' => $e->getMessage()]);
-            return;
-        }
+		try {
+			$run = $this->runMapper->find((int)$runId);
+		} catch (\Throwable $e) {
+			$this->logger->error('[SchemaRunJob] Run not found', ['run_id' => $runId, 'error' => $e->getMessage()]);
+			return;
+		}
 
-        if ($run->getState() !== SchemaRun::STATE_RUNNING) {
-            // Nothing to do for a terminal/non-running run.
-            return;
-        }
+		if ($run->getState() !== SchemaRun::STATE_RUNNING) {
+			// Nothing to do for a terminal/non-running run.
+			return;
+		}
 
-        try {
-            $more = $this->advance(run: $run, batchSize: $batchSize);
-        } catch (\Throwable $e) {
-            $this->logger->error(
-                '[SchemaRunJob] Batch processing failed',
-                ['run_id' => $runId, 'error' => $e->getMessage()]
-            );
-            $run->setState(SchemaRun::STATE_FAILED);
-            $report          = ($run->getReport() ?? []);
-            $report['fatal'] = $e->getMessage();
-            $run->setReport($report);
-            $this->runMapper->save($run);
-            return;
-        }
+		try {
+			$more = $this->advance(run: $run, batchSize: $batchSize);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'[SchemaRunJob] Batch processing failed',
+				['run_id' => $runId, 'error' => $e->getMessage()]
+			);
+			$run->setState(SchemaRun::STATE_FAILED);
+			$report = ($run->getReport() ?? []);
+			$report['fatal'] = $e->getMessage();
+			$run->setReport($report);
+			$this->runMapper->save($run);
+			return;
+		}
 
-        if ($more === true) {
-            $this->jobList->add(self::class, ['run_id' => $runId, 'batch_size' => $batchSize]);
-        }
+		if ($more === true) {
+			$this->jobList->add(self::class, ['run_id' => $runId, 'batch_size' => $batchSize]);
+		}
 
-    }//end run()
+	}//end run()
 
-    /**
-     * Advance the run by one batch, dispatching by run type.
-     *
-     * @param SchemaRun $run       The run.
-     * @param int       $batchSize The batch size.
-     *
-     * @return bool True when more work remains.
-     */
-    private function advance(SchemaRun $run, int $batchSize): bool
-    {
-        if ($run->getType() === SchemaRun::TYPE_MIGRATION) {
-            return $this->migrationService->processBatch($run, $batchSize);
-        }
+	/**
+	 * Advance the run by one batch, dispatching by run type.
+	 *
+	 * @param SchemaRun $run The run.
+	 * @param int $batchSize The batch size.
+	 *
+	 * @return bool True when more work remains.
+	 */
+	private function advance(SchemaRun $run, int $batchSize): bool {
+		if ($run->getType() === SchemaRun::TYPE_MIGRATION) {
+			return $this->migrationService->processBatch($run, $batchSize);
+		}
 
-        return $this->revalidationService->processBatch($run, $batchSize);
-
-    }//end advance()
+		return $this->revalidationService->processBatch($run, $batchSize);
+	}//end advance()
 }//end class

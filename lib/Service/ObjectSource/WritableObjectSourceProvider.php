@@ -38,48 +38,47 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Write capability for object-source providers (opt-in per provider).
  */
-interface WritableObjectSourceProvider extends ObjectSourceProvider
-{
-    /**
-     * Insert a new row/entity in the external system.
-     *
-     * @param Register             $register The register owning the schema.
-     * @param Schema               $schema   The sourced schema.
-     * @param array<string, mixed> $data     The validated object data.
-     * @param array<string, mixed> $config   The object-source config block.
-     *
-     * @return ObjectEntity The created entity as re-read from the external system.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function insert(Register $register, Schema $schema, array $data, array $config=[]): ObjectEntity;
+interface WritableObjectSourceProvider extends ObjectSourceProvider {
+	/**
+	 * Insert a new row/entity in the external system.
+	 *
+	 * @param Register $register The register owning the schema.
+	 * @param Schema $schema The sourced schema.
+	 * @param array<string, mixed> $data The validated object data.
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return ObjectEntity The created entity as re-read from the external system.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity;
 
-    /**
-     * Update an existing row/entity in the external system.
-     *
-     * @param Register             $register The register owning the schema.
-     * @param Schema               $schema   The sourced schema.
-     * @param string               $id       The object id (external key, possibly composite-joined).
-     * @param array<string, mixed> $data     The validated object data.
-     * @param array<string, mixed> $config   The object-source config block.
-     *
-     * @return ObjectEntity The updated entity as re-read from the external system.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function update(Register $register, Schema $schema, string $id, array $data, array $config=[]): ObjectEntity;
+	/**
+	 * Update an existing row/entity in the external system.
+	 *
+	 * @param Register $register The register owning the schema.
+	 * @param Schema $schema The sourced schema.
+	 * @param string $id The object id (external key, possibly composite-joined).
+	 * @param array<string, mixed> $data The validated object data.
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return ObjectEntity The updated entity as re-read from the external system.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity;
 
-    /**
-     * Delete a row/entity in the external system (hard delete).
-     *
-     * @param Register             $register The register owning the schema.
-     * @param Schema               $schema   The sourced schema.
-     * @param string               $id       The object id (external key, possibly composite-joined).
-     * @param array<string, mixed> $config   The object-source config block.
-     *
-     * @return bool True when a row was deleted; false when no row matched.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function remove(Register $register, Schema $schema, string $id, array $config=[]): bool;
+	/**
+	 * Delete a row/entity in the external system (hard delete).
+	 *
+	 * @param Register $register The register owning the schema.
+	 * @param Schema $schema The sourced schema.
+	 * @param string $id The object id (external key, possibly composite-joined).
+	 * @param array<string, mixed> $config The object-source config block.
+	 *
+	 * @return bool True when a row was deleted; false when no row matched.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function remove(Register $register, Schema $schema, string $id, array $config = []): bool;
 }//end interface

@@ -26,22 +26,20 @@ use Twig\TwigFunction;
  *
  * @package OCA\OpenRegister\Twig
  */
-class AuthenticationExtension extends AbstractExtension
-{
-    /**
-     * Get the Twig functions provided by this extension.
-     *
-     * @return TwigFunction[] Array of TwigFunction instances
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getFunctions(): array
-    {
-        return [
-            new TwigFunction('oauthToken', [AuthenticationRuntime::class, 'oauthToken']),
-            new TwigFunction('decosToken', [AuthenticationRuntime::class, 'decosToken']),
-            new TwigFunction('jwtToken', [AuthenticationRuntime::class, 'jwtToken']),
-        ];
+class AuthenticationExtension extends AbstractExtension {
+	/**
+	 * Get the Twig functions provided by this extension.
+	 *
+	 * @return TwigFunction[] Array of TwigFunction instances
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return [
+			new TwigFunction('oauthToken', [AuthenticationRuntime::class, 'oauthToken']),
+			new TwigFunction('decosToken', [AuthenticationRuntime::class, 'decosToken']),
+			new TwigFunction('jwtToken', [AuthenticationRuntime::class, 'jwtToken']),
+		];
 
-    }//end getFunctions()
+	}//end getFunctions()
 }//end class

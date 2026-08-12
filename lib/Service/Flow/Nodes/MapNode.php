@@ -47,244 +47,227 @@ use UnexpectedValueException;
 /**
  * Transforms the item list through a stored mapping.
  */
-class MapNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N          $l10n     Translations.
-     * @param IURLGenerator  $urls     For the palette icon.
-     * @param MappingService $mappings Evaluates the mapping.
-     * @param MappingMapper  $mapper   Resolves the mapping by id, uuid or slug.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls,
-        private readonly MappingService $mappings,
-        private readonly MappingMapper $mapper
-    ) {
+class MapNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 * @param MappingService $mappings Evaluates the mapping.
+	 * @param MappingMapper $mapper Resolves the mapping by id, uuid or slug.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+		private readonly MappingService $mappings,
+		private readonly MappingMapper $mapper,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getId(): string
-    {
-        return 'openregister.map';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getId(): string {
+		return 'openregister.map';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Map');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Map');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Reshape each item through a stored mapping.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/rename.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Reshape each item through a stored mapping.');
+	/**
+	 * Mapping transforms data in memory and grants no privilege of its own.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of a map step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function configKeys(): array {
+		return ['mapping'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/rename.svg');
+	/**
+	 * Reject a map step that names no mapping.
+	 *
+	 * A map with no mapping would pass every item through untouched — a step
+	 * that does nothing while looking like it does something, which is the
+	 * failure this whole programme exists to remove.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When no mapping is named.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function validateConfig(array $config): void {
+		$mapping = trim((string)($config['mapping'] ?? ''));
+		if ($mapping === '') {
+			throw new UnexpectedValueException($this->l10n->t('A map step needs a mapping.'));
+		}
 
-    }//end getIcon()
+	}//end validateConfig()
 
-    /**
-     * Mapping transforms data in memory and grants no privilege of its own.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	/**
+	 * Reshape every item through the mapping.
+	 *
+	 * An unresolvable mapping THROWS rather than returning the items unchanged.
+	 * Passing them through would record the step as completed while nothing was
+	 * transformed, and a downstream step reading the un-mapped shape would fail
+	 * somewhere else entirely — the error would surface far from its cause.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The transformed items.
+	 *
+	 * @throws RuntimeException When the mapping cannot be resolved or applied.
+	 *
+	 * `FlowItems::item()` is the item constructor every node uses; going through
+	 * an injected factory would give the engine two ways to build an item and no
+	 * way to tell which one a node used. `$context` is part of the IFlowNode
+	 * contract and unused here — a mapping transforms the item, not the run.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		$reference = trim((string)($config['mapping'] ?? ''));
+		$mapping = $this->resolve(reference: $reference);
 
-    }//end isAvailableForScope()
+		$mapped = [];
+		foreach ($items as $index => $item) {
+			$input = (array)($item[FlowItems::JSON] ?? []);
 
-    /**
-     * The config vocabulary of a map step.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['mapping'];
+			try {
+				$result = $this->mappings->executeMapping(mapping: $mapping, input: $input);
+			} catch (Throwable $e) {
+				throw new RuntimeException(
+					sprintf(
+						'Mapping "%s" failed on item %d: %s',
+						$reference,
+						$index,
+						$e->getMessage()
+					),
+					0,
+					$e
+				);
+			}
 
-    }//end configKeys()
+			$mapped[] = FlowItems::item(
+				json: $result,
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: $index
+			);
+		}//end foreach
 
-    /**
-     * Reject a map step that names no mapping.
-     *
-     * A map with no mapping would pass every item through untouched — a step
-     * that does nothing while looking like it does something, which is the
-     * failure this whole programme exists to remove.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When no mapping is named.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function validateConfig(array $config): void
-    {
-        $mapping = trim((string) ($config['mapping'] ?? ''));
-        if ($mapping === '') {
-            throw new UnexpectedValueException($this->l10n->t('A map step needs a mapping.'));
-        }
+		return $mapped;
+	}//end execute()
 
-    }//end validateConfig()
+	/**
+	 * Resolve a mapping by numeric id, uuid, slug or reference.
+	 *
+	 * Authors name mappings by whichever identifier they have in front of them,
+	 * and a flow definition is portable between instances where the numeric id
+	 * differs — so slug and reference must resolve too, or an exported flow
+	 * breaks on import while looking correct.
+	 *
+	 * @param string $reference The mapping identifier.
+	 *
+	 * @return \OCA\OpenRegister\Db\Mapping The resolved mapping.
+	 *
+	 * @throws RuntimeException When no mapping matches.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function resolve(string $reference) {
+		if (ctype_digit($reference) === true) {
+			try {
+				return $this->mapper->find((int)$reference);
+			} catch (DoesNotExistException $e) {
+				throw new RuntimeException(
+					sprintf('No mapping with id "%s".', $reference),
+					0,
+					$e
+				);
+			}
+		}
 
-    /**
-     * Reshape every item through the mapping.
-     *
-     * An unresolvable mapping THROWS rather than returning the items unchanged.
-     * Passing them through would record the step as completed while nothing was
-     * transformed, and a downstream step reading the un-mapped shape would fail
-     * somewhere else entirely — the error would surface far from its cause.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The transformed items.
-     *
-     * @throws RuntimeException When the mapping cannot be resolved or applied.
-     *
-     * `FlowItems::item()` is the item constructor every node uses; going through
-     * an injected factory would give the engine two ways to build an item and no
-     * way to tell which one a node used. `$context` is part of the IFlowNode
-     * contract and unused here — a mapping transforms the item, not the run.
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        $reference = trim((string) ($config['mapping'] ?? ''));
-        $mapping   = $this->resolve(reference: $reference);
+		// Resolving a uuid or a slug is find()'s job — it switches to matching those
+		// columns for any non-numeric string. Going straight to findByRef() instead
+		// consulted the `reference` column alone, so a flow naming its mapping by
+		// uuid or slug died on "No mapping matches ... by id, uuid, slug or
+		// reference" while the row sat there matching two of the four.
+		try {
+			return $this->mapper->find($reference);
+		} catch (Throwable $e) {
+			// Fall through to the reference lookup below.
+		}
 
-        $mapped = [];
-        foreach ($items as $index => $item) {
-            $input = (array) ($item[FlowItems::JSON] ?? []);
+		try {
+			$byRef = $this->mapper->findByRef($reference);
+		} catch (Throwable $e) {
+			$byRef = [];
+		}
 
-            try {
-                $result = $this->mappings->executeMapping(mapping: $mapping, input: $input);
-            } catch (Throwable $e) {
-                throw new RuntimeException(
-                    sprintf(
-                        'Mapping "%s" failed on item %d: %s',
-                        $reference,
-                        $index,
-                        $e->getMessage()
-                    ),
-                    0,
-                    $e
-                );
-            }
+		if (empty($byRef) === false) {
+			return $byRef[0];
+		}
 
-            $mapped[] = FlowItems::item(
-                json: $result,
-                binary: (array) ($item[FlowItems::BINARY] ?? []),
-                fromItemIndex: $index
-            );
-        }//end foreach
+		throw new RuntimeException(
+			sprintf('No mapping matches "%s" by id, uuid, slug or reference.', $reference)
+		);
 
-        return $mapped;
-
-    }//end execute()
-
-    /**
-     * Resolve a mapping by numeric id, uuid, slug or reference.
-     *
-     * Authors name mappings by whichever identifier they have in front of them,
-     * and a flow definition is portable between instances where the numeric id
-     * differs — so slug and reference must resolve too, or an exported flow
-     * breaks on import while looking correct.
-     *
-     * @param string $reference The mapping identifier.
-     *
-     * @return \OCA\OpenRegister\Db\Mapping The resolved mapping.
-     *
-     * @throws RuntimeException When no mapping matches.
-     *
-     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-     */
-    private function resolve(string $reference)
-    {
-        if (ctype_digit($reference) === true) {
-            try {
-                return $this->mapper->find((int) $reference);
-            } catch (DoesNotExistException $e) {
-                throw new RuntimeException(
-                    sprintf('No mapping with id "%s".', $reference),
-                    0,
-                    $e
-                );
-            }
-        }
-
-        // Resolving a uuid or a slug is find()'s job — it switches to matching those
-        // columns for any non-numeric string. Going straight to findByRef() instead
-        // consulted the `reference` column alone, so a flow naming its mapping by
-        // uuid or slug died on "No mapping matches ... by id, uuid, slug or
-        // reference" while the row sat there matching two of the four.
-        try {
-            return $this->mapper->find($reference);
-        } catch (Throwable $e) {
-            // Fall through to the reference lookup below.
-        }
-
-        try {
-            $byRef = $this->mapper->findByRef($reference);
-        } catch (Throwable $e) {
-            $byRef = [];
-        }
-
-        if (empty($byRef) === false) {
-            return $byRef[0];
-        }
-
-        throw new RuntimeException(
-            sprintf('No mapping matches "%s" by id, uuid, slug or reference.', $reference)
-        );
-
-    }//end resolve()
+	}//end resolve()
 }//end class

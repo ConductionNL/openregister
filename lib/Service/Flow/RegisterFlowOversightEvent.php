@@ -35,31 +35,30 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-class RegisterFlowOversightEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowOversightRegistry $registry The registry to contribute to.
-     */
-    public function __construct(private readonly FlowOversightRegistry $registry)
-    {
-        parent::__construct();
+class RegisterFlowOversightEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowOversightRegistry $registry The registry to contribute to.
+	 */
+	public function __construct(
+		private readonly FlowOversightRegistry $registry,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Contribute an oversight check.
-     *
-     * @param IFlowOversightCheck $check The check.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-     */
-    public function registerCheck(IFlowOversightCheck $check): void
-    {
-        $this->registry->register(check: $check);
+	/**
+	 * Contribute an oversight check.
+	 *
+	 * @param IFlowOversightCheck $check The check.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+	 */
+	public function registerCheck(IFlowOversightCheck $check): void {
+		$this->registry->register(check: $check);
 
-    }//end registerCheck()
+	}//end registerCheck()
 }//end class

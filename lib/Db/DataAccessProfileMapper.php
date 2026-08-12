@@ -44,15 +44,13 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<DataAccessProfile>
  */
-class DataAccessProfileMapper extends QBMapper
-{
-    /**
-     * Constructor
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_data_access_profiles', entityClass: DataAccessProfile::class);
-    }//end __construct()
+class DataAccessProfileMapper extends QBMapper {
+	/**
+	 * Constructor
+	 *
+	 * @param IDBConnection $db Database connection
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_data_access_profiles', entityClass: DataAccessProfile::class);
+	}//end __construct()
 }//end class

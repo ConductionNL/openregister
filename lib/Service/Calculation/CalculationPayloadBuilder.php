@@ -45,123 +45,116 @@ use OCA\OpenRegister\Db\Schema;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
  */
-class CalculationPayloadBuilder
-{
-    /**
-     * Constructor.
-     *
-     * @param ReferenceResolver          $references Cross-object reference pre-resolver.
-     * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
-     */
-    public function __construct(
-        private readonly ReferenceResolver $references,
-        private readonly AggregateReferenceResolver $aggregates,
-    ) {
+class CalculationPayloadBuilder {
+	/**
+	 * Constructor.
+	 *
+	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
+	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
+	 */
+	public function __construct(
+		private readonly ReferenceResolver $references,
+		private readonly AggregateReferenceResolver $aggregates,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Enrich an object's data with `@self`, `@ref` and `@aggregate` blocks.
-     *
-     * Mirrors the save-time listener exactly: `@self` carries the entity's
-     * system metadata (calculations reference `@self.created` etc. via the
-     * evaluator's dotted prop path), `@ref` the pre-resolved declared
-     * cross-object references, `@aggregate` the pre-resolved aggregate
-     * references. Resolution is best-effort and never raises. Callers MUST
-     * strip the synthetic keys before persisting
-     * ({@see self::stripSyntheticKeys()}).
-     *
-     * @param ObjectEntity $object The object whose data to enrich.
-     * @param Schema       $schema The object's schema (declares the reference blocks).
-     *
-     * @return array<string, mixed> The enriched evaluation payload.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    public function build(ObjectEntity $object, Schema $schema): array
-    {
-        $data = ($object->getObject() ?? []);
+	/**
+	 * Enrich an object's data with `@self`, `@ref` and `@aggregate` blocks.
+	 *
+	 * Mirrors the save-time listener exactly: `@self` carries the entity's
+	 * system metadata (calculations reference `@self.created` etc. via the
+	 * evaluator's dotted prop path), `@ref` the pre-resolved declared
+	 * cross-object references, `@aggregate` the pre-resolved aggregate
+	 * references. Resolution is best-effort and never raises. Callers MUST
+	 * strip the synthetic keys before persisting
+	 * ({@see self::stripSyntheticKeys()}).
+	 *
+	 * @param ObjectEntity $object The object whose data to enrich.
+	 * @param Schema $schema The object's schema (declares the reference blocks).
+	 *
+	 * @return array<string, mixed> The enriched evaluation payload.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	public function build(ObjectEntity $object, Schema $schema): array {
+		$data = ($object->getObject() ?? []);
 
-        $created          = $object->getCreated();
-        $updated          = $object->getUpdated();
-        $createdFormatted = null;
-        if ($created !== null) {
-            $createdFormatted = $created->format(\DateTimeInterface::ATOM);
-        }
+		$created = $object->getCreated();
+		$updated = $object->getUpdated();
+		$createdFormatted = null;
+		if ($created !== null) {
+			$createdFormatted = $created->format(\DateTimeInterface::ATOM);
+		}
 
-        $updatedFormatted = null;
-        if ($updated !== null) {
-            $updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
-        }
+		$updatedFormatted = null;
+		if ($updated !== null) {
+			$updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
+		}
 
-        $data['@self'] = [
-            'id'       => $object->getUuid(),
-            'uuid'     => $object->getUuid(),
-            'register' => $object->getRegister(),
-            'schema'   => $object->getSchema(),
-            'owner'    => $object->getOwner(),
-            'created'  => $createdFormatted,
-            'updated'  => $updatedFormatted,
-        ];
+		$data['@self'] = [
+			'id' => $object->getUuid(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'owner' => $object->getOwner(),
+			'created' => $createdFormatted,
+			'updated' => $updatedFormatted,
+		];
 
-        $references = $this->configBlock(schema: $schema, key: 'x-openregister-references');
-        if ($references !== null) {
-            $data['@ref'] = $this->references->resolveAll(
-                payload: $data,
-                references: $references,
-                register: $object->getRegister()
-            );
-        }
+		$references = $this->configBlock(schema: $schema, key: 'x-openregister-references');
+		if ($references !== null) {
+			$data['@ref'] = $this->references->resolveAll(
+				payload: $data,
+				references: $references,
+				register: $object->getRegister()
+			);
+		}
 
-        $aggregateRefs = $this->configBlock(schema: $schema, key: 'x-openregister-aggregate-refs');
-        if ($aggregateRefs !== null) {
-            $data['@aggregate'] = $this->aggregates->resolveAll(
-                payload: $data,
-                aggregates: $aggregateRefs,
-                registerRef: $object->getRegister()
-            );
-        }
+		$aggregateRefs = $this->configBlock(schema: $schema, key: 'x-openregister-aggregate-refs');
+		if ($aggregateRefs !== null) {
+			$data['@aggregate'] = $this->aggregates->resolveAll(
+				payload: $data,
+				aggregates: $aggregateRefs,
+				registerRef: $object->getRegister()
+			);
+		}
 
-        return $data;
+		return $data;
+	}//end build()
 
-    }//end build()
+	/**
+	 * Strip the synthetic evaluation-only keys from a payload.
+	 *
+	 * @param array<string, mixed> $data The enriched payload.
+	 *
+	 * @return array<string, mixed> The payload without `@self` / `@ref` / `@aggregate`.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
+	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
+	 */
+	public function stripSyntheticKeys(array $data): array {
+		unset($data['@self'], $data['@ref'], $data['@aggregate']);
 
-    /**
-     * Strip the synthetic evaluation-only keys from a payload.
-     *
-     * @param array<string, mixed> $data The enriched payload.
-     *
-     * @return array<string, mixed> The payload without `@self` / `@ref` / `@aggregate`.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
-     *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
-     */
-    public function stripSyntheticKeys(array $data): array
-    {
-        unset($data['@self'], $data['@ref'], $data['@aggregate']);
+		return $data;
+	}//end stripSyntheticKeys()
 
-        return $data;
+	/**
+	 * Read a non-empty array block off the schema configuration.
+	 *
+	 * @param Schema $schema The schema to inspect.
+	 * @param string $key The configuration key.
+	 *
+	 * @return array<string, mixed>|null The block, or null when absent/empty.
+	 */
+	private function configBlock(Schema $schema, string $key): ?array {
+		$config = ($schema->getConfiguration() ?? []);
+		$value = ($config[$key] ?? null);
+		if (is_array($value) === true && count($value) > 0) {
+			return $value;
+		}
 
-    }//end stripSyntheticKeys()
-
-    /**
-     * Read a non-empty array block off the schema configuration.
-     *
-     * @param Schema $schema The schema to inspect.
-     * @param string $key    The configuration key.
-     *
-     * @return array<string, mixed>|null The block, or null when absent/empty.
-     */
-    private function configBlock(Schema $schema, string $key): ?array
-    {
-        $config = ($schema->getConfiguration() ?? []);
-        $value  = ($config[$key] ?? null);
-        if (is_array($value) === true && count($value) > 0) {
-            return $value;
-        }
-
-        return null;
-
-    }//end configBlock()
+		return null;
+	}//end configBlock()
 }//end class

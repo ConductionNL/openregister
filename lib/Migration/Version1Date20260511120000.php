@@ -45,84 +45,81 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the notification dispatch log table for idempotency-key dedup.
  */
-class Version1Date20260511120000 extends SimpleMigrationStep
-{
-    /**
-     * Add the openregister_notif_dispatch_log table when missing.
-     *
-     * @param IOutput                   $output        Migration output sink.
-     * @param Closure(): ISchemaWrapper $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array<string, mixed>      $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260511120000 extends SimpleMigrationStep {
+	/**
+	 * Add the openregister_notif_dispatch_log table when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array<string, mixed> $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_notif_dispatch_log') === true) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_notif_dispatch_log') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_notif_dispatch_log');
+		$table = $schema->createTable(tableName: 'openregister_notif_dispatch_log');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'notification_slug',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 255,
-                'comment' => 'Annotation key (per-schema rule identifier)',
-            ]
-        );
+		$table->addColumn(
+			name: 'notification_slug',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 255,
+				'comment' => 'Annotation key (per-schema rule identifier)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'idempotency_key',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => true,
-                'length'  => 512,
-                'comment' => 'Resolved idempotency key template',
-            ]
-        );
+		$table->addColumn(
+			name: 'idempotency_key',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => true,
+				'length' => 512,
+				'comment' => 'Resolved idempotency key template',
+			]
+		);
 
-        $table->addColumn(
-            name: 'dispatched_at',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => true,
-                'comment' => 'Wall-clock timestamp of first dispatch for this key',
-            ]
-        );
+		$table->addColumn(
+			name: 'dispatched_at',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => true,
+				'comment' => 'Wall-clock timestamp of first dispatch for this key',
+			]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
+		$table->setPrimaryKey(columnNames: ['id']);
 
-        // Unique index is the primary dedup lookup (slug, key).
-        $table->addUniqueIndex(
-            columnNames: ['notification_slug', 'idempotency_key'],
-            indexName: 'idx_or_ndl_slug_key'
-        );
+		// Unique index is the primary dedup lookup (slug, key).
+		$table->addUniqueIndex(
+			columnNames: ['notification_slug', 'idempotency_key'],
+			indexName: 'idx_or_ndl_slug_key'
+		);
 
-        // Secondary index on dispatched_at for the prune DELETE query.
-        $table->addIndex(
-            columnNames: ['dispatched_at'],
-            indexName: 'idx_or_ndl_dispatched_at'
-        );
+		// Secondary index on dispatched_at for the prune DELETE query.
+		$table->addIndex(
+			columnNames: ['dispatched_at'],
+			indexName: 'idx_or_ndl_dispatched_at'
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

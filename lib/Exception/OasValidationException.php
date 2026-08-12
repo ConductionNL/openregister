@@ -32,34 +32,31 @@ use Throwable;
 /**
  * Exception class carrying the full OAS validation report.
  */
-class OasValidationException extends Exception
-{
-    /**
-     * Constructor for OasValidationException.
-     *
-     * @param string              $message  Human-readable summary of the failure.
-     * @param OasValidationReport $report   The full validation report.
-     * @param int                 $code     HTTP-style code (default 422).
-     * @param Throwable|null      $previous Optional underlying exception.
-     */
-    public function __construct(
-        string $message,
-        private readonly OasValidationReport $report,
-        int $code=422,
-        ?Throwable $previous=null,
-    ) {
-        parent::__construct(message: $message, code: $code, previous: $previous);
+class OasValidationException extends Exception {
+	/**
+	 * Constructor for OasValidationException.
+	 *
+	 * @param string $message Human-readable summary of the failure.
+	 * @param OasValidationReport $report The full validation report.
+	 * @param int $code HTTP-style code (default 422).
+	 * @param Throwable|null $previous Optional underlying exception.
+	 */
+	public function __construct(
+		string $message,
+		private readonly OasValidationReport $report,
+		int $code = 422,
+		?Throwable $previous = null,
+	) {
+		parent::__construct(message: $message, code: $code, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Returns the validation report associated with this exception.
-     *
-     * @return OasValidationReport The validation report.
-     */
-    public function getReport(): OasValidationReport
-    {
-        return $this->report;
-
-    }//end getReport()
+	/**
+	 * Returns the validation report associated with this exception.
+	 *
+	 * @return OasValidationReport The validation report.
+	 */
+	public function getReport(): OasValidationReport {
+		return $this->report;
+	}//end getReport()
 }//end class

@@ -31,37 +31,35 @@ namespace OCA\OpenRegister\Db;
  *
  * Final + abstract — constants-only utility, never instantiated.
  */
-final class DetectionMethod
-{
-    /**
-     * Presidio NER detection (default Python OpenAnonymiser backend).
-     */
-    public const PRESIDIO = 'presidio';
+final class DetectionMethod {
+	/**
+	 * Presidio NER detection (default Python OpenAnonymiser backend).
+	 */
+	public const PRESIDIO = 'presidio';
 
-    /**
-     * OpenAnonymiser-side custom recognisers.
-     */
-    public const OPENANONYMISER = 'openanonymiser';
+	/**
+	 * OpenAnonymiser-side custom recognisers.
+	 */
+	public const OPENANONYMISER = 'openanonymiser';
 
-    /**
-     * Regex / pattern-based recogniser.
-     */
-    public const PATTERN = 'pattern';
+	/**
+	 * Regex / pattern-based recogniser.
+	 */
+	public const PATTERN = 'pattern';
 
-    /**
-     * Operator-supplied via the `POST /api/files/{fileId}/manual-entities`
-     * endpoint. The catalogue + relation rows are structurally identical
-     * to detection-derived rows; only this tag distinguishes them.
-     */
-    public const MANUAL = 'manual';
+	/**
+	 * Operator-supplied via the `POST /api/files/{fileId}/manual-entities`
+	 * endpoint. The catalogue + relation rows are structurally identical
+	 * to detection-derived rows; only this tag distinguishes them.
+	 */
+	public const MANUAL = 'manual';
 
-    /**
-     * No public constructor — pure constants.
-     *
-     * @codeCoverageIgnore
-     */
-    private function __construct()
-    {
+	/**
+	 * No public constructor — pure constants.
+	 *
+	 * @codeCoverageIgnore
+	 */
+	private function __construct() {
 
-    }//end __construct()
+	}//end __construct()
 }//end class

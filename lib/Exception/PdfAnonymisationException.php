@@ -58,125 +58,122 @@ use Throwable;
  *
  * @spec openspec/specs/pdf-anonymisation/spec.md
  */
-class PdfAnonymisationException extends \Exception
-{
+class PdfAnonymisationException extends \Exception {
 
-    /**
-     * Encrypted PDF input — anonymising a password-protected PDF requires
-     * the password and is out of scope for v1. Controller maps to HTTP 422.
-     *
-     * @var string
-     */
-    public const REASON_ENCRYPTED_PDF = 'encrypted_pdf';
+	/**
+	 * Encrypted PDF input — anonymising a password-protected PDF requires
+	 * the password and is out of scope for v1. Controller maps to HTTP 422.
+	 *
+	 * @var string
+	 */
+	public const REASON_ENCRYPTED_PDF = 'encrypted_pdf';
 
-    /**
-     * Input PDF has no extractable text layer (image-only scan). Caller
-     * SHOULD defer to the `ocr-document-scanning` capability rather than
-     * surfacing as a hard error.
-     *
-     * @var string
-     */
-    public const REASON_TEXT_LAYER_MISSING = 'text_layer_missing';
+	/**
+	 * Input PDF has no extractable text layer (image-only scan). Caller
+	 * SHOULD defer to the `ocr-document-scanning` capability rather than
+	 * surfacing as a hard error.
+	 *
+	 * @var string
+	 */
+	public const REASON_TEXT_LAYER_MISSING = 'text_layer_missing';
 
-    /**
-     * Post-replacement validation gate detected residual entity text in
-     * the output PDF. The output is discarded; the gate fails closed.
-     * Controller maps to HTTP 500 with a structured diagnostic body.
-     *
-     * @var string
-     */
-    public const REASON_VALIDATION_FAILED = 'validation_failed';
+	/**
+	 * Post-replacement validation gate detected residual entity text in
+	 * the output PDF. The output is discarded; the gate fails closed.
+	 * Controller maps to HTTP 500 with a structured diagnostic body.
+	 *
+	 * @var string
+	 */
+	public const REASON_VALIDATION_FAILED = 'validation_failed';
 
-    /**
-     * Catch-all for unexpected pipeline failures (SAPP errors, malformed
-     * input, etc.). Controller maps to HTTP 500.
-     *
-     * @var string
-     */
-    public const REASON_INTERNAL_ERROR = 'internal_error';
+	/**
+	 * Catch-all for unexpected pipeline failures (SAPP errors, malformed
+	 * input, etc.). Controller maps to HTTP 500.
+	 *
+	 * @var string
+	 */
+	public const REASON_INTERNAL_ERROR = 'internal_error';
 
-    /**
-     * Path A's strict-mode validation gate failed AND the dormant Path B
-     * (NC Office ODT round-trip — `pdf-anonymisation-odt-fallback`) was
-     * attempted but also failed to produce a clean output. Controller maps
-     * to HTTP 500 with the structured diagnostic body, identical to
-     * REASON_VALIDATION_FAILED's mapping.
-     *
-     * Only raised when `pdf-anonymisation.path-b-enabled` is true AND a
-     * Path B attempt was made. Until the feature flag flips on this reason
-     * code is reserved (no caller produces it).
-     *
-     * @var string
-     */
-    public const REASON_VALIDATION_FAILED_AFTER_FALLBACK = 'validation_failed_after_fallback';
+	/**
+	 * Path A's strict-mode validation gate failed AND the dormant Path B
+	 * (NC Office ODT round-trip — `pdf-anonymisation-odt-fallback`) was
+	 * attempted but also failed to produce a clean output. Controller maps
+	 * to HTTP 500 with the structured diagnostic body, identical to
+	 * REASON_VALIDATION_FAILED's mapping.
+	 *
+	 * Only raised when `pdf-anonymisation.path-b-enabled` is true AND a
+	 * Path B attempt was made. Until the feature flag flips on this reason
+	 * code is reserved (no caller produces it).
+	 *
+	 * @var string
+	 */
+	public const REASON_VALIDATION_FAILED_AFTER_FALLBACK = 'validation_failed_after_fallback';
 
-    /**
-     * The structured reason code (one of the REASON_* constants).
-     *
-     * @var string
-     */
-    private readonly string $reason;
+	/**
+	 * The structured reason code (one of the REASON_* constants).
+	 *
+	 * @var string
+	 */
+	private readonly string $reason;
 
-    /**
-     * Free-form structured diagnostic surface, safe for logging.
-     *
-     * MUST NOT contain operator-supplied entity text (PII).
-     *
-     * @var array<string, mixed>
-     */
-    private readonly array $diagnostic;
+	/**
+	 * Free-form structured diagnostic surface, safe for logging.
+	 *
+	 * MUST NOT contain operator-supplied entity text (PII).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private readonly array $diagnostic;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $reason     One of the REASON_* constants
-     * @param string         $message    Human-readable error message (PII-free)
-     * @param array          $diagnostic Structural diagnostic info; MUST NOT contain PII
-     * @param Throwable|null $previous   Previous exception
-     *
-     * @phpstan-param array<string, mixed> $diagnostic
-     * @psalm-param   array<string, mixed> $diagnostic
-     *
-     * @spec openspec/specs/pdf-anonymisation/spec.md
-     */
-    public function __construct(
-        string $reason,
-        string $message='',
-        array $diagnostic=[],
-        ?Throwable $previous=null
-    ) {
-        $this->reason     = $reason;
-        $this->diagnostic = $diagnostic;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $reason One of the REASON_* constants
+	 * @param string $message Human-readable error message (PII-free)
+	 * @param array $diagnostic Structural diagnostic info; MUST NOT contain PII
+	 * @param Throwable|null $previous Previous exception
+	 *
+	 * @phpstan-param array<string, mixed> $diagnostic
+	 * @psalm-param   array<string, mixed> $diagnostic
+	 *
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 */
+	public function __construct(
+		string $reason,
+		string $message = '',
+		array $diagnostic = [],
+		?Throwable $previous = null,
+	) {
+		$this->reason = $reason;
+		$this->diagnostic = $diagnostic;
 
-        $finalMessage = $message;
-        if ($message === '') {
-            $finalMessage = sprintf('PDF anonymisation failed: %s', $reason);
-        }
+		$finalMessage = $message;
+		if ($message === '') {
+			$finalMessage = sprintf('PDF anonymisation failed: %s', $reason);
+		}
 
-        parent::__construct(message: $finalMessage, code: 0, previous: $previous);
-    }//end __construct()
+		parent::__construct(message: $finalMessage, code: 0, previous: $previous);
+	}//end __construct()
 
-    /**
-     * Get the structured reason code.
-     *
-     * @return string One of the REASON_* constants
-     *
-     * @spec openspec/specs/pdf-anonymisation/spec.md
-     */
-    public function getReason(): string
-    {
-        return $this->reason;
-    }//end getReason()
+	/**
+	 * Get the structured reason code.
+	 *
+	 * @return string One of the REASON_* constants
+	 *
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 */
+	public function getReason(): string {
+		return $this->reason;
+	}//end getReason()
 
-    /**
-     * Get the structural diagnostic surface (PII-free).
-     *
-     * @return array<string, mixed>
-     *
-     * @spec openspec/specs/pdf-anonymisation/spec.md
-     */
-    public function getDiagnostic(): array
-    {
-        return $this->diagnostic;
-    }//end getDiagnostic()
+	/**
+	 * Get the structural diagnostic surface (PII-free).
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 */
+	public function getDiagnostic(): array {
+		return $this->diagnostic;
+	}//end getDiagnostic()
 }//end class

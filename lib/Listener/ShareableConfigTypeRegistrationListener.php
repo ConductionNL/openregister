@@ -40,48 +40,46 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<RegisterShareableConfigTypesEvent>
  */
-class ShareableConfigTypeRegistrationListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowShareableConfigType           $flows     The built-in "Flows" type.
-     * @param RegisterSchemaShareableConfigType $registers The built-in "Registers & schemas" type.
-     * @param ConfigSetShareableConfigType      $configSet The built-in "Configuration set" type.
-     * @param SchemaShareableConfigScanner      $scanner   Turns shareable-marked schemas into types.
-     */
-    public function __construct(
-        private readonly FlowShareableConfigType $flows,
-        private readonly RegisterSchemaShareableConfigType $registers,
-        private readonly ConfigSetShareableConfigType $configSet,
-        private readonly SchemaShareableConfigScanner $scanner
-    ) {
+class ShareableConfigTypeRegistrationListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowShareableConfigType $flows The built-in "Flows" type.
+	 * @param RegisterSchemaShareableConfigType $registers The built-in "Registers & schemas" type.
+	 * @param ConfigSetShareableConfigType $configSet The built-in "Configuration set" type.
+	 * @param SchemaShareableConfigScanner $scanner Turns shareable-marked schemas into types.
+	 */
+	public function __construct(
+		private readonly FlowShareableConfigType $flows,
+		private readonly RegisterSchemaShareableConfigType $registers,
+		private readonly ConfigSetShareableConfigType $configSet,
+		private readonly SchemaShareableConfigScanner $scanner,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Register the built-in types plus every marked schema's type.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof RegisterShareableConfigTypesEvent) === false) {
-            return;
-        }
+	/**
+	 * Register the built-in types plus every marked schema's type.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof RegisterShareableConfigTypesEvent) === false) {
+			return;
+		}
 
-        $event->registerType(type: $this->flows);
-        $event->registerType(type: $this->registers);
-        $event->registerType(type: $this->configSet);
+		$event->registerType(type: $this->flows);
+		$event->registerType(type: $this->registers);
+		$event->registerType(type: $this->configSet);
 
-        // Any schema that marked itself shareable becomes a type — no per-app code.
-        foreach ($this->scanner->scan() as $type) {
-            $event->registerType(type: $type);
-        }
+		// Any schema that marked itself shareable becomes a type — no per-app code.
+		foreach ($this->scanner->scan() as $type) {
+			$event->registerType(type: $type);
+		}
 
-    }//end handle()
+	}//end handle()
 }//end class

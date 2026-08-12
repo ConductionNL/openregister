@@ -50,260 +50,239 @@ use Psr\Log\LoggerInterface;
  *
  * @group requires-app-timemanager
  */
-class TimeTrackerLinkServiceTest extends TestCase
-{
+class TimeTrackerLinkServiceTest extends TestCase {
 
-    private TimeTrackerLinkMapper&MockObject $mapper;
+	private TimeTrackerLinkMapper&MockObject $mapper;
 
-    private IDBConnection&MockObject $db;
+	private IDBConnection&MockObject $db;
 
-    private ContainerInterface&MockObject $container;
+	private ContainerInterface&MockObject $container;
 
-    private IAppManager&MockObject $appManager;
+	private IAppManager&MockObject $appManager;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private LoggerInterface&MockObject $logger;
+	private LoggerInterface&MockObject $logger;
 
-    private TimeTrackerLinkService $service;
+	private TimeTrackerLinkService $service;
 
-    protected function setUp(): void
-    {
-        $this->mapper = $this->getMockBuilder(TimeTrackerLinkMapper::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(
-                    [
-                        'findByObjectUuid',
-                        'findByObjectAndEntry',
-                        'deleteByObjectAndEntryId',
-                        'findAll',
-                        'insert',
-                        'update',
-                    ]
-                    )
-            ->getMock();
+	protected function setUp(): void {
+		$this->mapper = $this->getMockBuilder(TimeTrackerLinkMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(
+				[
+					'findByObjectUuid',
+					'findByObjectAndEntry',
+					'deleteByObjectAndEntryId',
+					'findAll',
+					'insert',
+					'update',
+				]
+			)
+			->getMock();
 
-        $this->db          = $this->createMock(IDBConnection::class);
-        $this->container   = $this->createMock(ContainerInterface::class);
-        $this->appManager  = $this->createMock(IAppManager::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->appManager = $this->createMock(IAppManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->service = new TimeTrackerLinkService(
-            $this->mapper,
-            $this->db,
-            $this->container,
-            $this->appManager,
-            $this->userSession,
-            $this->logger
-        );
-    }//end setUp()
+		$this->service = new TimeTrackerLinkService(
+			$this->mapper,
+			$this->db,
+			$this->container,
+			$this->appManager,
+			$this->userSession,
+			$this->logger
+		);
+	}//end setUp()
 
-    private function setupUser(string $uid='alice'): IUser&MockObject
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
-        return $user;
-    }//end setupUser()
+	private function setupUser(string $uid = 'alice'): IUser&MockObject {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+		return $user;
+	}//end setupUser()
 
-    public function testIsTimeManagerAvailableTrue(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(true);
-        $this->assertTrue($this->service->isTimeManagerAvailable());
-    }//end testIsTimeManagerAvailableTrue()
+	public function testIsTimeManagerAvailableTrue(): void {
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(true);
+		$this->assertTrue($this->service->isTimeManagerAvailable());
+	}//end testIsTimeManagerAvailableTrue()
 
-    public function testIsTimeManagerAvailableFalse(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
-        $this->assertFalse($this->service->isTimeManagerAvailable());
-    }//end testIsTimeManagerAvailableFalse()
+	public function testIsTimeManagerAvailableFalse(): void {
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+		$this->assertFalse($this->service->isTimeManagerAvailable());
+	}//end testIsTimeManagerAvailableFalse()
 
-    public function testLinkEntryThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testLinkEntryThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
-    }//end testLinkEntryThrowsWhenNoUser()
+		$this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
+	}//end testLinkEntryThrowsWhenNoUser()
 
-    public function testLinkEntryThrowsOnUnknownType(): void
-    {
-        $this->setupUser();
+	public function testLinkEntryThrowsOnUnknownType(): void {
+		$this->setupUser();
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(400);
 
-        $this->service->linkEntry('abc-123', 1, 2, 'banana', 'cli-1');
-    }//end testLinkEntryThrowsOnUnknownType()
+		$this->service->linkEntry('abc-123', 1, 2, 'banana', 'cli-1');
+	}//end testLinkEntryThrowsOnUnknownType()
 
-    public function testLinkEntryThrowsOnEmptyId(): void
-    {
-        $this->setupUser();
+	public function testLinkEntryThrowsOnEmptyId(): void {
+		$this->setupUser();
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(400);
 
-        $this->service->linkEntry('abc-123', 1, 2, 'client', '   ');
-    }//end testLinkEntryThrowsOnEmptyId()
+		$this->service->linkEntry('abc-123', 1, 2, 'client', '   ');
+	}//end testLinkEntryThrowsOnEmptyId()
 
-    public function testLinkEntryThrowsWhenTimeManagerUnavailable(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+	public function testLinkEntryThrowsWhenTimeManagerUnavailable(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(503);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(503);
 
-        $this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
-    }//end testLinkEntryThrowsWhenTimeManagerUnavailable()
+		$this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
+	}//end testLinkEntryThrowsWhenTimeManagerUnavailable()
 
-    public function testLinkEntryThrowsOnDuplicate(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->willReturn(true);
-        $this->mapper->method('findByObjectAndEntry')->willReturn(new TimeTrackerLink());
+	public function testLinkEntryThrowsOnDuplicate(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->mapper->method('findByObjectAndEntry')->willReturn(new TimeTrackerLink());
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(409);
-        $this->expectExceptionMessage('Entry already linked to this object');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(409);
+		$this->expectExceptionMessage('Entry already linked to this object');
 
-        $this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
-    }//end testLinkEntryThrowsOnDuplicate()
+		$this->service->linkEntry('abc-123', 1, 2, 'client', 'cli-1');
+	}//end testLinkEntryThrowsOnDuplicate()
 
-    public function testCreateAndLinkClientThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testCreateAndLinkClientThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
-    }//end testCreateAndLinkClientThrowsWhenNoUser()
+		$this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
+	}//end testCreateAndLinkClientThrowsWhenNoUser()
 
-    public function testCreateAndLinkClientThrowsOnEmptyName(): void
-    {
-        $this->setupUser();
+	public function testCreateAndLinkClientThrowsOnEmptyName(): void {
+		$this->setupUser();
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(400);
 
-        $this->service->createAndLinkClient('abc-123', 1, 2, '   ');
-    }//end testCreateAndLinkClientThrowsOnEmptyName()
+		$this->service->createAndLinkClient('abc-123', 1, 2, '   ');
+	}//end testCreateAndLinkClientThrowsOnEmptyName()
 
-    public function testCreateAndLinkClientThrowsWhenTimeManagerUnavailable(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+	public function testCreateAndLinkClientThrowsWhenTimeManagerUnavailable(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(503);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(503);
 
-        $this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
-    }//end testCreateAndLinkClientThrowsWhenTimeManagerUnavailable()
+		$this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
+	}//end testCreateAndLinkClientThrowsWhenTimeManagerUnavailable()
 
-    public function testUnlinkThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testUnlinkThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->unlink('abc-123', 'cli-1');
-    }//end testUnlinkThrowsWhenNoUser()
+		$this->service->unlink('abc-123', 'cli-1');
+	}//end testUnlinkThrowsWhenNoUser()
 
-    public function testUnlinkThrowsWhenLinkMissing(): void
-    {
-        $this->setupUser();
-        $this->mapper->method('deleteByObjectAndEntryId')->with('abc-123', 'cli-1')->willReturn(0);
+	public function testUnlinkThrowsWhenLinkMissing(): void {
+		$this->setupUser();
+		$this->mapper->method('deleteByObjectAndEntryId')->with('abc-123', 'cli-1')->willReturn(0);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(404);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(404);
 
-        $this->service->unlink('abc-123', 'cli-1');
-    }//end testUnlinkThrowsWhenLinkMissing()
+		$this->service->unlink('abc-123', 'cli-1');
+	}//end testUnlinkThrowsWhenLinkMissing()
 
-    public function testUnlinkSucceeds(): void
-    {
-        $this->setupUser();
-        $this->mapper->expects($this->once())
-            ->method('deleteByObjectAndEntryId')
-            ->with('abc-123', 'cli-1')
-            ->willReturn(1);
+	public function testUnlinkSucceeds(): void {
+		$this->setupUser();
+		$this->mapper->expects($this->once())
+			->method('deleteByObjectAndEntryId')
+			->with('abc-123', 'cli-1')
+			->willReturn(1);
 
-        $this->service->unlink('abc-123', 'cli-1');
-    }//end testUnlinkSucceeds()
+		$this->service->unlink('abc-123', 'cli-1');
+	}//end testUnlinkSucceeds()
 
-    public function testGetLinkedEntriesReturnsRows(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->willReturn(false);
+	public function testGetLinkedEntriesReturnsRows(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
 
-        $link = new TimeTrackerLink();
-        $link->setObjectUuid('abc-123');
-        $link->setEntryType('client');
-        $link->setClientId('cli-1');
-        $link->setName('Acme');
+		$link = new TimeTrackerLink();
+		$link->setObjectUuid('abc-123');
+		$link->setEntryType('client');
+		$link->setClientId('cli-1');
+		$link->setName('Acme');
 
-        $this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+		$this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
 
-        $rows = $this->service->getLinkedEntries('abc-123');
+		$rows = $this->service->getLinkedEntries('abc-123');
 
-        $this->assertCount(1, $rows);
-        $this->assertSame('client', $rows[0]['kind']);
-        $this->assertSame('cli-1', $rows[0]['id']);
-        $this->assertSame('Acme', $rows[0]['name']);
-    }//end testGetLinkedEntriesReturnsRows()
+		$this->assertCount(1, $rows);
+		$this->assertSame('client', $rows[0]['kind']);
+		$this->assertSame('cli-1', $rows[0]['id']);
+		$this->assertSame('Acme', $rows[0]['name']);
+	}//end testGetLinkedEntriesReturnsRows()
 
-    public function testGetLinkedEntriesEmpty(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->willReturn(false);
-        $this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([]);
+	public function testGetLinkedEntriesEmpty(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
+		$this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([]);
 
-        $this->assertSame([], $this->service->getLinkedEntries('abc-123'));
-    }//end testGetLinkedEntriesEmpty()
+		$this->assertSame([], $this->service->getLinkedEntries('abc-123'));
+	}//end testGetLinkedEntriesEmpty()
 
-    public function testGetAvailableClientsEmptyWhenTimeManagerUnavailable(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+	public function testGetAvailableClientsEmptyWhenTimeManagerUnavailable(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
 
-        $this->assertSame([], $this->service->getAvailableClients());
-    }//end testGetAvailableClientsEmptyWhenTimeManagerUnavailable()
+		$this->assertSame([], $this->service->getAvailableClients());
+	}//end testGetAvailableClientsEmptyWhenTimeManagerUnavailable()
 
-    public function testGetAvailableClientsEmptyWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(true);
+	public function testGetAvailableClientsEmptyWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(true);
 
-        $this->assertSame([], $this->service->getAvailableClients());
-    }//end testGetAvailableClientsEmptyWhenNoUser()
+		$this->assertSame([], $this->service->getAvailableClients());
+	}//end testGetAvailableClientsEmptyWhenNoUser()
 
-    /**
-     * `reconcileAllLinks()` returns a zero-stats record when NC TimeManager
-     * is not available (the upstream fetch path can't run, so reconciling
-     * is a no-op rather than an error).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
-     */
-    public function testReconcileAllLinksNoopWhenTimeManagerUnavailable(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
+	/**
+	 * `reconcileAllLinks()` returns a zero-stats record when NC TimeManager
+	 * is not available (the upstream fetch path can't run, so reconciling
+	 * is a no-op rather than an error).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/integration-time-tracker/tasks.md
+	 */
+	public function testReconcileAllLinksNoopWhenTimeManagerUnavailable(): void {
+		$this->appManager->method('isEnabledForUser')->with('timemanager')->willReturn(false);
 
-        // The mapper must NOT be touched when TimeManager is unavailable —
-        // the early-out short-circuits before any DB read.
-        $this->mapper->expects($this->never())->method('findAll');
+		// The mapper must NOT be touched when TimeManager is unavailable —
+		// the early-out short-circuits before any DB read.
+		$this->mapper->expects($this->never())->method('findAll');
 
-        $stats = $this->service->reconcileAllLinks();
+		$stats = $this->service->reconcileAllLinks();
 
-        $this->assertSame(
-            ['walked' => 0, 'refreshed' => 0, 'missing' => 0, 'errors' => 0],
-            $stats
-        );
-    }//end testReconcileAllLinksNoopWhenTimeManagerUnavailable()
+		$this->assertSame(
+			['walked' => 0, 'refreshed' => 0, 'missing' => 0, 'errors' => 0],
+			$stats
+		);
+	}//end testReconcileAllLinksNoopWhenTimeManagerUnavailable()
 }//end class

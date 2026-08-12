@@ -32,172 +32,169 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `oc_openregister_verwerkingsactiviteiten` per AVG Art 30 §1.
  */
-class Version1Date20260430160000 extends SimpleMigrationStep
-{
-    /**
-     * Add the verwerkingsactiviteiten table when missing.
-     *
-     * @param IOutput $output        Migration output sink.
-     * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array   $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260430160000 extends SimpleMigrationStep {
+	/**
+	 * Add the verwerkingsactiviteiten table when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_verwerkingsactiviteiten') === true) {
-            return $schema;
-        }
+		if ($schema->hasTable(tableName: 'openregister_verwerkingsactiviteiten') === true) {
+			return $schema;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_verwerkingsactiviteiten');
+		$table = $schema->createTable(tableName: 'openregister_verwerkingsactiviteiten');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-                'unsigned'      => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+				'unsigned' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'uuid',
-            typeName: Types::STRING,
-            options: ['notnull' => true, 'length' => 36]
-        );
+		$table->addColumn(
+			name: 'uuid',
+			typeName: Types::STRING,
+			options: ['notnull' => true, 'length' => 36]
+		);
 
-        $table->addColumn(
-            name: 'code',
-            typeName: Types::STRING,
-            options: ['notnull' => false, 'length' => 64]
-        );
+		$table->addColumn(
+			name: 'code',
+			typeName: Types::STRING,
+			options: ['notnull' => false, 'length' => 64]
+		);
 
-        $table->addColumn(
-            name: 'naam',
-            typeName: Types::STRING,
-            options: ['notnull' => true, 'length' => 255]
-        );
+		$table->addColumn(
+			name: 'naam',
+			typeName: Types::STRING,
+			options: ['notnull' => true, 'length' => 255]
+		);
 
-        $table->addColumn(
-            name: 'beschrijving',
-            typeName: Types::TEXT,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'beschrijving',
+			typeName: Types::TEXT,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'doelbinding',
-            typeName: Types::TEXT,
-            options: ['notnull' => true]
-        );
+		$table->addColumn(
+			name: 'doelbinding',
+			typeName: Types::TEXT,
+			options: ['notnull' => true]
+		);
 
-        $table->addColumn(
-            name: 'rechtsgrond',
-            typeName: Types::STRING,
-            options: ['notnull' => true, 'length' => 64]
-        );
+		$table->addColumn(
+			name: 'rechtsgrond',
+			typeName: Types::STRING,
+			options: ['notnull' => true, 'length' => 64]
+		);
 
-        $table->addColumn(
-            name: 'categorieen_betrokkenen',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'categorieen_betrokkenen',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'categorieen_persoonsgegevens',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'categorieen_persoonsgegevens',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'bewaartermijn',
-            typeName: Types::STRING,
-            options: ['notnull' => false, 'length' => 64]
-        );
+		$table->addColumn(
+			name: 'bewaartermijn',
+			typeName: Types::STRING,
+			options: ['notnull' => false, 'length' => 64]
+		);
 
-        $table->addColumn(
-            name: 'ontvangers',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'ontvangers',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'doorgifte_buiten_eu',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'doorgifte_buiten_eu',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'technische_maatregelen',
-            typeName: Types::TEXT,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'technische_maatregelen',
+			typeName: Types::TEXT,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'organisatorische_maatregelen',
-            typeName: Types::TEXT,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'organisatorische_maatregelen',
+			typeName: Types::TEXT,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'verwerkingsverantwoordelijke',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'verwerkingsverantwoordelijke',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'contactgegevens_fg',
-            typeName: Types::JSON,
-            options: ['notnull' => false]
-        );
+		$table->addColumn(
+			name: 'contactgegevens_fg',
+			typeName: Types::JSON,
+			options: ['notnull' => false]
+		);
 
-        $table->addColumn(
-            name: 'organisation_id',
-            typeName: Types::STRING,
-            options: ['notnull' => false, 'length' => 64]
-        );
+		$table->addColumn(
+			name: 'organisation_id',
+			typeName: Types::STRING,
+			options: ['notnull' => false, 'length' => 64]
+		);
 
-        $table->addColumn(
-            name: 'status',
-            typeName: Types::STRING,
-            options: ['notnull' => true, 'length' => 32, 'default' => 'concept']
-        );
+		$table->addColumn(
+			name: 'status',
+			typeName: Types::STRING,
+			options: ['notnull' => true, 'length' => 32, 'default' => 'concept']
+		);
 
-        $table->addColumn(
-            name: 'created',
-            typeName: Types::DATETIME,
-            options: ['notnull' => true]
-        );
+		$table->addColumn(
+			name: 'created',
+			typeName: Types::DATETIME,
+			options: ['notnull' => true]
+		);
 
-        $table->addColumn(
-            name: 'updated',
-            typeName: Types::DATETIME,
-            options: ['notnull' => true]
-        );
+		$table->addColumn(
+			name: 'updated',
+			typeName: Types::DATETIME,
+			options: ['notnull' => true]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
-        $table->addUniqueIndex(columnNames: ['uuid'], indexName: 'idx_vrw_uuid');
-        $table->addIndex(columnNames: ['code'], indexName: 'idx_vrw_code');
-        $table->addIndex(columnNames: ['organisation_id'], indexName: 'idx_vrw_organisation');
-        $table->addIndex(columnNames: ['status'], indexName: 'idx_vrw_status');
+		$table->setPrimaryKey(columnNames: ['id']);
+		$table->addUniqueIndex(columnNames: ['uuid'], indexName: 'idx_vrw_uuid');
+		$table->addIndex(columnNames: ['code'], indexName: 'idx_vrw_code');
+		$table->addIndex(columnNames: ['organisation_id'], indexName: 'idx_vrw_organisation');
+		$table->addIndex(columnNames: ['status'], indexName: 'idx_vrw_status');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

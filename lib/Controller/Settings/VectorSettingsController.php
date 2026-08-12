@@ -19,11 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
-use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\IRequest;
-use Exception;
 use OCA\OpenRegister\Service\VectorizationService;
+use OCP\AppFramework\Controller;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,22 +35,21 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
  */
-class VectorSettingsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string               $appName              The app name.
-     * @param IRequest             $request              The request.
-     * @param VectorizationService $vectorizationService Vectorization service.
-     * @param LoggerInterface      $logger               Logger.
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-        private readonly VectorizationService $vectorizationService,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class VectorSettingsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app name.
+	 * @param IRequest $request The request.
+	 * @param VectorizationService $vectorizationService Vectorization service.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+		private readonly VectorizationService $vectorizationService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 }//end class

@@ -30,125 +30,115 @@ use OCP\IL10N;
 /**
  * Activity setting for schema events.
  */
-class SchemaSetting extends ActivitySettings
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N $l The localization service.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function __construct(
-        private IL10N $l,
-    ) {
-    }//end __construct()
+class SchemaSetting extends ActivitySettings {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l The localization service.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private IL10N $l,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the identifier for this setting.
-     *
-     * @return string The setting identifier.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function getIdentifier(): string
-    {
-        return 'openregister_schemas';
-    }//end getIdentifier()
+	/**
+	 * Get the identifier for this setting.
+	 *
+	 * @return string The setting identifier.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getIdentifier(): string {
+		return 'openregister_schemas';
+	}//end getIdentifier()
 
-    /**
-     * Get the name for this setting.
-     *
-     * @return string The setting name.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function getName(): string
-    {
-        return $this->l->t('Schema changes');
-    }//end getName()
+	/**
+	 * Get the name for this setting.
+	 *
+	 * @return string The setting name.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getName(): string {
+		return $this->l->t('Schema changes');
+	}//end getName()
 
-    /**
-     * Get the group identifier for this setting.
-     *
-     * @return string The group identifier.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function getGroupIdentifier(): string
-    {
-        return 'openregister';
-    }//end getGroupIdentifier()
+	/**
+	 * Get the group identifier for this setting.
+	 *
+	 * @return string The group identifier.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getGroupIdentifier(): string {
+		return 'openregister';
+	}//end getGroupIdentifier()
 
-    /**
-     * Get the group name for this setting.
-     *
-     * @return string The group name.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function getGroupName(): string
-    {
-        return $this->l->t('Open Register');
-    }//end getGroupName()
+	/**
+	 * Get the group name for this setting.
+	 *
+	 * @return string The group name.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getGroupName(): string {
+		return $this->l->t('Open Register');
+	}//end getGroupName()
 
-    /**
-     * Get the priority for this setting.
-     *
-     * @return int The priority.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function getPriority(): int
-    {
-        return 53;
-    }//end getPriority()
+	/**
+	 * Get the priority for this setting.
+	 *
+	 * @return int The priority.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getPriority(): int {
+		return 53;
+	}//end getPriority()
 
-    /**
-     * Whether the user can change the stream setting.
-     *
-     * @return bool True if changeable.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function canChangeStream(): bool
-    {
-        return true;
-    }//end canChangeStream()
+	/**
+	 * Whether the user can change the stream setting.
+	 *
+	 * @return bool True if changeable.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function canChangeStream(): bool {
+		return true;
+	}//end canChangeStream()
 
-    /**
-     * Whether the stream is enabled by default.
-     *
-     * @return bool True if enabled by default.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function isDefaultEnabledStream(): bool
-    {
-        return true;
-    }//end isDefaultEnabledStream()
+	/**
+	 * Whether the stream is enabled by default.
+	 *
+	 * @return bool True if enabled by default.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function isDefaultEnabledStream(): bool {
+		return true;
+	}//end isDefaultEnabledStream()
 
-    /**
-     * Whether the user can change the mail setting.
-     *
-     * @return bool True if changeable.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function canChangeMail(): bool
-    {
-        return true;
-    }//end canChangeMail()
+	/**
+	 * Whether the user can change the mail setting.
+	 *
+	 * @return bool True if changeable.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function canChangeMail(): bool {
+		return true;
+	}//end canChangeMail()
 
-    /**
-     * Whether mail is enabled by default.
-     *
-     * @return bool True if enabled by default.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function isDefaultEnabledMail(): bool
-    {
-        return false;
-    }//end isDefaultEnabledMail()
+	/**
+	 * Whether mail is enabled by default.
+	 *
+	 * @return bool True if enabled by default.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function isDefaultEnabledMail(): bool {
+		return false;
+	}//end isDefaultEnabledMail()
 }//end class

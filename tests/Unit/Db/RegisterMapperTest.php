@@ -22,52 +22,48 @@ use Psr\Container\ContainerInterface;
  * and need integration tests for real coverage.
  * Here we verify construction wiring and the table name.
  */
-class RegisterMapperTest extends TestCase
-{
-    private IDBConnection&MockObject $db;
-    private SchemaMapper&MockObject $schemaMapper;
-    private IEventDispatcher&MockObject $eventDispatcher;
-    private ContainerInterface&MockObject $container;
-    private OrganisationMapper&MockObject $organisationMapper;
-    private IUserSession&MockObject $userSession;
-    private IGroupManager&MockObject $groupManager;
-    private IAppConfig&MockObject $appConfig;
-    private RegisterMapper $mapper;
+class RegisterMapperTest extends TestCase {
+	private IDBConnection&MockObject $db;
+	private SchemaMapper&MockObject $schemaMapper;
+	private IEventDispatcher&MockObject $eventDispatcher;
+	private ContainerInterface&MockObject $container;
+	private OrganisationMapper&MockObject $organisationMapper;
+	private IUserSession&MockObject $userSession;
+	private IGroupManager&MockObject $groupManager;
+	private IAppConfig&MockObject $appConfig;
+	private RegisterMapper $mapper;
 
-    protected function setUp(): void
-    {
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
+	protected function setUp(): void {
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
 
-        $this->mapper = new RegisterMapper(
-            $this->db,
-            $this->schemaMapper,
-            $this->eventDispatcher,
-            $this->container,
-            $this->organisationMapper,
-            $this->userSession,
-            $this->groupManager,
-            $this->appConfig
-        );
-    }
+		$this->mapper = new RegisterMapper(
+			$this->db,
+			$this->schemaMapper,
+			$this->eventDispatcher,
+			$this->container,
+			$this->organisationMapper,
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig
+		);
+	}
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Construction
+	// -------------------------------------------------------------------------
 
-    public function testConstructorCreatesInstance(): void
-    {
-        $this->assertInstanceOf(RegisterMapper::class, $this->mapper);
-    }
+	public function testConstructorCreatesInstance(): void {
+		$this->assertInstanceOf(RegisterMapper::class, $this->mapper);
+	}
 
-    public function testGetTableNameReturnsCorrectValue(): void
-    {
-        $this->assertStringContainsString('openregister_registers', $this->mapper->getTableName());
-    }
+	public function testGetTableNameReturnsCorrectValue(): void {
+		$this->assertStringContainsString('openregister_registers', $this->mapper->getTableName());
+	}
 }

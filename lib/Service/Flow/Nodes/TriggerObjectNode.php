@@ -64,196 +64,181 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow when an object is created, updated or deleted.
  */
-class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode
-{
+class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode {
 
-    /**
-     * The object events a trigger may name.
-     *
-     * Deliberately a closed list. An event name the engine never fires is a
-     * trigger that is saved, looks configured, and can never start anything —
-     * the failure mode a trigger cannot afford, because nothing happening looks
-     * exactly like nothing needing to happen.
-     *
-     * @var array<int, string>
-     */
-    public const EVENTS = [
-        'object.created',
-        'object.updated',
-        'object.deleted',
-    ];
+	/**
+	 * The object events a trigger may name.
+	 *
+	 * Deliberately a closed list. An event name the engine never fires is a
+	 * trigger that is saved, looks configured, and can never start anything —
+	 * the failure mode a trigger cannot afford, because nothing happening looks
+	 * exactly like nothing needing to happen.
+	 *
+	 * @var array<int, string>
+	 */
+	public const EVENTS = [
+		'object.created',
+		'object.updated',
+		'object.deleted',
+	];
 
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The node type.
-     *
-     * @return string The id.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getId(): string
-    {
-        return 'openregister.trigger-object';
+	/**
+	 * The node type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getId(): string {
+		return 'openregister.trigger-object';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('When an object changes');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('When an object changes');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t(
+			'Start the flow when one kind of object is created, updated or deleted. '
+			. 'One event, one register, one schema — use a mapping node to normalise other shapes.'
+		);
 
-    }//end getDisplayName()
+	}//end getDescription()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t(
-            'Start the flow when one kind of object is created, updated or deleted. '
-            .'One event, one register, one schema — use a mapping node to normalise other shapes.'
-        );
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/play.svg');
+	}//end getIcon()
 
-    }//end getDescription()
+	/**
+	 * Starting a flow grants no privilege of its own.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/play.svg');
+	/**
+	 * The config vocabulary of an object trigger.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function configKeys(): array {
+		return ['event', 'register', 'schema'];
+	}//end configKeys()
 
-    }//end getIcon()
+	/**
+	 * All three keys are REQUIRED, and `event` must be one the engine fires.
+	 *
+	 * Required, not optional-with-a-default: a trigger missing its subject
+	 * would either match nothing (and never fire) or match everything (and fire
+	 * on every object in the instance). Neither is a defensible default, and
+	 * both are silent.
+	 *
+	 * @param array $config The node configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the trigger does not name exactly one subject.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function validateConfig(array $config): void {
+		$event = trim((string)($config['event'] ?? ''));
+		if ($event === '') {
+			throw new InvalidArgumentException(
+				'An object trigger must name an "event" — one of: ' . implode(', ', self::EVENTS)
+			);
+		}
 
-    /**
-     * Starting a flow grants no privilege of its own.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+		if (in_array($event, self::EVENTS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'Unknown trigger event "%s". The engine fires: %s.',
+					$event,
+					implode(', ', self::EVENTS)
+				)
+			);
+		}
 
-    }//end isAvailableForScope()
+		foreach (['register', 'schema'] as $key) {
+			if (trim((string)($config[$key] ?? '')) === '') {
+				throw new InvalidArgumentException(
+					sprintf(
+						'An object trigger must name one "%s". A trigger with no %s either matches nothing '
+						. 'and never fires, or matches everything — and both are silent.',
+						$key,
+						$key
+					)
+				);
+			}
+		}
 
-    /**
-     * The config vocabulary of an object trigger.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function configKeys(): array
-    {
-        return ['event', 'register', 'schema'];
+	}//end validateConfig()
 
-    }//end configKeys()
-
-    /**
-     * All three keys are REQUIRED, and `event` must be one the engine fires.
-     *
-     * Required, not optional-with-a-default: a trigger missing its subject
-     * would either match nothing (and never fire) or match everything (and fire
-     * on every object in the instance). Neither is a defensible default, and
-     * both are silent.
-     *
-     * @param array $config The node configuration.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException When the trigger does not name exactly one subject.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function validateConfig(array $config): void
-    {
-        $event = trim((string) ($config['event'] ?? ''));
-        if ($event === '') {
-            throw new InvalidArgumentException(
-                'An object trigger must name an "event" — one of: '.implode(', ', self::EVENTS)
-            );
-        }
-
-        if (in_array($event, self::EVENTS, true) === false) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'Unknown trigger event "%s". The engine fires: %s.',
-                    $event,
-                    implode(', ', self::EVENTS)
-                )
-            );
-        }
-
-        foreach (['register', 'schema'] as $key) {
-            if (trim((string) ($config[$key] ?? '')) === '') {
-                throw new InvalidArgumentException(
-                    sprintf(
-                        'An object trigger must name one "%s". A trigger with no %s either matches nothing '
-                        .'and never fires, or matches everything — and both are silent.',
-                        $key,
-                        $key
-                    )
-                );
-            }
-        }
-
-    }//end validateConfig()
-
-    /**
-     * A trigger is an entry point, not work.
-     *
-     * By the time a run exists the trigger has already fired, so there is
-     * nothing left for this node to do: it passes its items straight through so
-     * the run continues to whatever the author wired after it.
-     *
-     * It deliberately does NOT re-check the subject. The resolver decided this
-     * flow wanted this event before the run was queued; re-deciding here would
-     * put the same rule in two places, and the copy that drifted would either
-     * drop legitimate runs or admit ones the resolver rejected.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The node configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        return $items;
-
-    }//end execute()
+	/**
+	 * A trigger is an entry point, not work.
+	 *
+	 * By the time a run exists the trigger has already fired, so there is
+	 * nothing left for this node to do: it passes its items straight through so
+	 * the run continues to whatever the author wired after it.
+	 *
+	 * It deliberately does NOT re-check the subject. The resolver decided this
+	 * flow wanted this event before the run was queued; re-deciding here would
+	 * put the same rule in two places, and the copy that drifted would either
+	 * drop legitimate runs or admit ones the resolver rejected.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The node configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		return $items;
+	}//end execute()
 }//end class

@@ -23,121 +23,102 @@ namespace Unit\Service\SchemaImport;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use PHPUnit\Framework\TestCase;
 
-class ThreeWayMergeTest extends TestCase
-{
-    private ThreeWayMerge $merge;
+class ThreeWayMergeTest extends TestCase {
+	private ThreeWayMerge $merge;
 
+	protected function setUp(): void {
+		$this->merge = new ThreeWayMerge();
+	}
 
-    protected function setUp(): void
-    {
-        $this->merge = new ThreeWayMerge();
-    }
+	public function testSourceChangeAppliedWhenLocalUnchanged(): void {
+		$baseline = ['email' => ['type' => 'string']];
+		$current = ['email' => ['type' => 'string']];
+		$incoming = ['email' => ['type' => 'string', 'format' => 'email']];
 
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
-    public function testSourceChangeAppliedWhenLocalUnchanged(): void
-    {
-        $baseline = ['email' => ['type' => 'string']];
-        $current  = ['email' => ['type' => 'string']];
-        $incoming = ['email' => ['type' => 'string', 'format' => 'email']];
+		$this->assertSame(['email'], $result['changed']);
+		$this->assertSame('email', $result['merged']['email']['format']);
+		$this->assertTrue($result['applied']);
+	}
 
-        $result = $this->merge->compute($baseline, $current, $incoming);
+	public function testLocalAdditionKept(): void {
+		$baseline = ['email' => ['type' => 'string']];
+		$current = ['email' => ['type' => 'string'], 'internalNote' => ['type' => 'string']];
+		$incoming = ['email' => ['type' => 'string']];
 
-        $this->assertSame(['email'], $result['changed']);
-        $this->assertSame('email', $result['merged']['email']['format']);
-        $this->assertTrue($result['applied']);
-    }
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
+		$this->assertContains('internalNote', $result['keptLocal']);
+		$this->assertArrayHasKey('internalNote', $result['merged']);
+	}
 
-    public function testLocalAdditionKept(): void
-    {
-        $baseline = ['email' => ['type' => 'string']];
-        $current  = ['email' => ['type' => 'string'], 'internalNote' => ['type' => 'string']];
-        $incoming = ['email' => ['type' => 'string']];
+	public function testLocalModificationKeptWhenSourceUnchanged(): void {
+		$baseline = ['age' => ['type' => 'integer']];
+		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
+		$incoming = ['age' => ['type' => 'integer']];
 
-        $result = $this->merge->compute($baseline, $current, $incoming);
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
-        $this->assertContains('internalNote', $result['keptLocal']);
-        $this->assertArrayHasKey('internalNote', $result['merged']);
-    }
+		$this->assertContains('age', $result['keptLocal']);
+		$this->assertSame(0, $result['merged']['age']['minimum']);
+	}
 
+	public function testConflictReportedWhenBothChanged(): void {
+		$baseline = ['age' => ['type' => 'integer']];
+		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
+		$incoming = ['age' => ['type' => 'number']];
 
-    public function testLocalModificationKeptWhenSourceUnchanged(): void
-    {
-        $baseline = ['age' => ['type' => 'integer']];
-        $current  = ['age' => ['type' => 'integer', 'minimum' => 0]];
-        $incoming = ['age' => ['type' => 'integer']];
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
-        $result = $this->merge->compute($baseline, $current, $incoming);
+		$this->assertSame(['age'], $result['conflicts']);
+		$this->assertFalse($result['applied']);
+		// Not overwritten without confirmation.
+		$this->assertSame('integer', $result['merged']['age']['type']);
+	}
 
-        $this->assertContains('age', $result['keptLocal']);
-        $this->assertSame(0, $result['merged']['age']['minimum']);
-    }
+	public function testConflictAppliedWhenResolved(): void {
+		$baseline = ['age' => ['type' => 'integer']];
+		$current = ['age' => ['type' => 'integer', 'minimum' => 0]];
+		$incoming = ['age' => ['type' => 'number']];
 
+		$result = $this->merge->compute($baseline, $current, $incoming, ['age']);
 
-    public function testConflictReportedWhenBothChanged(): void
-    {
-        $baseline = ['age' => ['type' => 'integer']];
-        $current  = ['age' => ['type' => 'integer', 'minimum' => 0]];
-        $incoming = ['age' => ['type' => 'number']];
+		$this->assertSame([], $result['conflicts']);
+		$this->assertTrue($result['applied']);
+		$this->assertSame('number', $result['merged']['age']['type']);
+	}
 
-        $result = $this->merge->compute($baseline, $current, $incoming);
+	public function testSourceRemovalReported(): void {
+		$baseline = ['deprecated' => ['type' => 'string']];
+		$current = ['deprecated' => ['type' => 'string']];
+		$incoming = [];
 
-        $this->assertSame(['age'], $result['conflicts']);
-        $this->assertFalse($result['applied']);
-        // Not overwritten without confirmation.
-        $this->assertSame('integer', $result['merged']['age']['type']);
-    }
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
+		$this->assertSame(['deprecated'], $result['removed']);
+	}
 
-    public function testConflictAppliedWhenResolved(): void
-    {
-        $baseline = ['age' => ['type' => 'integer']];
-        $current  = ['age' => ['type' => 'integer', 'minimum' => 0]];
-        $incoming = ['age' => ['type' => 'number']];
+	public function testSourceAddition(): void {
+		$baseline = [];
+		$current = [];
+		$incoming = ['newProp' => ['type' => 'string']];
 
-        $result = $this->merge->compute($baseline, $current, $incoming, ['age']);
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
-        $this->assertSame([], $result['conflicts']);
-        $this->assertTrue($result['applied']);
-        $this->assertSame('number', $result['merged']['age']['type']);
-    }
+		$this->assertSame(['newProp'], $result['added']);
+		$this->assertArrayHasKey('newProp', $result['merged']);
+	}
 
+	public function testOrderInsensitiveComparison(): void {
+		$baseline = ['p' => ['type' => 'string', 'format' => 'uri']];
+		$current = ['p' => ['format' => 'uri', 'type' => 'string']];
+		$incoming = ['p' => ['type' => 'string', 'format' => 'uri']];
 
-    public function testSourceRemovalReported(): void
-    {
-        $baseline = ['deprecated' => ['type' => 'string']];
-        $current  = ['deprecated' => ['type' => 'string']];
-        $incoming = [];
+		$result = $this->merge->compute($baseline, $current, $incoming);
 
-        $result = $this->merge->compute($baseline, $current, $incoming);
-
-        $this->assertSame(['deprecated'], $result['removed']);
-    }
-
-
-    public function testSourceAddition(): void
-    {
-        $baseline = [];
-        $current  = [];
-        $incoming = ['newProp' => ['type' => 'string']];
-
-        $result = $this->merge->compute($baseline, $current, $incoming);
-
-        $this->assertSame(['newProp'], $result['added']);
-        $this->assertArrayHasKey('newProp', $result['merged']);
-    }
-
-
-    public function testOrderInsensitiveComparison(): void
-    {
-        $baseline = ['p' => ['type' => 'string', 'format' => 'uri']];
-        $current  = ['p' => ['format' => 'uri', 'type' => 'string']];
-        $incoming = ['p' => ['type' => 'string', 'format' => 'uri']];
-
-        $result = $this->merge->compute($baseline, $current, $incoming);
-
-        // No change detected despite key ordering differences.
-        $this->assertSame([], $result['changed']);
-        $this->assertContains('p', $result['keptLocal']);
-    }
+		// No change detected despite key ordering differences.
+		$this->assertSame([], $result['changed']);
+		$this->assertContains('p', $result['keptLocal']);
+	}
 }

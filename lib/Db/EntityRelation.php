@@ -72,225 +72,222 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
-class EntityRelation extends Entity implements JsonSerializable
-{
+class EntityRelation extends Entity implements JsonSerializable {
 
-    /**
-     * Entity ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $entityId = null;
+	/**
+	 * Entity ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $entityId = null;
 
-    /**
-     * Chunk ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $chunkId = null;
+	/**
+	 * Chunk ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $chunkId = null;
 
-    /**
-     * Role.
-     *
-     * @var string|null
-     */
-    protected ?string $role = null;
+	/**
+	 * Role.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $role = null;
 
-    /**
-     * File ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $fileId = null;
+	/**
+	 * File ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $fileId = null;
 
-    /**
-     * Object ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $objectId = null;
+	/**
+	 * Object ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $objectId = null;
 
-    /**
-     * Email ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $emailId = null;
+	/**
+	 * Email ID.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $emailId = null;
 
-    /**
-     * Register identifier (uuid or slug) for object-source relations.
-     *
-     * Disambiguates the magic-table this relation's `object_id`
-     * points at — magic-table id sequences are scoped per-table, so
-     * the int alone can collide. Nullable for backwards compatibility
-     * with relations created before the disambiguation columns landed.
-     *
-     * @var string|null
-     */
-    protected ?string $registerId = null;
+	/**
+	 * Register identifier (uuid or slug) for object-source relations.
+	 *
+	 * Disambiguates the magic-table this relation's `object_id`
+	 * points at — magic-table id sequences are scoped per-table, so
+	 * the int alone can collide. Nullable for backwards compatibility
+	 * with relations created before the disambiguation columns landed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $registerId = null;
 
-    /**
-     * Schema identifier (uuid or slug) for object-source relations.
-     *
-     * @var string|null
-     */
-    protected ?string $schemaId = null;
+	/**
+	 * Schema identifier (uuid or slug) for object-source relations.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $schemaId = null;
 
-    /**
-     * Object uuid for object-source relations.
-     *
-     * Globally unique across all magic-tables — preferred over the int
-     * `object_id` for downstream lookups (DSAR, retention enforcement).
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * Object uuid for object-source relations.
+	 *
+	 * Globally unique across all magic-tables — preferred over the int
+	 * `object_id` for downstream lookups (DSAR, retention enforcement).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * Position start.
-     *
-     * @var integer
-     */
-    protected int $positionStart = 0;
+	/**
+	 * Position start.
+	 *
+	 * @var integer
+	 */
+	protected int $positionStart = 0;
 
-    /**
-     * Position end.
-     *
-     * @var integer
-     */
-    protected int $positionEnd = 0;
+	/**
+	 * Position end.
+	 *
+	 * @var integer
+	 */
+	protected int $positionEnd = 0;
 
-    /**
-     * Confidence.
-     *
-     * @var float
-     */
-    protected float $confidence = 0.0;
+	/**
+	 * Confidence.
+	 *
+	 * @var float
+	 */
+	protected float $confidence = 0.0;
 
-    /**
-     * Detection method.
-     *
-     * @var string|null
-     */
-    protected ?string $detectionMethod = null;
+	/**
+	 * Detection method.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $detectionMethod = null;
 
-    /**
-     * Context.
-     *
-     * @var string|null
-     */
-    protected ?string $context = null;
+	/**
+	 * Context.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $context = null;
 
-    /**
-     * Anonymized flag.
-     *
-     * @var boolean
-     */
-    protected bool $anonymized = false;
+	/**
+	 * Anonymized flag.
+	 *
+	 * @var boolean
+	 */
+	protected bool $anonymized = false;
 
-    /**
-     * Anonymized value.
-     *
-     * @var string|null
-     */
-    protected ?string $anonymizedValue = null;
+	/**
+	 * Anonymized value.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $anonymizedValue = null;
 
-    /**
-     * Legal bases (grondslagen) under which the entity is being redacted.
-     *
-     * Array of UUID-shaped strings referencing `base` schema objects in a
-     * consumer app's register (DocuDesk's `dossier` register is the first
-     * consumer; see the `entity-relation-grondslagen` change). OpenRegister
-     * does NOT validate that the UUIDs resolve — vocabulary ownership lies
-     * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
-     * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
-     *
-     * @var array|null
-     */
-    protected ?array $bases = null;
+	/**
+	 * Legal bases (grondslagen) under which the entity is being redacted.
+	 *
+	 * Array of UUID-shaped strings referencing `base` schema objects in a
+	 * consumer app's register (DocuDesk's `dossier` register is the first
+	 * consumer; see the `entity-relation-grondslagen` change). OpenRegister
+	 * does NOT validate that the UUIDs resolve — vocabulary ownership lies
+	 * with the consumer app. Set via `EntityRelationMapper::updateDecisionMetadata`
+	 * (and its HTTP surface `PATCH /api/entity-relations/{id}`); audit-traced.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $bases = null;
 
-    /**
-     * Operator decision: skip this occurrence from the anonymise pass.
-     *
-     * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
-     * from the file-scoped flip, the redaction text-replacement skips it, and
-     * the row retains `anonymized = false`. Set via the same audited
-     * `updateDecisionMetadata` write path as `bases`.
-     *
-     * @var boolean
-     */
-    protected bool $skipAnonymization = false;
+	/**
+	 * Operator decision: skip this occurrence from the anonymise pass.
+	 *
+	 * When `true`, `EntityRelationMapper::markAsAnonymized` excludes this row
+	 * from the file-scoped flip, the redaction text-replacement skips it, and
+	 * the row retains `anonymized = false`. Set via the same audited
+	 * `updateDecisionMetadata` write path as `bases`.
+	 *
+	 * @var boolean
+	 */
+	protected bool $skipAnonymization = false;
 
-    /**
-     * Created at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * Created at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'entityId', type: 'integer');
-        $this->addType(fieldName: 'chunkId', type: 'integer');
-        $this->addType(fieldName: 'role', type: 'string');
-        $this->addType(fieldName: 'fileId', type: 'integer');
-        $this->addType(fieldName: 'objectId', type: 'integer');
-        $this->addType(fieldName: 'emailId', type: 'integer');
-        $this->addType(fieldName: 'registerId', type: 'string');
-        $this->addType(fieldName: 'schemaId', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'positionStart', type: 'integer');
-        $this->addType(fieldName: 'positionEnd', type: 'integer');
-        $this->addType(fieldName: 'confidence', type: 'float');
-        $this->addType(fieldName: 'detectionMethod', type: 'string');
-        $this->addType(fieldName: 'context', type: 'string');
-        $this->addType(fieldName: 'anonymized', type: 'boolean');
-        $this->addType(fieldName: 'anonymizedValue', type: 'string');
-        $this->addType(fieldName: 'bases', type: 'json');
-        $this->addType(fieldName: 'skipAnonymization', type: 'boolean');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'entityId', type: 'integer');
+		$this->addType(fieldName: 'chunkId', type: 'integer');
+		$this->addType(fieldName: 'role', type: 'string');
+		$this->addType(fieldName: 'fileId', type: 'integer');
+		$this->addType(fieldName: 'objectId', type: 'integer');
+		$this->addType(fieldName: 'emailId', type: 'integer');
+		$this->addType(fieldName: 'registerId', type: 'string');
+		$this->addType(fieldName: 'schemaId', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'positionStart', type: 'integer');
+		$this->addType(fieldName: 'positionEnd', type: 'integer');
+		$this->addType(fieldName: 'confidence', type: 'float');
+		$this->addType(fieldName: 'detectionMethod', type: 'string');
+		$this->addType(fieldName: 'context', type: 'string');
+		$this->addType(fieldName: 'anonymized', type: 'boolean');
+		$this->addType(fieldName: 'anonymizedValue', type: 'string');
+		$this->addType(fieldName: 'bases', type: 'json');
+		$this->addType(fieldName: 'skipAnonymization', type: 'boolean');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string, mixed>
-     *
-     * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
-     *     role: null|string, fileId: int|null, objectId: int|null,
-     *     emailId: int|null, registerId: null|string, schemaId: null|string,
-     *     objectUuid: null|string, positionStart: int, positionEnd: int,
-     *     confidence: float, detectionMethod: null|string,
-     *     context: null|string, anonymized: bool,
-     *     anonymizedValue: null|string, bases: array|null,
-     *     skipAnonymization: bool, createdAt: null|string}
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                => $this->id,
-            'entityId'          => $this->entityId,
-            'chunkId'           => $this->chunkId,
-            'role'              => $this->role,
-            'fileId'            => $this->fileId,
-            'objectId'          => $this->objectId,
-            'emailId'           => $this->emailId,
-            'registerId'        => $this->registerId,
-            'schemaId'          => $this->schemaId,
-            'objectUuid'        => $this->objectUuid,
-            'positionStart'     => $this->positionStart,
-            'positionEnd'       => $this->positionEnd,
-            'confidence'        => $this->confidence,
-            'detectionMethod'   => $this->detectionMethod,
-            'context'           => $this->context,
-            'anonymized'        => $this->anonymized,
-            'anonymizedValue'   => $this->anonymizedValue,
-            'bases'             => $this->bases,
-            'skipAnonymization' => $this->skipAnonymization,
-            'createdAt'         => $this->createdAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
+	 *     role: null|string, fileId: int|null, objectId: int|null,
+	 *     emailId: int|null, registerId: null|string, schemaId: null|string,
+	 *     objectUuid: null|string, positionStart: int, positionEnd: int,
+	 *     confidence: float, detectionMethod: null|string,
+	 *     context: null|string, anonymized: bool,
+	 *     anonymizedValue: null|string, bases: array|null,
+	 *     skipAnonymization: bool, createdAt: null|string}
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'entityId' => $this->entityId,
+			'chunkId' => $this->chunkId,
+			'role' => $this->role,
+			'fileId' => $this->fileId,
+			'objectId' => $this->objectId,
+			'emailId' => $this->emailId,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'objectUuid' => $this->objectUuid,
+			'positionStart' => $this->positionStart,
+			'positionEnd' => $this->positionEnd,
+			'confidence' => $this->confidence,
+			'detectionMethod' => $this->detectionMethod,
+			'context' => $this->context,
+			'anonymized' => $this->anonymized,
+			'anonymizedValue' => $this->anonymizedValue,
+			'bases' => $this->bases,
+			'skipAnonymization' => $this->skipAnonymization,
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

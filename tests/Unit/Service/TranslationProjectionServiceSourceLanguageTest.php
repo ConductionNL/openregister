@@ -38,120 +38,114 @@ use Psr\Log\NullLogger;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TranslationProjectionServiceSourceLanguageTest extends TestCase
-{
+class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 
-    private TranslationProjectionService $service;
-    private Schema $schema;
-    private ObjectEntity $object;
+	private TranslationProjectionService $service;
+	private Schema $schema;
+	private ObjectEntity $object;
 
-    /**
-     * Build a service instance with mocked collaborators.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->service = new TranslationProjectionService(
-            $this->createMock(TranslationMapper::class),
-            $this->createMock(TranslationHandler::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(IUserSession::class),
-            new NullLogger()
-        );
+	/**
+	 * Build a service instance with mocked collaborators.
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->service = new TranslationProjectionService(
+			$this->createMock(TranslationMapper::class),
+			$this->createMock(TranslationHandler::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(IUserSession::class),
+			new NullLogger()
+		);
 
-        $this->schema = new Schema();
-        $this->schema->setProperties([
-            'title' => [
-                'type'           => 'string',
-                'translatable'   => true,
-                'sourceLanguage' => 'fr',
-            ],
-            'body'  => [
-                'type'         => 'string',
-                'translatable' => true,
-            ],
-        ]);
+		$this->schema = new Schema();
+		$this->schema->setProperties([
+			'title' => [
+				'type' => 'string',
+				'translatable' => true,
+				'sourceLanguage' => 'fr',
+			],
+			'body' => [
+				'type' => 'string',
+				'translatable' => true,
+			],
+		]);
 
-        $this->object = new ObjectEntity();
-    }//end setUp()
+		$this->object = new ObjectEntity();
+	}//end setUp()
 
-    /**
-     * Object body `_translationMeta.<prop>.sourceLanguage` wins over schema.
-     */
-    public function testObjectLevelOverrideWins(): void
-    {
-        $this->object->setObject([
-            'title' => ['fr' => 'Bonjour', 'en' => 'Hello'],
-            '_translationMeta' => [
-                'title' => ['sourceLanguage' => 'en'],
-            ],
-        ]);
+	/**
+	 * Object body `_translationMeta.<prop>.sourceLanguage` wins over schema.
+	 */
+	public function testObjectLevelOverrideWins(): void {
+		$this->object->setObject([
+			'title' => ['fr' => 'Bonjour', 'en' => 'Hello'],
+			'_translationMeta' => [
+				'title' => ['sourceLanguage' => 'en'],
+			],
+		]);
 
-        $resolved = $this->service->resolveSourceLanguage(
-            schema: $this->schema,
-            object: $this->object,
-            property: 'title',
-            registerDefault: 'nl'
-        );
+		$resolved = $this->service->resolveSourceLanguage(
+			schema: $this->schema,
+			object: $this->object,
+			property: 'title',
+			registerDefault: 'nl'
+		);
 
-        $this->assertSame('en', $resolved);
-    }//end testObjectLevelOverrideWins()
+		$this->assertSame('en', $resolved);
+	}//end testObjectLevelOverrideWins()
 
-    /**
-     * Schema property modifier is applied when no object override is present.
-     */
-    public function testSchemaDefaultInheritance(): void
-    {
-        $this->object->setObject([
-            'title' => ['fr' => 'Bonjour'],
-        ]);
+	/**
+	 * Schema property modifier is applied when no object override is present.
+	 */
+	public function testSchemaDefaultInheritance(): void {
+		$this->object->setObject([
+			'title' => ['fr' => 'Bonjour'],
+		]);
 
-        $resolved = $this->service->resolveSourceLanguage(
-            schema: $this->schema,
-            object: $this->object,
-            property: 'title',
-            registerDefault: 'nl'
-        );
+		$resolved = $this->service->resolveSourceLanguage(
+			schema: $this->schema,
+			object: $this->object,
+			property: 'title',
+			registerDefault: 'nl'
+		);
 
-        $this->assertSame('fr', $resolved);
-    }//end testSchemaDefaultInheritance()
+		$this->assertSame('fr', $resolved);
+	}//end testSchemaDefaultInheritance()
 
-    /**
-     * Register default is used when neither object nor schema declare a source.
-     */
-    public function testRegisterDefaultFallback(): void
-    {
-        $this->object->setObject([
-            'body' => ['nl' => 'Hallo'],
-        ]);
+	/**
+	 * Register default is used when neither object nor schema declare a source.
+	 */
+	public function testRegisterDefaultFallback(): void {
+		$this->object->setObject([
+			'body' => ['nl' => 'Hallo'],
+		]);
 
-        $resolved = $this->service->resolveSourceLanguage(
-            schema: $this->schema,
-            object: $this->object,
-            property: 'body',
-            registerDefault: 'nl'
-        );
+		$resolved = $this->service->resolveSourceLanguage(
+			schema: $this->schema,
+			object: $this->object,
+			property: 'body',
+			registerDefault: 'nl'
+		);
 
-        $this->assertSame('nl', $resolved);
-    }//end testRegisterDefaultFallback()
+		$this->assertSame('nl', $resolved);
+	}//end testRegisterDefaultFallback()
 
-    /**
-     * Hardcoded `'nl'` is used when the register default is empty.
-     */
-    public function testHardcodedNlFallback(): void
-    {
-        $this->object->setObject([
-            'body' => ['nl' => 'x'],
-        ]);
+	/**
+	 * Hardcoded `'nl'` is used when the register default is empty.
+	 */
+	public function testHardcodedNlFallback(): void {
+		$this->object->setObject([
+			'body' => ['nl' => 'x'],
+		]);
 
-        $resolved = $this->service->resolveSourceLanguage(
-            schema: $this->schema,
-            object: $this->object,
-            property: 'body',
-            registerDefault: ''
-        );
+		$resolved = $this->service->resolveSourceLanguage(
+			schema: $this->schema,
+			object: $this->object,
+			property: 'body',
+			registerDefault: ''
+		);
 
-        $this->assertSame('nl', $resolved);
-    }//end testHardcodedNlFallback()
+		$this->assertSame('nl', $resolved);
+	}//end testHardcodedNlFallback()
 }//end class

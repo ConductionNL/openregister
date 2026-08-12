@@ -1,4 +1,5 @@
 <?php
+
 /**
  * The friendly slug-collision message had been dead since 2026-07-23.
  *
@@ -32,93 +33,87 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Exception\DatabaseConstraintException
  */
-class DatabaseConstraintExceptionSlugTest extends TestCase
-{
+class DatabaseConstraintExceptionSlugTest extends TestCase {
 
-    /**
-     * The index names in use since 2026-07-23 produce the specific message.
-     *
-     * @dataProvider currentIndexProvider
-     *
-     * @param string $index    The index name in the DB error.
-     * @param string $entity   The entity type.
-     * @param string $expected A phrase the message must contain.
-     *
-     * @return void
-     */
-    public function testCurrentIndexNamesAreRecognised(string $index, string $entity, string $expected): void
-    {
-        $message = DatabaseConstraintException::fromDatabaseException(
-            new Exception(sprintf("Duplicate entry 'agentflow' for key '%s'", $index)),
-            $entity
-        )->getMessage();
+	/**
+	 * The index names in use since 2026-07-23 produce the specific message.
+	 *
+	 * @dataProvider currentIndexProvider
+	 *
+	 * @param string $index The index name in the DB error.
+	 * @param string $entity The entity type.
+	 * @param string $expected A phrase the message must contain.
+	 *
+	 * @return void
+	 */
+	public function testCurrentIndexNamesAreRecognised(string $index, string $entity, string $expected): void {
+		$message = DatabaseConstraintException::fromDatabaseException(
+			new Exception(sprintf("Duplicate entry 'agentflow' for key '%s'", $index)),
+			$entity
+		)->getMessage();
 
-        $this->assertStringContainsString($expected, $message);
-    }
+		$this->assertStringContainsString($expected, $message);
+	}
 
-    /**
-     * The post-migration index names.
-     *
-     * @return array<string, array{0: string, 1: string, 2: string}>
-     */
-    public static function currentIndexProvider(): array
-    {
-        return [
-            'schema (new)'   => ['schemas_org_app_slug_unique', 'schema', 'A schema with this slug already exists'],
-            'register (new)' => ['registers_org_app_slug_unique', 'register', 'A register with this slug already exists'],
-        ];
-    }
+	/**
+	 * The post-migration index names.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public static function currentIndexProvider(): array {
+		return [
+			'schema (new)' => ['schemas_org_app_slug_unique', 'schema', 'A schema with this slug already exists'],
+			'register (new)' => ['registers_org_app_slug_unique', 'register', 'A register with this slug already exists'],
+		];
+	}
 
-    /**
-     * The pre-migration names still work — an unmigrated instance keeps its message.
-     *
-     * @dataProvider legacyIndexProvider
-     *
-     * @param string $index    The legacy index name.
-     * @param string $entity   The entity type.
-     * @param string $expected A phrase the message must contain.
-     *
-     * @return void
-     */
-    public function testLegacyIndexNamesStillRecognised(string $index, string $entity, string $expected): void
-    {
-        $message = DatabaseConstraintException::fromDatabaseException(
-            new Exception(sprintf("Duplicate entry 'agentflow' for key '%s'", $index)),
-            $entity
-        )->getMessage();
+	/**
+	 * The pre-migration names still work — an unmigrated instance keeps its message.
+	 *
+	 * @dataProvider legacyIndexProvider
+	 *
+	 * @param string $index The legacy index name.
+	 * @param string $entity The entity type.
+	 * @param string $expected A phrase the message must contain.
+	 *
+	 * @return void
+	 */
+	public function testLegacyIndexNamesStillRecognised(string $index, string $entity, string $expected): void {
+		$message = DatabaseConstraintException::fromDatabaseException(
+			new Exception(sprintf("Duplicate entry 'agentflow' for key '%s'", $index)),
+			$entity
+		)->getMessage();
 
-        $this->assertStringContainsString($expected, $message);
-    }
+		$this->assertStringContainsString($expected, $message);
+	}
 
-    /**
-     * The pre-migration index names.
-     *
-     * @return array<string, array{0: string, 1: string, 2: string}>
-     */
-    public static function legacyIndexProvider(): array
-    {
-        return [
-            'schema (old)'   => ['schemas_organisation_slug_unique', 'schema', 'A schema with this slug already exists'],
-            'register (old)' => ['registers_organisation_slug_unique', 'register', 'A register with this slug already exists'],
-        ];
-    }
+	/**
+	 * The pre-migration index names.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public static function legacyIndexProvider(): array {
+		return [
+			'schema (old)' => ['schemas_organisation_slug_unique', 'schema', 'A schema with this slug already exists'],
+			'register (old)' => ['registers_organisation_slug_unique', 'register', 'A register with this slug already exists'],
+		];
+	}
 
-    /**
-     * POSITIVE CONTROL: an unrelated unique index still gets the generic message.
-     *
-     * Without this the tests above pass for a parser that returns the schema
-     * message unconditionally.
-     *
-     * @return void
-     */
-    public function testAnUnrelatedUniqueIndexKeepsTheGenericMessage(): void
-    {
-        $message = DatabaseConstraintException::fromDatabaseException(
-            new Exception("Duplicate entry 'x' for key 'some_other_unique_idx'"),
-            'schema'
-        )->getMessage();
+	/**
+	 * POSITIVE CONTROL: an unrelated unique index still gets the generic message.
+	 *
+	 * Without this the tests above pass for a parser that returns the schema
+	 * message unconditionally.
+	 *
+	 * @return void
+	 */
+	public function testAnUnrelatedUniqueIndexKeepsTheGenericMessage(): void {
+		$message = DatabaseConstraintException::fromDatabaseException(
+			new Exception("Duplicate entry 'x' for key 'some_other_unique_idx'"),
+			'schema'
+		)->getMessage();
 
-        $this->assertStringNotContainsString('with this slug', $message);
-        $this->assertStringContainsString('already exists', $message);
-    }
+		$this->assertStringNotContainsString('with this slug', $message);
+		$this->assertStringContainsString('already exists', $message);
+	}
 }

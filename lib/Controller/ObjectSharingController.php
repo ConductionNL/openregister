@@ -60,372 +60,360 @@ use Psr\Log\LoggerInterface;
 /**
  * Owner-checked endpoints for an object's scope and its grants.
  */
-class ObjectSharingController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string               $appName        App name.
-     * @param IRequest             $request        Request.
-     * @param ObjectService        $objectService  Resolves an object through the RBAC boundary.
-     * @param RegisterMapper       $registerMapper Resolves the register entity.
-     * @param SchemaMapper         $schemaMapper   Resolves the schema entity.
-     * @param ObjectSharingService $sharing        Performs the owner-checked writes.
-     * @param LoggerInterface      $logger         Logger.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ObjectService $objectService,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectSharingService $sharing,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class ObjectSharingController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param ObjectService $objectService Resolves an object through the RBAC boundary.
+	 * @param RegisterMapper $registerMapper Resolves the register entity.
+	 * @param SchemaMapper $schemaMapper Resolves the schema entity.
+	 * @param ObjectSharingService $sharing Performs the owner-checked writes.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ObjectService $objectService,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ObjectSharingService $sharing,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Read one object's effective scope.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The scope.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function scope(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Read one object's effective scope.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The scope.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function scope(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        $block = ($object->getAuthorization() ?? []);
-        $scope = null;
-        if (is_array($block) === true) {
-            $scope = ($block['scope'] ?? null);
-        }
+		$block = ($object->getAuthorization() ?? []);
+		$scope = null;
+		if (is_array($block) === true) {
+			$scope = ($block['scope'] ?? null);
+		}
 
-        return new JSONResponse(['scope' => $scope]);
-    }//end scope()
+		return new JSONResponse(['scope' => $scope]);
+	}//end scope()
 
-    /**
-     * Set one object's scope.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The stored block, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function setScope(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Set one object's scope.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The stored block, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function setScope(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        $scope = $this->request->getParam('scope');
-        if (is_string($scope) === false) {
-            return new JSONResponse(['message' => 'A scope is required'], Http::STATUS_BAD_REQUEST);
-        }
+		$scope = $this->request->getParam('scope');
+		if (is_string($scope) === false) {
+			return new JSONResponse(['message' => 'A scope is required'], Http::STATUS_BAD_REQUEST);
+		}
 
-        try {
-            $block = $this->sharing->setScope(
-                register: $this->registerMapper->find($this->objectService->getRegister()),
-                schema: $this->schemaMapper->find($this->objectService->getSchema()),
-                object: $object,
-                scope: $scope
-            );
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'setScope');
-        }
+		try {
+			$block = $this->sharing->setScope(
+				register: $this->registerMapper->find($this->objectService->getRegister()),
+				schema: $this->schemaMapper->find($this->objectService->getSchema()),
+				object: $object,
+				scope: $scope
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'setScope');
+		}
 
-        return new JSONResponse(['scope' => ($block['scope'] ?? null)]);
-    }//end setScope()
+		return new JSONResponse(['scope' => ($block['scope'] ?? null)]);
+	}//end setScope()
 
-    /**
-     * List the grants on one object.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The grants, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function shares(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * List the grants on one object.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The grants, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function shares(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        try {
-            return new JSONResponse(['results' => $this->sharing->listGrants(object: $object)]);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'shares');
-        }
-    }//end shares()
+		try {
+			return new JSONResponse(['results' => $this->sharing->listGrants(object: $object)]);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'shares');
+		}
+	}//end shares()
 
-    /**
-     * Grant one principal access to one object.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The created grant, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function createShare(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Grant one principal access to one object.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The created grant, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function createShare(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        $type       = (string) ($this->request->getParam('type') ?? 'user');
-        $shareWith  = (string) ($this->request->getParam('shareWith') ?? '');
-        $permission = $this->request->getParam('permissions');
+		$type = (string)($this->request->getParam('type') ?? 'user');
+		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
+		$permission = $this->request->getParam('permissions');
 
-        // Default to READ. A grant that silently carried write would be the
-        // wrong direction to guess in.
-        $permissions = 1;
-        if (is_numeric($permission) === true) {
-            $permissions = (int) $permission;
-        }
+		// Default to READ. A grant that silently carried write would be the
+		// wrong direction to guess in.
+		$permissions = 1;
+		if (is_numeric($permission) === true) {
+			$permissions = (int)$permission;
+		}
 
-        try {
-            $grant = $this->sharing->grant(
-                object: $object,
-                type: $type,
-                shareWith: $shareWith,
-                permissions: $permissions
-            );
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'createShare');
-        }
+		try {
+			$grant = $this->sharing->grant(
+				object: $object,
+				type: $type,
+				shareWith: $shareWith,
+				permissions: $permissions
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'createShare');
+		}
 
-        return new JSONResponse($grant, Http::STATUS_CREATED);
-    }//end createShare()
+		return new JSONResponse($grant, Http::STATUS_CREATED);
+	}//end createShare()
 
-    /**
-     * Create a tokenised link to an object.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The created link, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function createLink(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Create a tokenised link to an object.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The created link, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function createLink(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        try {
-            $link = $this->sharing->createLink(
-                object: $object,
-                permissions: $this->requestedPermissions(),
-                password: $this->optionalParam(name: 'password'),
-                expiration: $this->optionalParam(name: 'expiration')
-            );
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'createLink');
-        }
+		try {
+			$link = $this->sharing->createLink(
+				object: $object,
+				permissions: $this->requestedPermissions(),
+				password: $this->optionalParam(name: 'password'),
+				expiration: $this->optionalParam(name: 'expiration')
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'createLink');
+		}
 
-        return new JSONResponse($link, Http::STATUS_CREATED);
-    }//end createLink()
+		return new JSONResponse($link, Http::STATUS_CREATED);
+	}//end createLink()
 
-    /**
-     * Invite an email address to an object.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return JSONResponse The created invitation, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function inviteByEmail(string $register, string $schema, string $id): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Invite an email address to an object.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The created invitation, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function inviteByEmail(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        try {
-            $invite = $this->sharing->inviteByEmail(
-                object: $object,
-                email: (string) ($this->request->getParam('email') ?? ''),
-                permissions: $this->requestedPermissions(),
-                password: $this->optionalParam(name: 'password'),
-                expiration: $this->optionalParam(name: 'expiration')
-            );
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'inviteByEmail');
-        }
+		try {
+			$invite = $this->sharing->inviteByEmail(
+				object: $object,
+				email: (string)($this->request->getParam('email') ?? ''),
+				permissions: $this->requestedPermissions(),
+				password: $this->optionalParam(name: 'password'),
+				expiration: $this->optionalParam(name: 'expiration')
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'inviteByEmail');
+		}
 
-        return new JSONResponse($invite, Http::STATUS_CREATED);
-    }//end inviteByEmail()
+		return new JSONResponse($invite, Http::STATUS_CREATED);
+	}//end inviteByEmail()
 
-    /**
-     * The requested permission bitmask, defaulting to READ.
-     *
-     * Defaulting to read is the safe direction: a link that silently carried
-     * write because the caller omitted a field would be the wrong surprise.
-     *
-     * @return integer The bitmask.
-     */
-    private function requestedPermissions(): int
-    {
-        $requested = $this->request->getParam('permissions');
-        if (is_numeric($requested) === true) {
-            return (int) $requested;
-        }
+	/**
+	 * The requested permission bitmask, defaulting to READ.
+	 *
+	 * Defaulting to read is the safe direction: a link that silently carried
+	 * write because the caller omitted a field would be the wrong surprise.
+	 *
+	 * @return integer The bitmask.
+	 */
+	private function requestedPermissions(): int {
+		$requested = $this->request->getParam('permissions');
+		if (is_numeric($requested) === true) {
+			return (int)$requested;
+		}
 
-        return 1;
-    }//end requestedPermissions()
+		return 1;
+	}//end requestedPermissions()
 
-    /**
-     * A request parameter, or null when it is absent or blank.
-     *
-     * @param string $name The parameter name.
-     *
-     * @return string|null The value.
-     */
-    private function optionalParam(string $name): ?string
-    {
-        $value = $this->request->getParam($name);
-        if (is_string($value) === false || trim($value) === '') {
-            return null;
-        }
+	/**
+	 * A request parameter, or null when it is absent or blank.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null The value.
+	 */
+	private function optionalParam(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === false || trim($value) === '') {
+			return null;
+		}
 
-        return $value;
-    }//end optionalParam()
+		return $value;
+	}//end optionalParam()
 
-    /**
-     * Revoke one grant.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     * @param string $shareId  The grant to revoke.
-     *
-     * @return JSONResponse Empty on success, or an error.
-     *
-     * @NoAdminRequired
-     */
-    #[NoAdminRequired]
-    public function destroyShare(string $register, string $schema, string $id, string $shareId): JSONResponse
-    {
-        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-        if ($object instanceof JSONResponse) {
-            return $object;
-        }
+	/**
+	 * Revoke one grant.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 * @param string $shareId The grant to revoke.
+	 *
+	 * @return JSONResponse Empty on success, or an error.
+	 *
+	 * @NoAdminRequired
+	 */
+	#[NoAdminRequired]
+	public function destroyShare(string $register, string $schema, string $id, string $shareId): JSONResponse {
+		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
 
-        try {
-            $this->sharing->revoke(object: $object, shareId: $shareId);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->unexpected(exception: $e, context: 'destroyShare');
-        }
+		try {
+			$this->sharing->revoke(object: $object, shareId: $shareId);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (\Throwable $e) {
+			return $this->unexpected(exception: $e, context: 'destroyShare');
+		}
 
-        return new JSONResponse([], Http::STATUS_NO_CONTENT);
-    }//end destroyShare()
+		return new JSONResponse([], Http::STATUS_NO_CONTENT);
+	}//end destroyShare()
 
-    /**
-     * Resolve the target object through the RBAC boundary.
-     *
-     * An object the caller cannot READ is refused with 404 rather than 403, so
-     * this endpoint cannot be used to probe which object ids exist.
-     *
-     * @param string $register Register slug or id.
-     * @param string $schema   Schema slug or id.
-     * @param string $id       Object uuid.
-     *
-     * @return ObjectEntity|JSONResponse The object, or the response to return.
-     */
-    private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse
-    {
-        $this->objectService->setRegister($register);
-        $this->objectService->setSchema($schema);
-        $this->objectService->setObject($id);
+	/**
+	 * Resolve the target object through the RBAC boundary.
+	 *
+	 * An object the caller cannot READ is refused with 404 rather than 403, so
+	 * this endpoint cannot be used to probe which object ids exist.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 */
+	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
+		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
+		$this->objectService->setObject($id);
 
-        try {
-            $object = $this->objectService->getObject();
-        } catch (\Throwable $e) {
-            return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-        }
+		try {
+			$object = $this->objectService->getObject();
+		} catch (\Throwable $e) {
+			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+		}
 
-        if (($object instanceof ObjectEntity) === false) {
-            return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-        }
+		if (($object instanceof ObjectEntity) === false) {
+			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+		}
 
-        return $object;
-    }//end resolveObject()
+		return $object;
+	}//end resolveObject()
 
-    /**
-     * Log an unexpected failure and return a generic error.
-     *
-     * The message is never echoed to the client — it can carry storage paths and
-     * share internals.
-     *
-     * @param \Throwable $exception The failure.
-     * @param string     $context   Short label for the log line.
-     *
-     * @return JSONResponse A generic 500.
-     */
-    private function unexpected(\Throwable $exception, string $context): JSONResponse
-    {
-        $this->logger->error(
-            message: '[ObjectSharingController] '.$context.': '.$exception->getMessage(),
-            context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-        );
+	/**
+	 * Log an unexpected failure and return a generic error.
+	 *
+	 * The message is never echoed to the client — it can carry storage paths and
+	 * share internals.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string $context Short label for the log line.
+	 *
+	 * @return JSONResponse A generic 500.
+	 */
+	private function unexpected(\Throwable $exception, string $context): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectSharingController] ' . $context . ': ' . $exception->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+		);
 
-        return new JSONResponse(
-            ['message' => 'Could not complete the sharing request'],
-            Http::STATUS_INTERNAL_SERVER_ERROR
-        );
-    }//end unexpected()
+		return new JSONResponse(
+			['message' => 'Could not complete the sharing request'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unexpected()
 }//end class

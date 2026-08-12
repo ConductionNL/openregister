@@ -29,128 +29,119 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
-class FlowRunWorkerStaleTest extends TestCase
-{
-    private FlowRunMapper&MockObject $mapper;
+class FlowRunWorkerStaleTest extends TestCase {
+	private FlowRunMapper&MockObject $mapper;
 
-    private FlowRunAdvancer&MockObject $advancer;
+	private FlowRunAdvancer&MockObject $advancer;
 
-    private IAppConfig&MockObject $appConfig;
+	private IAppConfig&MockObject $appConfig;
 
-    private FlowRunWorker $worker;
+	private FlowRunWorker $worker;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->mapper    = $this->createMock(FlowRunMapper::class);
-        $this->advancer  = $this->createMock(FlowRunAdvancer::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
+		$this->mapper = $this->createMock(FlowRunMapper::class);
+		$this->advancer = $this->createMock(FlowRunAdvancer::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
 
-        // Nothing queued, nothing due, and pruning off — this suite is only
-        // about the reaper.
-        $this->mapper->method('findQueued')->willReturn([]);
-        $this->mapper->method('findDue')->willReturn([]);
+		// Nothing queued, nothing due, and pruning off — this suite is only
+		// about the reaper.
+		$this->mapper->method('findQueued')->willReturn([]);
+		$this->mapper->method('findDue')->willReturn([]);
 
-        $this->worker = new FlowRunWorker(
-            $this->createMock(ITimeFactory::class),
-            $this->mapper,
-            $this->advancer,
-            $this->appConfig,
-            new NullLogger()
-        );
-    }
+		$this->worker = new FlowRunWorker(
+			$this->createMock(ITimeFactory::class),
+			$this->mapper,
+			$this->advancer,
+			$this->appConfig,
+			new NullLogger()
+		);
+	}
 
-    /** Answer getValueString() from a map, falling back to the caller's default. */
-    private function config(array $values): void
-    {
-        $this->appConfig->method('getValueString')->willReturnCallback(
-            static fn (string $app, string $key, string $default = '') => ($values[$key] ?? $default)
-        );
-    }
+	/** Answer getValueString() from a map, falling back to the caller's default. */
+	private function config(array $values): void {
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = '') => ($values[$key] ?? $default)
+		);
+	}
 
-    /** Run one pass of the worker. */
-    private function pass(): void
-    {
-        $method = new \ReflectionMethod(FlowRunWorker::class, 'run');
-        $method->invoke($this->worker, null);
-    }
+	/** Run one pass of the worker. */
+	private function pass(): void {
+		$method = new \ReflectionMethod(FlowRunWorker::class, 'run');
+		$method->invoke($this->worker, null);
+	}
 
-    private function runningRun(string $uuid = 'zombie-1'): FlowRun
-    {
-        $run = new FlowRun();
-        $run->setUuid($uuid);
-        $run->setFlowId('f1');
-        $run->setStatus(FlowRun::STATUS_RUNNING);
-        $run->setUpdated(new DateTime('-2 days'));
+	private function runningRun(string $uuid = 'zombie-1'): FlowRun {
+		$run = new FlowRun();
+		$run->setUuid($uuid);
+		$run->setFlowId('f1');
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime('-2 days'));
 
-        return $run;
-    }
+		return $run;
+	}
 
-    public function testAnAbandonedRunIsFailedWithAReadableReason(): void
-    {
-        // Pruning off so the pass does nothing else.
-        $this->config(['flow_run_retention_days' => '0']);
+	public function testAnAbandonedRunIsFailedWithAReadableReason(): void {
+		// Pruning off so the pass does nothing else.
+		$this->config(['flow_run_retention_days' => '0']);
 
-        $run = $this->runningRun();
-        $this->mapper->method('findStale')->willReturn([$run]);
+		$run = $this->runningRun();
+		$this->mapper->method('findStale')->willReturn([$run]);
 
-        $saved = null;
-        $this->mapper->expects($this->once())->method('update')
-            ->willReturnCallback(function (FlowRun $r) use (&$saved) {
-                $saved = $r;
-                return $r;
-            });
+		$saved = null;
+		$this->mapper->expects($this->once())->method('update')
+			->willReturnCallback(function (FlowRun $r) use (&$saved) {
+				$saved = $r;
+				return $r;
+			});
 
-        $this->pass();
+		$this->pass();
 
-        $this->assertSame(FlowRun::STATUS_FAILED, $saved->getStatus());
-        $this->assertStringContainsString('Abandoned', (string) $saved->getError());
-        $this->assertStringContainsString('Retry', (string) $saved->getError());
-    }
+		$this->assertSame(FlowRun::STATUS_FAILED, $saved->getStatus());
+		$this->assertStringContainsString('Abandoned', (string)$saved->getError());
+		$this->assertStringContainsString('Retry', (string)$saved->getError());
+	}
 
-    public function testAnAbandonedRunIsNeverRequeued(): void
-    {
-        // Requeuing would repeat every side effect the dead pass already
-        // performed — an object write, a mail, a webhook. Retry is a person's
-        // decision, not a cron job's.
-        $this->config(['flow_run_retention_days' => '0']);
-        $this->mapper->method('findStale')->willReturn([$this->runningRun()]);
-        $this->mapper->method('update')->willReturnArgument(0);
+	public function testAnAbandonedRunIsNeverRequeued(): void {
+		// Requeuing would repeat every side effect the dead pass already
+		// performed — an object write, a mail, a webhook. Retry is a person's
+		// decision, not a cron job's.
+		$this->config(['flow_run_retention_days' => '0']);
+		$this->mapper->method('findStale')->willReturn([$this->runningRun()]);
+		$this->mapper->method('update')->willReturnArgument(0);
 
-        // `FlowRunAdvancer::advance()` is the worker's only execution path.
-        $this->advancer->expects($this->never())->method('advance');
+		// `FlowRunAdvancer::advance()` is the worker's only execution path.
+		$this->advancer->expects($this->never())->method('advance');
 
-        $this->pass();
-    }
+		$this->pass();
+	}
 
-    public function testTheStaleWindowIsConfigurableAndPassedAsACutoff(): void
-    {
-        $this->config(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '90']);
+	public function testTheStaleWindowIsConfigurableAndPassedAsACutoff(): void {
+		$this->config(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '90']);
 
-        $this->mapper->expects($this->once())->method('findStale')
-            ->with(
-                $this->callback(static function (DateTime $before): bool {
-                    $minutesAgo = ((time() - $before->getTimestamp()) / 60);
-                    // ~90 minutes ago, with room for the test's own runtime.
-                    return $minutesAgo > 89 && $minutesAgo < 92;
-                }),
-                $this->anything()
-            )
-            ->willReturn([]);
+		$this->mapper->expects($this->once())->method('findStale')
+			->with(
+				$this->callback(static function (DateTime $before): bool {
+					$minutesAgo = ((time() - $before->getTimestamp()) / 60);
+					// ~90 minutes ago, with room for the test's own runtime.
+					return $minutesAgo > 89 && $minutesAgo < 92;
+				}),
+				$this->anything()
+			)
+			->willReturn([]);
 
-        $this->pass();
-    }
+		$this->pass();
+	}
 
-    public function testAZeroWindowSwitchesTheReaperOff(): void
-    {
-        // An operator running very long single steps must be able to opt out
-        // rather than have the reaper fail work that is still going.
-        $this->config(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '0']);
+	public function testAZeroWindowSwitchesTheReaperOff(): void {
+		// An operator running very long single steps must be able to opt out
+		// rather than have the reaper fail work that is still going.
+		$this->config(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '0']);
 
-        $this->mapper->expects($this->never())->method('findStale');
-        $this->mapper->expects($this->never())->method('update');
+		$this->mapper->expects($this->never())->method('findStale');
+		$this->mapper->expects($this->never())->method('update');
 
-        $this->pass();
-    }
+		$this->pass();
+	}
 }

@@ -38,238 +38,222 @@ use PHPUnit\Framework\TestCase;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
-class BookmarkLinksControllerTest extends TestCase
-{
-    private IRequest&MockObject $request;
-    private BookmarkLinkService&MockObject $service;
-    private ObjectService&MockObject $objectService;
-    private BookmarkLinksController $controller;
+class BookmarkLinksControllerTest extends TestCase {
+	private IRequest&MockObject $request;
+	private BookmarkLinkService&MockObject $service;
+	private ObjectService&MockObject $objectService;
+	private BookmarkLinksController $controller;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request       = $this->createMock(IRequest::class);
-        $this->service       = $this->createMock(BookmarkLinkService::class);
-        $this->objectService = $this->createMock(ObjectService::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->service = $this->createMock(BookmarkLinkService::class);
+		$this->objectService = $this->createMock(ObjectService::class);
 
-        $this->controller = new BookmarkLinksController(
-            'openregister',
-            $this->request,
-            $this->service,
-            $this->objectService,
-        );
-    }
+		$this->controller = new BookmarkLinksController(
+			'openregister',
+			$this->request,
+			$this->service,
+			$this->objectService,
+		);
+	}
 
-    private function mockObject(string $uuid = 'abc-123', int $registerId = 1, int $schemaId = 2): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid($uuid);
-        $object->setRegister($registerId);
-        $object->setSchema($schemaId);
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setObject')->willReturnSelf();
-        $this->objectService->method('getObject')->willReturn($object);
-        return $object;
-    }
+	private function mockObject(string $uuid = 'abc-123', int $registerId = 1, int $schemaId = 2): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister($registerId);
+		$object->setSchema($schemaId);
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setObject')->willReturnSelf();
+		$this->objectService->method('getObject')->willReturn($object);
+		return $object;
+	}
 
-    public function testIndexReturns501WhenBookmarksUnavailable(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(false);
+	public function testIndexReturns501WhenBookmarksUnavailable(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(false);
 
-        $response = $this->controller->index('reg', 'sch', 'obj');
+		$response = $this->controller->index('reg', 'sch', 'obj');
 
-        $this->assertSame(501, $response->getStatus());
-    }
+		$this->assertSame(501, $response->getStatus());
+	}
 
-    public function testIndexReturnsResults(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->service->method('getLinkedBookmarks')->with('abc-123')->willReturn([
-            ['bookmarkId' => 99, 'title' => 'Test'],
-        ]);
+	public function testIndexReturnsResults(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->service->method('getLinkedBookmarks')->with('abc-123')->willReturn([
+			['bookmarkId' => 99, 'title' => 'Test'],
+		]);
 
-        $response = $this->controller->index('reg', 'sch', 'obj');
-        $data     = $response->getData();
+		$response = $this->controller->index('reg', 'sch', 'obj');
+		$data = $response->getData();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertSame(1, $data['total']);
-        $this->assertSame(99, $data['results'][0]['bookmarkId']);
-    }
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(1, $data['total']);
+		$this->assertSame(99, $data['results'][0]['bookmarkId']);
+	}
 
-    public function testIndexReturns404WhenObjectMissing(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->objectService->method('getObject')->willReturn(null);
+	public function testIndexReturns404WhenObjectMissing(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->objectService->method('getObject')->willReturn(null);
 
-        $response = $this->controller->index('reg', 'sch', 'missing');
+		$response = $this->controller->index('reg', 'sch', 'missing');
 
-        $this->assertSame(404, $response->getStatus());
-    }
+		$this->assertSame(404, $response->getStatus());
+	}
 
-    public function testLinkReturns400WhenBookmarkIdMissing(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturnMap([['bookmarkId', 0, 0]]);
+	public function testLinkReturns400WhenBookmarkIdMissing(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnMap([['bookmarkId', 0, 0]]);
 
-        $response = $this->controller->link('reg', 'sch', 'obj');
+		$response = $this->controller->link('reg', 'sch', 'obj');
 
-        $this->assertSame(400, $response->getStatus());
-    }
+		$this->assertSame(400, $response->getStatus());
+	}
 
-    public function testLinkReturns201OnSuccess(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturn(99);
+	public function testLinkReturns201OnSuccess(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn(99);
 
-        $link = new BookmarkLink();
-        $link->setObjectUuid('abc-123');
-        $link->setBookmarkId(99);
+		$link = new BookmarkLink();
+		$link->setObjectUuid('abc-123');
+		$link->setBookmarkId(99);
 
-        $this->service->method('linkBookmark')
-            ->with('abc-123', 1, 2, 99)
-            ->willReturn($link);
+		$this->service->method('linkBookmark')
+			->with('abc-123', 1, 2, 99)
+			->willReturn($link);
 
-        $response = $this->controller->link('reg', 'sch', 'obj');
+		$response = $this->controller->link('reg', 'sch', 'obj');
 
-        $this->assertSame(201, $response->getStatus());
-        $this->assertSame(99, $response->getData()['bookmarkId']);
-    }
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(99, $response->getData()['bookmarkId']);
+	}
 
-    public function testLinkReturns409OnDuplicate(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturn(99);
+	public function testLinkReturns409OnDuplicate(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn(99);
 
-        $this->service->method('linkBookmark')
-            ->willThrowException(new Exception('Bookmark already linked to this object', 409));
+		$this->service->method('linkBookmark')
+			->willThrowException(new Exception('Bookmark already linked to this object', 409));
 
-        $response = $this->controller->link('reg', 'sch', 'obj');
+		$response = $this->controller->link('reg', 'sch', 'obj');
 
-        $this->assertSame(409, $response->getStatus());
-    }
+		$this->assertSame(409, $response->getStatus());
+	}
 
-    public function testCreateNewReturns400WhenTitleMissing(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, $default = null) {
-                return match ($key) {
-                    'title' => '',
-                    'url'   => 'https://x.nl',
-                    'tags'  => [],
-                    default => $default,
-                };
-            }
-        );
+	public function testCreateNewReturns400WhenTitleMissing(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				return match ($key) {
+					'title' => '',
+					'url' => 'https://x.nl',
+					'tags' => [],
+					default => $default,
+				};
+			}
+		);
 
-        $response = $this->controller->createNew('reg', 'sch', 'obj');
+		$response = $this->controller->createNew('reg', 'sch', 'obj');
 
-        $this->assertSame(400, $response->getStatus());
-    }
+		$this->assertSame(400, $response->getStatus());
+	}
 
-    public function testCreateNewReturns400WhenUrlMissing(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, $default = null) {
-                return match ($key) {
-                    'title' => 'Conduction',
-                    'url'   => '',
-                    'tags'  => [],
-                    default => $default,
-                };
-            }
-        );
+	public function testCreateNewReturns400WhenUrlMissing(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				return match ($key) {
+					'title' => 'Conduction',
+					'url' => '',
+					'tags' => [],
+					default => $default,
+				};
+			}
+		);
 
-        $response = $this->controller->createNew('reg', 'sch', 'obj');
+		$response = $this->controller->createNew('reg', 'sch', 'obj');
 
-        $this->assertSame(400, $response->getStatus());
-    }
+		$this->assertSame(400, $response->getStatus());
+	}
 
-    public function testCreateNewReturns201OnSuccess(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, $default = null) {
-                return match ($key) {
-                    'title'       => 'Conduction',
-                    'url'         => 'https://conduction.nl',
-                    'description' => 'Company',
-                    'tags'        => ['vendor'],
-                    default       => $default,
-                };
-            }
-        );
+	public function testCreateNewReturns201OnSuccess(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) {
+				return match ($key) {
+					'title' => 'Conduction',
+					'url' => 'https://conduction.nl',
+					'description' => 'Company',
+					'tags' => ['vendor'],
+					default => $default,
+				};
+			}
+		);
 
-        $link = new BookmarkLink();
-        $link->setObjectUuid('abc-123');
-        $link->setBookmarkId(456);
-        $link->setTitle('Conduction');
+		$link = new BookmarkLink();
+		$link->setObjectUuid('abc-123');
+		$link->setBookmarkId(456);
+		$link->setTitle('Conduction');
 
-        $this->service->expects($this->once())
-            ->method('createAndLinkBookmark')
-            ->willReturn($link);
+		$this->service->expects($this->once())
+			->method('createAndLinkBookmark')
+			->willReturn($link);
 
-        $response = $this->controller->createNew('reg', 'sch', 'obj');
+		$response = $this->controller->createNew('reg', 'sch', 'obj');
 
-        $this->assertSame(201, $response->getStatus());
-        $this->assertSame(456, $response->getData()['bookmarkId']);
-    }
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(456, $response->getData()['bookmarkId']);
+	}
 
-    public function testDestroyReturns200OnSuccess(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->service->expects($this->once())
-            ->method('unlinkBookmark')
-            ->with('abc-123', 42);
+	public function testDestroyReturns200OnSuccess(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->service->expects($this->once())
+			->method('unlinkBookmark')
+			->with('abc-123', 42);
 
-        $response = $this->controller->destroy('reg', 'sch', 'obj', '42');
+		$response = $this->controller->destroy('reg', 'sch', 'obj', '42');
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($response->getData()['success']);
-    }
+		$this->assertSame(200, $response->getStatus());
+		$this->assertTrue($response->getData()['success']);
+	}
 
-    public function testDestroyReturns404WhenLinkMissing(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->mockObject();
-        $this->service->method('unlinkBookmark')
-            ->willThrowException(new Exception('Bookmark link not found', 404));
+	public function testDestroyReturns404WhenLinkMissing(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->service->method('unlinkBookmark')
+			->willThrowException(new Exception('Bookmark link not found', 404));
 
-        $response = $this->controller->destroy('reg', 'sch', 'obj', '42');
+		$response = $this->controller->destroy('reg', 'sch', 'obj', '42');
 
-        $this->assertSame(404, $response->getStatus());
-    }
+		$this->assertSame(404, $response->getStatus());
+	}
 
-    public function testAvailableReturnsList(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(true);
-        $this->service->method('getAvailableBookmarks')->willReturn([
-            ['id' => 1, 'title' => 'Conduction', 'url' => 'https://conduction.nl', 'description' => '', 'tags' => [], 'added' => null],
-        ]);
+	public function testAvailableReturnsList(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(true);
+		$this->service->method('getAvailableBookmarks')->willReturn([
+			['id' => 1, 'title' => 'Conduction', 'url' => 'https://conduction.nl', 'description' => '', 'tags' => [], 'added' => null],
+		]);
 
-        $response = $this->controller->available();
+		$response = $this->controller->available();
 
-        $this->assertSame(200, $response->getStatus());
-        $this->assertSame(1, $response->getData()['total']);
-    }
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(1, $response->getData()['total']);
+	}
 
-    public function testAvailableReturns501WhenBookmarksUnavailable(): void
-    {
-        $this->service->method('isBookmarksAvailable')->willReturn(false);
+	public function testAvailableReturns501WhenBookmarksUnavailable(): void {
+		$this->service->method('isBookmarksAvailable')->willReturn(false);
 
-        $response = $this->controller->available();
+		$response = $this->controller->available();
 
-        $this->assertSame(501, $response->getStatus());
-    }
+		$this->assertSame(501, $response->getStatus());
+	}
 }

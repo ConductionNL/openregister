@@ -38,49 +38,47 @@ use OCP\Migration\SimpleMigrationStep;
  * - append_only = false (default) → backward-compatible; no behaviour change
  * - append_only = true → INSERT only; UPDATE/DELETE rejected with HTTP 405
  */
-class Version1Date20260511110000 extends SimpleMigrationStep
-{
-    /**
-     * Add append_only column to openregister_schemas table.
-     *
-     * @param IOutput                 $output        Migration output interface
-     * @param Closure                 $schemaClosure Closure returning the DB schema wrapper
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null Updated schema, or null when no change was needed
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260511110000 extends SimpleMigrationStep {
+	/**
+	 * Add append_only column to openregister_schemas table.
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Closure returning the DB schema wrapper
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null Updated schema, or null when no change was needed
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_schemas') === false) {
-            $output->info('openregister_schemas table not found — skipping appendOnly migration');
-            return null;
-        }
+		if ($schema->hasTable('openregister_schemas') === false) {
+			$output->info('openregister_schemas table not found — skipping appendOnly migration');
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_schemas');
+		$table = $schema->getTable('openregister_schemas');
 
-        if ($table->hasColumn('append_only') === true) {
-            $output->info('append_only column already exists — skipping');
-            return null;
-        }
+		if ($table->hasColumn('append_only') === true) {
+			$output->info('append_only column already exists — skipping');
+			return null;
+		}
 
-        $table->addColumn(
-            'append_only',
-            Types::BOOLEAN,
-            [
-                'notnull' => true,
-                'default' => false,
-                'comment' => 'When true, objects of this schema are INSERT-only; UPDATE and DELETE are rejected with HTTP 405',
-            ]
-        );
+		$table->addColumn(
+			'append_only',
+			Types::BOOLEAN,
+			[
+				'notnull' => true,
+				'default' => false,
+				'comment' => 'When true, objects of this schema are INSERT-only; UPDATE and DELETE are rejected with HTTP 405',
+			]
+		);
 
-        $output->info('Added append_only column to openregister_schemas (default false)');
+		$output->info('Added append_only column to openregister_schemas (default false)');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

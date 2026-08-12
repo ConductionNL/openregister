@@ -44,81 +44,77 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @psalm-suppress UnusedClass
  */
-class Version1Date20260118000000 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20260118000000 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * Adds the 'active' column to the openregister_organisations table.
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper|null The modified schema wrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * Adds the 'active' column to the openregister_organisations table.
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The modified schema wrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_organisations') !== true) {
-            $output->info(message: '   ⚠️  Table openregister_organisations does not exist, skipping');
-            return $schema;
-        }
+		if ($schema->hasTable('openregister_organisations') !== true) {
+			$output->info(message: '   ⚠️  Table openregister_organisations does not exist, skipping');
+			return $schema;
+		}
 
-        $table = $schema->getTable('openregister_organisations');
+		$table = $schema->getTable('openregister_organisations');
 
-        // Check if active column already exists.
-        if ($table->hasColumn('active') === true) {
-            $output->info(message: '   ℹ️  Column active already exists, skipping');
-            return $schema;
-        }
+		// Check if active column already exists.
+		if ($table->hasColumn('active') === true) {
+			$output->info(message: '   ℹ️  Column active already exists, skipping');
+			return $schema;
+		}
 
-        $output->info(message: '📋 Adding active column to openregister_organisations table...');
+		$output->info(message: '📋 Adding active column to openregister_organisations table...');
 
-        $table->addColumn(
-            'active',
-            Types::BOOLEAN,
-            [
-                'notnull' => true,
-                'default' => true,
-                'comment' => 'Whether the organisation is active',
-            ]
-        );
+		$table->addColumn(
+			'active',
+			Types::BOOLEAN,
+			[
+				'notnull' => true,
+				'default' => true,
+				'comment' => 'Whether the organisation is active',
+			]
+		);
 
-        $output->info(message: '   ✓ Column active added successfully');
+		$output->info(message: '   ✓ Column active added successfully');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Performs actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        $output->info(message: '✅ Migration Version1Date20260118000000 completed - active column ready');
-    }//end postSchemaChange()
+	/**
+	 * Performs actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		$output->info(message: '✅ Migration Version1Date20260118000000 completed - active column ready');
+	}//end postSchemaChange()
 }//end class

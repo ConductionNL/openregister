@@ -42,442 +42,434 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class ApplicationTool extends AbstractTool implements ToolInterface
-{
+class ApplicationTool extends AbstractTool implements ToolInterface {
 
-    /**
-     * Application mapper for database operations
-     *
-     * @var ApplicationMapper
-     */
-    private ApplicationMapper $applicationMapper;
+	/**
+	 * Application mapper for database operations
+	 *
+	 * @var ApplicationMapper
+	 */
+	private ApplicationMapper $applicationMapper;
 
-    /**
-     * ApplicationTool constructor
-     *
-     * @param ApplicationMapper $applicationMapper Application mapper instance
-     * @param IUserSession      $userSession       User session
-     * @param LoggerInterface   $logger            Logger instance
-     */
-    public function __construct(
-        ApplicationMapper $applicationMapper,
-        IUserSession $userSession,
-        LoggerInterface $logger
-    ) {
-        parent::__construct(userSession: $userSession, logger: $logger);
-        $this->applicationMapper = $applicationMapper;
-    }//end __construct()
+	/**
+	 * ApplicationTool constructor
+	 *
+	 * @param ApplicationMapper $applicationMapper Application mapper instance
+	 * @param IUserSession $userSession User session
+	 * @param LoggerInterface $logger Logger instance
+	 */
+	public function __construct(
+		ApplicationMapper $applicationMapper,
+		IUserSession $userSession,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(userSession: $userSession, logger: $logger);
+		$this->applicationMapper = $applicationMapper;
+	}//end __construct()
 
-    /**
-     * Get the tool name
-     *
-     * @return string Tool name
-     *
-     * @psalm-return 'Application Management'
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getName(): string
-    {
-        return 'Application Management';
-    }//end getName()
+	/**
+	 * Get the tool name
+	 *
+	 * @return string Tool name
+	 *
+	 * @psalm-return 'Application Management'
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getName(): string {
+		return 'Application Management';
+	}//end getName()
 
-    /**
-     * Get the tool description
-     *
-     * @return string The tool description
-     *
-     * @psalm-return 'Manage applications: list, view, create, update, or delete with RBAC permissions.'
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getDescription(): string
-    {
-        return 'Manage applications: list, view, create, update, or delete with RBAC permissions.';
-    }//end getDescription()
+	/**
+	 * Get the tool description
+	 *
+	 * @return string The tool description
+	 *
+	 * @psalm-return 'Manage applications: list, view, create, update, or delete with RBAC permissions.'
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getDescription(): string {
+		return 'Manage applications: list, view, create, update, or delete with RBAC permissions.';
+	}//end getDescription()
 
-    /**
-     * Get function definitions for LLM function calling
-     *
-     * Returns function definitions in OpenAI function calling format.
-     * These are used by LLMs to understand what capabilities this tool provides.
-     *
-     * @return array<int, array<string, mixed>> Array of function definitions
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getFunctions(): array
-    {
-        return [
-            [
-                'name'        => 'list_applications',
-                'description' => 'List all accessible applications with basic information.',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'limit'  => [
-                            'type'        => 'integer',
-                            'description' => 'Maximum number of results to return (default: 50)',
-                        ],
-                        'offset' => [
-                            'type'        => 'integer',
-                            'description' => 'Number of results to skip for pagination (default: 0)',
-                        ],
-                    ],
-                    'required'   => [],
-                ],
-            ],
-            [
-                'name'        => 'get_application',
-                'description' => 'Get detailed application information by UUID.',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'uuid' => [
-                            'type'        => 'string',
-                            'description' => 'UUID of the application to retrieve',
-                        ],
-                    ],
-                    'required'   => ['uuid'],
-                ],
-            ],
-            [
-                'name'        => 'create_application',
-                'description' => 'Create a new application with unique name.',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'name'        => [
-                            'type'        => 'string',
-                            'description' => 'Name of the application (required)',
-                        ],
-                        'description' => [
-                            'type'        => 'string',
-                            'description' => 'Description of what the application does',
-                        ],
-                        'domain'      => [
-                            'type'        => 'string',
-                            'description' => 'Domain or URL where the application is hosted',
-                        ],
-                    ],
-                    'required'   => ['name'],
-                ],
-            ],
-            [
-                'name'        => 'update_application',
-                'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'uuid'        => [
-                            'type'        => 'string',
-                            'description' => 'UUID of the application to update',
-                        ],
-                        'name'        => [
-                            'type'        => 'string',
-                            'description' => 'New name for the application',
-                        ],
-                        'description' => [
-                            'type'        => 'string',
-                            'description' => 'New description',
-                        ],
-                        'domain'      => [
-                            'type'        => 'string',
-                            'description' => 'New domain or URL',
-                        ],
-                    ],
-                    'required'   => ['uuid'],
-                ],
-            ],
-            [
-                'name'        => 'delete_application',
-                'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
-                'parameters'  => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'uuid' => [
-                            'type'        => 'string',
-                            'description' => 'UUID of the application to delete',
-                        ],
-                    ],
-                    'required'   => ['uuid'],
-                ],
-            ],
-        ];
-    }//end getFunctions()
+	/**
+	 * Get function definitions for LLM function calling
+	 *
+	 * Returns function definitions in OpenAI function calling format.
+	 * These are used by LLMs to understand what capabilities this tool provides.
+	 *
+	 * @return array<int, array<string, mixed>> Array of function definitions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return [
+			[
+				'name' => 'list_applications',
+				'description' => 'List all accessible applications with basic information.',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'limit' => [
+							'type' => 'integer',
+							'description' => 'Maximum number of results to return (default: 50)',
+						],
+						'offset' => [
+							'type' => 'integer',
+							'description' => 'Number of results to skip for pagination (default: 0)',
+						],
+					],
+					'required' => [],
+				],
+			],
+			[
+				'name' => 'get_application',
+				'description' => 'Get detailed application information by UUID.',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'uuid' => [
+							'type' => 'string',
+							'description' => 'UUID of the application to retrieve',
+						],
+					],
+					'required' => ['uuid'],
+				],
+			],
+			[
+				'name' => 'create_application',
+				'description' => 'Create a new application with unique name.',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'name' => [
+							'type' => 'string',
+							'description' => 'Name of the application (required)',
+						],
+						'description' => [
+							'type' => 'string',
+							'description' => 'Description of what the application does',
+						],
+						'domain' => [
+							'type' => 'string',
+							'description' => 'Domain or URL where the application is hosted',
+						],
+					],
+					'required' => ['name'],
+				],
+			],
+			[
+				'name' => 'update_application',
+				'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'uuid' => [
+							'type' => 'string',
+							'description' => 'UUID of the application to update',
+						],
+						'name' => [
+							'type' => 'string',
+							'description' => 'New name for the application',
+						],
+						'description' => [
+							'type' => 'string',
+							'description' => 'New description',
+						],
+						'domain' => [
+							'type' => 'string',
+							'description' => 'New domain or URL',
+						],
+					],
+					'required' => ['uuid'],
+				],
+			],
+			[
+				'name' => 'delete_application',
+				'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
+				'parameters' => [
+					'type' => 'object',
+					'properties' => [
+						'uuid' => [
+							'type' => 'string',
+							'description' => 'UUID of the application to delete',
+						],
+					],
+					'required' => ['uuid'],
+				],
+			],
+		];
+	}//end getFunctions()
 
-    /**
-     * List applications
-     *
-     * @param int $limit  Maximum number of results (default: 50)
-     * @param int $offset Offset for pagination (default: 0)
-     *
-     * @return (bool|mixed|string)[] Response with applications list
-     *
-     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function listApplications(int $limit=50, int $offset=0): array
-    {
-        try {
-            $this->logger->info(
-                message: '[ApplicationTool] Listing applications',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'limit'  => $limit,
-                    'offset' => $offset,
-                ]
-            );
+	/**
+	 * List applications
+	 *
+	 * @param int $limit Maximum number of results (default: 50)
+	 * @param int $offset Offset for pagination (default: 0)
+	 *
+	 * @return (bool|mixed|string)[] Response with applications list
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function listApplications(int $limit = 50, int $offset = 0): array {
+		try {
+			$this->logger->info(
+				message: '[ApplicationTool] Listing applications',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'limit' => $limit,
+					'offset' => $offset,
+				]
+			);
 
-            // Get applications via mapper (RBAC is enforced in mapper).
-            $applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
-            $total        = $this->applicationMapper->countAll();
+			// Get applications via mapper (RBAC is enforced in mapper).
+			$applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
+			$total = $this->applicationMapper->countAll();
 
-            // Convert to array.
-            $results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
+			// Convert to array.
+			$results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
 
-            return $this->formatSuccess(
-                data: [
-                    'applications' => $results,
-                    'total'        => $total,
-                    'limit'        => $limit,
-                    'offset'       => $offset,
-                ],
-                message: "Found {$total} applications."
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ApplicationTool] Failed to list applications',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return $this->formatError(message: 'Failed to list applications: '.$e->getMessage());
-        }//end try
-    }//end listApplications()
+			return $this->formatSuccess(
+				data: [
+					'applications' => $results,
+					'total' => $total,
+					'limit' => $limit,
+					'offset' => $offset,
+				],
+				message: "Found {$total} applications."
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ApplicationTool] Failed to list applications',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $this->formatError(message: 'Failed to list applications: ' . $e->getMessage());
+		}//end try
+	}//end listApplications()
 
-    /**
-     * Get application details
-     *
-     * @param string $uuid Application UUID
-     *
-     * @return (bool|mixed|string)[] Response with application details
-     *
-     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function getApplication(string $uuid): array
-    {
-        try {
-            $this->logger->info(
-                message: '[ApplicationTool] Getting application',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-            );
+	/**
+	 * Get application details
+	 *
+	 * @param string $uuid Application UUID
+	 *
+	 * @return (bool|mixed|string)[] Response with application details
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getApplication(string $uuid): array {
+		try {
+			$this->logger->info(
+				message: '[ApplicationTool] Getting application',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
 
-            // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
+			// Find application (RBAC enforced in mapper).
+			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
-            return $this->formatSuccess(
-                data: $application->jsonSerialize(),
-                message: "Application '{$application->getName()}' retrieved successfully."
-            );
-        } catch (DoesNotExistException $e) {
-            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ApplicationTool] Failed to get application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return $this->formatError(message: 'Failed to get application: '.$e->getMessage());
-        }//end try
-    }//end getApplication()
+			return $this->formatSuccess(
+				data: $application->jsonSerialize(),
+				message: "Application '{$application->getName()}' retrieved successfully."
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ApplicationTool] Failed to get application',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $this->formatError(message: 'Failed to get application: ' . $e->getMessage());
+		}//end try
+	}//end getApplication()
 
-    /**
-     * Create application
-     *
-     * @param string      $name        Application name
-     * @param string|null $description Application description
-     * @param string|null $_domain     Application domain/URL (unused, kept for API compatibility)
-     *
-     * @return (bool|mixed|string)[] Response with created application
-     *
-     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function createApplication(
-        string $name,
-        ?string $description=null,
-        ?string $_domain=null
-    ): array {
-        try {
-            $this->logger->info(
-                message: '[ApplicationTool] Creating application',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]
-            );
+	/**
+	 * Create application
+	 *
+	 * @param string $name Application name
+	 * @param string|null $description Application description
+	 * @param string|null $_domain Application domain/URL (unused, kept for API compatibility)
+	 *
+	 * @return (bool|mixed|string)[] Response with created application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function createApplication(
+		string $name,
+		?string $description = null,
+		?string $_domain = null,
+	): array {
+		try {
+			$this->logger->info(
+				message: '[ApplicationTool] Creating application',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]
+			);
 
-            // Create application entity.
-            $application = new Application();
-            $application->setName($name);
-            if ($description !== null && $description !== '') {
-                $application->setDescription($description);
-            }
+			// Create application entity.
+			$application = new Application();
+			$application->setName($name);
+			if ($description !== null && $description !== '') {
+				$application->setDescription($description);
+			}
 
-            // Save via mapper (RBAC and organisation are enforced in mapper).
-            $application = $this->applicationMapper->insert($application);
+			// Save via mapper (RBAC and organisation are enforced in mapper).
+			$application = $this->applicationMapper->insert($application);
 
-            return $this->formatSuccess(
-                data: $application->jsonSerialize(),
-                message: "Application '{$name}' created successfully with UUID {$application->getUuid()}."
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ApplicationTool] Failed to create application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'name'  => $name,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return $this->formatError(message: 'Failed to create application: '.$e->getMessage());
-        }//end try
-    }//end createApplication()
+			return $this->formatSuccess(
+				data: $application->jsonSerialize(),
+				message: "Application '{$name}' created successfully with UUID {$application->getUuid()}."
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ApplicationTool] Failed to create application',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'name' => $name,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $this->formatError(message: 'Failed to create application: ' . $e->getMessage());
+		}//end try
+	}//end createApplication()
 
-    /**
-     * Update application
-     *
-     * @param string      $uuid        Application UUID
-     * @param string|null $name        New name
-     * @param string|null $description New description
-     * @param string|null $_domain     New domain (unused, kept for API compatibility)
-     *
-     * @return (bool|mixed|string)[] Response with updated application
-     *
-     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function updateApplication(
-        string $uuid,
-        ?string $name=null,
-        ?string $description=null,
-        ?string $_domain=null
-    ): array {
-        try {
-            $this->logger->info(
-                message: '[ApplicationTool] Updating application',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-            );
+	/**
+	 * Update application
+	 *
+	 * @param string $uuid Application UUID
+	 * @param string|null $name New name
+	 * @param string|null $description New description
+	 * @param string|null $_domain New domain (unused, kept for API compatibility)
+	 *
+	 * @return (bool|mixed|string)[] Response with updated application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function updateApplication(
+		string $uuid,
+		?string $name = null,
+		?string $description = null,
+		?string $_domain = null,
+	): array {
+		try {
+			$this->logger->info(
+				message: '[ApplicationTool] Updating application',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
 
-            // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
+			// Find application (RBAC enforced in mapper).
+			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
-            // Update fields.
-            if ($name !== null) {
-                $application->setName($name);
-            }
+			// Update fields.
+			if ($name !== null) {
+				$application->setName($name);
+			}
 
-            if ($description !== null) {
-                $application->setDescription($description);
-            }
+			if ($description !== null) {
+				$application->setDescription($description);
+			}
 
-            // Save changes (RBAC enforced in mapper).
-            $application = $this->applicationMapper->update($application);
+			// Save changes (RBAC enforced in mapper).
+			$application = $this->applicationMapper->update($application);
 
-            return $this->formatSuccess(
-                data: $application->jsonSerialize(),
-                message: "Application updated successfully."
-            );
-        } catch (DoesNotExistException $e) {
-            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ApplicationTool] Failed to update application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return $this->formatError(message: 'Failed to update application: '.$e->getMessage());
-        }//end try
-    }//end updateApplication()
+			return $this->formatSuccess(
+				data: $application->jsonSerialize(),
+				message: 'Application updated successfully.'
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ApplicationTool] Failed to update application',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
+		}//end try
+	}//end updateApplication()
 
-    /**
-     * Delete application
-     *
-     * @param string $uuid Application UUID
-     *
-     * @return (bool|mixed|string)[] Response confirming deletion
-     *
-     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function deleteApplication(string $uuid): array
-    {
-        try {
-            $this->logger->info(
-                message: '[ApplicationTool] Deleting application',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-            );
+	/**
+	 * Delete application
+	 *
+	 * @param string $uuid Application UUID
+	 *
+	 * @return (bool|mixed|string)[] Response confirming deletion
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function deleteApplication(string $uuid): array {
+		try {
+			$this->logger->info(
+				message: '[ApplicationTool] Deleting application',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
 
-            // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
-            $name        = $application->getName();
+			// Find application (RBAC enforced in mapper).
+			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
+			$name = $application->getName();
 
-            // Delete (RBAC enforced in mapper).
-            $this->applicationMapper->delete($application);
+			// Delete (RBAC enforced in mapper).
+			$this->applicationMapper->delete($application);
 
-            return $this->formatSuccess(
-                data: ['uuid' => $uuid],
-                message: "Application '{$name}' deleted successfully."
-            );
-        } catch (DoesNotExistException $e) {
-            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[ApplicationTool] Failed to delete application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return $this->formatError(message: 'Failed to delete application: '.$e->getMessage());
-        }//end try
-    }//end deleteApplication()
+			return $this->formatSuccess(
+				data: ['uuid' => $uuid],
+				message: "Application '{$name}' deleted successfully."
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[ApplicationTool] Failed to delete application',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+			return $this->formatError(message: 'Failed to delete application: ' . $e->getMessage());
+		}//end try
+	}//end deleteApplication()
 
-    /**
-     * Execute a function by name
-     *
-     * @param string      $functionName Name of the function to execute
-     * @param array       $parameters   Function parameters
-     * @param string|null $userId       User ID for session context (optional)
-     *
-     * @return array Response
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
-    {
-        // Convert snake_case to camelCase for PSR compliance.
-        $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+	/**
+	 * Execute a function by name
+	 *
+	 * @param string $functionName Name of the function to execute
+	 * @param array $parameters Function parameters
+	 * @param string|null $userId User ID for session context (optional)
+	 *
+	 * @return array Response
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
+		// Convert snake_case to camelCase for PSR compliance.
+		$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
-        // Call the method directly (LLPhant-compatible).
-        return $this->$methodName(...array_values($parameters));
-    }//end executeFunction()
+		// Call the method directly (LLPhant-compatible).
+		return $this->$methodName(...array_values($parameters));
+	}//end executeFunction()
 }//end class

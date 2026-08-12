@@ -41,81 +41,75 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry
  */
-class LifecycleActionRegistryTest extends TestCase
-{
-    private ContainerInterface $container;
-    private IServerContainer $serverContainer;
-    private LifecycleActionRegistry $registry;
+class LifecycleActionRegistryTest extends TestCase {
+	private ContainerInterface $container;
+	private IServerContainer $serverContainer;
+	private LifecycleActionRegistry $registry;
 
-    protected function setUp(): void
-    {
-        $this->container       = $this->createMock(ContainerInterface::class);
-        $this->serverContainer = $this->createMock(IServerContainer::class);
-        $logger                = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->serverContainer = $this->createMock(IServerContainer::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $this->registry = new LifecycleActionRegistry(
-            $this->container,
-            $this->serverContainer,
-            $logger
-        );
-    }//end setUp()
+		$this->registry = new LifecycleActionRegistry(
+			$this->container,
+			$this->serverContainer,
+			$logger
+		);
+	}//end setUp()
 
-    /**
-     * A built-in action name (`set-fields`) resolves to its handler FQCN through
-     * the OR container.
-     */
-    public function testBuiltinResolvesToHandler(): void
-    {
-        $handler = new SetFieldsAction();
-        $this->container->method('get')
-            ->with(SetFieldsAction::class)
-            ->willReturn($handler);
+	/**
+	 * A built-in action name (`set-fields`) resolves to its handler FQCN through
+	 * the OR container.
+	 */
+	public function testBuiltinResolvesToHandler(): void {
+		$handler = new SetFieldsAction();
+		$this->container->method('get')
+			->with(SetFieldsAction::class)
+			->willReturn($handler);
 
-        $resolved = $this->registry->resolve('set-fields');
-        $this->assertInstanceOf(LifecycleActionInterface::class, $resolved);
-        $this->assertSame($handler, $resolved);
-    }//end testBuiltinResolvesToHandler()
+		$resolved = $this->registry->resolve('set-fields');
+		$this->assertInstanceOf(LifecycleActionInterface::class, $resolved);
+		$this->assertSame($handler, $resolved);
+	}//end testBuiltinResolvesToHandler()
 
-    /**
-     * An app-registered handler resolves by its declared action name.
-     */
-    public function testAppRegisteredHandlerResolves(): void
-    {
-        $handler = $this->createMock(LifecycleActionInterface::class);
-        $this->container->method('get')
-            ->with('materialise-gl-transaction')
-            ->willReturn($handler);
+	/**
+	 * An app-registered handler resolves by its declared action name.
+	 */
+	public function testAppRegisteredHandlerResolves(): void {
+		$handler = $this->createMock(LifecycleActionInterface::class);
+		$this->container->method('get')
+			->with('materialise-gl-transaction')
+			->willReturn($handler);
 
-        $this->assertSame($handler, $this->registry->resolve('materialise-gl-transaction'));
-    }//end testAppRegisteredHandlerResolves()
+		$this->assertSame($handler, $this->registry->resolve('materialise-gl-transaction'));
+	}//end testAppRegisteredHandlerResolves()
 
-    /**
-     * FAIL LOUD: a declared action naming no registered handler throws — the
-     * exact defect (silent no-op) this executor eliminates.
-     */
-    public function testMissingHandlerFailsLoudly(): void
-    {
-        $notFound = new class extends \Exception implements NotFoundExceptionInterface {
-        };
-        $this->container->method('get')->willThrowException($notFound);
-        $this->serverContainer->method('get')->willThrowException($notFound);
+	/**
+	 * FAIL LOUD: a declared action naming no registered handler throws — the
+	 * exact defect (silent no-op) this executor eliminates.
+	 */
+	public function testMissingHandlerFailsLoudly(): void {
+		$notFound = new class extends \Exception implements NotFoundExceptionInterface {
+		};
+		$this->container->method('get')->willThrowException($notFound);
+		$this->serverContainer->method('get')->willThrowException($notFound);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('is declared but no handler is registered');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('is declared but no handler is registered');
 
-        $this->registry->resolve('does-not-exist');
-    }//end testMissingHandlerFailsLoudly()
+		$this->registry->resolve('does-not-exist');
+	}//end testMissingHandlerFailsLoudly()
 
-    /**
-     * FAIL LOUD: a resolved service that does not implement the interface throws.
-     */
-    public function testWrongTypeFailsLoudly(): void
-    {
-        $this->container->method('get')->willReturn(new \stdClass());
+	/**
+	 * FAIL LOUD: a resolved service that does not implement the interface throws.
+	 */
+	public function testWrongTypeFailsLoudly(): void {
+		$this->container->method('get')->willReturn(new \stdClass());
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('does not implement');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('does not implement');
 
-        $this->registry->resolve('bad-service');
-    }//end testWrongTypeFailsLoudly()
+		$this->registry->resolve('bad-service');
+	}//end testWrongTypeFailsLoudly()
 }//end class

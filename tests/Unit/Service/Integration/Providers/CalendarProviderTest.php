@@ -39,118 +39,110 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class CalendarProviderTest extends TestCase
-{
-    private function buildL10n(): IL10N
-    {
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
-        return $l10n;
-    }
+class CalendarProviderTest extends TestCase {
+	private function buildL10n(): IL10N {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		return $l10n;
+	}
 
-    private function buildLogger(): LoggerInterface
-    {
-        return $this->createMock(LoggerInterface::class);
-    }
+	private function buildLogger(): LoggerInterface {
+		return $this->createMock(LoggerInterface::class);
+	}
 
-    public function testMetadataGetters(): void
-    {
-        $provider = new CalendarProvider(
-            $this->createMock(CalendarEventService::class),
-            $this->createMock(CalendarLinkService::class),
-            $this->createMock(IAppManager::class),
-            $this->buildL10n(),
-            $this->buildLogger(),
-        );
+	public function testMetadataGetters(): void {
+		$provider = new CalendarProvider(
+			$this->createMock(CalendarEventService::class),
+			$this->createMock(CalendarLinkService::class),
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
 
-        $this->assertSame('calendar', $provider->getId());
-        $this->assertSame('Meetings', $provider->getLabel());
-        $this->assertSame('Calendar', $provider->getIcon());
-        $this->assertSame('comms', $provider->getGroup());
-        $this->assertSame('calendar', $provider->getRequiredApp());
-        $this->assertSame('link-table', $provider->getStorageStrategy());
-    }
+		$this->assertSame('calendar', $provider->getId());
+		$this->assertSame('Meetings', $provider->getLabel());
+		$this->assertSame('Calendar', $provider->getIcon());
+		$this->assertSame('comms', $provider->getGroup());
+		$this->assertSame('calendar', $provider->getRequiredApp());
+		$this->assertSame('link-table', $provider->getStorageStrategy());
+	}
 
-    public function testListGoesThroughLinkServiceUnion(): void
-    {
-        $link = $this->createMock(CalendarLinkService::class);
-        $link->expects($this->once())
-            ->method('getLinkedEvents')
-            ->with('obj-1')
-            ->willReturn([
-                ['uid' => 'ev-1', 'source' => 'both', 'summary' => 'Hello'],
-            ]);
+	public function testListGoesThroughLinkServiceUnion(): void {
+		$link = $this->createMock(CalendarLinkService::class);
+		$link->expects($this->once())
+			->method('getLinkedEvents')
+			->with('obj-1')
+			->willReturn([
+				['uid' => 'ev-1', 'source' => 'both', 'summary' => 'Hello'],
+			]);
 
-        $provider = new CalendarProvider(
-            $this->createMock(CalendarEventService::class),
-            $link,
-            $this->createMock(IAppManager::class),
-            $this->buildL10n(),
-            $this->buildLogger(),
-        );
+		$provider = new CalendarProvider(
+			$this->createMock(CalendarEventService::class),
+			$link,
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
 
-        $result = $provider->list('r', 's', 'obj-1');
-        $this->assertCount(1, $result);
-        $this->assertSame('both', $result[0]['source']);
-    }
+		$result = $provider->list('r', 's', 'obj-1');
+		$this->assertCount(1, $result);
+		$this->assertSame('both', $result[0]['source']);
+	}
 
-    public function testDeleteLegacyShapeStripsXor(): void
-    {
-        $eventSvc = $this->createMock(CalendarEventService::class);
-        $eventSvc->expects($this->once())
-            ->method('unlinkEvent')
-            ->with('7', 'event.ics');
+	public function testDeleteLegacyShapeStripsXor(): void {
+		$eventSvc = $this->createMock(CalendarEventService::class);
+		$eventSvc->expects($this->once())
+			->method('unlinkEvent')
+			->with('7', 'event.ics');
 
-        $linkSvc = $this->createMock(CalendarLinkService::class);
-        $linkSvc->expects($this->never())->method('unlinkEvent');
+		$linkSvc = $this->createMock(CalendarLinkService::class);
+		$linkSvc->expects($this->never())->method('unlinkEvent');
 
-        $provider = new CalendarProvider(
-            $eventSvc,
-            $linkSvc,
-            $this->createMock(IAppManager::class),
-            $this->buildL10n(),
-            $this->buildLogger(),
-        );
+		$provider = new CalendarProvider(
+			$eventSvc,
+			$linkSvc,
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
 
-        $provider->delete('r', 's', 'obj-1', '7/event.ics');
-    }
+		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+	}
 
-    public function testDeleteBareUidUsesLinkService(): void
-    {
-        $eventSvc = $this->createMock(CalendarEventService::class);
-        $eventSvc->expects($this->never())->method('unlinkEvent');
+	public function testDeleteBareUidUsesLinkService(): void {
+		$eventSvc = $this->createMock(CalendarEventService::class);
+		$eventSvc->expects($this->never())->method('unlinkEvent');
 
-        $linkSvc = $this->createMock(CalendarLinkService::class);
-        $linkSvc->expects($this->once())
-            ->method('unlinkEvent')
-            ->with('obj-1', 'ev-uid');
+		$linkSvc = $this->createMock(CalendarLinkService::class);
+		$linkSvc->expects($this->once())
+			->method('unlinkEvent')
+			->with('obj-1', 'ev-uid');
 
-        $provider = new CalendarProvider(
-            $eventSvc,
-            $linkSvc,
-            $this->createMock(IAppManager::class),
-            $this->buildL10n(),
-            $this->buildLogger(),
-        );
+		$provider = new CalendarProvider(
+			$eventSvc,
+			$linkSvc,
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
 
-        $provider->delete('r', 's', 'obj-1', 'ev-uid');
-    }
+		$provider->delete('r', 's', 'obj-1', 'ev-uid');
+	}
 
-    public function testHealthReportsUnavailableWhenNotInstalled(): void
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isInstalled')->with('calendar')->willReturn(false);
+	public function testHealthReportsUnavailableWhenNotInstalled(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->with('calendar')->willReturn(false);
 
-        $provider = new CalendarProvider(
-            $this->createMock(CalendarEventService::class),
-            $this->createMock(CalendarLinkService::class),
-            $appManager,
-            $this->buildL10n(),
-            $this->buildLogger(),
-        );
+		$provider = new CalendarProvider(
+			$this->createMock(CalendarEventService::class),
+			$this->createMock(CalendarLinkService::class),
+			$appManager,
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
 
-        $this->assertFalse($provider->isEnabled());
-        $h = $provider->health();
-        $this->assertSame('unavailable', $h['status']);
-    }
+		$this->assertFalse($provider->isEnabled());
+		$h = $provider->health();
+		$this->assertSame('unavailable', $h['status']);
+	}
 }

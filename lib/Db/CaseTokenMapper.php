@@ -33,80 +33,75 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<CaseToken>
  */
-class CaseTokenMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_case_tokens', entityClass: CaseToken::class);
-    }//end __construct()
+class CaseTokenMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_case_tokens', entityClass: CaseToken::class);
+	}//end __construct()
 
-    /**
-     * Find a case token by its opaque token string.
-     *
-     * Returns null on miss so callers can fail-closed (404) without a
-     * DoesNotExistException leaking through — important for the public
-     * resolve endpoint which must not become an enumeration oracle.
-     *
-     * @param string $token The opaque token string.
-     *
-     * @return CaseToken|null The token row, or null when unknown.
-     */
-    public function findByToken(string $token): ?CaseToken
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
+	/**
+	 * Find a case token by its opaque token string.
+	 *
+	 * Returns null on miss so callers can fail-closed (404) without a
+	 * DoesNotExistException leaking through — important for the public
+	 * resolve endpoint which must not become an enumeration oracle.
+	 *
+	 * @param string $token The opaque token string.
+	 *
+	 * @return CaseToken|null The token row, or null when unknown.
+	 */
+	public function findByToken(string $token): ?CaseToken {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('token', $qb->createNamedParameter($token)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findByToken()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByToken()
 
-    /**
-     * Find every token minted against the given object uuid.
-     *
-     * @param string $objectUuid The object uuid.
-     *
-     * @return CaseToken[] Token rows.
-     */
-    public function findByObjectUuid(string $objectUuid): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('created_at', 'DESC');
+	/**
+	 * Find every token minted against the given object uuid.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return CaseToken[] Token rows.
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('created_at', 'DESC');
 
-        return $this->findEntities(query: $qb);
-    }//end findByObjectUuid()
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
 
-    /**
-     * Find a token by its primary id (used by the revoke path so the
-     * controller / provider can address a token unambiguously).
-     *
-     * @param int $id The token row id.
-     *
-     * @return CaseToken|null The token, or null when unknown.
-     */
-    public function findById(int $id): ?CaseToken
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Find a token by its primary id (used by the revoke path so the
+	 * controller / provider can address a token unambiguously).
+	 *
+	 * @param int $id The token row id.
+	 *
+	 * @return CaseToken|null The token, or null when unknown.
+	 */
+	public function findById(int $id): ?CaseToken {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        try {
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        }
-    }//end findById()
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findById()
 }//end class

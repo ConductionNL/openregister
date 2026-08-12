@@ -43,48 +43,46 @@ use Psr\Container\ContainerInterface;
  *
  * @template-implements IEventListener<Event>
  */
-class FlowEngineRegistrationListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container Resolves the entity/operation with DI.
-     */
-    public function __construct(
-        private readonly ContainerInterface $container
-    ) {
-    }//end __construct()
+class FlowEngineRegistrationListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container Resolves the entity/operation with DI.
+	 */
+	public function __construct(
+		private readonly ContainerInterface $container,
+	) {
+	}//end __construct()
 
-    /**
-     * Register the entity on RegisterEntitiesEvent and the operation on
-     * RegisterOperationsEvent.
-     *
-     * @param Event $event The dispatched registration event.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript is the
-     *     canonical Nextcloud API for enqueuing scripts and has no injectable
-     *     DI equivalent in the AppFramework — a listener is handed only the
-     *     event, and Nextcloud ships no service form of the asset API. Wrapping
-     *     the call in a seam class would relocate the identical static call
-     *     rather than remove it. Mirrors ScriptManifestLoader::addEntryScripts().
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof RegisterEntitiesEvent) {
-            $event->registerEntity($this->container->get(RegisterObjectEntity::class));
-            return;
-        }
+	/**
+	 * Register the entity on RegisterEntitiesEvent and the operation on
+	 * RegisterOperationsEvent.
+	 *
+	 * @param Event $event The dispatched registration event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript is the
+	 *     canonical Nextcloud API for enqueuing scripts and has no injectable
+	 *     DI equivalent in the AppFramework — a listener is handed only the
+	 *     event, and Nextcloud ships no service form of the asset API. Wrapping
+	 *     the call in a seam class would relocate the identical static call
+	 *     rather than remove it. Mirrors ScriptManifestLoader::addEntryScripts().
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof RegisterEntitiesEvent) {
+			$event->registerEntity($this->container->get(RegisterObjectEntity::class));
+			return;
+		}
 
-        if ($event instanceof RegisterOperationsEvent) {
-            $event->registerOperation($this->container->get(RunFlowOperation::class));
-            // Load the operator's frontend settings component on the Flow admin
-            // page so the flow-name value is enterable. Mirrors how core apps
-            // (bookmarks/analytics) ship their *-flow.js operator UI. Harmless
-            // off the settings page — addScript only queues for a page render.
-            \OCP\Util::addScript('openregister', 'openregister-flow-operator');
-            return;
-        }
-    }//end handle()
+		if ($event instanceof RegisterOperationsEvent) {
+			$event->registerOperation($this->container->get(RunFlowOperation::class));
+			// Load the operator's frontend settings component on the Flow admin
+			// page so the flow-name value is enterable. Mirrors how core apps
+			// (bookmarks/analytics) ship their *-flow.js operator UI. Harmless
+			// off the settings page — addScript only queues for a page render.
+			\OCP\Util::addScript('openregister', 'openregister-flow-operator');
+			return;
+		}
+	}//end handle()
 }//end class

@@ -55,58 +55,55 @@ use OCP\Migration\SimpleMigrationStep;
  * to the entity_relations table. Both columns are nullable-or-defaulted
  * so existing rows pick up sensible defaults without backfill.
  */
-class Version1Date20260512120000 extends SimpleMigrationStep
-{
-    /**
-     * Add the two decision-metadata columns when missing.
-     *
-     * @param IOutput                 $output        Migration output sink.
-     * @param Closure                 $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array<array-key, mixed> $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260512120000 extends SimpleMigrationStep {
+	/**
+	 * Add the two decision-metadata columns when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array<array-key, mixed> $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_entity_relations') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable(tableName: 'openregister_entity_relations') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_entity_relations');
+		$table = $schema->getTable(tableName: 'openregister_entity_relations');
 
-        if ($table->hasColumn(name: 'bases') === false) {
-            $table->addColumn(
-                name: 'bases',
-                typeName: Types::JSON,
-                options: ['notnull' => false]
-            );
-        }
+		if ($table->hasColumn(name: 'bases') === false) {
+			$table->addColumn(
+				name: 'bases',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			);
+		}
 
-        if ($table->hasColumn(name: 'skip_anonymization') === false) {
-            $table->addColumn(
-                name: 'skip_anonymization',
-                typeName: Types::BOOLEAN,
-                options: [
-                    'notnull' => true,
-                    'default' => false,
-                ]
-            );
-        }
+		if ($table->hasColumn(name: 'skip_anonymization') === false) {
+			$table->addColumn(
+				name: 'skip_anonymization',
+				typeName: Types::BOOLEAN,
+				options: [
+					'notnull' => true,
+					'default' => false,
+				]
+			);
+		}
 
-        return $schema;
+		return $schema;
+	}//end changeSchema()
 
-    }//end changeSchema()
-
-    // PostSchemaChange() intentionally NOT overridden: the new columns
-    // are nullable (`bases`) or carry a DB-level default
-    // (`skip_anonymization` → false), so existing rows pick up correct
-    // values automatically and require no backfill pass. Adding an
-    // empty override would be dead code; SimpleMigrationStep's default
-    // no-op is what we want.
+	// PostSchemaChange() intentionally NOT overridden: the new columns
+	// are nullable (`bases`) or carry a DB-level default
+	// (`skip_anonymization` → false), so existing rows pick up correct
+	// values automatically and require no backfill pass. Adding an
+	// empty override would be dead code; SimpleMigrationStep's default
+	// no-op is what we want.
 }//end class

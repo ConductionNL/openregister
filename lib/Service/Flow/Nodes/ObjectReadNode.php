@@ -86,494 +86,468 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys
-{
+class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
 
-    /**
-     * The step type.
-     *
-     * @var string
-     */
-    public const NODE_ID = 'openregister.object-read';
+	/**
+	 * The step type.
+	 *
+	 * @var string
+	 */
+	public const NODE_ID = 'openregister.object-read';
 
-    /**
-     * Where the results land when the step names no `output`.
-     *
-     * @var string
-     */
-    private const DEFAULT_OUTPUT_KEY = 'objects';
+	/**
+	 * Where the results land when the step names no `output`.
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_OUTPUT_KEY = 'objects';
 
-    /**
-     * How many objects one read returns when the step names no `limit`.
-     *
-     * A default rather than "everything": a reaper over a runaway lock table
-     * should process a bounded batch and come back on the next tick, not build
-     * a million-item walk in memory and time the run out.
-     *
-     * @var int
-     */
-    private const DEFAULT_LIMIT = 100;
+	/**
+	 * How many objects one read returns when the step names no `limit`.
+	 *
+	 * A default rather than "everything": a reaper over a runaway lock table
+	 * should process a bounded batch and come back on the next tick, not build
+	 * a million-item walk in memory and time the run out.
+	 *
+	 * @var int
+	 */
+	private const DEFAULT_LIMIT = 100;
 
-    /**
-     * The ceiling on `limit`, whatever the step asks for.
-     *
-     * @var int
-     */
-    private const MAX_LIMIT = 1000;
+	/**
+	 * The ceiling on `limit`, whatever the step asks for.
+	 *
+	 * @var int
+	 */
+	private const MAX_LIMIT = 1000;
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService  $objects     Object reads, RBAC-enforcing.
-     * @param RegisterMapper $registers   Resolves the configured register.
-     * @param SchemaMapper   $schemas     Resolves the configured schema.
-     * @param IUserManager   $userManager Resolves the run owner.
-     * @param IL10N          $l10n        Translations.
-     * @param IURLGenerator  $urls        For the palette icon.
-     */
-    public function __construct(
-        private readonly ObjectService $objects,
-        private readonly RegisterMapper $registers,
-        private readonly SchemaMapper $schemas,
-        private readonly IUserManager $userManager,
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectService $objects Object reads, RBAC-enforcing.
+	 * @param RegisterMapper $registers Resolves the configured register.
+	 * @param SchemaMapper $schemas Resolves the configured schema.
+	 * @param IUserManager $userManager Resolves the run owner.
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly ObjectService $objects,
+		private readonly RegisterMapper $registers,
+		private readonly SchemaMapper $schemas,
+		private readonly IUserManager $userManager,
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return self::NODE_ID;
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return self::NODE_ID;
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Read objects');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Read objects');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Find objects in a register and put them on the item.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/search.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Find objects in a register and put them on the item.');
+	/**
+	 * Available in both scopes — the owner's RBAC is what bounds the read.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of an object-read step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return ['register', 'schema', 'filters', 'fanOut', 'limit', 'output'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/search.svg');
+	/**
+	 * Refuse a step that cannot name what it reads.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When register or schema is missing, or filters are malformed.
+	 */
+	public function validateConfig(array $config): void {
+		if (trim((string)($config['register'] ?? '')) === '') {
+			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a register.'));
+		}
 
-    }//end getIcon()
+		if (trim((string)($config['schema'] ?? '')) === '') {
+			throw new UnexpectedValueException($this->l10n->t('An object-read step needs a schema.'));
+		}
 
-    /**
-     * Available in both scopes — the owner's RBAC is what bounds the read.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+		if (array_key_exists('filters', $config) === true && is_array($config['filters']) === false) {
+			throw new UnexpectedValueException($this->l10n->t('An object-read step\'s filters must be an object.'));
+		}
 
-    }//end isAvailableForScope()
+	}//end validateConfig()
 
-    /**
-     * The config vocabulary of an object-read step.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['register', 'schema', 'filters', 'fanOut', 'limit', 'output'];
+	/**
+	 * Read once per item, putting the results on each.
+	 *
+	 * One read per item, not one for the whole batch, because the filters are
+	 * templated from the item — two items asking different questions must get
+	 * their own answers. It is the same contract every other item-driven node
+	 * follows.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata (carries the triggering user).
+	 *
+	 * @return array The items, each with the read's results added.
+	 *
+	 * @throws RuntimeException When the run has no resolvable owner.
+	 * @throws UnexpectedValueException When the register or schema does not resolve.
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		// An empty branch asks nothing. It short-circuits before the owner is
+		// resolved, because there is nothing to attribute — the same contract
+		// `openconnector.source-call` follows.
+		if ($items === []) {
+			return [];
+		}
 
-    }//end configKeys()
+		$this->validateConfig(config: $config);
 
-    /**
-     * Refuse a step that cannot name what it reads.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When register or schema is missing, or filters are malformed.
-     */
-    public function validateConfig(array $config): void
-    {
-        if (trim((string) ($config['register'] ?? '')) === '') {
-            throw new UnexpectedValueException($this->l10n->t('An object-read step needs a register.'));
-        }
+		$owner = $this->resolveOwner(context: $context);
+		$register = $this->resolveRegister(config: $config);
+		$schema = $this->resolveSchema(config: $config, register: $register);
+		$outKey = trim((string)($config['output'] ?? ''));
+		if ($outKey === '') {
+			$outKey = self::DEFAULT_OUTPUT_KEY;
+		}
 
-        if (trim((string) ($config['schema'] ?? '')) === '') {
-            throw new UnexpectedValueException($this->l10n->t('An object-read step needs a schema.'));
-        }
+		$limit = $this->limitFrom(config: $config);
 
-        if (array_key_exists('filters', $config) === true && is_array($config['filters']) === false) {
-            throw new UnexpectedValueException($this->l10n->t('An object-read step\'s filters must be an object.'));
-        }
+		$out = [];
+		foreach ($items as $index => $item) {
+			$json = (array)($item[FlowItems::JSON] ?? []);
+			$filters = $this->renderFilters(config: $config, json: $json);
 
-    }//end validateConfig()
+			$records = $this->read(
+				register: $register,
+				schema: $schema,
+				filters: $filters,
+				limit: $limit,
+				owner: $owner
+			);
 
-    /**
-     * Read once per item, putting the results on each.
-     *
-     * One read per item, not one for the whole batch, because the filters are
-     * templated from the item — two items asking different questions must get
-     * their own answers. It is the same contract every other item-driven node
-     * follows.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata (carries the triggering user).
-     *
-     * @return array The items, each with the read's results added.
-     *
-     * @throws RuntimeException        When the run has no resolvable owner.
-     * @throws UnexpectedValueException When the register or schema does not resolve.
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        // An empty branch asks nothing. It short-circuits before the owner is
-        // resolved, because there is nothing to attribute — the same contract
-        // `openconnector.source-call` follows.
-        if ($items === []) {
-            return [];
-        }
+			$binary = (array)($item[FlowItems::BINARY] ?? []);
 
-        $this->validateConfig(config: $config);
+			// FAN-OUT: one item per object, rather than one item holding a list.
+			//
+			// This exists because the list form does not COMPOSE. Every other
+			// node in the engine acts per item, and nothing expands a list
+			// inside an item's json back into items — `openregister.loop`
+			// batches the items on the walk, not the entries of a field. So a
+			// read that returns `{objects: [...]}` can be counted and branched
+			// on, and cannot be acted on one row at a time.
+			//
+			// Which is the motivating case. A reaper reads stale locks and then
+			// DELETES each one; with the list form its delete step sees one item
+			// whose `uuid` is not a field, and fails with "the match value for
+			// uuid could not be resolved from the item". Measured while building
+			// it.
+			//
+			// The list stays the DEFAULT because it is the right shape for the
+			// other half of the uses — "how many are there", "is there any" —
+			// where fanning out would turn one decision into N.
+			if (($config['fanOut'] ?? false) === true) {
+				foreach ($records as $record) {
+					$out[] = FlowItems::item(
+						json: array_merge($json, $record),
+						binary: $binary,
+						fromItemIndex: (int)$index
+					);
+				}
 
-        $owner    = $this->resolveOwner(context: $context);
-        $register = $this->resolveRegister(config: $config);
-        $schema   = $this->resolveSchema(config: $config, register: $register);
-        $outKey   = trim((string) ($config['output'] ?? ''));
-        if ($outKey === '') {
-            $outKey = self::DEFAULT_OUTPUT_KEY;
-        }
+				// No matches means no items, which ends the branch — the same
+				// contract `openregister.loop` has for an empty input. It is
+				// not an error: "nothing to reap" is the ordinary case.
+				continue;
+			}
 
-        $limit = $this->limitFrom(config: $config);
+			$json[$outKey] = $records;
 
-        $out = [];
-        foreach ($items as $index => $item) {
-            $json    = (array) ($item[FlowItems::JSON] ?? []);
-            $filters = $this->renderFilters(config: $config, json: $json);
+			$out[] = FlowItems::item(
+				json: $json,
+				binary: $binary,
+				fromItemIndex: (int)$index
+			);
+		}//end foreach
 
-            $records = $this->read(
-                register: $register,
-                schema: $schema,
-                filters: $filters,
-                limit: $limit,
-                owner: $owner
-            );
+		return $out;
+	}//end execute()
 
-            $binary = (array) ($item[FlowItems::BINARY] ?? []);
+	/**
+	 * Render the step's filters, refusing any placeholder that comes out empty.
+	 *
+	 * A FILTER IS A QUESTION, AND AN EMPTY ONE IS STILL A QUESTION.
+	 * ------------------------------------------------------------
+	 * `FlowValueTemplate::render()` cannot fail: a path the item does not carry
+	 * resolves to null and substitutes as the empty string. For a written FIELD
+	 * that is a deliberate narrowing, governed by `onMissing`. For a filter it
+	 * is a silent change of meaning — `"ZZ issue-lock {{repo}}"` becomes
+	 * `"ZZ issue-lock "`, which matches nothing, and the step then returns zero
+	 * rows and reports success.
+	 *
+	 * That is not hypothetical. hydra's lock reaper is a scheduled flow whose
+	 * filter interpolated `{{repo}}`, and a schedule tick's payload is only
+	 * `{flowId, scheduledAt}` — so under its own trigger the filter always
+	 * rendered empty and the reaper swept nothing, every run `completed`. It
+	 * reaped correctly whenever a human passed `repo` in a test payload, which
+	 * is exactly what kept it hidden.
+	 *
+	 * So an unfilled placeholder throws here, the same way
+	 * `ObjectWriteNode::findMatch()` refuses an unfilled MATCH key: a guard
+	 * that gets weaker when its input is missing is not a guard. `null` and the
+	 * empty string count as unfilled alongside an absent path, because all
+	 * three render identically — a computed field whose expression returned
+	 * null is present in the record and just as empty.
+	 *
+	 * A step that genuinely wants "everything" says so by authoring no filter,
+	 * which is a different sentence from one whose filter did not render.
+	 *
+	 * @param array $config The step configuration.
+	 * @param array $json The current item's record.
+	 *
+	 * @return array The rendered filters.
+	 *
+	 * @throws RuntimeException When a filter placeholder renders empty.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function renderFilters(array $config, array $json): array {
+		$rendered = FlowValueTemplate::renderTracked(
+			value: (array)($config['filters'] ?? []),
+			json: $json
+		);
 
-            // FAN-OUT: one item per object, rather than one item holding a list.
-            //
-            // This exists because the list form does not COMPOSE. Every other
-            // node in the engine acts per item, and nothing expands a list
-            // inside an item's json back into items — `openregister.loop`
-            // batches the items on the walk, not the entries of a field. So a
-            // read that returns `{objects: [...]}` can be counted and branched
-            // on, and cannot be acted on one row at a time.
-            //
-            // Which is the motivating case. A reaper reads stale locks and then
-            // DELETES each one; with the list form its delete step sees one item
-            // whose `uuid` is not a field, and fails with "the match value for
-            // uuid could not be resolved from the item". Measured while building
-            // it.
-            //
-            // The list stays the DEFAULT because it is the right shape for the
-            // other half of the uses — "how many are there", "is there any" —
-            // where fanning out would turn one decision into N.
-            if (($config['fanOut'] ?? false) === true) {
-                foreach ($records as $record) {
-                    $out[] = FlowItems::item(
-                        json: array_merge($json, $record),
-                        binary: $binary,
-                        fromItemIndex: (int) $index
-                    );
-                }
+		if ($rendered['unresolved'] !== []) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
+					. 'A filter that renders empty matches nothing, so the step would report success having read no objects.',
+					[implode(', ', $rendered['unresolved'])]
+				)
+			);
+		}
 
-                // No matches means no items, which ends the branch — the same
-                // contract `openregister.loop` has for an empty input. It is
-                // not an error: "nothing to reap" is the ordinary case.
-                continue;
-            }
+		return (array)$rendered['value'];
+	}//end renderFilters()
 
-            $json[$outKey] = $records;
+	/**
+	 * Perform one read as the run owner.
+	 *
+	 * A failure THROWS rather than returning an empty list. "No objects
+	 * matched" and "the read did not happen" are different answers, and a
+	 * caller that cannot tell them apart — a reaper, a guard, a count — will
+	 * read the second as the first and quietly do nothing.
+	 *
+	 * @param Register $register The resolved register.
+	 * @param Schema $schema The resolved schema.
+	 * @param array $filters The rendered filters.
+	 * @param int $limit The bounded result cap.
+	 * @param IUser $owner The run owner, whose RBAC applies.
+	 *
+	 * @return array<int, array> The matched objects, as plain records.
+	 *
+	 * @throws RuntimeException When the read itself fails.
+	 */
+	private function read(Register $register, Schema $schema, array $filters, int $limit, IUser $owner): array {
+		try {
+			// The read runs AS the owner. `$owner` was resolved, declared and
+			// documented as "the subject whose RBAC applies" — and then never
+			// used, so the read actually ran under whatever subject the ambient
+			// session happened to carry. Under CLI cron that is no subject at
+			// all, and both the RBAC and the organisation filter treat a
+			// sessionless CLI context as trusted and skip themselves entirely.
+			// So a scheduled flow read past the very access control this
+			// parameter names.
+			//
+			// ObjectService::findAll() has no acting-user parameter anywhere on
+			// its chain, so the subject is set for the duration of the call and
+			// restored afterwards. See ObjectService::runAs() for why that is
+			// the seam rather than threading a user through the query layer.
+			$found = $this->objects->runAs(
+				$owner,
+				fn (): array => $this->objects
+					->setRegister($register)
+					->setSchema($schema)
+					->findAll(config: ['filters' => $filters, 'limit' => $limit])
+			);
+		} catch (Throwable $e) {
+			throw new RuntimeException(
+				$this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
+				0,
+				$e
+			);
+		}//end try
 
-            $out[] = FlowItems::item(
-                json: $json,
-                binary: $binary,
-                fromItemIndex: (int) $index
-            );
-        }//end foreach
+		$records = [];
+		foreach ($found as $object) {
+			if (($object instanceof ObjectEntity) === false) {
+				continue;
+			}
 
-        return $out;
+			$record = (array)$object->getObject();
+			// The uuid is what a follow-up write or delete needs to name this
+			// row, and it does not live in the record's own fields.
+			$record['uuid'] = $object->getUuid();
 
-    }//end execute()
+			$records[] = $record;
+		}
 
-    /**
-     * Render the step's filters, refusing any placeholder that comes out empty.
-     *
-     * A FILTER IS A QUESTION, AND AN EMPTY ONE IS STILL A QUESTION.
-     * ------------------------------------------------------------
-     * `FlowValueTemplate::render()` cannot fail: a path the item does not carry
-     * resolves to null and substitutes as the empty string. For a written FIELD
-     * that is a deliberate narrowing, governed by `onMissing`. For a filter it
-     * is a silent change of meaning — `"ZZ issue-lock {{repo}}"` becomes
-     * `"ZZ issue-lock "`, which matches nothing, and the step then returns zero
-     * rows and reports success.
-     *
-     * That is not hypothetical. hydra's lock reaper is a scheduled flow whose
-     * filter interpolated `{{repo}}`, and a schedule tick's payload is only
-     * `{flowId, scheduledAt}` — so under its own trigger the filter always
-     * rendered empty and the reaper swept nothing, every run `completed`. It
-     * reaped correctly whenever a human passed `repo` in a test payload, which
-     * is exactly what kept it hidden.
-     *
-     * So an unfilled placeholder throws here, the same way
-     * `ObjectWriteNode::findMatch()` refuses an unfilled MATCH key: a guard
-     * that gets weaker when its input is missing is not a guard. `null` and the
-     * empty string count as unfilled alongside an absent path, because all
-     * three render identically — a computed field whose expression returned
-     * null is present in the record and just as empty.
-     *
-     * A step that genuinely wants "everything" says so by authoring no filter,
-     * which is a different sentence from one whose filter did not render.
-     *
-     * @param array $config The step configuration.
-     * @param array $json   The current item's record.
-     *
-     * @return array The rendered filters.
-     *
-     * @throws RuntimeException When a filter placeholder renders empty.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    private function renderFilters(array $config, array $json): array
-    {
-        $rendered = FlowValueTemplate::renderTracked(
-            value: (array) ($config['filters'] ?? []),
-            json: $json
-        );
+		return $records;
+	}//end read()
 
-        if ($rendered['unresolved'] !== []) {
-            throw new RuntimeException(
-                $this->l10n->t(
-                    'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
-                    .'A filter that renders empty matches nothing, so the step would report success having read no objects.',
-                    [implode(', ', $rendered['unresolved'])]
-                )
-            );
-        }
+	/**
+	 * The bounded result cap for one read.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return int The limit.
+	 */
+	private function limitFrom(array $config): int {
+		$limit = (int)($config['limit'] ?? self::DEFAULT_LIMIT);
+		if ($limit < 1) {
+			return self::DEFAULT_LIMIT;
+		}
 
-        return (array) $rendered['value'];
+		return min($limit, self::MAX_LIMIT);
+	}//end limitFrom()
 
-    }//end renderFilters()
+	/**
+	 * The run's owner, whose RBAC bounds the read.
+	 *
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return IUser The run owner.
+	 *
+	 * @throws RuntimeException When the run carries no resolvable owner.
+	 */
+	private function resolveOwner(array $context): IUser {
+		$uid = ($context['triggeredBy'] ?? null);
+		if (is_string($uid) === false || trim($uid) === '') {
+			throw new RuntimeException(
+				$this->l10n->t('This flow run has no owner (triggeredBy); an object read must be attributable.')
+			);
+		}
 
-    /**
-     * Perform one read as the run owner.
-     *
-     * A failure THROWS rather than returning an empty list. "No objects
-     * matched" and "the read did not happen" are different answers, and a
-     * caller that cannot tell them apart — a reaper, a guard, a count — will
-     * read the second as the first and quietly do nothing.
-     *
-     * @param Register $register The resolved register.
-     * @param Schema   $schema   The resolved schema.
-     * @param array    $filters  The rendered filters.
-     * @param int      $limit    The bounded result cap.
-     * @param IUser    $owner    The run owner, whose RBAC applies.
-     *
-     * @return array<int, array> The matched objects, as plain records.
-     *
-     * @throws RuntimeException When the read itself fails.
-     */
-    private function read(Register $register, Schema $schema, array $filters, int $limit, IUser $owner): array
-    {
-        try {
-            // The read runs AS the owner. `$owner` was resolved, declared and
-            // documented as "the subject whose RBAC applies" — and then never
-            // used, so the read actually ran under whatever subject the ambient
-            // session happened to carry. Under CLI cron that is no subject at
-            // all, and both the RBAC and the organisation filter treat a
-            // sessionless CLI context as trusted and skip themselves entirely.
-            // So a scheduled flow read past the very access control this
-            // parameter names.
-            //
-            // ObjectService::findAll() has no acting-user parameter anywhere on
-            // its chain, so the subject is set for the duration of the call and
-            // restored afterwards. See ObjectService::runAs() for why that is
-            // the seam rather than threading a user through the query layer.
-            $found = $this->objects->runAs(
-                $owner,
-                fn (): array => $this->objects
-                    ->setRegister($register)
-                    ->setSchema($schema)
-                    ->findAll(config: ['filters' => $filters, 'limit' => $limit])
-            );
-        } catch (Throwable $e) {
-            throw new RuntimeException(
-                $this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
-                0,
-                $e
-            );
-        }//end try
+		$user = $this->userManager->get(trim($uid));
+		if ($user === null) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'This flow run\'s owner "%s" (triggeredBy) is not a user account; an object read must be attributable.',
+					[trim($uid)]
+				)
+			);
+		}
 
-        $records = [];
-        foreach ($found as $object) {
-            if (($object instanceof ObjectEntity) === false) {
-                continue;
-            }
+		return $user;
+	}//end resolveOwner()
 
-            $record = (array) $object->getObject();
-            // The uuid is what a follow-up write or delete needs to name this
-            // row, and it does not live in the record's own fields.
-            $record['uuid'] = $object->getUuid();
+	/**
+	 * Resolve the configured register from a slug, uuid or id.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return Register The resolved register.
+	 *
+	 * @throws UnexpectedValueException When it does not resolve.
+	 */
+	private function resolveRegister(array $config): Register {
+		$identifier = trim((string)($config['register'] ?? ''));
 
-            $records[] = $record;
-        }
+		try {
+			return $this->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The register "%s" could not be resolved.', [$identifier]),
+				0,
+				$e
+			);
+		}
 
-        return $records;
+	}//end resolveRegister()
 
-    }//end read()
+	/**
+	 * Resolve the configured schema, preferring the register's own schemas.
+	 *
+	 * A bare slug is only unique WITHIN a register. Resolving it globally lets
+	 * a generic slug (`order`, `task`, `lock`) land on another app's schema
+	 * that happens to share it — the same reasoning as `ObjectWriteNode`.
+	 *
+	 * @param array $config The step configuration.
+	 * @param Register $register The already-resolved register.
+	 *
+	 * @return Schema The resolved schema.
+	 *
+	 * @throws UnexpectedValueException When it does not resolve.
+	 */
+	private function resolveSchema(array $config, Register $register): Schema {
+		$identifier = trim((string)($config['schema'] ?? ''));
 
-    /**
-     * The bounded result cap for one read.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return int The limit.
-     */
-    private function limitFrom(array $config): int
-    {
-        $limit = (int) ($config['limit'] ?? self::DEFAULT_LIMIT);
-        if ($limit < 1) {
-            return self::DEFAULT_LIMIT;
-        }
+		if (is_numeric($identifier) === false) {
+			$scoped = $this->schemas->findBySlugInIds(
+				slug: $identifier,
+				schemaIds: (array)($register->getSchemas() ?? [])
+			);
+			if ($scoped !== null) {
+				return $scoped;
+			}
+		}
 
-        return min($limit, self::MAX_LIMIT);
+		try {
+			return $this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
+				0,
+				$e
+			);
+		}
 
-    }//end limitFrom()
-
-    /**
-     * The run's owner, whose RBAC bounds the read.
-     *
-     * @param array $context Run-level metadata.
-     *
-     * @return IUser The run owner.
-     *
-     * @throws RuntimeException When the run carries no resolvable owner.
-     */
-    private function resolveOwner(array $context): IUser
-    {
-        $uid = ($context['triggeredBy'] ?? null);
-        if (is_string($uid) === false || trim($uid) === '') {
-            throw new RuntimeException(
-                $this->l10n->t('This flow run has no owner (triggeredBy); an object read must be attributable.')
-            );
-        }
-
-        $user = $this->userManager->get(trim($uid));
-        if ($user === null) {
-            throw new RuntimeException(
-                $this->l10n->t(
-                    'This flow run\'s owner "%s" (triggeredBy) is not a user account; an object read must be attributable.',
-                    [trim($uid)]
-                )
-            );
-        }
-
-        return $user;
-
-    }//end resolveOwner()
-
-    /**
-     * Resolve the configured register from a slug, uuid or id.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return Register The resolved register.
-     *
-     * @throws UnexpectedValueException When it does not resolve.
-     */
-    private function resolveRegister(array $config): Register
-    {
-        $identifier = trim((string) ($config['register'] ?? ''));
-
-        try {
-            return $this->registers->find(id: $identifier, _rbac: false, _multitenancy: false);
-        } catch (Throwable $e) {
-            throw new UnexpectedValueException(
-                $this->l10n->t('The register "%s" could not be resolved.', [$identifier]),
-                0,
-                $e
-            );
-        }
-
-    }//end resolveRegister()
-
-    /**
-     * Resolve the configured schema, preferring the register's own schemas.
-     *
-     * A bare slug is only unique WITHIN a register. Resolving it globally lets
-     * a generic slug (`order`, `task`, `lock`) land on another app's schema
-     * that happens to share it — the same reasoning as `ObjectWriteNode`.
-     *
-     * @param array    $config   The step configuration.
-     * @param Register $register The already-resolved register.
-     *
-     * @return Schema The resolved schema.
-     *
-     * @throws UnexpectedValueException When it does not resolve.
-     */
-    private function resolveSchema(array $config, Register $register): Schema
-    {
-        $identifier = trim((string) ($config['schema'] ?? ''));
-
-        if (is_numeric($identifier) === false) {
-            $scoped = $this->schemas->findBySlugInIds(
-                slug: $identifier,
-                schemaIds: (array) ($register->getSchemas() ?? [])
-            );
-            if ($scoped !== null) {
-                return $scoped;
-            }
-        }
-
-        try {
-            return $this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
-        } catch (Throwable $e) {
-            throw new UnexpectedValueException(
-                $this->l10n->t('The schema "%s" could not be resolved.', [$identifier]),
-                0,
-                $e
-            );
-        }
-
-    }//end resolveSchema()
+	}//end resolveSchema()
 }//end class

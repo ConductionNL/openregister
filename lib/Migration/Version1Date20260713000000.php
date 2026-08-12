@@ -64,58 +64,56 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class Version1Date20260713000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260713000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_scheduled_reports') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_scheduled_reports') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_scheduled_reports');
+		$table = $schema->createTable('openregister_scheduled_reports');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('owner', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
-        $table->addColumn('filters', Types::TEXT, ['notnull' => false]);
-        $table->addColumn('format', Types::STRING, ['notnull' => true, 'length' => 16]);
-        $table->addColumn('schedule_type', Types::STRING, ['notnull' => true, 'length' => 16]);
-        $table->addColumn('schedule_hour', Types::SMALLINT, ['notnull' => true, 'default' => 0]);
-        $table->addColumn('schedule_day_of_week', Types::SMALLINT, ['notnull' => false]);
-        $table->addColumn('schedule_day_of_month', Types::SMALLINT, ['notnull' => false]);
-        $table->addColumn('delivery_folder', Types::STRING, ['notnull' => true, 'length' => 512, 'default' => 'Reports/']);
-        $table->addColumn('enabled', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
-        $table->addColumn('last_run_at', Types::DATETIME, ['notnull' => false]);
-        $table->addColumn('last_status', Types::STRING, ['notnull' => false, 'length' => 16]);
-        $table->addColumn('last_error', Types::TEXT, ['notnull' => false]);
-        $table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
-        $table->addColumn('updated_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('owner', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true]);
+		$table->addColumn('filters', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('format', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('schedule_type', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('schedule_hour', Types::SMALLINT, ['notnull' => true, 'default' => 0]);
+		$table->addColumn('schedule_day_of_week', Types::SMALLINT, ['notnull' => false]);
+		$table->addColumn('schedule_day_of_month', Types::SMALLINT, ['notnull' => false]);
+		$table->addColumn('delivery_folder', Types::STRING, ['notnull' => true, 'length' => 512, 'default' => 'Reports/']);
+		$table->addColumn('enabled', Types::BOOLEAN, ['notnull' => true, 'default' => true]);
+		$table->addColumn('last_run_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('last_status', Types::STRING, ['notnull' => false, 'length' => 16]);
+		$table->addColumn('last_error', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('updated_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['owner'], 'idx_or_sched_report_owner');
-        $table->addIndex(['enabled'], 'idx_or_sched_report_enabled');
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['owner'], 'idx_or_sched_report_owner');
+		$table->addIndex(['enabled'], 'idx_or_sched_report_enabled');
 
-        $output->info('Created openregister_scheduled_reports table');
+		$output->info('Created openregister_scheduled_reports table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

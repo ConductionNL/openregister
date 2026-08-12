@@ -59,115 +59,112 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class PhotoLink extends Entity implements JsonSerializable
-{
+class PhotoLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The NC Photos album id (primary key in `oc_photos_albums`).
-     *
-     * @var integer|null
-     */
-    protected ?int $albumId = null;
+	/**
+	 * The NC Photos album id (primary key in `oc_photos_albums`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $albumId = null;
 
-    /**
-     * The album display name (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $albumName = null;
+	/**
+	 * The album display name (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $albumName = null;
 
-    /**
-     * The cached cover photo thumbnail href.
-     *
-     * @var string|null
-     */
-    protected ?string $coverPhotoUrl = null;
+	/**
+	 * The cached cover photo thumbnail href.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $coverPhotoUrl = null;
 
-    /**
-     * The cached photo count.
-     *
-     * @var integer|null
-     */
-    protected ?int $photoCount = null;
+	/**
+	 * The cached photo count.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $photoCount = null;
 
-    /**
-     * The cached album last-edited (last-added-photo) timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $lastEdited = null;
+	/**
+	 * The cached album last-edited (last-added-photo) timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastEdited = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'albumId', type: 'integer');
-        $this->addType(fieldName: 'albumName', type: 'string');
-        $this->addType(fieldName: 'coverPhotoUrl', type: 'string');
-        $this->addType(fieldName: 'photoCount', type: 'integer');
-        $this->addType(fieldName: 'lastEdited', type: 'datetime');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'albumId', type: 'integer');
+		$this->addType(fieldName: 'albumName', type: 'string');
+		$this->addType(fieldName: 'coverPhotoUrl', type: 'string');
+		$this->addType(fieldName: 'photoCount', type: 'integer');
+		$this->addType(fieldName: 'lastEdited', type: 'datetime');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'            => $this->id,
-            'objectUuid'    => $this->objectUuid,
-            'registerId'    => $this->registerId,
-            'schemaId'      => $this->schemaId,
-            'albumId'       => $this->albumId,
-            'albumName'     => $this->albumName,
-            'coverPhotoUrl' => $this->coverPhotoUrl,
-            'photoCount'    => $this->photoCount,
-            'lastEdited'    => $this->lastEdited?->format(DateTime::ATOM),
-            'linkedBy'      => $this->linkedBy,
-            'linkedAt'      => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'albumId' => $this->albumId,
+			'albumName' => $this->albumName,
+			'coverPhotoUrl' => $this->coverPhotoUrl,
+			'photoCount' => $this->photoCount,
+			'lastEdited' => $this->lastEdited?->format(DateTime::ATOM),
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

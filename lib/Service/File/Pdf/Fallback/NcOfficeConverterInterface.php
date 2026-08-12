@@ -56,41 +56,40 @@ namespace OCA\OpenRegister\Service\File\Pdf\Fallback;
  *
  * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
-interface NcOfficeConverterInterface
-{
-    /**
-     * Whether the NC Office bridge is reachable + ready for conversion.
-     *
-     * Path B short-circuits when this returns false (treats as
-     * `validation_failed_after_fallback` without attempting a round-trip).
-     *
-     * @return bool True when NC Office is installed and reachable.
-     */
-    public function isAvailable(): bool;
+interface NcOfficeConverterInterface {
+	/**
+	 * Whether the NC Office bridge is reachable + ready for conversion.
+	 *
+	 * Path B short-circuits when this returns false (treats as
+	 * `validation_failed_after_fallback` without attempting a round-trip).
+	 *
+	 * @return bool True when NC Office is installed and reachable.
+	 */
+	public function isAvailable(): bool;
 
-    /**
-     * Convert PDF bytes to ODT bytes via NC Office.
-     *
-     * @param string $pdfBytes Raw input PDF bytes.
-     *
-     * @return string Raw output ODT bytes.
-     *
-     * @throws \RuntimeException When the conversion fails for any reason.
-     *
-     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
-     */
-    public function pdfToOdt(string $pdfBytes): string;
+	/**
+	 * Convert PDF bytes to ODT bytes via NC Office.
+	 *
+	 * @param string $pdfBytes Raw input PDF bytes.
+	 *
+	 * @return string Raw output ODT bytes.
+	 *
+	 * @throws \RuntimeException When the conversion fails for any reason.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
+	 */
+	public function pdfToOdt(string $pdfBytes): string;
 
-    /**
-     * Convert ODT bytes to PDF bytes via NC Office.
-     *
-     * @param string $odtBytes Raw input ODT bytes.
-     *
-     * @return string Raw output PDF bytes.
-     *
-     * @throws \RuntimeException When the conversion fails for any reason.
-     *
-     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
-     */
-    public function odtToPdf(string $odtBytes): string;
+	/**
+	 * Convert ODT bytes to PDF bytes via NC Office.
+	 *
+	 * @param string $odtBytes Raw input ODT bytes.
+	 *
+	 * @return string Raw output PDF bytes.
+	 *
+	 * @throws \RuntimeException When the conversion fails for any reason.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
+	 */
+	public function odtToPdf(string $odtBytes): string;
 }//end interface

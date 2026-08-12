@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AppHost GenericPreferencesController — per-user scoping + leak-safe tests.
  *
@@ -28,104 +29,95 @@ use PHPUnit\Framework\TestCase;
  * Preferences are strictly session-user-scoped (no IDOR surface), keys are
  * sanitised into the `pref_` namespace, and anonymous callers get 401.
  */
-class GenericPreferencesControllerTest extends TestCase
-{
-    private function controller(IConfig $config, ?string $uid='alice'): GenericPreferencesController
-    {
-        $userSession = $this->createMock(IUserSession::class);
-        if ($uid === null) {
-            $userSession->method('getUser')->willReturn(null);
-        } else {
-            $user = $this->createMock(IUser::class);
-            $user->method('getUID')->willReturn($uid);
-            $userSession->method('getUser')->willReturn($user);
-        }
+class GenericPreferencesControllerTest extends TestCase {
+	private function controller(IConfig $config, ?string $uid = 'alice'): GenericPreferencesController {
+		$userSession = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$userSession->method('getUser')->willReturn(null);
+		} else {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+			$userSession->method('getUser')->willReturn($user);
+		}
 
-        return new GenericPreferencesController(
-            'myapp',
-            $this->createMock(IRequest::class),
-            $config,
-            $userSession
-        );
-    }//end controller()
+		return new GenericPreferencesController(
+			'myapp',
+			$this->createMock(IRequest::class),
+			$config,
+			$userSession
+		);
+	}//end controller()
 
-    public function testGetPreferenceReadsSessionUserUnderLeafAppNamespace(): void
-    {
-        // Scenario: Preference persists per user — the userId always comes from
-        // the session and the value lives under the LEAF app id.
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->once())
-            ->method('getUserValue')
-            ->with('alice', 'myapp', 'pref_sidebar-width', '')
-            ->willReturn('320');
+	public function testGetPreferenceReadsSessionUserUnderLeafAppNamespace(): void {
+		// Scenario: Preference persists per user — the userId always comes from
+		// the session and the value lives under the LEAF app id.
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->once())
+			->method('getUserValue')
+			->with('alice', 'myapp', 'pref_sidebar-width', '')
+			->willReturn('320');
 
-        $response = $this->controller($config)->getPreference('sidebar-width');
-        $this->assertSame(['value' => '320'], $response->getData());
-    }//end testGetPreferenceReadsSessionUserUnderLeafAppNamespace()
+		$response = $this->controller($config)->getPreference('sidebar-width');
+		$this->assertSame(['value' => '320'], $response->getData());
+	}//end testGetPreferenceReadsSessionUserUnderLeafAppNamespace()
 
-    public function testGetPreferenceReturnsNullWhenUnset(): void
-    {
-        $config = $this->createMock(IConfig::class);
-        $config->method('getUserValue')->willReturn('');
+	public function testGetPreferenceReturnsNullWhenUnset(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserValue')->willReturn('');
 
-        $response = $this->controller($config)->getPreference('sidebar-width');
-        $this->assertSame(['value' => null], $response->getData());
-    }//end testGetPreferenceReturnsNullWhenUnset()
+		$response = $this->controller($config)->getPreference('sidebar-width');
+		$this->assertSame(['value' => null], $response->getData());
+	}//end testGetPreferenceReturnsNullWhenUnset()
 
-    public function testSetPreferenceStoresValueForSessionUser(): void
-    {
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->once())
-            ->method('setUserValue')
-            ->with('alice', 'myapp', 'pref_theme', 'dark');
+	public function testSetPreferenceStoresValueForSessionUser(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->once())
+			->method('setUserValue')
+			->with('alice', 'myapp', 'pref_theme', 'dark');
 
-        $response = $this->controller($config)->setPreference('theme', 'dark');
-        $this->assertSame(['value' => 'dark'], $response->getData());
-    }//end testSetPreferenceStoresValueForSessionUser()
+		$response = $this->controller($config)->setPreference('theme', 'dark');
+		$this->assertSame(['value' => 'dark'], $response->getData());
+	}//end testSetPreferenceStoresValueForSessionUser()
 
-    public function testSetPreferenceEmptyValueDeletes(): void
-    {
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->once())
-            ->method('deleteUserValue')
-            ->with('alice', 'myapp', 'pref_theme');
-        $config->expects($this->never())->method('setUserValue');
+	public function testSetPreferenceEmptyValueDeletes(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->once())
+			->method('deleteUserValue')
+			->with('alice', 'myapp', 'pref_theme');
+		$config->expects($this->never())->method('setUserValue');
 
-        $response = $this->controller($config)->setPreference('theme', '');
-        $this->assertSame(['value' => null], $response->getData());
-    }//end testSetPreferenceEmptyValueDeletes()
+		$response = $this->controller($config)->setPreference('theme', '');
+		$this->assertSame(['value' => null], $response->getData());
+	}//end testSetPreferenceEmptyValueDeletes()
 
-    public function testAnonymousCallerGets401(): void
-    {
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->never())->method('getUserValue');
+	public function testAnonymousCallerGets401(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->never())->method('getUserValue');
 
-        $get = $this->controller($config, uid: null)->getPreference('theme');
-        $set = $this->controller($config, uid: null)->setPreference('theme', 'dark');
+		$get = $this->controller($config, uid: null)->getPreference('theme');
+		$set = $this->controller($config, uid: null)->setPreference('theme', 'dark');
 
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $get->getStatus());
-        $this->assertSame(Http::STATUS_UNAUTHORIZED, $set->getStatus());
-    }//end testAnonymousCallerGets401()
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $get->getStatus());
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $set->getStatus());
+	}//end testAnonymousCallerGets401()
 
-    public function testKeySanitisationBlocksNamespaceEscape(): void
-    {
-        // A key that sanitises to nothing must be rejected, and no IConfig
-        // access may happen — callers can never reach values outside `pref_`.
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->never())->method('getUserValue');
+	public function testKeySanitisationBlocksNamespaceEscape(): void {
+		// A key that sanitises to nothing must be rejected, and no IConfig
+		// access may happen — callers can never reach values outside `pref_`.
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->never())->method('getUserValue');
 
-        $response = $this->controller($config)->getPreference('///');
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }//end testKeySanitisationBlocksNamespaceEscape()
+		$response = $this->controller($config)->getPreference('///');
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testKeySanitisationBlocksNamespaceEscape()
 
-    public function testMixedKeyIsSanitisedIntoSafeCharset(): void
-    {
-        $config = $this->createMock(IConfig::class);
-        $config->expects($this->once())
-            ->method('getUserValue')
-            ->with('alice', 'myapp', 'pref_mykey', '')
-            ->willReturn('');
+	public function testMixedKeyIsSanitisedIntoSafeCharset(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->once())
+			->method('getUserValue')
+			->with('alice', 'myapp', 'pref_mykey', '')
+			->willReturn('');
 
-        $this->controller($config)->getPreference('My_Key!');
-    }//end testMixedKeyIsSanitisedIntoSafeCharset()
+		$this->controller($config)->getPreference('My_Key!');
+	}//end testMixedKeyIsSanitisedIntoSafeCharset()
 }//end class

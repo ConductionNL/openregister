@@ -29,60 +29,56 @@ use Exception;
  *
  * @package OCA\OpenRegister\Middleware
  */
-class TenantQuotaExceededException extends Exception
-{
-    /**
-     * Constructor
-     *
-     * @param string $message    Error message
-     * @param int    $quota      The quota limit
-     * @param string $resetAt    ISO 8601 timestamp when quota resets
-     * @param int    $retryAfter Seconds until quota reset
-     *
-     * @spec openspec/specs/tenant-quotas/spec.md
-     */
-    public function __construct(
-        string $message,
-        private readonly int $quota,
-        private readonly string $resetAt,
-        private readonly int $retryAfter
-    ) {
-        parent::__construct(message: $message, code: 429);
-    }//end __construct()
+class TenantQuotaExceededException extends Exception {
+	/**
+	 * Constructor
+	 *
+	 * @param string $message Error message
+	 * @param int $quota The quota limit
+	 * @param string $resetAt ISO 8601 timestamp when quota resets
+	 * @param int $retryAfter Seconds until quota reset
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function __construct(
+		string $message,
+		private readonly int $quota,
+		private readonly string $resetAt,
+		private readonly int $retryAfter,
+	) {
+		parent::__construct(message: $message, code: 429);
+	}//end __construct()
 
-    /**
-     * Get the quota limit.
-     *
-     * @return int The quota
-     *
-     * @spec openspec/specs/tenant-quotas/spec.md
-     */
-    public function getQuota(): int
-    {
-        return $this->quota;
-    }//end getQuota()
+	/**
+	 * Get the quota limit.
+	 *
+	 * @return int The quota
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function getQuota(): int {
+		return $this->quota;
+	}//end getQuota()
 
-    /**
-     * Get the reset timestamp.
-     *
-     * @return string ISO 8601 timestamp
-     *
-     * @spec openspec/specs/tenant-quotas/spec.md
-     */
-    public function getResetAt(): string
-    {
-        return $this->resetAt;
-    }//end getResetAt()
+	/**
+	 * Get the reset timestamp.
+	 *
+	 * @return string ISO 8601 timestamp
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function getResetAt(): string {
+		return $this->resetAt;
+	}//end getResetAt()
 
-    /**
-     * Get the retry-after seconds.
-     *
-     * @return int Seconds until reset
-     *
-     * @spec openspec/specs/tenant-quotas/spec.md
-     */
-    public function getRetryAfter(): int
-    {
-        return $this->retryAfter;
-    }//end getRetryAfter()
+	/**
+	 * Get the retry-after seconds.
+	 *
+	 * @return int Seconds until reset
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function getRetryAfter(): int {
+		return $this->retryAfter;
+	}//end getRetryAfter()
 }//end class

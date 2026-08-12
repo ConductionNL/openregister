@@ -42,191 +42,174 @@ use UnexpectedValueException;
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class WaitNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return 'openregister.wait';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return 'openregister.wait';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Wait');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Wait');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Pause the flow for a while, then carry on where it left off.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/history.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Pause the flow for a while, then carry on where it left off.');
+	/**
+	 * Waiting grants no privilege.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of a wait step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return ['for', 'until'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/history.svg');
+	/**
+	 * Reject a wait that names no time.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When neither `for` nor `until` is usable.
+	 */
+	public function validateConfig(array $config): void {
+		$for = trim((string)($config['for'] ?? ''));
+		$until = trim((string)($config['until'] ?? ''));
 
-    }//end getIcon()
+		if ($for === '' && $until === '') {
+			throw new UnexpectedValueException($this->l10n->t('A wait needs a duration or a moment to wait until.'));
+		}
 
-    /**
-     * Waiting grants no privilege.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+		if ($this->resolve(config: $config) === null) {
+			throw new UnexpectedValueException($this->l10n->t('That is not a time this flow can wait until.'));
+		}
 
-    }//end isAvailableForScope()
+	}//end validateConfig()
 
-    /**
-     * The config vocabulary of a wait step.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['for', 'until'];
+	/**
+	 * Suspend on the way in; pass through on the way back.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, unchanged, once the wait is over.
+	 *
+	 * @throws FlowSuspension On the first pass, to pause the run.
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		if (($context['resuming'] ?? false) === true) {
+			// Woken by the worker: the wait is over by construction, because
+			// the run was only eligible once `resumeAt` had passed.
+			return $items;
+		}
 
-    }//end configKeys()
+		$resumeAt = $this->resolve(config: $config);
+		if ($resumeAt === null) {
+			// Unparseable at run time (an expression produced nonsense).
+			// Passing through beats suspending forever on a time that will
+			// never arrive.
+			return $items;
+		}
 
-    /**
-     * Reject a wait that names no time.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When neither `for` nor `until` is usable.
-     */
-    public function validateConfig(array $config): void
-    {
-        $for   = trim((string) ($config['for'] ?? ''));
-        $until = trim((string) ($config['until'] ?? ''));
+		throw new FlowSuspension(
+			resumeAt: $resumeAt,
+			reason: sprintf('waiting until %s', $resumeAt->format('c'))
+		);
 
-        if ($for === '' && $until === '') {
-            throw new UnexpectedValueException($this->l10n->t('A wait needs a duration or a moment to wait until.'));
-        }
+	}//end execute()
 
-        if ($this->resolve(config: $config) === null) {
-            throw new UnexpectedValueException($this->l10n->t('That is not a time this flow can wait until.'));
-        }
+	/**
+	 * Work out when this wait ends.
+	 *
+	 * `until` is an absolute moment, `for` a relative one ("15 minutes",
+	 * "2 days"). Both go through strtotime, so an author can write either the
+	 * way they would say it.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return DateTime|null The resume time, or null when it cannot be read.
+	 *
+	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 */
+	private function resolve(array $config): ?DateTime {
+		$until = trim((string)($config['until'] ?? ''));
+		if ($until !== '') {
+			$time = strtotime($until);
+			if ($time === false) {
+				return null;
+			}
 
-    }//end validateConfig()
+			return (new DateTime())->setTimestamp($time);
+		}
 
-    /**
-     * Suspend on the way in; pass through on the way back.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, unchanged, once the wait is over.
-     *
-     * @throws FlowSuspension On the first pass, to pause the run.
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        if (($context['resuming'] ?? false) === true) {
-            // Woken by the worker: the wait is over by construction, because
-            // the run was only eligible once `resumeAt` had passed.
-            return $items;
-        }
+		$for = trim((string)($config['for'] ?? ''));
+		if ($for === '') {
+			return null;
+		}
 
-        $resumeAt = $this->resolve(config: $config);
-        if ($resumeAt === null) {
-            // Unparseable at run time (an expression produced nonsense).
-            // Passing through beats suspending forever on a time that will
-            // never arrive.
-            return $items;
-        }
+		// A bare number is read as seconds, which is what an author who typed
+		// "30" almost certainly meant.
+		if (ctype_digit($for) === true) {
+			return (new DateTime())->setTimestamp((time() + (int)$for));
+		}
 
-        throw new FlowSuspension(
-            resumeAt: $resumeAt,
-            reason: sprintf('waiting until %s', $resumeAt->format('c'))
-        );
+		$time = strtotime('+' . ltrim($for, '+'));
+		if ($time === false) {
+			return null;
+		}
 
-    }//end execute()
-
-    /**
-     * Work out when this wait ends.
-     *
-     * `until` is an absolute moment, `for` a relative one ("15 minutes",
-     * "2 days"). Both go through strtotime, so an author can write either the
-     * way they would say it.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return DateTime|null The resume time, or null when it cannot be read.
-     *
-     * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
-     */
-    private function resolve(array $config): ?DateTime
-    {
-        $until = trim((string) ($config['until'] ?? ''));
-        if ($until !== '') {
-            $time = strtotime($until);
-            if ($time === false) {
-                return null;
-            }
-
-            return (new DateTime())->setTimestamp($time);
-        }
-
-        $for = trim((string) ($config['for'] ?? ''));
-        if ($for === '') {
-            return null;
-        }
-
-        // A bare number is read as seconds, which is what an author who typed
-        // "30" almost certainly meant.
-        if (ctype_digit($for) === true) {
-            return (new DateTime())->setTimestamp((time() + (int) $for));
-        }
-
-        $time = strtotime('+'.ltrim($for, '+'));
-        if ($time === false) {
-            return null;
-        }
-
-        return (new DateTime())->setTimestamp($time);
-
-    }//end resolve()
+		return (new DateTime())->setTimestamp($time);
+	}//end resolve()
 }//end class

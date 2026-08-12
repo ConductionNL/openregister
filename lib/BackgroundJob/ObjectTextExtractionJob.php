@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCP\BackgroundJob\QueuedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\QueuedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -44,142 +44,140 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\BackgroundJob
  */
-class ObjectTextExtractionJob extends QueuedJob
-{
+class ObjectTextExtractionJob extends QueuedJob {
 
-    /**
-     * Configuration service
-     *
-     * @var IAppConfig
-     */
-    private IAppConfig $config;
+	/**
+	 * Configuration service
+	 *
+	 * @var IAppConfig
+	 */
+	private IAppConfig $config;
 
-    /**
-     * Logger service
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Logger service
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
 
-    /**
-     * Text extraction service
-     *
-     * @var TextExtractionService
-     */
-    private TextExtractionService $textExtractor;
+	/**
+	 * Text extraction service
+	 *
+	 * @var TextExtractionService
+	 */
+	private TextExtractionService $textExtractor;
 
-    /**
-     * Constructor
-     *
-     * Initializes the background job with required services via dependency injection.
-     *
-     * @param ITimeFactory          $time          Time factory for parent class
-     * @param IAppConfig            $config        Configuration service
-     * @param LoggerInterface       $logger        Logger service
-     * @param TextExtractionService $textExtractor Text extraction service
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IAppConfig $config,
-        LoggerInterface $logger,
-        TextExtractionService $textExtractor
-    ) {
-        parent::__construct(time: $time);
-        $this->config        = $config;
-        $this->logger        = $logger;
-        $this->textExtractor = $textExtractor;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * Initializes the background job with required services via dependency injection.
+	 *
+	 * @param ITimeFactory $time Time factory for parent class
+	 * @param IAppConfig $config Configuration service
+	 * @param LoggerInterface $logger Logger service
+	 * @param TextExtractionService $textExtractor Text extraction service
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IAppConfig $config,
+		LoggerInterface $logger,
+		TextExtractionService $textExtractor,
+	) {
+		parent::__construct(time: $time);
+		$this->config = $config;
+		$this->logger = $logger;
+		$this->textExtractor = $textExtractor;
+	}//end __construct()
 
-    /**
-     * Run the background job
-     *
-     * Extracts text from the specified object and stores it in the database.
-     * The job expects an argument array with 'object_id' key.
-     *
-     * @param array $argument Job arguments containing object_id
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    protected function run($argument): void
-    {
-        // Check if object extraction is enabled.
-        $objMgmtValue   = $this->config->getValueString(
-            app: 'openregister',
-            key: 'objectManagement',
-            default: '{}'
-        );
-        $objectSettings = json_decode($objMgmtValue, true);
-        if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
-            $message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
-            $this->logger->info(
-                message: $message,
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return;
-        }
+	/**
+	 * Run the background job
+	 *
+	 * Extracts text from the specified object and stores it in the database.
+	 * The job expects an argument array with 'object_id' key.
+	 *
+	 * @param array $argument Job arguments containing object_id
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	protected function run($argument): void {
+		// Check if object extraction is enabled.
+		$objMgmtValue = $this->config->getValueString(
+			app: 'openregister',
+			key: 'objectManagement',
+			default: '{}'
+		);
+		$objectSettings = json_decode($objMgmtValue, true);
+		if (($objectSettings['objectExtractionMode'] ?? 'background') === 'none') {
+			$message = '[ObjectTextExtractionJob] Object extraction is disabled. Not extracting text from objects.';
+			$this->logger->info(
+				message: $message,
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return;
+		}
 
-        // Validate argument.
-        if (isset($argument['object_id']) === false) {
-            $this->logger->error(
-                message: '[ObjectTextExtractionJob] Missing object_id in job arguments',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'argument' => $argument,
-                ]
-            );
-            return;
-        }
+		// Validate argument.
+		if (isset($argument['object_id']) === false) {
+			$this->logger->error(
+				message: '[ObjectTextExtractionJob] Missing object_id in job arguments',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'argument' => $argument,
+				]
+			);
+			return;
+		}
 
-        $objectId = (int) $argument['object_id'];
+		$objectId = (int)$argument['object_id'];
 
-        $this->logger->info(
-            message: '[ObjectTextExtractionJob] Starting text extraction',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'object_id' => $objectId,
-                'job_id'    => $this->getId(),
-            ]
-        );
+		$this->logger->info(
+			message: '[ObjectTextExtractionJob] Starting text extraction',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'object_id' => $objectId,
+				'job_id' => $this->getId(),
+			]
+		);
 
-        $startTime = microtime(true);
+		$startTime = microtime(true);
 
-        try {
-            // Extract text using TextExtractionService.
-            $this->textExtractor->extractObject(objectId: $objectId, forceReExtract: false);
+		try {
+			// Extract text using TextExtractionService.
+			$this->textExtractor->extractObject(objectId: $objectId, forceReExtract: false);
 
-            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+			$processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->info(
-                message: '[ObjectTextExtractionJob] Text extraction completed successfully',
-                context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
-                    'object_id'          => $objectId,
-                    'processing_time_ms' => $processingTime,
-                ]
-            );
-        } catch (\Exception $e) {
-            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+			$this->logger->info(
+				message: '[ObjectTextExtractionJob] Text extraction completed successfully',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'object_id' => $objectId,
+					'processing_time_ms' => $processingTime,
+				]
+			);
+		} catch (\Exception $e) {
+			$processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->logger->error(
-                message: '[ObjectTextExtractionJob] Exception during text extraction',
-                context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
-                    'object_id'          => $objectId,
-                    'error'              => $e->getMessage(),
-                    'trace'              => $e->getTraceAsString(),
-                    'processing_time_ms' => $processingTime,
-                ]
-            );
-        }//end try
-    }//end run()
+			$this->logger->error(
+				message: '[ObjectTextExtractionJob] Exception during text extraction',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'object_id' => $objectId,
+					'error' => $e->getMessage(),
+					'trace' => $e->getTraceAsString(),
+					'processing_time_ms' => $processingTime,
+				]
+			);
+		}//end try
+	}//end run()
 }//end class

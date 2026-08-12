@@ -37,6 +37,5 @@ use RuntimeException;
  *
  * @package OCA\OpenRegister\Db
  */
-class DuplicateDispatchException extends RuntimeException
-{
+class DuplicateDispatchException extends RuntimeException {
 }//end class

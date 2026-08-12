@@ -30,47 +30,46 @@ namespace OCA\OpenRegister\Service\TextExtraction;
  * Each handler is responsible for extracting text from a specific source type
  * (files, objects, agenda items, emails, etc.).
  */
-interface TextExtractionHandlerInterface
-{
-    /**
-     * Extract text from a source.
-     *
-     * @param int                  $sourceId   Source identifier.
-     * @param array<string, mixed> $sourceMeta Source metadata.
-     * @param bool                 $force      Force re-extraction even if up-to-date.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter is required for extraction control
-     *
-     * @return array{
-     *     source_type: string,
-     *     source_id: int,
-     *     text: string,
-     *     length: int,
-     *     checksum: string,
-     *     method: string,
-     *     owner: string|null,
-     *     organisation: string|null,
-     *     language: string|null,
-     *     language_level: string|null,
-     *     language_confidence: float|null,
-     *     detection_method: string|null,
-     *     metadata: array<string, mixed>
-     * }
-     *
-     * @throws \Exception When extraction fails.
-     *
-     * @spec openspec/specs/text-extraction/spec.md
-     */
-    public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
+interface TextExtractionHandlerInterface {
+	/**
+	 * Extract text from a source.
+	 *
+	 * @param int $sourceId Source identifier.
+	 * @param array<string, mixed> $sourceMeta Source metadata.
+	 * @param bool $force Force re-extraction even if up-to-date.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter is required for extraction control
+	 *
+	 * @return array{
+	 *     source_type: string,
+	 *     source_id: int,
+	 *     text: string,
+	 *     length: int,
+	 *     checksum: string,
+	 *     method: string,
+	 *     owner: string|null,
+	 *     organisation: string|null,
+	 *     language: string|null,
+	 *     language_level: string|null,
+	 *     language_confidence: float|null,
+	 *     detection_method: string|null,
+	 *     metadata: array<string, mixed>
+	 * }
+	 *
+	 * @throws \Exception When extraction fails.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array;
 
-    /**
-     * Get source metadata for a given source ID.
-     *
-     * @param int $sourceId Source identifier.
-     *
-     * @return array<string, mixed> Source metadata.
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If source not found.
-     */
-    public function getSourceMetadata(int $sourceId): array;
+	/**
+	 * Get source metadata for a given source ID.
+	 *
+	 * @param int $sourceId Source identifier.
+	 *
+	 * @return array<string, mixed> Source metadata.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If source not found.
+	 */
+	public function getSourceMetadata(int $sourceId): array;
 }//end interface

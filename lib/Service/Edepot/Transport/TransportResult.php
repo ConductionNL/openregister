@@ -32,188 +32,179 @@ namespace OCA\OpenRegister\Service\Edepot\Transport;
  *
  * @psalm-suppress UnusedClass
  */
-class TransportResult
-{
+class TransportResult {
 
-    /**
-     * Whether the transport succeeded overall.
-     *
-     * @var boolean
-     */
-    private bool $success;
+	/**
+	 * Whether the transport succeeded overall.
+	 *
+	 * @var boolean
+	 */
+	private bool $success;
 
-    /**
-     * Per-object results mapping UUID to acceptance status.
-     *
-     * @var array<string, array{accepted: bool, reference: string|null, error: string|null}>
-     */
-    private array $objectResults;
+	/**
+	 * Per-object results mapping UUID to acceptance status.
+	 *
+	 * @var array<string, array{accepted: bool, reference: string|null, error: string|null}>
+	 */
+	private array $objectResults;
 
-    /**
-     * Error message if the transport failed entirely.
-     *
-     * @var string|null
-     */
-    private ?string $errorMessage;
+	/**
+	 * Error message if the transport failed entirely.
+	 *
+	 * @var string|null
+	 */
+	private ?string $errorMessage;
 
-    /**
-     * The e-Depot's reference identifier for the transfer.
-     *
-     * @var string|null
-     */
-    private ?string $transferReference;
+	/**
+	 * The e-Depot's reference identifier for the transfer.
+	 *
+	 * @var string|null
+	 */
+	private ?string $transferReference;
 
-    /**
-     * Constructor.
-     *
-     * @param bool                                                                             $success           Overall success.
-     * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
-     * @param string|null                                                                      $errorMessage      Error message.
-     * @param string|null                                                                      $transferReference Transfer reference.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md
-     */
-    public function __construct(
-        bool $success=false,
-        array $objectResults=[],
-        ?string $errorMessage=null,
-        ?string $transferReference=null
-    ) {
-        $this->success           = $success;
-        $this->objectResults     = $objectResults;
-        $this->errorMessage      = $errorMessage;
-        $this->transferReference = $transferReference;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param bool $success Overall success.
+	 * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults Per-object results.
+	 * @param string|null $errorMessage Error message.
+	 * @param string|null $transferReference Transfer reference.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function __construct(
+		bool $success = false,
+		array $objectResults = [],
+		?string $errorMessage = null,
+		?string $transferReference = null,
+	) {
+		$this->success = $success;
+		$this->objectResults = $objectResults;
+		$this->errorMessage = $errorMessage;
+		$this->transferReference = $transferReference;
+	}//end __construct()
 
-    /**
-     * Check if the transport succeeded.
-     *
-     * @return bool True if successful.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function isSuccess(): bool
-    {
-        return $this->success;
-    }//end isSuccess()
+	/**
+	 * Check if the transport succeeded.
+	 *
+	 * @return bool True if successful.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function isSuccess(): bool {
+		return $this->success;
+	}//end isSuccess()
 
-    /**
-     * Check if the result is a partial success (some objects accepted, some rejected).
-     *
-     * @return bool True if partially successful.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function isPartialSuccess(): bool
-    {
-        if ($this->success === true) {
-            return false;
-        }
+	/**
+	 * Check if the result is a partial success (some objects accepted, some rejected).
+	 *
+	 * @return bool True if partially successful.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function isPartialSuccess(): bool {
+		if ($this->success === true) {
+			return false;
+		}
 
-        $accepted = 0;
-        $rejected = 0;
-        foreach ($this->objectResults as $result) {
-            if ($result['accepted'] === true) {
-                $accepted++;
-                continue;
-            }
+		$accepted = 0;
+		$rejected = 0;
+		foreach ($this->objectResults as $result) {
+			if ($result['accepted'] === true) {
+				$accepted++;
+				continue;
+			}
 
-            $rejected++;
-        }
+			$rejected++;
+		}
 
-        return ($accepted > 0 && $rejected > 0);
-    }//end isPartialSuccess()
+		return ($accepted > 0 && $rejected > 0);
+	}//end isPartialSuccess()
 
-    /**
-     * Get per-object results.
-     *
-     * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function getObjectResults(): array
-    {
-        return $this->objectResults;
-    }//end getObjectResults()
+	/**
+	 * Get per-object results.
+	 *
+	 * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getObjectResults(): array {
+		return $this->objectResults;
+	}//end getObjectResults()
 
-    /**
-     * Get the error message.
-     *
-     * @return string|null The error message.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function getErrorMessage(): ?string
-    {
-        return $this->errorMessage;
-    }//end getErrorMessage()
+	/**
+	 * Get the error message.
+	 *
+	 * @return string|null The error message.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getErrorMessage(): ?string {
+		return $this->errorMessage;
+	}//end getErrorMessage()
 
-    /**
-     * Get the transfer reference.
-     *
-     * @return string|null The e-Depot transfer reference.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md
-     */
-    public function getTransferReference(): ?string
-    {
-        return $this->transferReference;
-    }//end getTransferReference()
+	/**
+	 * Get the transfer reference.
+	 *
+	 * @return string|null The e-Depot transfer reference.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function getTransferReference(): ?string {
+		return $this->transferReference;
+	}//end getTransferReference()
 
-    /**
-     * Get UUIDs of accepted objects.
-     *
-     * @return array<int, string> UUIDs of accepted objects.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function getAcceptedUuids(): array
-    {
-        $uuids = [];
-        foreach ($this->objectResults as $uuid => $result) {
-            if ($result['accepted'] === true) {
-                $uuids[] = $uuid;
-            }
-        }
+	/**
+	 * Get UUIDs of accepted objects.
+	 *
+	 * @return array<int, string> UUIDs of accepted objects.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getAcceptedUuids(): array {
+		$uuids = [];
+		foreach ($this->objectResults as $uuid => $result) {
+			if ($result['accepted'] === true) {
+				$uuids[] = $uuid;
+			}
+		}
 
-        return $uuids;
-    }//end getAcceptedUuids()
+		return $uuids;
+	}//end getAcceptedUuids()
 
-    /**
-     * Get UUIDs of rejected objects.
-     *
-     * @return array<int, string> UUIDs of rejected objects.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function getRejectedUuids(): array
-    {
-        $uuids = [];
-        foreach ($this->objectResults as $uuid => $result) {
-            if ($result['accepted'] === false) {
-                $uuids[] = $uuid;
-            }
-        }
+	/**
+	 * Get UUIDs of rejected objects.
+	 *
+	 * @return array<int, string> UUIDs of rejected objects.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getRejectedUuids(): array {
+		$uuids = [];
+		foreach ($this->objectResults as $uuid => $result) {
+			if ($result['accepted'] === false) {
+				$uuids[] = $uuid;
+			}
+		}
 
-        return $uuids;
-    }//end getRejectedUuids()
+		return $uuids;
+	}//end getRejectedUuids()
 
-    /**
-     * Serialize to array.
-     *
-     * @return array<string,mixed> Serialized result.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-     */
-    public function toArray(): array
-    {
-        return [
-            'success'           => $this->success,
-            'objectResults'     => $this->objectResults,
-            'errorMessage'      => $this->errorMessage,
-            'transferReference' => $this->transferReference,
-        ];
-    }//end toArray()
+	/**
+	 * Serialize to array.
+	 *
+	 * @return array<string,mixed> Serialized result.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function toArray(): array {
+		return [
+			'success' => $this->success,
+			'objectResults' => $this->objectResults,
+			'errorMessage' => $this->errorMessage,
+			'transferReference' => $this->transferReference,
+		];
+	}//end toArray()
 }//end class

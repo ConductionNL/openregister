@@ -36,42 +36,40 @@ use Opis\JsonSchema\Format;
 /**
  * Format resolver asserting that a user id resolves to a real account.
  */
-class UserFormat implements Format
-{
-    /**
-     * Constructor.
-     *
-     * @param IUserManager $userManager The backend consulted for existence.
-     */
-    public function __construct(private readonly IUserManager $userManager)
-    {
-    }//end __construct()
+class UserFormat implements Format {
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserManager $userManager The backend consulted for existence.
+	 */
+	public function __construct(
+		private readonly IUserManager $userManager,
+	) {
+	}//end __construct()
 
-    /**
-     * Validate that the value names an existing Nextcloud user.
-     *
-     * @param mixed $data The value to validate.
-     *
-     * @inheritDoc
-     *
-     * @return bool True when the user exists.
-     *
-     * @spec openspec/specs/data-import-export/spec.md
-     */
-    public function validate(mixed $data): bool
-    {
-        if (is_string($data) === false) {
-            return false;
-        }
+	/**
+	 * Validate that the value names an existing Nextcloud user.
+	 *
+	 * @param mixed $data The value to validate.
+	 *
+	 * @inheritDoc
+	 *
+	 * @return bool True when the user exists.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function validate(mixed $data): bool {
+		if (is_string($data) === false) {
+			return false;
+		}
 
-        $uid = trim($data);
-        if ($uid === '') {
-            return false;
-        }
+		$uid = trim($data);
+		if ($uid === '') {
+			return false;
+		}
 
-        // Existence is the cheaper question and the only one being asked —
-        // userExists() rather than get(), since nothing here needs the object.
-        return $this->userManager->userExists($uid);
-
-    }//end validate()
+		// Existence is the cheaper question and the only one being asked —
+		// userExists() rather than get(), since nothing here needs the object.
+		return $this->userManager->userExists($uid);
+	}//end validate()
 }//end class

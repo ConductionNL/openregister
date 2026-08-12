@@ -36,100 +36,93 @@ use OCP\IUser;
 /**
  * Per-org role gating for publish and install.
  */
-class FederatedConfigAccess
-{
+class FederatedConfigAccess {
 
-    /**
-     * The app its config lives under.
-     */
-    private const APP_ID = 'openregister';
+	/**
+	 * The app its config lives under.
+	 */
+	private const APP_ID = 'openregister';
 
-    /**
-     * App-config key: comma-separated groups allowed to publish.
-     */
-    private const PUBLISH_GROUPS = 'federated_config_publish_groups';
+	/**
+	 * App-config key: comma-separated groups allowed to publish.
+	 */
+	private const PUBLISH_GROUPS = 'federated_config_publish_groups';
 
-    /**
-     * App-config key: comma-separated groups allowed to install.
-     */
-    private const INSTALL_GROUPS = 'federated_config_install_groups';
+	/**
+	 * App-config key: comma-separated groups allowed to install.
+	 */
+	private const INSTALL_GROUPS = 'federated_config_install_groups';
 
-    /**
-     * Constructor.
-     *
-     * @param IGroupManager $groupManager Resolves group membership and admin.
-     * @param IAppConfig    $appConfig    Reads the allowed-group lists.
-     */
-    public function __construct(
-        private readonly IGroupManager $groupManager,
-        private readonly IAppConfig $appConfig
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * @param IGroupManager $groupManager Resolves group membership and admin.
+	 * @param IAppConfig $appConfig Reads the allowed-group lists.
+	 */
+	public function __construct(
+		private readonly IGroupManager $groupManager,
+		private readonly IAppConfig $appConfig,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Whether a user may publish configuration.
-     *
-     * @param IUser|null $user The acting user (null = no session).
-     *
-     * @return boolean Whether publishing is allowed.
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function canPublish(?IUser $user): bool
-    {
-        return $this->isAllowed(user: $user, key: self::PUBLISH_GROUPS);
+	/**
+	 * Whether a user may publish configuration.
+	 *
+	 * @param IUser|null $user The acting user (null = no session).
+	 *
+	 * @return boolean Whether publishing is allowed.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function canPublish(?IUser $user): bool {
+		return $this->isAllowed(user: $user, key: self::PUBLISH_GROUPS);
+	}//end canPublish()
 
-    }//end canPublish()
+	/**
+	 * Whether a user may install configuration.
+	 *
+	 * @param IUser|null $user The acting user (null = no session).
+	 *
+	 * @return boolean Whether installing is allowed.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function canInstall(?IUser $user): bool {
+		return $this->isAllowed(user: $user, key: self::INSTALL_GROUPS);
+	}//end canInstall()
 
-    /**
-     * Whether a user may install configuration.
-     *
-     * @param IUser|null $user The acting user (null = no session).
-     *
-     * @return boolean Whether installing is allowed.
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function canInstall(?IUser $user): bool
-    {
-        return $this->isAllowed(user: $user, key: self::INSTALL_GROUPS);
+	/**
+	 * Whether a user satisfies a group allowlist.
+	 *
+	 * @param IUser|null $user The acting user.
+	 * @param string $key The app-config key holding the allowed groups.
+	 *
+	 * @return boolean Whether allowed.
+	 */
+	private function isAllowed(?IUser $user, string $key): bool {
+		if ($user === null) {
+			return false;
+		}
 
-    }//end canInstall()
+		// Admins may always act.
+		if ($this->groupManager->isAdmin($user->getUID()) === true) {
+			return true;
+		}
 
-    /**
-     * Whether a user satisfies a group allowlist.
-     *
-     * @param IUser|null $user The acting user.
-     * @param string     $key  The app-config key holding the allowed groups.
-     *
-     * @return boolean Whether allowed.
-     */
-    private function isAllowed(?IUser $user, string $key): bool
-    {
-        if ($user === null) {
-            return false;
-        }
+		$raw = trim($this->appConfig->getValueString(self::APP_ID, $key, ''));
+		if ($raw === '') {
+			// Not yet enforced — any signed-in user may act.
+			return true;
+		}
 
-        // Admins may always act.
-        if ($this->groupManager->isAdmin($user->getUID()) === true) {
-            return true;
-        }
+		$allowed = array_filter(array_map('trim', explode(',', $raw)));
+		foreach ($this->groupManager->getUserGroupIds($user) as $groupId) {
+			if (in_array($groupId, $allowed, true) === true) {
+				return true;
+			}
+		}
 
-        $raw = trim($this->appConfig->getValueString(self::APP_ID, $key, ''));
-        if ($raw === '') {
-            // Not yet enforced — any signed-in user may act.
-            return true;
-        }
-
-        $allowed = array_filter(array_map('trim', explode(',', $raw)));
-        foreach ($this->groupManager->getUserGroupIds($user) as $groupId) {
-            if (in_array($groupId, $allowed, true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-
-    }//end isAllowed()
+		return false;
+	}//end isAllowed()
 }//end class

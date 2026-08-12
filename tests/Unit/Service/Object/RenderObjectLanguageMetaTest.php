@@ -29,69 +29,64 @@ use PHPUnit\Framework\TestCase;
  * unit test focuses on the boolean coercion logic exposed implicitly by
  * the render path.
  */
-class RenderObjectLanguageMetaTest extends TestCase
-{
+class RenderObjectLanguageMetaTest extends TestCase {
 
-    /**
-     * Replicate the boolean coercion used by `shouldAttachLanguageMeta`.
-     *
-     * @param mixed $value Raw query parameter value (string|bool|int|null).
-     *
-     * @return bool Whether the envelope should be attached.
-     */
-    private function shouldAttach(mixed $value): bool
-    {
-        if ($value === null) {
-            return false;
-        }
+	/**
+	 * Replicate the boolean coercion used by `shouldAttachLanguageMeta`.
+	 *
+	 * @param mixed $value Raw query parameter value (string|bool|int|null).
+	 *
+	 * @return bool Whether the envelope should be attached.
+	 */
+	private function shouldAttach(mixed $value): bool {
+		if ($value === null) {
+			return false;
+		}
 
-        if (is_string($value) === false) {
-            return ($value === true || $value === 1);
-        }
+		if (is_string($value) === false) {
+			return ($value === true || $value === 1);
+		}
 
-        $normalised = strtolower(trim($value));
-        return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
-    }//end shouldAttach()
+		$normalised = strtolower(trim($value));
+		return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
+	}//end shouldAttach()
 
-    public function testTruthyValuesAttachEnvelope(): void
-    {
-        foreach (['true', 'TRUE', '1', 'yes', 'on'] as $candidate) {
-            $this->assertTrue($this->shouldAttach($candidate), sprintf('"%s" should opt-in', $candidate));
-        }
+	public function testTruthyValuesAttachEnvelope(): void {
+		foreach (['true', 'TRUE', '1', 'yes', 'on'] as $candidate) {
+			$this->assertTrue($this->shouldAttach($candidate), sprintf('"%s" should opt-in', $candidate));
+		}
 
-        $this->assertTrue($this->shouldAttach(true));
-        $this->assertTrue($this->shouldAttach(1));
-    }//end testTruthyValuesAttachEnvelope()
+		$this->assertTrue($this->shouldAttach(true));
+		$this->assertTrue($this->shouldAttach(1));
+	}//end testTruthyValuesAttachEnvelope()
 
-    public function testFalseyValuesSkipEnvelope(): void
-    {
-        $this->assertFalse($this->shouldAttach(null));
-        $this->assertFalse($this->shouldAttach(''));
-        $this->assertFalse($this->shouldAttach('false'));
-        $this->assertFalse($this->shouldAttach('0'));
-        $this->assertFalse($this->shouldAttach('off'));
-        $this->assertFalse($this->shouldAttach(0));
-        $this->assertFalse($this->shouldAttach(false));
-    }//end testFalseyValuesSkipEnvelope()
+	public function testFalseyValuesSkipEnvelope(): void {
+		$this->assertFalse($this->shouldAttach(null));
+		$this->assertFalse($this->shouldAttach(''));
+		$this->assertFalse($this->shouldAttach('false'));
+		$this->assertFalse($this->shouldAttach('0'));
+		$this->assertFalse($this->shouldAttach('off'));
+		$this->assertFalse($this->shouldAttach(0));
+		$this->assertFalse($this->shouldAttach(false));
+	}//end testFalseyValuesSkipEnvelope()
 
-    public function testEnvelopeShapeIsAdditive(): void
-    {
-        // Shape: existing _meta keys preserved; languageMeta added on top.
-        $existing = ['_meta' => ['retention' => ['ttl' => 90]]];
-        $envelope = [
-            'title' => [
-                'served'         => 'en',
-                'sourceLanguage' => 'nl',
-                'isSource'       => false,
-                'status'         => 'approved',
-            ],
-        ];
+	public function testEnvelopeShapeIsAdditive(): void {
+		// Shape: existing _meta keys preserved; languageMeta added on top.
+		$existing = ['_meta' => ['retention' => ['ttl' => 90]]];
+		$envelope = [
+			'title' => [
+				'served' => 'en',
+				'sourceLanguage' => 'nl',
+				'isSource' => false,
+				'status' => 'approved',
+			],
+		];
 
-        $existing['_meta']['languageMeta'] = $envelope;
+		$existing['_meta']['languageMeta'] = $envelope;
 
-        $this->assertArrayHasKey('languageMeta', $existing['_meta']);
-        $this->assertArrayHasKey('retention', $existing['_meta']);
-        $this->assertSame('approved', $existing['_meta']['languageMeta']['title']['status']);
-        $this->assertFalse($existing['_meta']['languageMeta']['title']['isSource']);
-    }//end testEnvelopeShapeIsAdditive()
+		$this->assertArrayHasKey('languageMeta', $existing['_meta']);
+		$this->assertArrayHasKey('retention', $existing['_meta']);
+		$this->assertSame('approved', $existing['_meta']['languageMeta']['title']['status']);
+		$this->assertFalse($existing['_meta']['languageMeta']['title']['isSource']);
+	}//end testEnvelopeShapeIsAdditive()
 }//end class

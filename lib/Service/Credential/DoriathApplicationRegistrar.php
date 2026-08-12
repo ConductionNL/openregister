@@ -57,228 +57,221 @@ use Throwable;
  *
  * @spec openspec/changes/per-app-doriath-application/tasks.md#1-per-app-doriath-registration-seam-d-2-d-6
  */
-class DoriathApplicationRegistrar
-{
-    /**
-     * FQCN of Doriath's application service (registration seam).
-     *
-     * @var string
-     */
-    private const APPLICATION_SERVICE = 'OCA\\Doriath\\Service\\ApplicationService';
+class DoriathApplicationRegistrar {
+	/**
+	 * FQCN of Doriath's application service (registration seam).
+	 *
+	 * @var string
+	 */
+	private const APPLICATION_SERVICE = 'OCA\\Doriath\\Service\\ApplicationService';
 
-    /**
-     * `IAppConfig` key prefix for a per-app Doriath application UUID.
-     *
-     * The per-app key is `self::APP_CONFIG_APPLICATION_ID_PREFIX . $appId`,
-     * deliberately DISTINCT from
-     * {@see DoriathCredentialStore::APP_CONFIG_APPLICATION_ID} (which identifies
-     * OpenRegister's own single custody vault). No secret material is ever
-     * stored under it — identity-only holds no private key.
-     *
-     * @var string
-     */
-    public const APP_CONFIG_APPLICATION_ID_PREFIX = 'doriath_application_id_';
+	/**
+	 * `IAppConfig` key prefix for a per-app Doriath application UUID.
+	 *
+	 * The per-app key is `self::APP_CONFIG_APPLICATION_ID_PREFIX . $appId`,
+	 * deliberately DISTINCT from
+	 * {@see DoriathCredentialStore::APP_CONFIG_APPLICATION_ID} (which identifies
+	 * OpenRegister's own single custody vault). No secret material is ever
+	 * stored under it — identity-only holds no private key.
+	 *
+	 * @var string
+	 */
+	public const APP_CONFIG_APPLICATION_ID_PREFIX = 'doriath_application_id_';
 
-    /**
-     * The Doriath application `type` for same-fleet consumers (design D-6).
-     *
-     * @var string
-     */
-    private const APPLICATION_TYPE = 'internal';
+	/**
+	 * The Doriath application `type` for same-fleet consumers (design D-6).
+	 *
+	 * @var string
+	 */
+	private const APPLICATION_TYPE = 'internal';
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig      $appConfig  Persists/probes the per-app Doriath application UUID (non-secret).
-     * @param IAppManager     $appManager Probes whether the doriath app is enabled.
-     * @param LoggerInterface $logger     Secret-free diagnostics.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IAppConfig $appConfig,
-        private readonly IAppManager $appManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig Persists/probes the per-app Doriath application UUID (non-secret).
+	 * @param IAppManager $appManager Probes whether the doriath app is enabled.
+	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+		private readonly IAppManager $appManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Register the given consuming app as its own identity-only Doriath application.
-     *
-     * Never throws: Doriath absent/disabled/unloadable, or any failure, warns
-     * and returns — the caller's OR app-key onboarding and the broker continue
-     * unchanged. Idempotent: a live persisted UUID makes this a no-op.
-     *
-     * @param string      $appId       The consuming app id (becomes the Doriath application name).
-     * @param string|null $description The manifest description (falls back to the appId).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function registerApplication(string $appId, ?string $description=null): void
-    {
-        try {
-            if ($this->isDoriathAvailable() === false) {
-                $this->logger->debug(
-                    sprintf('[DoriathApplicationRegistrar:%s] Doriath unavailable — skipping per-app registration', $appId)
-                );
-                return;
-            }
+	/**
+	 * Register the given consuming app as its own identity-only Doriath application.
+	 *
+	 * Never throws: Doriath absent/disabled/unloadable, or any failure, warns
+	 * and returns — the caller's OR app-key onboarding and the broker continue
+	 * unchanged. Idempotent: a live persisted UUID makes this a no-op.
+	 *
+	 * @param string $appId The consuming app id (becomes the Doriath application name).
+	 * @param string|null $description The manifest description (falls back to the appId).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function registerApplication(string $appId, ?string $description = null): void {
+		try {
+			if ($this->isDoriathAvailable() === false) {
+				$this->logger->debug(
+					sprintf('[DoriathApplicationRegistrar:%s] Doriath unavailable — skipping per-app registration', $appId)
+				);
+				return;
+			}
 
-            if ($this->isRegistrationLive(appId: $appId) === true) {
-                $this->logger->debug(
-                    sprintf('[DoriathApplicationRegistrar:%s] already registered with a live Doriath row — not re-registering', $appId)
-                );
-                return;
-            }
+			if ($this->isRegistrationLive(appId: $appId) === true) {
+				$this->logger->debug(
+					sprintf('[DoriathApplicationRegistrar:%s] already registered with a live Doriath row — not re-registering', $appId)
+				);
+				return;
+			}
 
-            $this->register(appId: $appId, description: $description);
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                sprintf('[DoriathApplicationRegistrar:%s] per-app Doriath registration skipped', $appId),
-                ['exception' => $e->getMessage()]
-            );
-        }//end try
-    }//end registerApplication()
+			$this->register(appId: $appId, description: $description);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('[DoriathApplicationRegistrar:%s] per-app Doriath registration skipped', $appId),
+				['exception' => $e->getMessage()]
+			);
+		}//end try
+	}//end registerApplication()
 
-    /**
-     * The per-app `IAppConfig` key holding this app's Doriath application UUID.
-     *
-     * @param string $appId The consuming app id.
-     *
-     * @return string The namespaced config key.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public static function appConfigKey(string $appId): string
-    {
-        return self::APP_CONFIG_APPLICATION_ID_PREFIX.$appId;
-    }//end appConfigKey()
+	/**
+	 * The per-app `IAppConfig` key holding this app's Doriath application UUID.
+	 *
+	 * @param string $appId The consuming app id.
+	 *
+	 * @return string The namespaced config key.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public static function appConfigKey(string $appId): string {
+		return self::APP_CONFIG_APPLICATION_ID_PREFIX . $appId;
+	}//end appConfigKey()
 
-    /**
-     * Whether the doriath app is enabled and its registration seam is loadable.
-     *
-     * @return bool True when per-app registration can be attempted.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    private function isDoriathAvailable(): bool
-    {
-        if ($this->appManager->isEnabledForUser('doriath') === false) {
-            return false;
-        }
+	/**
+	 * Whether the doriath app is enabled and its registration seam is loadable.
+	 *
+	 * @return bool True when per-app registration can be attempted.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function isDoriathAvailable(): bool {
+		if ($this->appManager->isEnabledForUser('doriath') === false) {
+			return false;
+		}
 
-        return ($this->resolveApplicationService() !== null);
-    }//end isDoriathAvailable()
+		return ($this->resolveApplicationService() !== null);
+	}//end isDoriathAvailable()
 
-    /**
-     * Whether a previous per-app registration is still live in Doriath (skip-fast).
-     *
-     * Mirrors {@see RegisterOpenRegisterWithDoriath::isRegistrationLive()}: true
-     * only when the per-app `IAppConfig` UUID is set AND Doriath still holds that
-     * row. A stale UUID (Doriath reinstalled/row removed) yields false, so the
-     * step re-registers exactly once.
-     *
-     * @param string $appId The consuming app id.
-     *
-     * @return bool True when already registered with a live row.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    private function isRegistrationLive(string $appId): bool
-    {
-        $applicationId = $this->appConfig->getValueString('openregister', self::appConfigKey(appId: $appId), '');
-        if ($applicationId === '') {
-            return false;
-        }
+	/**
+	 * Whether a previous per-app registration is still live in Doriath (skip-fast).
+	 *
+	 * Mirrors {@see RegisterOpenRegisterWithDoriath::isRegistrationLive()}: true
+	 * only when the per-app `IAppConfig` UUID is set AND Doriath still holds that
+	 * row. A stale UUID (Doriath reinstalled/row removed) yields false, so the
+	 * step re-registers exactly once.
+	 *
+	 * @param string $appId The consuming app id.
+	 *
+	 * @return bool True when already registered with a live row.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function isRegistrationLive(string $appId): bool {
+		$applicationId = $this->appConfig->getValueString('openregister', self::appConfigKey(appId: $appId), '');
+		if ($applicationId === '') {
+			return false;
+		}
 
-        $applicationService = $this->resolveApplicationService();
-        if ($applicationService === null) {
-            return false;
-        }
+		$applicationService = $this->resolveApplicationService();
+		if ($applicationService === null) {
+			return false;
+		}
 
-        try {
-            // Admin-scoped in-process read; throws when the row no longer exists.
-            $applicationService->get($applicationId, '', true);
-            return true;
-        } catch (Throwable $e) {
-            $this->logger->info(
-                sprintf('[DoriathApplicationRegistrar:%s] persisted application UUID is stale — re-registering', $appId),
-                ['error' => $e->getMessage()]
-            );
-            return false;
-        }
-    }//end isRegistrationLive()
+		try {
+			// Admin-scoped in-process read; throws when the row no longer exists.
+			$applicationService->get($applicationId, '', true);
+			return true;
+		} catch (Throwable $e) {
+			$this->logger->info(
+				sprintf('[DoriathApplicationRegistrar:%s] persisted application UUID is stale — re-registering', $appId),
+				['error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end isRegistrationLive()
 
-    /**
-     * Register the per-app application (identity-only, no CSR, pending) and persist its UUID.
-     *
-     * @param string      $appId       The consuming app id (Doriath application name).
-     * @param string|null $description The manifest description (falls back to the appId).
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    private function register(string $appId, ?string $description): void
-    {
-        $applicationService = $this->resolveApplicationService();
-        if ($applicationService === null) {
-            return;
-        }
+	/**
+	 * Register the per-app application (identity-only, no CSR, pending) and persist its UUID.
+	 *
+	 * @param string $appId The consuming app id (Doriath application name).
+	 * @param string|null $description The manifest description (falls back to the appId).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function register(string $appId, ?string $description): void {
+		$applicationService = $this->resolveApplicationService();
+		if ($applicationService === null) {
+			return;
+		}
 
-        $displayDescription = $appId;
-        if ($description !== null && $description !== '') {
-            $displayDescription = $description;
-        }
+		$displayDescription = $appId;
+		if ($description !== null && $description !== '') {
+			$displayDescription = $description;
+		}
 
-        // Identity-only: csr = null (no EncryptionSuite provisioned); userId =
-        // null (repair runs without a session); isAdmin = false → Doriath
-        // creates a PENDING row and dispatches an admin-approval notification.
-        $application = $applicationService->register(
-            $appId,
-            $displayDescription,
-            self::APPLICATION_TYPE,
-            null,
-            null,
-            false
-        );
+		// Identity-only: csr = null (no EncryptionSuite provisioned); userId =
+		// null (repair runs without a session); isAdmin = false → Doriath
+		// creates a PENDING row and dispatches an admin-approval notification.
+		$application = $applicationService->register(
+			$appId,
+			$displayDescription,
+			self::APPLICATION_TYPE,
+			null,
+			null,
+			false
+		);
 
-        // Doriath generates the row UUID — persist the NON-secret UUID only.
-        $applicationId = (string) $application->getId();
-        $this->appConfig->setValueString('openregister', self::appConfigKey(appId: $appId), $applicationId);
+		// Doriath generates the row UUID — persist the NON-secret UUID only.
+		$applicationId = (string)$application->getId();
+		$this->appConfig->setValueString('openregister', self::appConfigKey(appId: $appId), $applicationId);
 
-        $this->logger->info(
-            sprintf('[DoriathApplicationRegistrar:%s] registered per-app Doriath application (pending)', $appId),
-            ['applicationId' => $applicationId]
-        );
-    }//end register()
+		$this->logger->info(
+			sprintf('[DoriathApplicationRegistrar:%s] registered per-app Doriath application (pending)', $appId),
+			['applicationId' => $applicationId]
+		);
+	}//end register()
 
-    /**
-     * Resolve Doriath's ApplicationService, or null when unavailable.
-     *
-     * `class_exists` + `OCP\Server::get` (no compile-time Doriath dependency).
-     * Protected so unit tests can substitute a contract fake.
-     *
-     * @return object|null The resolved service, or null.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    protected function resolveApplicationService(): ?object
-    {
-        if (class_exists(self::APPLICATION_SERVICE) === false) {
-            return null;
-        }
+	/**
+	 * Resolve Doriath's ApplicationService, or null when unavailable.
+	 *
+	 * `class_exists` + `OCP\Server::get` (no compile-time Doriath dependency).
+	 * Protected so unit tests can substitute a contract fake.
+	 *
+	 * @return object|null The resolved service, or null.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	protected function resolveApplicationService(): ?object {
+		if (class_exists(self::APPLICATION_SERVICE) === false) {
+			return null;
+		}
 
-        try {
-            return Server::get(self::APPLICATION_SERVICE);
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                '[DoriathApplicationRegistrar] failed to resolve Doriath ApplicationService',
-                ['error' => $e->getMessage()]
-            );
-            return null;
-        }
-    }//end resolveApplicationService()
+		try {
+			return Server::get(self::APPLICATION_SERVICE);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[DoriathApplicationRegistrar] failed to resolve Doriath ApplicationService',
+				['error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end resolveApplicationService()
 }//end class

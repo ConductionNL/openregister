@@ -56,343 +56,333 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
-class ImportServiceRegisterAutoCreateTest extends TestCase
-{
+class ImportServiceRegisterAutoCreateTest extends TestCase {
 
-    /** @var RegisterMapper&MockObject */
-    private RegisterMapper $registerMapper;
+	/** @var RegisterMapper&MockObject */
+	private RegisterMapper $registerMapper;
 
-    /** @var SchemaMapper&MockObject */
-    private SchemaMapper $schemaMapper;
+	/** @var SchemaMapper&MockObject */
+	private SchemaMapper $schemaMapper;
 
-    /** @var ObjectService&MockObject */
-    private ObjectService $objectService;
+	/** @var ObjectService&MockObject */
+	private ObjectService $objectService;
 
-    private ImportHandler $importHandler;
+	private ImportHandler $importHandler;
 
-    private ImportService $service;
+	private ImportService $service;
 
-    /**
-     * @var list<string>
-     */
-    private array $createdFiles = [];
+	/**
+	 * @var list<string>
+	 */
+	private array $createdFiles = [];
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
-        $this->objectService  = $this->createMock(ObjectService::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->objectService = $this->createMock(ObjectService::class);
 
-        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
 
-        // Real ImportHandler (mirrors ImportHandlerTest.php's pattern) so
-        // importRegister()/importSchema()'s find-or-create logic runs for
-        // real; only the mappers underneath are mocked.
-        $this->importHandler = new ImportHandler(
-            schemaMapper: $this->schemaMapper,
-            registerMapper: $this->registerMapper,
-            objectEntityMapper: $this->createMock(MagicMapper::class),
-            configurationMapper: $this->createMock(ConfigurationMapper::class),
-            mappingMapper: $this->createMock(MappingMapper::class),
-            client: $this->createMock(Client::class),
-            appConfig: $this->createMock(IAppConfig::class),
-            logger: $this->createMock(LoggerInterface::class),
-            appDataPath: sys_get_temp_dir(),
-            uploadHandler: $this->createMock(UploadHandler::class),
-            objectService: $this->objectService
-        );
+		// Real ImportHandler (mirrors ImportHandlerTest.php's pattern) so
+		// importRegister()/importSchema()'s find-or-create logic runs for
+		// real; only the mappers underneath are mocked.
+		$this->importHandler = new ImportHandler(
+			schemaMapper: $this->schemaMapper,
+			registerMapper: $this->registerMapper,
+			objectEntityMapper: $this->createMock(MagicMapper::class),
+			configurationMapper: $this->createMock(ConfigurationMapper::class),
+			mappingMapper: $this->createMock(MappingMapper::class),
+			client: $this->createMock(Client::class),
+			appConfig: $this->createMock(IAppConfig::class),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: sys_get_temp_dir(),
+			uploadHandler: $this->createMock(UploadHandler::class),
+			objectService: $this->objectService
+		);
 
-        $importHandler = $this->importHandler;
-        $container     = $this->createMock(ContainerInterface::class);
-        $container->method('get')
-            ->willReturnCallback(
-                static function (string $id) use ($importHandler) {
-                    if ($id === ImportHandler::class) {
-                        return $importHandler;
-                    }
+		$importHandler = $this->importHandler;
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')
+			->willReturnCallback(
+				static function (string $id) use ($importHandler) {
+					if ($id === ImportHandler::class) {
+						return $importHandler;
+					}
 
-                    throw new \RuntimeException('Unexpected container->get() call: '.$id);
-                }
-            );
+					throw new \RuntimeException('Unexpected container->get() call: ' . $id);
+				}
+			);
 
-        $translationCsvCodec = $this->createMock(TranslationCsvCodec::class);
-        $translationCsvCodec->method('unflattenFromCsv')->willReturnCallback(static fn(array $row) => $row);
+		$translationCsvCodec = $this->createMock(TranslationCsvCodec::class);
+		$translationCsvCodec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 
-        $this->service = new ImportService(
-            $this->schemaMapper,
-            $this->objectService,
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(IGroupManager::class),
-            $translationCsvCodec,
-            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-            new MappingEngine(),
-            $this->createMock(ValidateObject::class),
-            $container
-        );
-    }//end setUp()
+		$this->service = new ImportService(
+			$this->schemaMapper,
+			$this->objectService,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IGroupManager::class),
+			$translationCsvCodec,
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+			new MappingEngine(),
+			$this->createMock(ValidateObject::class),
+			$container
+		);
+	}//end setUp()
 
-    protected function tearDown(): void
-    {
-        foreach ($this->createdFiles as $file) {
-            if (is_file($file) === true) {
-                unlink($file);
-            }
-        }
+	protected function tearDown(): void {
+		foreach ($this->createdFiles as $file) {
+			if (is_file($file) === true) {
+				unlink($file);
+			}
+		}
 
-        parent::tearDown();
-    }//end tearDown()
+		parent::tearDown();
+	}//end tearDown()
 
-    private function createRegisterEntity(int $id, string $slug, string $version): Register
-    {
-        $register = new Register();
-        $register->setSlug($slug);
-        $register->setTitle(ucfirst($slug));
-        $register->setVersion($version);
-        $ref  = new ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, $id);
-        return $register;
-    }//end createRegisterEntity()
+	private function createRegisterEntity(int $id, string $slug, string $version): Register {
+		$register = new Register();
+		$register->setSlug($slug);
+		$register->setTitle(ucfirst($slug));
+		$register->setVersion($version);
+		$ref = new ReflectionClass($register);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($register, $id);
+		return $register;
+	}//end createRegisterEntity()
 
-    private function createSchemaEntity(int $id, string $slug, array $properties, string $version): Schema
-    {
-        $schema = new Schema();
-        $schema->setSlug($slug);
-        $schema->setTitle(ucfirst($slug));
-        $schema->setProperties($properties);
-        $schema->setVersion($version);
-        $ref  = new ReflectionClass($schema);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($schema, $id);
-        return $schema;
-    }//end createSchemaEntity()
+	private function createSchemaEntity(int $id, string $slug, array $properties, string $version): Schema {
+		$schema = new Schema();
+		$schema->setSlug($slug);
+		$schema->setTitle(ucfirst($slug));
+		$schema->setProperties($properties);
+		$schema->setVersion($version);
+		$ref = new ReflectionClass($schema);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($schema, $id);
+		return $schema;
+	}//end createSchemaEntity()
 
-    private function writeTempJsonFile(array $data): string
-    {
-        $path = tempnam(sys_get_temp_dir(), 'register_bundle_test_').'.json';
-        file_put_contents($path, json_encode($data));
-        $this->createdFiles[] = $path;
-        return $path;
-    }//end writeTempJsonFile()
+	private function writeTempJsonFile(array $data): string {
+		$path = tempnam(sys_get_temp_dir(), 'register_bundle_test_') . '.json';
+		file_put_contents($path, json_encode($data));
+		$this->createdFiles[] = $path;
+		return $path;
+	}//end writeTempJsonFile()
 
-    /**
-     * A minimal register-bundle envelope: one register ("products"), one
-     * schema ("product"), one object — the same components.registers /
-     * components.schemas / components.objects shape
-     * ExportHandler::exportConfig() produces and
-     * ConfigurationService::importFromApp() consumes.
-     */
-    private function productsBundle(string $version='1.0.0'): array
-    {
-        return [
-            'openapi'    => '3.0.0',
-            'info'       => [
-                'title'   => 'Products',
-                'version' => $version,
-            ],
-            'components' => [
-                'registers' => [
-                    'products' => [
-                        'slug'        => 'products',
-                        'title'       => 'Products',
-                        'description' => 'Product catalogue',
-                        'version'     => $version,
-                        'schemas'     => ['product'],
-                    ],
-                ],
-                'schemas'   => [
-                    'product' => [
-                        'slug'       => 'product',
-                        'title'      => 'Product',
-                        'version'    => $version,
-                        'properties' => [
-                            'name' => ['type' => 'string'],
-                        ],
-                    ],
-                ],
-                'objects'   => [
-                    [
-                        '@self' => [
-                            'register' => 'products',
-                            'schema'   => 'product',
-                        ],
-                        'name'  => 'Widget',
-                    ],
-                ],
-            ],
-        ];
-    }//end productsBundle()
+	/**
+	 * A minimal register-bundle envelope: one register ("products"), one
+	 * schema ("product"), one object — the same components.registers /
+	 * components.schemas / components.objects shape
+	 * ExportHandler::exportConfig() produces and
+	 * ConfigurationService::importFromApp() consumes.
+	 */
+	private function productsBundle(string $version = '1.0.0'): array {
+		return [
+			'openapi' => '3.0.0',
+			'info' => [
+				'title' => 'Products',
+				'version' => $version,
+			],
+			'components' => [
+				'registers' => [
+					'products' => [
+						'slug' => 'products',
+						'title' => 'Products',
+						'description' => 'Product catalogue',
+						'version' => $version,
+						'schemas' => ['product'],
+					],
+				],
+				'schemas' => [
+					'product' => [
+						'slug' => 'product',
+						'title' => 'Product',
+						'version' => $version,
+						'properties' => [
+							'name' => ['type' => 'string'],
+						],
+					],
+				],
+				'objects' => [
+					[
+						'@self' => [
+							'register' => 'products',
+							'schema' => 'product',
+						],
+						'name' => 'Widget',
+					],
+				],
+			],
+		];
+	}//end productsBundle()
 
-    /**
-     * REQ-IMP-AC-01: a register bundle for a non-existent register
-     * auto-creates the register + schema and imports the bundle's objects.
-     */
-    public function testBundleAutoCreatesRegisterAndSchemaAndImportsObjects(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('register not found'));
+	/**
+	 * REQ-IMP-AC-01: a register bundle for a non-existent register
+	 * auto-creates the register + schema and imports the bundle's objects.
+	 */
+	public function testBundleAutoCreatesRegisterAndSchemaAndImportsObjects(): void {
+		$this->registerMapper->method('find')
+			->willThrowException(new DoesNotExistException('register not found'));
 
-        $createdRegister = $this->createRegisterEntity(id: 1, slug: 'products', version: '1.0.0');
-        $this->registerMapper->expects($this->once())
-            ->method('createFromArray')
-            ->willReturn($createdRegister);
+		$createdRegister = $this->createRegisterEntity(id: 1, slug: 'products', version: '1.0.0');
+		$this->registerMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturn($createdRegister);
 
-        $this->schemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('schema not found'));
+		$this->schemaMapper->method('find')
+			->willThrowException(new DoesNotExistException('schema not found'));
 
-        $createdSchema = $this->createSchemaEntity(
-            id: 1,
-            slug: 'product',
-            properties: ['name' => ['type' => 'string']],
-            version: '1.0.0'
-        );
-        $this->schemaMapper->expects($this->once())
-            ->method('createFromArray')
-            ->willReturn($createdSchema);
-        $this->schemaMapper->method('update')->willReturnArgument(0);
+		$createdSchema = $this->createSchemaEntity(
+			id: 1,
+			slug: 'product',
+			properties: ['name' => ['type' => 'string']],
+			version: '1.0.0'
+		);
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturn($createdSchema);
+		$this->schemaMapper->method('update')->willReturnArgument(0);
 
-        // getUuid() is an NC Entity magic accessor — mocks can't configure it;
-        // use a real entity with the uuid set instead.
-        $savedObject = new ObjectEntity();
-        $savedObject->setUuid('uuid-widget-1');
-        $this->objectService->expects($this->once())
-            ->method('saveObject')
-            ->willReturn($savedObject);
+		// getUuid() is an NC Entity magic accessor — mocks can't configure it;
+		// use a real entity with the uuid set instead.
+		$savedObject = new ObjectEntity();
+		$savedObject->setUuid('uuid-widget-1');
+		$this->objectService->expects($this->once())
+			->method('saveObject')
+			->willReturn($savedObject);
 
-        $path = $this->writeTempJsonFile($this->productsBundle());
+		$path = $this->writeTempJsonFile($this->productsBundle());
 
-        $result = $this->service->importFromJson(
-            filePath: $path,
-            register: null,
-            schema: null,
-            registerSlug: 'products'
-        );
+		$result = $this->service->importFromJson(
+			filePath: $path,
+			register: null,
+			schema: null,
+			registerSlug: 'products'
+		);
 
-        $this->assertSame(['uuid-widget-1'], $result['JSON']['created']);
-        $this->assertSame([], $result['JSON']['errors']);
-        $this->assertSame('product', $result['JSON']['schema']['slug']);
-    }//end testBundleAutoCreatesRegisterAndSchemaAndImportsObjects()
+		$this->assertSame(['uuid-widget-1'], $result['JSON']['created']);
+		$this->assertSame([], $result['JSON']['errors']);
+		$this->assertSame('product', $result['JSON']['schema']['slug']);
+	}//end testBundleAutoCreatesRegisterAndSchemaAndImportsObjects()
 
-    /**
-     * REQ-IMP-AC-03: re-importing a bundle whose register already exists
-     * must not create a duplicate register (or schema) — only the very
-     * first import's createFromArray() calls happen.
-     */
-    public function testReimportOfExistingBundleDoesNotDuplicateRegister(): void
-    {
-        $registerExists   = false;
-        $existingRegister = null;
-        $this->registerMapper->method('find')
-            ->willReturnCallback(
-                function () use (&$registerExists, &$existingRegister) {
-                    if ($registerExists === true) {
-                        return $existingRegister;
-                    }
+	/**
+	 * REQ-IMP-AC-03: re-importing a bundle whose register already exists
+	 * must not create a duplicate register (or schema) — only the very
+	 * first import's createFromArray() calls happen.
+	 */
+	public function testReimportOfExistingBundleDoesNotDuplicateRegister(): void {
+		$registerExists = false;
+		$existingRegister = null;
+		$this->registerMapper->method('find')
+			->willReturnCallback(
+				function () use (&$registerExists, &$existingRegister) {
+					if ($registerExists === true) {
+						return $existingRegister;
+					}
 
-                    throw new DoesNotExistException('register not found');
-                }
-            );
-        $this->registerMapper->expects($this->once())
-            ->method('createFromArray')
-            ->willReturnCallback(
-                function (array $data) use (&$registerExists, &$existingRegister) {
-                    $existingRegister = $this->createRegisterEntity(
-                        id: 1,
-                        slug: $data['slug'],
-                        version: $data['version']
-                    );
-                    $registerExists   = true;
-                    return $existingRegister;
-                }
-            );
+					throw new DoesNotExistException('register not found');
+				}
+			);
+		$this->registerMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $data) use (&$registerExists, &$existingRegister) {
+					$existingRegister = $this->createRegisterEntity(
+						id: 1,
+						slug: $data['slug'],
+						version: $data['version']
+					);
+					$registerExists = true;
+					return $existingRegister;
+				}
+			);
 
-        $schemaExists   = false;
-        $existingSchema = null;
-        $this->schemaMapper->method('find')
-            ->willReturnCallback(
-                function () use (&$schemaExists, &$existingSchema) {
-                    if ($schemaExists === true) {
-                        return $existingSchema;
-                    }
+		$schemaExists = false;
+		$existingSchema = null;
+		$this->schemaMapper->method('find')
+			->willReturnCallback(
+				function () use (&$schemaExists, &$existingSchema) {
+					if ($schemaExists === true) {
+						return $existingSchema;
+					}
 
-                    throw new DoesNotExistException('schema not found');
-                }
-            );
-        $this->schemaMapper->expects($this->once())
-            ->method('createFromArray')
-            ->willReturnCallback(
-                function (array $data) use (&$schemaExists, &$existingSchema) {
-                    $existingSchema = $this->createSchemaEntity(
-                        id: 1,
-                        slug: $data['slug'],
-                        properties: ($data['properties'] ?? []),
-                        version: $data['version']
-                    );
-                    $schemaExists   = true;
-                    return $existingSchema;
-                }
-            );
-        $this->schemaMapper->method('update')->willReturnArgument(0);
+					throw new DoesNotExistException('schema not found');
+				}
+			);
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $data) use (&$schemaExists, &$existingSchema) {
+					$existingSchema = $this->createSchemaEntity(
+						id: 1,
+						slug: $data['slug'],
+						properties: ($data['properties'] ?? []),
+						version: $data['version']
+					);
+					$schemaExists = true;
+					return $existingSchema;
+				}
+			);
+		$this->schemaMapper->method('update')->willReturnArgument(0);
 
-        // getUuid() is an NC Entity magic accessor — mocks can't configure it;
-        // use a real entity with the uuid set instead.
-        $savedObject = new ObjectEntity();
-        $savedObject->setUuid('uuid-widget-1');
-        $this->objectService->method('saveObject')->willReturn($savedObject);
+		// getUuid() is an NC Entity magic accessor — mocks can't configure it;
+		// use a real entity with the uuid set instead.
+		$savedObject = new ObjectEntity();
+		$savedObject->setUuid('uuid-widget-1');
+		$this->objectService->method('saveObject')->willReturn($savedObject);
 
-        $path = $this->writeTempJsonFile($this->productsBundle());
+		$path = $this->writeTempJsonFile($this->productsBundle());
 
-        // First import: creates the register + schema.
-        $this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		// First import: creates the register + schema.
+		$this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
 
-        // Second import of the SAME bundle: registerMapper::createFromArray
-        // and schemaMapper::createFromArray each remain asserted ->once()
-        // above — a second invocation would fail this test.
-        $result = $this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		// Second import of the SAME bundle: registerMapper::createFromArray
+		// and schemaMapper::createFromArray each remain asserted ->once()
+		// above — a second invocation would fail this test.
+		$result = $this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
 
-        $this->assertSame([], $result['JSON']['errors']);
-    }//end testReimportOfExistingBundleDoesNotDuplicateRegister()
+		$this->assertSame([], $result['JSON']['errors']);
+	}//end testReimportOfExistingBundleDoesNotDuplicateRegister()
 
-    /**
-     * REQ-IMP-AC-02: a plain object list (no register-bundle metadata)
-     * targeting a register that does not exist fails with a clear error
-     * naming the missing slug — not a silent no-op, not an opaque exception.
-     */
-    public function testPlainObjectListForMissingRegisterThrowsClearNamedError(): void
-    {
-        $path = $this->writeTempJsonFile(
-            [
-                ['name' => 'Order 1'],
-                ['name' => 'Order 2'],
-            ]
-        );
+	/**
+	 * REQ-IMP-AC-02: a plain object list (no register-bundle metadata)
+	 * targeting a register that does not exist fails with a clear error
+	 * naming the missing slug — not a silent no-op, not an opaque exception.
+	 */
+	public function testPlainObjectListForMissingRegisterThrowsClearNamedError(): void {
+		$path = $this->writeTempJsonFile(
+			[
+				['name' => 'Order 1'],
+				['name' => 'Order 2'],
+			]
+		);
 
-        try {
-            $this->service->importFromJson(
-                filePath: $path,
-                register: null,
-                schema: null,
-                registerSlug: 'orders'
-            );
-            $this->fail('Expected RegisterNotFoundException to be thrown.');
-        } catch (RegisterNotFoundException $e) {
-            $this->assertStringContainsString('orders', $e->getMessage());
-            // Names both remedies: create first, or supply a full bundle.
-            $this->assertStringContainsString('bundle', $e->getMessage());
-            $this->assertStringContainsString('Create the register first', $e->getMessage());
-            // A 4xx code — the controller maps any Exception here to an
-            // actionable 400 regardless, but the exception's own code must
-            // never be a 5xx.
-            $this->assertGreaterThanOrEqual(400, $e->getCode());
-            $this->assertLessThan(500, $e->getCode());
-        }
+		try {
+			$this->service->importFromJson(
+				filePath: $path,
+				register: null,
+				schema: null,
+				registerSlug: 'orders'
+			);
+			$this->fail('Expected RegisterNotFoundException to be thrown.');
+		} catch (RegisterNotFoundException $e) {
+			$this->assertStringContainsString('orders', $e->getMessage());
+			// Names both remedies: create first, or supply a full bundle.
+			$this->assertStringContainsString('bundle', $e->getMessage());
+			$this->assertStringContainsString('Create the register first', $e->getMessage());
+			// A 4xx code — the controller maps any Exception here to an
+			// actionable 400 regardless, but the exception's own code must
+			// never be a 5xx.
+			$this->assertGreaterThanOrEqual(400, $e->getCode());
+			$this->assertLessThan(500, $e->getCode());
+		}
 
-        // Register/schema creation must never be attempted for a non-bundle payload.
-        $this->registerMapper->expects($this->never())->method('createFromArray');
-        $this->schemaMapper->expects($this->never())->method('createFromArray');
-    }//end testPlainObjectListForMissingRegisterThrowsClearNamedError()
+		// Register/schema creation must never be attempted for a non-bundle payload.
+		$this->registerMapper->expects($this->never())->method('createFromArray');
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+	}//end testPlainObjectListForMissingRegisterThrowsClearNamedError()
 }//end class

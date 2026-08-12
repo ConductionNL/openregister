@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Bootstrap file for Unit Tests
  *
@@ -39,35 +40,35 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // php:8.3-cli CI environment where no real Nextcloud is present at that
 // path; skip them entirely whenever the real bootstrap is available.
 $nextcloudBasePath = __DIR__ . '/../../../lib/base.php';
-$hasRealNextcloud   = file_exists($nextcloudBasePath);
+$hasRealNextcloud = file_exists($nextcloudBasePath);
 
 if ($hasRealNextcloud === false) {
-    // Load minimal Doctrine DBAL stubs so nextcloud/ocp v31 interface constants
-    // (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated
-    // in the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
-    require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
+	// Load minimal Doctrine DBAL stubs so nextcloud/ocp v31 interface constants
+	// (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated
+	// in the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
+	require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
 
-    // Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
-    // the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
-    require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+	// Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
+	// the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
+	require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
 
-    // Load the Doriath contract stubs + test fixtures for the credential-broker
-    // Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
-    require_once __DIR__ . '/stubs/DoriathStubs.php';
+	// Load the Doriath contract stubs + test fixtures for the credential-broker
+	// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+	require_once __DIR__ . '/stubs/DoriathStubs.php';
 }
 
 // Bootstrap Nextcloud — since we run inside the Docker container,
 // the full environment (including \OC::$server) is available.
 if ($hasRealNextcloud === true) {
-    require_once $nextcloudBasePath;
+	require_once $nextcloudBasePath;
 }
 
 // Register Test\ namespace for NC test classes.
 $serverTestsLib = __DIR__ . '/../../../tests/lib/';
 if (is_dir($serverTestsLib)) {
-    $loader = new \Composer\Autoload\ClassLoader();
-    $loader->addPsr4('Test\\', $serverTestsLib);
-    $loader->register(true);
+	$loader = new \Composer\Autoload\ClassLoader();
+	$loader->addPsr4('Test\\', $serverTestsLib);
+	$loader->register(true);
 }
 
 // Ensure OpenRegister's ZipStream v3 wins over a co-installed forms app's
@@ -82,54 +83,54 @@ if (is_dir($serverTestsLib)) {
 // TypeErrors in any test that writes an Xlsx file. Dropping the forms-app
 // prefix entry forces the dispatcher to take the ZipStream3 (v3-native) path.
 foreach (spl_autoload_functions() as $autoload) {
-    if (is_array($autoload) === true
-        && is_object($autoload[0]) === true
-        && get_class($autoload[0]) === \Composer\Autoload\ClassLoader::class
-    ) {
-        /** @var \Composer\Autoload\ClassLoader $loader */
-        $loader   = $autoload[0];
-        $prefixes = $loader->getPrefixesPsr4();
-        if (isset($prefixes['ZipStream\\']) === true) {
-            $kept = [];
-            $dropped = false;
-            foreach ($prefixes['ZipStream\\'] as $path) {
-                $real = realpath($path);
-                if ($real !== false && strpos($real, '/custom_apps/forms/') !== false) {
-                    $dropped = true;
-                    continue;
-                }
-                $kept[] = $path;
-            }
-            if ($dropped === true) {
-                $loader->setPsr4('ZipStream\\', $kept);
-            }
-        }
+	if (is_array($autoload) === true
+		&& is_object($autoload[0]) === true
+		&& get_class($autoload[0]) === \Composer\Autoload\ClassLoader::class
+	) {
+		/** @var \Composer\Autoload\ClassLoader $loader */
+		$loader = $autoload[0];
+		$prefixes = $loader->getPrefixesPsr4();
+		if (isset($prefixes['ZipStream\\']) === true) {
+			$kept = [];
+			$dropped = false;
+			foreach ($prefixes['ZipStream\\'] as $path) {
+				$real = realpath($path);
+				if ($real !== false && strpos($real, '/custom_apps/forms/') !== false) {
+					$dropped = true;
+					continue;
+				}
+				$kept[] = $path;
+			}
+			if ($dropped === true) {
+				$loader->setPsr4('ZipStream\\', $kept);
+			}
+		}
 
-        // The forms app also ships pre-generated classmap entries pointing at
-        // its v2 vendor copy. Wipe any classmap entry whose target sits under
-        // the forms vendor tree for ZipStream classes — these win over PSR4.
-        $classMap = $loader->getClassMap();
-        $toUnset  = [];
-        foreach ($classMap as $class => $path) {
-            if (strncmp($class, 'ZipStream\\', 10) !== 0) {
-                continue;
-            }
-            $real = realpath($path);
-            if ($real !== false && strpos($real, '/custom_apps/forms/') !== false) {
-                $toUnset[] = $class;
-            }
-        }
-        if (count($toUnset) > 0) {
-            $cleaned = $classMap;
-            foreach ($toUnset as $class) {
-                unset($cleaned[$class]);
-            }
-            // Re-seed the classmap (addClassMap merges, so we have to wipe via reflection).
-            $rp = new \ReflectionProperty(\Composer\Autoload\ClassLoader::class, 'classMap');
-            $rp->setAccessible(true);
-            $rp->setValue($loader, $cleaned);
-        }
-    }
+		// The forms app also ships pre-generated classmap entries pointing at
+		// its v2 vendor copy. Wipe any classmap entry whose target sits under
+		// the forms vendor tree for ZipStream classes — these win over PSR4.
+		$classMap = $loader->getClassMap();
+		$toUnset = [];
+		foreach ($classMap as $class => $path) {
+			if (strncmp($class, 'ZipStream\\', 10) !== 0) {
+				continue;
+			}
+			$real = realpath($path);
+			if ($real !== false && strpos($real, '/custom_apps/forms/') !== false) {
+				$toUnset[] = $class;
+			}
+		}
+		if (count($toUnset) > 0) {
+			$cleaned = $classMap;
+			foreach ($toUnset as $class) {
+				unset($cleaned[$class]);
+			}
+			// Re-seed the classmap (addClassMap merges, so we have to wipe via reflection).
+			$rp = new \ReflectionProperty(\Composer\Autoload\ClassLoader::class, 'classMap');
+			$rp->setAccessible(true);
+			$rp->setValue($loader, $cleaned);
+		}
+	}
 }
 
 // Bootstrap message suppressed: error_log() writes to STDERR and PHPUnit's

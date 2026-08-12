@@ -60,127 +60,124 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class FormLink extends Entity implements JsonSerializable
-{
+class FormLink extends Entity implements JsonSerializable {
 
-    /**
-     * The OR object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The OR object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The OR register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The OR register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The OR schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The OR schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The NC Forms form id (numeric primary key in `forms_v2_forms`).
-     *
-     * @var integer|null
-     */
-    protected ?int $formId = null;
+	/**
+	 * The NC Forms form id (numeric primary key in `forms_v2_forms`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $formId = null;
 
-    /**
-     * The NC Forms form hash (URL-safe public identifier).
-     *
-     * @var string|null
-     */
-    protected ?string $formHash = null;
+	/**
+	 * The NC Forms form hash (URL-safe public identifier).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $formHash = null;
 
-    /**
-     * The NC Forms submission id (numeric primary key in
-     * `forms_v2_submissions`), or null for form-level links.
-     *
-     * @var integer|null
-     */
-    protected ?int $submissionId = null;
+	/**
+	 * The NC Forms submission id (numeric primary key in
+	 * `forms_v2_submissions`), or null for form-level links.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $submissionId = null;
 
-    /**
-     * Form title cached at link-time.
-     *
-     * @var string|null
-     */
-    protected ?string $title = null;
+	/**
+	 * Form title cached at link-time.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $title = null;
 
-    /**
-     * Form status snapshot at link-time (`open` / `closed` / `draft`).
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * Form status snapshot at link-time (`open` / `closed` / `draft`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * Form expiry timestamp snapshot.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $expiresAt = null;
+	/**
+	 * Form expiry timestamp snapshot.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $expiresAt = null;
 
-    /**
-     * The user id of the user that created the link.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The user id of the user that created the link.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The link creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The link creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'formId', type: 'integer');
-        $this->addType(fieldName: 'formHash', type: 'string');
-        $this->addType(fieldName: 'submissionId', type: 'integer');
-        $this->addType(fieldName: 'title', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'expiresAt', type: 'datetime');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'formId', type: 'integer');
+		$this->addType(fieldName: 'formHash', type: 'string');
+		$this->addType(fieldName: 'submissionId', type: 'integer');
+		$this->addType(fieldName: 'title', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'expiresAt', type: 'datetime');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'           => $this->id,
-            'objectUuid'   => $this->objectUuid,
-            'registerId'   => $this->registerId,
-            'schemaId'     => $this->schemaId,
-            'formId'       => $this->formId,
-            'formHash'     => $this->formHash,
-            'submissionId' => $this->submissionId,
-            'title'        => $this->title,
-            'status'       => $this->status,
-            'expiresAt'    => $this->expiresAt?->format(DateTime::ATOM),
-            'linkedBy'     => $this->linkedBy,
-            'linkedAt'     => $this->linkedAt?->format(DateTime::ATOM),
-        ];
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'formId' => $this->formId,
+			'formHash' => $this->formHash,
+			'submissionId' => $this->submissionId,
+			'title' => $this->title,
+			'status' => $this->status,
+			'expiresAt' => $this->expiresAt?->format(DateTime::ATOM),
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

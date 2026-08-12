@@ -56,120 +56,117 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Feedback extends Entity implements JsonSerializable
-{
+class Feedback extends Entity implements JsonSerializable {
 
-    /**
-     * UUID.
-     *
-     * @var string
-     */
-    protected string $uuid = '';
+	/**
+	 * UUID.
+	 *
+	 * @var string
+	 */
+	protected string $uuid = '';
 
-    /**
-     * Message ID.
-     *
-     * @var integer
-     */
-    protected int $messageId = 0;
+	/**
+	 * Message ID.
+	 *
+	 * @var integer
+	 */
+	protected int $messageId = 0;
 
-    /**
-     * Conversation ID.
-     *
-     * @var integer
-     */
-    protected int $conversationId = 0;
+	/**
+	 * Conversation ID.
+	 *
+	 * @var integer
+	 */
+	protected int $conversationId = 0;
 
-    /**
-     * Agent ID.
-     *
-     * @var integer
-     */
-    protected int $agentId = 0;
+	/**
+	 * Agent ID.
+	 *
+	 * @var integer
+	 */
+	protected int $agentId = 0;
 
-    /**
-     * User ID.
-     *
-     * @var string
-     */
-    protected string $userId = '';
+	/**
+	 * User ID.
+	 *
+	 * @var string
+	 */
+	protected string $userId = '';
 
-    /**
-     * Organisation.
-     *
-     * @var string|null
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Type ('positive' or 'negative').
-     *
-     * @var string
-     */
-    protected string $type = '';
+	/**
+	 * Type ('positive' or 'negative').
+	 *
+	 * @var string
+	 */
+	protected string $type = '';
 
-    /**
-     * Comment.
-     *
-     * @var string|null
-     */
-    protected ?string $comment = null;
+	/**
+	 * Comment.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $comment = null;
 
-    /**
-     * Created timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Created timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Updated timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Updated timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'messageId', type: 'integer');
-        $this->addType(fieldName: 'conversationId', type: 'integer');
-        $this->addType(fieldName: 'agentId', type: 'integer');
-        $this->addType(fieldName: 'userId', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'type', type: 'string');
-        $this->addType(fieldName: 'comment', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'messageId', type: 'integer');
+		$this->addType(fieldName: 'conversationId', type: 'integer');
+		$this->addType(fieldName: 'agentId', type: 'integer');
+		$this->addType(fieldName: 'userId', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'comment', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return (int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: string, messageId: int,
-     *     conversationId: int, agentId: int, userId: string,
-     *     organisation: null|string, type: string, comment: null|string,
-     *     created: null|string, updated: null|string}
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'             => $this->id,
-            'uuid'           => $this->uuid,
-            'messageId'      => $this->messageId,
-            'conversationId' => $this->conversationId,
-            'agentId'        => $this->agentId,
-            'userId'         => $this->userId,
-            'organisation'   => $this->organisation,
-            'type'           => $this->type,
-            'comment'        => $this->comment,
-            'created'        => $this->created?->format('c'),
-            'updated'        => $this->updated?->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return (int|null|string)[]
+	 *
+	 * @psalm-return array{id: int, uuid: string, messageId: int,
+	 *     conversationId: int, agentId: int, userId: string,
+	 *     organisation: null|string, type: string, comment: null|string,
+	 *     created: null|string, updated: null|string}
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'messageId' => $this->messageId,
+			'conversationId' => $this->conversationId,
+			'agentId' => $this->agentId,
+			'userId' => $this->userId,
+			'organisation' => $this->organisation,
+			'type' => $this->type,
+			'comment' => $this->comment,
+			'created' => $this->created?->format('c'),
+			'updated' => $this->updated?->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

@@ -37,51 +37,49 @@ use OCP\Migration\SimpleMigrationStep;
  * `user_name` and `session` are display-only legacy columns, and `object`
  * is a legacy FK-ish integer column.
  */
-class Version1Date20260423100000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260423100000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_audit_trails') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_audit_trails') === false) {
+			return null;
+		}
 
-        $table   = $schema->getTable('openregister_audit_trails');
-        $changed = false;
+		$table = $schema->getTable('openregister_audit_trails');
+		$changed = false;
 
-        foreach (['object', 'user_name', 'session'] as $columnName) {
-            if ($table->hasColumn($columnName) === false) {
-                continue;
-            }
+		foreach (['object', 'user_name', 'session'] as $columnName) {
+			if ($table->hasColumn($columnName) === false) {
+				continue;
+			}
 
-            $column = $table->getColumn($columnName);
-            if ($column->getNotnull() === false) {
-                continue;
-            }
+			$column = $table->getColumn($columnName);
+			if ($column->getNotnull() === false) {
+				continue;
+			}
 
-            $column->setNotnull(false);
-            $output->info("Relaxed NOT NULL on openregister_audit_trails.$columnName");
-            $changed = true;
-        }
+			$column->setNotnull(false);
+			$output->info("Relaxed NOT NULL on openregister_audit_trails.$columnName");
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

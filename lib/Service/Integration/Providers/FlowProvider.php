@@ -43,196 +43,184 @@ use OCP\IDBConnection;
 use OCP\IL10N;
 use Throwable;
 
-class FlowProvider extends AbstractIntegrationProvider
-{
+class FlowProvider extends AbstractIntegrationProvider {
 
-    private const REQUIRED_APP = 'workflowengine';
+	private const REQUIRED_APP = 'workflowengine';
 
-    public function __construct(
-        private FlowLinkMapper $flowLinkMapper,
-        private IDBConnection $db,
-        private IAppManager $appManager,
-        private IL10N $l10n,
-    ) {
-    }//end __construct()
+	public function __construct(
+		private FlowLinkMapper $flowLinkMapper,
+		private IDBConnection $db,
+		private IAppManager $appManager,
+		private IL10N $l10n,
+	) {
+	}//end __construct()
 
-    public function getId(): string
-    {
-        return 'flow';
-    }//end getId()
+	public function getId(): string {
+		return 'flow';
+	}//end getId()
 
-    public function getLabel(): string
-    {
-        return $this->l10n->t('Automation');
-    }//end getLabel()
+	public function getLabel(): string {
+		return $this->l10n->t('Automation');
+	}//end getLabel()
 
-    public function getIcon(): string
-    {
-        return 'RobotOutline';
-    }//end getIcon()
+	public function getIcon(): string {
+		return 'RobotOutline';
+	}//end getIcon()
 
-    public function getGroup(): ?string
-    {
-        return 'workflow';
-    }//end getGroup()
+	public function getGroup(): ?string {
+		return 'workflow';
+	}//end getGroup()
 
-    public function getRequiredApp(): ?string
-    {
-        return self::REQUIRED_APP;
-    }//end getRequiredApp()
+	public function getRequiredApp(): ?string {
+		return self::REQUIRED_APP;
+	}//end getRequiredApp()
 
-    public function getStorageStrategy(): string
-    {
-        return 'link-table';
-    }//end getStorageStrategy()
+	public function getStorageStrategy(): string {
+		return 'link-table';
+	}//end getStorageStrategy()
 
-    public function isEnabled(): bool
-    {
-        return $this->appManager->isInstalled(self::REQUIRED_APP);
-    }//end isEnabled()
+	public function isEnabled(): bool {
+		return $this->appManager->isInstalled(self::REQUIRED_APP);
+	}//end isEnabled()
 
-    /**
-     * List Flow operations linked to an OR object.
-     *
-     * Reads link rows from `openregister_flow_links`, then hydrates each
-     * row with the current name/class/entity/events/checks from
-     * `oc_flow_operations`. Falls back to the cached link-row columns
-     * when the operation has been deleted from NC Flow (the row still
-     * surfaces in the sidebar but is flagged with `enabled=false`).
-     *
-     * @param string              $register Register slug or numeric id (unused).
-     * @param string              $schema   Schema slug or numeric id (unused).
-     * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $filters  Optional filters (unused).
-     *
-     * @return array<int,array<string,mixed>>
-     *
-     * @spec openspec/specs/integration-flow/spec.md
-     */
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
-    {
-        if ($this->isEnabled() === false) {
-            return [];
-        }
+	/**
+	 * List Flow operations linked to an OR object.
+	 *
+	 * Reads link rows from `openregister_flow_links`, then hydrates each
+	 * row with the current name/class/entity/events/checks from
+	 * `oc_flow_operations`. Falls back to the cached link-row columns
+	 * when the operation has been deleted from NC Flow (the row still
+	 * surfaces in the sidebar but is flagged with `enabled=false`).
+	 *
+	 * @param string $register Register slug or numeric id (unused).
+	 * @param string $schema Schema slug or numeric id (unused).
+	 * @param string $objectId Object uuid.
+	 * @param array<string,mixed> $filters Optional filters (unused).
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/integration-flow/spec.md
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		if ($this->isEnabled() === false) {
+			return [];
+		}
 
-        $links = $this->flowLinkMapper->findByObjectUuid($objectId);
-        if ($links === []) {
-            return [];
-        }
+		$links = $this->flowLinkMapper->findByObjectUuid($objectId);
+		if ($links === []) {
+			return [];
+		}
 
-        $out = [];
-        foreach ($links as $link) {
-            $operationId = (int) $link->getOperationId();
-            $opRow       = $this->fetchOperationRow(operationId: $operationId);
+		$out = [];
+		foreach ($links as $link) {
+			$operationId = (int)$link->getOperationId();
+			$opRow = $this->fetchOperationRow(operationId: $operationId);
 
-            $name      = (string) ($opRow['name'] ?? $link->getOperationName() ?? '');
-            $class     = (string) ($opRow['class'] ?? $link->getOperationClass() ?? '');
-            $entity    = (string) ($opRow['entity'] ?? $link->getEntityType() ?? '');
-            $operation = (string) ($opRow['operation'] ?? '');
-            $events    = $this->decodeJsonField(value: $opRow['events'] ?? null);
-            $checks    = $this->decodeJsonField(value: $opRow['checks'] ?? null);
+			$name = (string)($opRow['name'] ?? $link->getOperationName() ?? '');
+			$class = (string)($opRow['class'] ?? $link->getOperationClass() ?? '');
+			$entity = (string)($opRow['entity'] ?? $link->getEntityType() ?? '');
+			$operation = (string)($opRow['operation'] ?? '');
+			$events = $this->decodeJsonField(value: $opRow['events'] ?? null);
+			$checks = $this->decodeJsonField(value: $opRow['checks'] ?? null);
 
-            $out[] = [
-                'id'        => (string) $operationId,
-                'title'     => $name,
-                'class'     => $class,
-                'entity'    => $entity,
-                'operation' => $operation,
-                'events'    => $events,
-                'checks'    => $checks,
-                'enabled'   => $opRow !== null,
-                'url'       => '/index.php/settings/admin/workflow#'.$operationId,
-                'linkId'    => $link->getId(),
-                'data'      => $opRow ?? [],
-            ];
-        }//end foreach
+			$out[] = [
+				'id' => (string)$operationId,
+				'title' => $name,
+				'class' => $class,
+				'entity' => $entity,
+				'operation' => $operation,
+				'events' => $events,
+				'checks' => $checks,
+				'enabled' => $opRow !== null,
+				'url' => '/index.php/settings/admin/workflow#' . $operationId,
+				'linkId' => $link->getId(),
+				'data' => $opRow ?? [],
+			];
+		}//end foreach
 
-        return $out;
-    }//end list()
+		return $out;
+	}//end list()
 
-    /**
-     * Fetch an operation row from `oc_flow_operations`.
-     *
-     * @param int $operationId Operation id.
-     *
-     * @return array<string,mixed>|null
-     */
-    private function fetchOperationRow(int $operationId): ?array
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
-                ->from('flow_operations')
-                ->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
+	/**
+	 * Fetch an operation row from `oc_flow_operations`.
+	 *
+	 * @param int $operationId Operation id.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function fetchOperationRow(int $operationId): ?array {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
+				->from('flow_operations')
+				->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
 
-            $row = $qb->executeQuery()->fetch();
-            if ($row === false) {
-                return null;
-            }
+			$row = $qb->executeQuery()->fetch();
+			if ($row === false) {
+				return null;
+			}
 
-            return $row;
-        } catch (Throwable $e) {
-            return null;
-        }
-    }//end fetchOperationRow()
+			return $row;
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end fetchOperationRow()
 
-    /**
-     * Decode a JSON-serialised array column (`events`, `checks`).
-     *
-     * NC Flow stores these as JSON strings. Tolerates already-decoded
-     * arrays so callers can pass raw row values from either source.
-     *
-     * @param mixed $value Raw column value.
-     *
-     * @return array<int,mixed>
-     */
-    private function decodeJsonField(mixed $value): array
-    {
-        if (is_array($value) === true) {
-            return $value;
-        }
+	/**
+	 * Decode a JSON-serialised array column (`events`, `checks`).
+	 *
+	 * NC Flow stores these as JSON strings. Tolerates already-decoded
+	 * arrays so callers can pass raw row values from either source.
+	 *
+	 * @param mixed $value Raw column value.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private function decodeJsonField(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
 
-        if (is_string($value) === false || $value === '') {
-            return [];
-        }
+		if (is_string($value) === false || $value === '') {
+			return [];
+		}
 
-        try {
-            $decoded = json_decode($value, true);
-            if (is_array($decoded) === true) {
-                return $decoded;
-            }
-        } catch (Throwable $e) {
-            // Fall through.
-        }
+		try {
+			$decoded = json_decode($value, true);
+			if (is_array($decoded) === true) {
+				return $decoded;
+			}
+		} catch (Throwable $e) {
+			// Fall through.
+		}
 
-        return [];
-    }//end decodeJsonField()
+		return [];
+	}//end decodeJsonField()
 
-    /**
-     * Provider health descriptor (enabled/disabled echo).
-     *
-     * @return array<string,mixed>
-     *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
-     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
-     */
-    public function health(): array
-    {
-        $available = $this->isEnabled();
-        $status    = 'unavailable';
-        if ($available === true) {
-            $status = 'ok';
-        }
+	/**
+	 * Provider health descriptor (enabled/disabled echo).
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
+	 */
+	public function health(): array {
+		$available = $this->isEnabled();
+		$status = 'unavailable';
+		if ($available === true) {
+			$status = 'ok';
+		}
 
-        $message = 'NC Flow (workflowengine) app is not installed';
-        if ($available === true) {
-            $message = null;
-        }
+		$message = 'NC Flow (workflowengine) app is not installed';
+		if ($available === true) {
+			$message = null;
+		}
 
-        return [
-            'status'     => $status,
-            'authStatus' => 'configured',
-            'message'    => $message,
-        ];
-    }//end health()
+		return [
+			'status' => $status,
+			'authStatus' => 'configured',
+			'message' => $message,
+		];
+	}//end health()
 }//end class

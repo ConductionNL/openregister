@@ -39,52 +39,48 @@ use OCP\EventDispatcher\Event;
  * any approval-driven leaf app) subscribe to this event to notify the
  * authorised role group, queue reminders, or kick off integrations.
  */
-class ApprovalStepInitiatedEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param ApprovalChain $chain      The approval chain the step belongs to.
-     * @param ApprovalStep  $step       The step that has just transitioned to `pending`.
-     * @param string        $objectUuid UUID of the object being approved.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ApprovalChain $chain,
-        private readonly ApprovalStep $step,
-        private readonly string $objectUuid
-    ) {
-        parent::__construct();
-    }//end __construct()
+class ApprovalStepInitiatedEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param ApprovalChain $chain The approval chain the step belongs to.
+	 * @param ApprovalStep $step The step that has just transitioned to `pending`.
+	 * @param string $objectUuid UUID of the object being approved.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ApprovalChain $chain,
+		private readonly ApprovalStep $step,
+		private readonly string $objectUuid,
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Get the approval chain.
-     *
-     * @return ApprovalChain The approval chain configuration.
-     */
-    public function getChain(): ApprovalChain
-    {
-        return $this->chain;
-    }//end getChain()
+	/**
+	 * Get the approval chain.
+	 *
+	 * @return ApprovalChain The approval chain configuration.
+	 */
+	public function getChain(): ApprovalChain {
+		return $this->chain;
+	}//end getChain()
 
-    /**
-     * Get the approval step that has been initiated.
-     *
-     * @return ApprovalStep The step now in `pending`.
-     */
-    public function getStep(): ApprovalStep
-    {
-        return $this->step;
-    }//end getStep()
+	/**
+	 * Get the approval step that has been initiated.
+	 *
+	 * @return ApprovalStep The step now in `pending`.
+	 */
+	public function getStep(): ApprovalStep {
+		return $this->step;
+	}//end getStep()
 
-    /**
-     * Get the UUID of the object whose chain is progressing.
-     *
-     * @return string Object UUID.
-     */
-    public function getObjectUuid(): string
-    {
-        return $this->objectUuid;
-    }//end getObjectUuid()
+	/**
+	 * Get the UUID of the object whose chain is progressing.
+	 *
+	 * @return string Object UUID.
+	 */
+	public function getObjectUuid(): string {
+		return $this->objectUuid;
+	}//end getObjectUuid()
 }//end class

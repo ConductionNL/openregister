@@ -50,247 +50,233 @@ use Psr\Log\LoggerInterface;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleValidationListener
  */
-class LifecycleValidationListenerTest extends TestCase
-{
+class LifecycleValidationListenerTest extends TestCase {
 
-    private SchemaMapper&MockObject $schemaMapper;
+	private SchemaMapper&MockObject $schemaMapper;
 
-    private ContainerInterface&MockObject $guardContainer;
+	private ContainerInterface&MockObject $guardContainer;
 
-    private LifecycleGuardRegistry $guardRegistry;
+	private LifecycleGuardRegistry $guardRegistry;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private PermissionHandler&MockObject $permissionHandler;
+	private PermissionHandler&MockObject $permissionHandler;
 
-    private LifecycleValidationListener $listener;
+	private LifecycleValidationListener $listener;
 
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->schemaMapper      = $this->createMock(SchemaMapper::class);
-        $this->userSession       = $this->createMock(IUserSession::class);
-        $this->permissionHandler = $this->createMock(PermissionHandler::class);
-        $logger                  = $this->createMock(LoggerInterface::class);
+	/**
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->permissionHandler = $this->createMock(PermissionHandler::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        // LifecycleGuardRegistry is final and cannot be doubled; drive a real
-        // instance through a mocked container that returns the test guard.
-        $this->guardContainer = $this->createMock(ContainerInterface::class);
-        $serverContainer      = $this->createMock(IServerContainer::class);
-        $serverContainer->method('get')->willThrowException(new \RuntimeException('not found'));
-        $this->guardRegistry  = new LifecycleGuardRegistry(
-            $this->guardContainer,
-            $serverContainer,
-            $logger
-        );
+		// LifecycleGuardRegistry is final and cannot be doubled; drive a real
+		// instance through a mocked container that returns the test guard.
+		$this->guardContainer = $this->createMock(ContainerInterface::class);
+		$serverContainer = $this->createMock(IServerContainer::class);
+		$serverContainer->method('get')->willThrowException(new \RuntimeException('not found'));
+		$this->guardRegistry = new LifecycleGuardRegistry(
+			$this->guardContainer,
+			$serverContainer,
+			$logger
+		);
 
-        $this->listener = new LifecycleValidationListener(
-            $this->schemaMapper,
-            $this->guardRegistry,
-            $this->userSession,
-            $this->permissionHandler,
-            $logger
-        );
-    }//end setUp()
+		$this->listener = new LifecycleValidationListener(
+			$this->schemaMapper,
+			$this->guardRegistry,
+			$this->userSession,
+			$this->permissionHandler,
+			$logger
+		);
+	}//end setUp()
 
-    /**
-     * Register a guard instance to be resolved for the given tag.
-     *
-     * @param string                  $tag   DI tag the transition `requires`.
-     * @param LifecycleGuardInterface $guard Guard instance to return.
-     *
-     * @return void
-     */
-    private function registerGuard(string $tag, LifecycleGuardInterface $guard): void
-    {
-        $this->guardContainer->method('get')->with($tag)->willReturn($guard);
-    }//end registerGuard()
+	/**
+	 * Register a guard instance to be resolved for the given tag.
+	 *
+	 * @param string $tag DI tag the transition `requires`.
+	 * @param LifecycleGuardInterface $guard Guard instance to return.
+	 *
+	 * @return void
+	 */
+	private function registerGuard(string $tag, LifecycleGuardInterface $guard): void {
+		$this->guardContainer->method('get')->with($tag)->willReturn($guard);
+	}//end registerGuard()
 
-    /**
-     * Build a schema whose configuration carries a lifecycle annotation.
-     *
-     * @param array<string, mixed>|null $lifecycle The x-openregister-lifecycle block, or null for no declaration.
-     *
-     * @return Schema
-     */
-    private function schemaWithLifecycle(?array $lifecycle): Schema
-    {
-        $schema = new Schema();
-        $schema->setSlug('voorstel');
-        if ($lifecycle !== null) {
-            $schema->setConfiguration(['x-openregister-lifecycle' => $lifecycle]);
-        } else {
-            $schema->setConfiguration([]);
-        }
+	/**
+	 * Build a schema whose configuration carries a lifecycle annotation.
+	 *
+	 * @param array<string, mixed>|null $lifecycle The x-openregister-lifecycle block, or null for no declaration.
+	 *
+	 * @return Schema
+	 */
+	private function schemaWithLifecycle(?array $lifecycle): Schema {
+		$schema = new Schema();
+		$schema->setSlug('voorstel');
+		if ($lifecycle !== null) {
+			$schema->setConfiguration(['x-openregister-lifecycle' => $lifecycle]);
+		} else {
+			$schema->setConfiguration([]);
+		}
 
-        $this->schemaMapper->method('find')->willReturn($schema);
-        return $schema;
-    }//end schemaWithLifecycle()
+		$this->schemaMapper->method('find')->willReturn($schema);
+		return $schema;
+	}//end schemaWithLifecycle()
 
-    /**
-     * Build an ObjectUpdatingEvent moving the lifecycle field from
-     * $oldState to $newState.
-     *
-     * @param string $field    Lifecycle field name.
-     * @param string $oldState Old state value.
-     * @param string $newState New state value.
-     *
-     * @return ObjectUpdatingEvent
-     */
-    private function event(string $field, string $oldState, string $newState): ObjectUpdatingEvent
-    {
-        $old = new ObjectEntity();
-        $old->setSchema('voorstel');
-        $old->setObject([$field => $oldState]);
+	/**
+	 * Build an ObjectUpdatingEvent moving the lifecycle field from
+	 * $oldState to $newState.
+	 *
+	 * @param string $field Lifecycle field name.
+	 * @param string $oldState Old state value.
+	 * @param string $newState New state value.
+	 *
+	 * @return ObjectUpdatingEvent
+	 */
+	private function event(string $field, string $oldState, string $newState): ObjectUpdatingEvent {
+		$old = new ObjectEntity();
+		$old->setSchema('voorstel');
+		$old->setObject([$field => $oldState]);
 
-        $new = new ObjectEntity();
-        $new->setSchema('voorstel');
-        $new->setObject([$field => $newState]);
+		$new = new ObjectEntity();
+		$new->setSchema('voorstel');
+		$new->setObject([$field => $newState]);
 
-        return new ObjectUpdatingEvent(newObject: $new, oldObject: $old);
-    }//end event()
+		return new ObjectUpdatingEvent(newObject: $new, oldObject: $old);
+	}//end event()
 
-    /**
-     * @return void
-     */
-    private function loginAs(string $uid): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
-    }//end loginAs()
+	/**
+	 * @return void
+	 */
+	private function loginAs(string $uid): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+	}//end loginAs()
 
-    private const VOORSTEL_LIFECYCLE = [
-        'field' => 'lifecycle',
-        'initial' => 'concept',
-        'transitions' => [
-            'indienen'    => ['from' => 'concept', 'to' => 'in_parafering'],
-            'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd'],
-        ],
-    ];
+	private const VOORSTEL_LIFECYCLE = [
+		'field' => 'lifecycle',
+		'initial' => 'concept',
+		'transitions' => [
+			'indienen' => ['from' => 'concept', 'to' => 'in_parafering'],
+			'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd'],
+		],
+	];
 
-    public function testAllowedTransitionPasses(): void
-    {
-        $this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
-        $event = $this->event('lifecycle', 'concept', 'in_parafering');
+	public function testAllowedTransitionPasses(): void {
+		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
 
-        $this->listener->handle($event);
+		$this->listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-        $this->assertSame([], $event->getErrors());
-    }//end testAllowedTransitionPasses()
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}//end testAllowedTransitionPasses()
 
-    public function testIllegalTransitionIsRejected(): void
-    {
-        // concept -> geparafeerd is not a declared transition.
-        $this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
-        $event = $this->event('lifecycle', 'concept', 'geparafeerd');
+	public function testIllegalTransitionIsRejected(): void {
+		// concept -> geparafeerd is not a declared transition.
+		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
+		$event = $this->event('lifecycle', 'concept', 'geparafeerd');
 
-        $this->listener->handle($event);
+		$this->listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-        $this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
-    }//end testIllegalTransitionIsRejected()
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
+	}//end testIllegalTransitionIsRejected()
 
-    public function testGuardDeniedIsRejected(): void
-    {
-        $lifecycle = self::VOORSTEL_LIFECYCLE;
-        $lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
-        $this->schemaWithLifecycle($lifecycle);
-        $this->loginAs('alice');
+	public function testGuardDeniedIsRejected(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
 
-        $guard = $this->createMock(LifecycleGuardInterface::class);
-        $guard->method('check')->willReturn(GuardResult::deny('Required fields missing.'));
-        $this->registerGuard('procest.voorstel.submitGuard', $guard);
+		$guard = $this->createMock(LifecycleGuardInterface::class);
+		$guard->method('check')->willReturn(GuardResult::deny('Required fields missing.'));
+		$this->registerGuard('procest.voorstel.submitGuard', $guard);
 
-        $event = $this->event('lifecycle', 'concept', 'in_parafering');
-        $this->listener->handle($event);
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$this->listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-        $this->assertSame('lifecycle-guard-denied', $event->getErrors()['code']);
-    }//end testGuardDeniedIsRejected()
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-guard-denied', $event->getErrors()['code']);
+	}//end testGuardDeniedIsRejected()
 
-    public function testGuardAllowedPasses(): void
-    {
-        $lifecycle = self::VOORSTEL_LIFECYCLE;
-        $lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
-        $this->schemaWithLifecycle($lifecycle);
-        $this->loginAs('alice');
+	public function testGuardAllowedPasses(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
 
-        $guard = $this->createMock(LifecycleGuardInterface::class);
-        $guard->method('check')->willReturn(GuardResult::allow());
-        $this->registerGuard('procest.voorstel.submitGuard', $guard);
+		$guard = $this->createMock(LifecycleGuardInterface::class);
+		$guard->method('check')->willReturn(GuardResult::allow());
+		$this->registerGuard('procest.voorstel.submitGuard', $guard);
 
-        $event = $this->event('lifecycle', 'concept', 'in_parafering');
-        $this->listener->handle($event);
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$this->listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-        $this->assertSame([], $event->getErrors());
-    }//end testGuardAllowedPasses()
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}//end testGuardAllowedPasses()
 
-    public function testUnauthorizedTransitionIsRejected(): void
-    {
-        $lifecycle = self::VOORSTEL_LIFECYCLE;
-        $lifecycle['transitions']['completeren']['authorization'] = ['vergunningverleners'];
-        $this->schemaWithLifecycle($lifecycle);
-        $this->loginAs('bob');
+	public function testUnauthorizedTransitionIsRejected(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['completeren']['authorization'] = ['vergunningverleners'];
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('bob');
 
-        $this->permissionHandler->method('isTransitionAuthorized')->willReturn(false);
+		$this->permissionHandler->method('isTransitionAuthorized')->willReturn(false);
 
-        $event = $this->event('lifecycle', 'in_parafering', 'geparafeerd');
-        $this->listener->handle($event);
+		$event = $this->event('lifecycle', 'in_parafering', 'geparafeerd');
+		$this->listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-        $this->assertSame('lifecycle-transition-unauthorized', $event->getErrors()['code']);
-    }//end testUnauthorizedTransitionIsRejected()
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-transition-unauthorized', $event->getErrors()['code']);
+	}//end testUnauthorizedTransitionIsRejected()
 
-    public function testAuthorizedTransitionPasses(): void
-    {
-        $lifecycle = self::VOORSTEL_LIFECYCLE;
-        $lifecycle['transitions']['completeren']['authorization'] = ['vergunningverleners'];
-        $this->schemaWithLifecycle($lifecycle);
-        $this->loginAs('carol');
+	public function testAuthorizedTransitionPasses(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['completeren']['authorization'] = ['vergunningverleners'];
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('carol');
 
-        $this->permissionHandler->method('isTransitionAuthorized')->willReturn(true);
+		$this->permissionHandler->method('isTransitionAuthorized')->willReturn(true);
 
-        $event = $this->event('lifecycle', 'in_parafering', 'geparafeerd');
-        $this->listener->handle($event);
+		$event = $this->event('lifecycle', 'in_parafering', 'geparafeerd');
+		$this->listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-        $this->assertSame([], $event->getErrors());
-    }//end testAuthorizedTransitionPasses()
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}//end testAuthorizedTransitionPasses()
 
-    public function testSchemaWithoutLifecycleIsUnaffected(): void
-    {
-        // No lifecycle declaration → listener must not touch the event,
-        // even for a value change. PermissionHandler/guard must never be called.
-        $this->schemaWithLifecycle(null);
-        $this->permissionHandler->expects($this->never())->method('isTransitionAuthorized');
-        $this->guardContainer->expects($this->never())->method('get');
+	public function testSchemaWithoutLifecycleIsUnaffected(): void {
+		// No lifecycle declaration → listener must not touch the event,
+		// even for a value change. PermissionHandler/guard must never be called.
+		$this->schemaWithLifecycle(null);
+		$this->permissionHandler->expects($this->never())->method('isTransitionAuthorized');
+		$this->guardContainer->expects($this->never())->method('get');
 
-        $event = $this->event('status', 'anything', 'whatever');
-        $this->listener->handle($event);
+		$event = $this->event('status', 'anything', 'whatever');
+		$this->listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-        $this->assertSame([], $event->getErrors());
-    }//end testSchemaWithoutLifecycleIsUnaffected()
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}//end testSchemaWithoutLifecycleIsUnaffected()
 
-    public function testPropertyAliasDrivesEnforcement(): void
-    {
-        // Annotation authored with `property` instead of `field` must still enforce.
-        $lifecycle = [
-            'property' => 'lifecycle',
-            'initial' => 'concept',
-            'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
-        ];
-        $this->schemaWithLifecycle($lifecycle);
+	public function testPropertyAliasDrivesEnforcement(): void {
+		// Annotation authored with `property` instead of `field` must still enforce.
+		$lifecycle = [
+			'property' => 'lifecycle',
+			'initial' => 'concept',
+			'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
+		];
+		$this->schemaWithLifecycle($lifecycle);
 
-        $event = $this->event('lifecycle', 'concept', 'geparafeerd');
-        $this->listener->handle($event);
+		$event = $this->event('lifecycle', 'concept', 'geparafeerd');
+		$this->listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-        $this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
-    }//end testPropertyAliasDrivesEnforcement()
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
+	}//end testPropertyAliasDrivesEnforcement()
 }//end class

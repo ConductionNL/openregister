@@ -62,178 +62,172 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-final class NotificationQueueFlushJob extends TimedJob
-{
-    /**
-     * Wire collaborators and configure the timed-job interval.
-     *
-     * @param ITimeFactory                      $time            Nextcloud time factory.
-     * @param QueuedNotificationMapper          $queuedMapper    Durable queue mapper.
-     * @param SchemaMapper                      $schemaMapper    Schema lookup mapper (rule digest config).
-     * @param AnnotationNotificationDispatcher  $dispatcher      Notification dispatcher (flush entry point).
-     * @param NotificationDeliveryWindowService $windowService   Delivery-window resolver + evaluator.
-     * @param DigestScheduleEvaluator           $digestEvaluator Live digest-schedule evaluator.
-     * @param LoggerInterface                   $logger          PSR logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly QueuedNotificationMapper $queuedMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly AnnotationNotificationDispatcher $dispatcher,
-        private readonly NotificationDeliveryWindowService $windowService,
-        private readonly DigestScheduleEvaluator $digestEvaluator,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: 60);
+final class NotificationQueueFlushJob extends TimedJob {
+	/**
+	 * Wire collaborators and configure the timed-job interval.
+	 *
+	 * @param ITimeFactory $time Nextcloud time factory.
+	 * @param QueuedNotificationMapper $queuedMapper Durable queue mapper.
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper (rule digest config).
+	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher (flush entry point).
+	 * @param NotificationDeliveryWindowService $windowService Delivery-window resolver + evaluator.
+	 * @param DigestScheduleEvaluator $digestEvaluator Live digest-schedule evaluator.
+	 * @param LoggerInterface $logger PSR logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly QueuedNotificationMapper $queuedMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly NotificationDeliveryWindowService $windowService,
+		private readonly DigestScheduleEvaluator $digestEvaluator,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: 60);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Scan every queued row, group by (schema_id, rule_key, recipient),
-     * and flush the groups/rows whose holding condition has cleared.
-     *
-     * @param mixed $argument Background-job argument (unused).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    protected function run($argument): void
-    {
-        // `$this->time` (protected on the OCP `Job` base class) rather than
-        // `new DateTimeImmutable('now')` so tests can inject a controllable
-        // clock — required to exercise the DST-transition re-evaluation
-        // scenario deterministically.
-        $now = DateTimeImmutable::createFromInterface($this->time->getDateTime());
+	/**
+	 * Scan every queued row, group by (schema_id, rule_key, recipient),
+	 * and flush the groups/rows whose holding condition has cleared.
+	 *
+	 * @param mixed $argument Background-job argument (unused).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	protected function run($argument): void {
+		// `$this->time` (protected on the OCP `Job` base class) rather than
+		// `new DateTimeImmutable('now')` so tests can inject a controllable
+		// clock — required to exercise the DST-transition re-evaluation
+		// scenario deterministically.
+		$now = DateTimeImmutable::createFromInterface($this->time->getDateTime());
 
-        try {
-            $rows = $this->queuedMapper->findAll();
-        } catch (\Throwable $e) {
-            $this->logger->warning('[NotificationQueueFlushJob] queue scan failed: '.$e->getMessage());
-            return;
-        }
+		try {
+			$rows = $this->queuedMapper->findAll();
+		} catch (\Throwable $e) {
+			$this->logger->warning('[NotificationQueueFlushJob] queue scan failed: ' . $e->getMessage());
+			return;
+		}
 
-        if (count($rows) === 0) {
-            return;
-        }
+		if (count($rows) === 0) {
+			return;
+		}
 
-        $groups = [];
-        foreach ($rows as $row) {
-            $key            = $row->getSchemaId().'|'.$row->getRuleKey().'|'.$row->getRecipient();
-            $groups[$key][] = $row;
-        }
+		$groups = [];
+		foreach ($rows as $row) {
+			$key = $row->getSchemaId() . '|' . $row->getRuleKey() . '|' . $row->getRecipient();
+			$groups[$key][] = $row;
+		}
 
-        $flushed = 0;
-        foreach ($groups as $groupRows) {
-            $flushed += $this->processGroup(rows: $groupRows, now: $now);
-        }
+		$flushed = 0;
+		foreach ($groups as $groupRows) {
+			$flushed += $this->processGroup(rows: $groupRows, now: $now);
+		}
 
-        if ($flushed > 0) {
-            $this->logger->info(sprintf('[NotificationQueueFlushJob] flushed %d queued notification(s)', $flushed));
-        }
+		if ($flushed > 0) {
+			$this->logger->info(sprintf('[NotificationQueueFlushJob] flushed %d queued notification(s)', $flushed));
+		}
 
-    }//end run()
+	}//end run()
 
-    /**
-     * Evaluate and flush one `(schema_id, rule_key, recipient)` group.
-     *
-     * @param array<int, QueuedNotification> $rows Rows in the group.
-     * @param DateTimeImmutable              $now  Logical "now" for this scan pass.
-     *
-     * @return int Number of rows flushed.
-     */
-    private function processGroup(array $rows, DateTimeImmutable $now): int
-    {
-        $first     = $rows[0];
-        $recipient = (string) $first->getRecipient();
+	/**
+	 * Evaluate and flush one `(schema_id, rule_key, recipient)` group.
+	 *
+	 * @param array<int, QueuedNotification> $rows Rows in the group.
+	 * @param DateTimeImmutable $now Logical "now" for this scan pass.
+	 *
+	 * @return int Number of rows flushed.
+	 */
+	private function processGroup(array $rows, DateTimeImmutable $now): int {
+		$first = $rows[0];
+		$recipient = (string)$first->getRecipient();
 
-        // Window-active blocks the WHOLE group, regardless of digest state
-        // (window-overlap semantics: delivery waits for the later of
-        // quiet-hours-end and digest-due-time).
-        $window = $this->windowService->getForUser(userId: $recipient);
-        if ($window !== null && $this->windowService->isInsideWindow(window: $window, now: $now) === true) {
-            return 0;
-        }
+		// Window-active blocks the WHOLE group, regardless of digest state
+		// (window-overlap semantics: delivery waits for the later of
+		// quiet-hours-end and digest-due-time).
+		$window = $this->windowService->getForUser(userId: $recipient);
+		if ($window !== null && $this->windowService->isInsideWindow(window: $window, now: $now) === true) {
+			return 0;
+		}
 
-        $digest = $this->resolveDigestSpec(schemaId: (int) $first->getSchemaId(), ruleKey: (string) $first->getRuleKey());
+		$digest = $this->resolveDigestSpec(schemaId: (int)$first->getSchemaId(), ruleKey: (string)$first->getRuleKey());
 
-        $dueRows = [];
-        foreach ($rows as $row) {
-            if ($digest === null) {
-                // No digest schedule declared (or it was removed from the
-                // schema since the row was queued) — the window has
-                // cleared, so the row is due immediately.
-                $dueRows[] = $row;
-                continue;
-            }
+		$dueRows = [];
+		foreach ($rows as $row) {
+			if ($digest === null) {
+				// No digest schedule declared (or it was removed from the
+				// schema since the row was queued) — the window has
+				// cleared, so the row is due immediately.
+				$dueRows[] = $row;
+				continue;
+			}
 
-            $enqueuedAt = DateTimeImmutable::createFromInterface($row->getCreatedAt());
-            if ($this->digestEvaluator->isDue(digest: $digest, enqueuedAt: $enqueuedAt, now: $now) === true) {
-                $dueRows[] = $row;
-            }
-        }
+			$enqueuedAt = DateTimeImmutable::createFromInterface($row->getCreatedAt());
+			if ($this->digestEvaluator->isDue(digest: $digest, enqueuedAt: $enqueuedAt, now: $now) === true) {
+				$dueRows[] = $row;
+			}
+		}
 
-        if (count($dueRows) === 0) {
-            return 0;
-        }
+		if (count($dueRows) === 0) {
+			return 0;
+		}
 
-        try {
-            $this->dispatcher->dispatchQueued(queuedRows: $dueRows);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                sprintf(
-                    '[NotificationQueueFlushJob] dispatchQueued failed for rule="%s" recipient="%s": %s',
-                    $first->getRuleKey(),
-                    $recipient,
-                    $e->getMessage()
-                )
-            );
-            return 0;
-        }
+		try {
+			$this->dispatcher->dispatchQueued(queuedRows: $dueRows);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[NotificationQueueFlushJob] dispatchQueued failed for rule="%s" recipient="%s": %s',
+					$first->getRuleKey(),
+					$recipient,
+					$e->getMessage()
+				)
+			);
+			return 0;
+		}
 
-        foreach ($dueRows as $row) {
-            $this->queuedMapper->deleteById(id: (int) $row->getId());
-        }
+		foreach ($dueRows as $row) {
+			$this->queuedMapper->deleteById(id: (int)$row->getId());
+		}
 
-        return count($dueRows);
+		return count($dueRows);
+	}//end processGroup()
 
-    }//end processGroup()
+	/**
+	 * Resolve the rule's `digest` block from the owning schema, or null
+	 * when the schema/rule/digest is missing or malformed.
+	 *
+	 * @param int $schemaId Owning schema id.
+	 * @param string $ruleKey Notification annotation key.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function resolveDigestSpec(int $schemaId, string $ruleKey): ?array {
+		try {
+			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-    /**
-     * Resolve the rule's `digest` block from the owning schema, or null
-     * when the schema/rule/digest is missing or malformed.
-     *
-     * @param int    $schemaId Owning schema id.
-     * @param string $ruleKey  Notification annotation key.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function resolveDigestSpec(int $schemaId, string $ruleKey): ?array
-    {
-        try {
-            $schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-        } catch (\Throwable $e) {
-            return null;
-        }
+		$config = ($schema->getConfiguration() ?? []);
+		$notifications = ($config['x-openregister-notifications'] ?? null);
+		if (is_array($notifications) === false) {
+			return null;
+		}
 
-        $config        = ($schema->getConfiguration() ?? []);
-        $notifications = ($config['x-openregister-notifications'] ?? null);
-        if (is_array($notifications) === false) {
-            return null;
-        }
+		$spec = ($notifications[$ruleKey] ?? null);
+		if (is_array($spec) === false) {
+			return null;
+		}
 
-        $spec = ($notifications[$ruleKey] ?? null);
-        if (is_array($spec) === false) {
-            return null;
-        }
+		$digest = ($spec['digest'] ?? null);
+		if (is_array($digest) === false || $this->digestEvaluator->isValidDigestSpec($digest) === false) {
+			return null;
+		}
 
-        $digest = ($spec['digest'] ?? null);
-        if (is_array($digest) === false || $this->digestEvaluator->isValidDigestSpec($digest) === false) {
-            return null;
-        }
-
-        return $digest;
-
-    }//end resolveDigestSpec()
+		return $digest;
+	}//end resolveDigestSpec()
 }//end class

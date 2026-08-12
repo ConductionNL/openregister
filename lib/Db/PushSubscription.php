@@ -52,76 +52,73 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class PushSubscription extends Entity implements JsonSerializable
-{
+class PushSubscription extends Entity implements JsonSerializable {
 
-    /**
-     * The owning Nextcloud user id.
-     *
-     * @var string|null
-     */
-    protected ?string $userId = null;
+	/**
+	 * The owning Nextcloud user id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $userId = null;
 
-    /**
-     * The push service endpoint URL (FCM / Mozilla / Apple).
-     *
-     * @var string|null
-     */
-    protected ?string $endpoint = null;
+	/**
+	 * The push service endpoint URL (FCM / Mozilla / Apple).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $endpoint = null;
 
-    /**
-     * The client public key (P-256 ECDH) used for payload encryption.
-     *
-     * @var string|null
-     */
-    protected ?string $p256dh = null;
+	/**
+	 * The client public key (P-256 ECDH) used for payload encryption.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $p256dh = null;
 
-    /**
-     * The client auth secret used for payload encryption.
-     *
-     * @var string|null
-     */
-    protected ?string $auth = null;
+	/**
+	 * The client auth secret used for payload encryption.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $auth = null;
 
-    /**
-     * The browser user agent at subscribe time (diagnostics only).
-     *
-     * @var string|null
-     */
-    protected ?string $userAgent = null;
+	/**
+	 * The browser user agent at subscribe time (diagnostics only).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $userAgent = null;
 
-    /**
-     * When the subscription was stored.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * When the subscription was stored.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'userId', type: 'string');
-        $this->addType(fieldName: 'endpoint', type: 'string');
-        $this->addType(fieldName: 'p256dh', type: 'string');
-        $this->addType(fieldName: 'auth', type: 'string');
-        $this->addType(fieldName: 'userAgent', type: 'string');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'userId', type: 'string');
+		$this->addType(fieldName: 'endpoint', type: 'string');
+		$this->addType(fieldName: 'p256dh', type: 'string');
+		$this->addType(fieldName: 'auth', type: 'string');
+		$this->addType(fieldName: 'userAgent', type: 'string');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization (never exposes another user's row — controller-gated).
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'        => $this->id,
-            'endpoint'  => $this->endpoint,
-            'userAgent' => $this->userAgent,
-            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization (never exposes another user's row — controller-gated).
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'endpoint' => $this->endpoint,
+			'userAgent' => $this->userAgent,
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

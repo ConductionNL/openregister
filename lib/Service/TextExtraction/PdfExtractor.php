@@ -27,113 +27,111 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use Exception;
 use OCP\Files\File;
-use Smalot\PdfParser\Parser as PdfParser;
 use Psr\Log\LoggerInterface;
+use Smalot\PdfParser\Parser as PdfParser;
 
 /**
  * Extracts text content from PDF files.
  */
-class PdfExtractor
-{
-    /**
-     * Constructor.
-     *
-     * @param LoggerInterface $logger Logger.
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class PdfExtractor {
+	/**
+	 * Constructor.
+	 *
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Extract plain text from a PDF file.
-     *
-     * @param File $file The PDF file to extract.
-     *
-     * @return string|null The extracted text, or null when empty.
-     *
-     * @throws Exception When the PDF parser is unavailable or extraction fails.
-     */
-    public function extract(File $file): ?string
-    {
-        // Check if PdfParser library is available.
-        if (class_exists('Smalot\PdfParser\Parser') === false) {
-            $this->logger->warning(
-                message: '[PdfExtractor] PDF parser library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PDF parser library (smalot/pdfparser) is not installed. ";
-            $msg .= "Run: composer require smalot/pdfparser";
-            throw new Exception($msg);
-        }
+	/**
+	 * Extract plain text from a PDF file.
+	 *
+	 * @param File $file The PDF file to extract.
+	 *
+	 * @return string|null The extracted text, or null when empty.
+	 *
+	 * @throws Exception When the PDF parser is unavailable or extraction fails.
+	 */
+	public function extract(File $file): ?string {
+		// Check if PdfParser library is available.
+		if (class_exists('Smalot\PdfParser\Parser') === false) {
+			$this->logger->warning(
+				message: '[PdfExtractor] PDF parser library not available',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $file->getId(),
+				]
+			);
+			$msg = 'PDF parser library (smalot/pdfparser) is not installed. ';
+			$msg .= 'Run: composer require smalot/pdfparser';
+			throw new Exception($msg);
+		}
 
-        try {
-            $this->logger->debug(
-                message: '[PdfExtractor] Extracting PDF',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
+		try {
+			$this->logger->debug(
+				message: '[PdfExtractor] Extracting PDF',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $file->getId(),
+					'name' => $file->getName(),
+				]
+			);
 
-            // Get file content.
-            $content = $file->getContent();
+			// Get file content.
+			$content = $file->getContent();
 
-            // Create temporary file for PdfParser (it requires a file path).
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
+			// Create temporary file for PdfParser (it requires a file path).
+			$tempFile = tmpfile();
+			$tempPath = stream_get_meta_data($tempFile)['uri'];
+			fwrite($tempFile, $content);
 
-            // Parse PDF.
-            $parser = new PdfParser();
-            $pdf    = $parser->parseFile($tempPath);
+			// Parse PDF.
+			$parser = new PdfParser();
+			$pdf = $parser->parseFile($tempPath);
 
-            // Extract text.
-            $text = $pdf->getText();
+			// Extract text.
+			$text = $pdf->getText();
 
-            // Clean up.
-            fclose($tempFile);
+			// Clean up.
+			fclose($tempFile);
 
-            if ($text === '') {
-                $this->logger->warning(
-                    message: '[PdfExtractor] PDF extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
+			if ($text === '') {
+				$this->logger->warning(
+					message: '[PdfExtractor] PDF extraction returned empty text',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'fileId' => $file->getId(),
+					]
+				);
+				return null;
+			}
 
-            $this->logger->debug(
-                message: '[PdfExtractor] PDF extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
+			$this->logger->debug(
+				message: '[PdfExtractor] PDF extracted successfully',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $file->getId(),
+					'length' => strlen($text),
+				]
+			);
 
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[PdfExtractor] PDF extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("PDF extraction failed: ".$e->getMessage());
-        }//end try
-    }//end extract()
+			return $text;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[PdfExtractor] PDF extraction failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'fileId' => $file->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+			throw new Exception('PDF extraction failed: ' . $e->getMessage());
+		}//end try
+	}//end extract()
 }//end class

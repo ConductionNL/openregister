@@ -46,148 +46,145 @@ use OCP\Migration\SimpleMigrationStep;
  * metadata columns so existing add-column migrations + future read
  * paths have a real table to operate on.
  */
-class Version1Date20260502130000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260502130000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_files') === true) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_files') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable(tableName: 'openregister_files');
+		$table = $schema->createTable(tableName: 'openregister_files');
 
-        $table->addColumn(
-            name: 'id',
-            typeName: Types::BIGINT,
-            options: [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
+		$table->addColumn(
+			name: 'id',
+			typeName: Types::BIGINT,
+			options: [
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
 
-        $table->addColumn(
-            name: 'file_id',
-            typeName: Types::BIGINT,
-            options: [
-                'notnull' => true,
-                'comment' => 'Nextcloud filecache.fileid this row wraps',
-            ]
-        );
+		$table->addColumn(
+			name: 'file_id',
+			typeName: Types::BIGINT,
+			options: [
+				'notnull' => true,
+				'comment' => 'Nextcloud filecache.fileid this row wraps',
+			]
+		);
 
-        $table->addColumn(
-            name: 'description',
-            typeName: Types::TEXT,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'File description for metadata enrichment',
-            ]
-        );
+		$table->addColumn(
+			name: 'description',
+			typeName: Types::TEXT,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'File description for metadata enrichment',
+			]
+		);
 
-        $table->addColumn(
-            name: 'category',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => false,
-                'length'  => 255,
-                'default' => null,
-                'comment' => 'File category for classification and filtering',
-            ]
-        );
+		$table->addColumn(
+			name: 'category',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => false,
+				'length' => 255,
+				'default' => null,
+				'comment' => 'File category for classification and filtering',
+			]
+		);
 
-        $table->addColumn(
-            name: 'labels',
-            typeName: Types::JSON,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'File labels (JSON array of strings) for tagging',
-            ]
-        );
+		$table->addColumn(
+			name: 'labels',
+			typeName: Types::JSON,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'File labels (JSON array of strings) for tagging',
+			]
+		);
 
-        $table->addColumn(
-            name: 'locked_by',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => false,
-                'length'  => 64,
-                'default' => null,
-                'comment' => 'User ID who locked the file (DB-backed locks)',
-            ]
-        );
+		$table->addColumn(
+			name: 'locked_by',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => false,
+				'length' => 64,
+				'default' => null,
+				'comment' => 'User ID who locked the file (DB-backed locks)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'locked_at',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Timestamp when the file lock was acquired',
-            ]
-        );
+		$table->addColumn(
+			name: 'locked_at',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Timestamp when the file lock was acquired',
+			]
+		);
 
-        $table->addColumn(
-            name: 'lock_expires',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Timestamp when the file lock expires (TTL)',
-            ]
-        );
+		$table->addColumn(
+			name: 'lock_expires',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Timestamp when the file lock expires (TTL)',
+			]
+		);
 
-        $table->addColumn(
-            name: 'download_count',
-            typeName: Types::BIGINT,
-            options: [
-                'notnull' => true,
-                'default' => 0,
-                'comment' => 'Cached download count for audit and analytics',
-            ]
-        );
+		$table->addColumn(
+			name: 'download_count',
+			typeName: Types::BIGINT,
+			options: [
+				'notnull' => true,
+				'default' => 0,
+				'comment' => 'Cached download count for audit and analytics',
+			]
+		);
 
-        $table->addColumn(
-            name: 'created',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => true,
-                'comment' => 'Row creation timestamp',
-            ]
-        );
+		$table->addColumn(
+			name: 'created',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => true,
+				'comment' => 'Row creation timestamp',
+			]
+		);
 
-        $table->addColumn(
-            name: 'updated',
-            typeName: Types::DATETIME,
-            options: [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Row last-update timestamp',
-            ]
-        );
+		$table->addColumn(
+			name: 'updated',
+			typeName: Types::DATETIME,
+			options: [
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Row last-update timestamp',
+			]
+		);
 
-        $table->setPrimaryKey(columnNames: ['id']);
-        $table->addUniqueIndex(columnNames: ['file_id'], indexName: 'idx_or_files_file_id');
-        $table->addIndex(columnNames: ['category'], indexName: 'idx_or_files_category');
-        $table->addIndex(columnNames: ['locked_by'], indexName: 'idx_or_files_locked_by');
+		$table->setPrimaryKey(columnNames: ['id']);
+		$table->addUniqueIndex(columnNames: ['file_id'], indexName: 'idx_or_files_file_id');
+		$table->addIndex(columnNames: ['category'], indexName: 'idx_or_files_category');
+		$table->addIndex(columnNames: ['locked_by'], indexName: 'idx_or_files_locked_by');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

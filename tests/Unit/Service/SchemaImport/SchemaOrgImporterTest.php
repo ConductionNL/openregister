@@ -27,150 +27,125 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaOrgImporter;
 use OCA\OpenRegister\Service\SchemaImport\SchemaOrgSnapshot;
 use PHPUnit\Framework\TestCase;
 
-class SchemaOrgImporterTest extends TestCase
-{
-    private SchemaOrgImporter $importer;
+class SchemaOrgImporterTest extends TestCase {
+	private SchemaOrgImporter $importer;
 
+	protected function setUp(): void {
+		$file = dirname(__DIR__, 4) . '/lib/Resources/schemaorg/schemaorg-current-https.jsonld';
+		$snapshot = new SchemaOrgSnapshot($file, 'test-version');
+		$this->importer = new SchemaOrgImporter($snapshot);
+	}
 
-    protected function setUp(): void
-    {
-        $file     = dirname(__DIR__, 4).'/lib/Resources/schemaorg/schemaorg-current-https.jsonld';
-        $snapshot = new SchemaOrgSnapshot($file, 'test-version');
-        $this->importer = new SchemaOrgImporter($snapshot);
-    }
+	public function testImportPersonSubset(): void {
+		$result = $this->importer->import(
+			'Person',
+			new ImportOptions(propertySubset: ['givenName', 'familyName', 'email', 'birthDate'])
+		);
 
+		$this->assertCount(4, $result->properties);
+		$this->assertArrayHasKey('givenName', $result->properties);
+		$this->assertSame('string', $result->properties['email']['type']);
+		$this->assertNotEmpty($result->properties['email']['description']);
 
-    public function testImportPersonSubset(): void
-    {
-        $result = $this->importer->import(
-            'Person',
-            new ImportOptions(propertySubset: ['givenName', 'familyName', 'email', 'birthDate'])
-        );
+		// birthDate → string/date.
+		$this->assertSame('string', $result->properties['birthDate']['type']);
+		$this->assertSame('date', $result->properties['birthDate']['format']);
 
-        $this->assertCount(4, $result->properties);
-        $this->assertArrayHasKey('givenName', $result->properties);
-        $this->assertSame('string', $result->properties['email']['type']);
-        $this->assertNotEmpty($result->properties['email']['description']);
+		$this->assertSame('Person', $result->title);
+	}
 
-        // birthDate → string/date.
-        $this->assertSame('string', $result->properties['birthDate']['type']);
-        $this->assertSame('date', $result->properties['birthDate']['format']);
+	public function testJsonLdBlockPreFilled(): void {
+		$result = $this->importer->import('Person', new ImportOptions(propertySubset: ['email']));
 
-        $this->assertSame('Person', $result->title);
-    }
+		$this->assertSame('https://schema.org/', $result->jsonld['@vocab']);
+		$this->assertSame('https://schema.org/Person', $result->jsonld['type']);
+		$this->assertSame('https://schema.org/email', $result->jsonld['properties']['email']);
+	}
 
+	public function testAncestorPropertiesAreOptIn(): void {
+		// Without ancestors: Thing-level name/description not present.
+		$direct = $this->importer->import('Person', new ImportOptions());
+		$this->assertArrayNotHasKey('name', $direct->properties);
+		$this->assertArrayNotHasKey('description', $direct->properties);
 
-    public function testJsonLdBlockPreFilled(): void
-    {
-        $result = $this->importer->import('Person', new ImportOptions(propertySubset: ['email']));
+		// With ancestors: Thing-level properties pulled in.
+		$withAncestors = $this->importer->import('Person', new ImportOptions(includeAncestors: true));
+		$this->assertArrayHasKey('name', $withAncestors->properties);
+		$this->assertArrayHasKey('description', $withAncestors->properties);
+	}
 
-        $this->assertSame('https://schema.org/', $result->jsonld['@vocab']);
-        $this->assertSame('https://schema.org/Person', $result->jsonld['type']);
-        $this->assertSame('https://schema.org/email', $result->jsonld['properties']['email']);
-    }
+	public function testDatatypeMappingTable(): void {
+		// numberOfEmployees → integer; legalName → string.
+		$org = $this->importer->import('Organization', new ImportOptions());
+		$this->assertSame('integer', $org->properties['numberOfEmployees']['type']);
+		$this->assertSame('string', $org->properties['legalName']['type']);
 
+		// url → string/uri.
+		$thing = $this->importer->import('Thing', new ImportOptions(propertySubset: ['url']));
+		$this->assertSame('string', $thing->properties['url']['type']);
+		$this->assertSame('uri', $thing->properties['url']['format']);
+	}
 
-    public function testAncestorPropertiesAreOptIn(): void
-    {
-        // Without ancestors: Thing-level name/description not present.
-        $direct = $this->importer->import('Person', new ImportOptions());
-        $this->assertArrayNotHasKey('name', $direct->properties);
-        $this->assertArrayNotHasKey('description', $direct->properties);
+	public function testObjectRangeBecomesUriReference(): void {
+		// founder ranges over Person (a class) → string/uri reference.
+		$org = $this->importer->import('Organization', new ImportOptions(propertySubset: ['founder']));
+		$this->assertSame('string', $org->properties['founder']['type']);
+		$this->assertSame('uri', $org->properties['founder']['format']);
+	}
 
-        // With ancestors: Thing-level properties pulled in.
-        $withAncestors = $this->importer->import('Person', new ImportOptions(includeAncestors: true));
-        $this->assertArrayHasKey('name', $withAncestors->properties);
-        $this->assertArrayHasKey('description', $withAncestors->properties);
-    }
+	public function testMultiRangeCollapsesToMostPermissive(): void {
+		// identifier ranges over Text + URL → most permissive = plain string.
+		$thing = $this->importer->import('Thing', new ImportOptions(propertySubset: ['identifier']));
+		$this->assertSame('string', $thing->properties['identifier']['type']);
+		$this->assertArrayNotHasKey('format', $thing->properties['identifier']);
+	}
 
+	public function testUnknownRequestedPropertiesReported(): void {
+		$result = $this->importer->import(
+			'Person',
+			new ImportOptions(propertySubset: ['givenName', 'doesNotExist'])
+		);
 
-    public function testDatatypeMappingTable(): void
-    {
-        // numberOfEmployees → integer; legalName → string.
-        $org = $this->importer->import('Organization', new ImportOptions());
-        $this->assertSame('integer', $org->properties['numberOfEmployees']['type']);
-        $this->assertSame('string', $org->properties['legalName']['type']);
+		$this->assertArrayHasKey('givenName', $result->properties);
+		$this->assertSame(['doesNotExist'], $result->unknownRequested);
+	}
 
-        // url → string/uri.
-        $thing = $this->importer->import('Thing', new ImportOptions(propertySubset: ['url']));
-        $this->assertSame('string', $thing->properties['url']['type']);
-        $this->assertSame('uri', $thing->properties['url']['format']);
-    }
+	public function testUnknownTypeThrows404(): void {
+		$this->expectException(SchemaImportException::class);
+		try {
+			$this->importer->import('Persoon', new ImportOptions());
+		} catch (SchemaImportException $e) {
+			$this->assertSame(404, $e->getHttpStatus());
+			throw $e;
+		}
+	}
 
+	public function testBaselineRecordedInProvenance(): void {
+		$result = $this->importer->import('Person', new ImportOptions(propertySubset: ['email']));
 
-    public function testObjectRangeBecomesUriReference(): void
-    {
-        // founder ranges over Person (a class) → string/uri reference.
-        $org = $this->importer->import('Organization', new ImportOptions(propertySubset: ['founder']));
-        $this->assertSame('string', $org->properties['founder']['type']);
-        $this->assertSame('uri', $org->properties['founder']['format']);
-    }
+		$this->assertSame('schema.org', $result->importSource['dialect']);
+		$this->assertSame('https://schema.org/Person', $result->importSource['reference']);
+		$this->assertSame('test-version', $result->importSource['snapshotVersion']);
+		$this->assertArrayHasKey('email', $result->importSource['baseline']);
+		$this->assertNotEmpty($result->importSource['importedAt']);
+	}
 
+	public function testDiscoveryFindsPersonWithParent(): void {
+		$results = $this->importer->discover('person');
+		$names = array_column($results, 'label');
+		$this->assertContains('Person', $names);
 
-    public function testMultiRangeCollapsesToMostPermissive(): void
-    {
-        // identifier ranges over Text + URL → most permissive = plain string.
-        $thing = $this->importer->import('Thing', new ImportOptions(propertySubset: ['identifier']));
-        $this->assertSame('string', $thing->properties['identifier']['type']);
-        $this->assertArrayNotHasKey('format', $thing->properties['identifier']);
-    }
+		foreach ($results as $candidate) {
+			if ($candidate['label'] === 'Person') {
+				$this->assertSame('https://schema.org/Person', $candidate['id']);
+				$this->assertSame('Thing', $candidate['parent']);
+				$this->assertSame('test-version', $candidate['snapshotVersion']);
+			}
+		}
+	}
 
-
-    public function testUnknownRequestedPropertiesReported(): void
-    {
-        $result = $this->importer->import(
-            'Person',
-            new ImportOptions(propertySubset: ['givenName', 'doesNotExist'])
-        );
-
-        $this->assertArrayHasKey('givenName', $result->properties);
-        $this->assertSame(['doesNotExist'], $result->unknownRequested);
-    }
-
-
-    public function testUnknownTypeThrows404(): void
-    {
-        $this->expectException(SchemaImportException::class);
-        try {
-            $this->importer->import('Persoon', new ImportOptions());
-        } catch (SchemaImportException $e) {
-            $this->assertSame(404, $e->getHttpStatus());
-            throw $e;
-        }
-    }
-
-
-    public function testBaselineRecordedInProvenance(): void
-    {
-        $result = $this->importer->import('Person', new ImportOptions(propertySubset: ['email']));
-
-        $this->assertSame('schema.org', $result->importSource['dialect']);
-        $this->assertSame('https://schema.org/Person', $result->importSource['reference']);
-        $this->assertSame('test-version', $result->importSource['snapshotVersion']);
-        $this->assertArrayHasKey('email', $result->importSource['baseline']);
-        $this->assertNotEmpty($result->importSource['importedAt']);
-    }
-
-
-    public function testDiscoveryFindsPersonWithParent(): void
-    {
-        $results = $this->importer->discover('person');
-        $names   = array_column($results, 'label');
-        $this->assertContains('Person', $names);
-
-        foreach ($results as $candidate) {
-            if ($candidate['label'] === 'Person') {
-                $this->assertSame('https://schema.org/Person', $candidate['id']);
-                $this->assertSame('Thing', $candidate['parent']);
-                $this->assertSame('test-version', $candidate['snapshotVersion']);
-            }
-        }
-    }
-
-
-    public function testImportByIriReference(): void
-    {
-        $result = $this->importer->import('https://schema.org/Person', new ImportOptions(propertySubset: ['email']));
-        $this->assertSame('Person', $result->title);
-    }
+	public function testImportByIriReference(): void {
+		$result = $this->importer->import('https://schema.org/Person', new ImportOptions(propertySubset: ['email']));
+		$this->assertSame('Person', $result->title);
+	}
 }

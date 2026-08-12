@@ -32,46 +32,44 @@ use Psr\Log\LoggerInterface;
  *
  * @implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
  */
-class GraphQLSubscriptionListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param SubscriptionService $subscriptionService Subscription service
-     * @param LoggerInterface     $logger              Logger
-     *
-     * @spec openspec/specs/graphql-api/spec.md
-     */
-    public function __construct(
-        private readonly SubscriptionService $subscriptionService,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class GraphQLSubscriptionListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param SubscriptionService $subscriptionService Subscription service
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	public function __construct(
+		private readonly SubscriptionService $subscriptionService,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle an event.
-     *
-     * @param Event $event The event
-     *
-     * @return void
-     *
-     * @spec openspec/specs/graphql-api/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        try {
-            if ($event instanceof ObjectCreatedEvent) {
-                $this->subscriptionService->pushEvent('create', $event->getObject());
-            } else if ($event instanceof ObjectUpdatedEvent) {
-                $this->subscriptionService->pushEvent('update', $event->getObject());
-            } else if ($event instanceof ObjectDeletedEvent) {
-                $this->subscriptionService->pushEvent('delete', $event->getObject());
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'GraphQL subscription event push failed: '.$e->getMessage()
-            );
-        }
+	/**
+	 * Handle an event.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	public function handle(Event $event): void {
+		try {
+			if ($event instanceof ObjectCreatedEvent) {
+				$this->subscriptionService->pushEvent('create', $event->getObject());
+			} elseif ($event instanceof ObjectUpdatedEvent) {
+				$this->subscriptionService->pushEvent('update', $event->getObject());
+			} elseif ($event instanceof ObjectDeletedEvent) {
+				$this->subscriptionService->pushEvent('delete', $event->getObject());
+			}
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				'GraphQL subscription event push failed: ' . $e->getMessage()
+			);
+		}
 
-    }//end handle()
+	}//end handle()
 }//end class

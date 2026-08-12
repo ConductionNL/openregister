@@ -32,32 +32,30 @@ use JsonSerializable;
 /**
  * Body of a parsed EML message.
  */
-final class EmlBody implements JsonSerializable
-{
-    /**
-     * Constructor.
-     *
-     * @param string|null $plainText The `text/plain` body part, or null when absent.
-     * @param string|null $html      The `text/html` body part, or null when absent.
-     */
-    public function __construct(
-        public readonly ?string $plainText,
-        public readonly ?string $html,
-    ) {
-    }//end __construct()
+final class EmlBody implements JsonSerializable {
+	/**
+	 * Constructor.
+	 *
+	 * @param string|null $plainText The `text/plain` body part, or null when absent.
+	 * @param string|null $html The `text/html` body part, or null when absent.
+	 */
+	public function __construct(
+		public readonly ?string $plainText,
+		public readonly ?string $html,
+	) {
+	}//end __construct()
 
-    /**
-     * JSON serialisation.
-     *
-     * @return array{plainText: string|null, html: string|null}
-     *
-     * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'plainText' => $this->plainText,
-            'html'      => $this->html,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array{plainText: string|null, html: string|null}
+	 *
+	 * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'plainText' => $this->plainText,
+			'html' => $this->html,
+		];
+	}//end jsonSerialize()
 }//end class

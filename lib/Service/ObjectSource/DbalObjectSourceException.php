@@ -31,40 +31,37 @@ use Throwable;
 /**
  * Read failure carrying a 502/503 HTTP status for the object-source dispatch.
  */
-class DbalObjectSourceException extends RuntimeException
-{
+class DbalObjectSourceException extends RuntimeException {
 
-    /**
-     * The HTTP status this failure should surface as (502 or 503).
-     *
-     * @var integer
-     */
-    private int $statusCode;
+	/**
+	 * The HTTP status this failure should surface as (502 or 503).
+	 *
+	 * @var integer
+	 */
+	private int $statusCode;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $message    A non-sensitive message (never a secret).
-     * @param int            $statusCode The HTTP status (502 upstream error / 503 unreachable).
-     * @param Throwable|null $previous   The underlying DBAL exception, if any.
-     *
-     * @return void
-     */
-    public function __construct(string $message, int $statusCode=503, ?Throwable $previous=null)
-    {
-        parent::__construct(message: $message, code: 0, previous: $previous);
-        $this->statusCode = $statusCode;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message A non-sensitive message (never a secret).
+	 * @param int $statusCode The HTTP status (502 upstream error / 503 unreachable).
+	 * @param Throwable|null $previous The underlying DBAL exception, if any.
+	 *
+	 * @return void
+	 */
+	public function __construct(string $message, int $statusCode = 503, ?Throwable $previous = null) {
+		parent::__construct(message: $message, code: 0, previous: $previous);
+		$this->statusCode = $statusCode;
+	}//end __construct()
 
-    /**
-     * The HTTP status this failure should surface as.
-     *
-     * @return int The status code (502 or 503).
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    public function getStatusCode(): int
-    {
-        return $this->statusCode;
-    }//end getStatusCode()
+	/**
+	 * The HTTP status this failure should surface as.
+	 *
+	 * @return int The status code (502 or 503).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function getStatusCode(): int {
+		return $this->statusCode;
+	}//end getStatusCode()
 }//end class

@@ -41,76 +41,70 @@ use OCP\EventDispatcher\Event;
  * `ApprovalStepApprovedEvent` is also fired for that final step; downstream
  * apps that only care about full-chain completion should listen here.
  */
-class ApprovalStepCompletedEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param ApprovalChain $chain           The approval chain that completed.
-     * @param ApprovalStep  $finalStep       The last step (approved) of the chain.
-     * @param string        $userId          ID of the user who approved the final step.
-     * @param string        $statusOnApprove The configured `statusOnApprove` from
-     *                                       the final step's chain definition —
-     *                                       i.e. the terminal status of the chain.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ApprovalChain $chain,
-        private readonly ApprovalStep $finalStep,
-        private readonly string $userId,
-        private readonly string $statusOnApprove
-    ) {
-        parent::__construct();
-    }//end __construct()
+class ApprovalStepCompletedEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param ApprovalChain $chain The approval chain that completed.
+	 * @param ApprovalStep $finalStep The last step (approved) of the chain.
+	 * @param string $userId ID of the user who approved the final step.
+	 * @param string $statusOnApprove The configured `statusOnApprove` from
+	 *                                the final step's chain definition —
+	 *                                i.e. the terminal status of the chain.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ApprovalChain $chain,
+		private readonly ApprovalStep $finalStep,
+		private readonly string $userId,
+		private readonly string $statusOnApprove,
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Get the approval chain.
-     *
-     * @return ApprovalChain The approval chain configuration.
-     */
-    public function getChain(): ApprovalChain
-    {
-        return $this->chain;
-    }//end getChain()
+	/**
+	 * Get the approval chain.
+	 *
+	 * @return ApprovalChain The approval chain configuration.
+	 */
+	public function getChain(): ApprovalChain {
+		return $this->chain;
+	}//end getChain()
 
-    /**
-     * Get the final step that closed the chain.
-     *
-     * @return ApprovalStep The final approved step.
-     */
-    public function getFinalStep(): ApprovalStep
-    {
-        return $this->finalStep;
-    }//end getFinalStep()
+	/**
+	 * Get the final step that closed the chain.
+	 *
+	 * @return ApprovalStep The final approved step.
+	 */
+	public function getFinalStep(): ApprovalStep {
+		return $this->finalStep;
+	}//end getFinalStep()
 
-    /**
-     * Get the ID of the user who closed the chain.
-     *
-     * @return string Nextcloud user ID.
-     */
-    public function getUserId(): string
-    {
-        return $this->userId;
-    }//end getUserId()
+	/**
+	 * Get the ID of the user who closed the chain.
+	 *
+	 * @return string Nextcloud user ID.
+	 */
+	public function getUserId(): string {
+		return $this->userId;
+	}//end getUserId()
 
-    /**
-     * Get the terminal status the parent object should adopt.
-     *
-     * @return string Status string from the final step's `statusOnApprove`.
-     */
-    public function getStatusOnApprove(): string
-    {
-        return $this->statusOnApprove;
-    }//end getStatusOnApprove()
+	/**
+	 * Get the terminal status the parent object should adopt.
+	 *
+	 * @return string Status string from the final step's `statusOnApprove`.
+	 */
+	public function getStatusOnApprove(): string {
+		return $this->statusOnApprove;
+	}//end getStatusOnApprove()
 
-    /**
-     * Convenience: the object UUID whose chain is now complete.
-     *
-     * @return string Object UUID (empty string if the step has none yet).
-     */
-    public function getObjectUuid(): string
-    {
-        return $this->finalStep->getObjectUuid() ?? '';
-    }//end getObjectUuid()
+	/**
+	 * Convenience: the object UUID whose chain is now complete.
+	 *
+	 * @return string Object UUID (empty string if the step has none yet).
+	 */
+	public function getObjectUuid(): string {
+		return $this->finalStep->getObjectUuid() ?? '';
+	}//end getObjectUuid()
 }//end class

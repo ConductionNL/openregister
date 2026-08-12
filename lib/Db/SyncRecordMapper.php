@@ -46,149 +46,143 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class SyncRecordMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(db: $db, tableName: 'openregister_sync_records', entityClass: SyncRecord::class);
-    }//end __construct()
+class SyncRecordMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: 'openregister_sync_records', entityClass: SyncRecord::class);
+	}//end __construct()
 
-    /**
-     * Create a pending tracking row for a gathered record.
-     *
-     * @param int         $sourceId     Owning source id
-     * @param string      $executionId  Sync execution id
-     * @param string      $externalId   External record identifier
-     * @param string|null $organisation Owning organisation UUID
-     *
-     * @return SyncRecord The persisted record
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function createPending(
-        int $sourceId,
-        string $executionId,
-        string $externalId,
-        ?string $organisation=null
-    ): SyncRecord {
-        $record = new SyncRecord();
-        $record->setUuid((string) Uuid::v4());
-        $record->setSourceId($sourceId);
-        $record->setExecutionId($executionId);
-        $record->setExternalId($externalId);
-        $record->setStatus(SyncRecordStatus::PENDING);
-        $record->setAttempts(0);
-        $record->setOrganisation($organisation);
-        $record->setCreated(new DateTime());
-        $record->setUpdated(new DateTime());
+	/**
+	 * Create a pending tracking row for a gathered record.
+	 *
+	 * @param int $sourceId Owning source id
+	 * @param string $executionId Sync execution id
+	 * @param string $externalId External record identifier
+	 * @param string|null $organisation Owning organisation UUID
+	 *
+	 * @return SyncRecord The persisted record
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function createPending(
+		int $sourceId,
+		string $executionId,
+		string $externalId,
+		?string $organisation = null,
+	): SyncRecord {
+		$record = new SyncRecord();
+		$record->setUuid((string)Uuid::v4());
+		$record->setSourceId($sourceId);
+		$record->setExecutionId($executionId);
+		$record->setExternalId($externalId);
+		$record->setStatus(SyncRecordStatus::PENDING);
+		$record->setAttempts(0);
+		$record->setOrganisation($organisation);
+		$record->setCreated(new DateTime());
+		$record->setUpdated(new DateTime());
 
-        return $this->insert(entity: $record);
-    }//end createPending()
+		return $this->insert(entity: $record);
+	}//end createPending()
 
-    /**
-     * Transition a record to a new status, enforcing the state machine.
-     *
-     * @param SyncRecord  $record       The record to transition
-     * @param string      $newStatus    The target status
-     * @param string|null $errorMessage Optional error detail
-     *
-     * @return SyncRecord The updated record
-     *
-     * @throws \InvalidArgumentException When the transition is not allowed
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function transitionStatus(SyncRecord $record, string $newStatus, ?string $errorMessage=null): SyncRecord
-    {
-        $current = (string) $record->getStatus();
-        if (SyncRecordStatus::canTransition(from: $current, to: $newStatus) === false) {
-            throw new InvalidArgumentException(
-                sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $newStatus)
-            );
-        }
+	/**
+	 * Transition a record to a new status, enforcing the state machine.
+	 *
+	 * @param SyncRecord $record The record to transition
+	 * @param string $newStatus The target status
+	 * @param string|null $errorMessage Optional error detail
+	 *
+	 * @return SyncRecord The updated record
+	 *
+	 * @throws \InvalidArgumentException When the transition is not allowed
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function transitionStatus(SyncRecord $record, string $newStatus, ?string $errorMessage = null): SyncRecord {
+		$current = (string)$record->getStatus();
+		if (SyncRecordStatus::canTransition(from: $current, to: $newStatus) === false) {
+			throw new InvalidArgumentException(
+				sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $newStatus)
+			);
+		}
 
-        $record->setStatus($newStatus);
-        if ($errorMessage !== null) {
-            $record->setErrorMessage($errorMessage);
-        }
+		$record->setStatus($newStatus);
+		if ($errorMessage !== null) {
+			$record->setErrorMessage($errorMessage);
+		}
 
-        $record->setUpdated(new DateTime());
+		$record->setUpdated(new DateTime());
 
-        return $this->update(entity: $record);
-    }//end transitionStatus()
+		return $this->update(entity: $record);
+	}//end transitionStatus()
 
-    /**
-     * Find all records for a given execution.
-     *
-     * @param string $executionId The execution id
-     *
-     * @return SyncRecord[] The records
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\SyncRecord>
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function findByExecution(string $executionId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)));
+	/**
+	 * Find all records for a given execution.
+	 *
+	 * @param string $executionId The execution id
+	 *
+	 * @return SyncRecord[] The records
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\SyncRecord>
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function findByExecution(string $executionId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)));
 
-        return $this->findEntities(query: $qb);
-    }//end findByExecution()
+		return $this->findEntities(query: $qb);
+	}//end findByExecution()
 
-    /**
-     * Find records for a source/execution still awaiting fetch (resume support).
-     *
-     * @param int    $sourceId    The source id
-     * @param string $executionId The execution id
-     *
-     * @return SyncRecord[] The pending records
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\SyncRecord>
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function findPending(int $sourceId, string $executionId): array
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)))
-            ->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(SyncRecordStatus::PENDING)));
+	/**
+	 * Find records for a source/execution still awaiting fetch (resume support).
+	 *
+	 * @param int $sourceId The source id
+	 * @param string $executionId The execution id
+	 *
+	 * @return SyncRecord[] The pending records
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\SyncRecord>
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function findPending(int $sourceId, string $executionId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('execution_id', $qb->createNamedParameter($executionId)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(SyncRecordStatus::PENDING)));
 
-        return $this->findEntities(query: $qb);
-    }//end findPending()
+		return $this->findEntities(query: $qb);
+	}//end findPending()
 
-    /**
-     * Find a record by source + external id (latest by id).
-     *
-     * @param int    $sourceId   The source id
-     * @param string $externalId The external record id
-     *
-     * @return SyncRecord|null The most recent matching record, or null
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function findByExternalId(int $sourceId, string $externalId): ?SyncRecord
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->eq('external_id', $qb->createNamedParameter($externalId)))
-            ->orderBy('id', 'DESC')
-            ->setMaxResults(1);
+	/**
+	 * Find a record by source + external id (latest by id).
+	 *
+	 * @param int $sourceId The source id
+	 * @param string $externalId The external record id
+	 *
+	 * @return SyncRecord|null The most recent matching record, or null
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function findByExternalId(int $sourceId, string $externalId): ?SyncRecord {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('external_id', $qb->createNamedParameter($externalId)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
 
-        $records = $this->findEntities(query: $qb);
+		$records = $this->findEntities(query: $qb);
 
-        return ($records[0] ?? null);
-    }//end findByExternalId()
+		return ($records[0] ?? null);
+	}//end findByExternalId()
 }//end class

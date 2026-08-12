@@ -54,97 +54,95 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class Version1Date20260723000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/data-import-export/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260723000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Registers: (organisation, slug) -> (organisation, application, slug).
-        $this->widenSlugUniqueIndex(
-            schema: $schema,
-            output: $output,
-            tableName: 'openregister_registers',
-            oldIndexName: 'registers_organisation_slug_unique',
-            newIndexName: 'registers_org_app_slug_unique'
-        );
+		// Registers: (organisation, slug) -> (organisation, application, slug).
+		$this->widenSlugUniqueIndex(
+			schema: $schema,
+			output: $output,
+			tableName: 'openregister_registers',
+			oldIndexName: 'registers_organisation_slug_unique',
+			newIndexName: 'registers_org_app_slug_unique'
+		);
 
-        // Schemas: (organisation, slug) -> (organisation, application, slug).
-        $this->widenSlugUniqueIndex(
-            schema: $schema,
-            output: $output,
-            tableName: 'openregister_schemas',
-            oldIndexName: 'schemas_organisation_slug_unique',
-            newIndexName: 'schemas_org_app_slug_unique'
-        );
+		// Schemas: (organisation, slug) -> (organisation, application, slug).
+		$this->widenSlugUniqueIndex(
+			schema: $schema,
+			output: $output,
+			tableName: 'openregister_schemas',
+			oldIndexName: 'schemas_organisation_slug_unique',
+			newIndexName: 'schemas_org_app_slug_unique'
+		);
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Swap a (organisation, slug) unique index for a (organisation, application, slug) one.
-     *
-     * Idempotent and self-guarding: does nothing unless the table and the three
-     * columns exist. Drops the old index only when present, and adds the new one
-     * only when absent, so re-runs and partially-applied states converge safely.
-     *
-     * @param ISchemaWrapper $schema       The schema wrapper.
-     * @param IOutput        $output       Migration output.
-     * @param string         $tableName    The table to alter.
-     * @param string         $oldIndexName The (organisation, slug) index to drop.
-     * @param string         $newIndexName The (organisation, application, slug) index to add.
-     *
-     * @return void
-     */
-    private function widenSlugUniqueIndex(
-        ISchemaWrapper $schema,
-        IOutput $output,
-        string $tableName,
-        string $oldIndexName,
-        string $newIndexName
-    ): void {
-        if ($schema->hasTable($tableName) === false) {
-            return;
-        }
+	/**
+	 * Swap a (organisation, slug) unique index for a (organisation, application, slug) one.
+	 *
+	 * Idempotent and self-guarding: does nothing unless the table and the three
+	 * columns exist. Drops the old index only when present, and adds the new one
+	 * only when absent, so re-runs and partially-applied states converge safely.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper.
+	 * @param IOutput $output Migration output.
+	 * @param string $tableName The table to alter.
+	 * @param string $oldIndexName The (organisation, slug) index to drop.
+	 * @param string $newIndexName The (organisation, application, slug) index to add.
+	 *
+	 * @return void
+	 */
+	private function widenSlugUniqueIndex(
+		ISchemaWrapper $schema,
+		IOutput $output,
+		string $tableName,
+		string $oldIndexName,
+		string $newIndexName,
+	): void {
+		if ($schema->hasTable($tableName) === false) {
+			return;
+		}
 
-        $table = $schema->getTable($tableName);
+		$table = $schema->getTable($tableName);
 
-        // Need all three columns to build the wider key.
-        if ($table->hasColumn('organisation') === false
-            || $table->hasColumn('application') === false
-            || $table->hasColumn('slug') === false
-        ) {
-            $output->warning(
-                "Cannot widen slug-uniqueness on {$tableName}: organisation, application or slug column missing"
-            );
-            return;
-        }
+		// Need all three columns to build the wider key.
+		if ($table->hasColumn('organisation') === false
+			|| $table->hasColumn('application') === false
+			|| $table->hasColumn('slug') === false
+		) {
+			$output->warning(
+				"Cannot widen slug-uniqueness on {$tableName}: organisation, application or slug column missing"
+			);
+			return;
+		}
 
-        // Drop the narrow (organisation, slug) index if it is still present.
-        if ($table->hasIndex($oldIndexName) === true) {
-            $table->dropIndex($oldIndexName);
-            $output->info("Dropped narrow unique index {$oldIndexName} on {$tableName}");
-        }
+		// Drop the narrow (organisation, slug) index if it is still present.
+		if ($table->hasIndex($oldIndexName) === true) {
+			$table->dropIndex($oldIndexName);
+			$output->info("Dropped narrow unique index {$oldIndexName} on {$tableName}");
+		}
 
-        // Add the wider (organisation, application, slug) index if not already there.
-        if ($table->hasIndex($newIndexName) === false) {
-            $table->addUniqueIndex(['organisation', 'application', 'slug'], $newIndexName);
-            $output->info("Added unique index {$newIndexName} on (organisation, application, slug) for {$tableName}");
-        }
-    }//end widenSlugUniqueIndex()
+		// Add the wider (organisation, application, slug) index if not already there.
+		if ($table->hasIndex($newIndexName) === false) {
+			$table->addUniqueIndex(['organisation', 'application', 'slug'], $newIndexName);
+			$output->info("Added unique index {$newIndexName} on (organisation, application, slug) for {$tableName}");
+		}
+	}//end widenSlugUniqueIndex()
 }//end class

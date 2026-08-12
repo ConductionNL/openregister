@@ -60,133 +60,130 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class PollLink extends Entity implements JsonSerializable
-{
+class PollLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The Polls poll id (primary key in `oc_polls_polls`).
-     *
-     * @var integer|null
-     */
-    protected ?int $pollId = null;
+	/**
+	 * The Polls poll id (primary key in `oc_polls_polls`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $pollId = null;
 
-    /**
-     * The poll title (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $pollTitle = null;
+	/**
+	 * The poll title (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $pollTitle = null;
 
-    /**
-     * The poll type (e.g. `textPoll` / `datePoll`).
-     *
-     * @var string|null
-     */
-    protected ?string $pollType = null;
+	/**
+	 * The poll type (e.g. `textPoll` / `datePoll`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $pollType = null;
 
-    /**
-     * The poll deadline (cached at link time).
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $deadline = null;
+	/**
+	 * The poll deadline (cached at link time).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $deadline = null;
 
-    /**
-     * Cached voter count (distinct users who voted at least once).
-     *
-     * @var integer|null
-     */
-    protected ?int $voterCount = null;
+	/**
+	 * Cached voter count (distinct users who voted at least once).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $voterCount = null;
 
-    /**
-     * Cached option count.
-     *
-     * @var integer|null
-     */
-    protected ?int $optionCount = null;
+	/**
+	 * Cached option count.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $optionCount = null;
 
-    /**
-     * Whether the poll is closed (deadline elapsed).
-     *
-     * @var boolean|null
-     */
-    protected ?bool $closed = false;
+	/**
+	 * Whether the poll is closed (deadline elapsed).
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $closed = false;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'pollId', type: 'integer');
-        $this->addType(fieldName: 'pollTitle', type: 'string');
-        $this->addType(fieldName: 'pollType', type: 'string');
-        $this->addType(fieldName: 'deadline', type: 'datetime');
-        $this->addType(fieldName: 'voterCount', type: 'integer');
-        $this->addType(fieldName: 'optionCount', type: 'integer');
-        $this->addType(fieldName: 'closed', type: 'boolean');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'pollId', type: 'integer');
+		$this->addType(fieldName: 'pollTitle', type: 'string');
+		$this->addType(fieldName: 'pollType', type: 'string');
+		$this->addType(fieldName: 'deadline', type: 'datetime');
+		$this->addType(fieldName: 'voterCount', type: 'integer');
+		$this->addType(fieldName: 'optionCount', type: 'integer');
+		$this->addType(fieldName: 'closed', type: 'boolean');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'          => $this->id,
-            'objectUuid'  => $this->objectUuid,
-            'registerId'  => $this->registerId,
-            'schemaId'    => $this->schemaId,
-            'pollId'      => $this->pollId,
-            'pollTitle'   => $this->pollTitle,
-            'pollType'    => $this->pollType,
-            'deadline'    => $this->deadline?->format(DateTime::ATOM),
-            'voterCount'  => $this->voterCount,
-            'optionCount' => $this->optionCount,
-            'closed'      => (bool) $this->closed,
-            'linkedBy'    => $this->linkedBy,
-            'linkedAt'    => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'pollId' => $this->pollId,
+			'pollTitle' => $this->pollTitle,
+			'pollType' => $this->pollType,
+			'deadline' => $this->deadline?->format(DateTime::ATOM),
+			'voterCount' => $this->voterCount,
+			'optionCount' => $this->optionCount,
+			'closed' => (bool)$this->closed,
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

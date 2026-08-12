@@ -33,66 +33,60 @@ use Exception;
  *
  * @phpstan-consistent-constructor
  */
-class MissingConfigException extends Exception
-{
+class MissingConfigException extends Exception {
 
-    /**
-     * Consumer app id (e.g. `opencatalogi`).
-     *
-     * @var string
-     */
-    private string $appId;
+	/**
+	 * Consumer app id (e.g. `opencatalogi`).
+	 *
+	 * @var string
+	 */
+	private string $appId;
 
-    /**
-     * Config key the resolver tried to read (e.g. `theme_register`).
-     *
-     * @var string
-     */
-    private string $configKey;
+	/**
+	 * Config key the resolver tried to read (e.g. `theme_register`).
+	 *
+	 * @var string
+	 */
+	private string $configKey;
 
-    /**
-     * Construct the missing-config exception with diagnostic context.
-     *
-     * @param string         $appId     Consumer app id.
-     * @param string         $configKey Config key that was missing.
-     * @param Exception|null $previous  Previous exception in the chain.
-     */
-    public function __construct(string $appId, string $configKey, ?Exception $previous=null)
-    {
-        $this->appId     = $appId;
-        $this->configKey = $configKey;
+	/**
+	 * Construct the missing-config exception with diagnostic context.
+	 *
+	 * @param string $appId Consumer app id.
+	 * @param string $configKey Config key that was missing.
+	 * @param Exception|null $previous Previous exception in the chain.
+	 */
+	public function __construct(string $appId, string $configKey, ?Exception $previous = null) {
+		$this->appId = $appId;
+		$this->configKey = $configKey;
 
-        parent::__construct(
-            message: sprintf(
-                'Resolver config key "%s" is not set for app "%s" and no default was provided.',
-                $configKey,
-                $appId
-            ),
-            code: 500,
-            previous: $previous
-        );
+		parent::__construct(
+			message: sprintf(
+				'Resolver config key "%s" is not set for app "%s" and no default was provided.',
+				$configKey,
+				$appId
+			),
+			code: 500,
+			previous: $previous
+		);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the app id that was being resolved against.
-     *
-     * @return string The consumer app id.
-     */
-    public function getAppId(): string
-    {
-        return $this->appId;
+	/**
+	 * Get the app id that was being resolved against.
+	 *
+	 * @return string The consumer app id.
+	 */
+	public function getAppId(): string {
+		return $this->appId;
+	}//end getAppId()
 
-    }//end getAppId()
-
-    /**
-     * Get the config key that was missing.
-     *
-     * @return string The config key.
-     */
-    public function getConfigKey(): string
-    {
-        return $this->configKey;
-
-    }//end getConfigKey()
+	/**
+	 * Get the config key that was missing.
+	 *
+	 * @return string The config key.
+	 */
+	public function getConfigKey(): string {
+		return $this->configKey;
+	}//end getConfigKey()
 }//end class

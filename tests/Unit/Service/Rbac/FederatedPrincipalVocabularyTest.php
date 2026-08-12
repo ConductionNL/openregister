@@ -47,137 +47,123 @@ use ReflectionClass;
 /**
  * Pins the remote types into the principal vocabulary on both sides.
  */
-class FederatedPrincipalVocabularyTest extends TestCase
-{
+class FederatedPrincipalVocabularyTest extends TestCase {
 
+	/**
+	 * Read a private class constant.
+	 *
+	 * Reflection is the point here: these lists are private BECAUSE nothing
+	 * should depend on them at runtime, and this test exists precisely to depend
+	 * on them at build time.
+	 *
+	 * @param string $class The class.
+	 * @param string $name The constant name.
+	 *
+	 * @return array<mixed> The constant value.
+	 */
+	private function constant(string $class, string $name): array {
+		return (array)(new ReflectionClass($class))->getConstant($name);
+	}//end constant()
 
-    /**
-     * Read a private class constant.
-     *
-     * Reflection is the point here: these lists are private BECAUSE nothing
-     * should depend on them at runtime, and this test exists precisely to depend
-     * on them at build time.
-     *
-     * @param string $class The class.
-     * @param string $name  The constant name.
-     *
-     * @return array<mixed> The constant value.
-     */
-    private function constant(string $class, string $name): array
-    {
-        return (array) (new ReflectionClass($class))->getConstant($name);
-    }//end constant()
+	/**
+	 * The RESOLVER treats both remote types as principals.
+	 *
+	 * If a remote type were dropped here, a federated grant would stop being
+	 * seen by the RBAC filter and the object would silently vanish for the
+	 * remote user — an over-filtering failure, which presents as an empty page.
+	 */
+	public function testTheResolverTreatsRemoteTypesAsPrincipals(): void {
+		$types = $this->constant(ObjectGrantResolver::class, 'PRINCIPAL_SHARE_TYPES');
 
+		$this->assertContains(IShare::TYPE_REMOTE, $types);
+		$this->assertContains(IShare::TYPE_REMOTE_GROUP, $types);
 
-    /**
-     * The RESOLVER treats both remote types as principals.
-     *
-     * If a remote type were dropped here, a federated grant would stop being
-     * seen by the RBAC filter and the object would silently vanish for the
-     * remote user — an over-filtering failure, which presents as an empty page.
-     */
-    public function testTheResolverTreatsRemoteTypesAsPrincipals(): void
-    {
-        $types = $this->constant(ObjectGrantResolver::class, 'PRINCIPAL_SHARE_TYPES');
+		// And the local ones, so this reads as one list rather than a carve-out.
+		$this->assertContains(IShare::TYPE_USER, $types);
+		$this->assertContains(IShare::TYPE_GROUP, $types);
+	}//end testTheResolverTreatsRemoteTypesAsPrincipals()
 
-        $this->assertContains(IShare::TYPE_REMOTE, $types);
-        $this->assertContains(IShare::TYPE_REMOTE_GROUP, $types);
+	/**
+	 * The WRITE surface can grant to both remote types.
+	 */
+	public function testTheWriteSurfaceCanGrantToRemotePrincipals(): void {
+		$types = $this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES');
 
-        // And the local ones, so this reads as one list rather than a carve-out.
-        $this->assertContains(IShare::TYPE_USER, $types);
-        $this->assertContains(IShare::TYPE_GROUP, $types);
-    }//end testTheResolverTreatsRemoteTypesAsPrincipals()
+		$this->assertSame(IShare::TYPE_REMOTE, ($types['remote'] ?? null));
+		$this->assertSame(IShare::TYPE_REMOTE_GROUP, ($types['remote_group'] ?? null));
+	}//end testTheWriteSurfaceCanGrantToRemotePrincipals()
 
+	/**
+	 * The BEARER types are absent from the principal list, on both sides.
+	 *
+	 * A link or email share admits whoever holds the token and is decided on the
+	 * public endpoint. If either leaked into the principal list it would ALSO be
+	 * resolved by the RBAC filter, and a link would start behaving like a grant
+	 * to every logged-in user — per-object publication by accident.
+	 */
+	public function testBearerTypesAreNotPrincipals(): void {
+		$resolverTypes = $this->constant(ObjectGrantResolver::class, 'PRINCIPAL_SHARE_TYPES');
+		$grantableById = array_values($this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES'));
 
-    /**
-     * The WRITE surface can grant to both remote types.
-     */
-    public function testTheWriteSurfaceCanGrantToRemotePrincipals(): void
-    {
-        $types = $this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES');
+		foreach ([IShare::TYPE_LINK, IShare::TYPE_EMAIL] as $bearer) {
+			$this->assertNotContains($bearer, $resolverTypes, 'a bearer type must not be resolved as a principal');
+			$this->assertNotContains($bearer, $grantableById, 'a bearer type must not be creatable as a grant');
+		}
+	}//end testBearerTypesAreNotPrincipals()
 
-        $this->assertSame(IShare::TYPE_REMOTE, ($types['remote'] ?? null));
-        $this->assertSame(IShare::TYPE_REMOTE_GROUP, ($types['remote_group'] ?? null));
-    }//end testTheWriteSurfaceCanGrantToRemotePrincipals()
+	/**
+	 * The bearer types ARE listed, even though they are not grantable.
+	 *
+	 * The complement of the test above, and the two must both hold. While
+	 * listGrants() iterated GRANTABLE_TYPES, links and email invitations were
+	 * WRITE-ONLY: createLink() minted a working public link that never appeared
+	 * in the panel, so the revoke control for it did not exist and the only way
+	 * to withdraw it was raw SQL or core's Files UI.
+	 *
+	 * A capability you cannot see is a capability you cannot revoke, which is
+	 * the worse half of an access-control surface to get wrong.
+	 */
+	public function testBearerTypesAreListedSoTheyCanBeRevoked(): void {
+		$listable = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
 
+		$this->assertSame(
+			IShare::TYPE_LINK,
+			($listable['link'] ?? null),
+			'a public link must be listed, or there is no way to revoke it through the UI'
+		);
+		$this->assertSame(
+			IShare::TYPE_EMAIL,
+			($listable['email'] ?? null),
+			'an email invitation must be listed, or there is no way to revoke it through the UI'
+		);
+	}//end testBearerTypesAreListedSoTheyCanBeRevoked()
 
-    /**
-     * The BEARER types are absent from the principal list, on both sides.
-     *
-     * A link or email share admits whoever holds the token and is decided on the
-     * public endpoint. If either leaked into the principal list it would ALSO be
-     * resolved by the RBAC filter, and a link would start behaving like a grant
-     * to every logged-in user — per-object publication by accident.
-     */
-    public function testBearerTypesAreNotPrincipals(): void
-    {
-        $resolverTypes = $this->constant(ObjectGrantResolver::class, 'PRINCIPAL_SHARE_TYPES');
-        $grantableById = array_values($this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES'));
+	/**
+	 * Listable is a strict SUPERSET of grantable.
+	 *
+	 * Two separate constants can drift, and drift in either direction is a
+	 * defect: a principal type missing from the listable set becomes an
+	 * invisible grant, and a bearer type leaking into the grantable set lets
+	 * `type=link` posted at the grant endpoint bypass the link surface's own
+	 * rules. This pins the relationship rather than the two lists separately.
+	 */
+	public function testEveryGrantableTypeIsAlsoListable(): void {
+		$grantable = $this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES');
+		$listable = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
 
-        foreach ([IShare::TYPE_LINK, IShare::TYPE_EMAIL] as $bearer) {
-            $this->assertNotContains($bearer, $resolverTypes, 'a bearer type must not be resolved as a principal');
-            $this->assertNotContains($bearer, $grantableById, 'a bearer type must not be creatable as a grant');
-        }
-    }//end testBearerTypesAreNotPrincipals()
+		foreach ($grantable as $label => $shareType) {
+			$this->assertSame(
+				$shareType,
+				($listable[$label] ?? null),
+				"grantable type '$label' is not listable — a grant that cannot be seen cannot be revoked"
+			);
+		}
 
-
-    /**
-     * The bearer types ARE listed, even though they are not grantable.
-     *
-     * The complement of the test above, and the two must both hold. While
-     * listGrants() iterated GRANTABLE_TYPES, links and email invitations were
-     * WRITE-ONLY: createLink() minted a working public link that never appeared
-     * in the panel, so the revoke control for it did not exist and the only way
-     * to withdraw it was raw SQL or core's Files UI.
-     *
-     * A capability you cannot see is a capability you cannot revoke, which is
-     * the worse half of an access-control surface to get wrong.
-     */
-    public function testBearerTypesAreListedSoTheyCanBeRevoked(): void
-    {
-        $listable = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
-
-        $this->assertSame(
-            IShare::TYPE_LINK,
-            ($listable['link'] ?? null),
-            'a public link must be listed, or there is no way to revoke it through the UI'
-        );
-        $this->assertSame(
-            IShare::TYPE_EMAIL,
-            ($listable['email'] ?? null),
-            'an email invitation must be listed, or there is no way to revoke it through the UI'
-        );
-    }//end testBearerTypesAreListedSoTheyCanBeRevoked()
-
-
-    /**
-     * Listable is a strict SUPERSET of grantable.
-     *
-     * Two separate constants can drift, and drift in either direction is a
-     * defect: a principal type missing from the listable set becomes an
-     * invisible grant, and a bearer type leaking into the grantable set lets
-     * `type=link` posted at the grant endpoint bypass the link surface's own
-     * rules. This pins the relationship rather than the two lists separately.
-     */
-    public function testEveryGrantableTypeIsAlsoListable(): void
-    {
-        $grantable = $this->constant(ObjectSharingService::class, 'GRANTABLE_TYPES');
-        $listable  = $this->constant(ObjectSharingService::class, 'LISTABLE_TYPES');
-
-        foreach ($grantable as $label => $shareType) {
-            $this->assertSame(
-                $shareType,
-                ($listable[$label] ?? null),
-                "grantable type '$label' is not listable — a grant that cannot be seen cannot be revoked"
-            );
-        }
-
-        $this->assertGreaterThan(
-            count($grantable),
-            count($listable),
-            'listable must be a STRICT superset — the bearer types belong to it and not to grantable'
-        );
-    }//end testEveryGrantableTypeIsAlsoListable()
-
+		$this->assertGreaterThan(
+			count($grantable),
+			count($listable),
+			'listable must be a STRICT superset — the bearer types belong to it and not to grantable'
+		);
+	}//end testEveryGrantableTypeIsAlsoListable()
 
 }//end class

@@ -55,166 +55,149 @@ use Psr\Log\LoggerInterface;
 /**
  * Locks the behaviour of an unusable `$ref` on a stored schema.
  */
-class ValidateObjectUnusableRefTest extends TestCase
-{
+class ValidateObjectUnusableRefTest extends TestCase {
 
-    /**
-     * The subject under test.
-     *
-     * @var ValidateObject
-     */
-    private ValidateObject $handler;
+	/**
+	 * The subject under test.
+	 *
+	 * @var ValidateObject
+	 */
+	private ValidateObject $handler;
 
+	/**
+	 * Build a ValidateObject with mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Build a ValidateObject with mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost:8080');
 
-        $urlGenerator = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('getBaseUrl')->willReturn('http://localhost:8080');
+		$this->handler = new ValidateObject(
+			$this->createMock(IAppConfig::class),
+			$this->createMock(MagicMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$urlGenerator,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IUserManager::class)
+		);
 
-        $this->handler = new ValidateObject(
-            $this->createMock(IAppConfig::class),
-            $this->createMock(MagicMapper::class),
-            $this->createMock(SchemaMapper::class),
-            $urlGenerator,
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(IUserManager::class)
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * A Schema entity with the given slug.
+	 *
+	 * @param string $slug Schema slug.
+	 *
+	 * @return Schema
+	 */
+	private function schema(string $slug = 'agent'): Schema {
+		$schema = new Schema();
+		$schema->setSlug($slug);
+		$schema->setTitle('Agent');
+		return $schema;
+	}//end schema()
 
+	/**
+	 * A schema object with one array property carrying the given top-level
+	 * `$ref` — the exact shape a pre-fix import left behind.
+	 *
+	 * @param mixed $ref The stored `$ref` value.
+	 *
+	 * @return object
+	 */
+	private function schemaWithPropertyRef(mixed $ref): object {
+		return json_decode(
+			json_encode(
+				[
+					'type' => 'object',
+					'properties' => [
+						'delegationAllowlist' => [
+							'type' => 'array',
+							'$ref' => $ref,
+							'items' => [
+								'type' => 'string',
+								'format' => 'uuid',
+							],
+						],
+					],
+				]
+			)
+		);
 
-    /**
-     * A Schema entity with the given slug.
-     *
-     * @param string $slug Schema slug.
-     *
-     * @return Schema
-     */
-    private function schema(string $slug='agent'): Schema
-    {
-        $schema = new Schema();
-        $schema->setSlug($slug);
-        $schema->setTitle('Agent');
-        return $schema;
+	}//end schemaWithPropertyRef()
 
-    }//end schema()
+	/**
+	 * An INT `$ref` — the ImportHandler shape — validates instead of throwing.
+	 *
+	 * The property must be PRESENT in the object: Opis parses a property's
+	 * subschema lazily, which is why this endpoint looked healthy for months
+	 * on instances whose optional relation arrays were never written.
+	 *
+	 * @return void
+	 */
+	public function testIntegerRefOnAnArrayPropertyDoesNotThrow(): void {
+		$object = ['delegationAllowlist' => ['550e8400-e29b-41d4-a716-446655440000']];
 
+		$result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(4365));
 
-    /**
-     * A schema object with one array property carrying the given top-level
-     * `$ref` — the exact shape a pre-fix import left behind.
-     *
-     * @param mixed $ref The stored `$ref` value.
-     *
-     * @return object
-     */
-    private function schemaWithPropertyRef(mixed $ref): object
-    {
-        return json_decode(
-            json_encode(
-                [
-                    'type'       => 'object',
-                    'properties' => [
-                        'delegationAllowlist' => [
-                            'type'  => 'array',
-                            '$ref'  => $ref,
-                            'items' => [
-                                'type'   => 'string',
-                                'format' => 'uuid',
-                            ],
-                        ],
-                    ],
-                ]
-            )
-        );
+		$this->assertTrue(
+			$result->isValid(),
+			'an int $ref must be dropped, not handed to Opis as a JSON Schema reference'
+		);
 
-    }//end schemaWithPropertyRef()
+	}//end testIntegerRefOnAnArrayPropertyDoesNotThrow()
 
+	/**
+	 * An EMPTY-STRING `$ref` is equally unusable and equally dropped.
+	 *
+	 * @return void
+	 */
+	public function testEmptyStringRefDoesNotThrow(): void {
+		$object = ['delegationAllowlist' => ['11111111-1111-1111-1111-111111111111']];
 
-    /**
-     * An INT `$ref` — the ImportHandler shape — validates instead of throwing.
-     *
-     * The property must be PRESENT in the object: Opis parses a property's
-     * subschema lazily, which is why this endpoint looked healthy for months
-     * on instances whose optional relation arrays were never written.
-     *
-     * @return void
-     */
-    public function testIntegerRefOnAnArrayPropertyDoesNotThrow(): void
-    {
-        $object = ['delegationAllowlist' => ['550e8400-e29b-41d4-a716-446655440000']];
+		$result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(''));
 
-        $result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(4365));
+		$this->assertTrue($result->isValid(), 'an empty-string $ref must be dropped');
 
-        $this->assertTrue(
-            $result->isValid(),
-            'an int $ref must be dropped, not handed to Opis as a JSON Schema reference'
-        );
+	}//end testEmptyStringRefDoesNotThrow()
 
-    }//end testIntegerRefOnAnArrayPropertyDoesNotThrow()
+	/**
+	 * A NULL `$ref` is dropped too — and a null property value, which survives
+	 * OpenRegister's own empty-value filter, is what actually reaches Opis.
+	 *
+	 * @return void
+	 */
+	public function testNullRefWithANullValueDoesNotThrow(): void {
+		$object = ['delegationAllowlist' => null];
 
+		$result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(null));
 
-    /**
-     * An EMPTY-STRING `$ref` is equally unusable and equally dropped.
-     *
-     * @return void
-     */
-    public function testEmptyStringRefDoesNotThrow(): void
-    {
-        $object = ['delegationAllowlist' => ['11111111-1111-1111-1111-111111111111']];
+		$this->assertTrue($result->isValid(), 'a null $ref must be dropped');
 
-        $result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(''));
+	}//end testNullRefWithANullValueDoesNotThrow()
 
-        $this->assertTrue($result->isValid(), 'an empty-string $ref must be dropped');
+	/**
+	 * 🔑 NEGATIVE CONTROL. Dropping the unusable `$ref` must not switch
+	 * validation off for the property — a value of the wrong TYPE still fails.
+	 *
+	 * Without this, all three tests above would pass just as well if the fix
+	 * had removed the property from validation altogether.
+	 *
+	 * @return void
+	 */
+	public function testDroppingTheRefStillLeavesTheTypeEnforced(): void {
+		$object = ['delegationAllowlist' => 'not an array at all'];
 
-    }//end testEmptyStringRefDoesNotThrow()
+		$result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(4365));
 
+		$this->assertFalse(
+			$result->isValid(),
+			'a string where the schema declares an array must still fail validation'
+		);
 
-    /**
-     * A NULL `$ref` is dropped too — and a null property value, which survives
-     * OpenRegister's own empty-value filter, is what actually reaches Opis.
-     *
-     * @return void
-     */
-    public function testNullRefWithANullValueDoesNotThrow(): void
-    {
-        $object = ['delegationAllowlist' => null];
-
-        $result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(null));
-
-        $this->assertTrue($result->isValid(), 'a null $ref must be dropped');
-
-    }//end testNullRefWithANullValueDoesNotThrow()
-
-
-    /**
-     * 🔑 NEGATIVE CONTROL. Dropping the unusable `$ref` must not switch
-     * validation off for the property — a value of the wrong TYPE still fails.
-     *
-     * Without this, all three tests above would pass just as well if the fix
-     * had removed the property from validation altogether.
-     *
-     * @return void
-     */
-    public function testDroppingTheRefStillLeavesTheTypeEnforced(): void
-    {
-        $object = ['delegationAllowlist' => 'not an array at all'];
-
-        $result = $this->handler->validateObject($object, $this->schema(), $this->schemaWithPropertyRef(4365));
-
-        $this->assertFalse(
-            $result->isValid(),
-            'a string where the schema declares an array must still fail validation'
-        );
-
-    }//end testDroppingTheRefStillLeavesTheTypeEnforced()
-
+	}//end testDroppingTheRefStillLeavesTheTypeEnforced()
 
 }//end class

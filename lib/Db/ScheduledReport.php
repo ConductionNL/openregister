@@ -88,247 +88,242 @@ use OCP\AppFramework\Db\Entity;
  *     their own field; splitting this into sub-objects would just move the
  *     field count, not reduce it.
  */
-class ScheduledReport extends Entity implements JsonSerializable
-{
+class ScheduledReport extends Entity implements JsonSerializable {
 
-    /**
-     * The owning Nextcloud user id.
-     *
-     * @var string|null
-     */
-    protected ?string $owner = null;
+	/**
+	 * The owning Nextcloud user id.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $owner = null;
 
-    /**
-     * User-facing label.
-     *
-     * @var string|null
-     */
-    protected ?string $name = null;
+	/**
+	 * User-facing label.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $name = null;
 
-    /**
-     * The register whose data is exported.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register whose data is exported.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema whose data is exported (required for `csv`).
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema whose data is exported (required for `csv`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * Opaque JSON-encoded `@self.*` filter map, same shape the export endpoints accept.
-     *
-     * @var string|null
-     */
-    protected ?string $filters = null;
+	/**
+	 * Opaque JSON-encoded `@self.*` filter map, same shape the export endpoints accept.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $filters = null;
 
-    /**
-     * Export format: csv|excel|pdf.
-     *
-     * @var string|null
-     */
-    protected ?string $format = null;
+	/**
+	 * Export format: csv|excel|pdf.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $format = null;
 
-    /**
-     * Schedule cadence: daily|weekly|monthly.
-     *
-     * @var string|null
-     */
-    protected ?string $scheduleType = null;
+	/**
+	 * Schedule cadence: daily|weekly|monthly.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $scheduleType = null;
 
-    /**
-     * Target hour of day (0-23), informational — see design.md due-logic notes.
-     *
-     * @var integer|null
-     */
-    protected ?int $scheduleHour = null;
+	/**
+	 * Target hour of day (0-23), informational — see design.md due-logic notes.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $scheduleHour = null;
 
-    /**
-     * Target day of week (0=Monday..6=Sunday), required when scheduleType is weekly.
-     *
-     * @var integer|null
-     */
-    protected ?int $scheduleDayOfWeek = null;
+	/**
+	 * Target day of week (0=Monday..6=Sunday), required when scheduleType is weekly.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $scheduleDayOfWeek = null;
 
-    /**
-     * Target day of month (1-28), required when scheduleType is monthly.
-     *
-     * @var integer|null
-     */
-    protected ?int $scheduleDayOfMonth = null;
+	/**
+	 * Target day of month (1-28), required when scheduleType is monthly.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $scheduleDayOfMonth = null;
 
-    /**
-     * Nextcloud Files delivery folder, relative to the owner's home. Default 'Reports/'.
-     *
-     * @var string|null
-     */
-    protected ?string $deliveryFolder = null;
+	/**
+	 * Nextcloud Files delivery folder, relative to the owner's home. Default 'Reports/'.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $deliveryFolder = null;
 
-    /**
-     * How the export is delivered to the owner: `files` (Nextcloud Files
-     * only — the original behaviour), `email` (email only), or `both`.
-     * Defaults to `files` so every report created before this field existed
-     * keeps its exact prior behaviour.
-     *
-     * @var string|null
-     */
-    protected ?string $deliveryMode = null;
+	/**
+	 * How the export is delivered to the owner: `files` (Nextcloud Files
+	 * only — the original behaviour), `email` (email only), or `both`.
+	 * Defaults to `files` so every report created before this field existed
+	 * keeps its exact prior behaviour.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $deliveryMode = null;
 
-    /**
-     * Opaque JSON-encoded array of recipient email addresses used when
-     * `deliveryMode` is `email` or `both`. Empty/absent means "the owner's
-     * own Nextcloud email address, resolved at run time" — see
-     * `ScheduledReportService::resolveRecipients()`.
-     *
-     * @var string|null
-     */
-    protected ?string $recipients = null;
+	/**
+	 * Opaque JSON-encoded array of recipient email addresses used when
+	 * `deliveryMode` is `email` or `both`. Empty/absent means "the owner's
+	 * own Nextcloud email address, resolved at run time" — see
+	 * `ScheduledReportService::resolveRecipients()`.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $recipients = null;
 
-    /**
-     * Whether this report is scheduled to run.
-     *
-     * @var boolean|null
-     */
-    protected ?bool $enabled = null;
+	/**
+	 * Whether this report is scheduled to run.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $enabled = null;
 
-    /**
-     * When this report last ran (any outcome).
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $lastRunAt = null;
+	/**
+	 * When this report last ran (any outcome).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastRunAt = null;
 
-    /**
-     * The outcome of the last run: success|failed.
-     *
-     * @var string|null
-     */
-    protected ?string $lastStatus = null;
+	/**
+	 * The outcome of the last run: success|failed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $lastStatus = null;
 
-    /**
-     * The failure reason when lastStatus is failed.
-     *
-     * @var string|null
-     */
-    protected ?string $lastError = null;
+	/**
+	 * The failure reason when lastStatus is failed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $lastError = null;
 
-    /**
-     * When this report was created.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * When this report was created.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * When this report was last updated.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updatedAt = null;
+	/**
+	 * When this report was last updated.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updatedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'filters', type: 'string');
-        $this->addType(fieldName: 'format', type: 'string');
-        $this->addType(fieldName: 'scheduleType', type: 'string');
-        $this->addType(fieldName: 'scheduleHour', type: 'integer');
-        $this->addType(fieldName: 'scheduleDayOfWeek', type: 'integer');
-        $this->addType(fieldName: 'scheduleDayOfMonth', type: 'integer');
-        $this->addType(fieldName: 'deliveryFolder', type: 'string');
-        $this->addType(fieldName: 'deliveryMode', type: 'string');
-        $this->addType(fieldName: 'recipients', type: 'string');
-        $this->addType(fieldName: 'enabled', type: 'boolean');
-        $this->addType(fieldName: 'lastRunAt', type: 'datetime');
-        $this->addType(fieldName: 'lastStatus', type: 'string');
-        $this->addType(fieldName: 'lastError', type: 'string');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-        $this->addType(fieldName: 'updatedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'filters', type: 'string');
+		$this->addType(fieldName: 'format', type: 'string');
+		$this->addType(fieldName: 'scheduleType', type: 'string');
+		$this->addType(fieldName: 'scheduleHour', type: 'integer');
+		$this->addType(fieldName: 'scheduleDayOfWeek', type: 'integer');
+		$this->addType(fieldName: 'scheduleDayOfMonth', type: 'integer');
+		$this->addType(fieldName: 'deliveryFolder', type: 'string');
+		$this->addType(fieldName: 'deliveryMode', type: 'string');
+		$this->addType(fieldName: 'recipients', type: 'string');
+		$this->addType(fieldName: 'enabled', type: 'boolean');
+		$this->addType(fieldName: 'lastRunAt', type: 'datetime');
+		$this->addType(fieldName: 'lastStatus', type: 'string');
+		$this->addType(fieldName: 'lastError', type: 'string');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
+		$this->addType(fieldName: 'updatedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * The decoded filter map, or an empty array when none is stored.
-     *
-     * @return array<string, mixed>
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    public function getFiltersArray(): array
-    {
-        if ($this->filters === null || $this->filters === '') {
-            return [];
-        }
+	/**
+	 * The decoded filter map, or an empty array when none is stored.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function getFiltersArray(): array {
+		if ($this->filters === null || $this->filters === '') {
+			return [];
+		}
 
-        $decoded = json_decode($this->filters, true);
-        if (is_array($decoded) === false) {
-            return [];
-        }
+		$decoded = json_decode($this->filters, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
 
-        return $decoded;
-    }//end getFiltersArray()
+		return $decoded;
+	}//end getFiltersArray()
 
-    /**
-     * The decoded recipient email list, or an empty array when none is stored
-     * (default-to-owner-email is resolved at run time, not here).
-     *
-     * @return string[]
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    public function getRecipientsArray(): array
-    {
-        if ($this->recipients === null || $this->recipients === '') {
-            return [];
-        }
+	/**
+	 * The decoded recipient email list, or an empty array when none is stored
+	 * (default-to-owner-email is resolved at run time, not here).
+	 *
+	 * @return string[]
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function getRecipientsArray(): array {
+		if ($this->recipients === null || $this->recipients === '') {
+			return [];
+		}
 
-        $decoded = json_decode($this->recipients, true);
-        if (is_array($decoded) === false) {
-            return [];
-        }
+		$decoded = json_decode($this->recipients, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
 
-        return array_values(array_filter($decoded, static fn ($value) => is_string($value) === true));
-    }//end getRecipientsArray()
+		return array_values(array_filter($decoded, static fn ($value) => is_string($value) === true));
+	}//end getRecipientsArray()
 
-    /**
-     * JSON serialization — the row is only ever exposed to its owner or an admin (controller-gated).
-     *
-     * @return array<string,mixed>
-     *
-     * @spec openspec/specs/scheduled-report-jobs/spec.md
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                 => $this->id,
-            'owner'              => $this->owner,
-            'name'               => $this->name,
-            'registerId'         => $this->registerId,
-            'schemaId'           => $this->schemaId,
-            'filters'            => $this->getFiltersArray(),
-            'format'             => $this->format,
-            'scheduleType'       => $this->scheduleType,
-            'scheduleHour'       => $this->scheduleHour,
-            'scheduleDayOfWeek'  => $this->scheduleDayOfWeek,
-            'scheduleDayOfMonth' => $this->scheduleDayOfMonth,
-            'deliveryFolder'     => $this->deliveryFolder,
-            'deliveryMode'       => ($this->deliveryMode ?? 'files'),
-            'recipients'         => $this->getRecipientsArray(),
-            'enabled'            => $this->enabled,
-            'lastRunAt'          => $this->lastRunAt?->format(DateTime::ATOM),
-            'lastStatus'         => $this->lastStatus,
-            'lastError'          => $this->lastError,
-            'createdAt'          => $this->createdAt?->format(DateTime::ATOM),
-            'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization — the row is only ever exposed to its owner or an admin (controller-gated).
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'owner' => $this->owner,
+			'name' => $this->name,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'filters' => $this->getFiltersArray(),
+			'format' => $this->format,
+			'scheduleType' => $this->scheduleType,
+			'scheduleHour' => $this->scheduleHour,
+			'scheduleDayOfWeek' => $this->scheduleDayOfWeek,
+			'scheduleDayOfMonth' => $this->scheduleDayOfMonth,
+			'deliveryFolder' => $this->deliveryFolder,
+			'deliveryMode' => ($this->deliveryMode ?? 'files'),
+			'recipients' => $this->getRecipientsArray(),
+			'enabled' => $this->enabled,
+			'lastRunAt' => $this->lastRunAt?->format(DateTime::ATOM),
+			'lastStatus' => $this->lastStatus,
+			'lastError' => $this->lastError,
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

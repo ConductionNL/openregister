@@ -38,131 +38,125 @@ use ReflectionMethod;
 /**
  * Class AuditSealJobTest
  */
-class AuditSealJobTest extends TestCase
-{
-    /**
-     * Build the job over a mocked service and logger, and run one tick.
-     *
-     * @param int   $remaining What countUnsealed() reports after the passes.
-     * @param int[] $passes    What each sealUnsealed() call returns, in order.
-     *
-     * @return LoggerInterface&\PHPUnit\Framework\MockObject\MockObject The logger, for assertions.
-     */
-    private function runTick(int $remaining, array $passes)
-    {
-        $hashes = $this->createMock(AuditHashService::class);
-        $hashes->method('sealUnsealed')->willReturnOnConsecutiveCalls(...array_merge($passes, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
-        $hashes->method('countUnsealed')->willReturn($remaining);
+class AuditSealJobTest extends TestCase {
+	/**
+	 * Build the job over a mocked service and logger, and run one tick.
+	 *
+	 * @param int $remaining What countUnsealed() reports after the passes.
+	 * @param int[] $passes What each sealUnsealed() call returns, in order.
+	 *
+	 * @return LoggerInterface&\PHPUnit\Framework\MockObject\MockObject The logger, for assertions.
+	 */
+	private function runTick(int $remaining, array $passes) {
+		$hashes = $this->createMock(AuditHashService::class);
+		$hashes->method('sealUnsealed')->willReturnOnConsecutiveCalls(...array_merge($passes, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+		$hashes->method('countUnsealed')->willReturn($remaining);
 
-        $logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
 
-        $run = new ReflectionMethod($job, 'run');
-        $run->setAccessible(true);
-        $run->invoke($job, null);
+		$run = new ReflectionMethod($job, 'run');
+		$run->setAccessible(true);
+		$run->invoke($job, null);
 
-        return $logger;
-    }//end runTick()
+		return $logger;
+	}//end runTick()
 
-    /**
-     * The backlog-not-draining alarm must actually fire.
-     *
-     * 🔴 This is the assertion that was impossible to satisfy. An early
-     * `if ($sealed === 0) { return; }` sat above the warning, so the one state
-     * that could reach it — sealed nothing, backlog non-empty — had already left
-     * the method. Psalm called it a ParadoxicalCondition; in operational terms
-     * the chain could stop closing its gaps and nothing would ever say so.
-     *
-     * @return void
-     */
-    public function testWarnsWhenNothingSealedAndABacklogRemains(): void
-    {
-        $logger = $this->createMock(LoggerInterface::class);
+	/**
+	 * The backlog-not-draining alarm must actually fire.
+	 *
+	 * 🔴 This is the assertion that was impossible to satisfy. An early
+	 * `if ($sealed === 0) { return; }` sat above the warning, so the one state
+	 * that could reach it — sealed nothing, backlog non-empty — had already left
+	 * the method. Psalm called it a ParadoxicalCondition; in operational terms
+	 * the chain could stop closing its gaps and nothing would ever say so.
+	 *
+	 * @return void
+	 */
+	public function testWarnsWhenNothingSealedAndABacklogRemains(): void {
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $hashes = $this->createMock(AuditHashService::class);
-        $hashes->method('sealUnsealed')->willReturn(0);
-        $hashes->method('countUnsealed')->willReturn(1200);
+		$hashes = $this->createMock(AuditHashService::class);
+		$hashes->method('sealUnsealed')->willReturn(0);
+		$hashes->method('countUnsealed')->willReturn(1200);
 
-        $logger->expects($this->once())
-            ->method('warning')
-            ->with($this->stringContains('not closing'));
+		$logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('not closing'));
 
-        $job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
-        $run = new ReflectionMethod($job, 'run');
-        $run->setAccessible(true);
-        $run->invoke($job, null);
-    }//end testWarnsWhenNothingSealedAndABacklogRemains()
+		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$run = new ReflectionMethod($job, 'run');
+		$run->setAccessible(true);
+		$run->invoke($job, null);
+	}//end testWarnsWhenNothingSealedAndABacklogRemains()
 
-    /**
-     * The steady state — nothing sealed, nothing outstanding — stays silent.
-     *
-     * The negative control for the test above: if the warning fired here too it
-     * would be noise rather than a signal, and an operator would learn to ignore
-     * the one line that matters.
-     *
-     * @return void
-     */
-    public function testStaysSilentWhenThereIsNothingToSeal(): void
-    {
-        $logger = $this->createMock(LoggerInterface::class);
+	/**
+	 * The steady state — nothing sealed, nothing outstanding — stays silent.
+	 *
+	 * The negative control for the test above: if the warning fired here too it
+	 * would be noise rather than a signal, and an operator would learn to ignore
+	 * the one line that matters.
+	 *
+	 * @return void
+	 */
+	public function testStaysSilentWhenThereIsNothingToSeal(): void {
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $hashes = $this->createMock(AuditHashService::class);
-        $hashes->method('sealUnsealed')->willReturn(0);
-        $hashes->method('countUnsealed')->willReturn(0);
+		$hashes = $this->createMock(AuditHashService::class);
+		$hashes->method('sealUnsealed')->willReturn(0);
+		$hashes->method('countUnsealed')->willReturn(0);
 
-        $logger->expects($this->never())->method('warning');
-        $logger->expects($this->never())->method('info');
+		$logger->expects($this->never())->method('warning');
+		$logger->expects($this->never())->method('info');
 
-        $job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
-        $run = new ReflectionMethod($job, 'run');
-        $run->setAccessible(true);
-        $run->invoke($job, null);
-    }//end testStaysSilentWhenThereIsNothingToSeal()
+		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$run = new ReflectionMethod($job, 'run');
+		$run->setAccessible(true);
+		$run->invoke($job, null);
+	}//end testStaysSilentWhenThereIsNothingToSeal()
 
-    /**
-     * A productive pass reports progress and does NOT raise the alarm.
-     *
-     * @return void
-     */
-    public function testReportsProgressWithoutWarningWhenRowsWereSealed(): void
-    {
-        $logger = $this->createMock(LoggerInterface::class);
+	/**
+	 * A productive pass reports progress and does NOT raise the alarm.
+	 *
+	 * @return void
+	 */
+	public function testReportsProgressWithoutWarningWhenRowsWereSealed(): void {
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $hashes = $this->createMock(AuditHashService::class);
-        $hashes->method('sealUnsealed')->willReturnOnConsecutiveCalls(500, 500, 0, 0, 0, 0, 0, 0, 0, 0);
-        $hashes->method('countUnsealed')->willReturn(300);
+		$hashes = $this->createMock(AuditHashService::class);
+		$hashes->method('sealUnsealed')->willReturnOnConsecutiveCalls(500, 500, 0, 0, 0, 0, 0, 0, 0, 0);
+		$hashes->method('countUnsealed')->willReturn(300);
 
-        $logger->expects($this->once())
-            ->method('info')
-            ->with($this->stringContains('Sealed 1000 audit row(s)'));
-        $logger->expects($this->never())->method('warning');
+		$logger->expects($this->once())
+			->method('info')
+			->with($this->stringContains('Sealed 1000 audit row(s)'));
+		$logger->expects($this->never())->method('warning');
 
-        $job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
-        $run = new ReflectionMethod($job, 'run');
-        $run->setAccessible(true);
-        $run->invoke($job, null);
-    }//end testReportsProgressWithoutWarningWhenRowsWereSealed()
+		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$run = new ReflectionMethod($job, 'run');
+		$run->setAccessible(true);
+		$run->invoke($job, null);
+	}//end testReportsProgressWithoutWarningWhenRowsWereSealed()
 
-    /**
-     * A throwing service must not break cron for every other job.
-     *
-     * @return void
-     */
-    public function testSwallowsServiceFailuresAndLogsThem(): void
-    {
-        $logger = $this->createMock(LoggerInterface::class);
+	/**
+	 * A throwing service must not break cron for every other job.
+	 *
+	 * @return void
+	 */
+	public function testSwallowsServiceFailuresAndLogsThem(): void {
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $hashes = $this->createMock(AuditHashService::class);
-        $hashes->method('sealUnsealed')->willThrowException(new \RuntimeException('db gone'));
+		$hashes = $this->createMock(AuditHashService::class);
+		$hashes->method('sealUnsealed')->willThrowException(new \RuntimeException('db gone'));
 
-        $logger->expects($this->once())
-            ->method('error')
-            ->with($this->stringContains('Seal sweep failed'));
+		$logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('Seal sweep failed'));
 
-        $job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
-        $run = new ReflectionMethod($job, 'run');
-        $run->setAccessible(true);
-        $run->invoke($job, null);
-    }//end testSwallowsServiceFailuresAndLogsThem()
+		$job = new AuditSealJob($this->createMock(ITimeFactory::class), $hashes, $logger);
+		$run = new ReflectionMethod($job, 'run');
+		$run->setAccessible(true);
+		$run->invoke($job, null);
+	}//end testSwallowsServiceFailuresAndLogsThem()
 }//end class

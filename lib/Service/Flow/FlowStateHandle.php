@@ -59,139 +59,125 @@ use JsonSerializable;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateHandle implements JsonSerializable
-{
+class FlowStateHandle implements JsonSerializable {
 
-    /**
-     * Where a node finds this in the step context.
-     *
-     * @var string
-     */
-    public const CONTEXT_KEY = 'flowState';
+	/**
+	 * Where a node finds this in the step context.
+	 *
+	 * @var string
+	 */
+	public const CONTEXT_KEY = 'flowState';
 
-    /**
-     * The stored values.
-     *
-     * @var array
-     */
-    private array $values = [];
+	/**
+	 * The stored values.
+	 *
+	 * @var array
+	 */
+	private array $values = [];
 
-    /**
-     * Whether anything was written since the handle was built.
-     *
-     * Tracked so a run that only READS state does not rewrite the row. A flow
-     * polling every five minutes would otherwise touch its state table on every
-     * tick forever, for nothing.
-     *
-     * @var boolean
-     */
-    private bool $dirty = false;
+	/**
+	 * Whether anything was written since the handle was built.
+	 *
+	 * Tracked so a run that only READS state does not rewrite the row. A flow
+	 * polling every five minutes would otherwise touch its state table on every
+	 * tick forever, for nothing.
+	 *
+	 * @var boolean
+	 */
+	private bool $dirty = false;
 
-    /**
-     * Build a handle over stored values.
-     *
-     * @param array|null $values The values already stored for this flow.
-     *
-     * @return void
-     */
-    public function __construct(?array $values=null)
-    {
-        $this->values = ($values ?? []);
+	/**
+	 * Build a handle over stored values.
+	 *
+	 * @param array|null $values The values already stored for this flow.
+	 *
+	 * @return void
+	 */
+	public function __construct(?array $values = null) {
+		$this->values = ($values ?? []);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Read one value.
-     *
-     * @param string $key     The key to read.
-     * @param mixed  $default Returned when the key was never written.
-     *
-     * @return mixed The stored value, or the default.
-     */
-    public function get(string $key, mixed $default=null): mixed
-    {
-        return ($this->values[$key] ?? $default);
+	/**
+	 * Read one value.
+	 *
+	 * @param string $key The key to read.
+	 * @param mixed $default Returned when the key was never written.
+	 *
+	 * @return mixed The stored value, or the default.
+	 */
+	public function get(string $key, mixed $default = null): mixed {
+		return ($this->values[$key] ?? $default);
+	}//end get()
 
-    }//end get()
+	/**
+	 * Write one value.
+	 *
+	 * @param string $key The key to write.
+	 * @param mixed $value The value to store.
+	 *
+	 * @return void
+	 */
+	public function set(string $key, mixed $value): void {
+		$this->values[$key] = $value;
+		$this->dirty = true;
 
-    /**
-     * Write one value.
-     *
-     * @param string $key   The key to write.
-     * @param mixed  $value The value to store.
-     *
-     * @return void
-     */
-    public function set(string $key, mixed $value): void
-    {
-        $this->values[$key] = $value;
-        $this->dirty        = true;
+	}//end set()
 
-    }//end set()
+	/**
+	 * Remove one value.
+	 *
+	 * @param string $key The key to remove.
+	 *
+	 * @return void
+	 */
+	public function forget(string $key): void {
+		if (array_key_exists($key, $this->values) === false) {
+			return;
+		}
 
-    /**
-     * Remove one value.
-     *
-     * @param string $key The key to remove.
-     *
-     * @return void
-     */
-    public function forget(string $key): void
-    {
-        if (array_key_exists($key, $this->values) === false) {
-            return;
-        }
+		unset($this->values[$key]);
+		$this->dirty = true;
 
-        unset($this->values[$key]);
-        $this->dirty = true;
+	}//end forget()
 
-    }//end forget()
+	/**
+	 * Whether this flow has ever stored the key.
+	 *
+	 * Distinct from `get() === null`: a flow may deliberately store null.
+	 *
+	 * @param string $key The key to test.
+	 *
+	 * @return boolean True when the key exists.
+	 */
+	public function has(string $key): bool {
+		return array_key_exists($key, $this->values);
+	}//end has()
 
-    /**
-     * Whether this flow has ever stored the key.
-     *
-     * Distinct from `get() === null`: a flow may deliberately store null.
-     *
-     * @param string $key The key to test.
-     *
-     * @return boolean True when the key exists.
-     */
-    public function has(string $key): bool
-    {
-        return array_key_exists($key, $this->values);
+	/**
+	 * Whether anything was written since this handle was built.
+	 *
+	 * @return boolean True when the state needs persisting.
+	 */
+	public function isDirty(): bool {
+		return $this->dirty;
+	}//end isDirty()
 
-    }//end has()
+	/**
+	 * All stored values.
+	 *
+	 * @return array The values.
+	 */
+	public function all(): array {
+		return $this->values;
+	}//end all()
 
-    /**
-     * Whether anything was written since this handle was built.
-     *
-     * @return boolean True when the state needs persisting.
-     */
-    public function isDirty(): bool
-    {
-        return $this->dirty;
-
-    }//end isDirty()
-
-    /**
-     * All stored values.
-     *
-     * @return array The values.
-     */
-    public function all(): array
-    {
-        return $this->values;
-
-    }//end all()
-
-    /**
-     * Serialise for storage.
-     *
-     * @return array The values.
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->values;
-
-    }//end jsonSerialize()
+	/**
+	 * Serialise for storage.
+	 *
+	 * @return array The values.
+	 */
+	public function jsonSerialize(): array {
+		return $this->values;
+	}//end jsonSerialize()
 }//end class

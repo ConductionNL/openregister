@@ -36,48 +36,47 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Dispatches each step to the registered node that owns its type.
  */
-class RegistryStepDispatcher implements FlowStepDispatcher
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowNodeRegistry $registry The node catalogue.
-     */
-    public function __construct(private readonly FlowNodeRegistry $registry)
-    {
+class RegistryStepDispatcher implements FlowStepDispatcher {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowNodeRegistry $registry The node catalogue.
+	 */
+	public function __construct(
+		private readonly FlowNodeRegistry $registry,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Resolve the step's type and run its node.
-     *
-     * A step with no `type` passes its items through untouched. That is not
-     * leniency about unknown types — an UNKNOWN type still throws, via the
-     * registry. It is the pure-routing edge: an author drawing an edge purely
-     * to shape the graph has not asked for work to happen on it.
-     *
-     * @param array $step    The step configuration.
-     * @param array $items   The input items.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The output items.
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function dispatch(array $step, array $items, array $context): array
-    {
-        $type = trim((string) ($step['type'] ?? ''));
-        if ($type === '') {
-            return $items;
-        }
+	/**
+	 * Resolve the step's type and run its node.
+	 *
+	 * A step with no `type` passes its items through untouched. That is not
+	 * leniency about unknown types — an UNKNOWN type still throws, via the
+	 * registry. It is the pure-routing edge: an author drawing an edge purely
+	 * to shape the graph has not asked for work to happen on it.
+	 *
+	 * @param array $step The step configuration.
+	 * @param array $items The input items.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The output items.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function dispatch(array $step, array $items, array $context): array {
+		$type = trim((string)($step['type'] ?? ''));
+		if ($type === '') {
+			return $items;
+		}
 
-        $node = $this->registry->get(type: $type);
+		$node = $this->registry->get(type: $type);
 
-        return $node->execute(
-            items: $items,
-            config: (array) ($step['config'] ?? []),
-            context: $context
-        );
+		return $node->execute(
+			items: $items,
+			config: (array)($step['config'] ?? []),
+			context: $context
+		);
 
-    }//end dispatch()
+	}//end dispatch()
 }//end class

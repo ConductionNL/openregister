@@ -41,47 +41,45 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ScheduleReconcilerJob extends TimedJob
-{
-    /**
-     * Constructor for ScheduleReconcilerJob.
-     *
-     * @param ITimeFactory       $time       Time factory.
-     * @param ScheduleReconciler $reconciler The AppHost scheduling engine.
-     * @param LoggerInterface    $logger     Logger.
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly ScheduleReconciler $reconciler,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        // Run every 60 seconds; the reconcile is a cheap set-diff (execution is
-        // OpenConnector's separate JobTask).
-        $this->setInterval(seconds: 60);
-    }//end __construct()
+class ScheduleReconcilerJob extends TimedJob {
+	/**
+	 * Constructor for ScheduleReconcilerJob.
+	 *
+	 * @param ITimeFactory $time Time factory.
+	 * @param ScheduleReconciler $reconciler The AppHost scheduling engine.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		private readonly ScheduleReconciler $reconciler,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time);
+		// Run every 60 seconds; the reconcile is a cheap set-diff (execution is
+		// OpenConnector's separate JobTask).
+		$this->setInterval(seconds: 60);
+	}//end __construct()
 
-    /**
-     * Execute one reconciliation sweep.
-     *
-     * @param mixed $argument Job argument (unused for TimedJob).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
-     */
-    protected function run($argument): void
-    {
-        try {
-            $this->reconciler->reconcile();
-        } catch (Throwable $e) {
-            // Defence in depth — reconcile() already never throws.
-            $this->logger->error(
-                message: '[ScheduleReconcilerJob] Reconcile sweep failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-    }//end run()
+	/**
+	 * Execute one reconciliation sweep.
+	 *
+	 * @param mixed $argument Job argument (unused for TimedJob).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 */
+	protected function run($argument): void {
+		try {
+			$this->reconciler->reconcile();
+		} catch (Throwable $e) {
+			// Defence in depth — reconcile() already never throws.
+			$this->logger->error(
+				message: '[ScheduleReconcilerJob] Reconcile sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end run()
 }//end class

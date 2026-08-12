@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Minimal bootstrap for aggregation unit tests.
  * Loads Composer autoloader and registers the OCP namespace from nextcloud/ocp.

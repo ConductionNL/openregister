@@ -30,109 +30,102 @@ use PHPUnit\Framework\TestCase;
 /**
  * @group DB
  */
-class UserProfileActionsIntegrationTest extends TestCase
-{
-    private UserService $userService;
-    private IUserManager $userManager;
-    private IConfig $config;
+class UserProfileActionsIntegrationTest extends TestCase {
+	private UserService $userService;
+	private IUserManager $userManager;
+	private IConfig $config;
 
-    private ?IUser $testUser = null;
-    private string $testUserId;
-    private string $initialPassword = 'IntegTestPass1!'; // 15 chars — clears NC password policy.
+	private ?IUser $testUser = null;
+	private string $testUserId;
+	private string $initialPassword = 'IntegTestPass1!'; // 15 chars — clears NC password policy.
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->userService = \OC::$server->get(UserService::class);
-        $this->userManager = \OC::$server->get(IUserManager::class);
-        $this->config      = \OC::$server->get(IConfig::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->userService = \OC::$server->get(UserService::class);
+		$this->userManager = \OC::$server->get(IUserManager::class);
+		$this->config = \OC::$server->get(IConfig::class);
 
-        // Create a fresh test user for each run so password churn is isolated.
-        $this->testUserId = 'phpunit-profile-' . bin2hex(random_bytes(4));
-        $this->testUser   = $this->userManager->createUser($this->testUserId, $this->initialPassword);
-        if ($this->testUser === false) {
-            $this->markTestSkipped('Could not create test user (likely password policy or backend issue).');
-        }
-    }
+		// Create a fresh test user for each run so password churn is isolated.
+		$this->testUserId = 'phpunit-profile-' . bin2hex(random_bytes(4));
+		$this->testUser = $this->userManager->createUser($this->testUserId, $this->initialPassword);
+		if ($this->testUser === false) {
+			$this->markTestSkipped('Could not create test user (likely password policy or backend issue).');
+		}
+	}
 
-    protected function tearDown(): void
-    {
-        if ($this->testUser !== null && $this->testUser !== false) {
-            try {
-                $this->testUser->delete();
-            } catch (\Throwable $e) {
-                // best effort
-            }
-        }
-        parent::tearDown();
-    }
+	protected function tearDown(): void {
+		if ($this->testUser !== null && $this->testUser !== false) {
+			try {
+				$this->testUser->delete();
+			} catch (\Throwable $e) {
+				// best effort
+			}
+		}
+		parent::tearDown();
+	}
 
-    public function testChangePasswordSucceedsAndOldPasswordStopsWorking(): void
-    {
-        // Replaces task: "Integration test for password change flow —
-        // authenticate, change password, verify new password works,
-        // verify old password fails".
-        $newPassword = 'NewIntegPass2@'; // 14 chars — clears policy.
+	public function testChangePasswordSucceedsAndOldPasswordStopsWorking(): void {
+		// Replaces task: "Integration test for password change flow —
+		// authenticate, change password, verify new password works,
+		// verify old password fails".
+		$newPassword = 'NewIntegPass2@'; // 14 chars — clears policy.
 
-        $result = $this->userService->changePassword(
-            $this->testUser,
-            $this->initialPassword,
-            $newPassword
-        );
+		$result = $this->userService->changePassword(
+			$this->testUser,
+			$this->initialPassword,
+			$newPassword
+		);
 
-        $this->assertTrue($result['success']);
+		$this->assertTrue($result['success']);
 
-        // New password authenticates.
-        $newAuth = $this->userManager->checkPassword($this->testUserId, $newPassword);
-        $this->assertNotFalse($newAuth, 'new password MUST authenticate after change');
-        $this->assertSame($this->testUserId, $newAuth->getUID());
+		// New password authenticates.
+		$newAuth = $this->userManager->checkPassword($this->testUserId, $newPassword);
+		$this->assertNotFalse($newAuth, 'new password MUST authenticate after change');
+		$this->assertSame($this->testUserId, $newAuth->getUID());
 
-        // Old password no longer authenticates.
-        $oldAuth = $this->userManager->checkPassword($this->testUserId, $this->initialPassword);
-        $this->assertFalse($oldAuth, 'old password MUST stop working after change');
-    }
+		// Old password no longer authenticates.
+		$oldAuth = $this->userManager->checkPassword($this->testUserId, $this->initialPassword);
+		$this->assertFalse($oldAuth, 'old password MUST stop working after change');
+	}
 
-    public function testChangePasswordRejectsWrongCurrentPassword(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Current password is incorrect');
+	public function testChangePasswordRejectsWrongCurrentPassword(): void {
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('Current password is incorrect');
 
-        $this->userService->changePassword(
-            $this->testUser,
-            'WrongCurrentPwd99!',
-            'NewIntegPass2@'
-        );
-    }
+		$this->userService->changePassword(
+			$this->testUser,
+			'WrongCurrentPwd99!',
+			'NewIntegPass2@'
+		);
+	}
 
-    public function testExportPersonalDataReturnsProfileShape(): void
-    {
-        // Replaces task: "Integration test for data export — create
-        // objects, export data, verify export contains all owned objects
-        // and profile data".
-        // Reset rate-limit so the export isn't blocked by the once-per-hour cap.
-        $this->config->setUserValue($this->testUserId, 'openregister', 'last_export_time', '0');
+	public function testExportPersonalDataReturnsProfileShape(): void {
+		// Replaces task: "Integration test for data export — create
+		// objects, export data, verify export contains all owned objects
+		// and profile data".
+		// Reset rate-limit so the export isn't blocked by the once-per-hour cap.
+		$this->config->setUserValue($this->testUserId, 'openregister', 'last_export_time', '0');
 
-        $export = $this->userService->exportPersonalData($this->testUser);
+		$export = $this->userService->exportPersonalData($this->testUser);
 
-        // Required top-level keys per the spec / current implementation.
-        $this->assertIsArray($export);
-        $this->assertArrayHasKey('exportDate', $export);
-        $this->assertArrayHasKey('profile', $export);
-        // Profile is a structured array with at least the uid.
-        $this->assertIsArray($export['profile']);
-        $this->assertSame($this->testUserId, $export['profile']['uid'] ?? null);
-    }
+		// Required top-level keys per the spec / current implementation.
+		$this->assertIsArray($export);
+		$this->assertArrayHasKey('exportDate', $export);
+		$this->assertArrayHasKey('profile', $export);
+		// Profile is a structured array with at least the uid.
+		$this->assertIsArray($export['profile']);
+		$this->assertSame($this->testUserId, $export['profile']['uid'] ?? null);
+	}
 
-    public function testExportPersonalDataIsRateLimited(): void
-    {
-        // Two consecutive exports — second MUST hit the rate limit (HTTP 429
-        // surfaced as RuntimeException with `retry_after` info in the message).
-        $this->config->setUserValue($this->testUserId, 'openregister', 'last_export_time', '0');
+	public function testExportPersonalDataIsRateLimited(): void {
+		// Two consecutive exports — second MUST hit the rate limit (HTTP 429
+		// surfaced as RuntimeException with `retry_after` info in the message).
+		$this->config->setUserValue($this->testUserId, 'openregister', 'last_export_time', '0');
 
-        $this->userService->exportPersonalData($this->testUser);
+		$this->userService->exportPersonalData($this->testUser);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessageMatches('/retry_after|once per hour/i');
-        $this->userService->exportPersonalData($this->testUser);
-    }
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessageMatches('/retry_after|once per hour/i');
+		$this->userService->exportPersonalData($this->testUser);
+	}
 }

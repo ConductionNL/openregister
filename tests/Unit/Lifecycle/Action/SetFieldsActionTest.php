@@ -33,79 +33,73 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Lifecycle\Action\SetFieldsAction
  */
-class SetFieldsActionTest extends TestCase
-{
-    private SetFieldsAction $action;
+class SetFieldsActionTest extends TestCase {
+	private SetFieldsAction $action;
 
-    protected function setUp(): void
-    {
-        $this->action = new SetFieldsAction();
-    }//end setUp()
+	protected function setUp(): void {
+		$this->action = new SetFieldsAction();
+	}//end setUp()
 
-    /**
-     * `set-fields` shape: the actionParameters map IS the field map. A declared
-     * static value is stamped verbatim onto the payload.
-     */
-    public function testSetFieldsShapeStampsStaticValue(): void
-    {
-        $result = $this->action->execute(
-            objectData: ['status' => 'submitted'],
-            previousData: ['status' => 'draft'],
-            parameters: ['reviewedBy' => 'system'],
-            actionName: 'set-fields'
-        );
+	/**
+	 * `set-fields` shape: the actionParameters map IS the field map. A declared
+	 * static value is stamped verbatim onto the payload.
+	 */
+	public function testSetFieldsShapeStampsStaticValue(): void {
+		$result = $this->action->execute(
+			objectData: ['status' => 'submitted'],
+			previousData: ['status' => 'draft'],
+			parameters: ['reviewedBy' => 'system'],
+			actionName: 'set-fields'
+		);
 
-        $this->assertSame('submitted', $result['status']);
-        $this->assertSame('system', $result['reviewedBy']);
-    }//end testSetFieldsShapeStampsStaticValue()
+		$this->assertSame('submitted', $result['status']);
+		$this->assertSame('system', $result['reviewedBy']);
+	}//end testSetFieldsShapeStampsStaticValue()
 
-    /**
-     * `set-field` shape: the field map lives under a `set` key.
-     */
-    public function testSetFieldShapeReadsSetKey(): void
-    {
-        $result = $this->action->execute(
-            objectData: ['status' => 'submitted'],
-            previousData: [],
-            parameters: ['set' => ['approved' => true]],
-            actionName: 'set-field'
-        );
+	/**
+	 * `set-field` shape: the field map lives under a `set` key.
+	 */
+	public function testSetFieldShapeReadsSetKey(): void {
+		$result = $this->action->execute(
+			objectData: ['status' => 'submitted'],
+			previousData: [],
+			parameters: ['set' => ['approved' => true]],
+			actionName: 'set-field'
+		);
 
-        $this->assertTrue($result['approved']);
-    }//end testSetFieldShapeReadsSetKey()
+		$this->assertTrue($result['approved']);
+	}//end testSetFieldShapeReadsSetKey()
 
-    /**
-     * The `@now` token resolves to an ISO-8601 UTC timestamp at execution time.
-     */
-    public function testNowTokenResolvesToTimestamp(): void
-    {
-        $result = $this->action->execute(
-            objectData: [],
-            previousData: [],
-            parameters: ['submittedAt' => '@now'],
-            actionName: 'set-fields'
-        );
+	/**
+	 * The `@now` token resolves to an ISO-8601 UTC timestamp at execution time.
+	 */
+	public function testNowTokenResolvesToTimestamp(): void {
+		$result = $this->action->execute(
+			objectData: [],
+			previousData: [],
+			parameters: ['submittedAt' => '@now'],
+			actionName: 'set-fields'
+		);
 
-        $this->assertMatchesRegularExpression(
-            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/',
-            (string) $result['submittedAt']
-        );
-    }//end testNowTokenResolvesToTimestamp()
+		$this->assertMatchesRegularExpression(
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/',
+			(string)$result['submittedAt']
+		);
+	}//end testNowTokenResolvesToTimestamp()
 
-    /**
-     * Fail loud: a declared action that resolves to no fields to set throws
-     * rather than silently no-oping.
-     */
-    public function testEmptyFieldMapThrows(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('declares no fields to set');
+	/**
+	 * Fail loud: a declared action that resolves to no fields to set throws
+	 * rather than silently no-oping.
+	 */
+	public function testEmptyFieldMapThrows(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('declares no fields to set');
 
-        $this->action->execute(
-            objectData: ['status' => 'submitted'],
-            previousData: [],
-            parameters: [],
-            actionName: 'set-fields'
-        );
-    }//end testEmptyFieldMapThrows()
+		$this->action->execute(
+			objectData: ['status' => 'submitted'],
+			previousData: [],
+			parameters: [],
+			actionName: 'set-fields'
+		);
+	}//end testEmptyFieldMapThrows()
 }//end class

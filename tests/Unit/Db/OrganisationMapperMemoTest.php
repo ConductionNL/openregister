@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCP\AppFramework\Db\Entity;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -44,172 +43,159 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
  */
-class OrganisationMapperMemoTest extends TestCase
-{
+class OrganisationMapperMemoTest extends TestCase {
 
-    /**
-     * Number of times executeQuery() has been invoked on the DB scaffolding.
-     *
-     * @var int
-     */
-    private int $selectCount = 0;
+	/**
+	 * Number of times executeQuery() has been invoked on the DB scaffolding.
+	 *
+	 * @var int
+	 */
+	private int $selectCount = 0;
 
-    /**
-     * The value the mocked preferences SELECT returns for `configvalue`.
-     *
-     * @var string|false
-     */
-    private string|false $storedConfigValue = '286a9152-0000-0000-0000-000000000000';
+	/**
+	 * The value the mocked preferences SELECT returns for `configvalue`.
+	 *
+	 * @var string|false
+	 */
+	private string|false $storedConfigValue = '286a9152-0000-0000-0000-000000000000';
 
-    /**
-     * DB connection mock.
-     *
-     * @var IDBConnection&MockObject
-     */
-    private IDBConnection&MockObject $db;
+	/**
+	 * DB connection mock.
+	 *
+	 * @var IDBConnection&MockObject
+	 */
+	private IDBConnection&MockObject $db;
 
+	/**
+	 * Wire a DB connection whose every query counts and returns the stored preference row.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Wire a DB connection whose every query counts and returns the stored preference row.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('eq');
 
-        $expr = $this->createMock(IExpressionBuilder::class);
-        $expr->method('eq')->willReturn('eq');
+		$cursor = $this->createMock(IResult::class);
+		$cursor->method('fetch')->willReturnCallback(
+			function () {
+				if ($this->storedConfigValue === false) {
+					return false;
+				}
 
-        $cursor = $this->createMock(IResult::class);
-        $cursor->method('fetch')->willReturnCallback(
-            function () {
-                if ($this->storedConfigValue === false) {
-                    return false;
-                }
+				return ['configvalue' => $this->storedConfigValue];
+			}
+		);
 
-                return ['configvalue' => $this->storedConfigValue];
-            }
-        );
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('update')->willReturnSelf();
+		$qb->method('insert')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('set')->willReturnSelf();
+		$qb->method('values')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturn('p');
+		$qb->method('executeQuery')->willReturnCallback(
+			function () use ($cursor): IResult {
+				$this->selectCount++;
+				return $cursor;
+			}
+		);
+		$qb->method('executeStatement')->willReturn(1);
 
-        $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('update')->willReturnSelf();
-        $qb->method('insert')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('set')->willReturnSelf();
-        $qb->method('values')->willReturnSelf();
-        $qb->method('where')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('expr')->willReturn($expr);
-        $qb->method('createNamedParameter')->willReturn('p');
-        $qb->method('executeQuery')->willReturnCallback(
-            function () use ($cursor): IResult {
-                $this->selectCount++;
-                return $cursor;
-            }
-        );
-        $qb->method('executeStatement')->willReturn(1);
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+	}//end setUp()
 
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-    }//end setUp()
+	/**
+	 * Build the mapper under test against the counting DB scaffolding.
+	 *
+	 * @return OrganisationMapper
+	 */
+	private function makeMapper(): OrganisationMapper {
+		return new OrganisationMapper(
+			$this->db,
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(IAppConfig::class),
+			$this->createMock(IConfig::class)
+		);
+	}//end makeMapper()
 
+	/**
+	 * Repeated look-ups for the same user hit the DB exactly once.
+	 *
+	 * @return void
+	 */
+	public function testRepeatedLookupsIssueOneQuery(): void {
+		$mapper = $this->makeMapper();
 
-    /**
-     * Build the mapper under test against the counting DB scaffolding.
-     *
-     * @return OrganisationMapper
-     */
-    private function makeMapper(): OrganisationMapper
-    {
-        return new OrganisationMapper(
-            $this->db,
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(IEventDispatcher::class),
-            $this->createMock(IAppConfig::class),
-            $this->createMock(IConfig::class)
-        );
-    }//end makeMapper()
+		$first = $mapper->getActiveOrganisationUuidForUser('alice');
+		for ($i = 0; $i < 50; $i++) {
+			$mapper->getActiveOrganisationUuidForUser('alice');
+		}
 
+		$this->assertSame('286a9152-0000-0000-0000-000000000000', $first);
+		$this->assertSame(1, $this->selectCount, '51 look-ups for one user must issue a single preferences query');
+	}//end testRepeatedLookupsIssueOneQuery()
 
-    /**
-     * Repeated look-ups for the same user hit the DB exactly once.
-     *
-     * @return void
-     */
-    public function testRepeatedLookupsIssueOneQuery(): void
-    {
-        $mapper = $this->makeMapper();
+	/**
+	 * Distinct users are memoised independently (one query each).
+	 *
+	 * @return void
+	 */
+	public function testDistinctUsersAreCachedIndependently(): void {
+		$mapper = $this->makeMapper();
 
-        $first = $mapper->getActiveOrganisationUuidForUser('alice');
-        for ($i = 0; $i < 50; $i++) {
-            $mapper->getActiveOrganisationUuidForUser('alice');
-        }
+		$mapper->getActiveOrganisationUuidForUser('alice');
+		$mapper->getActiveOrganisationUuidForUser('bob');
+		$mapper->getActiveOrganisationUuidForUser('alice');
+		$mapper->getActiveOrganisationUuidForUser('bob');
 
-        $this->assertSame('286a9152-0000-0000-0000-000000000000', $first);
-        $this->assertSame(1, $this->selectCount, '51 look-ups for one user must issue a single preferences query');
-    }//end testRepeatedLookupsIssueOneQuery()
+		$this->assertSame(2, $this->selectCount, 'two distinct users must issue exactly two queries');
+	}//end testDistinctUsersAreCachedIndependently()
 
+	/**
+	 * A "no active organisation" (null) result is cached and not re-queried.
+	 *
+	 * @return void
+	 */
+	public function testNullResultIsCached(): void {
+		$this->storedConfigValue = false;
+		$mapper = $this->makeMapper();
 
-    /**
-     * Distinct users are memoised independently (one query each).
-     *
-     * @return void
-     */
-    public function testDistinctUsersAreCachedIndependently(): void
-    {
-        $mapper = $this->makeMapper();
+		$this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
+		$this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
+		$this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
 
-        $mapper->getActiveOrganisationUuidForUser('alice');
-        $mapper->getActiveOrganisationUuidForUser('bob');
-        $mapper->getActiveOrganisationUuidForUser('alice');
-        $mapper->getActiveOrganisationUuidForUser('bob');
+		$this->assertSame(1, $this->selectCount, 'a cached null must not re-query the preferences table');
+	}//end testNullResultIsCached()
 
-        $this->assertSame(2, $this->selectCount, 'two distinct users must issue exactly two queries');
-    }//end testDistinctUsersAreCachedIndependently()
+	/**
+	 * Writing through the setter updates the memo without a fresh read.
+	 *
+	 * @return void
+	 */
+	public function testSetterUpdatesTheMemo(): void {
+		$mapper = $this->makeMapper();
 
+		// Prime the memo (1 SELECT), then write a new value through the setter.
+		$mapper->getActiveOrganisationUuidForUser('dave');
+		$queriesAfterPrime = $this->selectCount;
 
-    /**
-     * A "no active organisation" (null) result is cached and not re-queried.
-     *
-     * @return void
-     */
-    public function testNullResultIsCached(): void
-    {
-        $this->storedConfigValue = false;
-        $mapper                  = $this->makeMapper();
+		$mapper->setActiveOrganisationForUser('dave', 'new-org-uuid');
 
-        $this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
-        $this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
-        $this->assertNull($mapper->getActiveOrganisationUuidForUser('carol'));
+		// The subsequent read must return the written value from the memo — no new SELECT
+		// for the getter itself (the setter's own existence-probe SELECT is separate).
+		$selectsBeforeRead = $this->selectCount;
+		$value = $mapper->getActiveOrganisationUuidForUser('dave');
 
-        $this->assertSame(1, $this->selectCount, 'a cached null must not re-query the preferences table');
-    }//end testNullResultIsCached()
-
-
-    /**
-     * Writing through the setter updates the memo without a fresh read.
-     *
-     * @return void
-     */
-    public function testSetterUpdatesTheMemo(): void
-    {
-        $mapper = $this->makeMapper();
-
-        // Prime the memo (1 SELECT), then write a new value through the setter.
-        $mapper->getActiveOrganisationUuidForUser('dave');
-        $queriesAfterPrime = $this->selectCount;
-
-        $mapper->setActiveOrganisationForUser('dave', 'new-org-uuid');
-
-        // The subsequent read must return the written value from the memo — no new SELECT
-        // for the getter itself (the setter's own existence-probe SELECT is separate).
-        $selectsBeforeRead = $this->selectCount;
-        $value             = $mapper->getActiveOrganisationUuidForUser('dave');
-
-        $this->assertSame('new-org-uuid', $value, 'the getter must reflect the in-request write');
-        $this->assertSame($selectsBeforeRead, $this->selectCount, 'reading after a setter write must not hit the DB');
-        $this->assertGreaterThanOrEqual(1, $queriesAfterPrime);
-    }//end testSetterUpdatesTheMemo()
+		$this->assertSame('new-org-uuid', $value, 'the getter must reflect the in-request write');
+		$this->assertSame($selectsBeforeRead, $this->selectCount, 'reading after a setter write must not hit the DB');
+		$this->assertGreaterThanOrEqual(1, $queriesAfterPrime);
+	}//end testSetterUpdatesTheMemo()
 }//end class

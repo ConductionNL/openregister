@@ -58,130 +58,128 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create notification history table.
  */
-class Version1Date20260501100000 extends SimpleMigrationStep
-{
-    /**
-     * Add the openregister_notification_history table when missing.
-     *
-     * @param IOutput                   $output        Migration output sink.
-     * @param Closure(): ISchemaWrapper $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array<string, mixed>      $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260501100000 extends SimpleMigrationStep {
+	/**
+	 * Add the openregister_notification_history table when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure(): ISchemaWrapper $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array<string, mixed> $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_notification_history') === true) {
-            return $schema;
-        }
+		if ($schema->hasTable('openregister_notification_history') === true) {
+			return $schema;
+		}
 
-        $table = $schema->createTable('openregister_notification_history');
+		$table = $schema->createTable('openregister_notification_history');
 
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
-        $table->addColumn(
-            'rule_id',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'schema_id',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'register_id',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'object_uuid',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-            ]
-        );
-        $table->addColumn(
-            'channel',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 32,
-            ]
-        );
-        $table->addColumn(
-            'recipient',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'subject',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'status',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 32,
-                'default' => 'dispatched',
-            ]
-        );
-        $table->addColumn(
-            'error_message',
-            Types::TEXT,
-            [
-                'notnull' => false,
-            ]
-        );
-        $table->addColumn(
-            'locale',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 16,
-            ]
-        );
-        $table->addColumn(
-            'dispatched_at',
-            Types::DATETIME,
-            [
-                'notnull' => true,
-            ]
-        );
+		$table->addColumn(
+			'id',
+			Types::BIGINT,
+			[
+				'autoincrement' => true,
+				'notnull' => true,
+			]
+		);
+		$table->addColumn(
+			'rule_id',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 255,
+			]
+		);
+		$table->addColumn(
+			'schema_id',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 64,
+			]
+		);
+		$table->addColumn(
+			'register_id',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 64,
+			]
+		);
+		$table->addColumn(
+			'object_uuid',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 64,
+			]
+		);
+		$table->addColumn(
+			'channel',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 32,
+			]
+		);
+		$table->addColumn(
+			'recipient',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 255,
+			]
+		);
+		$table->addColumn(
+			'subject',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'status',
+			Types::STRING,
+			[
+				'notnull' => true,
+				'length' => 32,
+				'default' => 'dispatched',
+			]
+		);
+		$table->addColumn(
+			'error_message',
+			Types::TEXT,
+			[
+				'notnull' => false,
+			]
+		);
+		$table->addColumn(
+			'locale',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 16,
+			]
+		);
+		$table->addColumn(
+			'dispatched_at',
+			Types::DATETIME,
+			[
+				'notnull' => true,
+			]
+		);
 
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['object_uuid', 'dispatched_at'], 'or_notif_hist_obj_idx');
-        $table->addIndex(['rule_id', 'dispatched_at'], 'or_notif_hist_rule_idx');
-        $table->addIndex(['recipient', 'dispatched_at'], 'or_notif_hist_recip_idx');
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['object_uuid', 'dispatched_at'], 'or_notif_hist_obj_idx');
+		$table->addIndex(['rule_id', 'dispatched_at'], 'or_notif_hist_rule_idx');
+		$table->addIndex(['recipient', 'dispatched_at'], 'or_notif_hist_recip_idx');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

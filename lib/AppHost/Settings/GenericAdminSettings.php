@@ -45,97 +45,91 @@ use OCP\Settings\IDelegatedSettings;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.4
  */
-class GenericAdminSettings implements IDelegatedSettings
-{
-    /**
-     * Constructor.
-     *
-     * @param string          $appId        The leaf app id (template + version).
-     * @param string          $sectionId    The settings section id this form sits in.
-     * @param int             $priority     Ordering priority within the section.
-     * @param IAppManager     $appManager   App manager (version lookup).
-     * @param IInitialState   $initialState Initial-state service.
-     * @param IAppConfig|null $appConfig    App config — when provided, enables a
-     *                                      real up-to-date check by comparing the
-     *                                      running app version against the version
-     *                                      stored when the configuration was last
-     *                                      (re-)imported. Nullable so the older
-     *                                      registration factories keep working.
-     */
-    public function __construct(
-        protected readonly string $appId,
-        protected readonly string $sectionId,
-        protected readonly int $priority,
-        protected readonly IAppManager $appManager,
-        protected readonly IInitialState $initialState,
-        protected readonly ?IAppConfig $appConfig=null
-    ) {
-    }//end __construct()
+class GenericAdminSettings implements IDelegatedSettings {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appId The leaf app id (template + version).
+	 * @param string $sectionId The settings section id this form sits in.
+	 * @param int $priority Ordering priority within the section.
+	 * @param IAppManager $appManager App manager (version lookup).
+	 * @param IInitialState $initialState Initial-state service.
+	 * @param IAppConfig|null $appConfig App config — when provided, enables a
+	 *                                   real up-to-date check by comparing the
+	 *                                   running app version against the version
+	 *                                   stored when the configuration was last
+	 *                                   (re-)imported. Nullable so the older
+	 *                                   registration factories keep working.
+	 */
+	public function __construct(
+		protected readonly string $appId,
+		protected readonly string $sectionId,
+		protected readonly int $priority,
+		protected readonly IAppManager $appManager,
+		protected readonly IInitialState $initialState,
+		protected readonly ?IAppConfig $appConfig = null,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the settings form template (the leaf app's `settings/admin`).
-     *
-     * Provides `version` (running app version) and, when an IAppConfig is
-     * available, `configuredVersion` + `isUpToDate` — a REAL up-to-date signal
-     * (the config version is stamped by AppHostSettingsService on each import).
-     * The shared CnAdminSettingsShell reads these via loadState so the badge is
-     * truthful instead of hardcoded.
-     *
-     * @return TemplateResponse
-     */
-    public function getForm(): TemplateResponse
-    {
-        $version = $this->appManager->getAppVersion(appId: $this->appId);
-        $this->initialState->provideInitialState('version', $version);
+	/**
+	 * Get the settings form template (the leaf app's `settings/admin`).
+	 *
+	 * Provides `version` (running app version) and, when an IAppConfig is
+	 * available, `configuredVersion` + `isUpToDate` — a REAL up-to-date signal
+	 * (the config version is stamped by AppHostSettingsService on each import).
+	 * The shared CnAdminSettingsShell reads these via loadState so the badge is
+	 * truthful instead of hardcoded.
+	 *
+	 * @return TemplateResponse
+	 */
+	public function getForm(): TemplateResponse {
+		$version = $this->appManager->getAppVersion(appId: $this->appId);
+		$this->initialState->provideInitialState('version', $version);
 
-        if ($this->appConfig !== null) {
-            $configuredVersion = $this->appConfig->getValueString($this->appId, 'config_version', '');
-            $this->initialState->provideInitialState('configuredVersion', $configuredVersion);
-            // Up to date when the config was imported for the current app version.
-            // Empty configuredVersion (never imported) → not up to date.
-            $this->initialState->provideInitialState('isUpToDate', ($configuredVersion !== '' && $configuredVersion === $version));
-        }
+		if ($this->appConfig !== null) {
+			$configuredVersion = $this->appConfig->getValueString($this->appId, 'config_version', '');
+			$this->initialState->provideInitialState('configuredVersion', $configuredVersion);
+			// Up to date when the config was imported for the current app version.
+			// Empty configuredVersion (never imported) → not up to date.
+			$this->initialState->provideInitialState('isUpToDate', ($configuredVersion !== '' && $configuredVersion === $version));
+		}
 
-        return new TemplateResponse($this->appId, 'settings/admin', []);
-    }//end getForm()
+		return new TemplateResponse($this->appId, 'settings/admin', []);
+	}//end getForm()
 
-    /**
-     * Section id this settings page belongs to.
-     *
-     * @return string
-     */
-    public function getSection(): string
-    {
-        return $this->sectionId;
-    }//end getSection()
+	/**
+	 * Section id this settings page belongs to.
+	 *
+	 * @return string
+	 */
+	public function getSection(): string {
+		return $this->sectionId;
+	}//end getSection()
 
-    /**
-     * Ordering priority within the section.
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return $this->priority;
-    }//end getPriority()
+	/**
+	 * Ordering priority within the section.
+	 *
+	 * @return int
+	 */
+	public function getPriority(): int {
+		return $this->priority;
+	}//end getPriority()
 
-    /**
-     * Human-readable name of the delegated settings section.
-     *
-     * @return string|null Null to use the section default.
-     */
-    public function getName(): ?string
-    {
-        return null;
-    }//end getName()
+	/**
+	 * Human-readable name of the delegated settings section.
+	 *
+	 * @return string|null Null to use the section default.
+	 */
+	public function getName(): ?string {
+		return null;
+	}//end getName()
 
-    /**
-     * App-config keys a delegated admin may manage. Empty = full-admin only.
-     *
-     * @return array<string, string[]> Map of appId to allowed config keys.
-     */
-    public function getAuthorizedAppConfig(): array
-    {
-        return [];
-    }//end getAuthorizedAppConfig()
+	/**
+	 * App-config keys a delegated admin may manage. Empty = full-admin only.
+	 *
+	 * @return array<string, string[]> Map of appId to allowed config keys.
+	 */
+	public function getAuthorizedAppConfig(): array {
+		return [];
+	}//end getAuthorizedAppConfig()
 }//end class

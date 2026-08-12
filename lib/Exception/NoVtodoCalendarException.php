@@ -41,21 +41,19 @@ use RuntimeException;
  *
  * @phpstan-consistent-constructor
  */
-class NoVtodoCalendarException extends RuntimeException
-{
-    /**
-     * NoVtodoCalendarException constructor
-     *
-     * @param string          $userId   The user ID for whom no calendar was found
-     * @param int             $code     The exception code (default: 0)
-     * @param \Throwable|null $previous The previous exception that caused this one
-     *
-     * @return void
-     */
-    public function __construct(string $userId, int $code=0, ?\Throwable $previous=null)
-    {
-        $message = 'No VTODO-supporting calendar found for user '.$userId;
+class NoVtodoCalendarException extends RuntimeException {
+	/**
+	 * NoVtodoCalendarException constructor
+	 *
+	 * @param string $userId The user ID for whom no calendar was found
+	 * @param int $code The exception code (default: 0)
+	 * @param \Throwable|null $previous The previous exception that caused this one
+	 *
+	 * @return void
+	 */
+	public function __construct(string $userId, int $code = 0, ?\Throwable $previous = null) {
+		$message = 'No VTODO-supporting calendar found for user ' . $userId;
 
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 }//end class

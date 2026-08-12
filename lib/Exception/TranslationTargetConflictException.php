@@ -48,92 +48,87 @@ namespace OCA\OpenRegister\Exception;
  * }
  * ```
  */
-class TranslationTargetConflictException extends CustomValidationException
-{
+class TranslationTargetConflictException extends CustomValidationException {
 
-    /**
-     * Structured error code, exposed on the response body.
-     */
-    public const ERROR_CODE = 'TRANSLATION_TARGET_CONFLICT';
+	/**
+	 * Structured error code, exposed on the response body.
+	 */
+	public const ERROR_CODE = 'TRANSLATION_TARGET_CONFLICT';
 
-    /**
-     * The translatable property whose value conflicted with the header.
-     *
-     * @var string
-     */
-    private readonly string $property;
+	/**
+	 * The translatable property whose value conflicted with the header.
+	 *
+	 * @var string
+	 */
+	private readonly string $property;
 
-    /**
-     * The BCP-47 target language read from the header.
-     *
-     * @var string
-     */
-    private readonly string $targetLanguage;
+	/**
+	 * The BCP-47 target language read from the header.
+	 *
+	 * @var string
+	 */
+	private readonly string $targetLanguage;
 
-    /**
-     * Construct a target-language conflict exception.
-     *
-     * Extends `CustomValidationException` so the existing controller
-     * `catch (ValidationException | CustomValidationException $e)`
-     * blocks pick it up as a `400 Bad Request` without any new
-     * controller code.
-     *
-     * @param string $property       The translatable property name.
-     * @param string $targetLanguage The BCP-47 target language tag.
-     */
-    public function __construct(string $property, string $targetLanguage)
-    {
-        $this->property       = $property;
-        $this->targetLanguage = $targetLanguage;
+	/**
+	 * Construct a target-language conflict exception.
+	 *
+	 * Extends `CustomValidationException` so the existing controller
+	 * `catch (ValidationException | CustomValidationException $e)`
+	 * blocks pick it up as a `400 Bad Request` without any new
+	 * controller code.
+	 *
+	 * @param string $property The translatable property name.
+	 * @param string $targetLanguage The BCP-47 target language tag.
+	 */
+	public function __construct(string $property, string $targetLanguage) {
+		$this->property = $property;
+		$this->targetLanguage = $targetLanguage;
 
-        parent::__construct(
-            message: sprintf(
-                'Cannot mix language-keyed body for "%s" with X-Translation-Target-Language: %s',
-                $property,
-                $targetLanguage
-            ),
-            errors: [
-                'code'           => self::ERROR_CODE,
-                'property'       => $property,
-                'targetLanguage' => $targetLanguage,
-            ]
-        );
-    }//end __construct()
+		parent::__construct(
+			message: sprintf(
+				'Cannot mix language-keyed body for "%s" with X-Translation-Target-Language: %s',
+				$property,
+				$targetLanguage
+			),
+			errors: [
+				'code' => self::ERROR_CODE,
+				'property' => $property,
+				'targetLanguage' => $targetLanguage,
+			]
+		);
+	}//end __construct()
 
-    /**
-     * Get the property whose value conflicted.
-     *
-     * @return string The translatable property name.
-     */
-    public function getProperty(): string
-    {
-        return $this->property;
-    }//end getProperty()
+	/**
+	 * Get the property whose value conflicted.
+	 *
+	 * @return string The translatable property name.
+	 */
+	public function getProperty(): string {
+		return $this->property;
+	}//end getProperty()
 
-    /**
-     * Get the BCP-47 target language read from the header.
-     *
-     * @return string The BCP-47 language tag.
-     */
-    public function getTargetLanguage(): string
-    {
-        return $this->targetLanguage;
-    }//end getTargetLanguage()
+	/**
+	 * Get the BCP-47 target language read from the header.
+	 *
+	 * @return string The BCP-47 language tag.
+	 */
+	public function getTargetLanguage(): string {
+		return $this->targetLanguage;
+	}//end getTargetLanguage()
 
-    /**
-     * Convert the exception to a structured response body shape.
-     *
-     * @return array<string, mixed>
-     */
-    public function toErrorBody(): array
-    {
-        return [
-            'error' => [
-                'code'           => self::ERROR_CODE,
-                'property'       => $this->property,
-                'targetLanguage' => $this->targetLanguage,
-                'message'        => $this->getMessage(),
-            ],
-        ];
-    }//end toErrorBody()
+	/**
+	 * Convert the exception to a structured response body shape.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function toErrorBody(): array {
+		return [
+			'error' => [
+				'code' => self::ERROR_CODE,
+				'property' => $this->property,
+				'targetLanguage' => $this->targetLanguage,
+				'message' => $this->getMessage(),
+			],
+		];
+	}//end toErrorBody()
 }//end class

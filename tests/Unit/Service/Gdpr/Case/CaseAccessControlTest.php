@@ -29,104 +29,97 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for CaseAccessControl.
  */
-class CaseAccessControlTest extends TestCase
-{
+class CaseAccessControlTest extends TestCase {
 
-    /**
-     * Build the SUT for a caller uid (or null for anonymous), officer-group
-     * config value, and group membership.
-     *
-     * @param string|null $uid          Caller uid (null = anonymous).
-     * @param string      $officerGroup Configured officer group ('' = none).
-     * @param bool        $inGroup      Whether the caller is in the officer group.
-     *
-     * @return CaseAccessControl
-     */
-    private function build(?string $uid, string $officerGroup, bool $inGroup): CaseAccessControl
-    {
-        $userSession = $this->createMock(IUserSession::class);
-        if ($uid === null) {
-            $userSession->method('getUser')->willReturn(null);
-        } else {
-            $user = $this->createMock(IUser::class);
-            $user->method('getUID')->willReturn($uid);
-            $userSession->method('getUser')->willReturn($user);
-        }
+	/**
+	 * Build the SUT for a caller uid (or null for anonymous), officer-group
+	 * config value, and group membership.
+	 *
+	 * @param string|null $uid Caller uid (null = anonymous).
+	 * @param string $officerGroup Configured officer group ('' = none).
+	 * @param bool $inGroup Whether the caller is in the officer group.
+	 *
+	 * @return CaseAccessControl
+	 */
+	private function build(?string $uid, string $officerGroup, bool $inGroup): CaseAccessControl {
+		$userSession = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$userSession->method('getUser')->willReturn(null);
+		} else {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+			$userSession->method('getUser')->willReturn($user);
+		}
 
-        $groupManager = $this->createMock(IGroupManager::class);
-        $groupManager->method('isInGroup')->willReturn($inGroup);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isInGroup')->willReturn($inGroup);
 
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn($officerGroup);
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn($officerGroup);
 
-        return new CaseAccessControl(
-            $userSession,
-            $groupManager,
-            $appConfig,
-            $this->createMock(LoggerInterface::class)
-        );
+		return new CaseAccessControl(
+			$userSession,
+			$groupManager,
+			$appConfig,
+			$this->createMock(LoggerInterface::class)
+		);
 
-    }//end build()
+	}//end build()
 
-    /**
-     * The assigned handler may act on their own case.
-     *
-     * @return void
-     */
-    public function testHandlerActsOnOwnCase(): void
-    {
-        $sut = $this->build('handler1', 'dsar-officers', false);
-        $this->assertTrue($sut->mayAct(['handler' => 'handler1']));
+	/**
+	 * The assigned handler may act on their own case.
+	 *
+	 * @return void
+	 */
+	public function testHandlerActsOnOwnCase(): void {
+		$sut = $this->build('handler1', 'dsar-officers', false);
+		$this->assertTrue($sut->mayAct(['handler' => 'handler1']));
 
-    }//end testHandlerActsOnOwnCase()
+	}//end testHandlerActsOnOwnCase()
 
-    /**
-     * A handler is refused on another handler's case without the officer role.
-     *
-     * @return void
-     */
-    public function testHandlerRefusedOnOthersCase(): void
-    {
-        $sut = $this->build('handler1', 'dsar-officers', false);
-        $this->assertFalse($sut->mayAct(['handler' => 'handler2']));
+	/**
+	 * A handler is refused on another handler's case without the officer role.
+	 *
+	 * @return void
+	 */
+	public function testHandlerRefusedOnOthersCase(): void {
+		$sut = $this->build('handler1', 'dsar-officers', false);
+		$this->assertFalse($sut->mayAct(['handler' => 'handler2']));
 
-    }//end testHandlerRefusedOnOthersCase()
+	}//end testHandlerRefusedOnOthersCase()
 
-    /**
-     * An officer overrides across cases (not the assigned handler).
-     *
-     * @return void
-     */
-    public function testOfficerOverridesAcrossCases(): void
-    {
-        $sut = $this->build('officer1', 'dsar-officers', true);
-        $this->assertTrue($sut->mayAct(['handler' => 'handler2']));
+	/**
+	 * An officer overrides across cases (not the assigned handler).
+	 *
+	 * @return void
+	 */
+	public function testOfficerOverridesAcrossCases(): void {
+		$sut = $this->build('officer1', 'dsar-officers', true);
+		$this->assertTrue($sut->mayAct(['handler' => 'handler2']));
 
-    }//end testOfficerOverridesAcrossCases()
+	}//end testOfficerOverridesAcrossCases()
 
-    /**
-     * Anonymous callers are denied (fail closed).
-     *
-     * @return void
-     */
-    public function testAnonymousDenied(): void
-    {
-        $sut = $this->build(null, 'dsar-officers', true);
-        $this->assertFalse($sut->mayAct(['handler' => 'handler1']));
+	/**
+	 * Anonymous callers are denied (fail closed).
+	 *
+	 * @return void
+	 */
+	public function testAnonymousDenied(): void {
+		$sut = $this->build(null, 'dsar-officers', true);
+		$this->assertFalse($sut->mayAct(['handler' => 'handler1']));
 
-    }//end testAnonymousDenied()
+	}//end testAnonymousDenied()
 
-    /**
-     * When the officer role cannot be resolved (no officer group configured),
-     * a non-handler is denied rather than allowed (fail closed).
-     *
-     * @return void
-     */
-    public function testFailsClosedWhenOfficerRoleUnresolved(): void
-    {
-        // Officer group unconfigured ('') → the override is unresolvable → deny.
-        $sut = $this->build('someone', '', true);
-        $this->assertFalse($sut->mayAct(['handler' => 'handler2']));
+	/**
+	 * When the officer role cannot be resolved (no officer group configured),
+	 * a non-handler is denied rather than allowed (fail closed).
+	 *
+	 * @return void
+	 */
+	public function testFailsClosedWhenOfficerRoleUnresolved(): void {
+		// Officer group unconfigured ('') → the override is unresolvable → deny.
+		$sut = $this->build('someone', '', true);
+		$this->assertFalse($sut->mayAct(['handler' => 'handler2']));
 
-    }//end testFailsClosedWhenOfficerRoleUnresolved()
+	}//end testFailsClosedWhenOfficerRoleUnresolved()
 }//end class

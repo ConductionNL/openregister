@@ -53,179 +53,166 @@ use Psr\Log\LoggerInterface;
 /**
  * Unit tests for MessageDispatchProvider.
  */
-class MessageDispatchProviderTest extends TestCase
-{
+class MessageDispatchProviderTest extends TestCase {
 
-    /**
-     * Mocked external-call router.
-     *
-     * @var ExternalIntegrationRouter&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $router;
+	/**
+	 * Mocked external-call router.
+	 *
+	 * @var ExternalIntegrationRouter&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $router;
 
-    /**
-     * Mocked NC app manager.
-     *
-     * @var IAppManager&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $appManager;
+	/**
+	 * Mocked NC app manager.
+	 *
+	 * @var IAppManager&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $appManager;
 
-    /**
-     * System under test.
-     *
-     * @var MessageDispatchProvider
-     */
-    private MessageDispatchProvider $provider;
+	/**
+	 * System under test.
+	 *
+	 * @var MessageDispatchProvider
+	 */
+	private MessageDispatchProvider $provider;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->router     = $this->createMock(ExternalIntegrationRouter::class);
-        $this->appManager = $this->createMock(IAppManager::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->router = $this->createMock(ExternalIntegrationRouter::class);
+		$this->appManager = $this->createMock(IAppManager::class);
 
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
-        $logger = $this->createMock(LoggerInterface::class);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $this->provider = new MessageDispatchProvider(
-            router: $this->router,
-            appManager: $this->appManager,
-            l10n: $l10n,
-            logger: $logger,
-        );
-    }//end setUp()
+		$this->provider = new MessageDispatchProvider(
+			router: $this->router,
+			appManager: $this->appManager,
+			l10n: $l10n,
+			logger: $logger,
+		);
+	}//end setUp()
 
-    public function testMetadataMatchesLeafSpec(): void
-    {
-        $this->assertSame('message-dispatch', $this->provider->getId());
-        $this->assertSame('Outbound messaging (SMS / WhatsApp)', $this->provider->getLabel());
-        $this->assertSame('MessageText', $this->provider->getIcon());
-        $this->assertSame('external', $this->provider->getGroup());
-        $this->assertSame('openconnector', $this->provider->getRequiredApp());
-        $this->assertSame('external', $this->provider->getStorageStrategy());
-        // Default advertised source (the real target is per-call).
-        $this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
-        $this->assertSame('whatsapp-cloud-api', MessageDispatchProvider::SOURCE_ID);
-    }//end testMetadataMatchesLeafSpec()
+	public function testMetadataMatchesLeafSpec(): void {
+		$this->assertSame('message-dispatch', $this->provider->getId());
+		$this->assertSame('Outbound messaging (SMS / WhatsApp)', $this->provider->getLabel());
+		$this->assertSame('MessageText', $this->provider->getIcon());
+		$this->assertSame('external', $this->provider->getGroup());
+		$this->assertSame('openconnector', $this->provider->getRequiredApp());
+		$this->assertSame('external', $this->provider->getStorageStrategy());
+		// Default advertised source (the real target is per-call).
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+		$this->assertSame('whatsapp-cloud-api', MessageDispatchProvider::SOURCE_ID);
+	}//end testMetadataMatchesLeafSpec()
 
-    public function testAllowedSourcesAreTheFiveSeededSlugs(): void
-    {
-        $this->assertSame(
-            ['cmcom-sms', 'messagebird-sms', 'twilio-sms', 'whatsapp-cloud-api', 'whatsapp-bsp'],
-            MessageDispatchProvider::ALLOWED_SOURCES
-        );
-    }//end testAllowedSourcesAreTheFiveSeededSlugs()
+	public function testAllowedSourcesAreTheFiveSeededSlugs(): void {
+		$this->assertSame(
+			['cmcom-sms', 'messagebird-sms', 'twilio-sms', 'whatsapp-cloud-api', 'whatsapp-bsp'],
+			MessageDispatchProvider::ALLOWED_SOURCES
+		);
+	}//end testAllowedSourcesAreTheFiveSeededSlugs()
 
-    public function testAuthRequirementsAreExternalApiKeyViaOpenConnector(): void
-    {
-        $auth = $this->provider->authRequirements();
-        $this->assertSame('external', $auth['type']);
-        $this->assertSame('openconnector', $auth['configuredVia']);
-        $this->assertContains('apikey', $auth['supports']);
-        $this->assertContains('twilio-sms', $auth['sources']);
-        $this->assertContains('whatsapp-cloud-api', $auth['sources']);
-    }//end testAuthRequirementsAreExternalApiKeyViaOpenConnector()
+	public function testAuthRequirementsAreExternalApiKeyViaOpenConnector(): void {
+		$auth = $this->provider->authRequirements();
+		$this->assertSame('external', $auth['type']);
+		$this->assertSame('openconnector', $auth['configuredVia']);
+		$this->assertContains('apikey', $auth['supports']);
+		$this->assertContains('twilio-sms', $auth['sources']);
+		$this->assertContains('whatsapp-cloud-api', $auth['sources']);
+	}//end testAuthRequirementsAreExternalApiKeyViaOpenConnector()
 
-    public function testIsEnabledMirrorsOpenConnectorInstall(): void
-    {
-        $this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
-        $this->assertTrue($this->provider->isEnabled());
-    }//end testIsEnabledMirrorsOpenConnectorInstall()
+	public function testIsEnabledMirrorsOpenConnectorInstall(): void {
+		$this->appManager->method('isInstalled')->with('openconnector')->willReturn(true);
+		$this->assertTrue($this->provider->isEnabled());
+	}//end testIsEnabledMirrorsOpenConnectorInstall()
 
-    public function testListIsEmptyForSendOnlyLeaf(): void
-    {
-        $this->router->expects($this->never())->method('call');
-        $this->assertSame([], $this->provider->list('', '', '', ['_search' => 'x']));
-    }//end testListIsEmptyForSendOnlyLeaf()
+	public function testListIsEmptyForSendOnlyLeaf(): void {
+		$this->router->expects($this->never())->method('call');
+		$this->assertSame([], $this->provider->list('', '', '', ['_search' => 'x']));
+	}//end testListIsEmptyForSendOnlyLeaf()
 
-    public function testDispatchDelegatesPostToRouterWithBodyAndPath(): void
-    {
-        $body = ['From' => '+31600000000', 'To' => '+31611111111', 'Body' => 'Hi'];
+	public function testDispatchDelegatesPostToRouterWithBodyAndPath(): void {
+		$body = ['From' => '+31600000000', 'To' => '+31611111111', 'Body' => 'Hi'];
 
-        $this->router->expects($this->once())
-            ->method('call')
-            ->with(
-                $this->provider,
-                'POST',
-                '2010-04-01/Accounts/ACxxxx/Messages.json',
-                $this->callback(
-                    static function (array $opts) use ($body): bool {
-                        return $opts['body'] === $body
-                            && ($opts['headers']['Accept'] ?? null) === 'application/json'
-                            && ($opts['headers']['Content-Type'] ?? null) === 'application/x-www-form-urlencoded';
-                    }
-                )
-            )
-            ->willReturn(['sid' => 'SMxxxx', 'status' => 'queued']);
+		$this->router->expects($this->once())
+			->method('call')
+			->with(
+				$this->provider,
+				'POST',
+				'2010-04-01/Accounts/ACxxxx/Messages.json',
+				$this->callback(
+					static function (array $opts) use ($body): bool {
+						return $opts['body'] === $body
+							&& ($opts['headers']['Accept'] ?? null) === 'application/json'
+							&& ($opts['headers']['Content-Type'] ?? null) === 'application/x-www-form-urlencoded';
+					}
+				)
+			)
+			->willReturn(['sid' => 'SMxxxx', 'status' => 'queued']);
 
-        $result = $this->provider->dispatch(
-            source: 'twilio-sms',
-            body: $body,
-            path: '2010-04-01/Accounts/ACxxxx/Messages.json',
-            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
-        );
+		$result = $this->provider->dispatch(
+			source: 'twilio-sms',
+			body: $body,
+			path: '2010-04-01/Accounts/ACxxxx/Messages.json',
+			headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+		);
 
-        $this->assertSame('sent', $result['status']);
-        $this->assertSame('twilio-sms', $result['source']);
-        $this->assertSame('SMxxxx', $result['response']['sid']);
-    }//end testDispatchDelegatesPostToRouterWithBodyAndPath()
+		$this->assertSame('sent', $result['status']);
+		$this->assertSame('twilio-sms', $result['source']);
+		$this->assertSame('SMxxxx', $result['response']['sid']);
+	}//end testDispatchDelegatesPostToRouterWithBodyAndPath()
 
-    public function testDispatchSetsAndResetsTheTargetSource(): void
-    {
-        $this->router->method('call')->willReturn(['ok' => true]);
+	public function testDispatchSetsAndResetsTheTargetSource(): void {
+		$this->router->method('call')->willReturn(['ok' => true]);
 
-        $this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message');
+		$this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message');
 
-        // After dispatch the per-call source is reset to the advertised
-        // default, so a later contract caller (health/probe) never inherits
-        // a stale source.
-        $this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
-    }//end testDispatchSetsAndResetsTheTargetSource()
+		// After dispatch the per-call source is reset to the advertised
+		// default, so a later contract caller (health/probe) never inherits
+		// a stale source.
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchSetsAndResetsTheTargetSource()
 
-    public function testDispatchRejectsUnknownSourceBeforeRouter(): void
-    {
-        $this->router->expects($this->never())->method('call');
+	public function testDispatchRejectsUnknownSourceBeforeRouter(): void {
+		$this->router->expects($this->never())->method('call');
 
-        $result = $this->provider->dispatch(source: 'evil-source', body: ['x' => 1], path: 'send');
+		$result = $this->provider->dispatch(source: 'evil-source', body: ['x' => 1], path: 'send');
 
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('openconnector-source-missing', $result['cause']);
-    }//end testDispatchRejectsUnknownSourceBeforeRouter()
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('openconnector-source-missing', $result['cause']);
+	}//end testDispatchRejectsUnknownSourceBeforeRouter()
 
-    public function testDispatchDegradesOnSourceMissing(): void
-    {
-        $this->router->method('call')->willThrowException(
-            new ProviderUnavailableException(
-                'no source',
-                ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
-            )
-        );
+	public function testDispatchDegradesOnSourceMissing(): void {
+		$this->router->method('call')->willThrowException(
+			new ProviderUnavailableException(
+				'no source',
+				ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING
+			)
+		);
 
-        $result = $this->provider->dispatch(source: 'whatsapp-cloud-api', body: ['x' => 1], path: 'PNID/messages');
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('openconnector-source-missing', $result['cause']);
-    }//end testDispatchDegradesOnSourceMissing()
+		$result = $this->provider->dispatch(source: 'whatsapp-cloud-api', body: ['x' => 1], path: 'PNID/messages');
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('openconnector-source-missing', $result['cause']);
+	}//end testDispatchDegradesOnSourceMissing()
 
-    public function testDispatchDegradesOnUpstreamDown(): void
-    {
-        $this->router->method('call')->willThrowException(
-            new ProviderUnavailableException(
-                'down',
-                ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN
-            )
-        );
+	public function testDispatchDegradesOnUpstreamDown(): void {
+		$this->router->method('call')->willThrowException(
+			new ProviderUnavailableException(
+				'down',
+				ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN
+			)
+		);
 
-        $result = $this->provider->dispatch(source: 'messagebird-sms', body: ['x' => 1], path: 'messages');
-        $this->assertTrue($result['unavailable']);
-        $this->assertSame('upstream-service-down', $result['cause']);
-        // Source still reset even on the degraded path.
-        $this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
-    }//end testDispatchDegradesOnUpstreamDown()
+		$result = $this->provider->dispatch(source: 'messagebird-sms', body: ['x' => 1], path: 'messages');
+		$this->assertTrue($result['unavailable']);
+		$this->assertSame('upstream-service-down', $result['cause']);
+		// Source still reset even on the degraded path.
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchDegradesOnUpstreamDown()
 
-    public function testHealthDefersToRouterProbe(): void
-    {
-        $probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
-        $this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);
-        $this->assertSame($probe, $this->provider->health());
-    }//end testHealthDefersToRouterProbe()
+	public function testHealthDefersToRouterProbe(): void {
+		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		$this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);
+		$this->assertSame($probe, $this->provider->health());
+	}//end testHealthDefersToRouterProbe()
 }//end class

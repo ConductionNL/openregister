@@ -56,58 +56,54 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the collector a sibling app registers its leaves on.
  */
-class RegisterLeafProvidersEvent extends Event
-{
+class RegisterLeafProvidersEvent extends Event {
 
-    /**
-     * Leaves contributed during this dispatch.
-     *
-     * Each entry is a `['descriptor' => LeafDescriptor, 'provider' => ?IntegrationProvider]`
-     * tuple. The provider is present when the descriptor declares the
-     * `data-provider` kind and null otherwise.
-     *
-     * @var array<int, array{descriptor: LeafDescriptor, provider: ?IntegrationProvider}>
-     */
-    private array $leaves = [];
+	/**
+	 * Leaves contributed during this dispatch.
+	 *
+	 * Each entry is a `['descriptor' => LeafDescriptor, 'provider' => ?IntegrationProvider]`
+	 * tuple. The provider is present when the descriptor declares the
+	 * `data-provider` kind and null otherwise.
+	 *
+	 * @var array<int, array{descriptor: LeafDescriptor, provider: ?IntegrationProvider}>
+	 */
+	private array $leaves = [];
 
-    /**
-     * Contribute a leaf.
-     *
-     * A descriptor declaring the `data-provider` kind MUST pass an
-     * `IntegrationProvider` here; a render-only leaf passes null. The provider
-     * runs in the CONTRIBUTING app's DI context because the listener constructed
-     * it there — the same property ADR-041 relies on for command listeners.
-     *
-     * Validation (non-empty kinds, data-provider-requires-provider, kebab-case
-     * id, first-wins on duplicate id) is applied by `LeafRegistry` when the
-     * catalogue is collected, so a bad contribution costs only its own leaf.
-     *
-     * @param LeafDescriptor           $descriptor The leaf declaration.
-     * @param IntegrationProvider|null $provider   The data provider, or null for a render-only leaf.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
-     */
-    public function registerLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider=null): void
-    {
-        $this->leaves[] = [
-            'descriptor' => $descriptor,
-            'provider'   => $provider,
-        ];
+	/**
+	 * Contribute a leaf.
+	 *
+	 * A descriptor declaring the `data-provider` kind MUST pass an
+	 * `IntegrationProvider` here; a render-only leaf passes null. The provider
+	 * runs in the CONTRIBUTING app's DI context because the listener constructed
+	 * it there — the same property ADR-041 relies on for command listeners.
+	 *
+	 * Validation (non-empty kinds, data-provider-requires-provider, kebab-case
+	 * id, first-wins on duplicate id) is applied by `LeafRegistry` when the
+	 * catalogue is collected, so a bad contribution costs only its own leaf.
+	 *
+	 * @param LeafDescriptor $descriptor The leaf declaration.
+	 * @param IntegrationProvider|null $provider The data provider, or null for a render-only leaf.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+	 */
+	public function registerLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider = null): void {
+		$this->leaves[] = [
+			'descriptor' => $descriptor,
+			'provider' => $provider,
+		];
 
-    }//end registerLeaf()
+	}//end registerLeaf()
 
-    /**
-     * Every leaf contributed during this dispatch.
-     *
-     * @return array<int, array{descriptor: LeafDescriptor, provider: ?IntegrationProvider}> The leaves.
-     *
-     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
-     */
-    public function getLeaves(): array
-    {
-        return $this->leaves;
-
-    }//end getLeaves()
+	/**
+	 * Every leaf contributed during this dispatch.
+	 *
+	 * @return array<int, array{descriptor: LeafDescriptor, provider: ?IntegrationProvider}> The leaves.
+	 *
+	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+	 */
+	public function getLeaves(): array {
+		return $this->leaves;
+	}//end getLeaves()
 }//end class

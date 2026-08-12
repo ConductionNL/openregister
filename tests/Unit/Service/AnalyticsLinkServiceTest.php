@@ -48,194 +48,177 @@ use Psr\Log\LoggerInterface;
  *
  * @group requires-app-analytics
  */
-class AnalyticsLinkServiceTest extends TestCase
-{
+class AnalyticsLinkServiceTest extends TestCase {
 
-    private AnalyticsLinkMapper&MockObject $mapper;
+	private AnalyticsLinkMapper&MockObject $mapper;
 
-    private IAppManager&MockObject $appManager;
+	private IAppManager&MockObject $appManager;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private LoggerInterface&MockObject $logger;
+	private LoggerInterface&MockObject $logger;
 
-    private AnalyticsLinkService $service;
+	private AnalyticsLinkService $service;
 
-    protected function setUp(): void
-    {
-        $this->mapper = $this->getMockBuilder(AnalyticsLinkMapper::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(
-                    [
-                        'findByObjectUuid',
-                        'findByObjectAndReport',
-                        'deleteByObjectAndReport',
-                        'insert',
-                        'update',
-                    ]
-                    )
-            ->getMock();
+	protected function setUp(): void {
+		$this->mapper = $this->getMockBuilder(AnalyticsLinkMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(
+				[
+					'findByObjectUuid',
+					'findByObjectAndReport',
+					'deleteByObjectAndReport',
+					'insert',
+					'update',
+				]
+			)
+			->getMock();
 
-        $this->appManager  = $this->createMock(IAppManager::class);
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->logger      = $this->createMock(LoggerInterface::class);
+		$this->appManager = $this->createMock(IAppManager::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $this->service = new AnalyticsLinkService(
-            $this->mapper,
-            $this->appManager,
-            $this->userSession,
-            $this->logger
-        );
-    }//end setUp()
+		$this->service = new AnalyticsLinkService(
+			$this->mapper,
+			$this->appManager,
+			$this->userSession,
+			$this->logger
+		);
+	}//end setUp()
 
-    private function setupUser(string $uid='alice'): IUser&MockObject
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $this->userSession->method('getUser')->willReturn($user);
-        return $user;
-    }//end setupUser()
+	private function setupUser(string $uid = 'alice'): IUser&MockObject {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+		return $user;
+	}//end setupUser()
 
-    public function testIsAnalyticsAvailableTrue(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
-        $this->assertTrue($this->service->isAnalyticsAvailable());
-    }//end testIsAnalyticsAvailableTrue()
+	public function testIsAnalyticsAvailableTrue(): void {
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
+		$this->assertTrue($this->service->isAnalyticsAvailable());
+	}//end testIsAnalyticsAvailableTrue()
 
-    public function testIsAnalyticsAvailableFalse(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
-        $this->assertFalse($this->service->isAnalyticsAvailable());
-    }//end testIsAnalyticsAvailableFalse()
+	public function testIsAnalyticsAvailableFalse(): void {
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
+		$this->assertFalse($this->service->isAnalyticsAvailable());
+	}//end testIsAnalyticsAvailableFalse()
 
-    public function testLinkReportThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testLinkReportThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->linkReport('abc-123', 1, 2, 99);
-    }//end testLinkReportThrowsWhenNoUser()
+		$this->service->linkReport('abc-123', 1, 2, 99);
+	}//end testLinkReportThrowsWhenNoUser()
 
-    public function testLinkReportThrowsWhenAnalyticsUnavailable(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
+	public function testLinkReportThrowsWhenAnalyticsUnavailable(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(503);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(503);
 
-        $this->service->linkReport('abc-123', 1, 2, 99);
-    }//end testLinkReportThrowsWhenAnalyticsUnavailable()
+		$this->service->linkReport('abc-123', 1, 2, 99);
+	}//end testLinkReportThrowsWhenAnalyticsUnavailable()
 
-    public function testLinkReportThrowsOnDuplicate(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->willReturn(true);
-        $this->mapper->method('findByObjectAndReport')->with('abc-123', 99)->willReturn(new AnalyticsLink());
+	public function testLinkReportThrowsOnDuplicate(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->mapper->method('findByObjectAndReport')->with('abc-123', 99)->willReturn(new AnalyticsLink());
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(409);
-        $this->expectExceptionMessage('Report already linked to this object');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(409);
+		$this->expectExceptionMessage('Report already linked to this object');
 
-        $this->service->linkReport('abc-123', 1, 2, 99);
-    }//end testLinkReportThrowsOnDuplicate()
+		$this->service->linkReport('abc-123', 1, 2, 99);
+	}//end testLinkReportThrowsOnDuplicate()
 
-    public function testCreateAndLinkReportThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testCreateAndLinkReportThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
-    }//end testCreateAndLinkReportThrowsWhenNoUser()
+		$this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
+	}//end testCreateAndLinkReportThrowsWhenNoUser()
 
-    public function testCreateAndLinkReportThrowsOnEmptyName(): void
-    {
-        $this->setupUser();
+	public function testCreateAndLinkReportThrowsOnEmptyName(): void {
+		$this->setupUser();
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(400);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(400);
 
-        $this->service->createAndLinkReport('abc-123', 1, 2, '   ');
-    }//end testCreateAndLinkReportThrowsOnEmptyName()
+		$this->service->createAndLinkReport('abc-123', 1, 2, '   ');
+	}//end testCreateAndLinkReportThrowsOnEmptyName()
 
-    public function testCreateAndLinkReportThrowsWhenAnalyticsUnavailable(): void
-    {
-        $this->setupUser();
-        $this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
+	public function testCreateAndLinkReportThrowsWhenAnalyticsUnavailable(): void {
+		$this->setupUser();
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(503);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(503);
 
-        $this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
-    }//end testCreateAndLinkReportThrowsWhenAnalyticsUnavailable()
+		$this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
+	}//end testCreateAndLinkReportThrowsWhenAnalyticsUnavailable()
 
-    public function testUnlinkReportThrowsWhenNoUser(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
+	public function testUnlinkReportThrowsWhenNoUser(): void {
+		$this->userSession->method('getUser')->willReturn(null);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(401);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(401);
 
-        $this->service->unlinkReport('abc-123', 99);
-    }//end testUnlinkReportThrowsWhenNoUser()
+		$this->service->unlinkReport('abc-123', 99);
+	}//end testUnlinkReportThrowsWhenNoUser()
 
-    public function testUnlinkReportThrowsWhenLinkMissing(): void
-    {
-        $this->setupUser();
-        $this->mapper->method('deleteByObjectAndReport')->with('abc-123', 99)->willReturn(0);
+	public function testUnlinkReportThrowsWhenLinkMissing(): void {
+		$this->setupUser();
+		$this->mapper->method('deleteByObjectAndReport')->with('abc-123', 99)->willReturn(0);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionCode(404);
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(404);
 
-        $this->service->unlinkReport('abc-123', 99);
-    }//end testUnlinkReportThrowsWhenLinkMissing()
+		$this->service->unlinkReport('abc-123', 99);
+	}//end testUnlinkReportThrowsWhenLinkMissing()
 
-    public function testUnlinkReportSucceeds(): void
-    {
-        $this->setupUser();
-        $this->mapper->expects($this->once())
-            ->method('deleteByObjectAndReport')
-            ->with('abc-123', 99)
-            ->willReturn(1);
+	public function testUnlinkReportSucceeds(): void {
+		$this->setupUser();
+		$this->mapper->expects($this->once())
+			->method('deleteByObjectAndReport')
+			->with('abc-123', 99)
+			->willReturn(1);
 
-        $this->service->unlinkReport('abc-123', 99);
-    }//end testUnlinkReportSucceeds()
+		$this->service->unlinkReport('abc-123', 99);
+	}//end testUnlinkReportSucceeds()
 
-    public function testGetLinkedReportsReturnsRowsWithDeepLink(): void
-    {
-        $this->appManager->method('isEnabledForUser')->willReturn(false);
+	public function testGetLinkedReportsReturnsRowsWithDeepLink(): void {
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
 
-        $link = new AnalyticsLink();
-        $link->setObjectUuid('abc-123');
-        $link->setReportId(42);
-        $link->setReportTitle('Sales');
+		$link = new AnalyticsLink();
+		$link->setObjectUuid('abc-123');
+		$link->setReportId(42);
+		$link->setReportTitle('Sales');
 
-        $this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
+		$this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([$link]);
 
-        $rows = $this->service->getLinkedReports('abc-123');
+		$rows = $this->service->getLinkedReports('abc-123');
 
-        $this->assertCount(1, $rows);
-        $this->assertSame(42, $rows[0]['reportId']);
-        $this->assertSame('Sales', $rows[0]['reportTitle']);
-        $this->assertStringContainsString('/r/42', $rows[0]['url']);
-    }//end testGetLinkedReportsReturnsRowsWithDeepLink()
+		$this->assertCount(1, $rows);
+		$this->assertSame(42, $rows[0]['reportId']);
+		$this->assertSame('Sales', $rows[0]['reportTitle']);
+		$this->assertStringContainsString('/r/42', $rows[0]['url']);
+	}//end testGetLinkedReportsReturnsRowsWithDeepLink()
 
-    public function testGetLinkedReportsEmpty(): void
-    {
-        $this->appManager->method('isEnabledForUser')->willReturn(false);
-        $this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([]);
+	public function testGetLinkedReportsEmpty(): void {
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
+		$this->mapper->method('findByObjectUuid')->with('abc-123')->willReturn([]);
 
-        $this->assertSame([], $this->service->getLinkedReports('abc-123'));
-    }//end testGetLinkedReportsEmpty()
+		$this->assertSame([], $this->service->getLinkedReports('abc-123'));
+	}//end testGetLinkedReportsEmpty()
 
-    public function testGetAvailableReportsEmptyWhenAnalyticsUnavailable(): void
-    {
-        $this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
+	public function testGetAvailableReportsEmptyWhenAnalyticsUnavailable(): void {
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(false);
 
-        $this->assertSame([], $this->service->getAvailableReports());
-    }//end testGetAvailableReportsEmptyWhenAnalyticsUnavailable()
+		$this->assertSame([], $this->service->getAvailableReports());
+	}//end testGetAvailableReportsEmptyWhenAnalyticsUnavailable()
 }//end class

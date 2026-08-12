@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Minimal, guarded global `\OC` fake for exercising the REAL
  * Application::getRegisteredAppContainer() seam.
@@ -27,18 +28,17 @@
 declare(strict_types=1);
 
 if (class_exists('OC', false) === false) {
-    /**
-     * Global service-locator fake — only the static `$server` seam is used.
-     */
-    class OC
-    {
+	/**
+	 * Global service-locator fake — only the static `$server` seam is used.
+	 */
+	class OC {
 
-        /**
-         * The server container fake (assigned per test).
-         *
-         * @var object
-         */
-        public static object $server;
+		/**
+		 * The server container fake (assigned per test).
+		 *
+		 * @var object
+		 */
+		public static object $server;
 
-    }//end class
+	}//end class
 }//end if

@@ -43,153 +43,146 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Controller\AggregationController
  */
-class AggregationControllerTimeseriesTest extends TestCase
-{
+class AggregationControllerTimeseriesTest extends TestCase {
 
-    private AggregationController $controller;
+	private AggregationController $controller;
 
-    private AggregationRunner&MockObject $runner;
+	private AggregationRunner&MockObject $runner;
 
-    private TimeseriesRequestValidator&MockObject $validator;
+	private TimeseriesRequestValidator&MockObject $validator;
 
-    private IRequest&MockObject $request;
+	private IRequest&MockObject $request;
 
-    /**
-     * Boot the SUT with three mocks: the runner (to assert dispatch),
-     * the validator (to swap in concrete throw / pass behaviour per
-     * test), and the request (so we can stub getParam).
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->request    = $this->createMock(IRequest::class);
-        $this->runner     = $this->createMock(AggregationRunner::class);
-        $this->validator  = $this->createMock(TimeseriesRequestValidator::class);
-        $this->controller = new AggregationController(
-            'openregister',
-            $this->request,
-            $this->runner,
-            $this->validator
-        );
-    }//end setUp()
+	/**
+	 * Boot the SUT with three mocks: the runner (to assert dispatch),
+	 * the validator (to swap in concrete throw / pass behaviour per
+	 * test), and the request (so we can stub getParam).
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->runner = $this->createMock(AggregationRunner::class);
+		$this->validator = $this->createMock(TimeseriesRequestValidator::class);
+		$this->controller = new AggregationController(
+			'openregister',
+			$this->request,
+			$this->runner,
+			$this->validator
+		);
+	}//end setUp()
 
-    /**
-     * Schema-not-found → 404. The validator is not consulted.
-     *
-     * @return void
-     */
-    public function testReturns404WhenSchemaCannotBeResolved(): void
-    {
-        $this->runner->method('findSchema')->willThrowException(
-            new RuntimeException('Schema "bogus" not found.')
-        );
+	/**
+	 * Schema-not-found → 404. The validator is not consulted.
+	 *
+	 * @return void
+	 */
+	public function testReturns404WhenSchemaCannotBeResolved(): void {
+		$this->runner->method('findSchema')->willThrowException(
+			new RuntimeException('Schema "bogus" not found.')
+		);
 
-        $response = $this->controller->timeseries('reg', 'bogus');
+		$response = $this->controller->timeseries('reg', 'bogus');
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-        $body = $response->getData();
-        $this->assertIsArray($body);
-        $this->assertSame('Schema "bogus" not found.', $body['error'] ?? null);
-    }//end testReturns404WhenSchemaCannotBeResolved()
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertSame('Schema "bogus" not found.', $body['error'] ?? null);
+	}//end testReturns404WhenSchemaCannotBeResolved()
 
-    /**
-     * Validation failure → 400 + `{error}` body. Runner is not invoked.
-     *
-     * @return void
-     */
-    public function testReturns400WhenValidatorRejectsInput(): void
-    {
-        $schema = $this->createMock(Schema::class);
-        $this->runner->method('findSchema')->willReturn($schema);
-        $this->validator->method('validate')->willThrowException(
-            new InvalidArgumentException('`field` is required')
-        );
-        $this->runner->expects($this->never())->method('runAdhocByRef');
+	/**
+	 * Validation failure → 400 + `{error}` body. Runner is not invoked.
+	 *
+	 * @return void
+	 */
+	public function testReturns400WhenValidatorRejectsInput(): void {
+		$schema = $this->createMock(Schema::class);
+		$this->runner->method('findSchema')->willReturn($schema);
+		$this->validator->method('validate')->willThrowException(
+			new InvalidArgumentException('`field` is required')
+		);
+		$this->runner->expects($this->never())->method('runAdhocByRef');
 
-        $response = $this->controller->timeseries('reg', 'sch');
+		$response = $this->controller->timeseries('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $body = $response->getData();
-        $this->assertIsArray($body);
-        $this->assertSame('`field` is required', $body['error'] ?? null);
-    }//end testReturns400WhenValidatorRejectsInput()
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertSame('`field` is required', $body['error'] ?? null);
+	}//end testReturns400WhenValidatorRejectsInput()
 
-    /**
-     * NotAuthorized from runner → 403 + structured body.
-     *
-     * @return void
-     */
-    public function testReturns403WhenRunnerDeniesAccess(): void
-    {
-        $schema = $this->createMock(Schema::class);
-        $query  = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
-        $this->runner->method('findSchema')->willReturn($schema);
-        $this->validator->method('validate')->willReturn($query);
-        $this->runner->method('runAdhocByRef')->willThrowException(
-            new NotAuthorizedException(message: 'denied')
-        );
+	/**
+	 * NotAuthorized from runner → 403 + structured body.
+	 *
+	 * @return void
+	 */
+	public function testReturns403WhenRunnerDeniesAccess(): void {
+		$schema = $this->createMock(Schema::class);
+		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$this->runner->method('findSchema')->willReturn($schema);
+		$this->validator->method('validate')->willReturn($query);
+		$this->runner->method('runAdhocByRef')->willThrowException(
+			new NotAuthorizedException(message: 'denied')
+		);
 
-        $response = $this->controller->timeseries('reg', 'sch');
+		$response = $this->controller->timeseries('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-        $body = $response->getData();
-        $this->assertSame('denied', $body['error'] ?? null);
-    }//end testReturns403WhenRunnerDeniesAccess()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$body = $response->getData();
+		$this->assertSame('denied', $body['error'] ?? null);
+	}//end testReturns403WhenRunnerDeniesAccess()
 
-    /**
-     * Happy path: validator passes, runner returns groups, controller
-     * passes the body through verbatim.
-     *
-     * @return void
-     */
-    public function testHappyPathReturnsGroups(): void
-    {
-        $schema = $this->createMock(Schema::class);
-        $query  = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
-        $this->runner->method('findSchema')->willReturn($schema);
-        $this->validator->method('validate')->willReturn($query);
-        $this->runner->method('runAdhocByRef')->willReturn(
-            [
-                'groups'  => [
-                    ['key' => 'active', 'value' => 20],
-                    ['key' => 'archived', 'value' => 10],
-                ],
-                'backend' => 'postgres',
-                'cached'  => false,
-            ]
-        );
+	/**
+	 * Happy path: validator passes, runner returns groups, controller
+	 * passes the body through verbatim.
+	 *
+	 * @return void
+	 */
+	public function testHappyPathReturnsGroups(): void {
+		$schema = $this->createMock(Schema::class);
+		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$this->runner->method('findSchema')->willReturn($schema);
+		$this->validator->method('validate')->willReturn($query);
+		$this->runner->method('runAdhocByRef')->willReturn(
+			[
+				'groups' => [
+					['key' => 'active', 'value' => 20],
+					['key' => 'archived', 'value' => 10],
+				],
+				'backend' => 'postgres',
+				'cached' => false,
+			]
+		);
 
-        $response = $this->controller->timeseries('reg', 'sch');
+		$response = $this->controller->timeseries('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $body = $response->getData();
-        $this->assertIsArray($body);
-        $this->assertSame('postgres', $body['backend']);
-        $this->assertCount(2, $body['groups']);
-        $this->assertSame('active', $body['groups'][0]['key']);
-        $this->assertSame(20, $body['groups'][0]['value']);
-    }//end testHappyPathReturnsGroups()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$body = $response->getData();
+		$this->assertIsArray($body);
+		$this->assertSame('postgres', $body['backend']);
+		$this->assertCount(2, $body['groups']);
+		$this->assertSame('active', $body['groups'][0]['key']);
+		$this->assertSame(20, $body['groups'][0]['value']);
+	}//end testHappyPathReturnsGroups()
 
-    /**
-     * Register-not-found from runner → 404 (the runner's
-     * `runAdhocByRef` resolves both register and schema; either
-     * missing surfaces as RuntimeException).
-     *
-     * @return void
-     */
-    public function testReturns404WhenRegisterCannotBeResolved(): void
-    {
-        $schema = $this->createMock(Schema::class);
-        $query  = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
-        $this->runner->method('findSchema')->willReturn($schema);
-        $this->validator->method('validate')->willReturn($query);
-        $this->runner->method('runAdhocByRef')->willThrowException(
-            new RuntimeException('Register "bogus" not found.')
-        );
+	/**
+	 * Register-not-found from runner → 404 (the runner's
+	 * `runAdhocByRef` resolves both register and schema; either
+	 * missing surfaces as RuntimeException).
+	 *
+	 * @return void
+	 */
+	public function testReturns404WhenRegisterCannotBeResolved(): void {
+		$schema = $this->createMock(Schema::class);
+		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$this->runner->method('findSchema')->willReturn($schema);
+		$this->validator->method('validate')->willReturn($query);
+		$this->runner->method('runAdhocByRef')->willThrowException(
+			new RuntimeException('Register "bogus" not found.')
+		);
 
-        $response = $this->controller->timeseries('bogus', 'sch');
+		$response = $this->controller->timeseries('bogus', 'sch');
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }//end testReturns404WhenRegisterCannotBeResolved()
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testReturns404WhenRegisterCannotBeResolved()
 }//end class

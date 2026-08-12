@@ -41,69 +41,65 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for {@see DocumentProcessingHandler::getLastStructurePreservation()}.
  */
-class DocumentProcessingHandlerTest extends TestCase
-{
+class DocumentProcessingHandlerTest extends TestCase {
 
-    /**
-     * Build a handler with fully-mocked collaborators (no live NC instance).
-     *
-     * @return DocumentProcessingHandler
-     */
-    private function makeHandler(): DocumentProcessingHandler
-    {
-        return new DocumentProcessingHandler(
-            rootFolder: $this->createMock(originalClassName: IRootFolder::class),
-            userSession: $this->createMock(originalClassName: IUserSession::class),
-            logger: $this->createMock(originalClassName: LoggerInterface::class),
-            entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
-            sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
-            anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class),
-            l10n: null
-        );
-    }//end makeHandler()
+	/**
+	 * Build a handler with fully-mocked collaborators (no live NC instance).
+	 *
+	 * @return DocumentProcessingHandler
+	 */
+	private function makeHandler(): DocumentProcessingHandler {
+		return new DocumentProcessingHandler(
+			rootFolder: $this->createMock(originalClassName: IRootFolder::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
+			sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
+			anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class),
+			l10n: null
+		);
+	}//end makeHandler()
 
-    /**
-     * Before any redaction has run, the accessor returns null.
-     *
-     * @return void
-     */
-    public function testStructurePreservationIsNullBeforeAnyRun(): void
-    {
-        $handler = $this->makeHandler();
+	/**
+	 * Before any redaction has run, the accessor returns null.
+	 *
+	 * @return void
+	 */
+	public function testStructurePreservationIsNullBeforeAnyRun(): void {
+		$handler = $this->makeHandler();
 
-        self::assertNull($handler->getLastStructurePreservation());
-    }//end testStructurePreservationIsNullBeforeAnyRun()
+		self::assertNull($handler->getLastStructurePreservation());
+	}//end testStructurePreservationIsNullBeforeAnyRun()
 
-    /**
-     * A non-PDF (plain-text) redaction never touches
-     * `lastStructurePreservation` — the accessor returns null because no PDF
-     * structure tree is involved (REQ-ORTPR-003).
-     *
-     * @return void
-     */
-    public function testNonPdfHasNoStructureBlock(): void
-    {
-        $handler = $this->makeHandler();
+	/**
+	 * A non-PDF (plain-text) redaction never touches
+	 * `lastStructurePreservation` — the accessor returns null because no PDF
+	 * structure tree is involved (REQ-ORTPR-003).
+	 *
+	 * @return void
+	 */
+	public function testNonPdfHasNoStructureBlock(): void {
+		$handler = $this->makeHandler();
 
-        $outputFile = $this->createMock(originalClassName: File::class);
-        $outputFile->method('getPath')->willReturn('/note_replaced.txt');
+		$outputFile = $this->createMock(originalClassName: File::class);
+		$outputFile->method('getPath')->willReturn('/note_replaced.txt');
 
-        $folder = $this->createMock(originalClassName: Folder::class);
-        $folder->method('nodeExists')->willReturn(false);
-        $folder->method('newFile')->willReturn($outputFile);
+		$folder = $this->createMock(originalClassName: Folder::class);
+		$folder->method('nodeExists')->willReturn(false);
+		$folder->method('newFile')->willReturn($outputFile);
 
-        $textFile = $this->createMock(originalClassName: File::class);
-        $textFile->method('getName')->willReturn('note.txt');
-        $textFile->method('getPath')->willReturn('/note.txt');
-        $textFile->method('getContent')->willReturn('Aanvraag van Jan Jansen.');
-        $textFile->method('getParent')->willReturn($folder);
+		$textFile = $this->createMock(originalClassName: File::class);
+		$textFile->method('getName')->willReturn('note.txt');
+		$textFile->method('getPath')->willReturn('/note.txt');
+		$textFile->method('getContent')->willReturn('Aanvraag van Jan Jansen.');
+		$textFile->method('getParent')->willReturn($folder);
 
-        $handler->replaceWords(
-            node: $textFile,
-            replacements: ['Jan Jansen' => '[PERSON: 1]'],
-            outputName: 'note_replaced.txt'
-        );
+		$handler->replaceWords(
+			node: $textFile,
+			replacements: ['Jan Jansen' => '[PERSON: 1]'],
+			outputName: 'note_replaced.txt'
+		);
 
-        self::assertNull($handler->getLastStructurePreservation());
-    }//end testNonPdfHasNoStructureBlock()
+		self::assertNull($handler->getLastStructurePreservation());
+	}//end testNonPdfHasNoStructureBlock()
 }//end class

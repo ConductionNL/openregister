@@ -18,29 +18,25 @@ namespace Unit\Exception;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use PHPUnit\Framework\TestCase;
 
-final class ArchivalImmutableExceptionTest extends TestCase
-{
-    public function testExceptionCarriesStatus403(): void
-    {
-        $exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
-        self::assertSame(403, $exception->getCode());
-    }//end testExceptionCarriesStatus403()
+final class ArchivalImmutableExceptionTest extends TestCase {
+	public function testExceptionCarriesStatus403(): void {
+		$exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
+		self::assertSame(403, $exception->getCode());
+	}//end testExceptionCarriesStatus403()
 
-    public function testExceptionExposesSchemaIdentifier(): void
-    {
-        $exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
-        self::assertSame('call_log', $exception->getSchemaIdentifier());
-    }//end testExceptionExposesSchemaIdentifier()
+	public function testExceptionExposesSchemaIdentifier(): void {
+		$exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
+		self::assertSame('call_log', $exception->getSchemaIdentifier());
+	}//end testExceptionExposesSchemaIdentifier()
 
-    public function testStructuredResponseBody(): void
-    {
-        $exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
-        $body      = $exception->toResponseBody();
+	public function testStructuredResponseBody(): void {
+		$exception = new ArchivalImmutableException(schemaIdentifier: 'call_log');
+		$body = $exception->toResponseBody();
 
-        self::assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $body['error']);
-        self::assertSame('call_log', $body['schema']);
-        self::assertSame('delete', $body['operation']);
-        self::assertStringContainsString('archival', strtolower($body['message']));
-        self::assertStringContainsString('ArchivalRetentionTask', $body['hint']);
-    }//end testStructuredResponseBody()
+		self::assertSame('SCHEMA_ARCHIVAL_IMMUTABLE', $body['error']);
+		self::assertSame('call_log', $body['schema']);
+		self::assertSame('delete', $body['operation']);
+		self::assertStringContainsString('archival', strtolower($body['message']));
+		self::assertStringContainsString('ArchivalRetentionTask', $body['hint']);
+	}//end testStructuredResponseBody()
 }//end class

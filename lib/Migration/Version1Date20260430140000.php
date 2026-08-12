@@ -26,55 +26,52 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds a nullable `type` column + index on `openregister_registers`.
  */
-class Version1Date20260430140000 extends SimpleMigrationStep
-{
-    /**
-     * Add the column + index when missing.
-     *
-     * @param IOutput $output        Migration output sink.
-     * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
-     * @param array   $options       Migration options (unused).
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260430140000 extends SimpleMigrationStep {
+	/**
+	 * Add the column + index when missing.
+	 *
+	 * @param IOutput $output Migration output sink.
+	 * @param Closure $schemaClosure Closure returning the ISchemaWrapper.
+	 * @param array $options Migration options (unused).
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_registers') === false) {
-            return $schema;
-        }
+		if ($schema->hasTable(tableName: 'openregister_registers') === false) {
+			return $schema;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_registers');
+		$table = $schema->getTable(tableName: 'openregister_registers');
 
-        if ($table->hasColumn(name: 'type') === false) {
-            $table->addColumn(
-                name: 'type',
-                typeName: Types::STRING,
-                options: [
-                    'notnull' => false,
-                    'length'  => 32,
-                ],
-            );
-        }
+		if ($table->hasColumn(name: 'type') === false) {
+			$table->addColumn(
+				name: 'type',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => false,
+					'length' => 32,
+				],
+			);
+		}
 
-        if ($table->hasIndex(name: 'idx_registers_type') === false) {
-            $table->addIndex(columnNames: ['type'], indexName: 'idx_registers_type');
-        }
+		if ($table->hasIndex(name: 'idx_registers_type') === false) {
+			$table->addIndex(columnNames: ['type'], indexName: 'idx_registers_type');
+		}
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

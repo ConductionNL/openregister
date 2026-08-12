@@ -39,71 +39,68 @@ use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 /**
  * A marking store backed by a FlowRun row.
  */
-class FlowRunMarkingStore implements MarkingStoreInterface
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowRun $run The run whose marking this store reads and writes.
-     */
-    public function __construct(private readonly FlowRun $run)
-    {
+class FlowRunMarkingStore implements MarkingStoreInterface {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowRun $run The run whose marking this store reads and writes.
+	 */
+	public function __construct(
+		private readonly FlowRun $run,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Read the marking.
-     *
-     * The subject is ignored: the marking belongs to the RUN, not to the object
-     * the run is about. Two runs over one object hold two independent markings,
-     * which is the whole reason this is not stored on the subject.
-     *
-     * @param object $subject The subject (unused).
-     *
-     * @return Marking The current marking.
-     *
-     * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-     */
-    public function getMarking(object $subject): Marking
-    {
-        $places = ($this->run->getMarking() ?? []);
-        if (is_array($places) === false || $places === []) {
-            return new Marking();
-        }
+	/**
+	 * Read the marking.
+	 *
+	 * The subject is ignored: the marking belongs to the RUN, not to the object
+	 * the run is about. Two runs over one object hold two independent markings,
+	 * which is the whole reason this is not stored on the subject.
+	 *
+	 * @param object $subject The subject (unused).
+	 *
+	 * @return Marking The current marking.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	public function getMarking(object $subject): Marking {
+		$places = ($this->run->getMarking() ?? []);
+		if (is_array($places) === false || $places === []) {
+			return new Marking();
+		}
 
-        // Stored as `place => tokens`. A list of place names is also accepted,
-        // because that is the shape a hand-authored fixture tends to take.
-        $normalised = [];
-        foreach ($places as $key => $value) {
-            if (is_int($key) === true) {
-                $normalised[(string) $value] = 1;
-                continue;
-            }
+		// Stored as `place => tokens`. A list of place names is also accepted,
+		// because that is the shape a hand-authored fixture tends to take.
+		$normalised = [];
+		foreach ($places as $key => $value) {
+			if (is_int($key) === true) {
+				$normalised[(string)$value] = 1;
+				continue;
+			}
 
-            $normalised[(string) $key] = max(1, (int) $value);
-        }
+			$normalised[(string)$key] = max(1, (int)$value);
+		}
 
-        return new Marking($normalised);
+		return new Marking($normalised);
+	}//end getMarking()
 
-    }//end getMarking()
+	/**
+	 * Write the marking back onto the run.
+	 *
+	 * Only mutates the entity; persisting is the caller's job, so a whole hop
+	 * (marking, items, log) is written in one update rather than three.
+	 *
+	 * @param object $subject The subject (unused).
+	 * @param Marking $marking The new marking.
+	 * @param array<string,mixed> $context Transition context (unused).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	public function setMarking(object $subject, Marking $marking, array $context = []): void {
+		$this->run->setMarking($marking->getPlaces());
 
-    /**
-     * Write the marking back onto the run.
-     *
-     * Only mutates the entity; persisting is the caller's job, so a whole hop
-     * (marking, items, log) is written in one update rather than three.
-     *
-     * @param object              $subject The subject (unused).
-     * @param Marking             $marking The new marking.
-     * @param array<string,mixed> $context Transition context (unused).
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-     */
-    public function setMarking(object $subject, Marking $marking, array $context=[]): void
-    {
-        $this->run->setMarking($marking->getPlaces());
-
-    }//end setMarking()
+	}//end setMarking()
 }//end class

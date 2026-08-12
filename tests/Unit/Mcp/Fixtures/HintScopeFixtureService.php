@@ -36,48 +36,44 @@ use OCA\OpenRegister\Mcp\Attribute\McpTool;
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Mcp\Fixtures
  */
-class HintScopeFixtureService
-{
+class HintScopeFixtureService {
 
-    /**
-     * Declares all four optional hint/scope params — exercises additive
-     * forwarding into the descriptor.
-     *
-     * @param string $id The lead id to delete.
-     *
-     * @return array{id: string}
-     */
-    #[McpTool(readOnlyHint: false, destructiveHint: true, idempotentHint: false, scope: 'delete')]
-    public function deleteLead(string $id): array
-    {
-        return ['id' => $id];
-    }//end deleteLead()
+	/**
+	 * Declares all four optional hint/scope params — exercises additive
+	 * forwarding into the descriptor.
+	 *
+	 * @param string $id The lead id to delete.
+	 *
+	 * @return array{id: string}
+	 */
+	#[McpTool(readOnlyHint: false, destructiveHint: true, idempotentHint: false, scope: 'delete')]
+	public function deleteLead(string $id): array {
+		return ['id' => $id];
+	}//end deleteLead()
 
-    /**
-     * Declares none of the four optional params — the descriptor MUST
-     * carry NO hint/scope keys at all (never a fabricated default).
-     *
-     * @param string $id The lead id to fetch.
-     *
-     * @return array{id: string}
-     */
-    #[McpTool]
-    public function getLead(string $id): array
-    {
-        return ['id' => $id];
-    }//end getLead()
+	/**
+	 * Declares none of the four optional params — the descriptor MUST
+	 * carry NO hint/scope keys at all (never a fabricated default).
+	 *
+	 * @param string $id The lead id to fetch.
+	 *
+	 * @return array{id: string}
+	 */
+	#[McpTool]
+	public function getLead(string $id): array {
+		return ['id' => $id];
+	}//end getLead()
 
-    /**
-     * Declares an unrecognised `scope` value — the scanner MUST reject
-     * (skip + log) this tool entirely rather than register it.
-     *
-     * @param string $id The lead id.
-     *
-     * @return array{id: string}
-     */
-    #[McpTool(scope: 'wipe-everything')]
-    public function badScopeLead(string $id): array
-    {
-        return ['id' => $id];
-    }//end badScopeLead()
+	/**
+	 * Declares an unrecognised `scope` value — the scanner MUST reject
+	 * (skip + log) this tool entirely rather than register it.
+	 *
+	 * @param string $id The lead id.
+	 *
+	 * @return array{id: string}
+	 */
+	#[McpTool(scope: 'wipe-everything')]
+	public function badScopeLead(string $id): array {
+		return ['id' => $id];
+	}//end badScopeLead()
 }//end class

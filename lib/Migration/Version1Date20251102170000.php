@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
-use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -34,31 +33,29 @@ use OCP\Migration\SimpleMigrationStep;
  * Adds support for schema inheritance by allowing schemas to extend other schemas.
  * The extend column stores the ID, UUID, or slug of the parent schema.
  */
-class Version1Date20251102170000 extends SimpleMigrationStep
-{
-    /**
-     * Add extend column to schemas table
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return null Updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // Get schema wrapper instance from closure (validation only).
-        $schemaClosure();
+class Version1Date20251102170000 extends SimpleMigrationStep {
+	/**
+	 * Add extend column to schemas table
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return null Updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// Get schema wrapper instance from closure (validation only).
+		$schemaClosure();
 
-        $output->info(message: '⚠️  Schema extension (extend column) is deprecated - skipping migration');
-        $output->info(message: '   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
+		$output->info(message: '⚠️  Schema extension (extend column) is deprecated - skipping migration');
+		$output->info(message: '   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
 
-        // DEPRECATED: The extend column functionality has been replaced by JSON Schema.
-        // Composition using allOf, oneOf, and anyOf fields. This migration is kept.
-        // For backwards compatibility but no longer adds the extend column.
-        //
-        // If the extend column exists from a previous installation, it will remain.
-        // But is no longer used by the application.
-        return null;
-    }//end changeSchema()
+		// DEPRECATED: The extend column functionality has been replaced by JSON Schema.
+		// Composition using allOf, oneOf, and anyOf fields. This migration is kept.
+		// For backwards compatibility but no longer adds the extend column.
+		//
+		// If the extend column exists from a previous installation, it will remain.
+		// But is no longer used by the application.
+		return null;
+	}//end changeSchema()
 }//end class

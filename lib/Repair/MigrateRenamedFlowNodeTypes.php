@@ -58,166 +58,162 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class MigrateRenamedFlowNodeTypes implements IRepairStep
-{
+class MigrateRenamedFlowNodeTypes implements IRepairStep {
 
-    /**
-     * How many flows to read per page.
-     *
-     * @var integer
-     */
-    private const PAGE_SIZE = 100;
+	/**
+	 * How many flows to read per page.
+	 *
+	 * @var integer
+	 */
+	private const PAGE_SIZE = 100;
 
-    /**
-     * Constructor.
-     *
-     * Resolved lazily from the container for the same reason the other flow
-     * repair steps are: this runs during install and upgrade, when the flow
-     * table may not exist yet, and a constructor-injected mapper would make
-     * that a fatal rather than a skip.
-     *
-     * @param ContainerInterface $container The app container.
-     * @param LoggerInterface    $logger    Diagnostics.
-     */
-    public function __construct(
-        private readonly ContainerInterface $container,
-        private readonly LoggerInterface $logger
-    ) {
+	/**
+	 * Constructor.
+	 *
+	 * Resolved lazily from the container for the same reason the other flow
+	 * repair steps are: this runs during install and upgrade, when the flow
+	 * table may not exist yet, and a constructor-injected mapper would make
+	 * that a fatal rather than a skip.
+	 *
+	 * @param ContainerInterface $container The app container.
+	 * @param LoggerInterface $logger Diagnostics.
+	 */
+	public function __construct(
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step's name.
-     *
-     * @return string The name.
-     */
-    public function getName(): string
-    {
-        return 'Rewrite renamed flow node types in stored flow definitions';
+	/**
+	 * The step's name.
+	 *
+	 * @return string The name.
+	 */
+	public function getName(): string {
+		return 'Rewrite renamed flow node types in stored flow definitions';
+	}//end getName()
 
-    }//end getName()
+	/**
+	 * Rewrite every stored node type that the registry only resolves by alias.
+	 *
+	 * @param IOutput $output Migration output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function run(IOutput $output): void {
+		$renamed = FlowNodeRegistry::renamedTypes();
+		if ($renamed === []) {
+			$output->info('OpenRegister: no flow node types are aliased — nothing to rewrite.');
+			return;
+		}
 
-    /**
-     * Rewrite every stored node type that the registry only resolves by alias.
-     *
-     * @param IOutput $output Migration output.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/flow-engine/spec.md
-     */
-    public function run(IOutput $output): void
-    {
-        $renamed = FlowNodeRegistry::renamedTypes();
-        if ($renamed === []) {
-            $output->info('OpenRegister: no flow node types are aliased — nothing to rewrite.');
-            return;
-        }
+		try {
+			$mapper = $this->container->get(FlowMapper::class);
+		} catch (Throwable $e) {
+			$this->logger->info(
+				'[MigrateRenamedFlowNodeTypes] flow storage unavailable, skipping: ' . $e->getMessage()
+			);
+			return;
+		}
 
-        try {
-            $mapper = $this->container->get(FlowMapper::class);
-        } catch (Throwable $e) {
-            $this->logger->info(
-                '[MigrateRenamedFlowNodeTypes] flow storage unavailable, skipping: '.$e->getMessage()
-            );
-            return;
-        }
+		$flowsSeen = 0;
+		$flowsWritten = 0;
+		$nodesRewritten = 0;
+		$offset = 0;
 
-        $flowsSeen      = 0;
-        $flowsWritten   = 0;
-        $nodesRewritten = 0;
-        $offset         = 0;
+		while (true) {
+			try {
+				$flows = $mapper->findAllFlows(limit: self::PAGE_SIZE, offset: $offset);
+			} catch (Throwable $e) {
+				$output->warning('OpenRegister: could not read flows to rewrite node types: ' . $e->getMessage());
+				$this->logger->warning('[MigrateRenamedFlowNodeTypes] read failed: ' . $e->getMessage());
+				return;
+			}
 
-        while (true) {
-            try {
-                $flows = $mapper->findAllFlows(limit: self::PAGE_SIZE, offset: $offset);
-            } catch (Throwable $e) {
-                $output->warning('OpenRegister: could not read flows to rewrite node types: '.$e->getMessage());
-                $this->logger->warning('[MigrateRenamedFlowNodeTypes] read failed: '.$e->getMessage());
-                return;
-            }
+			if ($flows === []) {
+				break;
+			}
 
-            if ($flows === []) {
-                break;
-            }
+			foreach ($flows as $flow) {
+				$flowsSeen++;
 
-            foreach ($flows as $flow) {
-                $flowsSeen++;
+				$nodes = ($flow->getNodes() ?? []);
+				$changed = 0;
 
-                $nodes   = ($flow->getNodes() ?? []);
-                $changed = 0;
+				foreach ($nodes as $index => $node) {
+					if (is_array($node) === false) {
+						continue;
+					}
 
-                foreach ($nodes as $index => $node) {
-                    if (is_array($node) === false) {
-                        continue;
-                    }
+					$type = (string)($node['type'] ?? '');
+					if ($type === '' || isset($renamed[$type]) === false) {
+						continue;
+					}
 
-                    $type = (string) ($node['type'] ?? '');
-                    if ($type === '' || isset($renamed[$type]) === false) {
-                        continue;
-                    }
+					$nodes[$index]['type'] = $renamed[$type];
+					$changed++;
+				}
 
-                    $nodes[$index]['type'] = $renamed[$type];
-                    $changed++;
-                }
+				// Only write a flow that actually carried an old name. A blanket
+				// save would move every flow's `updated` timestamp for a no-op,
+				// which is the kind of churn that makes a later "what changed
+				// and when" impossible to answer.
+				if ($changed === 0) {
+					continue;
+				}
 
-                // Only write a flow that actually carried an old name. A blanket
-                // save would move every flow's `updated` timestamp for a no-op,
-                // which is the kind of churn that makes a later "what changed
-                // and when" impossible to answer.
-                if ($changed === 0) {
-                    continue;
-                }
+				$flow->setNodes($nodes);
 
-                $flow->setNodes($nodes);
+				try {
+					$mapper->update($flow);
+				} catch (Throwable $e) {
+					$output->warning(
+						sprintf(
+							'OpenRegister: could not rewrite node types on flow "%s": %s',
+							(string)$flow->getUuid(),
+							$e->getMessage()
+						)
+					);
+					continue;
+				}
 
-                try {
-                    $mapper->update($flow);
-                } catch (Throwable $e) {
-                    $output->warning(
-                        sprintf(
-                            'OpenRegister: could not rewrite node types on flow "%s": %s',
-                            (string) $flow->getUuid(),
-                            $e->getMessage()
-                        )
-                    );
-                    continue;
-                }
+				$flowsWritten++;
+				$nodesRewritten += $changed;
+			}//end foreach
 
-                $flowsWritten++;
-                $nodesRewritten += $changed;
-            }//end foreach
+			if (count($flows) < self::PAGE_SIZE) {
+				break;
+			}
 
-            if (count($flows) < self::PAGE_SIZE) {
-                break;
-            }
+			$offset += self::PAGE_SIZE;
+		}//end while
 
-            $offset += self::PAGE_SIZE;
-        }//end while
+		if ($nodesRewritten === 0) {
+			$output->info(
+				sprintf('OpenRegister: %d flow(s) checked, no renamed node types stored.', $flowsSeen)
+			);
+			return;
+		}
 
-        if ($nodesRewritten === 0) {
-            $output->info(
-                sprintf('OpenRegister: %d flow(s) checked, no renamed node types stored.', $flowsSeen)
-            );
-            return;
-        }
+		$output->info(
+			sprintf(
+				'OpenRegister: rewrote %d node(s) across %d flow(s) of %d to their current type ids (%s).',
+				$nodesRewritten,
+				$flowsWritten,
+				$flowsSeen,
+				implode(
+					', ',
+					array_map(
+						static fn (string $old, string $new): string => $old . ' → ' . $new,
+						array_keys($renamed),
+						array_values($renamed)
+					)
+				)
+			)
+		);
 
-        $output->info(
-            sprintf(
-                'OpenRegister: rewrote %d node(s) across %d flow(s) of %d to their current type ids (%s).',
-                $nodesRewritten,
-                $flowsWritten,
-                $flowsSeen,
-                implode(
-                        ', ',
-                        array_map(
-                    static fn (string $old, string $new): string => $old.' → '.$new,
-                    array_keys($renamed),
-                    array_values($renamed)
-                )
-                        )
-            )
-        );
-
-    }//end run()
+	}//end run()
 }//end class
