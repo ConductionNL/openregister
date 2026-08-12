@@ -344,6 +344,48 @@ const caseFolder = (c) => {
 
 // ------------------------------------------------------------- teardown ----
 
+/**
+ * The COVERAGE line: which cases actually ran.
+ *
+ * Every guarded case already set `<case>_skipped` when its prerequisite was
+ * absent — and nothing ever read it. The only trace of a skip was a
+ * `console.log`, so a run in which the AI case never executed reported exactly
+ * the same all-green summary as one in which it did. That is how
+ * `hermiq.agent-step` came to be described as "executed through the engine"
+ * while openregister's CI, which never installs hermiq, has skipped it every
+ * time: the fixture request POSTs to `/objects/hermiq/agent`, fails, leaves
+ * `agent` empty, and closes with `pm.expect(true).to.be.true`.
+ *
+ * This folder makes the count visible and, more importantly, makes an
+ * UNEXPECTED skip fail. A case may only be missing when it declared a
+ * prerequisite; anything else skipping is a hole, not a configuration.
+ */
+const coverage = {
+	name: '98 — coverage',
+	item: [
+		req('report which cases ran', 'GET', '/apps/openregister/api/flows?limit=1', undefined, [
+			`const cases = ${JSON.stringify(CASES.map((c) => ({ key: c.key, requires: (c.requires ?? null) })))}`,
+			"const skipped = cases.filter((c) => pm.collectionVariables.get('case_' + c.key.replace(/-/g, '_') + '_skipped') === '1')",
+			"const ran = cases.length - skipped.length",
+			"console.log('COVERAGE: ' + ran + ' of ' + cases.length + ' flow-engine cases ran'",
+			"    + (skipped.length ? ' — skipped: ' + skipped.map((c) => c.key + ' (needs ' + c.requires + ')').join(', ') : ''))",
+			"",
+			"// A case may only be absent when it DECLARED a prerequisite. One that",
+			"// skipped without declaring why is a hole in the suite, and the whole",
+			"// point of this folder is that such a hole cannot pass as green.",
+			"const unexplained = skipped.filter((c) => !c.requires)",
+			"pm.test('every skipped case declared a prerequisite', () => {",
+			"    pm.expect(unexplained.map((c) => c.key), 'a case skipped without declaring what it needs').to.eql([])",
+			'})',
+			"",
+			"// Named so the count is in the run summary rather than only in stdout.",
+			"pm.test('COVERAGE: ' + ran + ' of ' + cases.length + ' flow-engine cases executed', () => {",
+			"    pm.expect(ran, 'no flow-engine case ran at all').to.be.above(0)",
+			'})',
+		]),
+	],
+}
+
 const teardown = {
 	name: '99 — teardown',
 	item: [
@@ -451,7 +493,7 @@ const collection = {
 		{ key: 'objectQueue', value: '[]' },
 		{ key: 'objectHead', value: '' },
 	],
-	item: [setup, ...CASES.map(caseFolder), teardown],
+	item: [setup, ...CASES.map(caseFolder), coverage, teardown],
 }
 
 const out = join(here, 'openregister-flow-engine.postman_collection.json')

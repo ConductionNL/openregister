@@ -3074,6 +3074,71 @@
       ]
     },
     {
+      "name": "98 — coverage",
+      "item": [
+        {
+          "name": "report which cases ran",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cases = [{\"key\":\"api-sync\",\"requires\":null},{\"key\":\"notify-on-change\",\"requires\":null},{\"key\":\"mailbox-summary-ai\",\"requires\":\"agent\"},{\"key\":\"data-quality-sweep\",\"requires\":null},{\"key\":\"enrichment\",\"requires\":null},{\"key\":\"approval-routing\",\"requires\":null},{\"key\":\"retention-sweep\",\"requires\":null},{\"key\":\"paginated-sync\",\"requires\":null},{\"key\":\"route-and-merge\",\"requires\":null},{\"key\":\"sync-cursor\",\"requires\":null},{\"key\":\"batch-export\",\"requires\":null},{\"key\":\"map-transform\",\"requires\":null},{\"key\":\"trigger-object\",\"requires\":null},{\"key\":\"wait-suspends\",\"requires\":null}]",
+                  "const skipped = cases.filter((c) => pm.collectionVariables.get('case_' + c.key.replace(/-/g, '_') + '_skipped') === '1')",
+                  "const ran = cases.length - skipped.length",
+                  "console.log('COVERAGE: ' + ran + ' of ' + cases.length + ' flow-engine cases ran'",
+                  "    + (skipped.length ? ' — skipped: ' + skipped.map((c) => c.key + ' (needs ' + c.requires + ')').join(', ') : ''))",
+                  "",
+                  "// A case may only be absent when it DECLARED a prerequisite. One that",
+                  "// skipped without declaring why is a hole in the suite, and the whole",
+                  "// point of this folder is that such a hole cannot pass as green.",
+                  "const unexplained = skipped.filter((c) => !c.requires)",
+                  "pm.test('every skipped case declared a prerequisite', () => {",
+                  "    pm.expect(unexplained.map((c) => c.key), 'a case skipped without declaring what it needs').to.eql([])",
+                  "})",
+                  "",
+                  "// Named so the count is in the run summary rather than only in stdout.",
+                  "pm.test('COVERAGE: ' + ran + ' of ' + cases.length + ' flow-engine cases executed', () => {",
+                  "    pm.expect(ran, 'no flow-engine case ran at all').to.be.above(0)",
+                  "})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Authorization",
+                "value": "Basic {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/apps/openregister/api/flows?limit=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "apps",
+                "openregister",
+                "api",
+                "flows?limit=1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "99 — teardown",
       "item": [
         {
