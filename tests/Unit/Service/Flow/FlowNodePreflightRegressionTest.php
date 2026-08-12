@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+require_once __DIR__.'/FiltersFlowLevelFindings.php';
+
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Listener\FlowNodePreflightListener;

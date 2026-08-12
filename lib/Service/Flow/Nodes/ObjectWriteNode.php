@@ -1474,7 +1474,10 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         foreach ($raw as $entry) {
             if (is_array($entry) === false) {
                 throw new UnexpectedValueException(
-                    $this->l10n->t('Every match entry must name a property and a value. Write [{"property": "status", "value": "flagged"}] or {"status": "flagged"}.')
+                    $this->l10n->t(
+                        'Every match entry must name a property and a value. '
+                        .'Write [{"property": "status", "value": "flagged"}] or {"status": "flagged"}.'
+                    )
                 );
             }
 

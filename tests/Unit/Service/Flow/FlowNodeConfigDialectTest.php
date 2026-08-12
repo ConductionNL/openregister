@@ -41,6 +41,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+// The suite matches `*Test.php` and there is no autoloader for the test
+// namespace, so a helper that is not itself a test case is only reachable if a
+// consumer pulls it in — the convention the AppHost and Mcp fixtures follow.
+require_once __DIR__.'/FiltersFlowLevelFindings.php';
+
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
