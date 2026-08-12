@@ -129,11 +129,15 @@ class GroupReconciler
      * which carries authored scopes for groups no authorization block references
      * yet.
      *
+     * Public because the declared set is what the inventory surface reports on:
+     * "which groups does this instance depend on, and does anyone belong to
+     * them" is unanswerable without it.
+     *
      * @return string[] Provisionable group ids.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
-    private function collectDeclared(): array
+    public function collectDeclared(): array
     {
         $groups = array_merge(
             $this->fromLiveRegisters(),

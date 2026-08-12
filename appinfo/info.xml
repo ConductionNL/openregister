@@ -224,6 +224,11 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<!-- Read-only report: which RBAC groups this instance declares, and whether
+		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
+		     it never adds members, so an unpopulated group still denies every
+		     caller. This is how that state becomes visible. -->
+		<command>OCA\OpenRegister\Command\DeclaredGroupsCommand</command>
 		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
 		     the per-register uniqueness fix is preventive only, so pre-existing
 		     shared rows still need splitting. Reports only unless applied. -->
