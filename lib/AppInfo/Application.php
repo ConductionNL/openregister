@@ -166,6 +166,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
@@ -510,7 +511,7 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			\OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
 			static function ($c) {
-				return new \OCA\OpenRegister\Service\Flow\RegistryStepDispatcher(
+				return new RegistryStepDispatcher(
 					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)
 				);
 			}
