@@ -77,6 +77,19 @@ class RegistryStepDispatcher implements FlowStepDispatcher
     {
         $type = trim((string) ($step['type'] ?? ''));
 
+        // The guard is per-RUN state, so a container-built dispatcher never has
+        // one — the loop node resolves its dispatcher through DI, and the guard's
+        // constructor takes a run uuid the container cannot invent. Falling back
+        // to the run context keeps steps INSIDE a loop checkpointing, which is
+        // where a long run spends its time in the first place.
+        $guard = $this->guard;
+        if ($guard === null) {
+            $fromContext = ($context[FlowRunGuard::CONTEXT_KEY] ?? null);
+            if ($fromContext instanceof FlowRunGuard === true) {
+                $guard = $fromContext;
+            }
+        }
+
         // Checkpoint on the way IN, so a run whose very first step is the long one
         // is marked alive before that step begins, and so a run that is already
         // over budget stops here rather than starting more work.
@@ -85,7 +98,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher
             $where = 'a routing edge';
         }
 
-        $this->guard?->checkpoint(where: $where);
+        $guard?->checkpoint(where: $where);
 
         if ($type === '') {
             return $items;
