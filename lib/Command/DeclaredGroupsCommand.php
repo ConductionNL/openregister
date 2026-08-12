@@ -63,6 +63,8 @@ class DeclaredGroupsCommand extends Command
      * Configure the command.
      *
      * @return void
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     protected function configure(): void
     {
