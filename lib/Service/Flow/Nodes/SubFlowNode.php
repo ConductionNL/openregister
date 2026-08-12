@@ -156,7 +156,7 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
-		return ['flow', 'flowId', 'wait'];
+		return ['flow', 'flowId', 'wait', 'fanOut'];
 	}//end configKeys()
 
 	/**
@@ -171,6 +171,10 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 	public function validateConfig(array $config): void {
 		if ($this->flowIdFrom(config: $config) === '') {
 			throw new UnexpectedValueException($this->l10n->t('A sub-flow step needs a flow to run.'));
+		}
+
+		if (array_key_exists('fanOut', $config) === true && is_bool($config['fanOut']) === false) {
+			throw new UnexpectedValueException($this->l10n->t('The "fanOut" field must be true or false.'));
 		}
 
 	}//end validateConfig()
@@ -209,6 +213,88 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 			);
 		}
 
+		// FAN OUT: one child RUN per item, rather than one run holding every
+		// item. Without it a crawler that loops pages gets a sub-flow per PAGE —
+		// measured on the demo: 100 records paged in, and the sync sub-flow
+		// invoked 11 times, not 100. The per-record work happened inside the
+		// child because object-write iterates items itself, which is fine until
+		// you want per-record isolation, per-record retry, or a trace that shows
+		// one run per object.
+		if (($config['fanOut'] ?? false) === true) {
+			return $this->fanOut(
+				items: $items,
+				flow: $flow,
+				flowId: $flowId,
+				stack: $stack,
+				config: $config,
+				context: $context
+			);
+		}
+
+		return $this->invoke(
+			items: $items,
+			flow: $flow,
+			flowId: $flowId,
+			stack: $stack,
+			config: $config,
+			context: $context
+		);
+	}//end execute()
+
+	/**
+	 * Run the sub-flow once per item, and return everything they produced.
+	 *
+	 * An item that fails takes the step down with it, exactly as a single
+	 * invocation would: swallowing one child's failure would report the parent
+	 * step completed while some records were silently not processed, and the
+	 * count of child runs would be the only surviving evidence.
+	 *
+	 * @param array $items The input items.
+	 * @param array $flow The resolved sub-flow document.
+	 * @param string $flowId The sub-flow id.
+	 * @param array $stack The recursion stack.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array Everything the children produced, in item order.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function fanOut(array $items, array $flow, string $flowId, array $stack, array $config, array $context): array {
+		$out = [];
+		foreach ($items as $item) {
+			$produced = $this->invoke(
+				items: [$item],
+				flow: $flow,
+				flowId: $flowId,
+				stack: $stack,
+				config: $config,
+				context: $context
+			);
+
+			foreach ($produced as $one) {
+				$out[] = $one;
+			}
+		}
+
+		return $out;
+	}//end fanOut()
+
+	/**
+	 * One invocation of the sub-flow with the given items.
+	 *
+	 * @param array $items The items to seed the child with.
+	 * @param array $flow The resolved sub-flow document.
+	 * @param string $flowId The sub-flow id.
+	 * @param array $stack The recursion stack.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array What the child produced, or the input when fire-and-forget.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function invoke(array $items, array $flow, string $flowId, array $stack, array $config, array $context): array {
 		$subject = $this->subjectDescriptor(context: $context);
 		$childCtx = $context;
 		$childCtx[self::STACK_KEY] = $stack;
@@ -225,6 +311,15 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 		}
 
 		$childCtx[FlowToken::CONTEXT_KEY] = $parentToken->all();
+
+		// Fanned out and NOT waiting: the queued child starts from its subject,
+		// not from these items, so without this a per-object fan-out would queue
+		// N identical runs that never see their object. `payload` is the seeding
+		// path a subjectless run already uses, so the child reads its record as
+		// the first item exactly as a waiting child would.
+		if (($config['fanOut'] ?? false) === true && count($items) === 1) {
+			$childCtx['payload'] = (array)($items[0][FlowItems::JSON] ?? []);
+		}
 
 		// Fire-and-forget: queue against the subject and carry on. The queued
 		// run starts from its subject, not from these items — an independent
@@ -266,7 +361,7 @@ class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys {
 		$parentToken->merge((array)(($run->getContext() ?? [])[FlowToken::CONTEXT_KEY] ?? []));
 
 		return $this->itemsFrom(run: $run, flowId: $flowId);
-	}//end execute()
+	}//end invoke()
 
 	/**
 	 * Refuse a sub-flow that would recurse, and return the stack it should push.

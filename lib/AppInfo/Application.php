@@ -495,9 +495,25 @@ class Application extends App implements IBootstrap {
 		// The node validated, appeared in the palette and drew on the canvas
 		// throughout, which is why this survived: nothing short of RUNNING a
 		// flow that contains one can see it, and no flow on the instance did.
-		$context->registerServiceAlias(
+		//
+		// Registered as an explicit FACTORY, not an alias. An alias makes the
+		// container autowire RegistryStepDispatcher, and its second parameter is
+		// a FlowRunGuard whose own constructor takes a `string $runUuid` — which
+		// the container cannot invent. Autowiring it therefore died with
+		// "Could not resolve runUuid!" on the first repeat step that ran, and a
+		// nullable default does not help: the container resolves a typed
+		// parameter before it considers the default.
+		//
+		// The guard is per-RUN state and cannot come from the container at all.
+		// A container-built dispatcher gets none, and picks one up from the run
+		// context at dispatch time instead.
+		$context->registerService(
 			\OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
-			\OCA\OpenRegister\Service\Flow\RegistryStepDispatcher::class
+			static function ($c) {
+				return new \OCA\OpenRegister\Service\Flow\RegistryStepDispatcher(
+					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)
+				);
+			}
 		);
 
 		// DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
