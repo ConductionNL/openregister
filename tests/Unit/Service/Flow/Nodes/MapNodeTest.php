@@ -190,14 +190,24 @@ class MapNodeTest extends TestCase
     }//end testAFailingMappingNamesTheItemItFailedOn()
 
     /**
-     * A slug resolves, so an exported flow survives an id that differs per instance.
+     * A reference-column name still resolves once find() has missed on it.
+     *
+     * `resolve()` asks find() first for any non-numeric string, because find()
+     * is the only lookup that matches the uuid and slug columns. A name that
+     * lives in the `reference` column alone therefore has to survive find()
+     * MISSING before findByRef() gets its turn, and it is that fall-through the
+     * exception below exercises — an exported flow that names its mapping by
+     * reference breaks the moment find()'s throw stops being caught.
      *
      * @return void
      */
     public function testANonNumericReferenceResolvesByRef(): void
     {
         $mapping = $this->createMock(Mapping::class);
-        $this->mapper->expects($this->never())->method('find');
+        $this->mapper->expects($this->once())
+            ->method('find')
+            ->with('person-to-contact')
+            ->willThrowException(new DoesNotExistException('no such mapping'));
         $this->mapper->expects($this->once())
             ->method('findByRef')
             ->with('person-to-contact')
@@ -214,6 +224,39 @@ class MapNodeTest extends TestCase
         $this->assertCount(1, $out);
 
     }//end testANonNumericReferenceResolvesByRef()
+
+    /**
+     * A uuid or a slug resolves through find(), and findByRef() is never reached.
+     *
+     * find() is the only lookup that consults the uuid and slug columns, so
+     * asking findByRef() first left a flow naming its mapping by uuid or slug
+     * dying on "No mapping matches ..." while the row sat there matching two of
+     * the four identifiers. The `never()` on findByRef() is what pins the ORDER:
+     * without it a resolve() that consulted the `reference` column first would
+     * satisfy this test just as well.
+     *
+     * @return void
+     */
+    public function testAUuidReferenceResolvesThroughFind(): void
+    {
+        $mapping = $this->createMock(Mapping::class);
+        $this->mapper->expects($this->once())
+            ->method('find')
+            ->with('018f2a1e-0c3d-7c2b-9f11-6f0c9a1b2c3d')
+            ->willReturn($mapping);
+        $this->mapper->expects($this->never())->method('findByRef');
+
+        $this->mappings->method('executeMapping')->willReturn(['ok' => true]);
+
+        $out = $this->node->execute(
+            [FlowItems::item(json: [])],
+            ['mapping' => '018f2a1e-0c3d-7c2b-9f11-6f0c9a1b2c3d'],
+            []
+        );
+
+        $this->assertCount(1, $out);
+
+    }//end testAUuidReferenceResolvesThroughFind()
 
     /**
      * A map step with no mapping is refused at validation.
