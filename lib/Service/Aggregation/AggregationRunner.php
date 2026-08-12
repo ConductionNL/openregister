@@ -58,8 +58,16 @@ use RuntimeException;
 /**
  * Runs a named aggregation against a schema.
  *
- * @phpstan-type AggregationGroups array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>
- * @psalm-type AggregationGroups = array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>
+ * `AggValues` exists only to keep the multi-metric `@return` inside the
+ * 150-character limit. php-cs-fixer aligns a wrapped `@return` continuation to
+ * the column after the type on the first line, so a long shape pushes its own
+ * continuation past the limit; naming the repeated inner shape shortens both.
+ * The union is deliberately left wrapped rather than joined onto one line —
+ * joining it changes what PHPStan resolves and surfaces unrelated pre-existing
+ * type debt, which is not this commit's business.
+ *
+ * @phpstan-type AggValues array<string, int|float|null>
+ * @psalm-type AggValues = array<string, int|float|null>
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -2090,7 +2098,9 @@ class AggregationRunner {
 	 * @param array<string, mixed>|null $groupBy Optional group spec (see {@see tryNativeAggregation()}).
 	 * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries (>1).
 	 *
-	 * @return array{values: array<string, int|float|null>}|array{groups: AggregationGroups}|null
+	 * @return array{values: AggValues}
+	 *                                  |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: AggValues}>}
+	 *                                  |null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
