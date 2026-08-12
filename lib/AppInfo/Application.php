@@ -496,7 +496,6 @@ class Application extends App implements IBootstrap {
 		// The node validated, appeared in the palette and drew on the canvas
 		// throughout, which is why this survived: nothing short of RUNNING a
 		// flow that contains one can see it, and no flow on the instance did.
-		//
 		// Registered as an explicit FACTORY, not an alias. An alias makes the
 		// container autowire RegistryStepDispatcher, and its second parameter is
 		// a FlowRunGuard whose own constructor takes a `string $runUuid` — which
@@ -962,6 +961,16 @@ class Application extends App implements IBootstrap {
 				$importHandler->setUserManager($container->get('OCP\IUserManager'));
 			} catch (\Throwable $e) {
 				$logger->debug('[Application] IUserManager unavailable for ImportHandler: ' . $e->getMessage());
+			}
+
+			// Optional: creates the Nextcloud groups the imported configuration
+			// declares, so a group named in an authorization block always exists.
+			try {
+				$importHandler->setGroupProvisioner(
+					$container->get(\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class)
+				);
+			} catch (\Throwable $e) {
+				$logger->debug('[Application] GroupProvisioner unavailable for ImportHandler: ' . $e->getMessage());
 			}
 
 			return $importHandler;
