@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "2.2.0-vue3.9",
+    "@conduction/nextcloud-vue": "2.2.0-vue3.16",
     "@nextcloud/auth": "^2.6.0",
     "@nextcloud/axios": "^2.6.0",
     "@nextcloud/capabilities": "^1.2.1",
