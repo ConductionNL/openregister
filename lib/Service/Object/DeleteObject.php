@@ -507,6 +507,32 @@ class DeleteObject {
 	 *                                       entities so the handler skips its own per-object
 	 *                                       cross-table lookup. Ignored unless its uuid matches
 	 *                                       `$uuid` and both scope entities are concrete.
+	 * @param bool $permanent Destroy the row instead of tombstoning it. Default false, which is
+	 *                        the soft delete every existing caller already gets.
+	 *
+	 *                        This is NOT a convenience. A soft delete leaves the row in place with
+	 *                        `_deleted` set, and the magic table's `_uuid` unique index carries NO
+	 *                        `WHERE _deleted IS NULL` predicate — so the tombstone goes on holding
+	 *                        the identifier forever. The create path disagrees: it looks for a
+	 *                        conflict with `includeDeleted: false`, finds nothing, and proceeds,
+	 *                        only for the write underneath to be refused. The caller is then told
+	 *                        `An object with identifier "x" already exists` about an object every
+	 *                        read says does not exist (openregister#2459).
+	 *
+	 *                        That contradiction is survivable for records, which are archived and
+	 *                        never re-created under the same identifier. It is fatal for a CLAIM —
+	 *                        a lock, a slot, a lease — whose identifier is deliberately a pure
+	 *                        function of the thing being claimed, because that is what makes two
+	 *                        concurrent claimants collide. Such an identifier cannot be varied per
+	 *                        attempt without giving up the mutual exclusion it exists for, so a
+	 *                        claim that cannot destroy its own row is a claim that can be taken
+	 *                        exactly once, ever. Measured: hydra's sequencer locked
+	 *                        `zz-lock-openregister-1561`, released it, and was still refused a
+	 *                        fresh claim eight hours later by its own tombstone.
+	 *
+	 *                        Reserve it for rows whose identifier must become reusable. For
+	 *                        anything that is a record, the soft delete is what makes a mistake
+	 *                        recoverable, and that remains the default.
 	 *
 	 * @return bool Whether the deletion was successful.
 	 *
@@ -530,6 +556,7 @@ class DeleteObject {
 		bool $_multitenancy = true,
 		bool $scoped = false,
 		?ObjectEntity $preResolved = null,
+		bool $permanent = false,
 	): bool {
 		// Read-only projection guard: a schema served from an external source
 		// (x-openregister-object-source) is read-only — deletes are not allowed.
@@ -597,6 +624,7 @@ class DeleteObject {
 			// Pass the already-resolved scope so delete() skips its own re-find.
 			return $this->delete(
 				object: $object,
+				permanent: $permanent,
 				register: $this->contextRegisterEntity(context: $context),
 				schema: $this->contextSchemaEntity(context: $context)
 			);

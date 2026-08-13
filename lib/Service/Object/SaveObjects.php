@@ -272,6 +272,7 @@ class SaveObjects {
 	 * @param bool $_events Whether to dispatch object lifecycle events
 	 * @param bool $deduplicateIds Whether to deduplicate by IDs
 	 * @param bool $enrich Whether to enrich objects
+	 * @param bool $_audit Whether to write audit trail rows for the persisted objects
 	 *
 	 * @throws InvalidArgumentException If required fields are missing from any object
 	 * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -283,6 +284,11 @@ class SaveObjects {
 	 * @phpstan-return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Orchestrator at threshold after extracting initializeSaveResult
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
+	 *   policy switch that the single-object saveObject() also takes, and the two paths have to
+	 *   offer the same switches or a caller cannot move between them — which is exactly what the
+	 *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
+	 *   is a change to BOTH save paths and all their callers, not to this signature alone.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -296,6 +302,7 @@ class SaveObjects {
 		bool $_events = false,
 		bool $deduplicateIds = false,
 		bool $enrich = false,
+		bool $_audit = true,
 	): array {
 
 		$startTime = microtime(true);
@@ -319,6 +326,7 @@ class SaveObjects {
 		// when the caller is admin
 		// Validation under `_validation: true` runs Opis per-row when
 		// requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
+		$safeguardStart = microtime(true);
 		$objects = $this->applyBulkSafeguards(
 			objects: $objects,
 			register: $register,
@@ -327,6 +335,7 @@ class SaveObjects {
 			_validation: $_validation,
 			result: $result
 		);
+		$safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
 
 		if (empty($objects) === true) {
 			// All input rows rejected — short-circuit to avoid the empty
@@ -367,6 +376,7 @@ class SaveObjects {
 		// PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
 		$useFastPath = ($isMixedSchema === false && $schema !== null);
 
+		$prepareStart = microtime(true);
 		if ($useFastPath === true) {
 			// FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
 			[$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareSingleSchemaObjectsOptimized(
@@ -380,6 +390,8 @@ class SaveObjects {
 			// STANDARD PATH: Mixed-schema operation - use full preparation logic.
 			[$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareObjectsForBulkSave(objects: $objects);
 		}
+
+		$prepareMs = round((microtime(true) - $prepareStart) * 1000, 2);
 
 		// CRITICAL FIX: Include objects that failed during preparation in result.
 		foreach ($prepInvalidObjs as $invalidObj) {
@@ -421,7 +433,8 @@ class SaveObjects {
 				_validation: $_validation,
 				_events: $_events,
 				register: $register,
-				schema: $schema
+				schema: $schema,
+				_audit: $_audit
 			);
 
 			// Merge chunk results for saved, updated, invalid, errors, and unchanged.
@@ -458,6 +471,8 @@ class SaveObjects {
 				'processingTime' => round($chunkTime * 1000, 2),
 				// Objects per second.
 				'speed' => round($chunkSpeed, 2),
+				// Per-phase breakdown of the chunk pipeline, in milliseconds.
+				'phaseMs' => ($chunkResult['statistics']['phaseMs'] ?? []),
 			];
 		}//end foreach
 
@@ -477,6 +492,8 @@ class SaveObjects {
 			'totalProcessed' => count($processedObjects),
 			'totalRequested' => $totalObjects,
 			'efficiency' => $efficiency,
+			'safeguardsMs' => $safeguardMs,
+			'prepareMs' => $prepareMs,
 		];
 
 		// Add deduplication efficiency if we have unchanged objects.
@@ -639,6 +656,50 @@ class SaveObjects {
 			}
 		}
 
+		// Resolve the register once too, for the SAME reason the schema is
+		// resolved once: it bounds the create-vs-update lookup below to a single
+		// magic table. Without it MagicMapper::find() falls through to
+		// findAcrossAllMagicTables(), an instance-wide union over every magic
+		// table there is — and it runs once PER ROW.
+		//
+		// Measured on this instance: 757 ms per row, so a 20-row bulk save spent
+		// 15,143 ms of its 15,187 ms right here while the actual insert took 19 ms
+		// for all twenty. That made saveObjects() roughly FORTY TIMES slower per
+		// object than the saveObject() loop it exists to replace, which is the
+		// opposite of what every caller reaches for it expecting, and it grows
+		// with the number of magic tables on the instance rather than with the
+		// size of the batch.
+		$defaultRegister = null;
+		if ($register !== null && $register !== 0 && $register !== '0') {
+			try {
+				$defaultRegister = $this->loadSafeguardRegister(register: $register);
+			} catch (\Throwable $e) {
+				// A register we cannot resolve only costs the bounded lookup, not
+				// correctness: resolveSafeguardActionForRow() falls back to the
+				// instance-wide search, which is what it did before.
+				$defaultRegister = null;
+			}
+		}
+
+		// Resolve "which of these uuids already exist" for the WHOLE batch in one
+		// query per register+schema, before the row loop. Without it the loop
+		// below asks the same question one row at a time, which is O(N) queries
+		// inside the one code path whose entire purpose is to avoid them — and
+		// after the register/schema bounding above it was the single largest
+		// remaining cost of a bulk write.
+		//
+		// Rows whose group could not be prefetched (unresolvable register, an
+		// unreadable probe) are simply absent from the map, and
+		// resolveSafeguardActionForRow() falls back to its own lookup for them.
+		// An empty map is therefore "not prefetched", never "nothing exists" —
+		// treating a failed probe as an empty result would classify every row as
+		// a create and write duplicates on the next run.
+		$existingByUuid = $this->prefetchExistingRows(
+			objects: $objects,
+			defaultSchema: $defaultSchema,
+			defaultRegister: $defaultRegister
+		);
+
 		$passed = [];
 		foreach ($objects as $index => $object) {
 			// Note: phpdoc shape guarantees each $object is an array. Earlier
@@ -684,7 +745,12 @@ class SaveObjects {
 			// Determine CREATE vs UPDATE by UUID lookup.
 			[$uuid, $action, $existingEntity] = $this->resolveSafeguardActionForRow(
 				object: $sanitised,
-				rowSchema: $rowSchema
+				rowSchema: $rowSchema,
+				rowRegister: $this->resolveSafeguardRowRegister(
+					object: $sanitised,
+					defaultRegister: $defaultRegister
+				),
+				existingByUuid: $existingByUuid
 			);
 
 			// Step 4: appendOnly UPDATE → reject.
@@ -816,6 +882,51 @@ class SaveObjects {
 	}//end loadSafeguardSchema()
 
 	/**
+	 * Resolve the bulk-call register argument to a Register entity.
+	 *
+	 * The register counterpart of {@see loadSafeguardSchema()}: together they
+	 * give the create-vs-update probe enough context to look in one magic table
+	 * instead of every one on the instance.
+	 *
+	 * @param Register|string|int $register The bulk-call register argument.
+	 *
+	 * @return Register The resolved register.
+	 *
+	 * @throws \Throwable When the register cannot be loaded.
+	 */
+	private function loadSafeguardRegister(Register|string|int $register): Register {
+		if ($register instanceof Register === true) {
+			return $register;
+		}
+
+		return $this->loadRegisterWithCache(registerId: $register);
+	}//end loadSafeguardRegister()
+
+	/**
+	 * Determine which register applies to a single bulk row.
+	 *
+	 * Mirrors {@see resolveSafeguardRowSchema()}: `@self.register` wins for
+	 * mixed-register batches, otherwise the call-level default applies.
+	 *
+	 * @param array $object Raw row data.
+	 * @param Register|null $defaultRegister Call-level default register.
+	 *
+	 * @return Register|null Resolved register, or null when unresolvable.
+	 */
+	private function resolveSafeguardRowRegister(array $object, ?Register $defaultRegister): ?Register {
+		$selfRegister = $object['@self']['register'] ?? null;
+		if ($selfRegister !== null && $selfRegister !== '') {
+			try {
+				return $this->loadRegisterWithCache(registerId: $selfRegister);
+			} catch (\Throwable $e) {
+				// Fall through to default.
+			}
+		}
+
+		return $defaultRegister;
+	}//end resolveSafeguardRowRegister()
+
+	/**
 	 * Determine which schema applies to a single bulk row.
 	 *
 	 * Looks at `@self.schema` first (mixed-schema mode), then falls back to
@@ -847,18 +958,68 @@ class SaveObjects {
 	 *
 	 * @param array $object Raw row data.
 	 * @param Schema $rowSchema Row schema for table lookup.
+	 * @param Register|null $rowRegister Row register; with the schema it bounds
+	 *                                   the lookup to a single magic table.
+	 * @param array<string, array<string, ObjectEntity>> $existingByUuid Batch prefetch,
+	 *                                   keyed by "registerId/schemaId" then uuid. A group
+	 *                                   present here was probed; a group absent was not.
 	 *
 	 * @return array{0: ?string, 1: string, 2: ?ObjectEntity} Tuple of [uuid, action, existingEntity].
 	 */
-	private function resolveSafeguardActionForRow(array $object, Schema $rowSchema): array {
+	private function resolveSafeguardActionForRow(
+		array $object,
+		Schema $rowSchema,
+		?Register $rowRegister = null,
+		array $existingByUuid = []
+	): array {
 		$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
 		if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
 			return [null, 'create', null];
 		}
 
+		// Answered by the batch prefetch when this row's group was probed. The
+		// group key must be checked with array_key_exists, not by looking the
+		// uuid up directly: "this group was probed and the uuid was not in it"
+		// is a real answer (create), while "this group was never probed" is not
+		// an answer at all and has to fall through to the query below.
+		if ($rowRegister !== null) {
+			$groupKey = $this->safeguardGroupKey(register: $rowRegister, schema: $rowSchema);
+			if (array_key_exists($groupKey, $existingByUuid) === true) {
+				$existing = ($existingByUuid[$groupKey][$uuid] ?? null);
+				if ($existing !== null) {
+					return [$uuid, 'update', $existing];
+				}
+
+				return [$uuid, 'create', null];
+			}
+		}
+
 		try {
+			// Passing the register AND schema takes MagicMapper::find()'s bounded
+			// branch — one indexed lookup in the row's own magic table. Omitting
+			// either drops it into findAcrossAllMagicTables(), an instance-wide
+			// union that costs hundreds of milliseconds per row and scales with
+			// how many tables exist rather than with the batch.
+			//
+			// The bounded table is also the RIGHT place to ask the question. This
+			// probe decides create-vs-update for a write that is going into the
+			// row's own register/schema table, and feeds the appendOnly gate and
+			// the per-row permission check. An object carrying the same uuid in
+			// some OTHER register's table does not make this write an update, and
+			// checking permissions against that unrelated object's owner is a
+			// judgement about the wrong record — which is what the unbounded
+			// lookup did whenever a uuid collided across registers.
+			// The schema only bounds the search when the register does too;
+			// MagicMapper::find() takes its single-table branch on the PAIR.
+			$boundedSchema = null;
+			if ($rowRegister !== null) {
+				$boundedSchema = $rowSchema;
+			}
+
 			$existing = $this->objectEntityMapper->find(
 				identifier: $uuid,
+				register: $rowRegister,
+				schema: $boundedSchema,
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -867,6 +1028,101 @@ class SaveObjects {
 			return [$uuid, 'create', null];
 		}
 	}//end resolveSafeguardActionForRow()
+
+	/**
+	 * Build the group key a batch prefetch is bucketed under.
+	 *
+	 * @param Register $register The row's register.
+	 * @param Schema $schema The row's schema.
+	 *
+	 * @return string The "registerId/schemaId" key.
+	 */
+	private function safeguardGroupKey(Register $register, Schema $schema): string {
+		return ((string)$register->getId()) . '/' . ((string)$schema->getId());
+	}//end safeguardGroupKey()
+
+	/**
+	 * Look up, in one query per register+schema, which of a batch's uuids exist.
+	 *
+	 * Replaces N single-row existence queries with one per distinct target
+	 * table. Mixed-register and mixed-schema batches are handled by grouping,
+	 * so a batch spanning three tables costs three queries rather than N.
+	 *
+	 * A group is only added to the returned map once its probe has SUCCEEDED.
+	 * That distinction is the whole safety property here: the caller reads a
+	 * present group as authoritative ("absent uuid means this row is a create")
+	 * and an absent group as "unknown, go and ask". A failed probe recorded as
+	 * an empty group would silently turn every row of that group into a create
+	 * and duplicate the whole batch on the next run.
+	 *
+	 * @param array<int, array<string, mixed>> $objects The raw batch.
+	 * @param Schema|null $defaultSchema Call-level default schema.
+	 * @param Register|null $defaultRegister Call-level default register.
+	 *
+	 * @return array<string, array<string, ObjectEntity>> Existing entities, keyed by
+	 *         "registerId/schemaId" then uuid.
+	 */
+	private function prefetchExistingRows(
+		array $objects,
+		?Schema $defaultSchema,
+		?Register $defaultRegister
+	): array {
+		$groups = [];
+
+		foreach ($objects as $object) {
+			$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
+			if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+				continue;
+			}
+
+			$rowSchema = $this->resolveSafeguardRowSchema(object: $object, defaultSchema: $defaultSchema);
+			if ($rowSchema === null) {
+				continue;
+			}
+
+			$rowRegister = $this->resolveSafeguardRowRegister(object: $object, defaultRegister: $defaultRegister);
+			if ($rowRegister === null) {
+				continue;
+			}
+
+			$groupKey = $this->safeguardGroupKey(register: $rowRegister, schema: $rowSchema);
+			if (isset($groups[$groupKey]) === false) {
+				$groups[$groupKey] = [
+					'register' => $rowRegister,
+					'schema' => $rowSchema,
+					'uuids' => [],
+				];
+			}
+
+			$groups[$groupKey]['uuids'][] = $uuid;
+		}//end foreach
+
+		$existing = [];
+
+		foreach ($groups as $groupKey => $group) {
+			try {
+				$existing[$groupKey] = $this->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
+					register: $group['register'],
+					schema: $group['schema'],
+					uuids: $group['uuids']
+				);
+			} catch (\Throwable $e) {
+				// Leave the group OUT of the map — see the method docblock. The
+				// per-row lookup then answers for these rows, which is slower but
+				// correct.
+				$this->logger->warning(
+					message: '[SaveObjects] Batch existence prefetch failed; falling back to per-row lookup',
+					context: [
+						'group' => $groupKey,
+						'uuids' => count($group['uuids']),
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end foreach
+
+		return $existing;
+	}//end prefetchExistingRows()
 
 	/**
 	 * Record a rejection from `applyBulkSafeguards` into the result accumulator.
@@ -1374,6 +1630,7 @@ class SaveObjects {
 	 * @param bool $_events Dispatch events
 	 * @param Register|string|int|null $register Caller-supplied register context (forwarded to bulk save)
 	 * @param Schema|string|int|null $schema Caller-supplied schema context (forwarded to bulk save)
+	 * @param bool $_audit Whether to write audit trail rows for the persisted objects
 	 *
 	 * @return array Processing result for this chunk with bulk operation statistics
 	 *
@@ -1391,6 +1648,7 @@ class SaveObjects {
 		bool $_events,
 		Register|string|int|null $register = null,
 		Schema|string|int|null $schema = null,
+		bool $_audit = true,
 	): array {
 		$startTime = microtime(true);
 
@@ -1412,16 +1670,26 @@ class SaveObjects {
 			],
 		];
 
+		// Per-phase timings. A bulk save that is slower than the single-object
+		// path it replaces is indistinguishable from one that is faster unless
+		// the phases are reported separately — measured on this instance, the
+		// whole cost of a chunk sat in ONE of the five steps below.
+		$phaseMs = [];
+
 		// STEP 1: Transform objects for database format with metadata hydration.
+		$phaseStart = microtime(true);
 		$transformedObjects = $this->transformChunk(objects: $objects, schemaCache: $schemaCache, result: $result);
+		$phaseMs['transform'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		if (empty($transformedObjects) === true) {
+			$result['statistics']['phaseMs'] = $phaseMs;
 			return $result;
 		}
 
 		// STEP 1b (BUG-OBJ-1): enforce per-object RBAC and schema validation BEFORE persisting,
 		// mirroring the guarantees of the single-object save path. Objects that fail either check
 		// are moved into $result['invalid'] and excluded from persistence.
+		$phaseStart = microtime(true);
 		$transformedObjects = $this->enforceChunkGuards(
 			transformedObjects: $transformedObjects,
 			schemaCache: $schemaCache,
@@ -1429,25 +1697,31 @@ class SaveObjects {
 			_validation: $_validation,
 			result: $result
 		);
+		$phaseMs['guards'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		if (empty($transformedObjects) === true) {
+			$result['statistics']['phaseMs'] = $phaseMs;
 			return $result;
 		}
 
 		// STEP 2: Persist transformed objects to database.
+		$phaseStart = microtime(true);
 		$bulkResult = $this->persistChunk(
 			transformedObjects: $transformedObjects,
 			register: $register,
 			schema: $schema
 		);
+		$phaseMs['persist'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		// STEP 3: Build and classify results from bulk operation output. Returns the
 		// hydrated entities (with pre-update state for updates) for side effects.
+		$phaseStart = microtime(true);
 		$sideEffects = $this->buildChunkResults(
 			bulkResult: $bulkResult,
 			transformedObjects: $transformedObjects,
 			result: $result
 		);
+		$phaseMs['buildResults'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		// STEP 3b (BUG-OBJ-1): always write the audit trail for created/updated objects and,
 		// when requested, dispatch the matching lifecycle events. The ultraFastBulkSave mapper
@@ -1455,13 +1729,16 @@ class SaveObjects {
 		// so the bulk path must replay them here to stay at parity with single-object save.
 		// Audit rows are written with streamed batched multi-row INSERTs (100 rows per
 		// statement) instead of one INSERT (plus hash-chain queries) per object.
-		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events);
+		$phaseStart = microtime(true);
+		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events, _audit: $_audit);
+		$phaseMs['sideEffects'] = round((microtime(true) - $phaseStart) * 1000, 2);
 
 		$endTime = microtime(true);
 		$processingTime = round(($endTime - $startTime) * 1000, 2);
 
 		// Add processing time to the result for transparency and performance monitoring.
 		$result['statistics']['processingTimeMs'] = $processingTime;
+		$result['statistics']['phaseMs'] = $phaseMs;
 
 		return $result;
 	}//end processObjectsChunk()
@@ -1590,18 +1867,28 @@ class SaveObjects {
 	 *                           'created' => list<ObjectEntity>,
 	 *                           'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
 	 * @param bool $_events Whether to dispatch object lifecycle events
+	 * @param bool $_audit Whether to write audit trail rows; the bulk mirror of
+	 *                     the single-object path's `silent` flag
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function emitChunkSideEffects(array $sideEffects, bool $_events): void {
+	private function emitChunkSideEffects(array $sideEffects, bool $_events, bool $_audit = true): void {
 		$createdEntities = ($sideEffects['created'] ?? []);
 		$updatedEntities = ($sideEffects['updated'] ?? []);
 
 		// Batched audit trail: multi-row INSERTs instead of one INSERT (plus
 		// hash-chain queries) per object.
-		if ($this->auditTrailMapper !== null) {
+		//
+		// `$_audit === false` is the bulk mirror of the single-object path's
+		// `silent` flag, which has always skipped this row. Without it a caller
+		// that opts out of auditing per object — a synchronization engine writing
+		// its own bookkeeping, a config import, a repair step — would silently
+		// start auditing again the moment it switched to the bulk path, which is
+		// the opposite of what moving to bulk is for. Defaults to true, so every
+		// existing caller keeps writing audit rows.
+		if ($this->auditTrailMapper !== null && $_audit === true) {
 			$auditEntries = [];
 			foreach ($createdEntities as $entity) {
 				$auditEntries[] = [
