@@ -1915,6 +1915,15 @@ class ObjectService
      *                                                  import pipeline) MUST pass one: anonymous is
      *                                                  default-deny, so without it the delete is
      *                                                  neither attributable nor permitted.
+     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
+     *                                                  its identifier becomes reusable. Defaults to
+     *                                                  false — the soft delete every existing caller
+     *                                                  already gets, and the thing that makes a
+     *                                                  mistaken delete recoverable. Reserve it for
+     *                                                  rows that are a CLAIM rather than a record;
+     *                                                  see the parameter's full note on
+     *                                                  `DeleteObject::deleteObject()` and
+     *                                                  openregister#2459.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1937,7 +1946,8 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $_retentionSweep=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $permanent=false
     ): bool {
         // Explicit acting user for the permission check; null keeps today's
         // session-resolved behaviour for every existing caller.
@@ -2052,7 +2062,8 @@ class ObjectService
             originalObjectId: null,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            scoped: $hasScope
+            scoped: $hasScope,
+            permanent: $permanent
         );
     }//end deleteObject()
 

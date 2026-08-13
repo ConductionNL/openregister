@@ -374,16 +374,49 @@ class ObjectServicePatchObjectTest extends TestCase {
 	// ── deleteObject's explicit acting user (REQ-OWN-003, REQ-OWN-012) ──
 
 	public function testDeleteObjectAcceptsAnExplicitActingUserAndDefaultsToTheSession(): void {
-		$method = $this->reflection->getMethod('deleteObject');
-		$parameters = $method->getParameters();
-		$last = $parameters[(count($parameters) - 1)];
+		// BY NAME, not by position. This read `$parameters[count - 1]` and so
+		// asserted "currentUser is LAST", which is not what the test is about —
+		// appending any further optional parameter broke it while the property
+		// it means to protect was untouched.
+		$found = null;
+		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+			if ($parameter->getName() === 'currentUser') {
+				$found = $parameter;
+				break;
+			}
+		}
 
-		$this->assertSame('currentUser', $last->getName());
-		$this->assertSame(IUser::class, (string)$last->getType()->getName());
-		$this->assertTrue($last->isDefaultValueAvailable());
-		$this->assertNull($last->getDefaultValue(), 'null keeps today\'s session-resolved behaviour for every existing caller');
+		$this->assertNotNull($found, 'deleteObject() must accept an explicit acting user');
+		$this->assertSame(IUser::class, (string)$found->getType()->getName());
+		$this->assertTrue($found->isDefaultValueAvailable());
+		$this->assertNull($found->getDefaultValue(), 'null keeps today\'s session-resolved behaviour for every existing caller');
 
 	}//end testDeleteObjectAcceptsAnExplicitActingUserAndDefaultsToTheSession()
+
+	/**
+	 * The permanence opt-out exists, is boolean, and defaults to the tombstone.
+	 *
+	 * The default is the whole point: a soft delete is what makes a mistaken
+	 * delete recoverable, so `permanent` must be something a caller reaches for
+	 * deliberately rather than something they inherit (openregister#2459).
+	 *
+	 * @return void
+	 */
+	public function testDeleteObjectOffersPermanenceAndDefaultsToASoftDelete(): void {
+		$found = null;
+		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+			if ($parameter->getName() === 'permanent') {
+				$found = $parameter;
+				break;
+			}
+		}
+
+		$this->assertNotNull($found, 'deleteObject() must offer a permanence opt-out');
+		$this->assertSame('bool', (string)$found->getType()->getName());
+		$this->assertTrue($found->isDefaultValueAvailable());
+		$this->assertFalse($found->getDefaultValue(), 'the tombstone stays the default for every existing caller');
+
+	}//end testDeleteObjectOffersPermanenceAndDefaultsToASoftDelete()
 
 	public function testDeleteObjectForwardsTheActingUserIntoThePermissionCheck(): void {
 		$existing = new ObjectEntity();

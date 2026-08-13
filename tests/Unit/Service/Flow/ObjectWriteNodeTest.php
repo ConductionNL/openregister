@@ -216,6 +216,10 @@ class ObjectWriteNodeTest extends TestCase {
 			'delete confirm false' => [['register' => 'r', 'schema' => 's', 'operation' => 'delete', 'match' => $match, 'confirmDelete' => false], 'false is not an acknowledgement'],
 			'delete confirm string' => [['register' => 'r', 'schema' => 's', 'operation' => 'delete', 'match' => $match, 'confirmDelete' => 'true'], 'the string "true" is not boolean true'],
 			'delete confirm one' => [['register' => 'r', 'schema' => 's', 'operation' => 'delete', 'match' => $match, 'confirmDelete' => 1], '1 is not boolean true'],
+			'permanent string' => [['register' => 'r', 'schema' => 's', 'operation' => 'delete', 'match' => $match, 'confirmDelete' => true, 'permanent' => 'true'], 'the string "true" is truthy, and destruction is not something to reach by paste'],
+			'permanent one' => [['register' => 'r', 'schema' => 's', 'operation' => 'delete', 'match' => $match, 'confirmDelete' => true, 'permanent' => 1], '1 is not boolean true'],
+			'permanent on create' => [['register' => 'r', 'schema' => 's', 'operation' => 'create', 'fields' => ['a' => 1], 'permanent' => true], 'permanent only qualifies a delete'],
+			'permanent on update' => [['register' => 'r', 'schema' => 's', 'operation' => 'update', 'match' => $match, 'fields' => ['a' => 1], 'permanent' => true], 'permanent only qualifies a delete'],
 			'maxWrites zero' => [['register' => 'r', 'schema' => 's', 'operation' => 'create', 'fields' => ['a' => 1], 'maxWrites' => 0], 'a cap of zero is not a cap'],
 			'maxWrites negative' => [['register' => 'r', 'schema' => 's', 'operation' => 'create', 'fields' => ['a' => 1], 'maxWrites' => -1], 'a negative cap is not a cap'],
 			'maxWrites string' => [['register' => 'r', 'schema' => 's', 'operation' => 'create', 'fields' => ['a' => 1], 'maxWrites' => '10'], 'a cap must be a whole number'],
@@ -287,7 +291,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testEachItemProducesOneAttributedCreate(): void {
 		$seen = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
 				$seen[] = [
 					'object' => $object,
 					'register' => $register,
@@ -336,7 +340,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testBypassKeysInTheConfigurationAreNeverForwarded(): void {
 		$seen = null;
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
 				$seen = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'silent' => $silent];
 
 				return $this->entity('uuid-1', $object);
@@ -811,6 +815,91 @@ class ObjectWriteNodeTest extends TestCase {
 	}//end testASkippedDeleteIsDistinguishableFromAPerformedOne()
 
 	/**
+	 * Capture the `permanent` argument the node forwards to the object service.
+	 *
+	 * @param array<string, mixed> $config The delete configuration under test.
+	 *
+	 * @return bool|null The forwarded flag, or null when no delete was attempted.
+	 */
+	private function permanentForwardedBy(array $config): ?bool {
+		$this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
+
+		$seen = null;
+		$this->objects->method('deleteObject')->willReturnCallback(
+			function (
+				string $uuid,
+				mixed $register = null,
+				mixed $schema = null,
+				bool $_rbac = true,
+				bool $_multitenancy = true,
+				bool $_retentionSweep = false,
+				?IUser $currentUser = null,
+				bool $permanent = false
+			) use (&$seen): bool {
+				$seen = $permanent;
+
+				return true;
+			}
+		);
+
+		$this->node->execute($this->items([['retiredId' => 'r1']]), $config, $this->registerContext);
+
+		return $seen;
+
+	}//end permanentForwardedBy()
+
+	/**
+	 * The tombstone is the default, and it stays the default.
+	 *
+	 * A soft delete is what makes a mistaken flow recoverable, so a delete that
+	 * says nothing about permanence must not get it. This is the arm that makes
+	 * the next test mean something: without it, "permanent: true was forwarded"
+	 * is satisfied by a node that hardcodes true.
+	 *
+	 * @return void
+	 */
+	public function testADeleteIsSoftUnlessTheAuthorSaysOtherwise(): void {
+		$this->assertFalse(
+			$this->permanentForwardedBy($this->deleteConfig()),
+			'a delete with no "permanent" key must tombstone, not destroy'
+		);
+
+	}//end testADeleteIsSoftUnlessTheAuthorSaysOtherwise()
+
+	/**
+	 * `permanent: true` reaches the service, so a CLAIM can free its identifier.
+	 *
+	 * The tombstone goes on holding the identifier — the magic table's `_uuid`
+	 * unique index carries no `WHERE _deleted IS NULL` predicate — while the
+	 * create path looks for its conflict with `includeDeleted: false` and finds
+	 * nothing. A row that is a lock, a slot or a lease therefore cannot be
+	 * claimed twice, and the second attempt is refused with `already exists`
+	 * about an object every read reports as absent (openregister#2459).
+	 *
+	 * @return void
+	 */
+	public function testAPermanentDeleteReachesTheServiceSoAClaimCanFreeItsIdentifier(): void {
+		$this->assertTrue(
+			$this->permanentForwardedBy($this->deleteConfig(['permanent' => true])),
+			'"permanent": true must reach deleteObject(), or the identifier stays claimed'
+		);
+
+	}//end testAPermanentDeleteReachesTheServiceSoAClaimCanFreeItsIdentifier()
+
+	/**
+	 * `permanent: false` is a statement, not a gap, and means the same as absent.
+	 *
+	 * @return void
+	 */
+	public function testAnExplicitPermanentFalseIsStillASoftDelete(): void {
+		$this->assertFalse(
+			$this->permanentForwardedBy($this->deleteConfig(['permanent' => false])),
+			'an explicit false must not be read as an opt-in'
+		);
+
+	}//end testAnExplicitPermanentFalseIsStillASoftDelete()
+
+	/**
 	 * `config.output` on a delete used to be read by nothing.
 	 *
 	 * `outputJson()` is what honours the key, and it was only ever called on the
@@ -1060,7 +1149,7 @@ class ObjectWriteNodeTest extends TestCase {
 	 */
 	public function testAnOutputKeyPreservesTheIncomingRecord(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
 				return $this->entity('uuid-1', $object);
 			}
 		);
@@ -1090,7 +1179,7 @@ class ObjectWriteNodeTest extends TestCase {
 	 */
 	public function testWithoutAnOutputKeyTheWrittenObjectStillReplacesTheRecord(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
+			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
 				return $this->entity('uuid-1', $object);
 			}
 		);
