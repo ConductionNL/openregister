@@ -140,8 +140,8 @@ class MergeServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
 		$this->objectService->method('find')->willReturnMap(
 			[
-				['from-uuid', [], false, null, null, true, true, true, $from],
-				['into-uuid', [], false, null, null, true, true, true, $into],
+				['from-uuid', [], false, null, null, true, true, true, true, $from],
+				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
 		);
 		$this->objectService->method('findAll')->willReturn([]);
@@ -166,8 +166,8 @@ class MergeServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
 		$this->objectService->method('find')->willReturnMap(
 			[
-				['from-uuid', [], false, null, null, true, true, true, $from],
-				['into-uuid', [], false, null, null, true, true, true, $into],
+				['from-uuid', [], false, null, null, true, true, true, true, $from],
+				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
 		);
 		$this->objectService->method('findAll')->willReturn([]);
@@ -228,8 +228,8 @@ class MergeServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
 		$this->objectService->method('find')->willReturnMap(
 			[
-				['from-uuid', [], false, null, null, true, true, true, $from],
-				['into-uuid', [], false, null, null, true, true, true, $into],
+				['from-uuid', [], false, null, null, true, true, true, true, $from],
+				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
 		);
 
@@ -247,8 +247,8 @@ class MergeServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
 		$this->objectService->method('find')->willReturnMap(
 			[
-				['from-uuid', [], false, null, null, true, true, true, $from],
-				['into-uuid', [], false, null, null, true, true, true, $into],
+				['from-uuid', [], false, null, null, true, true, true, true, $from],
+				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
 		);
 
@@ -293,9 +293,9 @@ class MergeServiceTest extends TestCase {
 
 		$this->objectService->method('find')->willReturnMap(
 			[
-				['op-uuid', [], false, null, MergeService::MERGE_SCHEMA, true, true, true, $operationEntity],
-				['from-uuid', [], false, null, null, true, true, true, $fromEntity],
-				['into-uuid', [], false, null, null, true, true, true, $intoEntity],
+				['op-uuid', [], false, null, MergeService::MERGE_SCHEMA, true, true, true, true, $operationEntity],
+				['from-uuid', [], false, null, null, true, true, true, true, $fromEntity],
+				['into-uuid', [], false, null, null, true, true, true, true, $intoEntity],
 			]
 		);
 
