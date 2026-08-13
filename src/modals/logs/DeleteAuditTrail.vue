@@ -4,24 +4,43 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteAuditTrail'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteAuditTrail'"
 		:name="t('openregister', 'Delete Audit Trail')"
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			{{ t('openregister', 'Do you want to permanently delete this audit trail entry? This action cannot be undone.') }}
+			{{
+				t(
+					'openregister',
+					'Do you want to permanently delete this audit trail entry? This action cannot be undone.',
+				)
+			}}
 		</p>
 
-		<div v-if="success === null && auditTrailStore.auditTrailItem" class="audit-trail-info">
-			<p><strong>{{ t('openregister', 'ID:') }}</strong> {{ auditTrailStore.auditTrailItem.id }}</p>
+		<div
+			v-if="success === null && auditTrailStore.auditTrailItem"
+			class="audit-trail-info">
+			<p>
+				<strong>{{ t('openregister', 'ID:') }}</strong>
+				{{ auditTrailStore.auditTrailItem.id }}
+			</p>
 			<p>
 				<strong>{{ t('openregister', 'Action:') }}</strong>
-				<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
+				<span
+					class="action-badge"
+					:class="`action-${auditTrailStore.auditTrailItem.action}`">
 					{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
 				</span>
 			</p>
-			<p><strong>{{ t('openregister', 'Object:') }}</strong> {{ auditTrailStore.auditTrailItem.object }}</p>
-			<p><strong>{{ t('openregister', 'Created:') }}</strong> {{ formatDate(auditTrailStore.auditTrailItem.created) }}</p>
+			<p>
+				<strong>{{ t('openregister', 'Object:') }}</strong>
+				{{ auditTrailStore.auditTrailItem.object }}
+			</p>
+			<p>
+				<strong>{{ t('openregister', 'Created:') }}</strong>
+				{{ formatDate(auditTrailStore.auditTrailItem.created) }}
+			</p>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -36,7 +55,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -57,12 +80,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -111,9 +129,12 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`, {
-					method: 'DELETE',
-				})
+				const response = await fetch(
+					`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`,
+					{
+						method: 'DELETE',
+					},
+				)
 
 				const result = await response.json()
 
@@ -129,7 +150,12 @@ export default {
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || t('openregister', 'An error occurred while deleting the audit trail')
+				this.error =
+					error.message
+					|| t(
+						'openregister',
+						'An error occurred while deleting the audit trail',
+					)
 			} finally {
 				this.loading = false
 			}

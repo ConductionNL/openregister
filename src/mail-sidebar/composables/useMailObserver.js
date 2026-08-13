@@ -45,11 +45,17 @@ export function parseMailUrl(url) {
 	// Path-based routing without thread: /apps/mail/box/{mailboxId}
 	const pathBoxMatch = url.match(/\/apps\/mail\/box\/(\d+)$/)
 	if (pathBoxMatch) {
-		return { accountId: parseInt(pathBoxMatch[1], 10), messageId: null, sender: null }
+		return {
+			accountId: parseInt(pathBoxMatch[1], 10),
+			messageId: null,
+			sender: null,
+		}
 	}
 
 	// Hash-based routing: #/accounts/{accountId}/folders/{folderName}/messages/{messageId}
-	const hashMessageMatch = url.match(/\/accounts\/(\d+)\/folders\/[^/]+\/messages\/(\d+)/)
+	const hashMessageMatch = url.match(
+		/\/accounts\/(\d+)\/folders\/[^/]+\/messages\/(\d+)/,
+	)
 	if (hashMessageMatch) {
 		return {
 			accountId: parseInt(hashMessageMatch[1], 10),
@@ -61,7 +67,11 @@ export function parseMailUrl(url) {
 	// Hash-based folder-only: #/accounts/{accountId}/folders/...
 	const hashFolderMatch = url.match(/\/accounts\/(\d+)\/folders\//)
 	if (hashFolderMatch) {
-		return { accountId: parseInt(hashFolderMatch[1], 10), messageId: null, sender: null }
+		return {
+			accountId: parseInt(hashFolderMatch[1], 10),
+			messageId: null,
+			sender: null,
+		}
 	}
 
 	return { accountId: null, messageId: null, sender: null }
@@ -109,7 +119,8 @@ export function useMailObserver(options = {}) {
 			const url = window.location.hash || currentUrl
 			const parsed = parseMailUrl(url)
 
-			const changed = parsed.accountId !== accountId.value
+			const changed =
+				parsed.accountId !== accountId.value
 				|| parsed.messageId !== messageId.value
 
 			accountId.value = parsed.accountId

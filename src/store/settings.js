@@ -113,7 +113,16 @@ export const useSettingsStore = defineStore('settings', {
 			extractionMode: 'background', // background, immediate, manual
 			maxFileSize: 100,
 			batchSize: 10,
-			enabledFileTypes: ['txt', 'pdf', 'docx', 'xlsx', 'pptx', 'html', 'md', 'json'],
+			enabledFileTypes: [
+				'txt',
+				'pdf',
+				'docx',
+				'xlsx',
+				'pptx',
+				'html',
+				'md',
+				'json',
+			],
 		},
 
 		loadingLlmSettings: false,
@@ -210,7 +219,7 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		hasWarnings: (state) => {
 			const warnings = state.stats.warnings
-			return Object.values(warnings).some(count => count > 0)
+			return Object.values(warnings).some((count) => count > 0)
 		},
 
 		/**
@@ -218,40 +227,56 @@ export const useSettingsStore = defineStore('settings', {
 		 * @param {object} state - The state of the retention settings
 		 */
 		retentionStatusClass: (state) => {
-			const hasIssues = state.stats.warnings.auditTrailsWithoutExpiry > 0
-							 || state.stats.warnings.searchTrailsWithoutExpiry > 0
-							 || state.stats.warnings.expiredAuditTrails > 0
-							 || state.stats.warnings.expiredSearchTrails > 0
-							 || state.stats.warnings.expiredObjects > 0
+			const hasIssues =
+				state.stats.warnings.auditTrailsWithoutExpiry > 0
+				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
+				|| state.stats.warnings.expiredAuditTrails > 0
+				|| state.stats.warnings.expiredSearchTrails > 0
+				|| state.stats.warnings.expiredObjects > 0
 
 			return hasIssues ? 'warning-status' : 'healthy-status'
 		},
 
 		retentionStatusTextClass: (state) => {
-			const hasIssues = state.stats.warnings.auditTrailsWithoutExpiry > 0
-							 || state.stats.warnings.searchTrailsWithoutExpiry > 0
-							 || state.stats.warnings.expiredAuditTrails > 0
-							 || state.stats.warnings.expiredSearchTrails > 0
-							 || state.stats.warnings.expiredObjects > 0
+			const hasIssues =
+				state.stats.warnings.auditTrailsWithoutExpiry > 0
+				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
+				|| state.stats.warnings.expiredAuditTrails > 0
+				|| state.stats.warnings.expiredSearchTrails > 0
+				|| state.stats.warnings.expiredObjects > 0
 
 			return hasIssues ? 'status-warning' : 'status-healthy'
 		},
 
 		retentionStatusMessage: (state) => {
 			const warnings = state.stats.warnings
-			const hasIssues = warnings.auditTrailsWithoutExpiry > 0
-							 || warnings.searchTrailsWithoutExpiry > 0
-							 || warnings.expiredAuditTrails > 0
-							 || warnings.expiredSearchTrails > 0
-							 || warnings.expiredObjects > 0
+			const hasIssues =
+				warnings.auditTrailsWithoutExpiry > 0
+				|| warnings.searchTrailsWithoutExpiry > 0
+				|| warnings.expiredAuditTrails > 0
+				|| warnings.expiredSearchTrails > 0
+				|| warnings.expiredObjects > 0
 
 			if (hasIssues) {
 				const issues = []
-				if (warnings.auditTrailsWithoutExpiry > 0) issues.push(`${warnings.auditTrailsWithoutExpiry} audit trails without expiry`)
-				if (warnings.searchTrailsWithoutExpiry > 0) issues.push(`${warnings.searchTrailsWithoutExpiry} search trails without expiry`)
-				if (warnings.expiredAuditTrails > 0) issues.push(`${warnings.expiredAuditTrails} expired audit trails`)
-				if (warnings.expiredSearchTrails > 0) issues.push(`${warnings.expiredSearchTrails} expired search trails`)
-				if (warnings.expiredObjects > 0) issues.push(`${warnings.expiredObjects} expired objects`)
+				if (warnings.auditTrailsWithoutExpiry > 0)
+					issues.push(
+						`${warnings.auditTrailsWithoutExpiry} audit trails without expiry`,
+					)
+				if (warnings.searchTrailsWithoutExpiry > 0)
+					issues.push(
+						`${warnings.searchTrailsWithoutExpiry} search trails without expiry`,
+					)
+				if (warnings.expiredAuditTrails > 0)
+					issues.push(
+						`${warnings.expiredAuditTrails} expired audit trails`,
+					)
+				if (warnings.expiredSearchTrails > 0)
+					issues.push(
+						`${warnings.expiredSearchTrails} expired search trails`,
+					)
+				if (warnings.expiredObjects > 0)
+					issues.push(`${warnings.expiredObjects} expired objects`)
 
 				return `Issues found: ${issues.join(', ')}`
 			}
@@ -283,10 +308,13 @@ export const useSettingsStore = defineStore('settings', {
 					this.loadVersionInfo(),
 					this.loadAvailableOptions(),
 				])
-
 			} catch (error) {
 				console.error('Failed to load settings:', error)
-				showError(t('openregister', 'Failed to load settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to load settings: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.loading = false
 				this.loadingInProgress = false
@@ -316,16 +344,26 @@ export const useSettingsStore = defineStore('settings', {
 				this.massValidateResults = response.data
 
 				if (response.data.success) {
-					showSuccess(t('openregister', 'Mass validation completed successfully'))
+					showSuccess(
+						t('openregister', 'Mass validation completed successfully'),
+					)
 				} else {
-					showError(t('openregister', 'Mass validation failed: {error}', { error: response.data.message }))
+					showError(
+						t('openregister', 'Mass validation failed: {error}', {
+							error: response.data.message,
+						}),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Mass validation failed:', error)
 				const errorMessage = error.response?.data?.message || error.message
-				showError(t('openregister', 'Mass validation failed: {error}', { error: errorMessage }))
+				showError(
+					t('openregister', 'Mass validation failed: {error}', {
+						error: errorMessage,
+					}),
+				)
 
 				this.massValidateResults = {
 					success: false,
@@ -355,7 +393,9 @@ export const useSettingsStore = defineStore('settings', {
 		async loadMassValidateMemoryPrediction(maxObjects = 0) {
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/mass-validate/memory-prediction'),
+					generateUrl(
+						'/apps/openregister/api/settings/mass-validate/memory-prediction',
+					),
 					{ maxObjects },
 				)
 
@@ -406,14 +446,20 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadRbacSettings() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/rbac'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/rbac'),
+				)
 				if (response.data) {
 					this.rbacOptions = { ...this.rbacOptions, ...response.data.rbac }
 					if (response.data.availableGroups) {
-						this.groupOptions = Object.entries(response.data.availableGroups).map(([id, label]) => ({ id, label }))
+						this.groupOptions = Object.entries(
+							response.data.availableGroups,
+						).map(([id, label]) => ({ id, label }))
 					}
 					if (response.data.availableUsers) {
-						this.userOptions = Object.entries(response.data.availableUsers).map(([id, label]) => ({ id, label }))
+						this.userOptions = Object.entries(
+							response.data.availableUsers,
+						).map(([id, label]) => ({ id, label }))
 					}
 				}
 			} catch (error) {
@@ -442,7 +488,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to update RBAC settings:', error)
-				showError(t('openregister', 'Failed to update RBAC settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to update RBAC settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.saving = false
@@ -455,11 +505,18 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadMultitenancySettings() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/multitenancy'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/multitenancy'),
+				)
 				if (response.data) {
-					this.multitenancyOptions = { ...this.multitenancyOptions, ...response.data.multitenancy }
+					this.multitenancyOptions = {
+						...this.multitenancyOptions,
+						...response.data.multitenancy,
+					}
 					if (response.data.availableTenants) {
-						this.tenantOptions = Object.entries(response.data.availableTenants).map(([id, label]) => ({ id, label }))
+						this.tenantOptions = Object.entries(
+							response.data.availableTenants,
+						).map(([id, label]) => ({ id, label }))
 					}
 				}
 			} catch (error) {
@@ -481,14 +538,25 @@ export const useSettingsStore = defineStore('settings', {
 				)
 
 				if (response.data) {
-					this.multitenancyOptions = { ...this.multitenancyOptions, ...response.data.multitenancy }
+					this.multitenancyOptions = {
+						...this.multitenancyOptions,
+						...response.data.multitenancy,
+					}
 				}
 
-				showSuccess(t('openregister', 'Multitenancy settings updated successfully'))
+				showSuccess(
+					t('openregister', 'Multitenancy settings updated successfully'),
+				)
 				return response.data
 			} catch (error) {
 				console.error('Failed to update Multitenancy settings:', error)
-				showError(t('openregister', 'Failed to update Multitenancy settings: {error}', { error: error.message }))
+				showError(
+					t(
+						'openregister',
+						'Failed to update Multitenancy settings: {error}',
+						{ error: error.message },
+					),
+				)
 				throw error
 			} finally {
 				this.saving = false
@@ -501,9 +569,14 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadRetentionSettings() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/retention'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/retention'),
+				)
 				if (response.data) {
-					this.retentionOptions = { ...this.retentionOptions, ...response.data }
+					this.retentionOptions = {
+						...this.retentionOptions,
+						...response.data,
+					}
 				}
 			} catch (error) {
 				console.error('Failed to load Retention settings:', error)
@@ -529,7 +602,9 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadFlowSettings() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings'),
+				)
 				if (response.data?.flow) {
 					this.flowOptions = { ...this.flowOptions, ...response.data.flow }
 				}
@@ -561,7 +636,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to update flow settings:', error)
-				showError(t('openregister', 'Failed to update flow settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to update flow settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.saving = false
@@ -577,14 +656,25 @@ export const useSettingsStore = defineStore('settings', {
 				)
 
 				if (response.data) {
-					this.retentionOptions = { ...this.retentionOptions, ...response.data }
+					this.retentionOptions = {
+						...this.retentionOptions,
+						...response.data,
+					}
 				}
 
-				showSuccess(t('openregister', 'Retention settings updated successfully'))
+				showSuccess(
+					t('openregister', 'Retention settings updated successfully'),
+				)
 				return response.data
 			} catch (error) {
 				console.error('Failed to update Retention settings:', error)
-				showError(t('openregister', 'Failed to update Retention settings: {error}', { error: error.message }))
+				showError(
+					t(
+						'openregister',
+						'Failed to update Retention settings: {error}',
+						{ error: error.message },
+					),
+				)
 				throw error
 			} finally {
 				this.saving = false
@@ -598,7 +688,9 @@ export const useSettingsStore = defineStore('settings', {
 		async getLlmSettings() {
 			try {
 				this.loadingLlmSettings = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
 				if (response.data) {
 					this.llmOptions = { ...this.llmOptions, ...response.data }
 					return this.llmOptions
@@ -632,7 +724,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to save LLM settings:', error)
-				showError(t('openregister', 'Failed to save LLM settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to save LLM settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			}
 		},
@@ -654,14 +750,23 @@ export const useSettingsStore = defineStore('settings', {
 				}
 
 				// Show success message only if not just toggling enabled
-				if (Object.keys(partialData).length > 1 || !Object.prototype.hasOwnProperty.call(partialData, 'enabled')) {
-					showSuccess(t('openregister', 'LLM settings updated successfully'))
+				if (
+					Object.keys(partialData).length > 1
+					|| !Object.prototype.hasOwnProperty.call(partialData, 'enabled')
+				) {
+					showSuccess(
+						t('openregister', 'LLM settings updated successfully'),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to update LLM settings:', error)
-				showError(t('openregister', 'Failed to update LLM settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to update LLM settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			}
 		},
@@ -716,7 +821,9 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async getLlmUsageStats() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm/usage'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm/usage'),
+				)
 				return response.data
 			} catch (error) {
 				console.error('Failed to load LLM usage stats:', error)
@@ -731,7 +838,9 @@ export const useSettingsStore = defineStore('settings', {
 		async getFileSettings() {
 			try {
 				this.loadingFileSettings = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/files'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/files'),
+				)
 				if (response.data) {
 					this.fileOptions = { ...this.fileOptions, ...response.data }
 					return this.fileOptions
@@ -764,7 +873,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
-				showError(t('openregister', 'Failed to save file settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to save file settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			}
 		},
@@ -775,7 +888,9 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async getExtractionStats() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/files/stats'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/files/stats'),
+				)
 				const stats = response.data.data || response.data
 				this.extractionStats = stats // Cache in state
 				return stats
@@ -798,7 +913,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to discover files:', error)
-				showError(t('openregister', 'Failed to discover files: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to discover files: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			}
 		},
@@ -810,16 +929,25 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async triggerFileExtraction(type = 'pending') {
 			try {
-			// Use new core file extraction endpoints
-				const endpoint = type === 'failed'
-					? '/apps/openregister/api/files/retry-failed'
-					: '/apps/openregister/api/files/extract'
+				// Use new core file extraction endpoints
+				const endpoint =
+					type === 'failed'
+						? '/apps/openregister/api/files/retry-failed'
+						: '/apps/openregister/api/files/extract'
 
-				const response = await axios.post(generateUrl(endpoint), { limit: 100 })
+				const response = await axios.post(generateUrl(endpoint), {
+					limit: 100,
+				})
 				return response.data
 			} catch (error) {
 				console.error(`Failed to trigger ${type} file extraction:`, error)
-				showError(t('openregister', 'Failed to start processing {type} files: {error}', { type, error: error.message }))
+				showError(
+					t(
+						'openregister',
+						'Failed to start processing {type} files: {error}',
+						{ type, error: error.message },
+					),
+				)
 				throw error
 			}
 		},
@@ -832,7 +960,9 @@ export const useSettingsStore = defineStore('settings', {
 		async testDolphinConnection(connectionData) {
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/files/test-dolphin'),
+					generateUrl(
+						'/apps/openregister/api/settings/files/test-dolphin',
+					),
 					connectionData,
 				)
 				return response.data
@@ -853,7 +983,9 @@ export const useSettingsStore = defineStore('settings', {
 		async testPresidioConnection(connectionData) {
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/files/test-presidio'),
+					generateUrl(
+						'/apps/openregister/api/settings/files/test-presidio',
+					),
 					connectionData,
 				)
 				return response.data
@@ -874,7 +1006,9 @@ export const useSettingsStore = defineStore('settings', {
 		async testOpenAnonymiserConnection(connectionData) {
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/files/test-openanonymiser'),
+					generateUrl(
+						'/apps/openregister/api/settings/files/test-openanonymiser',
+					),
 					connectionData,
 				)
 				return response.data
@@ -894,7 +1028,9 @@ export const useSettingsStore = defineStore('settings', {
 		async getAnonymisationBackendState() {
 			try {
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/admin/anonymisation/backend-state'),
+					generateUrl(
+						'/apps/openregister/api/admin/anonymisation/backend-state',
+					),
 				)
 				return response.data
 			} catch (error) {
@@ -911,7 +1047,9 @@ export const useSettingsStore = defineStore('settings', {
 		async testAnonymisationBackend(method) {
 			try {
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/admin/anonymisation/test-connection'),
+					generateUrl(
+						'/apps/openregister/api/admin/anonymisation/test-connection',
+					),
 					{ method },
 				)
 				return response.data
@@ -933,7 +1071,9 @@ export const useSettingsStore = defineStore('settings', {
 		async loadVersionInfo() {
 			try {
 				this.loadingVersionInfo = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/version'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/version'),
+				)
 				if (response.data) {
 					this.versionInfo = { ...this.versionInfo, ...response.data }
 				}
@@ -964,14 +1104,20 @@ export const useSettingsStore = defineStore('settings', {
 		async loadStats() {
 			this.loadingStats = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/statistics'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/statistics'),
+				)
 				if (response.data) {
 					this.stats = { ...this.stats, ...response.data }
 					this.stats.lastUpdated = new Date().toISOString()
 				}
 			} catch (error) {
 				console.error('Failed to load statistics:', error)
-				showError(t('openregister', 'Failed to load statistics: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to load statistics: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.loadingStats = false
 			}
@@ -984,14 +1130,20 @@ export const useSettingsStore = defineStore('settings', {
 		async loadCacheStats() {
 			this.loadingCacheStats = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/cache'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/cache'),
+				)
 				if (response.data) {
 					this.cacheStats = { ...this.cacheStats, ...response.data }
 					this.cacheStats.lastUpdated = new Date().toISOString()
 				}
 			} catch (error) {
 				console.error('Failed to load cache statistics:', error)
-				showError(t('openregister', 'Failed to load cache statistics: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to load cache statistics: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.loadingCacheStats = false
 			}
@@ -1004,7 +1156,9 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async getChatStats() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/chat/stats'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/chat/stats'),
+				)
 				return response.data
 			} catch (error) {
 				console.error('Failed to load chat statistics:', error)
@@ -1025,22 +1179,39 @@ export const useSettingsStore = defineStore('settings', {
 		async clearSpecificCache(type) {
 			this.clearingCache = type
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/settings/cache'), {
-					data: { type },
-				})
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/settings/cache'),
+					{
+						data: { type },
+					},
+				)
 
 				if (response.data.success !== false) {
-					showSuccess(t('openregister', '{type} cache cleared successfully', { type }))
+					showSuccess(
+						t('openregister', '{type} cache cleared successfully', {
+							type,
+						}),
+					)
 					// Reload cache stats to reflect changes
 					await this.loadCacheStats()
 				} else {
-					showError(t('openregister', 'Failed to clear {type} cache: {error}', { type, error: response.data.message || 'Unknown error' }))
+					showError(
+						t('openregister', 'Failed to clear {type} cache: {error}', {
+							type,
+							error: response.data.message || 'Unknown error',
+						}),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error(`Failed to clear ${type} cache:`, error)
-				showError(t('openregister', 'Failed to clear {type} cache: {error}', { type, error: error.message }))
+				showError(
+					t('openregister', 'Failed to clear {type} cache: {error}', {
+						type,
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.clearingCache = false
@@ -1062,26 +1233,58 @@ export const useSettingsStore = defineStore('settings', {
 		async warmupNamesCache() {
 			this.warmingUpCache = true
 			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/cache/warmup-names'))
+				const response = await axios.post(
+					generateUrl(
+						'/apps/openregister/api/settings/cache/warmup-names',
+					),
+				)
 
 				if (response.data.success) {
 					const loadedCount = response.data.loaded_names || 0
 					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
-					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
+					const oldCacheSize =
+						response.data.old_cache?.distributed_name_cache_size || 0
+					const newCacheSize =
+						response.data.new_cache?.distributed_name_cache_size || 0
 
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
-						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
+						cacheMessage = t(
+							'openregister',
+							'Cache grew from {old} to {new} entries.',
+							{ old: oldCacheSize, new: newCacheSize },
+						)
 					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', { old: oldCacheSize, new: newCacheSize })
+						cacheMessage = t(
+							'openregister',
+							'Cache shrunk from {old} to {new} entries.',
+							{ old: oldCacheSize, new: newCacheSize },
+						)
 					} else {
-						cacheMessage = t('openregister', 'Cache stayed the same at {size} entries.', { size: newCacheSize })
+						cacheMessage = t(
+							'openregister',
+							'Cache stayed the same at {size} entries.',
+							{ size: newCacheSize },
+						)
 					}
 
-					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {message}', { count: loadedCount, time: executionTime, message: cacheMessage }))
+					showSuccess(
+						t(
+							'openregister',
+							'Names cache warmed up successfully: {count} names loaded in {time}. {message}',
+							{
+								count: loadedCount,
+								time: executionTime,
+								message: cacheMessage,
+							},
+						),
+					)
 				} else {
-					showError(t('openregister', 'Failed to warmup names cache: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t('openregister', 'Failed to warmup names cache: {error}', {
+							error: response.data.error || 'Unknown error',
+						}),
+					)
 				}
 
 				// Reload cache stats to reflect changes.
@@ -1090,7 +1293,11 @@ export const useSettingsStore = defineStore('settings', {
 				return response.data
 			} catch (error) {
 				console.error('Failed to warmup names cache:', error)
-				showError(t('openregister', 'Failed to warmup names cache: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to warmup names cache: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.warmingUpCache = false
@@ -1104,7 +1311,11 @@ export const useSettingsStore = defineStore('settings', {
 		async loadWarmupInterval() {
 			this.loadingWarmupInterval = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/cache/warmup-interval'))
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/settings/cache/warmup-interval',
+					),
+				)
 				if (response.data) {
 					this.warmupInterval = response.data.interval ?? 3600
 					this.warmupLastRun = response.data.last_run ?? null
@@ -1126,7 +1337,9 @@ export const useSettingsStore = defineStore('settings', {
 			this.savingWarmupInterval = true
 			try {
 				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/cache/warmup-interval'),
+					generateUrl(
+						'/apps/openregister/api/settings/cache/warmup-interval',
+					),
 					{ interval },
 				)
 
@@ -1134,13 +1347,23 @@ export const useSettingsStore = defineStore('settings', {
 					this.warmupInterval = response.data.interval
 					showSuccess(response.data.message)
 				} else {
-					showError(t('openregister', 'Failed to save warmup interval: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t(
+							'openregister',
+							'Failed to save warmup interval: {error}',
+							{ error: response.data.error || 'Unknown error' },
+						),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to save warmup interval:', error)
-				showError(t('openregister', 'Failed to save warmup interval: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to save warmup interval: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.savingWarmupInterval = false
@@ -1154,20 +1377,32 @@ export const useSettingsStore = defineStore('settings', {
 		async rebase() {
 			this.rebasing = true
 			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/rebase'))
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/rebase'),
+				)
 
 				if (response.data.success !== false) {
-					showSuccess(t('openregister', 'Rebase operation completed successfully'))
+					showSuccess(
+						t('openregister', 'Rebase operation completed successfully'),
+					)
 					// Reload statistics to reflect changes
 					await this.loadStats()
 				} else {
-					showError(t('openregister', 'Rebase operation failed: {error}', { error: response.data.message || 'Unknown error' }))
+					showError(
+						t('openregister', 'Rebase operation failed: {error}', {
+							error: response.data.message || 'Unknown error',
+						}),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Rebase operation failed:', error)
-				showError(t('openregister', 'Rebase operation failed: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Rebase operation failed: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.rebasing = false
@@ -1191,13 +1426,20 @@ export const useSettingsStore = defineStore('settings', {
 					return await this.updateRetentionSettings(data.retention)
 				} else {
 					// Fallback to legacy endpoint
-					const response = await axios.put(generateUrl('/apps/openregister/api/settings'), data)
+					const response = await axios.put(
+						generateUrl('/apps/openregister/api/settings'),
+						data,
+					)
 					showSuccess(t('openregister', 'Settings updated successfully'))
 					return response.data
 				}
 			} catch (error) {
 				console.error('Failed to save settings:', error)
-				showError(t('openregister', 'Failed to save settings: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to save settings: {error}', {
+						error: error.message,
+					}),
+				)
 				throw error
 			} finally {
 				this.saving = false
@@ -1238,9 +1480,12 @@ export const useSettingsStore = defineStore('settings', {
 			this.clearingCache = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/settings/cache'), {
-					data: { type },
-				})
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/settings/cache'),
+					{
+						data: { type },
+					},
+				)
 
 				if (response.data.success) {
 					// Reload cache stats after clearing
@@ -1248,7 +1493,11 @@ export const useSettingsStore = defineStore('settings', {
 				}
 			} catch (error) {
 				console.error('Failed to clear cache:', error)
-				showError(t('openregister', 'Failed to clear cache: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to clear cache: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.clearingCache = false
 			}
@@ -1278,17 +1527,33 @@ export const useSettingsStore = defineStore('settings', {
 			this.clearingAuditTrails = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/audit-trails/clear-all'))
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/audit-trails/clear-all'),
+				)
 
 				if (response.data.success) {
-					showSuccess(t('openregister', 'Successfully cleared {count} audit trails', { count: response.data.deleted || 0 }))
+					showSuccess(
+						t(
+							'openregister',
+							'Successfully cleared {count} audit trails',
+							{ count: response.data.deleted || 0 },
+						),
+					)
 					this.hideClearAuditTrailsDialog()
 				} else {
-					showError(t('openregister', 'Failed to clear audit trails: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t('openregister', 'Failed to clear audit trails: {error}', {
+							error: response.data.error || 'Unknown error',
+						}),
+					)
 				}
 			} catch (error) {
 				console.error('Failed to clear audit trails:', error)
-				showError(t('openregister', 'Failed to clear audit trails: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to clear audit trails: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.clearingAuditTrails = false
 			}
@@ -1318,17 +1583,33 @@ export const useSettingsStore = defineStore('settings', {
 			this.clearingSearchTrails = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/search-trails/clear-all'))
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/search-trails/clear-all'),
+				)
 
 				if (response.data.success) {
-					showSuccess(t('openregister', 'Successfully cleared {count} search trails', { count: response.data.deleted || 0 }))
+					showSuccess(
+						t(
+							'openregister',
+							'Successfully cleared {count} search trails',
+							{ count: response.data.deleted || 0 },
+						),
+					)
 					this.hideClearSearchTrailsDialog()
 				} else {
-					showError(t('openregister', 'Failed to clear search trails: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t('openregister', 'Failed to clear search trails: {error}', {
+							error: response.data.error || 'Unknown error',
+						}),
+					)
 				}
 			} catch (error) {
 				console.error('Failed to clear search trails:', error)
-				showError(t('openregister', 'Failed to clear search trails: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to clear search trails: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.clearingSearchTrails = false
 			}
@@ -1358,17 +1639,33 @@ export const useSettingsStore = defineStore('settings', {
 			this.clearingBlobObjects = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/objects/clear-blob'))
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/objects/clear-blob'),
+				)
 
 				if (response.data.success) {
-					showSuccess(t('openregister', 'Successfully cleared {count} blob storage objects', { count: response.data.deleted || 0 }))
+					showSuccess(
+						t(
+							'openregister',
+							'Successfully cleared {count} blob storage objects',
+							{ count: response.data.deleted || 0 },
+						),
+					)
 					this.hideClearBlobObjectsDialog()
 				} else {
-					showError(t('openregister', 'Failed to clear blob objects: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t('openregister', 'Failed to clear blob objects: {error}', {
+							error: response.data.error || 'Unknown error',
+						}),
+					)
 				}
 			} catch (error) {
 				console.error('Failed to clear blob objects:', error)
-				showError(t('openregister', 'Failed to clear blob objects: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to clear blob objects: {error}', {
+						error: error.message,
+					}),
+				)
 			} finally {
 				this.clearingBlobObjects = false
 			}
@@ -1415,21 +1712,43 @@ export const useSettingsStore = defineStore('settings', {
 			this.clearingAppStoreCache = true
 
 			try {
-				const response = await axios.delete(generateUrl('/apps/openregister/api/settings/cache/appstore'), {
-					data: { type },
-				})
+				const response = await axios.delete(
+					generateUrl('/apps/openregister/api/settings/cache/appstore'),
+					{
+						data: { type },
+					},
+				)
 
 				if (response.data.success) {
-					const invalidated = response.data.invalidated?.join(', ') || 'cache'
-					showSuccess(t('openregister', 'App store cache invalidated: {invalidated}', { invalidated }))
+					const invalidated =
+						response.data.invalidated?.join(', ') || 'cache'
+					showSuccess(
+						t(
+							'openregister',
+							'App store cache invalidated: {invalidated}',
+							{ invalidated },
+						),
+					)
 				} else {
-					showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: response.data.error || 'Unknown error' }))
+					showError(
+						t(
+							'openregister',
+							'Failed to invalidate app store cache: {error}',
+							{ error: response.data.error || 'Unknown error' },
+						),
+					)
 				}
 
 				return response.data
 			} catch (error) {
 				console.error('Failed to invalidate app store cache:', error)
-				showError(t('openregister', 'Failed to invalidate app store cache: {error}', { error: error.message }))
+				showError(
+					t(
+						'openregister',
+						'Failed to invalidate app store cache: {error}',
+						{ error: error.message },
+					),
+				)
 				throw error
 			} finally {
 				this.clearingAppStoreCache = false

@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import {
+	deletedStore,
+	registerStore,
+	schemaStore,
+	navigationStore,
+} from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 
@@ -12,17 +17,37 @@ import formatBytes from '../../services/formatBytes.js'
 				<h1 class="viewHeaderTitleIndented">
 					{{ t('openregister', 'Soft Deleted Items') }}
 				</h1>
-				<p>{{ t('openregister', 'Manage and restore soft deleted items from your registers') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Manage and restore soft deleted items from your registers',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} deleted items', { showing: paginatedItems.length, total: deletedStore.deletedPagination.total }) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} deleted items',
+								{
+									showing: paginatedItems.length,
+									total: deletedStore.deletedPagination.total,
+								},
+							)
+						}}
 					</span>
 					<span v-if="selectedItems.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
+						({{
+							t('openregister', '{count} selected', {
+								count: selectedItems.length,
+							})
+						}})
 					</span>
 				</div>
 				<div class="viewActions">
@@ -30,7 +55,11 @@ import formatBytes from '../../services/formatBytes.js'
 					<NcActions
 						:force-name="true"
 						:disabled="selectedItems.length === 0"
-						:title="selectedItems.length === 0 ? 'Select one or more objects to use mass actions' : `Mass actions (${selectedItems.length} selected)`"
+						:title="
+							selectedItems.length === 0
+								? 'Select one or more objects to use mass actions'
+								: `Mass actions (${selectedItems.length} selected)`
+						"
 						:menu-name="`Mass Actions (${selectedItems.length})`">
 						<template #icon>
 							<FormatListChecks :size="20" />
@@ -56,13 +85,8 @@ import formatBytes from '../../services/formatBytes.js'
 					</NcActions>
 
 					<!-- Regular Actions -->
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshItems">
+					<NcActions :force-name="true" :inline="1" menu-name="Actions">
+						<NcActionButton close-after-click @click="refreshItems">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -73,7 +97,8 @@ import formatBytes from '../../services/formatBytes.js'
 			</div>
 
 			<!-- Items Table -->
-			<NcEmptyContent v-if="deletedStore.deletedLoading || !filteredItems.length"
+			<NcEmptyContent
+				v-if="deletedStore.deletedLoading || !filteredItems.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
@@ -117,21 +142,34 @@ import formatBytes from '../../services/formatBytes.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="item in paginatedItems"
+						<tr
+							v-for="item in paginatedItems"
 							:key="item.id"
 							class="viewTableRow itemRow table-row-selectable"
-							:class="{ 'viewTableRowSelected table-row-selected': selectedItems.includes(item.id) }"
+							:class="{
+								'viewTableRowSelected table-row-selected':
+									selectedItems.includes(item.id),
+							}"
 							@click="handleRowClick(item.id, $event)">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
 									:model-value="selectedItems.includes(item.id)"
 									:aria-labelledby="`deleted-row-title-${item.id}`"
-									@update:modelValue="(checked) => toggleItemSelection(item.id, checked)" />
+									@update:modelValue="
+										(checked) =>
+											toggleItemSelection(item.id, checked)
+									" />
 							</td>
-							<td :id="`deleted-row-title-${item.id}`" class="tableColumnTitle">
+							<td
+								:id="`deleted-row-title-${item.id}`"
+								class="tableColumnTitle">
 								<div class="titleContent">
 									<strong>{{ getItemTitle(item) }}</strong>
-									<span v-if="getItemDescription(item)" class="textDescription textEllipsis">{{ getItemDescription(item) }}</span>
+									<span
+										v-if="getItemDescription(item)"
+										class="textDescription textEllipsis"
+										>{{ getItemDescription(item) }}</span
+									>
 								</div>
 							</td>
 							<td class="tableColumnConstrained">
@@ -141,23 +179,40 @@ import formatBytes from '../../services/formatBytes.js'
 								{{ getSchemaName(item['@self']?.schema) }}
 							</td>
 							<td>
-								<span v-if="item['@self']?.deleted?.deleted">{{ formatPurgeDate(item['@self'].deleted.deleted) }}</span>
-								<span v-else>{{ t('openregister', 'Unknown') }}</span>
+								<span v-if="item['@self']?.deleted?.deleted">{{
+									formatPurgeDate(item['@self'].deleted.deleted)
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'Unknown')
+								}}</span>
 							</td>
-							<td>{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}</td>
 							<td>
-								<span v-if="item['@self']?.deleted?.purgeDate">{{ formatPurgeDate(item['@self'].deleted.purgeDate) }}</span>
-								<span v-else>{{ t('openregister', 'No purge date set') }}</span>
+								{{
+									item['@self']?.deleted?.deletedBy
+									|| t('openregister', 'Unknown')
+								}}
+							</td>
+							<td>
+								<span v-if="item['@self']?.deleted?.purgeDate">{{
+									formatPurgeDate(item['@self'].deleted.purgeDate)
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No purge date set')
+								}}</span>
 							</td>
 							<td class="tableColumnActions">
 								<NcActions>
-									<NcActionButton close-after-click @click="restoreItem(item)">
+									<NcActionButton
+										close-after-click
+										@click="restoreItem(item)">
 										<template #icon>
 											<Restore :size="20" />
 										</template>
 										{{ t('openregister', 'Restore') }}
 									</NcActionButton>
-									<NcActionButton close-after-click @click="permanentlyDelete(item)">
+									<NcActionButton
+										close-after-click
+										@click="permanentlyDelete(item)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
@@ -253,7 +308,12 @@ export default {
 		 * @spec exclude list-view select-all checkbox state (computed)
 		 */
 		allSelected() {
-			return this.paginatedItems.length > 0 && this.paginatedItems.every(item => this.selectedItems.includes(item.id))
+			return (
+				this.paginatedItems.length > 0
+				&& this.paginatedItems.every((item) =>
+					this.selectedItems.includes(item.id),
+				)
+			)
 		},
 		/**
 		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
@@ -277,9 +337,15 @@ export default {
 		 */
 		emptyContentDescription() {
 			if (deletedStore.deletedLoading) {
-				return t('openregister', 'Please wait while we fetch your deleted items.')
+				return t(
+					'openregister',
+					'Please wait while we fetch your deleted items.',
+				)
 			} else if (!this.filteredItems.length) {
-				return t('openregister', 'There are no deleted items matching your current filters.')
+				return t(
+					'openregister',
+					'There are no deleted items matching your current filters.',
+				)
 			}
 			return ''
 		},
@@ -420,7 +486,14 @@ export default {
 		 */
 		getItemTitle(item) {
 			// Try various title fields, fallback to ID without "Object" prefix
-			return item.title || item.fileName || item.name || item.object?.title || item.object?.name || item.id
+			return (
+				item.title
+				|| item.fileName
+				|| item.name
+				|| item.object?.title
+				|| item.object?.name
+				|| item.id
+			)
 		},
 		/**
 		 * Get item description from object data
@@ -428,7 +501,12 @@ export default {
 		 * @return {string} The item description
 		 */
 		getItemDescription(item) {
-			return item.description || item.object?.description || item.object?.summary || null
+			return (
+				item.description
+				|| item.object?.description
+				|| item.object?.summary
+				|| null
+			)
 		},
 		/**
 		 * Get register name by ID
@@ -439,7 +517,9 @@ export default {
 		getRegisterName(registerId) {
 			if (!registerId) return t('openregister', 'Unknown Register')
 
-			const register = registerStore.registerList.find(r => r.id === parseInt(registerId))
+			const register = registerStore.registerList.find(
+				(r) => r.id === parseInt(registerId),
+			)
 			return register?.title || `Register ${registerId}`
 		},
 		/**
@@ -451,7 +531,9 @@ export default {
 		getSchemaName(schemaId) {
 			if (!schemaId) return t('openregister', 'Unknown Schema')
 
-			const schema = schemaStore.schemaList.find(s => s.id === parseInt(schemaId))
+			const schema = schemaStore.schemaList.find(
+				(s) => s.id === parseInt(schemaId),
+			)
 			return schema?.title || `Schema ${schemaId}`
 		},
 		/**
@@ -462,13 +544,13 @@ export default {
 		 */
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.paginatedItems.forEach(item => {
+				this.paginatedItems.forEach((item) => {
 					if (!this.selectedItems.includes(item.id)) {
 						this.selectedItems.push(item.id)
 					}
 				})
 			} else {
-				this.paginatedItems.forEach(item => {
+				this.paginatedItems.forEach((item) => {
 					const index = this.selectedItems.indexOf(item.id)
 					if (index > -1) {
 						this.selectedItems.splice(index, 1)
@@ -504,7 +586,9 @@ export default {
 			if (this.selectedItems.length === 0) return
 
 			// Get selected objects data
-			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
+			const selectedObjects = this.paginatedItems.filter((item) =>
+				this.selectedItems.includes(item.id),
+			)
 
 			// Set data in deletedStore and open dialog
 			deletedStore.setSelectedForBulkAction(selectedObjects)
@@ -519,7 +603,9 @@ export default {
 			if (this.selectedItems.length === 0) return
 
 			// Get selected objects data
-			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
+			const selectedObjects = this.paginatedItems.filter((item) =>
+				this.selectedItems.includes(item.id),
+			)
 
 			// Set data in deletedStore and open dialog
 			deletedStore.setSelectedForBulkAction(selectedObjects)
@@ -556,7 +642,7 @@ export default {
 		 */
 		async handleObjectsDeleted(objectIds) {
 			// Remove from selection if they were selected
-			objectIds.forEach(id => {
+			objectIds.forEach((id) => {
 				const index = this.selectedItems.indexOf(id)
 				if (index > -1) {
 					this.selectedItems.splice(index, 1)
@@ -574,7 +660,7 @@ export default {
 		 */
 		async handleObjectsRestored(objectIds) {
 			// Remove from selection if they were selected
-			objectIds.forEach(id => {
+			objectIds.forEach((id) => {
 				const index = this.selectedItems.indexOf(id)
 				if (index > -1) {
 					this.selectedItems.splice(index, 1)
@@ -657,9 +743,11 @@ export default {
 		 */
 		handleRowClick(id, event) {
 			// Don't select if clicking on the checkbox, actions button, or inside actions menu
-			if (event.target.closest('.tableColumnCheckbox')
+			if (
+				event.target.closest('.tableColumnCheckbox')
 				|| event.target.closest('.tableColumnActions')
-				|| event.target.closest('.actionsButton')) {
+				|| event.target.closest('.actionsButton')
+			) {
 				return
 			}
 
@@ -674,7 +762,7 @@ export default {
 		 */
 		handleSelectItem(id) {
 			if (this.selectedItems.includes(id)) {
-				this.selectedItems = this.selectedItems.filter(item => item !== id)
+				this.selectedItems = this.selectedItems.filter((item) => item !== id)
 			} else {
 				this.selectedItems.push(id)
 			}

@@ -8,7 +8,12 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		<CnIndexPage
 			ref="indexPage"
 			:title="t('openregister', 'Sources')"
-			:description="t('openregister', 'Manage your data sources and their configurations')"
+			:description="
+				t(
+					'openregister',
+					'Manage your data sources and their configurations',
+				)
+			"
 			:show-title="true"
 			:objects="paginatedSources"
 			:columns="tableColumns"
@@ -28,7 +33,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			row-key="id"
 			:empty-text="emptyContentName"
 			:refreshing="isRefreshing"
-			@add="sourceStore.setSourceItem(null); navigationStore.setModal('editSource')"
+			@add="
+				sourceStore.setSourceItem(null)
+				navigationStore.setModal('editSource')
+			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -46,19 +54,34 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="sourceStore.setSourceItem(object); navigationStore.setModal('viewSource')">
+							<NcActionButton
+								close-after-click
+								@click="
+									sourceStore.setSourceItem(object)
+									navigationStore.setModal('viewSource')
+								">
 								<template #icon>
 									<Eye :size="20" />
 								</template>
 								{{ t('openregister', 'View') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="sourceStore.setSourceItem(object); navigationStore.setModal('editSource')">
+							<NcActionButton
+								close-after-click
+								@click="
+									sourceStore.setSourceItem(object)
+									navigationStore.setModal('editSource')
+								">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
 								{{ t('openregister', 'Edit') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="sourceStore.setSourceItem(object); navigationStore.setDialog('deleteSource')">
+							<NcActionButton
+								close-after-click
+								@click="
+									sourceStore.setSourceItem(object)
+									navigationStore.setDialog('deleteSource')
+								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -74,14 +97,22 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<div class="sourceInfo">
 							<div class="sourceInfoItem">
 								<strong>{{ t('openregister', 'Type') }}:</strong>
-								<span>{{ object.type || t('openregister', 'Unknown') }}</span>
+								<span>{{
+									object.type || t('openregister', 'Unknown')
+								}}</span>
 							</div>
 							<div v-if="object.databaseUrl" class="sourceInfoItem">
-								<strong>{{ t('openregister', 'Database URL') }}:</strong>
-								<span class="truncatedUrl">{{ object.databaseUrl }}</span>
+								<strong
+									>{{ t('openregister', 'Database URL') }}:</strong
+								>
+								<span class="truncatedUrl">{{
+									object.databaseUrl
+								}}</span>
 							</div>
 							<div class="sourceInfoItem">
-								<strong>{{ t('openregister', 'Registers') }}:</strong>
+								<strong
+									>{{ t('openregister', 'Registers') }}:</strong
+								>
 								<span>{{ getSourceRegisterCount(object.id) }}</span>
 							</div>
 						</div>
@@ -93,7 +124,11 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<template #column-title="{ row }">
 				<div class="titleContent">
 					<strong>{{ row.title }}</strong>
-					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+					<span
+						v-if="row.description"
+						class="textDescription textEllipsis"
+						>{{ row.description }}</span
+					>
 				</div>
 			</template>
 
@@ -104,7 +139,9 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: database url -->
 			<template #column-databaseUrl="{ row }">
-				<span v-if="row.databaseUrl" class="truncatedUrl">{{ row.databaseUrl }}</span>
+				<span v-if="row.databaseUrl" class="truncatedUrl">{{
+					row.databaseUrl
+				}}</span>
 				<span v-else>-</span>
 			</template>
 
@@ -115,12 +152,40 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{ row.created ? new Date(row.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.created
+						? new Date(row.created).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.created).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom column: updated date -->
 			<template #column-updated="{ row }">
-				{{ row.updated ? new Date(row.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.updated
+						? new Date(row.updated).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.updated).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -129,19 +194,34 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="sourceStore.setSourceItem(row); navigationStore.setModal('viewSource')">
+					<NcActionButton
+						close-after-click
+						@click="
+							sourceStore.setSourceItem(row)
+							navigationStore.setModal('viewSource')
+						">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						{{ t('openregister', 'View') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="sourceStore.setSourceItem(row); navigationStore.setModal('editSource')">
+					<NcActionButton
+						close-after-click
+						@click="
+							sourceStore.setSourceItem(row)
+							navigationStore.setModal('editSource')
+						">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="sourceStore.setSourceItem(row); navigationStore.setDialog('deleteSource')">
+					<NcActionButton
+						close-after-click
+						@click="
+							sourceStore.setSourceItem(row)
+							navigationStore.setDialog('deleteSource')
+						">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -199,8 +279,16 @@ export default {
 				{ key: 'type', label: t('openregister', 'Type') },
 				{ key: 'databaseUrl', label: t('openregister', 'Database URL') },
 				{ key: 'registers', label: t('openregister', 'Registers') },
-				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
-				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
+				{
+					key: 'created',
+					label: t('openregister', 'Created'),
+					sortable: true,
+				},
+				{
+					key: 'updated',
+					label: t('openregister', 'Updated'),
+					sortable: true,
+				},
 			]
 		},
 		/**

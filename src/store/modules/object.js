@@ -97,13 +97,16 @@ function openregisterObjectPlugin() {
 				const resolved = (Array.isArray(ids) ? ids : [ids])
 					.map((entry) => {
 						if (entry === null || entry === undefined) return null
-						if (typeof entry === 'string' || typeof entry === 'number') return String(entry)
+						if (typeof entry === 'string' || typeof entry === 'number')
+							return String(entry)
 						return entry.id ?? entry['@self']?.id ?? null
 					})
 					.filter((id) => id !== null && id !== '')
 
 				if (resolved.length === 0) {
-					throw new Error('No deletable object ids could be resolved from the selection.')
+					throw new Error(
+						'No deletable object ids could be resolved from the selection.',
+					)
 				}
 
 				return await this.deleteObjects(type, resolved)
@@ -137,7 +140,14 @@ function openregisterObjectPlugin() {
 				const pag = this.getPagination(type)
 				return {
 					response: {},
-					data: { results, total: pag.total, page: pag.page, pages: pag.pages, limit: pag.limit, offset: (pag.page - 1) * pag.limit },
+					data: {
+						results,
+						total: pag.total,
+						page: pag.page,
+						pages: pag.pages,
+						limit: pag.limit,
+						offset: (pag.page - 1) * pag.limit,
+					},
 				}
 			},
 

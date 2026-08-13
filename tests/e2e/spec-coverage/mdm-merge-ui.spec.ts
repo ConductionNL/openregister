@@ -31,8 +31,12 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
+	await page.goto(`/index.php/apps/openregister/#${route}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	await page.waitForTimeout(800)
 	await dismissFirstRun(page)
@@ -43,7 +47,13 @@ async function dismissFirstRun(page: Page): Promise<void> {
 	for (const name of [/first run/i, /welcome/i, /support/i]) {
 		const dlg = page.getByRole('dialog', { name }).first()
 		if (await dlg.isVisible().catch(() => false)) {
-			await dlg.getByRole('button', { name: /close|dismiss|got it|skip|no thanks/i }).first().click().catch(() => {})
+			await dlg
+				.getByRole('button', {
+					name: /close|dismiss|got it|skip|no thanks/i,
+				})
+				.first()
+				.click()
+				.catch(() => {})
 		}
 	}
 }
@@ -56,7 +66,9 @@ async function clickAndWaitForOptions(
 ): Promise<boolean> {
 	await combo.click()
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -86,7 +98,9 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 async function gotoScoped(page: Page, route: string): Promise<boolean> {
 	if (seed) {
 		await gotoApp(page, `${route}${scopedQuery()}`)
-		await expect(page.getByTestId('mdm-register-select')).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByTestId('mdm-register-select')).toBeVisible({
+			timeout: 10_000,
+		})
 		return true
 	}
 	await gotoApp(page, route)
@@ -105,12 +119,16 @@ async function gotoScoped(page: Page, route: string): Promise<boolean> {
 test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('merge wizard opens from a candidate pair, previews, requires a reason, executes, then the operation is reversed', async ({ page }) => {
+	test('merge wizard opens from a candidate pair, previews, requires a reason, executes, then the operation is reversed', async ({
+		page,
+	}) => {
 		const selected = await gotoScoped(page, '/duplicates')
 		test.skip(!selected, 'No register/schema available — seed data needed')
 
 		const mergeButton = page.getByTestId('mdm-merge-launch').first()
-		const hasPair = await mergeButton.isVisible({ timeout: 8_000 }).catch(() => false)
+		const hasPair = await mergeButton
+			.isVisible({ timeout: 8_000 })
+			.catch(() => false)
 		test.skip(!hasPair, 'No candidate pairs available — seed data needed')
 
 		const rowCountBefore = await page.getByTestId('mdm-duplicate-row').count()
@@ -125,7 +143,10 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 		await expect(previewTable.or(errorNote)).toBeVisible({ timeout: 15_000 })
 
 		const hasPreview = await previewTable.isVisible().catch(() => false)
-		test.skip(!hasPreview, 'Merge preview unavailable for this pair — RBAC or data mismatch')
+		test.skip(
+			!hasPreview,
+			'Merge preview unavailable for this pair — RBAC or data mismatch',
+		)
 
 		const confirmButton = page.getByTestId('mdm-merge-confirm')
 
@@ -141,11 +162,14 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 		// their `currentMasterEntity` back-reference and projects a populated
 		// golden record, so merge#preview returns a non-empty
 		// `postMergeGoldenRecord` and the preview table renders at least one row.
-		await expect(previewTable.locator('[data-testid="mdm-merge-preview-row"]').first())
-			.toBeVisible({ timeout: 10_000 })
+		await expect(
+			previewTable.locator('[data-testid="mdm-merge-preview-row"]').first(),
+		).toBeVisible({ timeout: 10_000 })
 
 		await reasonCombo.click()
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout: 10_000 })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout: 10_000,
+		})
 		await page.getByRole('option').first().click()
 
 		await expect(confirmButton).toBeEnabled({ timeout: 5_000 })
@@ -155,7 +179,9 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 		await expect(dialog).toBeHidden({ timeout: 15_000 })
 		const emptyAfter = page.getByText(/No duplicate candidates found/i)
 		const rowsAfter = page.getByTestId('mdm-duplicate-row')
-		await expect(emptyAfter.or(rowsAfter.first())).toBeVisible({ timeout: 15_000 })
+		await expect(emptyAfter.or(rowsAfter.first())).toBeVisible({
+			timeout: 15_000,
+		})
 		// The merge must not manufacture NEW candidate pairs. It does not
 		// necessarily shrink the list: duplicate detection currently still
 		// surfaces a merged-away (merged-into-other) master until dedup filters
@@ -165,12 +191,16 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 
 		// ── Reverse the operation from the Merge Operations view. ──
 		await gotoApp(page, '/mergeOperations')
-		await expect(page.getByRole('heading', { name: /Merge Operations/i }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: /Merge Operations/i }).first(),
+		).toBeVisible({ timeout: 15_000 })
 
 		const operationRow = page.getByTestId('mdm-merge-operation-row').first()
 		await expect(operationRow).toBeVisible({ timeout: 15_000 })
 
-		const reverseButtonsBefore = await page.getByTestId('mdm-merge-reverse').count()
+		const reverseButtonsBefore = await page
+			.getByTestId('mdm-merge-reverse')
+			.count()
 		const reverseButton = page.getByTestId('mdm-merge-reverse').first()
 		await expect(reverseButton).toBeVisible({ timeout: 10_000 })
 		await reverseButton.click()
@@ -179,9 +209,13 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 		// and a "Reversed / final" status badge is present. (Row is re-located by
 		// these stable signals rather than a "has reverse button" filter, which
 		// stops matching the row once its button disappears.)
-		await expect(page.getByTestId('mdm-merge-reverse'))
-			.toHaveCount(Math.max(0, reverseButtonsBefore - 1), { timeout: 15_000 })
-		await expect(page.getByText(/Reversed \/ final/i).first()).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByTestId('mdm-merge-reverse')).toHaveCount(
+			Math.max(0, reverseButtonsBefore - 1),
+			{ timeout: 15_000 },
+		)
+		await expect(page.getByText(/Reversed \/ final/i).first()).toBeVisible({
+			timeout: 10_000,
+		})
 	})
 })
 
@@ -192,7 +226,9 @@ test.describe('mdm-merge-ui — duplicate → merge → reverse chain', () => {
 test.describe('mdm-merge-ui — Merge Operations view', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Merge Operations is registered in the Data quality nav group and its view renders audit rows or the empty state', async ({ page }) => {
+	test('Merge Operations is registered in the Data quality nav group and its view renders audit rows or the empty state', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/')
 		const nav = page.locator('.app-navigation').first()
 
@@ -200,13 +236,17 @@ test.describe('mdm-merge-ui — Merge Operations view', () => {
 		const groupToggle = nav.getByText('Data quality', { exact: true }).first()
 		await expect(groupToggle).toBeVisible({ timeout: 10_000 })
 		await groupToggle.click().catch(() => {})
-		await expect(nav.getByText('Merge Operations', { exact: true }).first()).toBeVisible({ timeout: 10_000 })
+		await expect(
+			nav.getByText('Merge Operations', { exact: true }).first(),
+		).toBeVisible({ timeout: 10_000 })
 
 		// Navigable: the hash route renders the dedicated audit view. (Deep-link
 		// rather than click-through so the assertion does not depend on the
 		// nav group's expand/collapse animation state.)
 		await gotoApp(page, '/mergeOperations')
-		await expect(page.getByRole('heading', { name: /Merge Operations/i }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: /Merge Operations/i }).first(),
+		).toBeVisible({ timeout: 15_000 })
 
 		const emptyState = page.getByText(/No merge operations found/i)
 		const table = page.locator('.mergeOperationsTable')

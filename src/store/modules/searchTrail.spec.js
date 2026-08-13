@@ -140,7 +140,11 @@ describe('SearchTrail Store', () => {
 				expect(store.statistics.averageExecutionTime).toBe(180)
 				expect(store.statistics.successRate).toBeCloseTo(0.95)
 				expect(store.statistics.uniqueSearchTerms).toBe(250)
-				expect(store.statistics.queryComplexity).toEqual({ simple: 600, medium: 300, complex: 100 })
+				expect(store.statistics.queryComplexity).toEqual({
+					simple: 600,
+					medium: 300,
+					complex: 100,
+				})
 			})
 		})
 
@@ -213,7 +217,9 @@ describe('SearchTrail Store', () => {
 					json: async () => ({ error: 'Server error' }),
 				})
 
-				await expect(store.fetchSearchTrails()).rejects.toThrow('Server error')
+				await expect(store.fetchSearchTrails()).rejects.toThrow(
+					'Server error',
+				)
 				expect(store.searchTrailLoading).toBe(false)
 			})
 
@@ -302,7 +308,9 @@ describe('SearchTrail Store', () => {
 					json: async () => ({ error: 'Statistics error' }),
 				})
 
-				await expect(store.fetchStatistics()).rejects.toThrow('Statistics error')
+				await expect(store.fetchStatistics()).rejects.toThrow(
+					'Statistics error',
+				)
 				expect(store.statisticsLoading).toBe(false)
 			})
 		})
@@ -345,8 +353,18 @@ describe('SearchTrail Store', () => {
 				// so assert the translated shape rather than equality
 				// with the raw response.
 				const apiActivity = [
-					{ period: '2023-01-01', count: 50, avg_results: 15, avg_response_time: 100 },
-					{ period: '2023-01-02', count: 75, avg_results: 16, avg_response_time: 110 },
+					{
+						period: '2023-01-01',
+						count: 50,
+						avg_results: 15,
+						avg_response_time: 100,
+					},
+					{
+						period: '2023-01-02',
+						count: 75,
+						avg_results: 16,
+						avg_response_time: 110,
+					},
 				]
 
 				fetch.mockResolvedValueOnce({

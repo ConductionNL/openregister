@@ -43,8 +43,12 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 async function gotoApp(page: Page, subpath: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${subpath}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
+	await page.goto(`/index.php/apps/openregister/#${subpath}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	// Give Vue a moment to mount and hydrate the component tree.
 	await page.waitForTimeout(800)
@@ -55,21 +59,34 @@ async function gotoApp(page: Page, subpath: string): Promise<void> {
  * Waits for the NcAppSidebar panel to appear in the DOM.
  * Returns the search input locator inside the sidebar.
  */
-async function openEntitiesSidebar(page: Page): Promise<ReturnType<Page['locator']>> {
+async function openEntitiesSidebar(
+	page: Page,
+): Promise<ReturnType<Page['locator']>> {
 	// Click the "Show Filters" button to open the NcAppSidebar.
-	const toggleBtn = page.locator('button', { hasText: 'Show Filters' })
+	const toggleBtn = page
+		.locator('button', { hasText: 'Show Filters' })
 		.or(page.getByRole('button', { name: /Toggle search sidebar/i }))
 		.first()
 	await expect(toggleBtn).toBeVisible({ timeout: 10_000 })
 	await toggleBtn.click()
 
 	// NcAppSidebar renders as .app-sidebar in the DOM.
-	await page.waitForSelector('.app-sidebar, [class*="app-sidebar"]', { timeout: 10_000 })
+	await page.waitForSelector('.app-sidebar, [class*="app-sidebar"]', {
+		timeout: 10_000,
+	})
 	await page.waitForTimeout(400) // let Vue finish transition
 
 	// The search input is inside the sidebar — look for the "Search by value" text input.
-	const sidebarInput = page.getByRole('textbox', { name: /search by value/i }).first()
-		.or(page.locator('.app-sidebar input[type="text"], .app-sidebar input:not([type="hidden"])').first())
+	const sidebarInput = page
+		.getByRole('textbox', { name: /search by value/i })
+		.first()
+		.or(
+			page
+				.locator(
+					'.app-sidebar input[type="text"], .app-sidebar input:not([type="hidden"])',
+				)
+				.first(),
+		)
 	return sidebarInput
 }
 
@@ -85,7 +102,9 @@ async function clickAndWaitForOptions(
 	await combo.click()
 	// Wait for the options listbox to appear.
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -99,7 +118,9 @@ test.describe('files-sidebar-tabs — single-keystroke-emits-after-500ms', () =>
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#single-keystroke-emits-after-500ms
-	test('typing one character in the entities sidebar triggers search after 500ms debounce', async ({ page }) => {
+	test('typing one character in the entities sidebar triggers search after 500ms debounce', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/entities')
 
 		// Open the NcAppSidebar and get the search input.
@@ -131,7 +152,9 @@ test.describe('files-sidebar-tabs — rapid-keystrokes-only-emit-the-final-value
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#rapid-keystrokes-only-emit-the-final-value
-	test('typing three rapid characters results in a single debounced emission', async ({ page }) => {
+	test('typing three rapid characters results in a single debounced emission', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/entities')
 
 		// Open the NcAppSidebar and get the search input.
@@ -175,11 +198,15 @@ test.describe('files-sidebar-tabs — switching-register-clears-the-active-schem
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#switching-register-clears-the-active-schema
-	test('picking a register in DeletedSideBar enables schema, switching disables it again', async ({ page }) => {
+	test('picking a register in DeletedSideBar enables schema, switching disables it again', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/deleted')
 
 		// The DeletedSideBar has a Register combobox (single-select).
-		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
+		const registerCombo = page
+			.getByRole('combobox', { name: 'Register' })
+			.first()
 		await expect(registerCombo).toBeVisible({ timeout: 10_000 })
 
 		// Initially, Schema should be disabled.
@@ -200,7 +227,11 @@ test.describe('files-sidebar-tabs — switching-register-clears-the-active-schem
 		await expect(schemaCombo).not.toBeDisabled({ timeout: 8_000 })
 
 		// Select a schema if available.
-		const hasSchemaOptions = await clickAndWaitForOptions(page, schemaCombo, 8_000)
+		const hasSchemaOptions = await clickAndWaitForOptions(
+			page,
+			schemaCombo,
+			8_000,
+		)
 		if (hasSchemaOptions) {
 			// The schema option list can re-render right after it opens (the
 			// schema store hydrates asynchronously once a register is picked),
@@ -230,21 +261,32 @@ test.describe('files-sidebar-tabs — switching-register-clears-the-active-schem
 
 		// Try to pick a second option.
 		const secondOpt = page.getByRole('option').nth(1)
-		const hasSecond = await secondOpt.isVisible({ timeout: 5_000 }).catch(() => false)
+		const hasSecond = await secondOpt
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 
 		if (!hasSecond) {
 			// Only one register — clear the register instead.
 			await page.keyboard.press('Escape')
 			// Find and click the "clear" (×) / deselect button on the NcSelect.
 			// NcSelect renders a "Deselect <name>" button for the selected tag.
-			const deselectBtn = page.locator('[aria-label*="Deselect"], [aria-label*="deselect"], button[title*="Clear" i]').first()
-			const hasClear = await deselectBtn.isVisible({ timeout: 3_000 }).catch(() => false)
+			const deselectBtn = page
+				.locator(
+					'[aria-label*="Deselect"], [aria-label*="deselect"], button[title*="Clear" i]',
+				)
+				.first()
+			const hasClear = await deselectBtn
+				.isVisible({ timeout: 3_000 })
+				.catch(() => false)
 			if (hasClear) {
 				await deselectBtn.click()
 				// Schema select should be disabled again.
 				await expect(schemaCombo).toBeDisabled({ timeout: 8_000 })
 			} else {
-				test.skip(true, 'Only one register, no clear/deselect button found — skip cascade check')
+				test.skip(
+					true,
+					'Only one register, no clear/deselect button found — skip cascade check',
+				)
 			}
 			return
 		}
@@ -254,9 +296,9 @@ test.describe('files-sidebar-tabs — switching-register-clears-the-active-schem
 		// After switching register, schema combobox should be cleared.
 		// schemaStore.setSchemaItem(null) is called in handleRegisterChange.
 		// With a new register selected, schema stays enabled but value is cleared.
-		const schemaInputValue = await schemaCombo.evaluate(
-			(el: HTMLInputElement) => el.value ?? '',
-		).catch(() => '')
+		const schemaInputValue = await schemaCombo
+			.evaluate((el: HTMLInputElement) => el.value ?? '')
+			.catch(() => '')
 		// The value should be empty after cascade reset.
 		expect(schemaInputValue).toBe('')
 	})
@@ -269,10 +311,14 @@ test.describe('files-sidebar-tabs — clearing-the-register-also-clears-the-sche
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#clearing-the-register-also-clears-the-schema
-	test('clearing the register in DeletedSideBar disables the schema select', async ({ page }) => {
+	test('clearing the register in DeletedSideBar disables the schema select', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/deleted')
 
-		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
+		const registerCombo = page
+			.getByRole('combobox', { name: 'Register' })
+			.first()
 		await expect(registerCombo).toBeVisible({ timeout: 10_000 })
 
 		const schemaCombo = page.getByRole('combobox', { name: 'Schema' }).first()
@@ -295,22 +341,39 @@ test.describe('files-sidebar-tabs — clearing-the-register-also-clears-the-sche
 
 		// Clear the register via the NcSelect clear button.
 		// NcSelect (vue-select) renders a "Clear selected" button when a value is selected.
-		const clearBtn = page.getByRole('button', { name: /Clear selected|Deselect/i }).first()
-			.or(page.locator('[aria-label*="Clear selected"], [aria-label*="Deselect"]').first())
-		const hasClear = await clearBtn.isVisible({ timeout: 5_000 }).catch(() => false)
+		const clearBtn = page
+			.getByRole('button', { name: /Clear selected|Deselect/i })
+			.first()
+			.or(
+				page
+					.locator(
+						'[aria-label*="Clear selected"], [aria-label*="Deselect"]',
+					)
+					.first(),
+			)
+		const hasClear = await clearBtn
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 
 		if (hasClear) {
 			await clearBtn.click()
 		} else {
 			// Fallback: look for tag-remove icon inside the select.
-			const tagRemove = page.locator(
-				'.multiselect__tag-icon, [class*="tag"] button, [class*="remove"] button',
-			).first()
-			const hasTag = await tagRemove.isVisible({ timeout: 2_000 }).catch(() => false)
+			const tagRemove = page
+				.locator(
+					'.multiselect__tag-icon, [class*="tag"] button, [class*="remove"] button',
+				)
+				.first()
+			const hasTag = await tagRemove
+				.isVisible({ timeout: 2_000 })
+				.catch(() => false)
 			if (hasTag) {
 				await tagRemove.click()
 			} else {
-				test.skip(true, 'Cannot find clear/remove/deselect button for register select')
+				test.skip(
+					true,
+					'Cannot find clear/remove/deselect button for register select',
+				)
 				return
 			}
 		}
@@ -327,14 +390,18 @@ test.describe('files-sidebar-tabs — deletedsidebar-additionally-re-applies-fil
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#deletedsidebar-additionally-re-applies-filters-after-the-cascade
-	test('selecting a register in DeletedSideBar calls applyFilters and updates the URL', async ({ page }) => {
+	test('selecting a register in DeletedSideBar calls applyFilters and updates the URL', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/deleted')
 
 		// Verify clean start — no ?register param.
 		const initialUrl = page.url()
 		expect(initialUrl).toContain('/deleted')
 
-		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
+		const registerCombo = page
+			.getByRole('combobox', { name: 'Register' })
+			.first()
 		await expect(registerCombo).toBeVisible({ timeout: 10_000 })
 
 		// Select the first available register — wait for options.
@@ -349,9 +416,11 @@ test.describe('files-sidebar-tabs — deletedsidebar-additionally-re-applies-fil
 
 		// DeletedSideBar::handleRegisterChange calls applyFilters() → updateRouteQueryFromState() → $router.replace.
 		// Wait for the URL to update.
-		await page.waitForURL(/[?&]register=/, { timeout: 8_000 }).catch(async () => {
-			await page.waitForTimeout(1500)
-		})
+		await page
+			.waitForURL(/[?&]register=/, { timeout: 8_000 })
+			.catch(async () => {
+				await page.waitForTimeout(1500)
+			})
 
 		const urlAfter = page.url()
 		expect(urlAfter).toMatch(/[?&]register=\d+/)
@@ -365,14 +434,24 @@ test.describe('files-sidebar-tabs — applyfilters-writes-filter-state-to-the-ur
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/files-sidebar-tabs/spec.md#applyfilters-writes-filter-state-to-the-url
-	test('applyFilters writes register to the URL query on /deleted', async ({ page }) => {
+	test('applyFilters writes register to the URL query on /deleted', async ({
+		page,
+	}) => {
 		// Start from clean /deleted (hash form — router runs in hash mode).
-		await page.goto('/index.php/apps/openregister/#/deleted', { waitUntil: 'domcontentloaded' })
-		await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
-		await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
+		await page.goto('/index.php/apps/openregister/#/deleted', {
+			waitUntil: 'domcontentloaded',
+		})
+		await page.waitForSelector('#header, header.header-appcontainer', {
+			timeout: 25_000,
+		})
+		await page.waitForSelector('#app-content-vue, .app-content', {
+			timeout: 20_000,
+		})
 		await page.waitForTimeout(800) // let Vue mount the sidebar
 
-		const registerCombo = page.getByRole('combobox', { name: 'Register' }).first()
+		const registerCombo = page
+			.getByRole('combobox', { name: 'Register' })
+			.first()
 		await expect(registerCombo).toBeVisible({ timeout: 10_000 })
 
 		// Select the first register — wait for options.
@@ -386,9 +465,11 @@ test.describe('files-sidebar-tabs — applyfilters-writes-filter-state-to-the-ur
 		await opt.click()
 
 		// $router.replace should add ?register=<id> to the URL.
-		await page.waitForURL(/[?&]register=\d+/, { timeout: 8_000 }).catch(async () => {
-			await page.waitForTimeout(1500)
-		})
+		await page
+			.waitForURL(/[?&]register=\d+/, { timeout: 8_000 })
+			.catch(async () => {
+				await page.waitForTimeout(1500)
+			})
 
 		const finalUrl = page.url()
 		expect(finalUrl).toMatch(/[?&]register=\d+/)

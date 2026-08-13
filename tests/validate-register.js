@@ -31,7 +31,8 @@ const REPO_ROOT = path.resolve(__dirname, '..')
 function registerFiles() {
 	const dir = path.join(REPO_ROOT, 'lib', 'Settings')
 	if (!fs.existsSync(dir)) return []
-	return fs.readdirSync(dir)
+	return fs
+		.readdirSync(dir)
 		.filter((f) => f.endsWith('_register.json') || f.endsWith('-register.json'))
 		.map((f) => path.join(dir, f))
 }
@@ -46,7 +47,10 @@ function phpClassIndex(appNamespace) {
 			const p = path.join(d, entry.name)
 			if (entry.isDirectory()) walk(p)
 			else if (entry.name.endsWith('.php')) {
-				const rel = path.relative(libDir, p).replace(/\.php$/, '').split(path.sep)
+				const rel = path
+					.relative(libDir, p)
+					.replace(/\.php$/, '')
+					.split(path.sep)
 				// e.g. ['Lifecycle','CoursePublishGuard'] → OCA\<App>\Lifecycle\CoursePublishGuard
 				found.add(`${appNamespace}\\${rel.join('\\')}`)
 				found.add(rel[rel.length - 1]) // shortname fallback
@@ -64,17 +68,26 @@ function appNamespace() {
 	const m = fs.readFileSync(infoXml, 'utf8').match(/<id>([^<]+)<\/id>/)
 	if (!m) return null
 	// app id like "openconnector" or "app-template" → namespace "OpenConnector" / "AppTemplate"
-	const camel = m[1].split(/[-_]/).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('')
+	const camel = m[1]
+		.split(/[-_]/)
+		.map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+		.join('')
 	return `OCA\\${camel}`
 }
 
 function collectRequires(node, acc) {
 	if (node === null || typeof node !== 'object') return
-	if (Array.isArray(node)) { node.forEach((n) => collectRequires(n, acc)); return }
+	if (Array.isArray(node)) {
+		node.forEach((n) => collectRequires(n, acc))
+		return
+	}
 	for (const [k, v] of Object.entries(node)) {
 		if (k === 'requires') {
 			if (typeof v === 'string') acc.push(v)
-			else if (Array.isArray(v)) v.forEach((s) => { if (typeof s === 'string') acc.push(s) })
+			else if (Array.isArray(v))
+				v.forEach((s) => {
+					if (typeof s === 'string') acc.push(s)
+				})
 		} else {
 			collectRequires(v, acc)
 		}
@@ -86,7 +99,8 @@ function lifecycleStates(lc) {
 	// fleet: {states:{...},transitions:{...}} or {transitions:{name:{from,to}}}.
 	const states = new Set()
 	if (!lc || typeof lc !== 'object') return states
-	if (lc.states && typeof lc.states === 'object') Object.keys(lc.states).forEach((s) => states.add(s))
+	if (lc.states && typeof lc.states === 'object')
+		Object.keys(lc.states).forEach((s) => states.add(s))
 	if (lc.initial) states.add(lc.initial)
 	if (lc.initialState) states.add(lc.initialState)
 	if (lc.default) states.add(lc.default)
@@ -113,10 +127,16 @@ function validateRegister(file, errors, warnings) {
 	}
 	const xo = reg['x-openregister']
 	if (!xo || typeof xo !== 'object' || !xo.type || !xo.app) {
-		errors.push(`${label}: missing or incomplete top-level x-openregister block (needs at least { type, app })`)
+		errors.push(
+			`${label}: missing or incomplete top-level x-openregister block (needs at least { type, app })`,
+		)
 	}
 	const schemas = (reg.components && reg.components.schemas) || null
-	if (!schemas || typeof schemas !== 'object' || Object.keys(schemas).length === 0) {
+	if (
+		!schemas
+		|| typeof schemas !== 'object'
+		|| Object.keys(schemas).length === 0
+	) {
 		errors.push(`${label}: components.schemas is empty`)
 		return
 	}
@@ -127,27 +147,56 @@ function validateRegister(file, errors, warnings) {
 
 	for (const [name, s] of Object.entries(schemas)) {
 		const at = `${label} › ${name}`
-		if (!s || typeof s !== 'object') { errors.push(`${at}: not an object`); continue }
+		if (!s || typeof s !== 'object') {
+			errors.push(`${at}: not an object`)
+			continue
+		}
 		// slug
-		if (typeof s.slug !== 'string' || s.slug.length === 0) errors.push(`${at}: missing string "slug"`)
+		if (typeof s.slug !== 'string' || s.slug.length === 0)
+			errors.push(`${at}: missing string "slug"`)
 		else {
-			if (slugSeen.has(s.slug)) errors.push(`${at}: slug "${s.slug}" duplicates ${slugSeen.get(s.slug)}`)
+			if (slugSeen.has(s.slug))
+				errors.push(
+					`${at}: slug "${s.slug}" duplicates ${slugSeen.get(s.slug)}`,
+				)
 			slugSeen.set(s.slug, name)
 		}
 		// shape
-		if (s.type !== 'object') warnings.push(`${at}: "type" is not "object" (got ${JSON.stringify(s.type)})`)
-		if (!Array.isArray(s.required)) warnings.push(`${at}: "required" is not an array`)
-		const props = s.properties && typeof s.properties === 'object' ? Object.keys(s.properties) : []
-		if (props.length === 0) errors.push(`${at}: "properties" is empty — schema looks clobbered (a merge may have replaced it with a stub)`)
+		if (s.type !== 'object')
+			warnings.push(
+				`${at}: "type" is not "object" (got ${JSON.stringify(s.type)})`,
+			)
+		if (!Array.isArray(s.required))
+			warnings.push(`${at}: "required" is not an array`)
+		const props =
+			s.properties && typeof s.properties === 'object'
+				? Object.keys(s.properties)
+				: []
+		if (props.length === 0)
+			errors.push(
+				`${at}: "properties" is empty — schema looks clobbered (a merge may have replaced it with a stub)`,
+			)
 		// "too thin to be real" heuristic: a schema that declares a lifecycle/calc/notif/agg
 		// elsewhere but here has ≤3 properties and no x-openregister-* at all is suspect.
 		const xKeys = Object.keys(s).filter((k) => k.startsWith('x-openregister'))
-		if (props.length > 0 && props.length <= 3 && xKeys.filter((k) => k !== 'x-openregister-seed').length === 0) {
-			warnings.push(`${at}: only ${props.length} properties and no x-openregister-* declarations — verify this isn't a stub left by a bad merge`)
+		if (
+			props.length > 0
+			&& props.length <= 3
+			&& xKeys.filter((k) => k !== 'x-openregister-seed').length === 0
+		) {
+			warnings.push(
+				`${at}: only ${props.length} properties and no x-openregister-* declarations — verify this isn't a stub left by a bad merge`,
+			)
 		}
 		// appendOnly placement
-		if (s['x-openregister'] && typeof s['x-openregister'] === 'object' && s['x-openregister'].appendOnly !== undefined) {
-			errors.push(`${at}: appendOnly is nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`)
+		if (
+			s['x-openregister']
+			&& typeof s['x-openregister'] === 'object'
+			&& s['x-openregister'].appendOnly !== undefined
+		) {
+			errors.push(
+				`${at}: appendOnly is nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`,
+			)
 		}
 		// lifecycle requires → PHP class must exist
 		const requires = []
@@ -155,7 +204,9 @@ function validateRegister(file, errors, warnings) {
 		for (const cls of requires) {
 			const short = cls.split('\\').pop()
 			if (!phpIndex.has(cls) && !phpIndex.has(short)) {
-				errors.push(`${at}: lifecycle requires "${cls}" but no matching PHP class found under lib/ (looked for "${cls}" and shortname "${short}")`)
+				errors.push(
+					`${at}: lifecycle requires "${cls}" but no matching PHP class found under lib/ (looked for "${cls}" and shortname "${short}")`,
+				)
 			}
 		}
 		// lifecycle transition target states should be declared
@@ -164,7 +215,9 @@ function validateRegister(file, errors, warnings) {
 			const declared = new Set(Object.keys(lc.states))
 			for (const [tn, t] of Object.entries(lc.transitions)) {
 				if (t && typeof t.to === 'string' && !declared.has(t.to)) {
-					warnings.push(`${at}: transition "${tn}" → "${t.to}" but "${t.to}" is not in states{}`)
+					warnings.push(
+						`${at}: transition "${tn}" → "${t.to}" but "${t.to}" is not in states{}`,
+					)
 				}
 			}
 		}
@@ -177,28 +230,42 @@ async function deepValidate(files, errors) {
 	const auth = process.env.OR_BASIC_AUTH // "user:pass"
 	if (!base || !auth) return // skipped silently — no OR instance in CI
 	const fetchFn = global.fetch
-	if (!fetchFn) { errors.push('OR_BASE_URL set but global fetch unavailable (need Node 18+)'); return }
+	if (!fetchFn) {
+		errors.push('OR_BASE_URL set but global fetch unavailable (need Node 18+)')
+		return
+	}
 	for (const file of files) {
 		const json = fs.readFileSync(file, 'utf8')
 		try {
-			const res = await fetchFn(`${base.replace(/\/$/, '')}/index.php/apps/openregister/api/configurations/validate`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'OCS-APIRequest': 'true',
-					Authorization: 'Basic ' + Buffer.from(auth).toString('base64'),
+			const res = await fetchFn(
+				`${base.replace(/\/$/, '')}/index.php/apps/openregister/api/configurations/validate`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'OCS-APIRequest': 'true',
+						Authorization:
+							'Basic ' + Buffer.from(auth).toString('base64'),
+					},
+					body: JSON.stringify({ json }),
 				},
-				body: JSON.stringify({ json }),
-			})
-			if (!res.ok) errors.push(`${path.relative(REPO_ROOT, file)}: OR validate endpoint returned ${res.status}`)
+			)
+			if (!res.ok)
+				errors.push(
+					`${path.relative(REPO_ROOT, file)}: OR validate endpoint returned ${res.status}`,
+				)
 			else {
 				const body = await res.json().catch(() => ({}))
 				if (body && Array.isArray(body.errors) && body.errors.length) {
-					errors.push(`${path.relative(REPO_ROOT, file)}: OR reported ${body.errors.length} schema errors`)
+					errors.push(
+						`${path.relative(REPO_ROOT, file)}: OR reported ${body.errors.length} schema errors`,
+					)
 				}
 			}
 		} catch (e) {
-			errors.push(`${path.relative(REPO_ROOT, file)}: OR validate call failed — ${e.message}`)
+			errors.push(
+				`${path.relative(REPO_ROOT, file)}: OR validate call failed — ${e.message}`,
+			)
 		}
 	}
 }
@@ -206,7 +273,9 @@ async function deepValidate(files, errors) {
 async function main() {
 	const files = registerFiles()
 	if (files.length === 0) {
-		console.log('[validate-register] no lib/Settings/*_register.json found — nothing to check')
+		console.log(
+			'[validate-register] no lib/Settings/*_register.json found — nothing to check',
+		)
 		process.exit(0)
 	}
 	const errors = []
@@ -217,10 +286,14 @@ async function main() {
 	for (const w of warnings) console.warn(`[validate-register] WARN  ${w}`)
 	for (const e of errors) console.error(`[validate-register] ERROR ${e}`)
 	if (errors.length > 0) {
-		console.error(`[validate-register] FAIL — ${errors.length} error(s), ${warnings.length} warning(s).`)
+		console.error(
+			`[validate-register] FAIL — ${errors.length} error(s), ${warnings.length} warning(s).`,
+		)
 		process.exit(1)
 	}
-	console.log(`[validate-register] PASS — ${files.length} register file(s), ${warnings.length} warning(s).`)
+	console.log(
+		`[validate-register] PASS — ${files.length} register file(s), ${warnings.length} warning(s).`,
+	)
 	process.exit(0)
 }
 

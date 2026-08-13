@@ -70,62 +70,99 @@ test.describe('object-crud — create→read→update→delete with field-value 
 
 	test.afterAll(async ({ request }) => {
 		if (objectId) {
-			await request.delete(`${API}/objects/${register.id}/${schema.id}/${objectId}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${register.id}/${schema.id}/${objectId}`)
+				.catch(() => {})
 		}
 		await deleteSchema(request, schema.id)
 		await deleteRegister(request, register.id)
 	})
 
 	async function getObjectBody(request: APIRequestContext, id: string) {
-		const resp = await request.get(`${API}/objects/${register.id}/${schema.id}/${id}`, {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			`${API}/objects/${register.id}/${schema.id}/${id}`,
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		return { status: resp.status(), body: resp.ok() ? await resp.json() : null }
 	}
 
-	test('CREATE an object with real field values (persisted)', async ({ request }) => {
-		const resp = await request.post(`${API}/objects/${register.id}/${schema.id}`, {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: { title: TITLE_VALUE, count: COUNT_VALUE },
-		})
-		expect(resp.status(), 'POST /api/objects/{register}/{schema}').toBeLessThanOrEqual(201)
+	test('CREATE an object with real field values (persisted)', async ({
+		request,
+	}) => {
+		const resp = await request.post(
+			`${API}/objects/${register.id}/${schema.id}`,
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: { title: TITLE_VALUE, count: COUNT_VALUE },
+			},
+		)
+		expect(
+			resp.status(),
+			'POST /api/objects/{register}/{schema}',
+		).toBeLessThanOrEqual(201)
 		const body = await resp.json()
 		objectId = body['@self']?.id ?? body.id ?? null
 		expect(objectId, 'created object must have an id').toBeTruthy()
 
 		// Persistence: a fresh GET returns the exact field values.
-		const { status, body: fresh } = await getObjectBody(request, objectId as string)
+		const { status, body: fresh } = await getObjectBody(
+			request,
+			objectId as string,
+		)
 		expect(status).toBe(200)
 		expect(fresh.title).toBe(TITLE_VALUE)
 		expect(Number(fresh.count)).toBe(COUNT_VALUE)
 	})
 
-	test('READ (detail) — deep-linking to the object renders its persisted identity', async ({ page }) => {
+	test('READ (detail) — deep-linking to the object renders its persisted identity', async ({
+		page,
+	}) => {
 		test.skip(objectId === null, 'no object created')
 
 		// Deep-link to the object detail (path routing in the manifest-v2 shell).
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('main, .app-content, #content-vue').first()).toBeVisible({ timeout: 30_000 })
+		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(
+			page.locator('main, .app-content, #content-vue').first(),
+		).toBeVisible({ timeout: 30_000 })
 
 		// The detail surface renders THIS object's real persisted uuid — a
 		// data-dependent signal that the specific created object loaded and
 		// rendered (not a shell/placeholder). The object's data-tab values live
 		// in a CodeMirror editor whose virtualized text layer is not assertable;
 		// the field-value persistence is verified against the API below.
-		await expect(page.getByText(objectId as string, { exact: false }).first())
-			.toBeVisible({ timeout: 20_000 })
+		await expect(
+			page.getByText(objectId as string, { exact: false }).first(),
+		).toBeVisible({ timeout: 20_000 })
 
 		// The Data tab (where field values live) must be present for this object.
-		await expect(page.getByText(/^Data$/).first()).toBeVisible({ timeout: 15_000 })
+		await expect(page.getByText(/^Data$/).first()).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 
-	test('UPDATE — edit fields, assert persistence and the detail still loads', async ({ page, request }) => {
+	test('UPDATE — edit fields, assert persistence and the detail still loads', async ({
+		page,
+		request,
+	}) => {
 		test.skip(objectId === null, 'no object to update')
 
-		const put = await request.put(`${API}/objects/${register.id}/${schema.id}/${objectId}`, {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: { title: TITLE_UPDATED, count: COUNT_UPDATED },
-		})
+		const put = await request.put(
+			`${API}/objects/${register.id}/${schema.id}/${objectId}`,
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: { title: TITLE_UPDATED, count: COUNT_UPDATED },
+			},
+		)
 		expect(put.status(), 'PUT /api/objects/{register}/{schema}/{id}').toBe(200)
 
 		// True persistence via a fresh GET — the field values actually changed.
@@ -134,18 +171,26 @@ test.describe('object-crud — create→read→update→delete with field-value 
 		expect(Number(fresh.count)).toBe(COUNT_UPDATED)
 
 		// The detail surface still resolves the (now-updated) object by uuid.
-		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('main, .app-content, #content-vue').first()).toBeVisible({ timeout: 30_000 })
-		await expect(page.getByText(objectId as string, { exact: false }).first())
-			.toBeVisible({ timeout: 20_000 })
+		await page.goto(`${APP}/#/objects/${register.id}/${schema.id}/${objectId}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(
+			page.locator('main, .app-content, #content-vue').first(),
+		).toBeVisible({ timeout: 30_000 })
+		await expect(
+			page.getByText(objectId as string, { exact: false }).first(),
+		).toBeVisible({ timeout: 20_000 })
 	})
 
 	test('DELETE — remove the object and assert it is gone', async ({ request }) => {
 		test.skip(objectId === null, 'no object to delete')
 
-		const del = await request.delete(`${API}/objects/${register.id}/${schema.id}/${objectId}`, {
-			headers: { Accept: 'application/json' },
-		})
+		const del = await request.delete(
+			`${API}/objects/${register.id}/${schema.id}/${objectId}`,
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect([200, 204], 'DELETE object').toContain(del.status())
 
 		const { status } = await getObjectBody(request, objectId as string)

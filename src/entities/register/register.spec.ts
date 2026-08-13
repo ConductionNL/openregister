@@ -41,7 +41,7 @@ describe('Register Entity', () => {
 		expect(register).toBeInstanceOf(Register)
 		const result = register.validate()
 		expect(result.success).toBe(false)
-		expect(result.error?.issues.some(i => i.path[0] === 'title')).toBe(true)
+		expect(result.error?.issues.some((i) => i.path[0] === 'title')).toBe(true)
 	})
 
 	it('should correctly combine database and register prefixes', () => {

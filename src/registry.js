@@ -50,7 +50,10 @@ import { defineAsyncComponent } from 'vue'
 function page(component) {
 	return {
 		kind: 'page',
-		component: typeof component === 'function' ? defineAsyncComponent(component) : component,
+		component:
+			typeof component === 'function'
+				? defineAsyncComponent(component)
+				: component,
 	}
 }
 
@@ -61,13 +64,21 @@ export default {
 	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
 	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
 	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),
-	OrganisationsIndex: page(() => import('./views/organisation/OrganisationsIndex.vue')),
-	ApplicationsIndex: page(() => import('./views/application/ApplicationsIndex.vue')),
-	ApplicationDetails: page(() => import('./views/application/ApplicationDetails.vue')),
+	OrganisationsIndex: page(
+		() => import('./views/organisation/OrganisationsIndex.vue'),
+	),
+	ApplicationsIndex: page(
+		() => import('./views/application/ApplicationsIndex.vue'),
+	),
+	ApplicationDetails: page(
+		() => import('./views/application/ApplicationDetails.vue'),
+	),
 	ObjectsIndex: page(() => import('./views/object/ObjectsIndex.vue')),
 	SearchIndex: page(() => import('./views/search/SearchIndex.vue')),
 	FilesIndex: page(() => import('./views/files/FilesIndex.vue')),
-	ConfigurationsIndex: page(() => import('./views/configuration/ConfigurationsIndex.vue')),
+	ConfigurationsIndex: page(
+		() => import('./views/configuration/ConfigurationsIndex.vue'),
+	),
 	DeletedIndex: page(() => import('./views/deleted/DeletedIndex.vue')),
 	AuditTrailIndex: page(() => import('./views/logs/AuditTrailIndex.vue')),
 	SearchTrailIndex: page(() => import('./views/logs/SearchTrailIndex.vue')),
@@ -84,11 +95,17 @@ export default {
 	AvgIndex: page(() => import('./views/avg/AvgIndex.vue')),
 	ReportsIndex: page(() => import('./views/reports/ReportsIndex.vue')),
 	ReportView: page(() => import('./views/reports/ReportView.vue')),
-	FeaturesRoadmapIndex: page(() => import('./views/roadmap/FeaturesRoadmapIndex.vue')),
+	FeaturesRoadmapIndex: page(
+		() => import('./views/roadmap/FeaturesRoadmapIndex.vue'),
+	),
 	IntegrationsView: page(() => import('./views/integration/IntegrationsView.vue')),
 	QualityIndex: page(() => import('./views/quality/QualityIndex.vue')),
 	DuplicatesIndex: page(() => import('./views/quality/DuplicatesIndex.vue')),
-	MasterEntitiesIndex: page(() => import('./views/quality/MasterEntitiesIndex.vue')),
+	MasterEntitiesIndex: page(
+		() => import('./views/quality/MasterEntitiesIndex.vue'),
+	),
 	QueueHealthIndex: page(() => import('./views/quality/QueueHealthIndex.vue')),
-	MergeOperationsIndex: page(() => import('./views/quality/MergeOperationsIndex.vue')),
+	MergeOperationsIndex: page(
+		() => import('./views/quality/MergeOperationsIndex.vue'),
+	),
 }

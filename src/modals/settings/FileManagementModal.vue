@@ -1,5 +1,6 @@
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="t('openregister', 'File Vectorization')"
 		size="large"
 		@closing="$emit('closing')">
@@ -9,8 +10,22 @@
 				<InformationOutline :size="20" />
 				<div>
 					<h4>{{ t('openregister', 'Using Pre-Generated Chunks') }}</h4>
-					<p>{{ t('openregister', 'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.') }}</p>
-					<p><strong>{{ t('openregister', 'To adjust chunk size or strategy, go to file configuration → processing limits.') }}</strong></p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.',
+							)
+						}}
+					</p>
+					<p>
+						<strong>{{
+							t(
+								'openregister',
+								'To adjust chunk size or strategy, go to file configuration → processing limits.',
+							)
+						}}</strong>
+					</p>
 				</div>
 			</div>
 
@@ -22,9 +37,16 @@
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
 						type="switch">
-						{{ t('openregister', 'Enable automatic file vectorization') }}
+						{{
+							t('openregister', 'Enable automatic file vectorization')
+						}}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Automatically generate vector embeddings from text chunks when files are uploaded and processed') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Automatically generate vector embeddings from text chunks when files are uploaded and processed',
+						)
+					}}</small>
 				</div>
 			</div>
 
@@ -33,7 +55,9 @@
 				<h3>{{ t('openregister', '⚡ Batch Processing') }}</h3>
 
 				<div class="form-group">
-					<label for="batch-size">{{ t('openregister', 'Batch Size') }}</label>
+					<label for="batch-size">{{
+						t('openregister', 'Batch Size')
+					}}</label>
 					<input
 						id="batch-size"
 						v-model.number="config.batchSize"
@@ -41,17 +65,25 @@
 						min="1"
 						max="100"
 						step="1"
-						class="input-field">
-					<small>{{ t('openregister', 'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
+						class="input-field" />
+					<small>{{
+						t(
+							'openregister',
+							'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
+						)
+					}}</small>
 				</div>
 
 				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.autoRetry"
-						type="switch">
+					<NcCheckboxRadioSwitch v-model="config.autoRetry" type="switch">
 						{{ t('openregister', 'Auto-retry failed vectorizations') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Automatically retry failed vectorization attempts (max 3 retries)',
+						)
+					}}</small>
 				</div>
 			</div>
 		</div>
@@ -69,14 +101,23 @@
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
 				</template>
-				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+				{{
+					saving
+						? t('openregister', 'Saving...')
+						: t('openregister', 'Save Configuration')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcDialog,
+	NcButton,
+	NcLoadingIcon,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import axios from '@nextcloud/axios'
@@ -112,7 +153,6 @@ export default {
 				batchSize: 25,
 				autoRetry: true,
 			},
-
 		}
 	},
 
@@ -141,16 +181,29 @@ export default {
 			this.saving = true
 
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/file-vectorization'), this.config)
-				showSuccess(this.t('openregister', 'File vectorization configuration saved successfully'))
+				await axios.post(
+					generateUrl(
+						'/apps/openregister/api/settings/file-vectorization',
+					),
+					this.config,
+				)
+				showSuccess(
+					this.t(
+						'openregister',
+						'File vectorization configuration saved successfully',
+					),
+				)
 				this.$emit('closing')
 			} catch (error) {
-				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Failed to save configuration: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.saving = false
 			}
 		},
-
 	},
 }
 </script>

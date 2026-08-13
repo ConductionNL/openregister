@@ -15,12 +15,12 @@ export function stringToDate(value, format) {
 
 	if (format === 'date') {
 		const parts = value.split(/[T ]/)[0].split('-').map(Number)
-		if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+		if (parts.length === 3 && parts.every((n) => !isNaN(n))) {
 			return new Date(parts[0], parts[1] - 1, parts[2])
 		}
 	} else if (format === 'time') {
 		const parts = value.split(':').map(Number)
-		if (parts.length >= 2 && parts.every(n => !isNaN(n))) {
+		if (parts.length >= 2 && parts.every((n) => !isNaN(n))) {
 			const d = new Date()
 			d.setHours(parts[0], parts[1], parts[2] || 0, 0)
 			return d

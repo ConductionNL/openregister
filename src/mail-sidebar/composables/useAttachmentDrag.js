@@ -34,7 +34,13 @@ function readAttachmentProps(el) {
 	if (vue3 && vue3.props) {
 		const p = vue3.props
 		if (p.id && p.fileName) {
-			return { id: p.id, fileName: p.fileName, mime: p.mime, size: p.size, url: p.url }
+			return {
+				id: p.id,
+				fileName: p.fileName,
+				mime: p.mime,
+				size: p.size,
+				url: p.url,
+			}
 		}
 	}
 	// Vue 2
@@ -42,7 +48,13 @@ function readAttachmentProps(el) {
 	if (vue2 && vue2.$props) {
 		const p = vue2.$props
 		if (p.id && p.fileName) {
-			return { id: p.id, fileName: p.fileName, mime: p.mime, size: p.size, url: p.url }
+			return {
+				id: p.id,
+				fileName: p.fileName,
+				mime: p.mime,
+				size: p.size,
+				url: p.url,
+			}
 		}
 	}
 	return null

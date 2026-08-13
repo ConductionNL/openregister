@@ -121,7 +121,13 @@ export default defineConfig({
 		// The shared workflow uploads `tests/e2e/playwright-report/` as the
 		// `playwright-report` artifact. With `list` as the only reporter that
 		// directory was never created, so the artifact was empty on every run.
-		['html', { open: 'never', outputFolder: path.resolve(__dirname, '../playwright-report') }],
+		[
+			'html',
+			{
+				open: 'never',
+				outputFolder: path.resolve(__dirname, '../playwright-report'),
+			},
+		],
 	],
 	// ⚠️ MUST stay `tests/e2e/test-results`. This was `../test-results-ci`, and
 	// the shared workflow's "Upload Playwright traces" step globs exactly

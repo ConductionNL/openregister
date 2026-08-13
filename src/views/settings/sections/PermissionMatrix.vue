@@ -5,15 +5,34 @@ import { translate as t } from '@nextcloud/l10n'
 <template>
 	<SettingsSection
 		:name="t('openregister', 'Permission Matrix')"
-		:description="t('openregister', 'View and manage authorization across registers and schemas')"
+		:description="
+			t(
+				'openregister',
+				'View and manage authorization across registers and schemas',
+			)
+		"
 		:loading="loading"
 		:loading-message="t('openregister', 'Loading permission matrix...')">
 		<div v-if="!isAdminUser" class="access-denied">
-			<p>{{ t('openregister', 'You do not have permission to view the permission matrix. Admin access is required.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'You do not have permission to view the permission matrix. Admin access is required.',
+					)
+				}}
+			</p>
 		</div>
 
 		<div v-else-if="registers.length === 0 && !loading" class="empty-state">
-			<p>{{ t('openregister', 'No registers found. Create a register to configure permissions.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'No registers found. Create a register to configure permissions.',
+					)
+				}}
+			</p>
 		</div>
 
 		<div v-else class="permission-matrix">
@@ -37,79 +56,165 @@ import { translate as t } from '@nextcloud/l10n'
 							<th scope="col" class="name-column">
 								{{ t('openregister', 'Register / Schema') }}
 							</th>
-							<th v-for="action in actions"
+							<th
+								v-for="action in actions"
 								:key="action"
 								scope="col"
 								class="action-column">
 								{{ t('openregister', action) }}
 							</th>
-							<th id="permission-matrix-col-public" scope="col" class="action-column">
+							<th
+								id="permission-matrix-col-public"
+								scope="col"
+								class="action-column">
 								{{ t('openregister', 'Public') }}
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="register in registers" :key="'reg-' + register.id">
+						<template
+							v-for="register in registers"
+							:key="'reg-' + register.id">
 							<!-- Register Row -->
 							<tr class="register-row">
-								<td :id="`permission-matrix-register-${register.id}`" class="name-cell">
+								<td
+									:id="`permission-matrix-register-${register.id}`"
+									class="name-cell">
 									<button
 										class="expand-toggle"
 										@click="toggleRegister(register.id)">
-										<span class="expand-icon">{{ expandedRegisters[register.id] ? '&#9660;' : '&#9654;' }}</span>
-										<strong>{{ register.title || register.name || 'Register #' + register.id }}</strong>
+										<span class="expand-icon">{{
+											expandedRegisters[register.id]
+												? '&#9660;'
+												: '&#9654;'
+										}}</span>
+										<strong>{{
+											register.title
+											|| register.name
+											|| 'Register #' + register.id
+										}}</strong>
 									</button>
-									<span v-if="register.authorization && Object.keys(register.authorization).length > 0"
+									<span
+										v-if="
+											register.authorization
+											&& Object.keys(register.authorization)
+												.length > 0
+										"
 										class="auth-badge">
 										{{ t('openregister', 'RBAC') }}
 									</span>
 								</td>
-								<td v-for="action in actions"
+								<td
+									v-for="action in actions"
 									:key="action"
 									class="action-cell">
 									<span
 										class="group-list"
-										:title="getGroupsTooltip(getRegisterGroups(register, action))">
-										{{ formatGroups(getRegisterGroups(register, action)) }}
+										:title="
+											getGroupsTooltip(
+												getRegisterGroups(register, action),
+											)
+										">
+										{{
+											formatGroups(
+												getRegisterGroups(register, action),
+											)
+										}}
 									</span>
 								</td>
 								<td class="action-cell">
 									<NcCheckboxRadioSwitch
-										:model-value="isPublicAccess(register.authorization)"
+										:model-value="
+											isPublicAccess(register.authorization)
+										"
 										type="switch"
 										:aria-labelledby="`permission-matrix-register-${register.id} permission-matrix-col-public`"
-										@update:modelValue="togglePublicAccess(register, $event)" />
+										@update:modelValue="
+											togglePublicAccess(register, $event)
+										" />
 								</td>
 							</tr>
 
 							<!-- Schema Rows -->
 							<template v-if="expandedRegisters[register.id]">
-								<tr v-for="schema in getRegisterSchemas(register)"
+								<tr
+									v-for="schema in getRegisterSchemas(register)"
 									:key="'schema-' + schema.id"
 									class="schema-row">
-									<td :id="`permission-matrix-schema-${register.id}-${schema.id}`" class="name-cell schema-indent">
-										&#8627; {{ schema.title || schema.name || 'Schema #' + schema.id }}
-										<span v-if="!schema.authorization || Object.keys(schema.authorization).length === 0"
+									<td
+										:id="`permission-matrix-schema-${register.id}-${schema.id}`"
+										class="name-cell schema-indent">
+										&#8627;
+										{{
+											schema.title
+											|| schema.name
+											|| 'Schema #' + schema.id
+										}}
+										<span
+											v-if="
+												!schema.authorization
+												|| Object.keys(schema.authorization)
+													.length === 0
+											"
 											class="inherited-badge"
-											:title="t('openregister', 'Inherits permissions from register')">
+											:title="
+												t(
+													'openregister',
+													'Inherits permissions from register',
+												)
+											">
 											{{ t('openregister', 'inherited') }}
 										</span>
 									</td>
-									<td v-for="action in actions"
+									<td
+										v-for="action in actions"
 										:key="action"
 										class="action-cell">
 										<span
-											:class="getPermissionClass(schema, register, action)"
-											:title="getEffectiveTooltip(schema, register, action)">
-											{{ formatGroups(getEffectiveGroups(schema, register, action)) }}
+											:class="
+												getPermissionClass(
+													schema,
+													register,
+													action,
+												)
+											"
+											:title="
+												getEffectiveTooltip(
+													schema,
+													register,
+													action,
+												)
+											">
+											{{
+												formatGroups(
+													getEffectiveGroups(
+														schema,
+														register,
+														action,
+													),
+												)
+											}}
 										</span>
 									</td>
 									<td class="action-cell">
 										<NcCheckboxRadioSwitch
-											:model-value="isPublicAccess(getEffectiveAuth(schema, register))"
+											:model-value="
+												isPublicAccess(
+													getEffectiveAuth(
+														schema,
+														register,
+													),
+												)
+											"
 											type="switch"
 											:aria-labelledby="`permission-matrix-schema-${register.id}-${schema.id} permission-matrix-col-public`"
-											@update:modelValue="toggleSchemaPublicAccess(schema, register, $event)" />
+											@update:modelValue="
+												toggleSchemaPublicAccess(
+													schema,
+													register,
+													$event,
+												)
+											" />
 									</td>
 								</tr>
 							</template>
@@ -119,12 +224,24 @@ import { translate as t } from '@nextcloud/l10n'
 			</div>
 
 			<!-- Bulk Actions -->
-			<div v-for="register in registersWithBulkActions"
+			<div
+				v-for="register in registersWithBulkActions"
 				:key="'bulk-' + register.id"
 				class="bulk-actions">
-				<h4>{{ t('openregister', 'Bulk Role Assignment: {title}', { title: register.title || 'Register #' + register.id }) }}</h4>
+				<h4>
+					{{
+						t('openregister', 'Bulk Role Assignment: {title}', {
+							title: register.title || 'Register #' + register.id,
+						})
+					}}
+				</h4>
 				<p class="bulk-description">
-					{{ t('openregister', 'Apply a role to all schemas in this register that do not have explicit authorization overrides.') }}
+					{{
+						t(
+							'openregister',
+							'Apply a role to all schemas in this register that do not have explicit authorization overrides.',
+						)
+					}}
 				</p>
 				<div class="bulk-controls">
 					<NcSelect
@@ -191,7 +308,8 @@ export default {
 		 */
 		registersWithBulkActions() {
 			return this.registers.filter(
-				register => this.expandedRegisters[register.id]
+				(register) =>
+					this.expandedRegisters[register.id]
 					&& register.configuration
 					&& register.configuration.roles,
 			)
@@ -210,10 +328,12 @@ export default {
 			this.loading = true
 			try {
 				const registerResult = await this.registerStore.refreshRegisterList()
-				this.registers = registerResult?.data || this.registerStore.registerList || []
+				this.registers =
+					registerResult?.data || this.registerStore.registerList || []
 
 				const schemaResult = await this.schemaStore.refreshSchemaList()
-				this.schemas = schemaResult?.data || this.schemaStore.schemaList || []
+				this.schemas =
+					schemaResult?.data || this.schemaStore.schemaList || []
 			} catch (error) {
 				console.error('Failed to load permission matrix data:', error)
 			} finally {
@@ -235,7 +355,9 @@ export default {
 		 */
 		getRegisterSchemas(register) {
 			const schemaIds = register.schemas || []
-			return this.schemas.filter(s => schemaIds.includes(s.id) || schemaIds.includes(String(s.id)))
+			return this.schemas.filter(
+				(s) => schemaIds.includes(s.id) || schemaIds.includes(String(s.id)),
+			)
 		},
 
 		/**
@@ -246,11 +368,13 @@ export default {
 		getRegisterGroups(register, action) {
 			const auth = register.authorization
 			if (!auth || !auth[action]) return []
-			return auth[action].map(entry => {
-				if (typeof entry === 'string') return entry
-				if (entry && entry.group) return entry.group
-				return null
-			}).filter(Boolean)
+			return auth[action]
+				.map((entry) => {
+					if (typeof entry === 'string') return entry
+					if (entry && entry.group) return entry.group
+					return null
+				})
+				.filter(Boolean)
 		},
 
 		/**
@@ -263,11 +387,13 @@ export default {
 			const schemaAuth = schema.authorization
 			if (schemaAuth && Object.keys(schemaAuth).length > 0) {
 				const rules = schemaAuth[action] || []
-				return rules.map(entry => {
-					if (typeof entry === 'string') return entry
-					if (entry && entry.group) return entry.group
-					return null
-				}).filter(Boolean)
+				return rules
+					.map((entry) => {
+						if (typeof entry === 'string') return entry
+						if (entry && entry.group) return entry.group
+						return null
+					})
+					.filter(Boolean)
 			}
 			// Inherit from register
 			return this.getRegisterGroups(register, action)
@@ -294,7 +420,11 @@ export default {
 		 */
 		getPermissionClass(schema, register, action) {
 			const schemaAuth = schema.authorization
-			if (schemaAuth && Object.keys(schemaAuth).length > 0 && schemaAuth[action]) {
+			if (
+				schemaAuth
+				&& Object.keys(schemaAuth).length > 0
+				&& schemaAuth[action]
+			) {
 				return 'group-list direct'
 			}
 			if (this.getRegisterGroups(register, action).length > 0) {
@@ -311,7 +441,11 @@ export default {
 		 */
 		getEffectiveTooltip(schema, register, action) {
 			const schemaAuth = schema.authorization
-			if (schemaAuth && Object.keys(schemaAuth).length > 0 && schemaAuth[action]) {
+			if (
+				schemaAuth
+				&& Object.keys(schemaAuth).length > 0
+				&& schemaAuth[action]
+			) {
 				return 'Directly configured on this schema'
 			}
 			const registerGroups = this.getRegisterGroups(register, action)
@@ -346,7 +480,7 @@ export default {
 		 */
 		isPublicAccess(authorization) {
 			if (!authorization || !authorization.read) return false
-			return authorization.read.some(entry => {
+			return authorization.read.some((entry) => {
 				if (typeof entry === 'string') return entry === 'public'
 				if (entry && entry.group) return entry.group === 'public'
 				return false
@@ -367,12 +501,15 @@ export default {
 				}
 			} else {
 				if (auth.read) {
-					auth.read = auth.read.filter(e => e !== 'public')
+					auth.read = auth.read.filter((e) => e !== 'public')
 				}
 			}
 
 			try {
-				await this.registerStore.saveRegister({ ...register, authorization: auth })
+				await this.registerStore.saveRegister({
+					...register,
+					authorization: auth,
+				})
 				await this.loadData()
 			} catch (error) {
 				console.error('Failed to toggle public access:', error)
@@ -386,9 +523,10 @@ export default {
 		 * @spec exclude settings-matrix toggle wiring; mutates schema read-auth and persists via store (auth-system contract)
 		 */
 		async toggleSchemaPublicAccess(schema, register, enabled) {
-			const schemaAuth = schema.authorization && Object.keys(schema.authorization).length > 0
-				? { ...schema.authorization }
-				: { ...(register.authorization || {}) }
+			const schemaAuth =
+				schema.authorization && Object.keys(schema.authorization).length > 0
+					? { ...schema.authorization }
+					: { ...(register.authorization || {}) }
 
 			if (enabled) {
 				if (!schemaAuth.read) schemaAuth.read = []
@@ -397,12 +535,15 @@ export default {
 				}
 			} else {
 				if (schemaAuth.read) {
-					schemaAuth.read = schemaAuth.read.filter(e => e !== 'public')
+					schemaAuth.read = schemaAuth.read.filter((e) => e !== 'public')
 				}
 			}
 
 			try {
-				await this.schemaStore.saveSchema({ ...schema, authorization: schemaAuth })
+				await this.schemaStore.saveSchema({
+					...schema,
+					authorization: schemaAuth,
+				})
 				await this.loadData()
 			} catch (error) {
 				console.error('Failed to toggle schema public access:', error)
@@ -415,7 +556,10 @@ export default {
 		 */
 		getRoleOptions(register) {
 			const roles = register.configuration?.roles || []
-			return roles.map(r => ({ label: r.name + ' (' + (r.actions || []).join(', ') + ')', value: r.name }))
+			return roles.map((r) => ({
+				label: r.name + ' (' + (r.actions || []).join(', ') + ')',
+				value: r.name,
+			}))
 		},
 
 		/**
@@ -424,22 +568,22 @@ export default {
 		getGroupOptions() {
 			// Collect all unique groups from all registers and schemas
 			const groups = new Set()
-			this.registers.forEach(r => {
+			this.registers.forEach((r) => {
 				const auth = r.authorization || {}
-				Object.values(auth).forEach(entries => {
+				Object.values(auth).forEach((entries) => {
 					if (Array.isArray(entries)) {
-						entries.forEach(e => {
+						entries.forEach((e) => {
 							if (typeof e === 'string') groups.add(e)
 							if (e && e.group) groups.add(e.group)
 						})
 					}
 				})
 			})
-			this.schemas.forEach(s => {
+			this.schemas.forEach((s) => {
 				const auth = s.authorization || {}
-				Object.values(auth).forEach(entries => {
+				Object.values(auth).forEach((entries) => {
 					if (Array.isArray(entries)) {
-						entries.forEach(e => {
+						entries.forEach((e) => {
 							if (typeof e === 'string') groups.add(e)
 							if (e && e.group) groups.add(e.group)
 						})
@@ -448,7 +592,9 @@ export default {
 			})
 			groups.add('public')
 			groups.add('admin')
-			return Array.from(groups).sort().map(g => ({ label: g, value: g }))
+			return Array.from(groups)
+				.sort()
+				.map((g) => ({ label: g, value: g }))
 		},
 
 		/**
@@ -465,7 +611,10 @@ export default {
 
 			for (const schema of schemas) {
 				// Skip schemas with explicit authorization
-				if (schema.authorization && Object.keys(schema.authorization).length > 0) {
+				if (
+					schema.authorization
+					&& Object.keys(schema.authorization).length > 0
+				) {
 					continue
 				}
 
@@ -477,10 +626,17 @@ export default {
 				}
 
 				try {
-					await this.schemaStore.saveSchema({ ...schema, authorization: auth })
+					await this.schemaStore.saveSchema({
+						...schema,
+						authorization: auth,
+					})
 					applied++
 				} catch (error) {
-					console.error('Failed to apply role to schema:', schema.id, error)
+					console.error(
+						'Failed to apply role to schema:',
+						schema.id,
+						error,
+					)
 				}
 			}
 

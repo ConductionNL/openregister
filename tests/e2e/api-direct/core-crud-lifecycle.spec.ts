@@ -47,7 +47,9 @@ async function pickLiveObjectId(request: APIRequestContext): Promise<string | nu
 test.describe('object-lifecycle — REST CRUD pipeline', () => {
 	let createdObjectId: string | null = null
 
-	test('POST creates an object and GET retrieves it (REQ-001)', async ({ request }) => {
+	test('POST creates an object and GET retrieves it (REQ-001)', async ({
+		request,
+	}) => {
 		const payload = {
 			name: `${RUN_ID}-character`,
 			ocName: `${RUN_ID} E2E Test`,
@@ -58,21 +60,32 @@ test.describe('object-lifecycle — REST CRUD pipeline', () => {
 		const created = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: payload,
 			},
 		)
-		expect(created.status(), 'POST /objects should return 200 or 201').toBeLessThanOrEqual(201)
+		expect(
+			created.status(),
+			'POST /objects should return 200 or 201',
+		).toBeLessThanOrEqual(201)
 		const createdBody = await created.json()
 		createdObjectId = createdBody['@self']?.id ?? createdBody.id ?? null
 		expect(createdObjectId, 'created object must have an id').toBeTruthy()
 
 		// Verify the version and timestamp fields that the pipeline assigns (REQ-001 scenario).
 		const self = createdBody['@self'] ?? {}
-		expect(self.created ?? createdBody.created, 'created timestamp must be set by server').toBeTruthy()
+		expect(
+			self.created ?? createdBody.created,
+			'created timestamp must be set by server',
+		).toBeTruthy()
 	})
 
-	test('PUT updates the object (REQ-001 pipeline update path)', async ({ request }) => {
+	test('PUT updates the object (REQ-001 pipeline update path)', async ({
+		request,
+	}) => {
 		// If the create test above did not run first, pick any live object.
 		let id = createdObjectId
 		if (!id) {
@@ -83,7 +96,10 @@ test.describe('object-lifecycle — REST CRUD pipeline', () => {
 		const update = await request.put(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-character-updated`,
 					ocName: `${RUN_ID} E2E Updated`,
@@ -94,7 +110,9 @@ test.describe('object-lifecycle — REST CRUD pipeline', () => {
 		)
 		expect(update.status(), 'PUT /objects/{id} should return 200').toBe(200)
 		const updatedBody = await update.json()
-		expect(updatedBody.description, 'description should be updated').toContain('Updated by object-lifecycle')
+		expect(updatedBody.description, 'description should be updated').toContain(
+			'Updated by object-lifecycle',
+		)
 	})
 
 	test('GET listing returns standard envelope shape', async ({ request }) => {
@@ -121,7 +139,9 @@ test.describe('object-lifecycle — REST CRUD pipeline', () => {
 			{ headers: { Accept: 'application/json' } },
 		)
 		// DELETE returns 200 or 204 depending on implementation.
-		expect([200, 204], `DELETE should return 200 or 204`).toContain(deleted.status())
+		expect([200, 204], `DELETE should return 200 or 204`).toContain(
+			deleted.status(),
+		)
 
 		// Confirm it is gone — GET should return 404.
 		const gone = await request.get(
@@ -135,8 +155,10 @@ test.describe('object-lifecycle — REST CRUD pipeline', () => {
 	test.afterAll(async ({ request }) => {
 		// Best-effort cleanup: delete the test object if not already removed.
 		if (!createdObjectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${createdObjectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${createdObjectId}`,
+			)
+			.catch(() => {})
 	})
 })

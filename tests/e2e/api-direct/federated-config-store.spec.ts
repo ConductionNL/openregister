@@ -19,7 +19,10 @@ import { execSync } from 'node:child_process'
 import { resolveBaseUrl, resolveContainer } from '../base-url'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 // ⚠️ There is deliberately NO default here. This spec calls
 // `docker restart ${CONTAINER}`, and the previous default was the literal
 // string `'nextcloud'` — the SHARED dev container, which bind-mounts several
@@ -33,7 +36,9 @@ function occ(args: string): string | null {
 		return null
 	}
 	try {
-		return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, { encoding: 'utf8' })
+		return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, {
+			encoding: 'utf8',
+		})
 	} catch {
 		return null
 	}
@@ -54,10 +59,14 @@ function restartAndWait(): void {
 					{ encoding: 'utf8' },
 				)
 				if (code.trim() === '200') return
-			} catch { /* keep polling */ }
+			} catch {
+				/* keep polling */
+			}
 			execSync('sleep 3')
 		}
-	} catch { /* best effort */ }
+	} catch {
+		/* best effort */
+	}
 }
 
 test.describe('Federated config store', () => {
@@ -67,32 +76,50 @@ test.describe('Federated config store', () => {
 	const objects: string[] = []
 
 	test.beforeAll(async ({ request }) => {
-		const sch = await (await request.post(`${API}/schemas`, {
-			headers: JSON_HEADERS,
-			data: { title: `Store ${runId}`, properties: { name: { type: 'string' } }, configuration: { 'x-openregister-shareable': true } },
-		})).json()
+		const sch = await (
+			await request.post(`${API}/schemas`, {
+				headers: JSON_HEADERS,
+				data: {
+					title: `Store ${runId}`,
+					properties: { name: { type: 'string' } },
+					configuration: { 'x-openregister-shareable': true },
+				},
+			})
+		).json()
 		schId = sch.id
-		const reg = await (await request.post(`${API}/registers`, {
-			headers: JSON_HEADERS, data: { title: `Store Reg ${runId}`, schemas: [schId] },
-		})).json()
+		const reg = await (
+			await request.post(`${API}/registers`, {
+				headers: JSON_HEADERS,
+				data: { title: `Store Reg ${runId}`, schemas: [schId] },
+			})
+		).json()
 		regId = reg.id
 		type = `${reg.slug}.${sch.slug}`
-		const obj = await (await request.post(`${API}/objects/${regId}/${schId}`, {
-			headers: JSON_HEADERS, data: { name: 'Alpha' },
-		})).json()
+		const obj = await (
+			await request.post(`${API}/objects/${regId}/${schId}`, {
+				headers: JSON_HEADERS,
+				data: { name: 'Alpha' },
+			})
+		).json()
 		objects.push(obj['@self'].id)
 	})
 
 	test.afterAll(async ({ request }) => {
-		for (const u of objects) await request.delete(`${API}/objects/${regId}/${schId}/${u}`).catch(() => {})
+		for (const u of objects)
+			await request
+				.delete(`${API}/objects/${regId}/${schId}/${u}`)
+				.catch(() => {})
 		await request.delete(`${API}/registers/${regId}`).catch(() => {})
 		await request.delete(`${API}/schemas/${schId}`).catch(() => {})
 	})
 
 	async function bundle(request: APIRequestContext): Promise<any> {
-		return (await request.post(`${API}/federated-config/bundle`, {
-			headers: JSON_HEADERS, data: { type, selection: {} },
-		})).json()
+		return (
+			await request.post(`${API}/federated-config/bundle`, {
+				headers: JSON_HEADERS,
+				data: { type, selection: {} },
+			})
+		).json()
 	}
 
 	test('the instance exposes a signing public key', async ({ request }) => {
@@ -105,7 +132,9 @@ test.describe('Federated config store', () => {
 	})
 
 	test('discovery searches GitHub by topic', async ({ request }) => {
-		const resp = await request.get(`${API}/federated-config/discover?topic=openbuild-app`)
+		const resp = await request.get(
+			`${API}/federated-config/discover?topic=openbuild-app`,
+		)
 		expect(resp.status()).toBe(200)
 		const results = (await resp.json()).results
 		expect(Array.isArray(results)).toBe(true)
@@ -118,30 +147,45 @@ test.describe('Federated config store', () => {
 	})
 
 	test('discovery needs a topic', async ({ request }) => {
-		expect((await request.get(`${API}/federated-config/discover`)).status()).toBe(400)
+		expect(
+			(await request.get(`${API}/federated-config/discover`)).status(),
+		).toBe(400)
 	})
 
-	test('publish refuses when no store credential is selected', async ({ request }) => {
+	test('publish refuses when no store credential is selected', async ({
+		request,
+	}) => {
 		// The admin session has no federated-config-credential preference set, so
 		// publish must refuse rather than guess a credential.
 		const resp = await request.post(`${API}/federated-config/publish`, {
 			headers: JSON_HEADERS,
-			data: { type, selection: {}, repo: 'ConductionNL/store-e2e', path: 'bundle.json' },
+			data: {
+				type,
+				selection: {},
+				repo: 'ConductionNL/store-e2e',
+				path: 'bundle.json',
+			},
 		})
 		expect(resp.status()).toBe(400)
 		expect((await resp.json()).error).toContain('credential')
 	})
 
 	test('signing enforcement refuses an unsigned bundle', async ({ request }) => {
-		const set = occ('config:app:set openregister federated_config_trusted_keys --value="AAAAsomeotherkey="')
+		const set = occ(
+			'config:app:set openregister federated_config_trusted_keys --value="AAAAsomeotherkey="',
+		)
 		test.skip(set === null, 'occ not reachable (not on the dev host)')
 		restartAndWait()
 		try {
 			const b = await bundle(request)
 			const denied = await request.post(`${API}/federated-config/install`, {
-				headers: JSON_HEADERS, data: { type, bundle: b, source: 'ConductionNL/x' },
+				headers: JSON_HEADERS,
+				data: { type, bundle: b, source: 'ConductionNL/x' },
 			})
-			expect(denied.status(), 'unsigned bundle refused under enforcement').toBe(403)
+			expect(
+				denied.status(),
+				'unsigned bundle refused under enforcement',
+			).toBe(403)
 			expect((await denied.json()).error).toContain('trusted')
 		} finally {
 			occ('config:app:delete openregister federated_config_trusted_keys')
@@ -149,10 +193,13 @@ test.describe('Federated config store', () => {
 		}
 	})
 
-	test('unsigned install succeeds when signing is not enforced', async ({ request }) => {
+	test('unsigned install succeeds when signing is not enforced', async ({
+		request,
+	}) => {
 		const b = await bundle(request)
 		const ok = await request.post(`${API}/federated-config/install`, {
-			headers: JSON_HEADERS, data: { type, bundle: b, source: 'ConductionNL/x' },
+			headers: JSON_HEADERS,
+			data: { type, bundle: b, source: 'ConductionNL/x' },
 		})
 		expect(ok.status()).toBe(200)
 		const installed = (await ok.json()).installed ?? []

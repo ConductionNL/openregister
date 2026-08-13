@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { registerStore, dashboardStore, navigationStore, schemaStore } from '../../store/store.js'
+import {
+	registerStore,
+	dashboardStore,
+	navigationStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -12,9 +17,11 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 		:subtitle="register.description"
 		subname="Register Details"
 		:open="navigationStore.sidebarState.register"
-		@update:open="(e) => {
-			navigationStore.setSidebarState('register', e)
-		}">
+		@update:open="
+			(e) => {
+				navigationStore.setSidebarState('register', e)
+			}
+		">
 		<template #secondary-actions>
 			<NcActionButton @click="showEditDialog = true">
 				<template #icon>
@@ -55,9 +62,12 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="register.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: register.stats?.objects?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'object{plural}', {
+								plural:
+									register.stats?.objects?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="PackageVariantClosed"
 						variant="primary"
 						horizontal
@@ -66,9 +76,11 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="register.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: register.stats?.logs?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'log{plural}', {
+								plural: register.stats?.logs?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="TextBoxOutline"
 						horizontal
 						show-zero-count
@@ -76,9 +88,12 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="register.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: register.stats?.files?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'file{plural}', {
+								plural:
+									register.stats?.files?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="FileDocumentOutline"
 						horizontal
 						show-zero-count
@@ -86,9 +101,11 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<CnStatsBlock
 						:title="t('openregister', 'Schemas')"
 						:count="register.schemas?.length || 0"
-						:count-label="t('openregister', 'schema{plural}', {
-							plural: register.schemas?.length !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'schema{plural}', {
+								plural: register.schemas?.length !== 1 ? 's' : '',
+							})
+						"
 						:icon="FileCodeOutline"
 						horizontal
 						show-zero-count />
@@ -127,7 +144,9 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
-								<NcActionButton close-after-click @click="editSchema(schema)">
+								<NcActionButton
+									close-after-click
+									@click="editSchema(schema)">
 									<template #icon>
 										<Pencil :size="20" />
 									</template>
@@ -144,7 +163,9 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 								:title="t('openregister', 'Total Size')"
 								:count="0"
 								show-zero-count
-								:breakdown="sizeBreakdown(schema.stats?.objects?.size)" />
+								:breakdown="
+									sizeBreakdown(schema.stats?.objects?.size)
+								" />
 						</CnKpiGrid>
 					</CnItemCard>
 				</div>
@@ -167,17 +188,17 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					:model-value="formData.title || ''"
 					:error="!!errors.title"
 					:helper-text="errors.title"
-					@update:modelValue="v => updateField('title', v)" />
+					@update:modelValue="(v) => updateField('title', v)" />
 				<NcTextField
 					:label="t('openregister', 'Slug') + ' *'"
 					:model-value="formData.slug || ''"
 					:error="!!errors.slug"
 					:helper-text="errors.slug"
-					@update:modelValue="v => updateField('slug', v)" />
+					@update:modelValue="(v) => updateField('slug', v)" />
 				<NcTextArea
 					:label="t('openregister', 'Description')"
 					:model-value="formData.description || ''"
-					@update:modelValue="v => updateField('description', v)" />
+					@update:modelValue="(v) => updateField('description', v)" />
 				<NcSelect
 					:input-label="t('openregister', 'Schemas')"
 					:options="schemaSelectOptions"
@@ -185,20 +206,40 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					:multiple="true"
 					:close-on-select="false"
 					:loading="schemasLoading"
-					@update:modelValue="vals => updateField('schemas', vals)" />
+					@update:modelValue="(vals) => updateField('schemas', vals)" />
 				<RegisterLanguagesEditor
 					:value="formData.languages || []"
 					:label="t('openregister', 'Languages')"
-					:helper-text="t('openregister', 'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.')"
-					@input="vals => updateField('languages', vals)" />
+					:helper-text="
+						t(
+							'openregister',
+							'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.',
+						)
+					"
+					@input="(vals) => updateField('languages', vals)" />
 			</div>
 		</template>
 	</CnFormDialog>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
-import { CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
+import {
+	NcAppSidebar,
+	NcAppSidebarTab,
+	NcButton,
+	NcEmptyContent,
+	NcActions,
+	NcActionButton,
+	NcTextField,
+	NcTextArea,
+	NcSelect,
+} from '@nextcloud/vue'
+import {
+	CnStatsBlock,
+	CnKpiGrid,
+	CnItemCard,
+	CnFormDialog,
+} from '@conduction/nextcloud-vue'
 import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
@@ -260,12 +301,15 @@ export default {
 			// Find the register in the dashboard store using the ID from the register
 			// store, falling back to the route param on a deep link / page refresh.
 			// Mirrors RegisterDetail.register — the whole sidebar is v-if'd on this.
-			const registerId = registerStore.getRegisterItem?.id || this.$route.params.id
+			const registerId =
+				registerStore.getRegisterItem?.id || this.$route.params.id
 			if (!registerId) {
 				return undefined
 			}
 			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(r => String(r.id) === String(registerId))
+			return dashboardStore.registers.find(
+				(r) => String(r.id) === String(registerId),
+			)
 		},
 		activeTab: {
 			/**
@@ -305,11 +349,35 @@ export default {
 			return {
 				title: t('openregister', 'Register'),
 				properties: {
-					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
-					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
-					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
-					languages: { type: 'array', title: t('openregister', 'Languages'), order: 5 },
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						required: true,
+						minLength: 1,
+						order: 1,
+					},
+					slug: {
+						type: 'string',
+						title: t('openregister', 'Slug'),
+						required: true,
+						minLength: 1,
+						order: 2,
+					},
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						order: 3,
+					},
+					schemas: {
+						type: 'array',
+						title: t('openregister', 'Schemas'),
+						order: 4,
+					},
+					languages: {
+						type: 'array',
+						title: t('openregister', 'Languages'),
+						order: 5,
+					},
 				},
 				required: ['title', 'slug'],
 			}
@@ -348,7 +416,10 @@ export default {
 			this.schemasLoading = true
 			try {
 				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
+					id: s.id,
+					label: s.title,
+				}))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -364,10 +435,13 @@ export default {
 		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
+			return schemas.map((s) => {
 				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
+				return (
+					this.schemaSelectOptions.find(
+						(o) => String(o.id) === String(id),
+					) || { id, label: String(id) }
+				)
 			})
 		},
 
@@ -381,7 +455,9 @@ export default {
 			try {
 				await registerStore.saveRegister({
 					...formData,
-					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+					schemas: (formData.schemas || []).map((s) =>
+						typeof s === 'object' ? s.id : s,
+					),
 				})
 				this.$refs.formDialog.setResult({ success: true })
 				await dashboardStore.fetchRegisters()
@@ -419,7 +495,9 @@ export default {
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
 			try {
 				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
+				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+					type: 'application/json',
+				})
 				const downloadLink = document.createElement('a')
 				downloadLink.href = URL.createObjectURL(blob)
 				downloadLink.download = `${this.register.title.toLowerCase()}-api-specification.json`
@@ -443,7 +521,10 @@ export default {
 
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
-			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+			window.open(
+				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
+				'_blank',
+			)
 		},
 
 		/**

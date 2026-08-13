@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	objectStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -9,7 +14,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<ObjectsList />
 		</template>
 		<template #default>
-			<NcEmptyContent v-if="!objectStore.objectItem || !isObjectsRoute"
+			<NcEmptyContent
+				v-if="!objectStore.objectItem || !isObjectsRoute"
 				class="detailContainer"
 				name="No object"
 				description="No object selected yet">
@@ -50,7 +56,10 @@ export default {
 		// share this view tree via NcAppContent but should fall back
 		// to the empty state.
 		isObjectsRoute() {
-			return this.$route.path === '/objects' || this.$route.name === 'objectDetail'
+			return (
+				this.$route.path === '/objects'
+				|| this.$route.name === 'objectDetail'
+			)
 		},
 	},
 	watch: {
@@ -117,7 +126,9 @@ export default {
 					},
 				})
 				if (!response.ok) {
-					console.error(`[ObjectsIndex] deep-link fetch ${url} returned ${response.status}`)
+					console.error(
+						`[ObjectsIndex] deep-link fetch ${url} returned ${response.status}`,
+					)
 					return
 				}
 				const item = await response.json()

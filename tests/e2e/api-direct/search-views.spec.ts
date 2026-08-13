@@ -44,7 +44,9 @@ test.describe('zoeken-filteren — search and filter parameters', () => {
 		expect(typeof body1.limit).toBe('number')
 	})
 
-	test('field filter parameter narrows results (type=player)', async ({ request }) => {
+	test('field filter parameter narrows results (type=player)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?type=player&_limit=5`,
 			{ headers: { Accept: 'application/json' } },
@@ -60,7 +62,9 @@ test.describe('zoeken-filteren — search and filter parameters', () => {
 		}
 	})
 
-	test('_search with non-matching term returns empty results (not 5xx)', async ({ request }) => {
+	test('_search with non-matching term returns empty results (not 5xx)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_search=xyzzy_nonexistent_string_${RUN_ID}&_limit=5`,
 			{ headers: { Accept: 'application/json' } },
@@ -89,7 +93,9 @@ test.describe('zoeken-filteren — search and filter parameters', () => {
 // faceting-configuration — facets in listing response
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('faceting-configuration — facets response shape', () => {
-	test('listing endpoint returns facets array (may be empty without Solr)', async ({ request }) => {
+	test('listing endpoint returns facets array (may be empty without Solr)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_limit=5`,
 			{ headers: { Accept: 'application/json' } },
@@ -101,7 +107,9 @@ test.describe('faceting-configuration — facets response shape', () => {
 		expect(Array.isArray(body.facets)).toBe(true)
 	})
 
-	test('@self metadata in listing envelope has source field', async ({ request }) => {
+	test('@self metadata in listing envelope has source field', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_limit=1`,
 			{ headers: { Accept: 'application/json' } },
@@ -121,9 +129,12 @@ test.describe('saved-search-views — views REST lifecycle', () => {
 	let createdViewId: number | null = null
 
 	test('GET /api/views returns empty or populated list', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/views?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/views?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body).toHaveProperty('results')
@@ -132,7 +143,10 @@ test.describe('saved-search-views — views REST lifecycle', () => {
 
 	test('POST /api/views creates a saved view', async ({ request }) => {
 		const resp = await request.post('/index.php/apps/openregister/api/views', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
 			data: {
 				name: `${RUN_ID}-test-view`,
 				description: 'E2E test saved view',
@@ -154,7 +168,9 @@ test.describe('saved-search-views — views REST lifecycle', () => {
 		expect(createdViewId, 'created view should have an id').toBeTruthy()
 	})
 
-	test('GET /api/views/:id returns the created view (or 404 if filtering by user)', async ({ request }) => {
+	test('GET /api/views/:id returns the created view (or 404 if filtering by user)', async ({
+		request,
+	}) => {
 		if (!createdViewId) test.skip(true, 'no view created in this run')
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/views/${createdViewId}`,
@@ -175,11 +191,18 @@ test.describe('saved-search-views — views REST lifecycle', () => {
 		const resp = await request.put(
 			`/index.php/apps/openregister/api/views/${createdViewId}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-test-view-updated`,
 					description: 'Updated by e2e test',
-					query: { registers: [REGISTER_ID], schemas: [SCHEMA_ID], searchTerms: ['updated'] },
+					query: {
+						registers: [REGISTER_ID],
+						schemas: [SCHEMA_ID],
+						searchTerms: ['updated'],
+					},
 				},
 			},
 		)
@@ -200,6 +223,8 @@ test.describe('saved-search-views — views REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!createdViewId) return
-		await request.delete(`/index.php/apps/openregister/api/views/${createdViewId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/views/${createdViewId}`)
+			.catch(() => {})
 	})
 })

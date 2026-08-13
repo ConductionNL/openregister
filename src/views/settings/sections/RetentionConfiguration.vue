@@ -31,16 +31,23 @@
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Configure retention policies for objects and audit logs. Object retention controls when inactive objects are archived and permanently deleted.
-				Log retention manages how long audit trails for different CRUD operations are kept for compliance and debugging.
-				<strong>Note:</strong> Setting retention to 0 means data is kept forever (not advisable for production).
+				Configure retention policies for objects and audit logs. Object
+				retention controls when inactive objects are archived and permanently
+				deleted. Log retention manages how long audit trails for different
+				CRUD operations are kept for compliance and debugging.
+				<strong>Note:</strong> Setting retention to 0 means data is kept
+				forever (not advisable for production).
 			</p>
 			<p class="toggle-status" :class="retentionStatusClass">
-				<span :class="retentionStatusTextClass">{{ retentionStatusMessage }}</span>
+				<span :class="retentionStatusTextClass">{{
+					retentionStatusMessage
+				}}</span>
 			</p>
 			<p class="impact-description warning-box">
-				<strong>⚠️ Important:</strong> Changes to retention policies only apply to objects that are "touched" (created, updated, or accessed) after the retention policy was changed.
-				Existing objects will retain their previous retention schedules until they are modified.
+				<strong>⚠️ Important:</strong> Changes to retention policies only
+				apply to objects that are "touched" (created, updated, or accessed)
+				after the retention policy was changed. Existing objects will retain
+				their previous retention schedules until they are modified.
 			</p>
 		</div>
 
@@ -48,7 +55,8 @@
 		<div class="option-section">
 			<h4>Trail Features</h4>
 			<p class="option-description">
-				Control which types of audit trails are enabled. Disabling trails will stop recording new entries but won't affect existing data.
+				Control which types of audit trails are enabled. Disabling trails
+				will stop recording new entries but won't affect existing data.
 			</p>
 
 			<div class="trail-switches">
@@ -60,7 +68,8 @@
 						Audit Trails enabled
 					</NcCheckboxRadioSwitch>
 					<p class="trail-description">
-						Record all CRUD operations (create, read, update, delete) for objects and system actions
+						Record all CRUD operations (create, read, update, delete) for
+						objects and system actions
 					</p>
 				</div>
 
@@ -72,12 +81,14 @@
 						Search Trails enabled
 					</NcCheckboxRadioSwitch>
 					<p class="trail-description">
-						Record search queries and analytics for performance monitoring and usage insights
+						Record search queries and analytics for performance
+						monitoring and usage insights
 					</p>
 				</div>
 
 				<div v-if="searchTrailsEnabled" class="trail-switch-row">
-					<NcSelect v-model="selectedRecordingMode"
+					<NcSelect
+						v-model="selectedRecordingMode"
 						:options="recordingModeOptions"
 						:clearable="false"
 						:disabled="loading || saving"
@@ -85,9 +96,10 @@
 						label="label"
 						class="recording-mode-select" />
 					<p class="trail-description">
-						Which searches are recorded: <strong>All searches</strong> logs every list and query,
-						<strong>Text searches only</strong> logs free-text searches (default), and
-						<strong>Disabled</strong> records nothing.
+						Which searches are recorded:
+						<strong>All searches</strong> logs every list and query,
+						<strong>Text searches only</strong> logs free-text searches
+						(default), and <strong>Disabled</strong> records nothing.
 					</p>
 				</div>
 			</div>
@@ -97,13 +109,17 @@
 		<div class="option-section">
 			<h4>Data & Log Retention Policies</h4>
 			<p class="option-description">
-				Configure retention periods for objects and audit logs (in milliseconds). Object retention controls lifecycle management, while log retention manages audit trail storage by action type.
+				Configure retention periods for objects and audit logs (in
+				milliseconds). Object retention controls lifecycle management, while
+				log retention manages audit trail storage by action type.
 			</p>
 
 			<div class="retention-table">
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-object-archive"><strong>Soft Delete After Inactivity</strong></label>
+						<label for="retention-object-archive"
+							><strong>Soft Delete After Inactivity</strong></label
+						>
 						<p class="retention-description">
 							Time since last CRUD action before object is soft-deleted
 						</p>
@@ -112,22 +128,32 @@
 						<div class="retention-input-wrapper">
 							<input
 								id="retention-object-archive"
-								v-model.number="retentionOptions.objectArchiveRetention"
+								v-model.number="
+									retentionOptions.objectArchiveRetention
+								"
 								type="number"
 								:disabled="loading || saving"
 								placeholder="31536000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.objectArchiveRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.objectArchiveRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-object-delete"><strong>Permanent Delete After Soft Delete</strong></label>
+						<label for="retention-object-delete"
+							><strong
+								>Permanent Delete After Soft Delete</strong
+							></label
+						>
 						<p class="retention-description">
 							Time from soft-delete to permanent deletion
 						</p>
@@ -136,46 +162,63 @@
 						<div class="retention-input-wrapper">
 							<input
 								id="retention-object-delete"
-								v-model.number="retentionOptions.objectDeleteRetention"
+								v-model.number="
+									retentionOptions.objectDeleteRetention
+								"
 								type="number"
 								:disabled="loading || saving"
 								placeholder="63072000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.objectDeleteRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.objectDeleteRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-search-trail"><strong>Search Trail Retention</strong></label>
+						<label for="retention-search-trail"
+							><strong>Search Trail Retention</strong></label
+						>
 						<p class="retention-description">
-							Retention period for search query audit trails and analytics
+							Retention period for search query audit trails and
+							analytics
 						</p>
 					</div>
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
 								id="retention-search-trail"
-								v-model.number="retentionOptions.searchTrailRetention"
+								v-model.number="
+									retentionOptions.searchTrailRetention
+								"
 								type="number"
 								:disabled="loading || saving"
 								placeholder="2592000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.searchTrailRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.searchTrailRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-create-log"><strong>Create Action Logs</strong></label>
+						<label for="retention-create-log"
+							><strong>Create Action Logs</strong></label
+						>
 						<p class="retention-description">
 							Retention period for object creation audit logs
 						</p>
@@ -188,18 +231,24 @@
 								type="number"
 								:disabled="loading || saving"
 								placeholder="2592000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.createLogRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.createLogRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-read-log"><strong>Read Action Logs</strong></label>
+						<label for="retention-read-log"
+							><strong>Read Action Logs</strong></label
+						>
 						<p class="retention-description">
 							Retention period for object access/view audit logs
 						</p>
@@ -212,18 +261,22 @@
 								type="number"
 								:disabled="loading || saving"
 								placeholder="86400000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.readLogRetention) }}
+						{{
+							formatRetentionPeriod(retentionOptions.readLogRetention)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-update-log"><strong>Update Action Logs</strong></label>
+						<label for="retention-update-log"
+							><strong>Update Action Logs</strong></label
+						>
 						<p class="retention-description">
 							Retention period for object modification audit logs
 						</p>
@@ -236,18 +289,24 @@
 								type="number"
 								:disabled="loading || saving"
 								placeholder="604800000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.updateLogRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.updateLogRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-delete-log"><strong>Delete Action Logs</strong></label>
+						<label for="retention-delete-log"
+							><strong>Delete Action Logs</strong></label
+						>
 						<p class="retention-description">
 							Retention period for object deletion audit logs
 						</p>
@@ -260,20 +319,27 @@
 								type="number"
 								:disabled="loading || saving"
 								placeholder="2592000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.deleteLogRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.deleteLogRetention,
+							)
+						}}
 					</div>
 				</div>
 
 				<div class="retention-row">
 					<div class="retention-label">
-						<label for="retention-webhook-log"><strong>Webhook Logs</strong></label>
+						<label for="retention-webhook-log"
+							><strong>Webhook Logs</strong></label
+						>
 						<p class="retention-description">
-							Retention period for webhook delivery logs and retry attempts
+							Retention period for webhook delivery logs and retry
+							attempts
 						</p>
 					</div>
 					<div class="retention-input">
@@ -284,12 +350,16 @@
 								type="number"
 								:disabled="loading || saving"
 								placeholder="2592000000"
-								class="retention-input-field">
+								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{ formatRetentionPeriod(retentionOptions.webhookLogRetention) }}
+						{{
+							formatRetentionPeriod(
+								retentionOptions.webhookLogRetention,
+							)
+						}}
 					</div>
 				</div>
 			</div>
@@ -304,7 +374,12 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+} from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -376,7 +451,9 @@ export default {
 			 * @return {boolean}
 			 */
 			get() {
-				return this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
+				return (
+					this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
+				)
 			},
 			/**
 			 * Write the search-trails-enabled flag to the store.
@@ -397,7 +474,10 @@ export default {
 			 * @return {string} One of 'all', '_search', 'none'.
 			 */
 			get() {
-				return this.settingsStore.retentionOptions.searchTrailRecordingMode ?? '_search'
+				return (
+					this.settingsStore.retentionOptions.searchTrailRecordingMode
+					?? '_search'
+				)
 			},
 			/**
 			 * Write the search-trail recording mode to the store.
@@ -419,7 +499,10 @@ export default {
 		recordingModeOptions() {
 			return [
 				{ value: 'all', label: this.t('openregister', 'All searches') },
-				{ value: '_search', label: this.t('openregister', 'Text searches only') },
+				{
+					value: '_search',
+					label: this.t('openregister', 'Text searches only'),
+				},
 				{ value: 'none', label: this.t('openregister', 'Disabled') },
 			]
 		},
@@ -431,7 +514,11 @@ export default {
 		 */
 		selectedRecordingMode: {
 			get() {
-				return this.recordingModeOptions.find(o => o.value === this.searchTrailRecordingMode) || this.recordingModeOptions[1]
+				return (
+					this.recordingModeOptions.find(
+						(o) => o.value === this.searchTrailRecordingMode,
+					) || this.recordingModeOptions[1]
+				)
 			},
 			set(option) {
 				this.searchTrailRecordingMode = option ? option.value : '_search'

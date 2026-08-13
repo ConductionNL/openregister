@@ -20,7 +20,12 @@
  * object, and deletes the users at the end. It needs no `occ`, no docker, and no
  * pre-seeded data, which is what makes it safe to run on every push.
  */
-import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as pwRequest,
+	type APIRequestContext,
+} from '@playwright/test'
 import { resolveBaseUrl } from '../base-url'
 
 const BASE = resolveBaseUrl()
@@ -48,7 +53,10 @@ const OTHER = 'e2e-other'
 const PASS = 'E2e-Share-Pass-123'
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -104,7 +112,9 @@ test.describe('object sharing over HTTP', () => {
 			data: {
 				title: `e2e share schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				// A non-empty authorization block FAILS CLOSED for any action it
 				// does not list — so listing only `read` means the owner cannot
 				// even create the fixture. The first CI run said exactly that:
@@ -140,14 +150,20 @@ test.describe('object sharing over HTTP', () => {
 		const before = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}`,
 		)
-		expect(before.status(), 'the object should start out readable by another user').toBeLessThan(300)
+		expect(
+			before.status(),
+			'the object should start out readable by another user',
+		).toBeLessThan(300)
 
 		// The OWNER sets the scope. Not an admin — that is the point of task 4.0.
 		const put = await owner.put(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}/scope`,
 			{ data: { scope: 'private' } },
 		)
-		expect(put.ok(), `owner could not set the scope: ${await put.text()}`).toBeTruthy()
+		expect(
+			put.ok(),
+			`owner could not set the scope: ${await put.text()}`,
+		).toBeTruthy()
 		expect((await put.json()).scope).toBe('private')
 
 		// The consequence: gone for the other user.
@@ -163,7 +179,10 @@ test.describe('object sharing over HTTP', () => {
 		const mine = await owner.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}`,
 		)
-		expect(mine.status(), 'the owner must still reach their own private object').toBeLessThan(300)
+		expect(
+			mine.status(),
+			'the owner must still reach their own private object',
+		).toBeLessThan(300)
 	})
 
 	test('inviting a user restores their access, and revoking removes it again', async () => {
@@ -178,11 +197,14 @@ test.describe('object sharing over HTTP', () => {
 		const granted = await other.get(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}`,
 		)
-		expect(granted.status(), 'an invited user must reach the object').toBeLessThan(300)
+		expect(
+			granted.status(),
+			'an invited user must reach the object',
+		).toBeLessThan(300)
 
 		const revoke = await owner.delete(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}`
-			+ `/shares/${encodeURIComponent(shareId)}`,
+				+ `/shares/${encodeURIComponent(shareId)}`,
 		)
 		expect(revoke.ok(), `revoke failed: ${await revoke.text()}`).toBeTruthy()
 
@@ -207,7 +229,9 @@ test.describe('object sharing over HTTP', () => {
 		// ANONYMOUS: a context with no credentials at all.
 		const anon = await pwRequest.newContext({ baseURL: BASE })
 		try {
-			const resolved = await anon.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const resolved = await anon.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(
 				resolved.ok(),
 				`a live token must resolve anonymously: ${await resolved.text()}`,
@@ -215,17 +239,19 @@ test.describe('object sharing over HTTP', () => {
 
 			await owner.delete(
 				`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}`
-				+ `/shares/${encodeURIComponent(String(id))}`,
+					+ `/shares/${encodeURIComponent(String(id))}`,
 			)
 
-			const dead = await anon.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const dead = await anon.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(dead.status(), 'a revoked link must stop resolving').toBe(404)
 		} finally {
 			await anon.dispose()
 		}
 	})
 
-	test('a non-owner cannot change the scope of somebody else\'s object', async () => {
+	test("a non-owner cannot change the scope of somebody else's object", async () => {
 		const attempt = await other.put(
 			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectUuid}/scope`,
 			{ data: { scope: 'organisation' } },

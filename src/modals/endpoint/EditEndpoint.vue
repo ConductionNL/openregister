@@ -4,8 +4,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'editEndpoint'"
-		:name="endpointStore.endpointItem?.id ? t('openregister', 'Edit Endpoint') : t('openregister', 'Add Endpoint')"
+	<NcDialog
+		v-if="navigationStore.modal === 'editEndpoint'"
+		:name="
+			endpointStore.endpointItem?.id
+				? t('openregister', 'Edit Endpoint')
+				: t('openregister', 'Add Endpoint')
+		"
 		size="large"
 		:can-close="true"
 		@update:open="navigationStore.setModal(false)">
@@ -49,11 +54,15 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<NcTextField
 					v-model="endpointStore.endpointItem.inputMapping"
 					:label="t('openregister', 'Input Mapping')"
-					:placeholder="t('openregister', 'ID of input mapping (optional)')" />
+					:placeholder="
+						t('openregister', 'ID of input mapping (optional)')
+					" />
 				<NcTextField
 					v-model="endpointStore.endpointItem.outputMapping"
 					:label="t('openregister', 'Output Mapping')"
-					:placeholder="t('openregister', 'ID of output mapping (optional)')" />
+					:placeholder="
+						t('openregister', 'ID of output mapping (optional)')
+					" />
 			</div>
 			<div class="modalFooter">
 				<NcButton @click="navigationStore.setModal(false)">
@@ -63,7 +72,12 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					:disabled="!endpointStore.endpointItem.name || !endpointStore.endpointItem.endpoint || !endpointStore.endpointItem.method || !endpointStore.endpointItem.targetType"
+					:disabled="
+						!endpointStore.endpointItem.name
+						|| !endpointStore.endpointItem.endpoint
+						|| !endpointStore.endpointItem.method
+						|| !endpointStore.endpointItem.targetType
+					"
 					variant="primary"
 					@click="saveEndpoint()">
 					<template #icon>
@@ -100,7 +114,15 @@ export default {
 	},
 	data() {
 		return {
-			methodOptions: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+			methodOptions: [
+				'GET',
+				'POST',
+				'PUT',
+				'DELETE',
+				'PATCH',
+				'OPTIONS',
+				'HEAD',
+			],
 			targetTypeOptions: ['view', 'agent', 'webhook', 'register', 'schema'],
 			endpointPlaceholder: '/api/example/{{id}}',
 		}
@@ -111,7 +133,8 @@ export default {
 		 */
 		saveEndpoint() {
 			if (endpointStore.endpointItem.id) {
-				endpointStore.updateEndpoint(endpointStore.endpointItem)
+				endpointStore
+					.updateEndpoint(endpointStore.endpointItem)
 					.then(() => {
 						navigationStore.setModal(false)
 						OCP.Toast.success('Endpoint updated successfully')
@@ -120,7 +143,8 @@ export default {
 						OCP.Toast.error(`Error updating endpoint: ${error.message}`)
 					})
 			} else {
-				endpointStore.createEndpoint(endpointStore.endpointItem)
+				endpointStore
+					.createEndpoint(endpointStore.endpointItem)
 					.then(() => {
 						navigationStore.setModal(false)
 						OCP.Toast.success('Endpoint created successfully')

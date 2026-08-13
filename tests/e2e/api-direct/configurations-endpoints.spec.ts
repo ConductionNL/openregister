@@ -24,10 +24,15 @@ const RUN_ID = `e2e-${Date.now()}`
 // openapi-generation — OAS endpoint produces full document
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('openapi-generation — full OAS document', () => {
-	test('OAS document has components/schemas for registered data types', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas', {
-			headers: { Accept: 'application/json' },
-		})
+	test('OAS document has components/schemas for registered data types', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body).toHaveProperty('components')
@@ -39,7 +44,9 @@ test.describe('openapi-generation — full OAS document', () => {
 	})
 
 	test('OAS info block includes title and version', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas')
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body.info).toHaveProperty('title')
@@ -47,10 +54,14 @@ test.describe('openapi-generation — full OAS document', () => {
 		expect(body.info.title).toBeTruthy()
 	})
 
-	test('per-register OAS endpoint returns register-scoped document', async ({ request }) => {
+	test('per-register OAS endpoint returns register-scoped document', async ({
+		request,
+	}) => {
 		// The all-registers OAS is at /api/registers/oas.
 		// Individual register OAS may be at /api/registers/:id/oas.
-		const listResp = await request.get('/index.php/apps/openregister/api/registers?_limit=1')
+		const listResp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=1',
+		)
 		const list = await listResp.json()
 		const reg = (list.results ?? [])[0]
 		if (!reg) return
@@ -70,10 +81,15 @@ test.describe('openapi-generation — full OAS document', () => {
 test.describe('configurations — configuration sets REST lifecycle', () => {
 	let configId: number | null = null
 
-	test('GET /api/configurations lists configurations (any response, not just 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/configurations?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/configurations lists configurations (any response, not just 5xx)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/configurations?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		// The configurations endpoint may be under active development.
 		// Accept any status — just verify the route is reachable (not a hard crash we caused).
 		// We test the OpenAPI doc shows it, not that this specific endpoint works perfectly.
@@ -82,7 +98,9 @@ test.describe('configurations — configuration sets REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!configId) return
-		await request.delete(`/index.php/apps/openregister/api/configurations/${configId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/configurations/${configId}`)
+			.catch(() => {})
 	})
 })
 
@@ -93,9 +111,12 @@ test.describe('endpoints — endpoints REST lifecycle', () => {
 	let endpointId: number | null = null
 
 	test('GET /api/endpoints lists endpoints (no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/endpoints?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/endpoints?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -104,15 +125,21 @@ test.describe('endpoints — endpoints REST lifecycle', () => {
 	})
 
 	test('POST /api/endpoints creates an endpoint', async ({ request }) => {
-		const resp = await request.post('/index.php/apps/openregister/api/endpoints', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: {
-				name: `${RUN_ID}-endpoint`,
-				description: 'E2E test endpoint',
-				method: 'GET',
-				path: `/api/${RUN_ID}`,
+		const resp = await request.post(
+			'/index.php/apps/openregister/api/endpoints',
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: {
+					name: `${RUN_ID}-endpoint`,
+					description: 'E2E test endpoint',
+					method: 'GET',
+					path: `/api/${RUN_ID}`,
+				},
 			},
-		})
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok() || resp.status() === 201) {
 			const body = await resp.json()
@@ -132,7 +159,9 @@ test.describe('endpoints — endpoints REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!endpointId) return
-		await request.delete(`/index.php/apps/openregister/api/endpoints/${endpointId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/endpoints/${endpointId}`)
+			.catch(() => {})
 	})
 })
 
@@ -140,13 +169,20 @@ test.describe('endpoints — endpoints REST lifecycle', () => {
 // schema-hooks — hook configuration per schema
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('schema-hooks — schema hook configuration', () => {
-	test('schema response includes hooks configuration field (if present)', async ({ request }) => {
-		const listResp = await request.get('/index.php/apps/openregister/api/schemas?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('schema response includes hooks configuration field (if present)', async ({
+		request,
+	}) => {
+		const listResp = await request.get(
+			'/index.php/apps/openregister/api/schemas?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(listResp.status()).toBe(200)
 		const list = await listResp.json()
-		for (const schema of (list.results ?? []).slice(0, 3) as Array<Record<string, unknown>>) {
+		for (const schema of (list.results ?? []).slice(0, 3) as Array<
+			Record<string, unknown>
+		>) {
 			// Hooks may be present as schema.hooks or schema.handlers.
 			// Just verify the schema object is well-formed.
 			expect(schema.id ?? schema.uuid).toBeTruthy()
@@ -160,9 +196,12 @@ test.describe('schema-hooks — schema hook configuration', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('workflow-operations — workflow API surface', () => {
 	test('GET /api/workflows lists workflows (no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/workflows?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/workflows?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		// May 404 if not yet implemented; 200 or 404 — never 5xx.
 		expect(resp.status()).toBeLessThan(500)
 	})
@@ -193,11 +232,16 @@ test.describe('approval-workflow — approval state surface', () => {
 // method-decomposition — handler chaining (observed through consistent behavior)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('method-decomposition — handler chaining consistency', () => {
-	test('creating and immediately fetching an object returns consistent state', async ({ request }) => {
+	test('creating and immediately fetching an object returns consistent state', async ({
+		request,
+	}) => {
 		const created = await request.post(
 			'/index.php/apps/openregister/api/objects/8/18',
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-handler-test`,
 					ocName: `${RUN_ID} Handler Test`,
@@ -218,9 +262,13 @@ test.describe('method-decomposition — handler chaining consistency', () => {
 		)
 		expect(fetched.status()).toBe(200)
 		const fetchedBody = await fetched.json()
-		expect(fetchedBody.name ?? fetchedBody['@self']?.name).toContain(`${RUN_ID}-handler-test`)
+		expect(fetchedBody.name ?? fetchedBody['@self']?.name).toContain(
+			`${RUN_ID}-handler-test`,
+		)
 
 		// Clean up.
-		await request.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`)
+			.catch(() => {})
 	})
 })

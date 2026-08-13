@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TApplication } from './application.types'
 
 export class Application implements TApplication {
-
 	public id?: number
 	public uuid?: string
 	public name: string
@@ -88,26 +87,32 @@ export class Application implements TApplication {
 			registers: z.array(z.number()).optional(),
 			schemas: z.array(z.number()).optional(),
 			groups: z.array(z.string()).optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
-			authorization: z.object({
-				create: z.array(z.string()).optional(),
-				read: z.array(z.string()).optional(),
-				update: z.array(z.string()).optional(),
-				delete: z.array(z.string()).optional(),
-			}).optional(),
+			quota: z
+				.object({
+					storage: z.number().nullable().optional(),
+					bandwidth: z.number().nullable().optional(),
+					requests: z.number().nullable().optional(),
+					users: z.number().nullable().optional(),
+					groups: z.number().nullable().optional(),
+				})
+				.optional(),
+			usage: z
+				.object({
+					storage: z.number().optional(),
+					bandwidth: z.number().optional(),
+					requests: z.number().optional(),
+					users: z.number().optional(),
+					groups: z.number().optional(),
+				})
+				.optional(),
+			authorization: z
+				.object({
+					create: z.array(z.string()).optional(),
+					read: z.array(z.string()).optional(),
+					update: z.array(z.string()).optional(),
+					delete: z.array(z.string()).optional(),
+				})
+				.optional(),
 			owner: z.string().optional(),
 			active: z.boolean().optional(),
 			created: z.string().optional(),
@@ -116,5 +121,4 @@ export class Application implements TApplication {
 
 		return schema.safeParse(this)
 	}
-
 }

@@ -1,20 +1,21 @@
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		name="Confirm Rebase Operation"
 		@closing="$emit('closing')">
 		<div class="rebase-dialog-content">
 			<h3>⚠️ Confirm Rebase Operation</h3>
 			<p>
-				This operation will recalculate deletion times for all objects and logs based on current retention settings.
-				It will also assign default owners and organizations to objects that don't have them assigned.
+				This operation will recalculate deletion times for all objects and
+				logs based on current retention settings. It will also assign default
+				owners and organizations to objects that don't have them assigned.
 			</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 
 			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')">
-					Cancel
-				</NcButton>
-				<NcButton variant="error"
+				<NcButton @click="$emit('closing')"> Cancel </NcButton>
+				<NcButton
+					variant="error"
 					:disabled="rebasing"
 					@click="$emit('confirm')">
 					<template #icon>

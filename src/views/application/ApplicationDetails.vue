@@ -5,7 +5,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<div v-if="applicationStore.loading || !applicationStore.applicationItem" class="loadingContainer">
+		<div
+			v-if="applicationStore.loading || !applicationStore.applicationItem"
+			class="loadingContainer">
 			<NcLoadingIcon :size="64" />
 			<p>{{ t('openregister', 'Loading application details...') }}</p>
 		</div>
@@ -18,7 +20,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<AlertCircleOutline :size="64" />
 				</template>
 				<template #action>
-					<NcButton variant="primary" @click="$router.push({ name: 'applications' })">
+					<NcButton
+						variant="primary"
+						@click="$router.push({ name: 'applications' })">
 						<template #icon>
 							<ArrowLeft :size="20" />
 						</template>
@@ -44,10 +48,14 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						<ApplicationOutline :size="32" />
 						{{ applicationStore.applicationItem.name }}
 					</h1>
-					<span v-if="applicationStore.applicationItem.version" class="versionBadge">
+					<span
+						v-if="applicationStore.applicationItem.version"
+						class="versionBadge">
 						v{{ applicationStore.applicationItem.version }}
 					</span>
-					<span v-if="applicationStore.applicationItem.active" class="statusBadge active">
+					<span
+						v-if="applicationStore.applicationItem.active"
+						class="statusBadge active">
 						{{ t('openregister', 'Active') }}
 					</span>
 					<span v-else class="statusBadge inactive">
@@ -56,13 +64,15 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				</div>
 				<div class="headerActions">
 					<NcActions :inline="2">
-						<NcActionButton @click="navigationStore.setModal('editApplication')">
+						<NcActionButton
+							@click="navigationStore.setModal('editApplication')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							{{ t('openregister', 'Edit') }}
 						</NcActionButton>
-						<NcActionButton @click="navigationStore.setDialog('deleteApplication')">
+						<NcActionButton
+							@click="navigationStore.setDialog('deleteApplication')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -73,7 +83,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Description -->
-			<div v-if="applicationStore.applicationItem.description" class="detailsSection">
+			<div
+				v-if="applicationStore.applicationItem.description"
+				class="detailsSection">
 				<p class="description">
 					{{ applicationStore.applicationItem.description }}
 				</p>
@@ -90,39 +102,72 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<div class="detailsContent">
 						<div class="detailRow">
 							<strong>{{ t('openregister', 'ID') }}:</strong>
-							<span class="monospace">{{ applicationStore.applicationItem.id }}</span>
+							<span class="monospace">{{
+								applicationStore.applicationItem.id
+							}}</span>
 						</div>
-						<div v-if="applicationStore.applicationItem.version" class="detailRow">
+						<div
+							v-if="applicationStore.applicationItem.version"
+							class="detailRow">
 							<strong>{{ t('openregister', 'Version') }}:</strong>
-							<span>{{ applicationStore.applicationItem.version }}</span>
+							<span>{{
+								applicationStore.applicationItem.version
+							}}</span>
 						</div>
 						<div class="detailRow">
 							<strong>{{ t('openregister', 'Status') }}:</strong>
-							<span :class="applicationStore.applicationItem.active ? 'status-active' : 'status-inactive'">
-								{{ applicationStore.applicationItem.active ? t('openregister', 'Active') : t('openregister', 'Inactive') }}
+							<span
+								:class="
+									applicationStore.applicationItem.active
+										? 'status-active'
+										: 'status-inactive'
+								">
+								{{
+									applicationStore.applicationItem.active
+										? t('openregister', 'Active')
+										: t('openregister', 'Inactive')
+								}}
 							</span>
 						</div>
-						<div v-if="applicationStore.applicationItem.created" class="detailRow">
+						<div
+							v-if="applicationStore.applicationItem.created"
+							class="detailRow">
 							<strong>{{ t('openregister', 'Created') }}:</strong>
-							<span>{{ new Date(applicationStore.applicationItem.created).toLocaleString() }}</span>
+							<span>{{
+								new Date(
+									applicationStore.applicationItem.created,
+								).toLocaleString()
+							}}</span>
 						</div>
-						<div v-if="applicationStore.applicationItem.updated" class="detailRow">
+						<div
+							v-if="applicationStore.applicationItem.updated"
+							class="detailRow">
 							<strong>{{ t('openregister', 'Updated') }}:</strong>
-							<span>{{ new Date(applicationStore.applicationItem.updated).toLocaleString() }}</span>
+							<span>{{
+								new Date(
+									applicationStore.applicationItem.updated,
+								).toLocaleString()
+							}}</span>
 						</div>
 					</div>
 				</div>
 
 				<!-- Organisation -->
-				<div v-if="applicationStore.applicationItem.organisation" class="detailsCard">
+				<div
+					v-if="applicationStore.applicationItem.organisation"
+					class="detailsCard">
 					<h3>
 						<OfficeBuilding :size="20" />
 						{{ t('openregister', 'Organisation') }}
 					</h3>
 					<div class="detailsContent">
 						<div class="detailRow">
-							<strong>{{ t('openregister', 'Organisation ID') }}:</strong>
-							<span>{{ applicationStore.applicationItem.organisation }}</span>
+							<strong
+								>{{ t('openregister', 'Organisation ID') }}:</strong
+							>
+							<span>{{
+								applicationStore.applicationItem.organisation
+							}}</span>
 						</div>
 					</div>
 				</div>
@@ -134,12 +179,28 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'Configurations') }}
 					</h3>
 					<div class="detailsContent">
-						<div v-if="applicationStore.applicationItem.configurations && applicationStore.applicationItem.configurations.length > 0">
-							<p>{{ applicationStore.applicationItem.configurations.length }} {{ t('openregister', 'configuration(s)') }}</p>
+						<div
+							v-if="
+								applicationStore.applicationItem.configurations
+								&& applicationStore.applicationItem.configurations
+									.length > 0
+							">
+							<p>
+								{{
+									applicationStore.applicationItem.configurations
+										.length
+								}}
+								{{ t('openregister', 'configuration(s)') }}
+							</p>
 						</div>
 						<div v-else>
 							<NcNoteCard type="info">
-								{{ t('openregister', 'No configurations found for this application.') }}
+								{{
+									t(
+										'openregister',
+										'No configurations found for this application.',
+									)
+								}}
 							</NcNoteCard>
 						</div>
 					</div>
@@ -152,12 +213,27 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'Registers') }}
 					</h3>
 					<div class="detailsContent">
-						<div v-if="applicationStore.applicationItem.registers && applicationStore.applicationItem.registers.length > 0">
-							<p>{{ applicationStore.applicationItem.registers.length }} {{ t('openregister', 'register(s)') }}</p>
+						<div
+							v-if="
+								applicationStore.applicationItem.registers
+								&& applicationStore.applicationItem.registers.length
+									> 0
+							">
+							<p>
+								{{
+									applicationStore.applicationItem.registers.length
+								}}
+								{{ t('openregister', 'register(s)') }}
+							</p>
 						</div>
 						<div v-else>
 							<NcNoteCard type="info">
-								{{ t('openregister', 'No registers found for this application.') }}
+								{{
+									t(
+										'openregister',
+										'No registers found for this application.',
+									)
+								}}
 							</NcNoteCard>
 						</div>
 					</div>
@@ -170,12 +246,25 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'Schemas') }}
 					</h3>
 					<div class="detailsContent">
-						<div v-if="applicationStore.applicationItem.schemas && applicationStore.applicationItem.schemas.length > 0">
-							<p>{{ applicationStore.applicationItem.schemas.length }} {{ t('openregister', 'schema(s)') }}</p>
+						<div
+							v-if="
+								applicationStore.applicationItem.schemas
+								&& applicationStore.applicationItem.schemas.length
+									> 0
+							">
+							<p>
+								{{ applicationStore.applicationItem.schemas.length }}
+								{{ t('openregister', 'schema(s)') }}
+							</p>
 						</div>
 						<div v-else>
 							<NcNoteCard type="info">
-								{{ t('openregister', 'No schemas found for this application.') }}
+								{{
+									t(
+										'openregister',
+										'No schemas found for this application.',
+									)
+								}}
 							</NcNoteCard>
 						</div>
 					</div>

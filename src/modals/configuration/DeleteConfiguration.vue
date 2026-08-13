@@ -1,5 +1,6 @@
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteConfiguration'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteConfiguration'"
 		name="Delete Configuration"
 		size="small"
 		:can-close="false">
@@ -8,7 +9,11 @@
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>Are you sure you want to delete the configuration "{{ configurationStore.configurationItem?.title }}"?</p>
+			<p>
+				Are you sure you want to delete the configuration "{{
+					configurationStore.configurationItem?.title
+				}}"?
+			</p>
 			<p>This action cannot be undone.</p>
 		</div>
 
@@ -34,12 +39,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
@@ -86,7 +86,9 @@ export default {
 			this.error = null
 
 			try {
-				await configurationStore.deleteConfiguration(configurationStore.configurationItem)
+				await configurationStore.deleteConfiguration(
+					configurationStore.configurationItem,
+				)
 				this.closeModal()
 			} catch (error) {
 				this.error = error.message || 'Failed to delete configuration'

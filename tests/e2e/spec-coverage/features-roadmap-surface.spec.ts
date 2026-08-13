@@ -45,7 +45,8 @@ const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const ROADMAP_API = '**/apps/openregister/api/github/issues*'
 
 /** OCS provisioning path for the admin kill-switch this spec exercises. */
-const FLAG_PATH = '/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregister/features_roadmap_enabled'
+const FLAG_PATH =
+	'/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregister/features_roadmap_enabled'
 
 /**
  * Navigate to the Features & Roadmap route and wait for the view nc-vue
@@ -55,14 +56,19 @@ const FLAG_PATH = '/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregi
  * deep-link renders the dashboard instead of the target page.
  */
 async function gotoRoadmapRoute(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openregister/#/features-roadmap',
-		{ waitUntil: 'domcontentloaded' })
-	await page.locator('.cn-features-and-roadmap-view')
+	await page.goto('/index.php/apps/openregister/#/features-roadmap', {
+		waitUntil: 'domcontentloaded',
+	})
+	await page
+		.locator('.cn-features-and-roadmap-view')
 		.waitFor({ state: 'visible', timeout: 30_000 })
 }
 
 /** Stub the roadmap proxy so no test in this file reaches github.com. */
-async function stubRoadmap(page: Page, body: Record<string, unknown>): Promise<void> {
+async function stubRoadmap(
+	page: Page,
+	body: Record<string, unknown>,
+): Promise<void> {
 	await page.route(ROADMAP_API, async (route) => {
 		await route.fulfill({
 			status: 200,
@@ -101,7 +107,9 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 	 *
 	 * @e2e openspec/specs/features-roadmap-menu/spec.md#empty-features-manifest
 	 */
-	test('an empty features manifest renders the documented empty state in a demonstrably live panel', async ({ page }) => {
+	test('an empty features manifest renders the documented empty state in a demonstrably live panel', async ({
+		page,
+	}) => {
 		await stubRoadmap(page, { items: [] })
 		await gotoRoadmapRoute(page)
 
@@ -110,23 +118,29 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 
 		// The requirement.
 		await expect(panel.locator('.cn-features-tab')).toBeVisible()
-		await expect(panel.locator('.cn-features-tab .empty-content__name'))
-			.toHaveText('No features documented yet')
+		await expect(
+			panel.locator('.cn-features-tab .empty-content__name'),
+		).toHaveText('No features documented yet')
 		await expect(title).toHaveText('Features')
 
 		// CONTROL, direction 1 — the same panel renders something else.
 		await page.getByRole('button', { name: /Show roadmap/i }).click()
-		await expect(panel.locator('.cn-roadmap-tab')).toBeVisible({ timeout: 20_000 })
+		await expect(panel.locator('.cn-roadmap-tab')).toBeVisible({
+			timeout: 20_000,
+		})
 		await expect(panel.locator('.cn-features-tab')).toHaveCount(0)
 		await expect(title).toHaveText('Roadmap')
 		// A DIFFERENT empty state, from the same slot, on the stubbed payload.
-		await expect(panel.locator('.cn-roadmap-tab .empty-content__name'))
-			.toHaveText('No roadmap items yet')
+		await expect(
+			panel.locator('.cn-roadmap-tab .empty-content__name'),
+		).toHaveText('No roadmap items yet')
 
 		// CONTROL, direction 2 — and back, so the first state was not a one-way
 		// render that happened to be showing when we looked.
 		await page.getByRole('button', { name: /Show features/i }).click()
-		await expect(panel.locator('.cn-features-tab')).toBeVisible({ timeout: 20_000 })
+		await expect(panel.locator('.cn-features-tab')).toBeVisible({
+			timeout: 20_000,
+		})
 		await expect(panel.locator('.cn-roadmap-tab')).toHaveCount(0)
 		await expect(title).toHaveText('Features')
 	})
@@ -161,7 +175,9 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 	 *
 	 * @e2e openspec/specs/features-roadmap-menu/spec.md#submit-requires-title-and-body
 	 */
-	test('the suggest-feature form stays unsubmittable until every required field is filled, and issues no POST', async ({ page }) => {
+	test('the suggest-feature form stays unsubmittable until every required field is filled, and issues no POST', async ({
+		page,
+	}) => {
 		await stubRoadmap(page, { items: [] })
 
 		// Any POST at all to the issue endpoint fails the test — asserted at
@@ -189,15 +205,19 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 
 		await expect(submit).toBeDisabled()
 
-		await page.getByRole('textbox', { name: /^Title$/i })
+		await page
+			.getByRole('textbox', { name: /^Title$/i })
 			.fill('Coverage: assert the suggest-feature validation gradient')
 		await expect(submit).toBeDisabled()
 
-		await page.getByRole('textbox', { name: /^Problem$/i })
+		await page
+			.getByRole('textbox', { name: /^Problem$/i })
 			.fill('The submit gate was never exercised by a browser test.')
-		await page.getByRole('textbox', { name: /Proposed solution/i })
+		await page
+			.getByRole('textbox', { name: /Proposed solution/i })
 			.fill('Drive the four-state gradient and assert the final flip.')
-		await page.getByRole('textbox', { name: /Who benefits/i })
+		await page
+			.getByRole('textbox', { name: /Who benefits/i })
 			.fill('Maintainers reading gate-19 numbers.')
 		// Still incomplete: `canSubmit` also requires a priority.
 		await expect(submit).toBeDisabled()
@@ -206,7 +226,9 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 		// which intercepts pointer events on the option `<li>` and turns a click
 		// into a 60 s timeout that reads as a slow page rather than a wrong
 		// gesture. Arrow+Enter is a real user gesture and is not intercepted.
-		const combo = page.locator('.v-select input[type="search"], .v-select .vs__search').first()
+		const combo = page
+			.locator('.v-select input[type="search"], .v-select .vs__search')
+			.first()
 		await combo.click()
 		await combo.press('ArrowDown')
 		await combo.press('Enter')
@@ -217,8 +239,10 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 		await cancel.click()
 		await expect(modal).toHaveCount(0)
 
-		expect(posts, `the form issued ${posts.length} POST(s) to the issue endpoint: ${posts.join(', ')}`)
-			.toHaveLength(0)
+		expect(
+			posts,
+			`the form issued ${posts.length} POST(s) to the issue endpoint: ${posts.join(', ')}`,
+		).toHaveLength(0)
 	})
 
 	/**
@@ -241,7 +265,10 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 	 *
 	 * @e2e openspec/specs/features-roadmap-menu/spec.md#default-behavior
 	 */
-	test('the features_roadmap_enabled default is true, and the guard that enforces it can still refuse', async ({ page, request }) => {
+	test('the features_roadmap_enabled default is true, and the guard that enforces it can still refuse', async ({
+		page,
+		request,
+	}) => {
 		const ocs = { 'OCS-APIRequest': 'true' }
 		const probeGuard = async () =>
 			request.get('/index.php/apps/openregister/api/github/issues')
@@ -251,18 +278,24 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 
 		// The requirement: absent key => the feature behaves as enabled.
 		const whenAbsent = await probeGuard()
-		expect(whenAbsent.status(),
-			`guard answered ${whenAbsent.status()} with the key ABSENT; the default must be enabled`)
-			.not.toBe(403)
+		expect(
+			whenAbsent.status(),
+			`guard answered ${whenAbsent.status()} with the key ABSENT; the default must be enabled`,
+		).not.toBe(403)
 
 		// ...and the route renders rather than showing a disabled notice.
 		await stubRoadmap(page, { items: [] })
 		await gotoRoadmapRoute(page)
-		await expect(page.getByRole('button', { name: /^\s*Suggest feature\s*$/i })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /^\s*Suggest feature\s*$/i }),
+		).toBeVisible()
 
 		try {
 			// THE CONTROL: flip the key and the same probe must refuse.
-			const set = await request.post(FLAG_PATH, { headers: ocs, form: { value: 'false' } })
+			const set = await request.post(FLAG_PATH, {
+				headers: ocs,
+				form: { value: 'false' },
+			})
 			expect(set.status(), 'could not write the app-config key').toBe(200)
 
 			const whenFalse = await probeGuard()
@@ -275,8 +308,9 @@ test.describe('features-roadmap — behaviour, not just render', () => {
 		// And the flip is reversible, so the control did not leave the
 		// instance changed for whatever runs next.
 		const whenRestored = await probeGuard()
-		expect(whenRestored.status(),
-			'the key was not restored to ABSENT — a later test would inherit a disabled feature')
-			.not.toBe(403)
+		expect(
+			whenRestored.status(),
+			'the key was not restored to ABSENT — a later test would inherit a disabled feature',
+		).not.toBe(403)
 	})
 })

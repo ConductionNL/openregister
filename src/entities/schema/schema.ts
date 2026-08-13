@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TSchema } from './schema.types'
 
 export class Schema implements TSchema {
-
 	public id: string
 	public title: string
 	public version: string
@@ -46,7 +45,9 @@ export class Schema implements TSchema {
 		this.summary = schema.summary || ''
 		this.required = schema.required || []
 		// Convert properties array to object if needed (backend sometimes returns array when empty)
-		this.properties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
+		this.properties = Array.isArray(schema.properties)
+			? {}
+			: schema.properties || {}
 		this.archive = schema.archive || {}
 		this.updated = schema.updated || ''
 		this.created = schema.created || ''
@@ -75,7 +76,9 @@ export class Schema implements TSchema {
 		const schema = z.object({
 			id: z.string().min(1),
 			title: z.string().min(1),
-			version: z.string().regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
+			version: z
+				.string()
+				.regex(/^(?:\d+\.){2}\d+$/g, 'Invalid version format'),
 			description: z.string(),
 			summary: z.string(),
 			required: z.array(z.string()),
@@ -84,10 +87,12 @@ export class Schema implements TSchema {
 			updated: z.string(),
 			created: z.string(),
 			slug: z.string().min(1),
-			configuration: z.object({
-				objectNameField: z.string().optional(),
-				objectDescriptionField: z.string().optional(),
-			}).optional(),
+			configuration: z
+				.object({
+					objectNameField: z.string().optional(),
+					objectDescriptionField: z.string().optional(),
+				})
+				.optional(),
 			hardValidation: z.boolean(),
 			maxDepth: z.number().int().min(0),
 			authorization: z.record(z.array(z.string())).optional(),
@@ -95,5 +100,4 @@ export class Schema implements TSchema {
 
 		return schema.safeParse(this)
 	}
-
 }

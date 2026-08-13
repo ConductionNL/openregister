@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { deletedStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	deletedStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -12,7 +17,10 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 		:subname="t('openregister', 'Restore or permanently delete items')"
 		:open="navigationStore.sidebarState.deleted"
 		@update:open="(e) => navigationStore.setSidebarState('deleted', e)">
-		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
+		<NcAppSidebarTab
+			id="filters-tab"
+			:name="t('openregister', 'Filters')"
+			:order="1">
 			<template #icon>
 				<FilterOutline :size="20" />
 			</template>
@@ -21,7 +29,9 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Deleted Items') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
 					<NcSelect
 						id="registerSelect"
 						v-bind="registerOptions"
@@ -32,7 +42,9 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
 					<NcSelect
 						id="schemaSelect"
 						v-bind="schemaOptions"
@@ -44,7 +56,9 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
+					<label for="deletedBySelect">{{
+						t('openregister', 'Deleted By')
+					}}</label>
 					<NcSelect
 						id="deletedBySelect"
 						v-model="selectedDeletedBy"
@@ -74,11 +88,19 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			</div>
 
 			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.') }}
+				{{
+					t(
+						'openregister',
+						'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.',
+					)
+				}}
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
+		<NcAppSidebarTab
+			id="stats-tab"
+			:name="t('openregister', 'Statistics')"
+			:order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -136,11 +158,14 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 					<NcLoadingIcon :size="24" />
 				</div>
 
-				<div v-else-if="deletedStore.topDeleters.length === 0" class="no-data">
+				<div
+					v-else-if="deletedStore.topDeleters.length === 0"
+					class="no-data">
 					<p>{{ t('openregister', 'No deletion data available') }}</p>
 				</div>
 
-				<NcListItem v-for="(deleter, index) in deletedStore.topDeleters"
+				<NcListItem
+					v-for="(deleter, index) in deletedStore.topDeleters"
 					v-else
 					:key="index"
 					:name="deleter.user"
@@ -149,7 +174,11 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						<AccountCircle :size="32" />
 					</template>
 					<template #subname>
-						{{ t('openregister', '{count} deletions', { count: deleter.count }) }}
+						{{
+							t('openregister', '{count} deletions', {
+								count: deleter.count,
+							})
+						}}
 					</template>
 				</NcListItem>
 			</div>
@@ -203,16 +232,21 @@ export default {
 		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -226,17 +260,26 @@ export default {
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -278,23 +321,21 @@ export default {
 		userOptions() {
 			// Get unique users from deleted items or provide default options
 			const users = new Set()
-			deletedStore.deletedList.forEach(item => {
+			deletedStore.deletedList.forEach((item) => {
 				const deletedBy = item['@self']?.deleted?.deletedBy
 				if (deletedBy) {
 					users.add(deletedBy)
 				}
 			})
 
-			const userOptions = Array.from(users).map(user => ({
+			const userOptions = Array.from(users).map((user) => ({
 				label: user,
 				value: user,
 			}))
 
 			// Add some common default users if no data
 			if (userOptions.length === 0) {
-				return [
-					{ label: this.t('openregister', 'Admin'), value: 'admin' },
-				]
+				return [{ label: this.t('openregister', 'Admin'), value: 'admin' }]
 			}
 
 			return userOptions
@@ -423,8 +464,14 @@ export default {
 				query.deletedBy = String(this.selectedDeletedBy.value)
 			}
 			// JS dates are awful, so we first check if it's a valid date and then get the ISO string.
-			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
-			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			if (this.dateFrom)
+				query.dateFrom = new Date(this.dateFrom).getDate()
+					? new Date(this.dateFrom).toISOString()
+					: null
+			if (this.dateTo)
+				query.dateTo = new Date(this.dateTo).getDate()
+					? new Date(this.dateTo).toISOString()
+					: null
 			return query
 		},
 		/**
@@ -465,11 +512,14 @@ export default {
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/deleted') return
-			const { register, schema, deletedBy, dateFrom, dateTo } = this.$route.query || {}
+			const { register, schema, deletedBy, dateFrom, dateTo } =
+				this.$route.query || {}
 
 			// Dates
-			this.dateFrom = dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo = dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
+			this.dateFrom =
+				dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
+			this.dateTo =
+				dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
 
 			// Deleted by
 			if (typeof deletedBy === 'string' && deletedBy.length > 0) {
@@ -482,14 +532,18 @@ export default {
 			const applyRegister = () => {
 				if (!register) return true
 				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
+				const reg = registerStore.registerList.find(
+					(r) => String(r.id) === String(register),
+				)
 				if (reg) registerStore.setRegisterItem(reg)
 				return true
 			}
 			const applySchema = () => {
 				if (!schema) return true
 				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
+				const sch = schemaStore.schemaList.find(
+					(s) => String(s.id) === String(schema),
+				)
 				if (sch) schemaStore.setSchemaItem(sch)
 				return true
 			}

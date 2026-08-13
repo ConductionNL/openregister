@@ -2,7 +2,11 @@
 import { setActivePinia, createPinia } from 'pinia'
 
 import { useConfigurationStore } from './configuration.js'
-import { ConfigurationEntity, mockConfiguration, mockConfigurations } from '../../entities/index.js'
+import {
+	ConfigurationEntity,
+	mockConfiguration,
+	mockConfigurations,
+} from '../../entities/index.js'
 
 describe('Configuration Store', () => {
 	beforeEach(() => {

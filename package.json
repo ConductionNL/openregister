@@ -31,7 +31,9 @@
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
     "manifest:build": "node scripts/build-features-manifest.js",
-    "manifest:check": "node scripts/build-features-manifest.js --check"
+    "manifest:check": "node scripts/build-features-manifest.js --check",
+    "format": "prettier --check \"**/*.{js,ts,vue,css,scss}\"",
+    "format:fix": "prettier --write \"**/*.{js,ts,vue,css,scss}\""
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
@@ -84,6 +86,7 @@
     "@nextcloud/browserslist-config": "^2.3.0",
     "@nextcloud/eslint-config": "^8.4.1",
     "@nextcloud/eslint-plugin": "^2.2.1",
+    "@nextcloud/prettier-config": "^1.2.0",
     "@nextcloud/stylelint-config": "^2.4.0",
     "@nextcloud/webpack-vue-config": "^7.0.1",
     "@pinia/testing": "^1.0.3",
@@ -99,6 +102,7 @@
     "babel-loader": "^10.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-config-standard": "^17.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-import-resolver-exports": "^1.0.0-beta.5",
@@ -114,6 +118,7 @@
     "jest-transform-stub": "^2.0.0",
     "postcss": "^8.4.31",
     "postcss-html": "^1.8.1",
+    "prettier": "^3.9.6",
     "stylelint": "^15.11.0",
     "stylelint-config-recommended-scss": "^13.1.0",
     "stylelint-config-recommended-vue": "^1.6.1",
@@ -147,5 +152,6 @@
     "postcss": "^8.4.31",
     "json5": "^2.2.3",
     "@babel/traverse": "^7.23.9"
-  }
+  },
+  "prettier": "@nextcloud/prettier-config"
 }

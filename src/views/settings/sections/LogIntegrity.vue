@@ -2,7 +2,12 @@
 	<SettingsSection
 		id="log-integrity"
 		:name="t('openregister', 'Log integrity')"
-		:description="t('openregister', 'Every audit entry is chained to the one before it with a SHA-256 hash, so altering or deleting history breaks the links either side of it. This is where you can see whether that chain is whole.')">
+		:description="
+			t(
+				'openregister',
+				'Every audit entry is chained to the one before it with a SHA-256 hash, so altering or deleting history breaks the links either side of it. This is where you can see whether that chain is whole.',
+			)
+		">
 		<div class="integrity">
 			<!-- Seal coverage: cheap, loaded on open -->
 			<div v-if="status === null" class="integrity__hint">
@@ -11,35 +16,72 @@
 
 			<div v-else class="integrity__coverage">
 				<div class="integrity__bar" :title="coverageTitle">
-					<div class="integrity__bar-fill" :class="barClass" :style="{ width: status.coverage + '%' }" />
+					<div
+						class="integrity__bar-fill"
+						:class="barClass"
+						:style="{ width: status.coverage + '%' }" />
 				</div>
 
 				<div class="integrity__figures">
 					<div class="integrity__figure">
-						<span class="integrity__figure-value">{{ formatNumber(status.total) }}</span>
-						<span class="integrity__figure-label">{{ t('openregister', 'Audit entries') }}</span>
+						<span class="integrity__figure-value">{{
+							formatNumber(status.total)
+						}}</span>
+						<span class="integrity__figure-label">{{
+							t('openregister', 'Audit entries')
+						}}</span>
 					</div>
 					<div class="integrity__figure">
-						<span class="integrity__figure-value">{{ formatNumber(status.sealed) }}</span>
-						<span class="integrity__figure-label">{{ t('openregister', 'Sealed') }}</span>
+						<span class="integrity__figure-value">{{
+							formatNumber(status.sealed)
+						}}</span>
+						<span class="integrity__figure-label">{{
+							t('openregister', 'Sealed')
+						}}</span>
 					</div>
-					<div class="integrity__figure" :class="{ 'integrity__figure--attention': status.unsealed > 0 }">
-						<span class="integrity__figure-value">{{ formatNumber(status.unsealed) }}</span>
-						<span class="integrity__figure-label">{{ t('openregister', 'Awaiting a seal') }}</span>
+					<div
+						class="integrity__figure"
+						:class="{
+							'integrity__figure--attention': status.unsealed > 0,
+						}">
+						<span class="integrity__figure-value">{{
+							formatNumber(status.unsealed)
+						}}</span>
+						<span class="integrity__figure-label">{{
+							t('openregister', 'Awaiting a seal')
+						}}</span>
 					</div>
 					<div class="integrity__figure">
-						<span class="integrity__figure-value">{{ status.coverage }}%</span>
-						<span class="integrity__figure-label">{{ t('openregister', 'Coverage') }}</span>
+						<span class="integrity__figure-value"
+							>{{ status.coverage }}%</span
+						>
+						<span class="integrity__figure-label">{{
+							t('openregister', 'Coverage')
+						}}</span>
 					</div>
 				</div>
 
-				<div v-if="status.unsealed > 0" class="integrity__state integrity__state--warning">
+				<div
+					v-if="status.unsealed > 0"
+					class="integrity__state integrity__state--warning">
 					<div class="integrity__state-badge">
 						<AlertOutline :size="20" />
-						<span>{{ n('openregister', '%n entry has no hash yet', '%n entries have no hash yet', status.unsealed) }}</span>
+						<span>{{
+							n(
+								'openregister',
+								'%n entry has no hash yet',
+								'%n entries have no hash yet',
+								status.unsealed,
+							)
+						}}</span>
 					</div>
 					<p class="integrity__hint">
-						{{ t('openregister', 'An entry with no hash is one the chain cannot vouch for. A background job sweeps these every five minutes and seals the oldest first, so a backlog after heavy write activity is normal and drains on its own. A backlog that never shrinks is not — it means sealing is failing on both the write path and the sweep.') }}
+						{{
+							t(
+								'openregister',
+								'An entry with no hash is one the chain cannot vouch for. A background job sweeps these every five minutes and seals the oldest first, so a backlog after heavy write activity is normal and drains on its own. A backlog that never shrinks is not — it means sealing is failing on both the write path and the sweep.',
+							)
+						}}
 					</p>
 				</div>
 
@@ -49,7 +91,12 @@
 						<span>{{ t('openregister', 'Every entry is sealed') }}</span>
 					</div>
 					<p class="integrity__hint">
-						{{ t('openregister', 'Every audit entry carries a hash. That says the sweeper is keeping up — it does not by itself prove the stored hashes still agree with their rows. Verify the chain to establish that.') }}
+						{{
+							t(
+								'openregister',
+								'Every audit entry carries a hash. That says the sweeper is keeping up — it does not by itself prove the stored hashes still agree with their rows. Verify the chain to establish that.',
+							)
+						}}
 					</p>
 				</div>
 			</div>
@@ -60,7 +107,12 @@
 					{{ t('openregister', 'Chain verification') }}
 				</h4>
 				<p class="integrity__hint">
-					{{ t('openregister', 'Recomputes every hash and compares it with the one stored. This reads the whole audit trail, so it is run on request rather than each time this page opens.') }}
+					{{
+						t(
+							'openregister',
+							'Recomputes every hash and compares it with the one stored. This reads the whole audit trail, so it is run on request rather than each time this page opens.',
+						)
+					}}
 				</p>
 
 				<NcButton
@@ -72,33 +124,76 @@
 						<NcLoadingIcon v-if="verifying" :size="20" />
 						<ShieldSearch v-else :size="20" />
 					</template>
-					{{ verifying ? t('openregister', 'Verifying …') : t('openregister', 'Verify chain') }}
+					{{
+						verifying
+							? t('openregister', 'Verifying …')
+							: t('openregister', 'Verify chain')
+					}}
 				</NcButton>
 
-				<div v-if="verification !== null" class="integrity__state" :class="verification.valid ? 'integrity__state--success' : 'integrity__state--error'">
+				<div
+					v-if="verification !== null"
+					class="integrity__state"
+					:class="
+						verification.valid
+							? 'integrity__state--success'
+							: 'integrity__state--error'
+					">
 					<div class="integrity__state-badge">
 						<ShieldCheck v-if="verification.valid" :size="20" />
 						<ShieldAlert v-else :size="20" />
-						<span v-if="verification.valid">{{ t('openregister', 'Chain intact') }}</span>
+						<span v-if="verification.valid">{{
+							t('openregister', 'Chain intact')
+						}}</span>
 						<span v-else>{{ t('openregister', 'Chain broken') }}</span>
 					</div>
 
 					<p v-if="verification.valid" class="integrity__hint">
-						{{ t('openregister', 'Verified {count} entries against their stored hashes with no mismatch. The history has not been rewritten.', { count: formatNumber(verification.entriesVerified) }) }}
+						{{
+							t(
+								'openregister',
+								'Verified {count} entries against their stored hashes with no mismatch. The history has not been rewritten.',
+								{
+									count: formatNumber(
+										verification.entriesVerified,
+									),
+								},
+							)
+						}}
 					</p>
 
 					<template v-else>
 						<p class="integrity__hint">
-							{{ t('openregister', 'Verification stopped at entry {id} after {count} entries matched. From that entry on, the recomputed hash disagrees with the one stored.', { id: verification.brokenAt, count: formatNumber(verification.entriesVerified) }) }}
+							{{
+								t(
+									'openregister',
+									'Verification stopped at entry {id} after {count} entries matched. From that entry on, the recomputed hash disagrees with the one stored.',
+									{
+										id: verification.brokenAt,
+										count: formatNumber(
+											verification.entriesVerified,
+										),
+									},
+								)
+							}}
 						</p>
 						<p class="integrity__hint">
-							{{ t('openregister', 'This has two possible causes and they are not equally serious: the entry was altered after it was written, or it was sealed before the seal lock existed and chained onto the wrong predecessor. Read the entry before deciding. Repair is a deliberate operator action — it rewrites stored hashes, which is exactly the event this chain exists to make visible — so it is only available as a command:') }}
+							{{
+								t(
+									'openregister',
+									'This has two possible causes and they are not equally serious: the entry was altered after it was written, or it was sealed before the seal lock existed and chained onto the wrong predecessor. Read the entry before deciding. Repair is a deliberate operator action — it rewrites stored hashes, which is exactly the event this chain exists to make visible — so it is only available as a command:',
+								)
+							}}
 						</p>
-						<code class="integrity__command">occ openregister:rechain-audit-trail</code>
+						<code class="integrity__command"
+							>occ openregister:rechain-audit-trail</code
+						>
 					</template>
 				</div>
 
-				<div v-if="error !== ''" class="integrity__state integrity__state--error">
+				<div
+					v-if="error !== ''"
+					class="integrity__state integrity__state--error">
 					<div class="integrity__state-badge">
 						<ShieldAlert :size="20" />
 						<span>{{ error }}</span>
@@ -184,7 +279,9 @@ export default {
 			if (this.status === null || this.status.unsealed === 0) {
 				return 'integrity__bar-fill--success'
 			}
-			return this.status.coverage < 95 ? 'integrity__bar-fill--error' : 'integrity__bar-fill--warning'
+			return this.status.coverage < 95
+				? 'integrity__bar-fill--error'
+				: 'integrity__bar-fill--warning'
 		},
 
 		/**
@@ -222,11 +319,16 @@ export default {
 		 */
 		async loadStatus() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/audit-trails/integrity'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/audit-trails/integrity'),
+				)
 				this.status = response.data
 			} catch (error) {
 				console.error('Failed to load audit integrity status:', error)
-				this.error = this.t('openregister', 'Could not read the seal coverage of the audit trail.')
+				this.error = this.t(
+					'openregister',
+					'Could not read the seal coverage of the audit trail.',
+				)
 			}
 		},
 
@@ -242,12 +344,17 @@ export default {
 			this.verification = null
 
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/audit-trails/verify'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/audit-trails/verify'),
+				)
 				this.verification = response.data
 				await this.loadStatus()
 			} catch (error) {
 				console.error('Failed to verify audit chain:', error)
-				this.error = this.t('openregister', 'Verification could not be completed.')
+				this.error = this.t(
+					'openregister',
+					'Verification could not be completed.',
+				)
 			} finally {
 				this.verifying = false
 			}

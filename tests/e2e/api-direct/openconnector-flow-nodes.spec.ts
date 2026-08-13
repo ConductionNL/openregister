@@ -19,11 +19,17 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 const runId = `e2e-ocnodes-${Date.now()}`
 
 /** Find a register by slug. */
-async function registerBySlug(request: APIRequestContext, slug: string): Promise<any> {
+async function registerBySlug(
+	request: APIRequestContext,
+	slug: string,
+): Promise<any> {
 	const resp = await request.get(`${API}/registers?limit=1000`)
 	expect(resp.ok(), 'list registers').toBeTruthy()
 	const rows: any[] = (await resp.json()).results ?? []
@@ -36,13 +42,20 @@ async function registerBySlug(request: APIRequestContext, slug: string): Promise
  * Resolve a schema by slug WITHIN a register — `flow` is not a unique slug
  * across the instance, so a global lookup lands on another app's schema.
  */
-async function schemaInRegister(request: APIRequestContext, register: any, slug: string): Promise<number> {
-	const ids: number[] = (register.schemas ?? []).map((s: any) => (typeof s === 'object' ? (s.id ?? s) : s))
+async function schemaInRegister(
+	request: APIRequestContext,
+	register: any,
+	slug: string,
+): Promise<number> {
+	const ids: number[] = (register.schemas ?? []).map((s: any) =>
+		typeof s === 'object' ? (s.id ?? s) : s,
+	)
 	for (const id of ids) {
 		const resp = await request.get(`${API}/schemas/${id}`)
 		if (!resp.ok()) continue
 		const sch = await resp.json()
-		if ((sch.slug ?? sch['@self']?.slug) === slug) return sch.id ?? sch['@self']?.id
+		if ((sch.slug ?? sch['@self']?.slug) === slug)
+			return sch.id ?? sch['@self']?.id
 	}
 	throw new Error(`schema slug=${slug} not found in register ${register.slug}`)
 }
@@ -60,7 +73,9 @@ test.describe('OpenConnector flow-node leaves', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const u of flows) {
-			await request.delete(`${API}/objects/${flowReg}/${flowSch}/${u}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${flowReg}/${flowSch}/${u}`)
+				.catch(() => {})
 		}
 	})
 
@@ -83,7 +98,9 @@ test.describe('OpenConnector flow-node leaves', () => {
 		return resp
 	}
 
-	test('both leaves are registered in the shared node registry', async ({ request }) => {
+	test('both leaves are registered in the shared node registry', async ({
+		request,
+	}) => {
 		// The palette is the registry's public face; a leaf missing here is a
 		// leaf no flow author can ever place, however green its unit tests are.
 		//
@@ -100,11 +117,20 @@ test.describe('OpenConnector flow-node leaves', () => {
 		const ids: string[] = (body.results ?? []).map((n: any) => n.id)
 
 		expect(ids, 'source-call is offered').toContain('openconnector.source-call')
-		expect(ids, 'synchronization-run is offered').toContain('openconnector.synchronization-run')
+		expect(ids, 'synchronization-run is offered').toContain(
+			'openconnector.synchronization-run',
+		)
 	})
 
-	test('a source-call step without a source is refused at save time', async ({ request }) => {
-		const resp = await flowWithStep(request, 'Bad source-call', 'openconnector.source-call', {})
+	test('a source-call step without a source is refused at save time', async ({
+		request,
+	}) => {
+		const resp = await flowWithStep(
+			request,
+			'Bad source-call',
+			'openconnector.source-call',
+			{},
+		)
 
 		// Either the write is refused, or it is stored and the engine refuses to
 		// run it. What must NOT happen is a silently-accepted step that no-ops.
@@ -126,8 +152,15 @@ test.describe('OpenConnector flow-node leaves', () => {
 		}
 	})
 
-	test('a synchronization-run step without a synchronization is refused', async ({ request }) => {
-		const resp = await flowWithStep(request, 'Bad sync-run', 'openconnector.synchronization-run', {})
+	test('a synchronization-run step without a synchronization is refused', async ({
+		request,
+	}) => {
+		const resp = await flowWithStep(
+			request,
+			'Bad sync-run',
+			'openconnector.synchronization-run',
+			{},
+		)
 
 		if (resp.status() <= 201) {
 			const uuid = (await resp.json())?.['@self']?.id
@@ -147,13 +180,20 @@ test.describe('OpenConnector flow-node leaves', () => {
 		}
 	})
 
-	test('a synchronization-run naming a missing synchronization fails loudly', async ({ request }) => {
+	test('a synchronization-run naming a missing synchronization fails loudly', async ({
+		request,
+	}) => {
 		// The failure that matters: a step pointed at something that does not
 		// exist must surface, not quietly produce an empty result set that reads
 		// as a successful run with no data.
-		const resp = await flowWithStep(request, 'Missing sync', 'openconnector.synchronization-run', {
-			synchronization: '00000000-0000-4000-8000-000000000000',
-		})
+		const resp = await flowWithStep(
+			request,
+			'Missing sync',
+			'openconnector.synchronization-run',
+			{
+				synchronization: '00000000-0000-4000-8000-000000000000',
+			},
+		)
 
 		if (resp.status() > 201) {
 			expect(resp.status()).toBeGreaterThanOrEqual(400)
@@ -170,7 +210,10 @@ test.describe('OpenConnector flow-node leaves', () => {
 
 		if (run.ok()) {
 			const result = await run.json()
-			expect(result.status, 'a missing synchronization must not complete cleanly').not.toBe('completed')
+			expect(
+				result.status,
+				'a missing synchronization must not complete cleanly',
+			).not.toBe('completed')
 		} else {
 			expect(run.status()).toBeGreaterThanOrEqual(400)
 		}

@@ -46,7 +46,9 @@ async function pickLiveObjectId(request: APIRequestContext): Promise<string | nu
 // auth-system: Nextcloud session auth for browser users (REQ-001 scenario)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('auth-system — session authentication', () => {
-	test('authenticated user can access the OpenRegister app page', async ({ page }) => {
+	test('authenticated user can access the OpenRegister app page', async ({
+		page,
+	}) => {
 		// Reuse the storageState logged-in session from global-setup.
 		await page.context().addInitScript(() => {}) // no-op to ensure context primed
 
@@ -54,17 +56,30 @@ test.describe('auth-system — session authentication', () => {
 		const authFile = STORAGE_STATE
 		const fs = await import('fs')
 		if (!fs.existsSync(authFile)) {
-			test.skip(true, 'global-setup auth file not present — run full suite first')
+			test.skip(
+				true,
+				'global-setup auth file not present — run full suite first',
+			)
 		}
 
 		// Use domcontentloaded — the NC app SPA keeps XHR activity going so networkidle never fires.
-		await page.goto('/index.php/apps/openregister/', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// The Nextcloud header renders only when the session is valid.
-		await expect(page.locator('#header, header.header-appcontainer, header.header')).toBeVisible({ timeout: 20_000 })
+		await expect(
+			page.locator('#header, header.header-appcontainer, header.header'),
+		).toBeVisible({ timeout: 20_000 })
 
 		// The app navigation must be present (Vue app mounted successfully).
-		await expect(page.locator('.app-navigation, nav[class*="navigation"], .app-navigation-list').first()).toBeVisible({ timeout: 20_000 })
+		await expect(
+			page
+				.locator(
+					'.app-navigation, nav[class*="navigation"], .app-navigation-list',
+				)
+				.first(),
+		).toBeVisible({ timeout: 20_000 })
 	})
 })
 
@@ -74,8 +89,12 @@ test.describe('auth-system — session authentication', () => {
 test.describe('frontend-app-bootstrap — app mount and data load', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('app mounts with navigation and at least one store hydrated', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/', { waitUntil: 'domcontentloaded' })
+	test('app mounts with navigation and at least one store hydrated', async ({
+		page,
+	}) => {
+		await page.goto('/index.php/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+		})
 		// Don't wait for networkidle — NC SPA keeps background XHR alive indefinitely.
 
 		// App navigation sidebar renders when Vue app boots.
@@ -87,14 +106,18 @@ test.describe('frontend-app-bootstrap — app mount and data load', () => {
 		await expect(navItems.first()).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('navigating to /registers renders the register list view', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/registers', { waitUntil: 'domcontentloaded' })
+	test('navigating to /registers renders the register list view', async ({
+		page,
+	}) => {
+		await page.goto('/index.php/apps/openregister/#/registers', {
+			waitUntil: 'domcontentloaded',
+		})
 		// Don't wait for networkidle — NC SPA keeps background XHR alive indefinitely.
 
 		// The registers view should contain the main content area.
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })
 
@@ -116,25 +139,40 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	test('#/registers route renders register list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/registers', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/openregister/#/registers', {
+			waitUntil: 'domcontentloaded',
+		})
 		// Should NOT redirect to a different page or show a 404.
 		expect(page.url()).toContain('/openregister/')
-		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
 	test('#/schemas route renders schema list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/schemas', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/openregister/#/schemas', {
+			waitUntil: 'domcontentloaded',
+		})
 		expect(page.url()).toContain('/openregister/')
-		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
 	test('#/objects route renders object list', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/#/objects', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/openregister/#/objects', {
+			waitUntil: 'domcontentloaded',
+		})
 		expect(page.url()).toContain('/openregister/')
-		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 
-	test('#/objects/:register/:schema/:id deep-links to object detail', async ({ page, request }) => {
+	test('#/objects/:register/:schema/:id deep-links to object detail', async ({
+		page,
+		request,
+	}) => {
 		const objectId = await pickLiveObjectId(request)
 		test.skip(objectId === null, 'no live object found for deep-link test')
 
@@ -144,6 +182,8 @@ test.describe('deep-link-registry — hash routes render correct views', () => {
 		)
 		expect(page.url()).toContain('/openregister/')
 		// The detail panel / object view must render something.
-		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })

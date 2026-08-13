@@ -13,6 +13,7 @@
 import { registerWidget } from '@nextcloud/vue-richtext'
 
 registerWidget('openregister-object', async () => {
-	const { default: ObjectReferenceWidget } = await import('./ObjectReferenceWidget.vue')
+	const { default: ObjectReferenceWidget } =
+		await import('./ObjectReferenceWidget.vue')
 	return ObjectReferenceWidget
 })

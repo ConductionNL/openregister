@@ -46,8 +46,10 @@ describe('AuditTrail Entity', () => {
 
 		expect(auditTrail).toBeInstanceOf(AuditTrail)
 		expect(auditTrail.validate().success).toBe(false)
-		expect(auditTrail.validate().error?.issues).toContainEqual(expect.objectContaining({
-			path: ['uuid'],
-		}))
+		expect(auditTrail.validate().error?.issues).toContainEqual(
+			expect.objectContaining({
+				path: ['uuid'],
+			}),
+		)
 	})
 })

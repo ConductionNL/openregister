@@ -64,7 +64,9 @@ test.describe('openregister-app-manifest — CnAppRoot shell mounts', () => {
 		// The #menu slot renders OR's MainMenu (CnAppNav) — the app navigation.
 		await expect(
 			page
-				.locator('.app-navigation, nav[class*="navigation"], [class*="navigation-list"]')
+				.locator(
+					'.app-navigation, nav[class*="navigation"], [class*="navigation-list"]',
+				)
 				.first(),
 		).toBeVisible({ timeout: 25_000 })
 
@@ -225,7 +227,9 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 		await gotoRoute(page, '/')
 
 		const nav = page
-			.locator('.app-navigation, nav[class*="navigation"], [class*="navigation-list"]')
+			.locator(
+				'.app-navigation, nav[class*="navigation"], [class*="navigation-list"]',
+			)
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
@@ -236,8 +240,12 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 		// innerText (which omits collapsed children).
 		// A data-cluster destination (Registers) and an administration-cluster
 		// destination (Configurations) are both present in the rendered nav.
-		await expect(page.locator('[data-testid="cn-nav-entry-Registers"]')).toHaveCount(1)
-		await expect(page.locator('[data-testid="cn-nav-entry-Configurations"]')).toHaveCount(1)
+		await expect(
+			page.locator('[data-testid="cn-nav-entry-Registers"]'),
+		).toHaveCount(1)
+		await expect(
+			page.locator('[data-testid="cn-nav-entry-Configurations"]'),
+		).toHaveCount(1)
 	})
 
 	// @e2e openregister-app-manifest::menu-order-is-monotonic-per-section
@@ -246,7 +254,9 @@ test.describe('openregister-app-manifest — navigation sections', () => {
 		await gotoRoute(page, '/')
 
 		const nav = page
-			.locator('.app-navigation, nav[class*="navigation"], [class*="navigation-list"]')
+			.locator(
+				'.app-navigation, nav[class*="navigation"], [class*="navigation-list"]',
+			)
 			.first()
 		await expect(nav).toBeVisible({ timeout: 25_000 })
 
@@ -287,6 +297,9 @@ test.describe('openregister-app-manifest — no deprecation warning', () => {
 		await gotoRoute(page, '/')
 		// Give the shell a moment to finish its loading → shell transition.
 		await page.waitForTimeout(1500)
-		expect(warnings, `unexpected deprecation warnings: ${warnings.join('; ')}`).toHaveLength(0)
+		expect(
+			warnings,
+			`unexpected deprecation warnings: ${warnings.join('; ')}`,
+		).toHaveLength(0)
 	})
 })

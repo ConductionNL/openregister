@@ -18,8 +18,10 @@ jest.mock('@nextcloud/vue', () => ({
  * @param {Array} args Positional arguments.
  * @return {*} The invocation result.
  */
-const callMethod = (key, ctx, ...args) => BrowserNotificationsSection.methods[key].apply(ctx, args)
-const callComputed = (key, ctx) => BrowserNotificationsSection.computed[key].call(ctx)
+const callMethod = (key, ctx, ...args) =>
+	BrowserNotificationsSection.methods[key].apply(ctx, args)
+const callComputed = (key, ctx) =>
+	BrowserNotificationsSection.computed[key].call(ctx)
 
 const t = (app, s) => s
 
@@ -30,7 +32,13 @@ describe('BrowserNotificationsSection', () => {
 
 	describe('client resolution + state', () => {
 		it('reports unsupported when no WebPush client is present', () => {
-			const ctx = { t, supported: true, permission: 'default', enabled: false, client: BrowserNotificationsSection.methods.client }
+			const ctx = {
+				t,
+				supported: true,
+				permission: 'default',
+				enabled: false,
+				client: BrowserNotificationsSection.methods.client,
+			}
 			callMethod('refreshState', ctx)
 			expect(ctx.supported).toBe(false)
 		})
@@ -46,9 +54,17 @@ describe('BrowserNotificationsSection', () => {
 			const isSupported = jest.fn(() => true) // not called by refreshState
 			const permission = jest.fn(() => 'default')
 			const enablePush = jest.fn()
-			window.OCA = { OpenRegister: { WebPush: { isSupported, permission, enablePush } } }
+			window.OCA = {
+				OpenRegister: { WebPush: { isSupported, permission, enablePush } },
+			}
 
-			const ctx = { t, supported: false, permission: 'granted', enabled: true, client: BrowserNotificationsSection.methods.client }
+			const ctx = {
+				t,
+				supported: false,
+				permission: 'granted',
+				enabled: true,
+				client: BrowserNotificationsSection.methods.client,
+			}
 			callMethod('refreshState', ctx)
 
 			// jsdom has no serviceWorker/PushManager/Notification → supported = false.
@@ -65,9 +81,18 @@ describe('BrowserNotificationsSection', () => {
 			const enablePush = jest.fn(() => Promise.resolve(true))
 			const disablePush = jest.fn(() => Promise.resolve(false))
 			const permission = jest.fn(() => 'granted')
-			window.OCA = { OpenRegister: { WebPush: { enablePush, disablePush, permission } } }
+			window.OCA = {
+				OpenRegister: { WebPush: { enablePush, disablePush, permission } },
+			}
 
-			const ctx = { t, busy: false, error: null, enabled: false, permission: 'default', client: BrowserNotificationsSection.methods.client }
+			const ctx = {
+				t,
+				busy: false,
+				error: null,
+				enabled: false,
+				permission: 'default',
+				client: BrowserNotificationsSection.methods.client,
+			}
 			await callMethod('onToggle', ctx, true)
 
 			expect(enablePush).toHaveBeenCalledTimes(1)
@@ -80,9 +105,18 @@ describe('BrowserNotificationsSection', () => {
 			const enablePush = jest.fn(() => Promise.resolve(true))
 			const disablePush = jest.fn(() => Promise.resolve(false))
 			const permission = jest.fn(() => 'granted')
-			window.OCA = { OpenRegister: { WebPush: { enablePush, disablePush, permission } } }
+			window.OCA = {
+				OpenRegister: { WebPush: { enablePush, disablePush, permission } },
+			}
 
-			const ctx = { t, busy: false, error: null, enabled: true, permission: 'granted', client: BrowserNotificationsSection.methods.client }
+			const ctx = {
+				t,
+				busy: false,
+				error: null,
+				enabled: true,
+				permission: 'granted',
+				client: BrowserNotificationsSection.methods.client,
+			}
 			await callMethod('onToggle', ctx, false)
 
 			expect(disablePush).toHaveBeenCalledTimes(1)
@@ -91,11 +125,20 @@ describe('BrowserNotificationsSection', () => {
 		})
 
 		it('surfaces an error and reverts state when enablePush rejects', async () => {
-			const enablePush = jest.fn(() => Promise.reject(new Error('Notification permission not granted')))
+			const enablePush = jest.fn(() =>
+				Promise.reject(new Error('Notification permission not granted')),
+			)
 			const permission = jest.fn(() => 'denied')
 			window.OCA = { OpenRegister: { WebPush: { enablePush, permission } } }
 
-			const ctx = { t, busy: false, error: null, enabled: false, permission: 'default', client: BrowserNotificationsSection.methods.client }
+			const ctx = {
+				t,
+				busy: false,
+				error: null,
+				enabled: false,
+				permission: 'default',
+				client: BrowserNotificationsSection.methods.client,
+			}
 			await callMethod('onToggle', ctx, true)
 
 			expect(ctx.error).toBe('Notification permission not granted')
@@ -110,7 +153,9 @@ describe('BrowserNotificationsSection', () => {
 			['denied', 'denied'],
 			['default', 'not yet requested'],
 		])('describes the %s permission state', (permission, fragment) => {
-			expect(callComputed('permissionLabel', { t, permission })).toContain(fragment)
+			expect(callComputed('permissionLabel', { t, permission })).toContain(
+				fragment,
+			)
 		})
 	})
 })

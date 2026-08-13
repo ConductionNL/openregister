@@ -45,14 +45,21 @@
 
 					<!-- Configured Version (if provided) -->
 					<div v-if="configuredVersion" class="version-item">
-						<span class="version-label">{{ labels.configuredVersion }}:</span>
+						<span class="version-label"
+							>{{ labels.configuredVersion }}:</span
+						>
 						<span class="version-value">{{ configuredVersion }}</span>
 					</div>
 
 					<!-- Additional items -->
-					<div v-for="item in additionalItems" :key="item.label" class="version-item">
+					<div
+						v-for="item in additionalItems"
+						:key="item.label"
+						class="version-item">
 						<span class="version-label">{{ item.label }}:</span>
-						<span class="version-value" :class="item.statusClass">{{ item.value }}</span>
+						<span class="version-value" :class="item.statusClass">{{
+							item.value
+						}}</span>
 					</div>
 
 					<!-- Optional additional items slot -->
@@ -212,7 +219,6 @@ export default {
 	emits: ['update'],
 
 	computed: {
-
 		/**
 		 * Update button type based on status
 		 *

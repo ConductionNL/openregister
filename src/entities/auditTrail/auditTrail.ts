@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TAuditTrail } from './auditTrail.types'
 
 export class AuditTrail implements TAuditTrail {
-
 	public id: number
 	public uuid: string
 	public schema: number
@@ -92,5 +91,4 @@ export class AuditTrail implements TAuditTrail {
 
 		return schema.safeParse(this)
 	}
-
 }

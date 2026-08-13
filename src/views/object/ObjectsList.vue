@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	objectStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -17,13 +22,25 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
-					<NcActionButton close-after-click @click="objectStore.refreshObjectList({ search: search, page: 1 })">
+					<NcActionButton
+						close-after-click
+						@click="
+							objectStore.refreshObjectList({
+								search: search,
+								page: 1,
+							})
+						">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
 						Refresh
 					</NcActionButton>
-					<NcActionButton close-after-click @click="objectStore.setObjectItem(null); navigationStore.setModal('uploadObject')">
+					<NcActionButton
+						close-after-click
+						@click="
+							objectStore.setObjectItem(null)
+							navigationStore.setModal('uploadObject')
+						">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
@@ -37,27 +54,54 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</NcActionButton>
 				</NcActions>
 			</div>
-			<div v-if="objectStore.getCollection(objectStore.currentType).length > 0 && objectStore.getPagination(objectStore.currentType).total > limit">
-				<span>Page {{ currentPage }} of {{ objectStore.getPagination(objectStore.currentType).pages }}</span>
-				<CnPagination class="listPagination"
+			<div
+				v-if="
+					objectStore.getCollection(objectStore.currentType).length > 0
+					&& objectStore.getPagination(objectStore.currentType).total
+						> limit
+				">
+				<span
+					>Page {{ currentPage }} of
+					{{
+						objectStore.getPagination(objectStore.currentType).pages
+					}}</span
+				>
+				<CnPagination
+					class="listPagination"
 					:current-page="currentPage"
-					:total-pages="objectStore.getPagination(objectStore.currentType).pages"
-					:total-items="objectStore.getPagination(objectStore.currentType).total"
+					:total-pages="
+						objectStore.getPagination(objectStore.currentType).pages
+					"
+					:total-items="
+						objectStore.getPagination(objectStore.currentType).total
+					"
 					:current-page-size="limit"
 					:min-items-to-show="10"
 					@page-changed="currentPage = $event"
 					@page-size-changed="onPageSizeChanged" />
 			</div>
 		</div>
-		<ul v-if="objectStore.getCollection(objectStore.currentType) && objectStore.getCollection(objectStore.currentType).length > 0 && !loading">
-			<NcListItem v-for="(object, i) in objectStore.getCollection(objectStore.currentType)"
+		<ul
+			v-if="
+				objectStore.getCollection(objectStore.currentType)
+				&& objectStore.getCollection(objectStore.currentType).length > 0
+				&& !loading
+			">
+			<NcListItem
+				v-for="(object, i) in objectStore.getCollection(
+					objectStore.currentType,
+				)"
 				:key="`${object}${i}`"
 				:name="object.id?.toString()"
 				:active="objectStore.objectItem?.id === object?.id"
 				:force-display-actions="true"
 				@click="objectStore.setObjectItem(object)">
 				<template #icon>
-					<CubeOutline :class="objectStore.objectItem?.id === object.id && 'selectedObjectIcon'"
+					<CubeOutline
+						:class="
+							objectStore.objectItem?.id === object.id
+							&& 'selectedObjectIcon'
+						"
 						disable-menu
 						:size="44" />
 				</template>
@@ -65,21 +109,31 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					{{ object.uuid }}
 				</template>
 				<template #actions>
-					<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setModal('viewObject')">
+					<NcActionButton
+						close-after-click
+						@click="
+							objectStore.setObjectItem(object)
+							navigationStore.setModal('viewObject')
+						">
 						<template #icon>
 							<Pencil />
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton v-if="!object.locked"
+					<NcActionButton
+						v-if="!object.locked"
 						close-after-click
-						@click="objectStore.setObjectItem(object); navigationStore.setModal('lockObject')">
+						@click="
+							objectStore.setObjectItem(object)
+							navigationStore.setModal('lockObject')
+						">
 						<template #icon>
 							<LockOutline />
 						</template>
 						Lock
 					</NcActionButton>
-					<NcActionButton v-if="object.locked"
+					<NcActionButton
+						v-if="object.locked"
 						close-after-click
 						@click="objectStore.unlockObject(objectStore.objectItem.id)">
 						<template #icon>
@@ -87,7 +141,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						</template>
 						Unlock
 					</NcActionButton>
-					<NcActionButton close-after-click @click="objectStore.setObjectItem(object); navigationStore.setDialog('deleteObject')">
+					<NcActionButton
+						close-after-click
+						@click="
+							objectStore.setObjectItem(object)
+							navigationStore.setDialog('deleteObject')
+						">
 						<template #icon>
 							<TrashCanOutline />
 						</template>
@@ -97,7 +156,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcListItem>
 		</ul>
 
-		<NcLoadingIcon v-if="loading"
+		<NcLoadingIcon
+			v-if="loading"
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
@@ -110,7 +170,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 </template>
 
 <script>
-import { NcListItem, NcActionButton, NcAppContentList, NcTextField, NcLoadingIcon, NcActions } from '@nextcloud/vue'
+import {
+	NcListItem,
+	NcActionButton,
+	NcAppContentList,
+	NcTextField,
+	NcLoadingIcon,
+	NcActions,
+} from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -184,9 +251,15 @@ export default {
 		 */
 		currentPage(newVal) {
 			this.loading = true
-			objectStore.refreshObjectList({ limit: this.limit, page: newVal, search: this.search }).finally(() => {
-				this.loading = false
-			})
+			objectStore
+				.refreshObjectList({
+					limit: this.limit,
+					page: newVal,
+					search: this.search,
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 		/**
 		 * @param {string} newVal The new search term
@@ -196,9 +269,15 @@ export default {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
 				this.loading = true
-				objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: newVal }).finally(() => {
-					this.loading = false
-				})
+				objectStore
+					.refreshObjectList({
+						limit: this.limit,
+						page: this.currentPage,
+						search: newVal,
+					})
+					.finally(() => {
+						this.loading = false
+					})
 			}, 700)
 		},
 	},
@@ -220,9 +299,15 @@ export default {
 			return
 		}
 		this.loading = true
-		objectStore.refreshObjectList({ limit: this.limit, page: this.currentPage, search: this.search }).finally(() => {
-			this.loading = false
-		})
+		objectStore
+			.refreshObjectList({
+				limit: this.limit,
+				page: this.currentPage,
+				search: this.search,
+			})
+			.finally(() => {
+				this.loading = false
+			})
 	},
 	/**
 	 * Lifecycle hook: release the live collection subscription on unmount.
@@ -295,7 +380,10 @@ export default {
 				}
 				this.liveHandle = null
 				this.liveType = ''
-				console.warn('[ObjectsList] live subscription failed:', e?.message ?? e)
+				console.warn(
+					'[ObjectsList] live subscription failed:',
+					e?.message ?? e,
+				)
 			}
 		},
 		/**
@@ -335,9 +423,15 @@ export default {
 				return
 			}
 			this.loading = true
-			objectStore.refreshObjectList({ limit: this.limit, page: 1, search: this.search }).finally(() => {
-				this.loading = false
-			})
+			objectStore
+				.refreshObjectList({
+					limit: this.limit,
+					page: 1,
+					search: this.search,
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 		/**
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)

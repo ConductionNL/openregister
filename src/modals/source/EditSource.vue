@@ -4,8 +4,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'editSource'"
-		:name="sourceStore.sourceItem?.id ? t('openregister', 'Edit Source') : t('openregister', 'Add Source')"
+	<NcDialog
+		v-if="navigationStore.modal === 'editSource'"
+		:name="
+			sourceStore.sourceItem?.id
+				? t('openregister', 'Edit Source')
+				: t('openregister', 'Add Source')
+		"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
@@ -19,60 +24,89 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<div v-if="!success" class="formContainer">
-			<NcTextField :disabled="loading"
+			<NcTextField
+				:disabled="loading"
 				:label="t('openregister', 'Title *')"
 				v-model="sourceItem.title" />
-			<NcTextArea :disabled="loading"
+			<NcTextArea
+				:disabled="loading"
 				:label="t('openregister', 'Description')"
 				v-model="sourceItem.description" />
-			<NcSelect v-bind="typeOptions"
+			<NcSelect
+				v-bind="typeOptions"
 				v-model="typeOptions.value"
 				:input-label="t('openregister', 'Type')"
 				:disabled="loading" />
 
 			<template v-if="!isDatabaseType">
-				<NcTextField :disabled="loading"
+				<NcTextField
+					:disabled="loading"
 					:label="t('openregister', 'Database URL')"
 					v-model="sourceItem.databaseUrl" />
 			</template>
 
 			<template v-if="isDatabaseType">
-				<NcSelect v-bind="driverOptions"
+				<NcSelect
+					v-bind="driverOptions"
 					v-model="driverOptions.value"
 					:input-label="t('openregister', 'Driver')"
 					:disabled="loading" />
 				<template v-if="driverOptions.value?.id === 'pdo_sqlite'">
-					<NcTextField :disabled="loading"
+					<NcTextField
+						:disabled="loading"
 						:label="t('openregister', 'Database file path *')"
 						v-model="connection.path" />
 				</template>
 				<template v-else>
-					<NcTextField :disabled="loading"
+					<NcTextField
+						:disabled="loading"
 						:label="t('openregister', 'Host *')"
 						v-model="connection.host" />
-					<NcTextField :disabled="loading"
+					<NcTextField
+						:disabled="loading"
 						:label="t('openregister', 'Port')"
 						v-model="connection.port" />
-					<NcTextField :disabled="loading"
+					<NcTextField
+						:disabled="loading"
 						:label="t('openregister', 'Database name *')"
 						v-model="connection.dbname" />
-					<NcTextField :disabled="loading"
+					<NcTextField
+						:disabled="loading"
 						:label="t('openregister', 'User')"
 						v-model="connection.user" />
-					<NcTextField :disabled="loading"
-						:label="t('openregister', 'Credential (UUID from the credential store)')"
+					<NcTextField
+						:disabled="loading"
+						:label="
+							t(
+								'openregister',
+								'Credential (UUID from the credential store)',
+							)
+						"
 						v-model="connection.credential" />
 				</template>
-				<NcCheckboxRadioSwitch
-					v-model="connection.writable"
-					type="switch">
-					{{ t('openregister', 'Allow writes (create, update and delete push through to the external database)') }}
+				<NcCheckboxRadioSwitch v-model="connection.writable" type="switch">
+					{{
+						t(
+							'openregister',
+							'Allow writes (create, update and delete push through to the external database)',
+						)
+					}}
 				</NcCheckboxRadioSwitch>
 				<p v-if="connection.writable" class="databaseHint">
-					{{ t('openregister', 'Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.') }}
+					{{
+						t(
+							'openregister',
+							'Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.',
+						)
+					}}
 				</p>
 				<p class="databaseHint">
-					{{ t('openregister', 'The database password is never stored on the source; reference a credential from the credential store instead.') }}
+					{{
+						t(
+							'openregister',
+							'The database password is never stored on the source; reference a credential from the credential store instead.',
+						)
+					}}
 				</p>
 			</template>
 		</div>
@@ -82,9 +116,14 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
+				{{
+					success
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
-			<NcButton v-if="!success && isDatabaseType && sourceItem.id"
+			<NcButton
+				v-if="!success && isDatabaseType && sourceItem.id"
 				:disabled="loading || actionLoading"
 				@click="testConnection()">
 				<template #icon>
@@ -93,7 +132,8 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ t('openregister', 'Test connection') }}
 			</NcButton>
-			<NcButton v-if="!success && isDatabaseType && sourceItem.id"
+			<NcButton
+				v-if="!success && isDatabaseType && sourceItem.id"
 				:disabled="loading || actionLoading"
 				@click="introspect()">
 				<template #icon>
@@ -102,16 +142,25 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ t('openregister', 'Create virtual register') }}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !sourceItem.title"
 				variant="primary"
 				@click="editSource()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && sourceStore.sourceItem?.id" :size="20" />
-					<Plus v-if="!loading && !sourceStore.sourceItem?.id" :size="20" />
+					<ContentSaveOutline
+						v-if="!loading && sourceStore.sourceItem?.id"
+						:size="20" />
+					<Plus
+						v-if="!loading && !sourceStore.sourceItem?.id"
+						:size="20" />
 				</template>
-				{{ sourceStore.sourceItem?.id ? t('openregister', 'Save') : t('openregister', 'Create') }}
+				{{
+					sourceStore.sourceItem?.id
+						? t('openregister', 'Save')
+						: t('openregister', 'Create')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -232,8 +281,13 @@ export default {
 				}
 
 				// set typeOptions to the sourceItem type
-				this.typeOptions.value = this.typeOptions.options.find(option => option.id === this.sourceItem.type)
-					|| this.typeOptions.options.find(option => option.id === 'internal')
+				this.typeOptions.value =
+					this.typeOptions.options.find(
+						(option) => option.id === this.sourceItem.type,
+					)
+					|| this.typeOptions.options.find(
+						(option) => option.id === 'internal',
+					)
 
 				// Restore non-secret database connection parts (the password is
 				// never on the source — it lives behind the credential store).
@@ -248,8 +302,10 @@ export default {
 					writable: authConfig.writable === true,
 				}
 				if (authConfig.driver) {
-					this.driverOptions.value = this.driverOptions.options.find(option => option.id === authConfig.driver)
-						|| this.driverOptions.value
+					this.driverOptions.value =
+						this.driverOptions.options.find(
+							(option) => option.id === authConfig.driver,
+						) || this.driverOptions.value
 				}
 			}
 		},
@@ -281,7 +337,9 @@ export default {
 				writable: false,
 			}
 			// reset typeOptions to the internal option
-			this.typeOptions.value = this.typeOptions.options.find(option => option.id === 'internal')
+			this.typeOptions.value = this.typeOptions.options.find(
+				(option) => option.id === 'internal',
+			)
 		},
 		/**
 		 * @spec exclude Modal save plumbing — delegates source persistence to sourceStore.saveSource.
@@ -310,16 +368,25 @@ export default {
 				}
 			}
 
-			sourceStore.saveSource(payload).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the source'
-			}).finally(() => {
-				this.loading = false
-			})
+			sourceStore
+				.saveSource(payload)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok
+						&& (this.closeModalTimeout = setTimeout(
+							this.closeModal,
+							2000,
+						))
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message || 'An error occurred while saving the source'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 		/**
 		 * Test the saved database source's connection (never exposes the password).
@@ -328,7 +395,10 @@ export default {
 		 * @return {Promise<void>} Resolves when the test finished.
 		 */
 		async testConnection() {
-			await this.runSourceAction('test-connection', t('openregister', 'Connection successful'))
+			await this.runSourceAction(
+				'test-connection',
+				t('openregister', 'Connection successful'),
+			)
 		},
 		/**
 		 * Introspect the database source into a virtual register + schemas.
@@ -353,7 +423,9 @@ export default {
 
 			try {
 				const response = await fetch(
-					generateUrl(`/apps/openregister/api/sources/${this.sourceItem.id}/${action}`),
+					generateUrl(
+						`/apps/openregister/api/sources/${this.sourceItem.id}/${action}`,
+					),
 					{
 						method: 'POST',
 						headers: { requesttoken: window.OC?.requestToken || '' },
@@ -376,11 +448,13 @@ export default {
 					}
 				} else {
 					this.actionMessageType = 'error'
-					this.actionMessage = data.error || t('openregister', 'The action failed')
+					this.actionMessage =
+						data.error || t('openregister', 'The action failed')
 				}
 			} catch (error) {
 				this.actionMessageType = 'error'
-				this.actionMessage = error.message || t('openregister', 'The action failed')
+				this.actionMessage =
+					error.message || t('openregister', 'The action failed')
 			} finally {
 				this.actionLoading = false
 			}

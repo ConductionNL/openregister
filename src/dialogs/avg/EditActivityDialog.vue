@@ -12,7 +12,9 @@
 
 			<NcTextField
 				v-model="form.code"
-				:label="t('openregister', 'Code (short readable key, e.g. v-2026-001)')" />
+				:label="
+					t('openregister', 'Code (short readable key, e.g. v-2026-001)')
+				" />
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Description') }}</span>
@@ -21,7 +23,8 @@
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Purpose limitation *') }}</span>
-				<textarea v-model="form.doelbinding"
+				<textarea
+					v-model="form.doelbinding"
 					rows="3"
 					class="avgTextarea"
 					required />
@@ -37,7 +40,12 @@
 
 			<NcTextField
 				v-model="form.bewaartermijn"
-				:label="t('openregister', 'Retention period (ISO-8601 duration, e.g. P10Y, P30D)')" />
+				:label="
+					t(
+						'openregister',
+						'Retention period (ISO-8601 duration, e.g. P10Y, P30D)',
+					)
+				" />
 
 			<NcSelect
 				v-model="form.status"
@@ -47,23 +55,39 @@
 				:reduce="(o) => o.value" />
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categories of data subjects (one per line)') }}</span>
-				<textarea v-model="categorieenBetrokkenenText" rows="3" class="avgTextarea" />
+				<span>{{
+					t('openregister', 'Categories of data subjects (one per line)')
+				}}</span>
+				<textarea
+					v-model="categorieenBetrokkenenText"
+					rows="3"
+					class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categories of personal data (one per line)') }}</span>
-				<textarea v-model="categorieenPersoonsgegevensText" rows="3" class="avgTextarea" />
+				<span>{{
+					t('openregister', 'Categories of personal data (one per line)')
+				}}</span>
+				<textarea
+					v-model="categorieenPersoonsgegevensText"
+					rows="3"
+					class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Technical measures') }}</span>
-				<textarea v-model="form.technischeMaatregelen" rows="3" class="avgTextarea" />
+				<textarea
+					v-model="form.technischeMaatregelen"
+					rows="3"
+					class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
 				<span>{{ t('openregister', 'Organisational measures') }}</span>
-				<textarea v-model="form.organisatorischeMaatregelen" rows="3" class="avgTextarea" />
+				<textarea
+					v-model="form.organisatorischeMaatregelen"
+					rows="3"
+					class="avgTextarea" />
 			</label>
 
 			<NcNoteCard v-if="error" type="error">
@@ -71,14 +95,21 @@
 			</NcNoteCard>
 
 			<div class="avgEditActions">
-				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton
+					variant="tertiary"
+					:disabled="saving"
+					@click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="primary" type="submit" :disabled="saving">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>
-					{{ activity ? t('openregister', 'Save changes') : t('openregister', 'Create') }}
+					{{
+						activity
+							? t('openregister', 'Save changes')
+							: t('openregister', 'Create')
+					}}
 				</NcButton>
 			</div>
 		</form>
@@ -97,7 +128,10 @@ import {
 } from '@nextcloud/vue'
 
 import { avgStore } from '../../store/store.js'
-import { RECHTSGROND_VOCABULARY, STATUS_VOCABULARY } from '../../store/modules/avg.js'
+import {
+	RECHTSGROND_VOCABULARY,
+	STATUS_VOCABULARY,
+} from '../../store/modules/avg.js'
 
 export default {
 	name: 'EditActivityDialog',
@@ -141,7 +175,10 @@ export default {
 		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
 		 */
 		rechtsgrondOptions() {
-			return RECHTSGROND_VOCABULARY.map((v) => ({ value: v, label: v.replace(/_/g, ' ') }))
+			return RECHTSGROND_VOCABULARY.map((v) => ({
+				value: v,
+				label: v.replace(/_/g, ' '),
+			}))
 		},
 		/**
 		 * @spec exclude Presentation glue: maps the status vocabulary to select options; no standalone behavioural contract.
@@ -208,9 +245,11 @@ export default {
 				bewaartermijn: activity?.bewaartermijn ?? '',
 				status: activity?.status ?? 'concept',
 				categorieenBetrokkenen: activity?.categorieenBetrokkenen ?? [],
-				categorieenPersoonsgegevens: activity?.categorieenPersoonsgegevens ?? [],
+				categorieenPersoonsgegevens:
+					activity?.categorieenPersoonsgegevens ?? [],
 				technischeMaatregelen: activity?.technischeMaatregelen ?? '',
-				organisatorischeMaatregelen: activity?.organisatorischeMaatregelen ?? '',
+				organisatorischeMaatregelen:
+					activity?.organisatorischeMaatregelen ?? '',
 			}
 		},
 
@@ -238,7 +277,10 @@ export default {
 			this.error = null
 			try {
 				if (this.activity) {
-					await avgStore.updateActivity(this.activity.uuid, this.buildPayload())
+					await avgStore.updateActivity(
+						this.activity.uuid,
+						this.buildPayload(),
+					)
 				} else {
 					await avgStore.createActivity(this.buildPayload())
 				}

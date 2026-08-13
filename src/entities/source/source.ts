@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TSource } from './source.types'
 
 export class Source implements TSource {
-
 	public id: string | number
 	public title: string
 	public description: string
@@ -38,5 +37,4 @@ export class Source implements TSource {
 
 		return schema.safeParse(this)
 	}
-
 }

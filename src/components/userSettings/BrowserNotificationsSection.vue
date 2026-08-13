@@ -22,11 +22,25 @@
  @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 -->
 <template>
-	<NcSettingsSection :name="t('openregister', 'Browser notifications')"
-		:description="t('openregister', 'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.')"
+	<NcSettingsSection
+		:name="t('openregister', 'Browser notifications')"
+		:description="
+			t(
+				'openregister',
+				'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.',
+			)
+		"
 		data-testid="browser-notifications-section">
-		<NcNoteCard v-if="!supported" type="warning" data-testid="browser-notifications-unsupported">
-			{{ t('openregister', 'This browser does not support web push notifications.') }}
+		<NcNoteCard
+			v-if="!supported"
+			type="warning"
+			data-testid="browser-notifications-unsupported">
+			{{
+				t(
+					'openregister',
+					'This browser does not support web push notifications.',
+				)
+			}}
 		</NcNoteCard>
 
 		<template v-else>
@@ -39,11 +53,16 @@
 				{{ t('openregister', 'Enable browser notifications') }}
 			</NcCheckboxRadioSwitch>
 
-			<p class="user-settings-section__hint" data-testid="browser-notifications-permission">
+			<p
+				class="user-settings-section__hint"
+				data-testid="browser-notifications-permission">
 				{{ permissionLabel }}
 			</p>
 
-			<NcNoteCard v-if="error" type="error" data-testid="browser-notifications-error">
+			<NcNoteCard
+				v-if="error"
+				type="error"
+				data-testid="browser-notifications-error">
 				{{ error }}
 			</NcNoteCard>
 		</template>
@@ -83,12 +102,18 @@ export default {
 		 */
 		permissionLabel() {
 			switch (this.permission) {
-			case 'granted':
-				return this.t('openregister', 'Notification permission: granted')
-			case 'denied':
-				return this.t('openregister', 'Notification permission: denied. Re-enable notifications for this site in your browser settings.')
-			default:
-				return this.t('openregister', 'Notification permission: not yet requested. Enabling the toggle will ask for permission.')
+				case 'granted':
+					return this.t('openregister', 'Notification permission: granted')
+				case 'denied':
+					return this.t(
+						'openregister',
+						'Notification permission: denied. Re-enable notifications for this site in your browser settings.',
+					)
+				default:
+					return this.t(
+						'openregister',
+						'Notification permission: not yet requested. Enabling the toggle will ask for permission.',
+					)
 			}
 		},
 	},
@@ -103,7 +128,12 @@ export default {
 		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.2
 		 */
 		client() {
-			return (window.OCA && window.OCA.OpenRegister && window.OCA.OpenRegister.WebPush) || null
+			return (
+				(window.OCA
+					&& window.OCA.OpenRegister
+					&& window.OCA.OpenRegister.WebPush)
+				|| null
+			)
 		},
 		/**
 		 * Read support + permission state from the WebPush client. Never prompts.
@@ -117,16 +147,18 @@ export default {
 			// mounts, and depending on it would wrongly report "not supported".
 			// The client global is only needed for the enable/disable actions,
 			// by which point the deferred script has long since run.
-			this.supported = (typeof navigator !== 'undefined'
+			this.supported =
+				typeof navigator !== 'undefined'
 				&& 'serviceWorker' in navigator
 				&& typeof window !== 'undefined'
 				&& 'PushManager' in window
-				&& 'Notification' in window)
-			this.permission = ('Notification' in window) ? Notification.permission : 'unsupported'
+				&& 'Notification' in window
+			this.permission =
+				'Notification' in window ? Notification.permission : 'unsupported'
 			// A granted permission does not guarantee an active subscription, but
 			// it is the only non-async signal we have without a network call; the
 			// authoritative enable/disable result comes from the toggle handlers.
-			this.enabled = (this.permission === 'granted')
+			this.enabled = this.permission === 'granted'
 		},
 		/**
 		 * Handle a toggle gesture: subscribe on enable, unsubscribe on disable.
@@ -140,7 +172,10 @@ export default {
 		async onToggle(checked) {
 			const client = this.client()
 			if (client === null) {
-				this.error = this.t('openregister', 'Browser notification client is still loading — please try again in a moment.')
+				this.error = this.t(
+					'openregister',
+					'Browser notification client is still loading — please try again in a moment.',
+				)
 				return
 			}
 			this.busy = true
@@ -154,7 +189,12 @@ export default {
 					this.enabled = false
 				}
 			} catch (e) {
-				this.error = e.message || this.t('openregister', 'Could not change browser notification settings.')
+				this.error =
+					e.message
+					|| this.t(
+						'openregister',
+						'Could not change browser notification settings.',
+					)
 				// Revert the optimistic state on failure.
 				this.enabled = !checked
 			} finally {

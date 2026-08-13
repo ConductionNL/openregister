@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { searchTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	searchTrailStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -12,7 +17,10 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 		:subname="t('openregister', 'View search analytics and manage search logs')"
 		:open="navigationStore.sidebarState.searchTrail"
 		@update:open="(e) => navigationStore.setSidebarState('searchTrail', e)">
-		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
+		<NcAppSidebarTab
+			id="filters-tab"
+			:name="t('openregister', 'Filters')"
+			:order="1">
 			<template #icon>
 				<FilterOutline :size="20" />
 			</template>
@@ -21,7 +29,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
 					<NcSelect
 						id="registerSelect"
 						v-bind="registerOptions"
@@ -32,7 +42,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
 					<NcSelect
 						id="schemaSelect"
 						v-bind="schemaOptions"
@@ -44,7 +56,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="successSelect">{{ t('openregister', 'Success Status') }}</label>
+					<label for="successSelect">{{
+						t('openregister', 'Success Status')
+					}}</label>
 					<NcSelect
 						id="successSelect"
 						v-model="selectedSuccessStatus"
@@ -90,7 +104,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label for="searchTermFilter">{{ t('openregister', 'Search Term') }}</label>
+					<label for="searchTermFilter">{{
+						t('openregister', 'Search Term')
+					}}</label>
 					<NcTextField
 						id="searchTermFilter"
 						v-model="searchTermFilter"
@@ -99,7 +115,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						@update:modelValue="handleSearchTermFilterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="executionTimeFilter">{{ t('openregister', 'Execution Time Range') }}</label>
+					<label for="executionTimeFilter">{{
+						t('openregister', 'Execution Time Range')
+					}}</label>
 					<div class="rangeFilter">
 						<NcTextField
 							id="executionTimeFrom"
@@ -118,7 +136,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					</div>
 				</div>
 				<div class="filterGroup">
-					<label for="resultCountFilter">{{ t('openregister', 'Result Count Range') }}</label>
+					<label for="resultCountFilter">{{
+						t('openregister', 'Result Count Range')
+					}}</label>
 					<div class="rangeFilter">
 						<NcTextField
 							id="resultCountFrom"
@@ -148,11 +168,19 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 			</div>
 
 			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.') }}
+				{{
+					t(
+						'openregister',
+						'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
+					)
+				}}
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
+		<NcAppSidebarTab
+			id="stats-tab"
+			:name="t('openregister', 'Statistics')"
+			:order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -186,9 +214,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						</div>
 					</div>
 					<div class="statCard">
-						<div class="statNumber">
-							{{ averageExecutionTime }}ms
-						</div>
+						<div class="statNumber">{{ averageExecutionTime }}ms</div>
 						<div class="statLabel">
 							{{ t('openregister', 'Avg Execution Time') }}
 						</div>
@@ -235,40 +261,67 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)')"
+								:title="
+									t(
+										'openregister',
+										'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
+									)
+								"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Simple') }}
 							</span>
 							<span>{{ queryComplexity.simple }}</span>
 						</div>
 						<div class="complexityProgress">
-							<div class="complexityProgressBar simple" :style="{ width: getComplexityPercentage('simple') + '%' }" />
+							<div
+								class="complexityProgressBar simple"
+								:style="{
+									width: getComplexityPercentage('simple') + '%',
+								}" />
 						</div>
 					</div>
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)')"
+								:title="
+									t(
+										'openregister',
+										'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
+									)
+								"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Medium') }}
 							</span>
 							<span>{{ queryComplexity.medium }}</span>
 						</div>
 						<div class="complexityProgress">
-							<div class="complexityProgressBar medium" :style="{ width: getComplexityPercentage('medium') + '%' }" />
+							<div
+								class="complexityProgressBar medium"
+								:style="{
+									width: getComplexityPercentage('medium') + '%',
+								}" />
 						</div>
 					</div>
 					<div class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="t('openregister', 'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations')"
+								:title="
+									t(
+										'openregister',
+										'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
+									)
+								"
 								class="complexity-label-with-tooltip">
 								{{ t('openregister', 'Complex') }}
 							</span>
 							<span>{{ queryComplexity.complex }}</span>
 						</div>
 						<div class="complexityProgress">
-							<div class="complexityProgressBar complex" :style="{ width: getComplexityPercentage('complex') + '%' }" />
+							<div
+								class="complexityProgressBar complex"
+								:style="{
+									width: getComplexityPercentage('complex') + '%',
+								}" />
 						</div>
 					</div>
 				</div>
@@ -278,7 +331,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 			<div class="popularTermsSection">
 				<h4>{{ t('openregister', 'Popular Search Terms') }}</h4>
 				<div class="popularTermsList">
-					<NcListItem v-for="(term, index) in popularTerms"
+					<NcListItem
+						v-for="(term, index) in popularTerms"
 						:key="index"
 						:name="term.term"
 						:bold="false">
@@ -286,7 +340,11 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							<MagnifyPlus :size="32" />
 						</template>
 						<template #subname>
-							{{ t('openregister', '{count} searches', { count: term.count }) }}
+							{{
+								t('openregister', '{count} searches', {
+									count: term.count,
+								})
+							}}
 						</template>
 					</NcListItem>
 				</div>
@@ -296,7 +354,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 			<div class="registerSchemaSection">
 				<h4>{{ t('openregister', 'Register/Schema Usage') }}</h4>
 				<div class="registerSchemaList">
-					<NcListItem v-for="(stat, index) in registerSchemaStats"
+					<NcListItem
+						v-for="(stat, index) in registerSchemaStats"
 						:key="index"
 						:name="getRegisterSchemaName(stat)"
 						:bold="false">
@@ -304,14 +363,21 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							<DatabaseOutline :size="32" />
 						</template>
 						<template #subname>
-							{{ t('openregister', '{count} searches', { count: stat.count }) }}
+							{{
+								t('openregister', '{count} searches', {
+									count: stat.count,
+								})
+							}}
 						</template>
 					</NcListItem>
 				</div>
 			</div>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="analytics-tab" :name="t('openregister', 'Analytics')" :order="3">
+		<NcAppSidebarTab
+			id="analytics-tab"
+			:name="t('openregister', 'Analytics')"
+			:order="3">
 			<template #icon>
 				<TrendingUp :size="20" />
 			</template>
@@ -322,7 +388,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 
 				<!-- Activity Period Selector -->
 				<div class="filterGroup">
-					<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
+					<label for="activityPeriodSelect">{{
+						t('openregister', 'Activity Period')
+					}}</label>
 					<NcSelect
 						id="activityPeriodSelect"
 						v-model="selectedActivityPeriod"
@@ -339,15 +407,24 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<!-- Activity Chart/Data -->
 				<div class="activityData">
 					<h4>{{ t('openregister', 'Search Activity') }}</h4>
-					<div v-if="searchTrailStore.activityLoading" class="loadingSpinner">
+					<div
+						v-if="searchTrailStore.activityLoading"
+						class="loadingSpinner">
 						<NcLoadingIcon :size="32" />
 					</div>
-					<div v-else-if="currentActivityData.length > 0" class="activityList">
-						<div v-for="(activity, index) in currentActivityData"
+					<div
+						v-else-if="currentActivityData.length > 0"
+						class="activityList">
+						<div
+							v-for="(activity, index) in currentActivityData"
 							:key="index"
 							class="activityItem">
-							<span class="activityPeriod">{{ formatActivityPeriod(activity.period) }}</span>
-							<span class="activityCount">{{ activity.searches }} searches</span>
+							<span class="activityPeriod">{{
+								formatActivityPeriod(activity.period)
+							}}</span>
+							<span class="activityCount"
+								>{{ activity.searches }} searches</span
+							>
 						</div>
 					</div>
 					<div v-else class="noActivityData">
@@ -359,7 +436,8 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="userAgentSection">
 					<h4>{{ t('openregister', 'User Agent Statistics') }}</h4>
 					<div class="userAgentList">
-						<NcListItem v-for="(agent, index) in userAgentStats"
+						<NcListItem
+							v-for="(agent, index) in userAgentStats"
 							:key="index"
 							:name="getBrowserName(agent)"
 							:bold="false">
@@ -367,7 +445,11 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 								<Monitor :size="32" />
 							</template>
 							<template #subname>
-								{{ t('openregister', '{count} searches', { count: agent.count }) }}
+								{{
+									t('openregister', '{count} searches', {
+										count: agent.count,
+									})
+								}}
 							</template>
 						</NcListItem>
 					</div>
@@ -494,16 +576,21 @@ export default {
 		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -517,17 +604,26 @@ export default {
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -567,12 +663,21 @@ export default {
 		 * @return {Array} User filter options
 		 */
 		userOptions() {
-			if (!searchTrailStore.searchTrailList || !searchTrailStore.searchTrailList.length) {
+			if (
+				!searchTrailStore.searchTrailList
+				|| !searchTrailStore.searchTrailList.length
+			) {
 				return []
 			}
 			// Get unique users from search trail list
-			const users = [...new Set(searchTrailStore.searchTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
-			return users.map(user => ({
+			const users = [
+				...new Set(
+					searchTrailStore.searchTrailList
+						.map((trail) => trail.userName || trail.user)
+						.filter(Boolean),
+				),
+			]
+			return users.map((user) => ({
 				label: user,
 				value: user,
 			}))
@@ -744,7 +849,7 @@ export default {
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
 				const users = this.selectedUsers.slice()
 				if (users.length > 0) {
-					filters.user = users.map(u => u.value).join(',')
+					filters.user = users.map((u) => u.value).join(',')
 				}
 			}
 
@@ -816,15 +921,23 @@ export default {
 				const stats = await searchTrailStore.getStatistics()
 				this.totalSearchTrails = stats.total || 0
 				this.totalResults = stats.totalResults || 0
-				this.averageResultsPerSearch = Math.round(stats.averageResultsPerSearch || 0)
-				this.averageExecutionTime = Math.round(stats.averageExecutionTime || 0)
+				this.averageResultsPerSearch = Math.round(
+					stats.averageResultsPerSearch || 0,
+				)
+				this.averageExecutionTime = Math.round(
+					stats.averageExecutionTime || 0,
+				)
 				this.successRate = stats.successRate || 0
 				this.uniqueSearchTerms = stats.uniqueSearchTerms || 0
 				this.uniqueUsers = stats.uniqueUsers || 0
 				this.uniqueOrganizations = stats.uniqueOrganizations || 0
 				this.avgSearchesPerSession = stats.avgSearchesPerSession || 0
 				this.avgObjectViewsPerSession = stats.avgObjectViewsPerSession || 0
-				this.queryComplexity = stats.queryComplexity || { simple: 0, medium: 0, complex: 0 }
+				this.queryComplexity = stats.queryComplexity || {
+					simple: 0,
+					medium: 0,
+					complex: 0,
+				}
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 				// Set default values on error
@@ -907,7 +1020,10 @@ export default {
 		 * @return {number} The percentage
 		 */
 		getComplexityPercentage(type) {
-			const total = this.queryComplexity.simple + this.queryComplexity.medium + this.queryComplexity.complex
+			const total =
+				this.queryComplexity.simple
+				+ this.queryComplexity.medium
+				+ this.queryComplexity.complex
 			if (total === 0) return 0
 			return Math.round((this.queryComplexity[type] / total) * 100)
 		},
@@ -922,16 +1038,19 @@ export default {
 			const periodType = this.selectedActivityPeriod.value
 
 			switch (periodType) {
-			case 'hourly':
-				return new Date(period).toLocaleString()
-			case 'daily':
-				return new Date(period).toLocaleDateString()
-			case 'weekly':
-				return `Week of ${new Date(period).toLocaleDateString()}`
-			case 'monthly':
-				return new Date(period).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
-			default:
-				return period
+				case 'hourly':
+					return new Date(period).toLocaleString()
+				case 'daily':
+					return new Date(period).toLocaleDateString()
+				case 'weekly':
+					return `Week of ${new Date(period).toLocaleDateString()}`
+				case 'monthly':
+					return new Date(period).toLocaleDateString(undefined, {
+						year: 'numeric',
+						month: 'long',
+					})
+				default:
+					return period
 			}
 		},
 		/**
@@ -962,8 +1081,10 @@ export default {
 		 * @return {string} The display name
 		 */
 		getRegisterSchemaName(stat) {
-			const register = registerStore.registerList.find(r => r.id === stat.register)
-			const schema = schemaStore.schemaList.find(s => s.id === stat.schema)
+			const register = registerStore.registerList.find(
+				(r) => r.id === stat.register,
+			)
+			const schema = schemaStore.schemaList.find((s) => s.id === stat.schema)
 
 			const registerName = register?.title || `Register ${stat.register}`
 			const schemaName = schema?.title || `Schema ${stat.schema}`
@@ -992,17 +1113,30 @@ export default {
 		buildQueryFromState() {
 			const query = {}
 			// Filters
-			if (registerStore.registerItem) query.register = String(registerStore.registerItem.id)
-			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
-			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) query.user = this.selectedUsers.map(u => u.value || u).join(',')
+			if (registerStore.registerItem)
+				query.register = String(registerStore.registerItem.id)
+			if (schemaStore.schemaItem)
+				query.schema = String(schemaStore.schemaItem.id)
+			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value)
+				query.success = String(this.selectedSuccessStatus.value)
+			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0)
+				query.user = this.selectedUsers.map((u) => u.value || u).join(',')
 			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
-			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			if (this.dateFrom)
+				query.dateFrom = new Date(this.dateFrom).getDate()
+					? new Date(this.dateFrom).toISOString()
+					: null
+			if (this.dateTo)
+				query.dateTo = new Date(this.dateTo).getDate()
+					? new Date(this.dateTo).toISOString()
+					: null
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
-			if (this.executionTimeFrom) query.executionTimeFrom = String(this.executionTimeFrom)
-			if (this.executionTimeTo) query.executionTimeTo = String(this.executionTimeTo)
-			if (this.resultCountFrom) query.resultCountFrom = String(this.resultCountFrom)
+			if (this.executionTimeFrom)
+				query.executionTimeFrom = String(this.executionTimeFrom)
+			if (this.executionTimeTo)
+				query.executionTimeTo = String(this.executionTimeTo)
+			if (this.resultCountFrom)
+				query.resultCountFrom = String(this.resultCountFrom)
 			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
 			return query
 		},
@@ -1046,18 +1180,25 @@ export default {
 			// Success status
 			if (typeof q.success !== 'undefined') {
 				const val = String(q.success)
-				const opt = this.successOptions.find(o => String(o.value) === val)
+				const opt = this.successOptions.find((o) => String(o.value) === val)
 				this.selectedSuccessStatus = opt || null
 			}
 			// Users
 			if (typeof q.user === 'string') {
-				const users = q.user.split(',').map(s => s.trim()).filter(Boolean)
-				this.selectedUsers = users.map(u => ({ label: u, value: u }))
+				const users = q.user
+					.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean)
+				this.selectedUsers = users.map((u) => ({ label: u, value: u }))
 			}
 			// Dates and fields
 			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
-			this.dateFrom = q.dateFrom && new Date(q.dateFrom).getDate() ? new Date(q.dateFrom) : null
-			this.dateTo = q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
+			this.dateFrom =
+				q.dateFrom && new Date(q.dateFrom).getDate()
+					? new Date(q.dateFrom)
+					: null
+			this.dateTo =
+				q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
 			this.searchTermFilter = q.searchTerm || ''
 			this.executionTimeFrom = q.executionTimeFrom || ''
 			this.executionTimeTo = q.executionTimeTo || ''
@@ -1067,14 +1208,18 @@ export default {
 			const applyRegister = () => {
 				if (!q.register) return true
 				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(q.register))
+				const reg = registerStore.registerList.find(
+					(r) => String(r.id) === String(q.register),
+				)
 				if (reg) registerStore.setRegisterItem(reg)
 				return true
 			}
 			const applySchema = () => {
 				if (!q.schema) return true
 				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(q.schema))
+				const sch = schemaStore.schemaList.find(
+					(s) => String(s.id) === String(q.schema),
+				)
 				if (sch) schemaStore.setSchemaItem(sch)
 				return true
 			}

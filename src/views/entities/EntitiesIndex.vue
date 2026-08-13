@@ -14,11 +14,20 @@
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage and view detected entities from files and objects') }}
+					{{
+						t(
+							'openregister',
+							'Manage and view detected entities from files and objects',
+						)
+					}}
 				</p>
 			</div>
 
@@ -26,13 +35,23 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="entitiesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} entities', {
-							showing: paginatedEntities.length,
-							total: totalEntities
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} entities',
+								{
+									showing: paginatedEntities.length,
+									total: totalEntities,
+								},
+							)
+						}}
 					</span>
 					<span v-if="selectedEntities.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedEntities.length }) }})
+						({{
+							t('openregister', '{count} selected', {
+								count: selectedEntities.length,
+							})
+						}})
 					</span>
 				</div>
 				<div class="viewActions">
@@ -59,13 +78,8 @@
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshEntities">
+					<NcActions :force-name="true" :inline="1" menu-name="Actions">
+						<NcActionButton close-after-click @click="refreshEntities">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -82,7 +96,9 @@
 			<NcEmptyContent
 				v-else-if="!entitiesList.length"
 				:name="t('openregister', 'No entities found')"
-				:description="t('openregister', 'No entities have been detected yet')">
+				:description="
+					t('openregister', 'No entities have been detected yet')
+				">
 				<template #icon>
 					<AccountOutline :size="64" />
 				</template>
@@ -93,7 +109,8 @@
 				<!-- Cards View -->
 				<template v-if="viewMode === 'cards'">
 					<div class="cardGrid">
-						<div v-for="entity in paginatedEntities"
+						<div
+							v-for="entity in paginatedEntities"
 							:key="entity.id"
 							class="card">
 							<div class="cardHeader">
@@ -103,12 +120,20 @@
 										whole card clickable with the mouse without turning the card into
 										a role="button" (which would hide the heading, the stats table and
 										the actions menu from assistive technology). -->
-									<button type="button" class="cardActivator" @click="viewEntity(entity)">
+									<button
+										type="button"
+										class="cardActivator"
+										@click="viewEntity(entity)">
 										{{ entity.value }}
 									</button>
-									<span class="badge badge-type">{{ entity.type }}</span>
+									<span class="badge badge-type">{{
+										entity.type
+									}}</span>
 								</h2>
-								<NcActions class="cardActions" :primary="true" menu-name="Actions">
+								<NcActions
+									class="cardActions"
+									:primary="true"
+									menu-name="Actions">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
@@ -128,19 +153,29 @@
 								<tbody>
 									<tr>
 										<th scope="row">
-											<strong>{{ t('openregister', 'Category') }}</strong>
+											<strong>{{
+												t('openregister', 'Category')
+											}}</strong>
 										</th>
-										<td><span class="badge badge-category">{{ entity.category }}</span></td>
+										<td>
+											<span class="badge badge-category">{{
+												entity.category
+											}}</span>
+										</td>
 									</tr>
 									<tr>
 										<th scope="row">
-											<strong>{{ t('openregister', 'Detected At') }}</strong>
+											<strong>{{
+												t('openregister', 'Detected At')
+											}}</strong>
 										</th>
 										<td>{{ formatDate(entity.detectedAt) }}</td>
 									</tr>
 									<tr>
 										<th scope="row">
-											<strong>{{ t('openregister', 'Relations') }}</strong>
+											<strong>{{
+												t('openregister', 'Relations')
+											}}</strong>
 										</th>
 										<td>{{ entity.relationCount || 0 }}</td>
 									</tr>
@@ -160,7 +195,12 @@
 										<NcCheckboxRadioSwitch
 											:model-value="allSelected"
 											:indeterminate="someSelected"
-											:aria-label="t('openregister', 'Select all entities')"
+											:aria-label="
+												t(
+													'openregister',
+													'Select all entities',
+												)
+											"
 											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th scope="col">
@@ -184,27 +224,51 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="entity in paginatedEntities"
+								<tr
+									v-for="entity in paginatedEntities"
 									:key="entity.id"
 									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedEntities.includes(entity.id) }">
+									:class="{
+										viewTableRowSelected:
+											selectedEntities.includes(entity.id),
+									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:model-value="selectedEntities.includes(entity.id)"
-											:aria-label="t('openregister', 'Select entity {value}', { value: entity.value })"
-											@update:modelValue="(checked) => toggleEntitySelection(entity.id, checked)" />
+											:model-value="
+												selectedEntities.includes(entity.id)
+											"
+											:aria-label="
+												t(
+													'openregister',
+													'Select entity {value}',
+													{ value: entity.value },
+												)
+											"
+											@update:modelValue="
+												(checked) =>
+													toggleEntitySelection(
+														entity.id,
+														checked,
+													)
+											" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="entity-value-cell">
-											<AccountOutline :size="20" class="entity-icon" />
+											<AccountOutline
+												:size="20"
+												class="entity-icon" />
 											<strong>{{ entity.value }}</strong>
 										</div>
 									</td>
 									<td>
-										<span class="badge badge-type">{{ entity.type }}</span>
+										<span class="badge badge-type">{{
+											entity.type
+										}}</span>
 									</td>
 									<td>
-										<span class="badge badge-category">{{ entity.category }}</span>
+										<span class="badge badge-category">{{
+											entity.category
+										}}</span>
 									</td>
 									<td>{{ formatDate(entity.detectedAt) }}</td>
 									<td>{{ entity.relationCount || 0 }}</td>
@@ -351,7 +415,12 @@ export default {
 		 * @return {boolean} True if all selected
 		 */
 		allSelected() {
-			return this.entitiesList.length > 0 && this.entitiesList.every(entity => this.selectedEntities.includes(entity.id))
+			return (
+				this.entitiesList.length > 0
+				&& this.entitiesList.every((entity) =>
+					this.selectedEntities.includes(entity.id),
+				)
+			)
 		},
 
 		/**
@@ -392,7 +461,10 @@ export default {
 		 * @return {void}
 		 */
 		toggleSidebar() {
-			navigationStore.setSidebarState('entities', !navigationStore.sidebarState.entities)
+			navigationStore.setSidebarState(
+				'entities',
+				!navigationStore.sidebarState.entities,
+			)
 		},
 
 		/**
@@ -467,7 +539,8 @@ export default {
 
 				if (response.data.success) {
 					this.entitiesList = response.data.data
-					this.totalEntities = response.data.count || this.entitiesList.length
+					this.totalEntities =
+						response.data.count || this.entitiesList.length
 				}
 			} catch (error) {
 				console.error('Failed to load entities:', error)
@@ -521,7 +594,7 @@ export default {
 		 */
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.selectedEntities = this.entitiesList.map(entity => entity.id)
+				this.selectedEntities = this.entitiesList.map((entity) => entity.id)
 			} else {
 				this.selectedEntities = []
 			}
@@ -539,7 +612,9 @@ export default {
 			if (checked) {
 				this.selectedEntities.push(entityId)
 			} else {
-				this.selectedEntities = this.selectedEntities.filter(id => id !== entityId)
+				this.selectedEntities = this.selectedEntities.filter(
+					(id) => id !== entityId,
+				)
 			}
 		},
 

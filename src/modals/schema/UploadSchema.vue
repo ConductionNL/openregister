@@ -4,7 +4,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'uploadSchema'"
+	<NcDialog
+		v-if="navigationStore.modal === 'uploadSchema'"
 		name="Upload Schema"
 		size="normal"
 		:can-close="false">
@@ -16,13 +17,15 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<div v-if="!success" class="formContainer">
-			<NcTextField :disabled="loading"
+			<NcTextField
+				:disabled="loading"
 				:label="t('openregister', 'Url')"
 				v-model="schema.url" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
 				<p>{{ t('openregister', 'Schema') }}</p>
-				<CodeMirror v-model="schema.json"
+				<CodeMirror
+					v-model="schema.json"
 					:basic="true"
 					:dark="getTheme() === 'dark'"
 					:lang="json()"
@@ -44,7 +47,8 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !schema || !validateJson(schema.json)"
 				variant="primary"
 				@click="uploadSchema()">
@@ -132,16 +136,26 @@ export default {
 				...this.schema,
 				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
 			}
-			schemaStore.uploadSchema(newSchema).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while uploading the schema'
-			}).finally(() => {
-				this.loading = false
-			})
+			schemaStore
+				.uploadSchema(newSchema)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok
+						&& (this.closeModalTimeout = setTimeout(
+							this.closeModal,
+							2000,
+						))
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message
+						|| 'An error occurred while uploading the schema'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 		/**
 		 * @param json

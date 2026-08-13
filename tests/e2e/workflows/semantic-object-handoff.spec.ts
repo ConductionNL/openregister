@@ -35,7 +35,10 @@ test.describe('semantic-object-handoff — engine surface', () => {
 
 	test.beforeEach(async () => {
 		if (!fs.existsSync(STORAGE_STATE)) {
-			test.skip(true, 'storageState not present — the app is not reachable/built in this environment')
+			test.skip(
+				true,
+				'storageState not present — the app is not reachable/built in this environment',
+			)
 		}
 	})
 
@@ -48,21 +51,30 @@ test.describe('semantic-object-handoff — engine surface', () => {
 	 * @e2e openspec/specs/semantic-object-handoff/spec.md#no-provider-installed-hide-mode
 	 * @e2e openspec/specs/semantic-object-handoff/spec.md#availability-endpoint-without-provider
 	 */
-	test('no-provider degradation: availability reason + typed execute error', async ({ request }) => {
+	test('no-provider degradation: availability reason + typed execute error', async ({
+		request,
+	}) => {
 		// Environment-provided fixture: a `request`-like object whose schema
 		// declares a handoff to a kind with no installed provider.
 		const fixture = process.env.OR_HANDOFF_FIXTURE_NOPROVIDER
-		test.skip(!fixture, 'OR_HANDOFF_FIXTURE_NOPROVIDER not seeded in this environment')
+		test.skip(
+			!fixture,
+			'OR_HANDOFF_FIXTURE_NOPROVIDER not seeded in this environment',
+		)
 		const [register, schema, id, handoffId] = String(fixture).split('/')
 
-		const availability = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`)
+		const availability = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`,
+		)
 		expect(availability.status()).toBe(200)
 		const body = await availability.json()
 		const entry = body.handoffs.find((h: { id: string }) => h.id === handoffId)
 		expect(entry.state).toBe('unavailable')
 		expect(entry.reason).toBe('handoff-provider-unavailable')
 
-		const execute = await request.post(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`)
+		const execute = await request.post(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`,
+		)
 		expect(execute.status()).toBe(409)
 		expect((await execute.json()).error).toBe('handoff-provider-unavailable')
 	})
@@ -77,26 +89,41 @@ test.describe('semantic-object-handoff — engine surface', () => {
 	 * @e2e openspec/specs/semantic-object-handoff/spec.md#successful-request-to-case-handoff
 	 * @e2e openspec/specs/semantic-object-handoff/spec.md#semantic-references-are-carried-not-copied
 	 */
-	test('provider present: availability names provider; execute links provenance both ways', async ({ request }) => {
+	test('provider present: availability names provider; execute links provenance both ways', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_HANDOFF_FIXTURE_PROVIDER
-		test.skip(!fixture, 'OR_HANDOFF_FIXTURE_PROVIDER not seeded in this environment')
+		test.skip(
+			!fixture,
+			'OR_HANDOFF_FIXTURE_PROVIDER not seeded in this environment',
+		)
 		const [register, schema, id, handoffId] = String(fixture).split('/')
 
-		const availability = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`)
-		const entry = (await availability.json()).handoffs.find((h: { id: string }) => h.id === handoffId)
+		const availability = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`,
+		)
+		const entry = (await availability.json()).handoffs.find(
+			(h: { id: string }) => h.id === handoffId,
+		)
 		expect(entry.state).toBe('available')
 		expect(entry.provider.schema).toBeTruthy()
 
-		const execute = await request.post(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`)
+		const execute = await request.post(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`,
+		)
 		expect(execute.status()).toBe(200)
 		const result = await execute.json()
 		expect(result.status).toBe('executed')
 		expect(result.target.uuid).toBeTruthy()
 
 		// Source side: handed-off-to provenance relation + status update.
-		const source = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const source = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		const sourceBody = await source.json()
-		const relationValues = JSON.stringify(sourceBody['@self']?.relations ?? sourceBody.relations ?? {})
+		const relationValues = JSON.stringify(
+			sourceBody['@self']?.relations ?? sourceBody.relations ?? {},
+		)
 		expect(relationValues).toContain(result.target.uuid)
 	})
 
@@ -108,15 +135,24 @@ test.describe('semantic-object-handoff — engine surface', () => {
 	 */
 	test('queue mode: parked handoff reports queued state', async ({ request }) => {
 		const fixture = process.env.OR_HANDOFF_FIXTURE_QUEUE
-		test.skip(!fixture, 'OR_HANDOFF_FIXTURE_QUEUE not seeded in this environment')
+		test.skip(
+			!fixture,
+			'OR_HANDOFF_FIXTURE_QUEUE not seeded in this environment',
+		)
 		const [register, schema, id, handoffId] = String(fixture).split('/')
 
-		const park = await request.post(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`)
+		const park = await request.post(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs/${handoffId}`,
+		)
 		expect(park.status()).toBe(202)
 		expect((await park.json()).status).toBe('parked')
 
-		const availability = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`)
-		const entry = (await availability.json()).handoffs.find((h: { id: string }) => h.id === handoffId)
+		const availability = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`,
+		)
+		const entry = (await availability.json()).handoffs.find(
+			(h: { id: string }) => h.id === handoffId,
+		)
 		expect(entry.state).toBe('queued')
 		expect(entry.queueEntry.status).toBe('parked')
 	})
@@ -129,11 +165,18 @@ test.describe('semantic-object-handoff — engine surface', () => {
 	 */
 	test('disabled provider app degrades like no provider', async ({ request }) => {
 		const fixture = process.env.OR_HANDOFF_FIXTURE_DISABLED
-		test.skip(!fixture, 'OR_HANDOFF_FIXTURE_DISABLED not seeded (needs a disabled provider app)')
+		test.skip(
+			!fixture,
+			'OR_HANDOFF_FIXTURE_DISABLED not seeded (needs a disabled provider app)',
+		)
 		const [register, schema, id, handoffId] = String(fixture).split('/')
 
-		const availability = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`)
-		const entry = (await availability.json()).handoffs.find((h: { id: string }) => h.id === handoffId)
+		const availability = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}/handoffs`,
+		)
+		const entry = (await availability.json()).handoffs.find(
+			(h: { id: string }) => h.id === handoffId,
+		)
 		expect(entry.state).toBe('unavailable')
 	})
 })

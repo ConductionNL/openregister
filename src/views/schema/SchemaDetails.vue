@@ -8,7 +8,9 @@ import formatBytes from '../../services/formatBytes.js'
 	<NcAppContent>
 		<!-- Loading and error states -->
 		<div v-if="dashboardStore.loading" class="error">
-			<NcEmptyContent name="Loading" description="Loading schema statistics...">
+			<NcEmptyContent
+				name="Loading"
+				description="Loading schema statistics...">
 				<template #icon>
 					<NcLoadingIcon :size="64" />
 				</template>
@@ -31,31 +33,46 @@ import formatBytes from '../../services/formatBytes.js'
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="navigationStore.setModal('editSchema')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setModal('editSchema')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click @click="schemaStore.setSchemaPropertyKey(null); navigationStore.setModal('editSchemaProperty')">
+						<NcActionButton
+							close-after-click
+							@click="
+								schemaStore.setSchemaPropertyKey(null)
+								navigationStore.setModal('editSchemaProperty')
+							">
 							<template #icon>
 								<PlusCircleOutline />
 							</template>
 							Add Property
 						</NcActionButton>
-						<NcActionButton close-after-click @click="navigationStore.setModal('uploadSchema')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setModal('uploadSchema')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton close-after-click @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
+						<NcActionButton
+							close-after-click
+							@click="
+								schemaStore.downloadSchema(schemaStore.schemaItem)
+							">
 							<template #icon>
 								<Download :size="20" />
 							</template>
 							Download
 						</NcActionButton>
-						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteSchema')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -122,7 +139,9 @@ import formatBytes from '../../services/formatBytes.js'
 							<tr>
 								<td>{{ t('openregister', 'Objects') }}</td>
 								<td>{{ schemaStats.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(schemaStats.objects?.size || 0) }}</td>
+								<td>
+									{{ formatBytes(schemaStats.objects?.size || 0) }}
+								</td>
 							</tr>
 							<tr class="subRow">
 								<td class="indented">
@@ -141,12 +160,16 @@ import formatBytes from '../../services/formatBytes.js'
 							<tr>
 								<td>{{ t('openregister', 'Files') }}</td>
 								<td>{{ schemaStats.files?.total || 0 }}</td>
-								<td>{{ formatBytes(schemaStats.files?.size || 0) }}</td>
+								<td>
+									{{ formatBytes(schemaStats.files?.size || 0) }}
+								</td>
 							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Logs') }}</td>
 								<td>{{ schemaStats.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(schemaStats.logs?.size || 0) }}</td>
+								<td>
+									{{ formatBytes(schemaStats.logs?.size || 0) }}
+								</td>
 							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Registers') }}</td>
@@ -165,7 +188,10 @@ import formatBytes from '../../services/formatBytes.js'
 							type="line"
 							height="350"
 							:options="auditTrailChartOptions"
-							:series="dashboardStore.chartData?.auditTrailActions?.series || []" />
+							:series="
+								dashboardStore.chartData?.auditTrailActions?.series
+								|| []
+							" />
 					</div>
 
 					<!-- Objects by Register Chart -->
@@ -175,8 +201,14 @@ import formatBytes from '../../services/formatBytes.js'
 							type="pie"
 							height="350"
 							:options="registerChartOptions"
-							:series="dashboardStore.chartData?.objectsByRegister?.series || []"
-							:labels="dashboardStore.chartData?.objectsByRegister?.labels || []" />
+							:series="
+								dashboardStore.chartData?.objectsByRegister?.series
+								|| []
+							"
+							:labels="
+								dashboardStore.chartData?.objectsByRegister?.labels
+								|| []
+							" />
 					</div>
 
 					<!-- Objects by Size Chart -->
@@ -186,7 +218,14 @@ import formatBytes from '../../services/formatBytes.js'
 							type="bar"
 							height="350"
 							:options="sizeChartOptions"
-							:series="[{ name: 'Objects', data: dashboardStore.chartData?.objectsBySize?.series || [] }]" />
+							:series="[
+								{
+									name: 'Objects',
+									data:
+										dashboardStore.chartData?.objectsBySize
+											?.series || [],
+								},
+							]" />
 					</div>
 				</div>
 			</div>
@@ -195,7 +234,13 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcActions,
+	NcActionButton,
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import VueApexCharts from 'vue3-apexcharts'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -254,7 +299,8 @@ export default {
 					zoom: { enabled: true },
 				},
 				xaxis: {
-					categories: dashboardStore.chartData?.auditTrailActions?.labels || [],
+					categories:
+						dashboardStore.chartData?.auditTrailActions?.labels || [],
 					title: { text: 'Date' },
 				},
 				yaxis: { title: { text: 'Number of Actions' } },
@@ -274,13 +320,15 @@ export default {
 				chart: { type: 'pie' },
 				labels: dashboardStore.chartData?.objectsByRegister?.labels || [],
 				legend: { position: 'bottom' },
-				responsive: [{
-					breakpoint: 480,
-					options: {
-						chart: { width: 200 },
-						legend: { position: 'bottom' },
+				responsive: [
+					{
+						breakpoint: 480,
+						options: {
+							chart: { width: 200 },
+							legend: { position: 'bottom' },
+						},
 					},
-				}],
+				],
 			}
 		},
 		/**
@@ -299,7 +347,8 @@ export default {
 					},
 				},
 				xaxis: {
-					categories: dashboardStore.chartData?.objectsBySize?.labels || [],
+					categories:
+						dashboardStore.chartData?.objectsBySize?.labels || [],
 					title: { text: 'Size Range' },
 				},
 				yaxis: { title: { text: 'Number of Objects' } },
@@ -315,7 +364,10 @@ export default {
 	 */
 	async mounted() {
 		// Fetch dashboard data if not already loaded
-		if (!dashboardStore.chartData || Object.keys(dashboardStore.chartData).length === 0) {
+		if (
+			!dashboardStore.chartData
+			|| Object.keys(dashboardStore.chartData).length === 0
+		) {
 			await dashboardStore.fetchAllChartData()
 		}
 
@@ -339,7 +391,9 @@ export default {
 			this.statsError = null
 
 			try {
-				this.schemaStats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				this.schemaStats = await schemaStore.getSchemaStats(
+					schemaStore.schemaItem.id,
+				)
 			} catch (error) {
 				console.error('Error loading schema stats:', error)
 				this.statsError = error.message
@@ -354,7 +408,9 @@ export default {
 		 * @return {void}
 		 */
 		setActiveProperty(key) {
-			if (JSON.stringify(schemaStore.schemaPropertyKey) === JSON.stringify(key)) {
+			if (
+				JSON.stringify(schemaStore.schemaPropertyKey) === JSON.stringify(key)
+			) {
 				schemaStore.setSchemaPropertyKey(null)
 			} else {
 				schemaStore.setSchemaPropertyKey(key)
@@ -435,7 +491,9 @@ export default {
 		color: var(--color-text-maxcontrast);
 		font-size: 14px;
 		font-weight: 500;
-		transition: color 0.15s, border-color 0.15s;
+		transition:
+			color 0.15s,
+			border-color 0.15s;
 
 		&:hover {
 			color: var(--color-main-text);

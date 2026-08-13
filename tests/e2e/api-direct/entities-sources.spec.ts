@@ -23,27 +23,39 @@ test.describe('linked-entity-types — entities REST lifecycle', () => {
 	let entityId: number | null = null
 
 	test('GET /api/entities lists entities', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/entities?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/entities?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
 			// API may return {results:[...]} or {data:[...], success:true} depending on version.
 			const hasData = Array.isArray(body.results) || Array.isArray(body.data)
-			expect(hasData, 'entities response should have results or data array').toBe(true)
+			expect(
+				hasData,
+				'entities response should have results or data array',
+			).toBe(true)
 		}
 	})
 
 	test('POST /api/entities creates an entity', async ({ request }) => {
-		const resp = await request.post('/index.php/apps/openregister/api/entities', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: {
-				name: `${RUN_ID}-entity`,
-				description: 'E2E test entity for linked-entity-types spec',
-				entityType: 'person',
+		const resp = await request.post(
+			'/index.php/apps/openregister/api/entities',
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: {
+					name: `${RUN_ID}-entity`,
+					description: 'E2E test entity for linked-entity-types spec',
+					entityType: 'person',
+				},
 			},
-		})
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok() || resp.status() === 201) {
 			const body = await resp.json()
@@ -63,7 +75,9 @@ test.describe('linked-entity-types — entities REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!entityId) return
-		await request.delete(`/index.php/apps/openregister/api/entities/${entityId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/entities/${entityId}`)
+			.catch(() => {})
 	})
 })
 
@@ -74,9 +88,12 @@ test.describe('data-sync-harvesting — sources REST lifecycle', () => {
 	let sourceId: number | null = null
 
 	test('GET /api/sources returns list', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/sources?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/sources?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -85,11 +102,16 @@ test.describe('data-sync-harvesting — sources REST lifecycle', () => {
 		}
 	})
 
-	test('POST /api/sources creates a source (or surfaces known limitation)', async ({ request }) => {
+	test('POST /api/sources creates a source (or surfaces known limitation)', async ({
+		request,
+	}) => {
 		// Note: the sources POST endpoint may return 500 if required fields differ from the OR version.
 		// Test that the endpoint is reachable and responds in an expected way.
 		const resp = await request.post('/index.php/apps/openregister/api/sources', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
 			data: {
 				name: `${RUN_ID}-source`,
 				description: 'E2E test source for data-sync-harvesting spec',
@@ -129,7 +151,9 @@ test.describe('data-sync-harvesting — sources REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!sourceId) return
-		await request.delete(`/index.php/apps/openregister/api/sources/${sourceId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/sources/${sourceId}`)
+			.catch(() => {})
 	})
 })
 
@@ -137,10 +161,15 @@ test.describe('data-sync-harvesting — sources REST lifecycle', () => {
 // action-registry / actions — actions API surface
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('action-registry — actions REST surface', () => {
-	test('GET /api/actions returns list (empty or populated, no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/actions?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/actions returns list (empty or populated, no 5xx)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/actions?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -153,7 +182,9 @@ test.describe('action-registry — actions REST surface', () => {
 // nextcloud-entity-relations — object relations via @self.relations
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('nextcloud-entity-relations — @self.relations on objects', () => {
-	test('object relations are an object (string key → value)', async ({ request }) => {
+	test('object relations are an object (string key → value)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			'/index.php/apps/openregister/api/objects/8/18?_limit=3',
 			{ headers: { Accept: 'application/json' } },
@@ -164,7 +195,10 @@ test.describe('nextcloud-entity-relations — @self.relations on objects', () =>
 		for (const obj of objects) {
 			const self = (obj['@self'] ?? {}) as Record<string, unknown>
 			if ('relations' in self && self.relations !== null) {
-				expect(typeof self.relations, '@self.relations should be an object').toBe('object')
+				expect(
+					typeof self.relations,
+					'@self.relations should be an object',
+				).toBe('object')
 				// Values should be strings (UUID references or literal values).
 				for (const val of Object.values(self.relations as object)) {
 					expect(typeof val).toMatch(/string|number|object/)

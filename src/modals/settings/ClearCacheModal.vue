@@ -7,7 +7,8 @@
 		<div class="dialog-content">
 			<h3>🗑️ Clear Cache</h3>
 			<p class="warning-text">
-				Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.
+				Select the type of cache to clear. This action cannot be undone and
+				may temporarily impact performance.
 			</p>
 
 			<div class="cache-type-selection">
@@ -57,18 +58,13 @@
 		</div>
 
 		<template #actions>
-			<NcButton
-				:disabled="clearing"
-				@click="$emit('close')">
+			<NcButton :disabled="clearing" @click="$emit('close')">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton
-				variant="error"
-				:disabled="clearing"
-				@click="confirmClear">
+			<NcButton variant="error" :disabled="clearing" @click="confirmClear">
 				<template #icon>
 					<NcLoadingIcon v-if="clearing" :size="20" />
 					<Delete v-else :size="20" />
@@ -80,7 +76,12 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcDialog,
+	NcButton,
+	NcLoadingIcon,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 

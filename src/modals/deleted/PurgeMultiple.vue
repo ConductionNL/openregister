@@ -4,8 +4,17 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
-		:name="n('openregister', 'Purge {count} object from database', 'Purge {count} objects from database', objectsToDelete.length, { count: objectsToDelete.length })"
+	<NcDialog
+		v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
+		:name="
+			n(
+				'openregister',
+				'Purge {count} object from database',
+				'Purge {count} objects from database',
+				objectsToDelete.length,
+				{ count: objectsToDelete.length },
+			)
+		"
 		size="normal"
 		:can-close="false">
 		<!-- Object Selection Review -->
@@ -15,14 +24,26 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 			</h3>
 
 			<NcNoteCard type="warning">
-				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to permanently delete by clicking the remove button. This action cannot be undone.') }}
+				{{
+					t(
+						'openregister',
+						"Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.",
+					)
+				}}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: objectsToDelete.length }) }}</h4>
+				<h4>
+					{{
+						t('openregister', 'Selected Objects ({count})', {
+							count: objectsToDelete.length,
+						})
+					}}
+				</h4>
 
 				<div v-if="objectsToDelete.length" class="selected-objects-list">
-					<div v-for="obj in objectsToDelete"
+					<div
+						v-for="obj in objectsToDelete"
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
@@ -31,8 +52,13 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
-						<NcButton variant="tertiary"
-							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
+						<NcButton
+							variant="tertiary"
+							:aria-label="
+								t('openregister', 'Remove {title}', {
+									title: getObjectTitle(obj),
+								})
+							"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,9 +67,16 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
+				<NcEmptyContent
+					v-else
+					:name="t('openregister', 'No objects selected')">
 					<template #description>
-						{{ t('openregister', 'No objects are currently selected for permanent deletion.') }}
+						{{
+							t(
+								'openregister',
+								'No objects are currently selected for permanent deletion.',
+							)
+						}}
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -61,7 +94,11 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -126,7 +163,10 @@ export default {
 	},
 	watch: {
 		'navigationStore.dialog'(newValue, oldValue) {
-			if (newValue === 'permanentlyDeleteMultiple' && oldValue !== 'permanentlyDeleteMultiple') {
+			if (
+				newValue === 'permanentlyDeleteMultiple'
+				&& oldValue !== 'permanentlyDeleteMultiple'
+			) {
 				this.initializeSelection()
 			}
 		},
@@ -154,7 +194,9 @@ export default {
 		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			this.selectedObjects = this.selectedObjects.filter(
+				(obj) => obj.id !== objectId,
+			)
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
@@ -188,7 +230,7 @@ export default {
 			this.loading = true
 
 			try {
-				const ids = this.objectsToDelete.map(obj => obj.id)
+				const ids = this.objectsToDelete.map((obj) => obj.id)
 				const result = await deletedStore.permanentlyDeleteMultiple(ids)
 
 				this.success = true
@@ -196,13 +238,22 @@ export default {
 
 				// Build success message
 				if (result.deleted > 0) {
-					let message = t('openregister', 'Successfully permanently deleted {count} objects', { count: result.deleted })
+					let message = t(
+						'openregister',
+						'Successfully permanently deleted {count} objects',
+						{ count: result.deleted },
+					)
 					if (result.failed > 0) {
-						message += t('openregister', ', {failed} failed', { failed: result.failed })
+						message += t('openregister', ', {failed} failed', {
+							failed: result.failed,
+						})
 					}
 					this.successMessage = message
 				} else {
-					this.successMessage = t('openregister', 'No objects were permanently deleted')
+					this.successMessage = t(
+						'openregister',
+						'No objects were permanently deleted',
+					)
 				}
 
 				// Auto-close after 3 seconds
@@ -212,7 +263,12 @@ export default {
 				eventBus.emit('deleted-objects-permanently-deleted', ids)
 			} catch (error) {
 				this.success = false
-				this.error = error.message || t('openregister', 'An error occurred while permanently deleting the objects')
+				this.error =
+					error.message
+					|| t(
+						'openregister',
+						'An error occurred while permanently deleting the objects',
+					)
 			} finally {
 				this.loading = false
 			}
@@ -224,7 +280,15 @@ export default {
 		 * @return {string} The object title
 		 */
 		getObjectTitle(object) {
-			return object?.title || object?.fileName || object?.name || object?.object?.title || object?.object?.name || object?.id || 'Unknown'
+			return (
+				object?.title
+				|| object?.fileName
+				|| object?.name
+				|| object?.object?.title
+				|| object?.object?.name
+				|| object?.id
+				|| 'Unknown'
+			)
 		},
 	},
 }

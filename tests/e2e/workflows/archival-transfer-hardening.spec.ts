@@ -36,7 +36,10 @@ test.describe('archival-transfer-hardening — e-Depot durability', () => {
 
 	test.beforeEach(async () => {
 		if (!fs.existsSync(STORAGE_STATE)) {
-			test.skip(true, 'storageState not present — the app is not reachable/built in this environment')
+			test.skip(
+				true,
+				'storageState not present — the app is not reachable/built in this environment',
+			)
 		}
 	})
 
@@ -48,7 +51,10 @@ test.describe('archival-transfer-hardening — e-Depot durability', () => {
 	 */
 	test('bagit-configured connection produces a valid bag', async ({ request }) => {
 		const fixture = process.env.OR_EDEPOT_BAGIT_FIXTURE
-		test.skip(!fixture, 'OR_EDEPOT_BAGIT_FIXTURE (a completed bagit transfer uuid) not seeded')
+		test.skip(
+			!fixture,
+			'OR_EDEPOT_BAGIT_FIXTURE (a completed bagit transfer uuid) not seeded',
+		)
 
 		const transfer = await request.get(`${API_BASE}/transfers/${fixture}`)
 		expect(transfer.status()).toBe(200)
@@ -63,9 +69,14 @@ test.describe('archival-transfer-hardening — e-Depot durability', () => {
 	 * @e2e openspec/specs/edepot-durable-retry/spec.md#transport-failure-reschedules-instead-of-blocking
 	 * @e2e openspec/specs/edepot-durable-retry/spec.md#exhaustion-escalates-to-archivists
 	 */
-	test('unreachable endpoint grows the attempt history then escalates', async ({ request }) => {
+	test('unreachable endpoint grows the attempt history then escalates', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_EDEPOT_RETRY_FIXTURE
-		test.skip(!fixture, 'OR_EDEPOT_RETRY_FIXTURE (a transfer uuid against a down endpoint) not seeded')
+		test.skip(
+			!fixture,
+			'OR_EDEPOT_RETRY_FIXTURE (a transfer uuid against a down endpoint) not seeded',
+		)
 
 		const transfer = await request.get(`${API_BASE}/transfers/${fixture}`)
 		const body = await transfer.json()
@@ -81,12 +92,19 @@ test.describe('archival-transfer-hardening — e-Depot durability', () => {
 	 * @e2e openspec/specs/edepot-proof-of-transfer/spec.md#proof-record-created-on-confirmation
 	 * @e2e openspec/specs/edepot-proof-of-transfer/spec.md#proof-survives-destruction-of-the-source
 	 */
-	test('completed transfer produces a proof that survives destruction', async ({ request }) => {
+	test('completed transfer produces a proof that survives destruction', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_EDEPOT_PROOF_FIXTURE
-		test.skip(!fixture, 'OR_EDEPOT_PROOF_FIXTURE (register/schema/uuid of a proof record) not seeded')
+		test.skip(
+			!fixture,
+			'OR_EDEPOT_PROOF_FIXTURE (register/schema/uuid of a proof record) not seeded',
+		)
 		const [register, schema, id] = String(fixture).split('/')
 
-		const proof = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const proof = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		expect(proof.status()).toBe(200)
 		const body = await proof.json()
 		expect(body.eDepotReference).toBeTruthy()

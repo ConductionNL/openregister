@@ -4,7 +4,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'viewConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'viewConfiguration'"
 		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
 		size="large"
 		:can-close="false">
@@ -13,7 +14,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div class="configurationDetailsGrid">
 				<div class="configurationMainInfo">
 					<h2>{{ configurationStore.configurationItem?.title }}</h2>
-					<p v-if="configurationStore.configurationItem?.description" class="configurationDescription">
+					<p
+						v-if="configurationStore.configurationItem?.description"
+						class="configurationDescription">
 						{{ configurationStore.configurationItem.description }}
 					</p>
 				</div>
@@ -21,19 +24,35 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<div class="configurationProperties">
 					<div class="propertyItem">
 						<strong>{{ t('openregister', 'Type') }}:</strong>
-						<span>{{ configurationStore.configurationItem?.type || 'Unknown' }}</span>
+						<span>{{
+							configurationStore.configurationItem?.type || 'Unknown'
+						}}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.owner" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.owner"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Owner') }}:</strong>
 						<span>{{ configurationStore.configurationItem.owner }}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.created" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.created"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.created).toLocaleString() }}</span>
+						<span>{{
+							new Date(
+								configurationStore.configurationItem.created,
+							).toLocaleString()
+						}}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.updated" class="propertyItem">
+					<div
+						v-if="configurationStore.configurationItem?.updated"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.updated).toLocaleString() }}</span>
+						<span>{{
+							new Date(
+								configurationStore.configurationItem.updated,
+							).toLocaleString()
+						}}</span>
 					</div>
 				</div>
 			</div>
@@ -54,16 +73,32 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<div class="tabContent">
 					<!-- Configuration Tab -->
 					<div v-if="activeTab === 0" class="tabPanel">
-						<div v-if="configurationStore.configurationItem?.configuration" class="configurationJsonContainer">
+						<div
+							v-if="
+								configurationStore.configurationItem?.configuration
+							"
+							class="configurationJsonContainer">
 							<h3>{{ t('openregister', 'Configuration Data') }}</h3>
 							<div class="jsonViewer">
-								<pre>{{ JSON.stringify(configurationStore.configurationItem.configuration, null, 2) }}</pre>
+								<pre>{{
+									JSON.stringify(
+										configurationStore.configurationItem
+											.configuration,
+										null,
+										2,
+									)
+								}}</pre>
 							</div>
 						</div>
 						<div v-else class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No configuration data')"
-								:description="t('openregister', 'This configuration has no data defined.')">
+								:description="
+									t(
+										'openregister',
+										'This configuration has no data defined.',
+									)
+								">
 								<template #icon>
 									<CogOutline :size="64" />
 								</template>
@@ -76,7 +111,12 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<div class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No logs found')"
-								:description="t('openregister', 'No logs are available for this configuration.')">
+								:description="
+									t(
+										'openregister',
+										'No logs are available for this configuration.',
+									)
+								">
 								<template #icon>
 									<PostOutline :size="64" />
 								</template>
@@ -117,12 +157,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-	NcActionButton,
-	NcEmptyContent,
-} from '@nextcloud/vue'
+import { NcDialog, NcButton, NcActionButton, NcEmptyContent } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'

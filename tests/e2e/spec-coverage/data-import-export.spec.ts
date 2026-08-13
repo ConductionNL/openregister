@@ -59,7 +59,9 @@ test.describe('data-import-export — import dialog reachability', () => {
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/data-import-export/spec.md#ui-progress-indicator
-	test('ui-progress-indicator — objects view loads (ImportRegister modal is accessible)', async ({ page }) => {
+	test('ui-progress-indicator — objects view loads (ImportRegister modal is accessible)', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		// The OR SPA uses Vue Router history mode with base /index.php/apps/openregister/
@@ -69,12 +71,14 @@ test.describe('data-import-export — import dialog reachability', () => {
 		})
 		// Nextcloud header must be visible
 		await expect(
-			page.locator('#header, header.header-appcontainer, .header-appcontainer').first(),
+			page
+				.locator('#header, header.header-appcontainer, .header-appcontainer')
+				.first(),
 		).toBeVisible({ timeout: 25_000 })
 		// App content area must be present
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 15_000,
+		})
 
 		// The objects view renders — ImportRegister is triggered from here
 		// Verify the page URL and that the app didn't error-out
@@ -82,7 +86,9 @@ test.describe('data-import-export — import dialog reachability', () => {
 	})
 
 	// @e2e openspec/specs/data-import-export/spec.md#ui-progress-indicator
-	test('ui-progress-indicator — import register modal navigation exists', async ({ page }) => {
+	test('ui-progress-indicator — import register modal navigation exists', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		// Navigate to the registers view where the import action is available
@@ -92,38 +98,48 @@ test.describe('data-import-export — import dialog reachability', () => {
 		await expect(
 			page.locator('#header, .header-appcontainer').first(),
 		).toBeVisible({ timeout: 25_000 })
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 15_000,
+		})
 
 		// Look for any import-related UI element (action menu, "Import" button, etc.)
 		// These are typically in an NcActions menu on the register list
-		const importTrigger = page.locator(
-			'button:has-text("Import"), [aria-label*="import"], [aria-label*="Import"]',
-		).first()
-		const importVisible = await importTrigger.isVisible({ timeout: 5_000 }).catch(() => false)
+		const importTrigger = page
+			.locator(
+				'button:has-text("Import"), [aria-label*="import"], [aria-label*="Import"]',
+			)
+			.first()
+		const importVisible = await importTrigger
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 
 		// If the import button is visible, verify the ImportRegister modal can be opened
 		if (importVisible) {
 			await importTrigger.click()
 			// The dialog should appear
 			const dialog = page.locator('[role="dialog"], .nc-dialog').first()
-			const dialogVisible = await dialog.isVisible({ timeout: 8_000 }).catch(() => false)
+			const dialogVisible = await dialog
+				.isVisible({ timeout: 8_000 })
+				.catch(() => false)
 			if (dialogVisible) {
 				await expect(dialog).toBeVisible()
 				// The ImportRegister modal has a "cancel" / close button
-				const closeBtn = dialog.locator(
-					'button:has-text("Cancel"), button[aria-label*="close"], button[aria-label*="Close"]',
-				).first()
-				if (await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+				const closeBtn = dialog
+					.locator(
+						'button:has-text("Cancel"), button[aria-label*="close"], button[aria-label*="Close"]',
+					)
+					.first()
+				if (
+					await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false)
+				) {
 					await closeBtn.click()
 				}
 			}
 		}
 
 		// In any case the page is still functional
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 5_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 5_000,
+		})
 	})
 })

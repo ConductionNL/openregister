@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TOrganisation } from './organisation.types'
 
 export class Organisation implements TOrganisation {
-
 	public id?: number
 	public uuid?: string
 	public name: string
@@ -102,38 +101,43 @@ export class Organisation implements TOrganisation {
 			isDefault: z.boolean().optional(),
 			active: z.boolean().optional(),
 			owner: z.string().optional(),
-			quota: z.object({
-				storage: z.number().nullable().optional(),
-				bandwidth: z.number().nullable().optional(),
-				requests: z.number().nullable().optional(),
-				users: z.number().nullable().optional(),
-				groups: z.number().nullable().optional(),
-			}).optional(),
-			usage: z.object({
-				storage: z.number().optional(),
-				bandwidth: z.number().optional(),
-				requests: z.number().optional(),
-				users: z.number().optional(),
-				groups: z.number().optional(),
-			}).optional(),
-			authorization: z.object({
-				register: crudSchema.optional(),
-				schema: crudSchema.optional(),
-				object: crudSchema.optional(),
-				view: crudSchema.optional(),
-				agent: crudSchema.optional(),
-				configuration: crudSchema.optional(),
-				application: crudSchema.optional(),
-				object_publish: z.array(z.string()).optional(),
-				agent_use: z.array(z.string()).optional(),
-				dashboard_view: z.array(z.string()).optional(),
-				llm_use: z.array(z.string()).optional(),
-			}).optional(),
+			quota: z
+				.object({
+					storage: z.number().nullable().optional(),
+					bandwidth: z.number().nullable().optional(),
+					requests: z.number().nullable().optional(),
+					users: z.number().nullable().optional(),
+					groups: z.number().nullable().optional(),
+				})
+				.optional(),
+			usage: z
+				.object({
+					storage: z.number().optional(),
+					bandwidth: z.number().optional(),
+					requests: z.number().optional(),
+					users: z.number().optional(),
+					groups: z.number().optional(),
+				})
+				.optional(),
+			authorization: z
+				.object({
+					register: crudSchema.optional(),
+					schema: crudSchema.optional(),
+					object: crudSchema.optional(),
+					view: crudSchema.optional(),
+					agent: crudSchema.optional(),
+					configuration: crudSchema.optional(),
+					application: crudSchema.optional(),
+					object_publish: z.array(z.string()).optional(),
+					agent_use: z.array(z.string()).optional(),
+					dashboard_view: z.array(z.string()).optional(),
+					llm_use: z.array(z.string()).optional(),
+				})
+				.optional(),
 			created: z.string().optional(),
 			updated: z.string().optional(),
 		})
 
 		return schema.safeParse(this)
 	}
-
 }

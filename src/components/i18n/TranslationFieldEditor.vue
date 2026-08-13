@@ -1,18 +1,25 @@
 <template>
 	<div class="translation-field-editor">
-		<label v-if="label" class="translation-field-editor__label">{{ label }}</label>
+		<label v-if="label" class="translation-field-editor__label">{{
+			label
+		}}</label>
 
-		<div v-for="lang in orderedLanguages"
+		<div
+			v-for="lang in orderedLanguages"
 			:key="lang"
 			class="translation-field-editor__row">
 			<div class="translation-field-editor__row-header">
-				<span class="translation-field-editor__lang-badge">{{ lang.toUpperCase() }}</span>
-				<TranslationStatusChip v-if="getStatus(lang)"
+				<span class="translation-field-editor__lang-badge">{{
+					lang.toUpperCase()
+				}}</span>
+				<TranslationStatusChip
+					v-if="getStatus(lang)"
 					:status="getStatus(lang)"
 					:language="lang" />
 			</div>
 
-			<textarea v-if="multiline"
+			<textarea
+				v-if="multiline"
 				:value="getValue(lang)"
 				:dir="dirFor(lang)"
 				:lang="lang"
@@ -22,7 +29,8 @@
 				:disabled="disabled"
 				class="translation-field-editor__textarea"
 				@input="onInput(lang, $event.target.value)" />
-			<input v-else
+			<input
+				v-else
 				type="text"
 				:value="getValue(lang)"
 				:dir="dirFor(lang)"
@@ -31,7 +39,7 @@
 				:placeholder="placeholderFor(lang)"
 				:disabled="disabled"
 				class="translation-field-editor__input"
-				@input="onInput(lang, $event.target.value)">
+				@input="onInput(lang, $event.target.value)" />
 		</div>
 	</div>
 </template>

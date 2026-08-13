@@ -286,7 +286,7 @@ export const useDeletedStore = defineStore('deleted', {
 				}
 
 				// Remove from deleted list
-				this.deletedList = this.deletedList.filter(item => item.id !== id)
+				this.deletedList = this.deletedList.filter((item) => item.id !== id)
 
 				return data
 			} catch (error) {
@@ -319,7 +319,9 @@ export const useDeletedStore = defineStore('deleted', {
 				}
 
 				// Remove restored objects from list
-				this.deletedList = this.deletedList.filter(item => !ids.includes(item.id))
+				this.deletedList = this.deletedList.filter(
+					(item) => !ids.includes(item.id),
+				)
 
 				return data
 			} catch (error) {
@@ -347,11 +349,13 @@ export const useDeletedStore = defineStore('deleted', {
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to permanently delete object')
+					throw new Error(
+						data.error || 'Failed to permanently delete object',
+					)
 				}
 
 				// Remove from deleted list
-				this.deletedList = this.deletedList.filter(item => item.id !== id)
+				this.deletedList = this.deletedList.filter((item) => item.id !== id)
 
 				return data
 			} catch (error) {
@@ -380,11 +384,15 @@ export const useDeletedStore = defineStore('deleted', {
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to permanently delete objects')
+					throw new Error(
+						data.error || 'Failed to permanently delete objects',
+					)
 				}
 
 				// Remove deleted objects from list
-				this.deletedList = this.deletedList.filter(item => !ids.includes(item.id))
+				this.deletedList = this.deletedList.filter(
+					(item) => !ids.includes(item.id),
+				)
 
 				return data
 			} catch (error) {

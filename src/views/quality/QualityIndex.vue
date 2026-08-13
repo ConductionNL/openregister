@@ -3,7 +3,14 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<h1>{{ t('openregister', 'Data Quality') }}</h1>
-				<p>{{ t('openregister', 'Review score distribution and the lowest-quality objects for a register and schema.') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Review score distribution and the lowest-quality objects for a register and schema.',
+						)
+					}}
+				</p>
 			</div>
 
 			<RegisterSchemaSelector />
@@ -11,7 +18,12 @@
 			<NcEmptyContent
 				v-if="!hasSelection"
 				:name="t('openregister', 'Select a register and schema')"
-				:description="t('openregister', 'Choose a register and schema above to see its quality statistics.')">
+				:description="
+					t(
+						'openregister',
+						'Choose a register and schema above to see its quality statistics.',
+					)
+				">
 				<template #icon>
 					<ChartBoxOutline :size="64" />
 				</template>
@@ -24,7 +36,12 @@
 			<template v-else-if="isEmpty">
 				<NcEmptyContent
 					:name="t('openregister', 'No scored objects for this schema')"
-					:description="t('openregister', 'This schema has no objects with a materialised quality score yet.')">
+					:description="
+						t(
+							'openregister',
+							'This schema has no objects with a materialised quality score yet.',
+						)
+					">
 					<template #icon>
 						<ChartBoxOutline :size="64" />
 					</template>
@@ -35,20 +52,28 @@
 				<!-- KPI cards -->
 				<div class="kpiRow">
 					<div class="kpiCard">
-						<span class="kpiLabel">{{ t('openregister', 'Average score') }}</span>
+						<span class="kpiLabel">{{
+							t('openregister', 'Average score')
+						}}</span>
 						<span class="kpiValue">{{ formattedAverage }}</span>
 					</div>
 					<div class="kpiCard kpiGood">
 						<span class="kpiLabel">{{ t('openregister', 'Good') }}</span>
-						<span class="kpiValue">{{ qualityStats.buckets?.good ?? 0 }}</span>
+						<span class="kpiValue">{{
+							qualityStats.buckets?.good ?? 0
+						}}</span>
 					</div>
 					<div class="kpiCard kpiFair">
 						<span class="kpiLabel">{{ t('openregister', 'Fair') }}</span>
-						<span class="kpiValue">{{ qualityStats.buckets?.fair ?? 0 }}</span>
+						<span class="kpiValue">{{
+							qualityStats.buckets?.fair ?? 0
+						}}</span>
 					</div>
 					<div class="kpiCard kpiPoor">
 						<span class="kpiLabel">{{ t('openregister', 'Poor') }}</span>
-						<span class="kpiValue">{{ qualityStats.buckets?.poor ?? 0 }}</span>
+						<span class="kpiValue">{{
+							qualityStats.buckets?.poor ?? 0
+						}}</span>
 					</div>
 				</div>
 
@@ -61,7 +86,10 @@
 						:series="histogramSeries"
 						:categories="histogramCategories"
 						@error="chartAvailable = false" />
-					<table v-else class="histogramTable" data-testid="histogram-fallback-table">
+					<table
+						v-else
+						class="histogramTable"
+						data-testid="histogram-fallback-table">
 						<thead>
 							<tr>
 								<th scope="col">
@@ -109,22 +137,41 @@
 							<tr v-for="item in lowQualityObjects" :key="item.id">
 								<td>{{ item.id }}</td>
 								<td>{{ item.qualityScore }}</td>
-								<td><span :class="'badge badge-status-' + item.qualityStatus">{{ item.qualityStatus }}</span></td>
+								<td>
+									<span
+										:class="
+											'badge badge-status-'
+											+ item.qualityStatus
+										"
+										>{{ item.qualityStatus }}</span
+									>
+								</td>
 							</tr>
 						</tbody>
 					</table>
 					<div v-if="lowQualityTotal > lowQualityLimit" class="pagination">
-						<NcButton :disabled="lowQualityOffset === 0" @click="previousPage">
+						<NcButton
+							:disabled="lowQualityOffset === 0"
+							@click="previousPage">
 							{{ t('openregister', 'Previous') }}
 						</NcButton>
 						<span class="paginationInfo">
-							{{ t('openregister', 'Showing {from}-{to} of {total}', {
-								from: lowQualityOffset + 1,
-								to: Math.min(lowQualityOffset + lowQualityLimit, lowQualityTotal),
-								total: lowQualityTotal,
-							}) }}
+							{{
+								t('openregister', 'Showing {from}-{to} of {total}', {
+									from: lowQualityOffset + 1,
+									to: Math.min(
+										lowQualityOffset + lowQualityLimit,
+										lowQualityTotal,
+									),
+									total: lowQualityTotal,
+								})
+							}}
 						</span>
-						<NcButton :disabled="lowQualityOffset + lowQualityLimit >= lowQualityTotal" @click="nextPage">
+						<NcButton
+							:disabled="
+								lowQualityOffset + lowQualityLimit >= lowQualityTotal
+							"
+							@click="nextPage">
 							{{ t('openregister', 'Next') }}
 						</NcButton>
 					</div>
@@ -136,7 +183,12 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcButton,
+} from '@nextcloud/vue'
 import { CnChartWidget } from '@conduction/nextcloud-vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
@@ -209,7 +261,9 @@ export default {
 		 * @spec exclude UI plumbing — derives histogram bucket labels for the chart/table, no backend contract of its own
 		 */
 		histogramCategories() {
-			return this.histogram.map((_, index) => `${index * 10}-${(index + 1) * 10}`)
+			return this.histogram.map(
+				(_, index) => `${index * 10}-${(index + 1) * 10}`,
+			)
 		},
 
 		/**
@@ -273,8 +327,15 @@ export default {
 			if (!qualityStore.hasSelection) return
 			this.chartAvailable = true
 			await Promise.all([
-				qualityStore.fetchQualityStats(qualityStore.selectedRegister, qualityStore.selectedSchema),
-				qualityStore.fetchLowQualityObjects(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: 20, offset: 0 }),
+				qualityStore.fetchQualityStats(
+					qualityStore.selectedRegister,
+					qualityStore.selectedSchema,
+				),
+				qualityStore.fetchLowQualityObjects(
+					qualityStore.selectedRegister,
+					qualityStore.selectedSchema,
+					{ limit: 20, offset: 0 },
+				),
 			])
 		},
 
@@ -283,7 +344,11 @@ export default {
 		 */
 		async previousPage() {
 			const offset = Math.max(0, this.lowQualityOffset - this.lowQualityLimit)
-			await qualityStore.fetchLowQualityObjects(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: this.lowQualityLimit, offset })
+			await qualityStore.fetchLowQualityObjects(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: this.lowQualityLimit, offset },
+			)
 		},
 
 		/**
@@ -291,7 +356,11 @@ export default {
 		 */
 		async nextPage() {
 			const offset = this.lowQualityOffset + this.lowQualityLimit
-			await qualityStore.fetchLowQualityObjects(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: this.lowQualityLimit, offset })
+			await qualityStore.fetchLowQualityObjects(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: this.lowQualityLimit, offset },
+			)
 		},
 	},
 }

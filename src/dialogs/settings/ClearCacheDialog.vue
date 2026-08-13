@@ -1,5 +1,6 @@
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		name="Clear Cache"
 		:can-close="!clearing"
 		@closing="$emit('closing')">
@@ -7,36 +8,42 @@
 			<div class="clear-cache-options">
 				<h3>🗑️ Clear Cache</h3>
 				<p class="warning-text">
-					Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.
+					Select the type of cache to clear. This action cannot be undone
+					and may temporarily impact performance.
 				</p>
 
 				<div class="cache-type-selection">
 					<h4>Cache Type:</h4>
-					<NcCheckboxRadioSwitch v-model="selectedCacheType"
+					<NcCheckboxRadioSwitch
+						v-model="selectedCacheType"
 						name="cache_type"
 						value="all"
 						type="radio">
 						Clear All Cache (Recommended)
 					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch v-model="selectedCacheType"
+					<NcCheckboxRadioSwitch
+						v-model="selectedCacheType"
 						name="cache_type"
 						value="object"
 						type="radio">
 						Object Cache Only
 					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch v-model="selectedCacheType"
+					<NcCheckboxRadioSwitch
+						v-model="selectedCacheType"
 						name="cache_type"
 						value="schema"
 						type="radio">
 						Schema Cache Only
 					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch v-model="selectedCacheType"
+					<NcCheckboxRadioSwitch
+						v-model="selectedCacheType"
 						name="cache_type"
 						value="facet"
 						type="radio">
 						Facet Cache Only
 					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch v-model="selectedCacheType"
+					<NcCheckboxRadioSwitch
+						v-model="selectedCacheType"
 						name="cache_type"
 						value="distributed"
 						type="radio">
@@ -45,11 +52,11 @@
 				</div>
 			</div>
 			<div class="dialog-actions">
-				<NcButton :disabled="clearing"
-					@click="$emit('closing')">
+				<NcButton :disabled="clearing" @click="$emit('closing')">
 					Cancel
 				</NcButton>
-				<NcButton variant="error"
+				<NcButton
+					variant="error"
 					:disabled="clearing"
 					@click="$emit('confirm')">
 					<template #icon>
@@ -64,7 +71,12 @@
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
 export default {

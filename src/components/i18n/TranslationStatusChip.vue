@@ -1,5 +1,6 @@
 <template>
-	<span :class="['translation-status-chip', `translation-status-chip--${status}`]"
+	<span
+		:class="['translation-status-chip', `translation-status-chip--${status}`]"
 		:title="tooltipText"
 		:aria-label="tooltipText">
 		<span class="translation-status-chip__icon" aria-hidden="true">

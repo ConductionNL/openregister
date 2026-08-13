@@ -18,5 +18,4 @@ export default function getValidISOstring(dateString) {
 	} else {
 		return null
 	}
-
 }

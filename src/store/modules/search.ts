@@ -22,32 +22,23 @@ export const useSearchStore = defineStore('search', () => {
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
 	function getSearchResults() {
-		fetch(
-			'/index.php/apps/openregister/api/search?_search=' + search.value,
-			{
-				method: 'GET',
-			},
-		)
-			.then(
-				(response) => {
-					response.json().then(
-						(data) => {
-							if (data?.code === 403 && data?.message) {
-								searchError.value = data.message
-							} else {
-								searchError.value = '' // Clear any previous errors
-							}
-							searchResults.value = data
-						},
-					)
-				},
-			)
-			.catch(
-				(err) => {
-					searchError.value = err.message || 'An error occurred'
-					console.error(err.message ?? err)
-				},
-			)
+		fetch('/index.php/apps/openregister/api/search?_search=' + search.value, {
+			method: 'GET',
+		})
+			.then((response) => {
+				response.json().then((data) => {
+					if (data?.code === 403 && data?.message) {
+						searchError.value = data.message
+					} else {
+						searchError.value = '' // Clear any previous errors
+					}
+					searchResults.value = data
+				})
+			})
+			.catch((err) => {
+				searchError.value = err.message || 'An error occurred'
+				console.error(err.message ?? err)
+			})
 	}
 	function clearSearch() {
 		search.value = ''
@@ -57,8 +48,8 @@ export const useSearchStore = defineStore('search', () => {
 
 	// new, used by search page
 	// search data
-	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
-	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataRegister = ref<{ label: string; id: string } | null>(null)
+	const searchObjectsDataSchema = ref<{ label: string; id: string } | null>(null)
 	const searchObjectsDataPagination = ref<number>(1)
 	const searchObjectsDataPaginationLimit = ref<number>(14)
 
@@ -77,7 +68,12 @@ export const useSearchStore = defineStore('search', () => {
 	 * @param {Record<string, string>} searchQuery - Key-value pairs of search parameters
 	 * @return {object} Object containing refs that will be updated with search results
 	 */
-	function searchObjects(searchQuery: Record<string, string> = {}): {success: Ref<boolean>, loading: Ref<boolean>, result: Ref<Record<string, any>[]>, error: Ref<string>} {
+	function searchObjects(searchQuery: Record<string, string> = {}): {
+		success: Ref<boolean>
+		loading: Ref<boolean>
+		result: Ref<Record<string, any>[]>
+		error: Ref<string>
+	} {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
 
@@ -95,7 +91,7 @@ export const useSearchStore = defineStore('search', () => {
 		const endpoint = `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
 
 		fetch(endpoint, { method: 'GET' })
-			.then(async response => {
+			.then(async (response) => {
 				// Clear any previous errors
 				searchObjectsError.value = ''
 
@@ -110,7 +106,7 @@ export const useSearchStore = defineStore('search', () => {
 				searchObjectsSuccess.value = true
 				searchObjectsResult.value = data
 			})
-			.catch(error => {
+			.catch((error) => {
 				console.error('Error fetching search results:', error)
 				searchObjectsSuccess.value = false
 				searchObjectsError.value = error
