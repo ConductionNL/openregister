@@ -1171,6 +1171,9 @@ class ObjectService
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
+     * @param bool                     $_validation   Whether to validate the object against its schema (default: true).
+     *                                                Was hardcoded true here, so a bulk importer with pre-validated
+     *                                                rows had no way to decline re-validating every one of them.
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
      * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
@@ -1201,6 +1204,7 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $silent=false,
+        bool $_validation=true,
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null,
         bool $failIfExists=false
@@ -1355,7 +1359,7 @@ class ObjectService
             _multitenancy: $_multitenancy,
             persist: true,
             silent: $silent,
-            _validation: true,
+            _validation: $_validation,
             uploadedFiles: $uploadedFiles,
             currentUser: $currentUser,
             failIfExists: $failIfExists
