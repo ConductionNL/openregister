@@ -278,11 +278,30 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$this->permissionHandler->method('hasPermission')->willReturn(true);
 
 		// Existing object returned → triggers UPDATE classification.
+		//
+		// 🔑 THE LOOKUP IS THE BATCH PREFETCH, NOT `find()`. This mocked `find()`
+		// alone, which is the per-row fallback and is only reached when a group's
+		// probe FAILED. `prefetchExistingRows()` runs first and calls
+		// `findObjectsByUuidsInRegisterSchema()`; an unmocked mapper answers `[]`,
+		// which the classifier reads as a SUCCESSFUL probe that found nothing —
+		// "this group was probed and the uuid was not in it" — and returns
+		// `create` without ever consulting `find()`.
+		//
+		// ⚠️ The failure that produced was a row sailing through the appendOnly
+		// gate, which is exactly what a real immutability bypass would look like.
+		// It was not one: measured with a probe at the gate,
+		// `uuid='1111…' action='create' appendOnly=true`. The gate is intact and
+		// fires on `update`; the row simply never got classified as one. A test
+		// mocking a superseded lookup does not fail loudly — it silently exercises
+		// the other branch and reports the safeguard missing.
 		$existing = new \OCA\OpenRegister\Db\ObjectEntity();
 		$existing->setUuid('11111111-1111-1111-1111-111111111111');
 		$this->objectMapper
 			->method('find')
 			->willReturn($existing);
+		$this->objectMapper
+			->method('findObjectsByUuidsInRegisterSchema')
+			->willReturn(['11111111-1111-1111-1111-111111111111' => $existing]);
 
 		$result = $this->initResult(1);
 		$passed = $this->callApplyBulkSafeguards(

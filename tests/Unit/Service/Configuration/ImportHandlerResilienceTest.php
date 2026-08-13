@@ -273,8 +273,20 @@ class ImportHandlerResilienceTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([]);
 
 		// Assert the resolved admin is forwarded as the acting user. saveObject()'s
-		// 10th parameter is $currentUser; the production code passes it by name and
-		// PHP maps it onto that positional slot.
+		// $currentUser is the ELEVENTH parameter of saveObject(). The production
+		// code passes it by name and PHP maps it onto that positional slot, so
+		// this closure has to mirror the real signature exactly up to it —
+		// including parameters it does not care about.
+		//
+		// ⚠️ THE FAILURE MODE IS SILENT AND IT ALREADY HAPPENED HERE. This
+		// comment said "10th", written when it was, and then `$_validation` was
+		// inserted at position 9. Every later parameter shifted one right: the
+		// slot named `$uploadedFiles` began receiving `$_validation`, the slot
+		// named `$currentUser` began receiving `$uploadedFiles` — which is null —
+		// and the assertion failed with "null is identical to an object of class
+		// MockObject_IUser", naming the acting user and saying nothing about the
+		// signature. A positional closure against a signature that grows in the
+		// MIDDLE reads the wrong argument under the right name.
 		$capturedUser = null;
 		$this->objectService->method('saveObject')
 			->willReturnCallback(function (
@@ -286,6 +298,7 @@ class ImportHandlerResilienceTest extends TestCase {
 				$rbac = true,
 				$multitenancy = true,
 				$silent = false,
+				$validation = true,
 				$uploadedFiles = null,
 				$currentUser = null,
 			) use (&$capturedUser) {
