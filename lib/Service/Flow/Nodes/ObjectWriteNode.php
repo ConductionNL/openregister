@@ -789,25 +789,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		// Guard 4: the ordinary delete path, with the run owner as the explicit
 		// acting user and the register / schema scope confining the lookup to
-		// one magic table. No `_retentionSweep`, and a SOFT delete unless the
-		// author asked for otherwise — a soft delete is what makes a mistaken
-		// flow recoverable, so it stays the default.
-		//
-		// `permanent: true` is for a row that is a CLAIM rather than a record —
-		// a lock, a slot, a lease. Such a row's identifier is deliberately a
-		// pure function of the thing being claimed, which is what makes two
-		// concurrent claimants collide on it; it therefore cannot be varied per
-		// attempt. A soft delete leaves the tombstone holding that identifier
-		// (the `_uuid` unique index has no `WHERE _deleted IS NULL` predicate),
-		// so a claim that cannot destroy its own row can be taken exactly once,
-		// ever — and the second attempt is refused with `already exists` about
-		// an object every read reports as absent. See openregister#2459.
+		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
+		// the soft delete is the default and what opts out of it.
 		$this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,
 			schema: $schema,
 			currentUser: $owner,
-			permanent: (($config['permanent'] ?? false) === true)
+			permanent: $this->permanenceOf(config: $config)
 		);
 		$writes++;
 
@@ -1510,41 +1499,10 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 	 */
 	private function validateOperationKeys(array $config, string $operation): void {
 		if ($operation === self::OP_DELETE) {
-			if (array_key_exists('fields', $config) === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('"fields" has no meaning for a delete step.')
-				);
-			}
-
-			if (array_key_exists('replace', $config) === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('"replace" has no meaning for a delete step.')
-				);
-			}
-
-			// Guard 3: a second, deliberate key. Changing one enum value from
-			// "update" to "delete" is not enough to reach a deletion, and the
-			// flow will not save without it. The string "true" does not count.
-			if (($config['confirmDelete'] ?? null) !== true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('A delete step must carry "confirmDelete": true, as a boolean.')
-				);
-			}
-
-			// Guard 5, and the only one that is about IRREVERSIBILITY rather
-			// than about aim. The four above stop a delete from touching the
-			// wrong rows; this one stops a delete from being unrecoverable
-			// without the author having said so in as many words. Same rule as
-			// `confirmDelete`: a boolean, because the string "false" is truthy
-			// and would turn a paste into a destruction.
-			if (array_key_exists('permanent', $config) === true && is_bool($config['permanent']) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('"permanent" must be true or false, as a boolean.')
-				);
-			}
+			$this->validateDeleteKeys(config: $config);
 
 			return;
-		}//end if
+		}
 
 		if (array_key_exists('permanent', $config) === true) {
 			throw new UnexpectedValueException(
@@ -1565,6 +1523,91 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 		}
 
 	}//end validateOperationKeys()
+
+	/**
+	 * The save-time half of the delete guards.
+	 *
+	 * Split out of `validateOperationKeys()` rather than left inline: the delete
+	 * branch is the only one carrying four checks, and keeping it there put that
+	 * method at cyclomatic 11 / NPath 300 against thresholds of 10 and 200. The
+	 * guards are the part of this class most worth reading in one piece, so they
+	 * get a method whose whole subject is refusing a delete nobody meant.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a key is meaningless for a delete or an acknowledgement is missing.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function validateDeleteKeys(array $config): void {
+		if (array_key_exists('fields', $config) === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"fields" has no meaning for a delete step.')
+			);
+		}
+
+		if (array_key_exists('replace', $config) === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"replace" has no meaning for a delete step.')
+			);
+		}
+
+		// Guard 3: a second, deliberate key. Changing one enum value from
+		// "update" to "delete" is not enough to reach a deletion, and the
+		// flow will not save without it. The string "true" does not count.
+		if (($config['confirmDelete'] ?? null) !== true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A delete step must carry "confirmDelete": true, as a boolean.')
+			);
+		}
+
+		// Guard 5, and the only one that is about IRREVERSIBILITY rather than
+		// about aim. The four above stop a delete from touching the wrong rows;
+		// this one stops a delete from being unrecoverable without the author
+		// having said so in as many words. Same rule as `confirmDelete`: a
+		// boolean, because the string "false" is truthy and would turn a paste
+		// into a destruction.
+		if (array_key_exists('permanent', $config) === true && is_bool($config['permanent']) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"permanent" must be true or false, as a boolean.')
+			);
+		}
+
+	}//end validateDeleteKeys()
+
+	/**
+	 * Whether this delete destroys the row or tombstones it.
+	 *
+	 * SOFT unless the author said otherwise, and that default does not move: a
+	 * tombstone is what makes a mistaken flow recoverable.
+	 *
+	 * `permanent: true` is for a row that is a CLAIM rather than a record — a
+	 * lock, a slot, a lease. Such a row's identifier is deliberately a pure
+	 * function of the thing being claimed, which is exactly what makes two
+	 * concurrent claimants collide on it, so it cannot be varied per attempt
+	 * without giving up the mutual exclusion it exists for. A soft delete leaves
+	 * the tombstone holding that identifier — the `_uuid` unique index carries no
+	 * `WHERE _deleted IS NULL` predicate — so a claim that cannot destroy its own
+	 * row can be taken exactly once, ever, and every attempt after that is
+	 * refused with `already exists` about an object every read reports as absent
+	 * (openregister#2459).
+	 *
+	 * A strict `=== true`, matching `confirmDelete`: the string "false" is
+	 * truthy, and `validateDeleteKeys()` has already refused any non-boolean, so
+	 * this is belt and braces on the one option that cannot be undone.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return bool True to destroy the row, false to tombstone it.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function permanenceOf(array $config): bool {
+		return (($config['permanent'] ?? false) === true);
+
+	}//end permanenceOf()
 
 	/**
 	 * Reject an out-of-range option value.
