@@ -26,7 +26,8 @@ describe('fileMetadata API helpers', () => {
 		it('PUTs new labels to /files/{fileId}/labels with `{ labels }` body', async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve({ id: 42, labels: ['confidential', 'q3-2025'] }),
+				json: () =>
+					Promise.resolve({ id: 42, labels: ['confidential', 'q3-2025'] }),
 			})
 
 			const result = await updateFileLabels({
@@ -39,10 +40,14 @@ describe('fileMetadata API helpers', () => {
 
 			expect(fetchMock).toHaveBeenCalledTimes(1)
 			const [url, opts] = fetchMock.mock.calls[0]
-			expect(url).toBe('/index.php/apps/openregister/api/objects/5/28/obj-uuid/files/42/labels')
+			expect(url).toBe(
+				'/index.php/apps/openregister/api/objects/5/28/obj-uuid/files/42/labels',
+			)
 			expect(opts.method).toBe('PUT')
 			expect(opts.headers['Content-Type']).toBe('application/json')
-			expect(JSON.parse(opts.body)).toEqual({ labels: ['confidential', 'q3-2025'] })
+			expect(JSON.parse(opts.body)).toEqual({
+				labels: ['confidential', 'q3-2025'],
+			})
 			expect(result.labels).toEqual(['confidential', 'q3-2025'])
 		})
 
@@ -65,7 +70,12 @@ describe('fileMetadata API helpers', () => {
 		it('PUTs description + category in one round-trip; null fields are NOT sent', async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve({ id: 42, description: 'Q3 minutes', category: 'governance' }),
+				json: () =>
+					Promise.resolve({
+						id: 42,
+						description: 'Q3 minutes',
+						category: 'governance',
+					}),
 			})
 
 			const result = await updateFileMetadata({
@@ -80,7 +90,9 @@ describe('fileMetadata API helpers', () => {
 
 			expect(fetchMock).toHaveBeenCalledTimes(1)
 			const [url, opts] = fetchMock.mock.calls[0]
-			expect(url).toBe('/index.php/apps/openregister/api/objects/5/28/obj-uuid/files/42')
+			expect(url).toBe(
+				'/index.php/apps/openregister/api/objects/5/28/obj-uuid/files/42',
+			)
 			expect(opts.method).toBe('PUT')
 			const body = JSON.parse(opts.body)
 			expect(body).toEqual({
@@ -95,7 +107,8 @@ describe('fileMetadata API helpers', () => {
 		it('explicit empty values are sent — distinct from null/skip', async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve({ id: 42, description: '', category: '' }),
+				json: () =>
+					Promise.resolve({ id: 42, description: '', category: '' }),
 			})
 
 			await updateFileMetadata({

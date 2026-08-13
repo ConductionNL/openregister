@@ -14,9 +14,14 @@
 
 				<div v-if="hasActiveFilters" class="active-filters">
 					<!-- Display active facets -->
-					<div v-for="(facetData, facetField) in objectStore.currentFacets" :key="`active-${facetField}`" class="active-filter-group">
+					<div
+						v-for="(facetData, facetField) in objectStore.currentFacets"
+						:key="`active-${facetField}`"
+						class="active-filter-group">
 						<div class="active-filter-header">
-							<span class="active-filter-name">{{ getActiveFacetDisplayName(facetField) }}</span>
+							<span class="active-filter-name">{{
+								getActiveFacetDisplayName(facetField)
+							}}</span>
 							<NcButton
 								variant="tertiary"
 								size="small"
@@ -29,12 +34,21 @@
 						</div>
 
 						<!-- Show facet values for this filter -->
-						<div v-if="facetData.buckets && facetData.buckets.length > 0" class="active-filter-values">
-							<div v-for="bucket in facetData.buckets.slice(0, 5)" :key="bucket.key" class="active-filter-value">
+						<div
+							v-if="facetData.buckets && facetData.buckets.length > 0"
+							class="active-filter-values">
+							<div
+								v-for="bucket in facetData.buckets.slice(0, 5)"
+								:key="bucket.key"
+								class="active-filter-value">
 								{{ bucket.key }}
-								<span class="value-count">({{ bucket.results }})</span>
+								<span class="value-count"
+									>({{ bucket.results }})</span
+								>
 							</div>
-							<div v-if="facetData.buckets.length > 5" class="filter-more">
+							<div
+								v-if="facetData.buckets.length > 5"
+								class="filter-more">
 								+{{ facetData.buckets.length - 5 }} more
 							</div>
 						</div>
@@ -52,7 +66,9 @@
 				</div>
 
 				<div v-else class="no-active-filters">
-					<span class="no-filters-text">{{ t('openregister', 'No active filters') }}</span>
+					<span class="no-filters-text">{{
+						t('openregister', 'No active filters')
+					}}</span>
 				</div>
 			</div>
 
@@ -63,7 +79,11 @@
 				</h3>
 
 				<!-- Metadata Facets -->
-				<div v-if="Object.keys(objectStore.availableMetadataFacets).length > 0" class="facet-section">
+				<div
+					v-if="
+						Object.keys(objectStore.availableMetadataFacets).length > 0
+					"
+					class="facet-section">
 					<h4 class="facet-section-title">
 						{{ t('openregister', 'Metadata Filters') }}
 					</h4>
@@ -78,27 +98,39 @@
 								class="facet-date-label"
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
-								<span v-if="field.date_range" class="date-range-info">
+								<span
+									v-if="field.date_range"
+									class="date-range-info">
 									({{ formatDateRange(field.date_range) }})
 								</span>
 							</label>
 							<div class="date-range-inputs">
 								<NcDateTimePickerNative
-									:model-value="getDateRangeValue(fieldName, 'from')"
+									:model-value="
+										getDateRangeValue(fieldName, 'from')
+									"
 									:placeholder="t('openregister', 'From date')"
 									type="date"
-									@update:modelValue="updateDateRange(fieldName, 'from', $event)" />
-								<span class="date-separator">{{ t('openregister', 'to') }}</span>
+									@update:modelValue="
+										updateDateRange(fieldName, 'from', $event)
+									" />
+								<span class="date-separator">{{
+									t('openregister', 'to')
+								}}</span>
 								<NcDateTimePickerNative
 									:model-value="getDateRangeValue(fieldName, 'to')"
 									:placeholder="t('openregister', 'To date')"
 									type="date"
-									@update:modelValue="updateDateRange(fieldName, 'to', $event)" />
+									@update:modelValue="
+										updateDateRange(fieldName, 'to', $event)
+									" />
 								<NcButton
 									v-if="hasDateRange(fieldName)"
 									variant="tertiary"
 									size="small"
-									:aria-label="t('openregister', 'Clear date range')"
+									:aria-label="
+										t('openregister', 'Clear date range')
+									"
 									@click="clearDateRange(fieldName)">
 									<template #icon>
 										<Close :size="16" />
@@ -118,60 +150,106 @@
 								class="facet-dropdown-label"
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
-								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.getPagination(objectStore.currentType).total || 0 }} objects)
+								<span
+									v-if="field.appearance_rate"
+									class="field-coverage">
+									({{ field.appearance_rate }}/{{
+										objectStore.getPagination(
+											objectStore.currentType,
+										).total || 0
+									}}
+									objects)
 								</span>
 							</label>
 							<NcSelect
-								:model-value="getSelectedMetadataDropdownValues(fieldName)"
+								:model-value="
+									getSelectedMetadataDropdownValues(fieldName)
+								"
 								:options="getMetadataDropdownOptions(fieldName)"
-								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: capitalizeFieldName(fieldName) })"
+								:placeholder="
+									t('openregister', 'Select {fieldName} values', {
+										fieldName: capitalizeFieldName(fieldName),
+									})
+								"
 								:input-label="capitalizeFieldName(fieldName)"
 								:multiple="true"
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:modelValue="updateMetadataDropdownSelection(fieldName, $event)">
+								@update:modelValue="
+									updateMetadataDropdownSelection(
+										fieldName,
+										$event,
+									)
+								">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
-										<span class="option-label">{{ option.label || option.value || '' }}</span>
-										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+										<span class="option-label">{{
+											option.label || option.value || ''
+										}}</span>
+										<span
+											v-if="option.count"
+											class="option-count"
+											>({{ option.count }})</span
+										>
 									</div>
 								</template>
 								<template #selected-option="{ option }">
-									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+									<span v-if="option" class="selected-option">{{
+										option.label || option.value || ''
+									}}</span>
 								</template>
 							</NcSelect>
 						</div>
 					</div>
 
 					<!-- Non-date metadata facets -->
-					<div v-if="Object.keys(nonDateMetadataFields).length > 0" class="facet-list">
+					<div
+						v-if="Object.keys(nonDateMetadataFields).length > 0"
+						class="facet-list">
 						<div
 							v-for="(field, fieldName) in nonDateMetadataFields"
 							:key="`meta-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
 								:model-value="isActiveFacet(`@self.${fieldName}`)"
-								@update:modelValue="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
-								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
+								@update:modelValue="
+									(status) =>
+										toggleFacet(
+											`@self.${fieldName}`,
+											field.facet_types[0],
+											status,
+										)
+								">
+								<span :title="field.description">{{
+									capitalizeFieldName(fieldName)
+								}}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
 								{{ field.type }}
-								<span v-if="field.appearance_rate">({{ field.appearance_rate }} objects)</span>
+								<span v-if="field.appearance_rate"
+									>({{ field.appearance_rate }} objects)</span
+								>
 							</small>
 						</div>
 					</div>
 				</div>
 
 				<!-- Object Field Facets -->
-				<div v-if="Object.keys(objectStore.availableObjectFieldFacets).length > 0" class="facet-section">
+				<div
+					v-if="
+						Object.keys(objectStore.availableObjectFieldFacets).length
+						> 0
+					"
+					class="facet-section">
 					<h4 class="facet-section-title">
 						{{ t('openregister', 'Property Filters') }}
 					</h4>
 
 					<!-- Date Range facets for object date fields -->
-					<div v-if="Object.keys(dateRangeObjectFields).length > 0" class="facet-date-ranges">
+					<div
+						v-if="Object.keys(dateRangeObjectFields).length > 0"
+						class="facet-date-ranges">
 						<div
 							v-for="(facet, fieldName) in dateRangeObjectFields"
 							:key="`date-range-${fieldName}`"
@@ -181,39 +259,74 @@
 							</label>
 
 							<!-- Predefined range radio buttons -->
-							<div v-if="facet.data && facet.data.buckets" class="date-range-presets">
+							<div
+								v-if="facet.data && facet.data.buckets"
+								class="date-range-presets">
 								<NcCheckboxRadioSwitch
 									v-for="bucket in facet.data.buckets"
 									:key="bucket.value"
-									:model-value="isDateRangeSelected(fieldName, bucket.value)"
+									:model-value="
+										isDateRangeSelected(fieldName, bucket.value)
+									"
 									type="radio"
 									name="date-range-${fieldName}"
-									@update:modelValue="selectDateRangeBucket(fieldName, bucket)">
+									@update:modelValue="
+										selectDateRangeBucket(fieldName, bucket)
+									">
 									{{ bucket.label || bucket.value }}
-									<span v-if="bucket.count !== undefined" class="value-count">({{ bucket.count }})</span>
+									<span
+										v-if="bucket.count !== undefined"
+										class="value-count"
+										>({{ bucket.count }})</span
+									>
 								</NcCheckboxRadioSwitch>
 							</div>
 
 							<!-- Custom date range picker -->
 							<div class="date-range-custom">
-								<span class="date-separator">{{ t('openregister', 'or pick a range') }}</span>
+								<span class="date-separator">{{
+									t('openregister', 'or pick a range')
+								}}</span>
 								<div class="date-range-inputs">
 									<NcDateTimePickerNative
-										:model-value="getObjectDateRangeValue(fieldName, 'from')"
+										:model-value="
+											getObjectDateRangeValue(
+												fieldName,
+												'from',
+											)
+										"
 										:placeholder="t('openregister', 'From date')"
 										type="date"
-										@update:modelValue="updateObjectDateRange(fieldName, 'from', $event)" />
-									<span class="date-separator">{{ t('openregister', 'to') }}</span>
+										@update:modelValue="
+											updateObjectDateRange(
+												fieldName,
+												'from',
+												$event,
+											)
+										" />
+									<span class="date-separator">{{
+										t('openregister', 'to')
+									}}</span>
 									<NcDateTimePickerNative
-										:model-value="getObjectDateRangeValue(fieldName, 'to')"
+										:model-value="
+											getObjectDateRangeValue(fieldName, 'to')
+										"
 										:placeholder="t('openregister', 'To date')"
 										type="date"
-										@update:modelValue="updateObjectDateRange(fieldName, 'to', $event)" />
+										@update:modelValue="
+											updateObjectDateRange(
+												fieldName,
+												'to',
+												$event,
+											)
+										" />
 									<NcButton
 										v-if="hasObjectDateRange(fieldName)"
 										variant="tertiary"
 										size="small"
-										:aria-label="t('openregister', 'Clear date range')"
+										:aria-label="
+											t('openregister', 'Clear date range')
+										"
 										@click="clearObjectDateRange(fieldName)">
 										<template #icon>
 											<Close :size="16" />
@@ -225,35 +338,59 @@
 					</div>
 
 					<!-- Date Histogram facets for object date fields -->
-					<div v-if="Object.keys(dateHistogramObjectFields).length > 0" class="facet-dropdowns">
+					<div
+						v-if="Object.keys(dateHistogramObjectFields).length > 0"
+						class="facet-dropdowns">
 						<div
 							v-for="(facet, fieldName) in dateHistogramObjectFields"
 							:key="`date-hist-${fieldName}`"
 							class="facet-dropdown-item">
 							<label class="facet-dropdown-label">
 								{{ facet.title || capitalizeFieldName(fieldName) }}
-								<span v-if="facet.config && facet.config.interval" class="field-coverage">
+								<span
+									v-if="facet.config && facet.config.interval"
+									class="field-coverage">
 									({{ facet.config.interval }})
 								</span>
 							</label>
 							<NcSelect
-								:model-value="getSelectedDateHistogramValues(fieldName)"
+								:model-value="
+									getSelectedDateHistogramValues(fieldName)
+								"
 								:options="getDateHistogramOptions(fieldName)"
-								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: facet.title || capitalizeFieldName(fieldName) })"
-								:input-label="facet.title || capitalizeFieldName(fieldName)"
+								:placeholder="
+									t('openregister', 'Select {fieldName} values', {
+										fieldName:
+											facet.title
+											|| capitalizeFieldName(fieldName),
+									})
+								"
+								:input-label="
+									facet.title || capitalizeFieldName(fieldName)
+								"
 								:multiple="true"
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:modelValue="updateDateHistogramSelection(fieldName, $event)">
+								@update:modelValue="
+									updateDateHistogramSelection(fieldName, $event)
+								">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
-										<span class="option-label">{{ option.label || option.value || '' }}</span>
-										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+										<span class="option-label">{{
+											option.label || option.value || ''
+										}}</span>
+										<span
+											v-if="option.count"
+											class="option-count"
+											>({{ option.count }})</span
+										>
 									</div>
 								</template>
 								<template #selected-option="{ option }">
-									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+									<span v-if="option" class="selected-option">{{
+										option.label || option.value || ''
+									}}</span>
 								</template>
 							</NcSelect>
 						</div>
@@ -269,49 +406,88 @@
 								class="facet-dropdown-label"
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
-								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.getPagination(objectStore.currentType).total || 0 }} objects)
+								<span
+									v-if="field.appearance_rate"
+									class="field-coverage">
+									({{ field.appearance_rate }}/{{
+										objectStore.getPagination(
+											objectStore.currentType,
+										).total || 0
+									}}
+									objects)
 								</span>
 							</label>
 							<NcSelect
 								:model-value="getSelectedDropdownValues(fieldName)"
 								:options="getDropdownOptions(fieldName)"
-								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: capitalizeFieldName(fieldName) })"
+								:placeholder="
+									t('openregister', 'Select {fieldName} values', {
+										fieldName: capitalizeFieldName(fieldName),
+									})
+								"
 								:input-label="capitalizeFieldName(fieldName)"
 								:multiple="true"
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:modelValue="updateDropdownSelection(fieldName, $event)">
+								@update:modelValue="
+									updateDropdownSelection(fieldName, $event)
+								">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
-										<span class="option-label">{{ option.label || option.value || '' }}</span>
-										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+										<span class="option-label">{{
+											option.label || option.value || ''
+										}}</span>
+										<span
+											v-if="option.count"
+											class="option-count"
+											>({{ option.count }})</span
+										>
 									</div>
 								</template>
 								<template #selected-option="{ option }">
-									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+									<span v-if="option" class="selected-option">{{
+										option.label || option.value || ''
+									}}</span>
 								</template>
 							</NcSelect>
 						</div>
 					</div>
 
 					<!-- Checkbox-based facets for non-terms fields (excluding id and date fields) -->
-					<div v-if="Object.keys(nonTermsObjectFieldFacets).length > 0" class="facet-list">
+					<div
+						v-if="Object.keys(nonTermsObjectFieldFacets).length > 0"
+						class="facet-list">
 						<div
 							v-for="(field, fieldName) in nonTermsObjectFieldFacets"
 							:key="`checkbox-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
 								:model-value="isActiveFacet(fieldName)"
-								@update:modelValue="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
-								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
+								@update:modelValue="
+									(status) =>
+										toggleFacet(
+											fieldName,
+											field.facet_types[0],
+											status,
+										)
+								">
+								<span :title="field.description">{{
+									capitalizeFieldName(fieldName)
+								}}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
 								{{ field.type }}
-								<span v-if="field.appearance_rate">({{ field.appearance_rate }} objects)</span>
-								<span v-if="field.sample_values && field.sample_values.length > 0">
-									- Sample: {{ field.sample_values.slice(0, 3).join(', ') }}
+								<span v-if="field.appearance_rate"
+									>({{ field.appearance_rate }} objects)</span
+								>
+								<span
+									v-if="
+										field.sample_values
+										&& field.sample_values.length > 0
+									">
+									- Sample:
+									{{ field.sample_values.slice(0, 3).join(', ') }}
 								</span>
 							</small>
 						</div>
@@ -321,7 +497,14 @@
 		</div>
 
 		<div v-else class="facet-empty">
-			<p>{{ t('openregister', 'No facetable fields available. Select a register and schema to see available filters.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'No facetable fields available. Select a register and schema to see available filters.',
+					)
+				}}
+			</p>
 		</div>
 	</div>
 </template>
@@ -332,7 +515,13 @@
  * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
  * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
  */
-import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
+import {
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcButton,
+	NcSelect,
+	NcDateTimePickerNative,
+} from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import { objectStore } from '../store/store.js'
 
@@ -353,7 +542,10 @@ export default {
 	},
 	computed: {
 		hasActiveFilters() {
-			return this.objectStore.hasFacets && Object.keys(this.objectStore.currentFacets).length > 0
+			return (
+				this.objectStore.hasFacets
+				&& Object.keys(this.objectStore.currentFacets).length > 0
+			)
 		},
 		/**
 		 * Get object fields that support terms faceting (excluding id)
@@ -363,12 +555,18 @@ export default {
 		 */
 		termsFacetableFields() {
 			const fields = {}
-			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(([fieldName, field]) => {
-				// Exclude id field and only include fields that support terms faceting
-				if (fieldName !== 'id' && field.facet_types && field.facet_types.includes('terms')) {
-					fields[fieldName] = field
-				}
-			})
+			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(
+				([fieldName, field]) => {
+					// Exclude id field and only include fields that support terms faceting
+					if (
+						fieldName !== 'id'
+						&& field.facet_types
+						&& field.facet_types.includes('terms')
+					) {
+						fields[fieldName] = field
+					}
+				},
+			)
 			return fields
 		},
 		/**
@@ -379,12 +577,18 @@ export default {
 		 */
 		nonTermsObjectFieldFacets() {
 			const fields = {}
-			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(([fieldName, field]) => {
-				// Exclude id field, only include fields that don't support terms faceting
-				if (fieldName !== 'id' && (!field.facet_types || !field.facet_types.includes('terms'))) {
-					fields[fieldName] = field
-				}
-			})
+			Object.entries(this.objectStore.availableObjectFieldFacets).forEach(
+				([fieldName, field]) => {
+					// Exclude id field, only include fields that don't support terms faceting
+					if (
+						fieldName !== 'id'
+						&& (!field.facet_types
+							|| !field.facet_types.includes('terms'))
+					) {
+						fields[fieldName] = field
+					}
+				},
+			)
 			return fields
 		},
 		/**
@@ -394,12 +598,18 @@ export default {
 		 */
 		metadataDateFields() {
 			const fields = {}
-			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
-				// Include fields that are date type and support range faceting
-				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
-					fields[fieldName] = field
-				}
-			})
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(
+				([fieldName, field]) => {
+					// Include fields that are date type and support range faceting
+					if (
+						field.type === 'date'
+						&& field.facet_types
+						&& field.facet_types.includes('range')
+					) {
+						fields[fieldName] = field
+					}
+				},
+			)
 
 			return fields
 		},
@@ -410,15 +620,20 @@ export default {
 		 */
 		nonDateMetadataFields() {
 			const fields = {}
-			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
-				// Exclude date fields, id, uuid, and terms-facetable fields
-				if (field.type !== 'date'
-					&& fieldName !== 'id'
-					&& fieldName !== 'uuid'
-					&& (!field.facet_types || !field.facet_types.includes('terms'))) {
-					fields[fieldName] = field
-				}
-			})
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(
+				([fieldName, field]) => {
+					// Exclude date fields, id, uuid, and terms-facetable fields
+					if (
+						field.type !== 'date'
+						&& fieldName !== 'id'
+						&& fieldName !== 'uuid'
+						&& (!field.facet_types
+							|| !field.facet_types.includes('terms'))
+					) {
+						fields[fieldName] = field
+					}
+				},
+			)
 			return fields
 		},
 		/**
@@ -432,11 +647,13 @@ export default {
 		 */
 		dateRangeObjectFields() {
 			const fields = {}
-			Object.entries(this.objectStore.currentFacets || {}).forEach(([fieldName, facet]) => {
-				if (fieldName !== '@self' && facet.type === 'date_range') {
-					fields[fieldName] = facet
-				}
-			})
+			Object.entries(this.objectStore.currentFacets || {}).forEach(
+				([fieldName, facet]) => {
+					if (fieldName !== '@self' && facet.type === 'date_range') {
+						fields[fieldName] = facet
+					}
+				},
+			)
 			return fields
 		},
 		/**
@@ -446,11 +663,13 @@ export default {
 		 */
 		dateHistogramObjectFields() {
 			const fields = {}
-			Object.entries(this.objectStore.currentFacets || {}).forEach(([fieldName, facet]) => {
-				if (fieldName !== '@self' && facet.type === 'date_histogram') {
-					fields[fieldName] = facet
-				}
-			})
+			Object.entries(this.objectStore.currentFacets || {}).forEach(
+				([fieldName, facet]) => {
+					if (fieldName !== '@self' && facet.type === 'date_histogram') {
+						fields[fieldName] = facet
+					}
+				},
+			)
 			return fields
 		},
 		/**
@@ -458,15 +677,19 @@ export default {
 		 */
 		termsMetadataFields() {
 			const fields = {}
-			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
-				// Include fields that support terms faceting (excluding id and uuid)
-				if (fieldName !== 'id'
-					&& fieldName !== 'uuid'
-					&& field.facet_types
-					&& field.facet_types.includes('terms')) {
-					fields[fieldName] = field
-				}
-			})
+			Object.entries(this.objectStore.availableMetadataFacets).forEach(
+				([fieldName, field]) => {
+					// Include fields that support terms faceting (excluding id and uuid)
+					if (
+						fieldName !== 'id'
+						&& fieldName !== 'uuid'
+						&& field.facet_types
+						&& field.facet_types.includes('terms')
+					) {
+						fields[fieldName] = field
+					}
+				},
+			)
 			return fields
 		},
 	},
@@ -480,7 +703,9 @@ export default {
 		isActiveFacet(fieldName) {
 			if (fieldName.startsWith('@self.')) {
 				const field = fieldName.replace('@self.', '')
-				return Boolean(this.objectStore.activeFacets._facets?.['@self']?.[field])
+				return Boolean(
+					this.objectStore.activeFacets._facets?.['@self']?.[field],
+				)
 			} else {
 				return Boolean(this.objectStore.activeFacets._facets?.[fieldName])
 			}
@@ -509,12 +734,14 @@ export default {
 			}
 
 			// Try to get a friendly name from facetable fields
-			const metadataField = this.objectStore.availableMetadataFacets[facetField]
+			const metadataField =
+				this.objectStore.availableMetadataFacets[facetField]
 			if (metadataField) {
 				return metadataField.description || facetField
 			}
 
-			const objectField = this.objectStore.availableObjectFieldFacets[facetField]
+			const objectField =
+				this.objectStore.availableObjectFieldFacets[facetField]
 			if (objectField) {
 				return objectField.description || facetField
 			}
@@ -545,9 +772,15 @@ export default {
 			// Remove a specific active filter
 			if (facetField === '@self') {
 				// Remove all metadata facets
-				const metadataFields = Object.keys(this.objectStore.activeFacets._facets?.['@self'] || {})
+				const metadataFields = Object.keys(
+					this.objectStore.activeFacets._facets?.['@self'] || {},
+				)
 				for (const field of metadataFields) {
-					await this.objectStore.updateActiveFacet(`@self.${field}`, null, false)
+					await this.objectStore.updateActiveFacet(
+						`@self.${field}`,
+						null,
+						false,
+					)
 				}
 			} else {
 				// Remove individual field facet
@@ -579,7 +812,7 @@ export default {
 			// First, try to get values from current facet results
 			const facetData = this.objectStore.currentFacets[fieldName]
 			if (facetData && facetData.buckets) {
-				facetData.buckets.forEach(bucket => {
+				facetData.buckets.forEach((bucket) => {
 					if (bucket && bucket.key !== undefined) {
 						options.push({
 							value: bucket.key,
@@ -590,13 +823,18 @@ export default {
 				})
 			} else {
 				// Fallback to sample values from facetable fields
-				const fieldInfo = this.objectStore.availableObjectFieldFacets[fieldName]
+				const fieldInfo =
+					this.objectStore.availableObjectFieldFacets[fieldName]
 				if (fieldInfo && fieldInfo.sample_values) {
-					fieldInfo.sample_values.forEach(sampleValue => {
+					fieldInfo.sample_values.forEach((sampleValue) => {
 						if (sampleValue !== null && sampleValue !== undefined) {
 							// Handle both string and object values
 							let value, label, count
-							if (typeof sampleValue === 'object' && sampleValue !== null && sampleValue.value !== undefined) {
+							if (
+								typeof sampleValue === 'object'
+								&& sampleValue !== null
+								&& sampleValue.value !== undefined
+							) {
 								value = sampleValue.value
 								label = sampleValue.label || sampleValue.value
 								count = sampleValue.count
@@ -607,7 +845,11 @@ export default {
 							}
 
 							// Avoid duplicates and ensure value is valid
-							if (value !== null && value !== undefined && !options.find(opt => opt.value === value)) {
+							if (
+								value !== null
+								&& value !== undefined
+								&& !options.find((opt) => opt.value === value)
+							) {
 								options.push({ value, label, count })
 							}
 						}
@@ -617,7 +859,12 @@ export default {
 
 			// Filter out any invalid options and sort
 			return options
-				.filter(option => option && option.value !== null && option.value !== undefined)
+				.filter(
+					(option) =>
+						option
+						&& option.value !== null
+						&& option.value !== undefined,
+				)
 				.sort((a, b) => {
 					if (a.count && b.count) {
 						return b.count - a.count
@@ -642,8 +889,8 @@ export default {
 			const options = this.getDropdownOptions(fieldName)
 			const selectedValues = []
 
-			filterValues.forEach(value => {
-				const option = options.find(opt => opt.value === value)
+			filterValues.forEach((value) => {
+				const option = options.find((opt) => opt.value === value)
 				if (option) {
 					selectedValues.push(option)
 				} else {
@@ -667,9 +914,14 @@ export default {
 		async updateDropdownSelection(fieldName, selectedOptions) {
 			try {
 				// Extract values from selected options
-				const selectedValues = selectedOptions && selectedOptions.length > 0
-					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
-					: []
+				const selectedValues =
+					selectedOptions && selectedOptions.length > 0
+						? selectedOptions
+								.map((option) => option.value)
+								.filter(
+									(value) => value !== null && value !== undefined,
+								)
+						: []
 
 				// Update the filter (not facet configuration)
 				this.objectStore.updateFilter(fieldName, selectedValues)
@@ -724,7 +976,7 @@ export default {
 			const currentFilters = { ...this.objectStore.activeFilters }
 
 			// Clear any existing date range filters for this field
-			Object.keys(currentFilters).forEach(key => {
+			Object.keys(currentFilters).forEach((key) => {
 				if (key.startsWith(fieldName + '[')) {
 					delete currentFilters[key]
 				}
@@ -753,8 +1005,13 @@ export default {
 		 */
 		getObjectDateRangeValue(fieldName, bound) {
 			const operator = bound === 'from' ? '>=' : '<='
-			const filterValues = this.objectStore.activeFilters[`${fieldName}[${operator}]`]
-			if (filterValues && Array.isArray(filterValues) && filterValues.length > 0) {
+			const filterValues =
+				this.objectStore.activeFilters[`${fieldName}[${operator}]`]
+			if (
+				filterValues
+				&& Array.isArray(filterValues)
+				&& filterValues.length > 0
+			) {
 				return filterValues[0]
 			}
 			return null
@@ -820,7 +1077,7 @@ export default {
 				return []
 			}
 
-			return facet.data.buckets.map(bucket => ({
+			return facet.data.buckets.map((bucket) => ({
 				value: bucket.value,
 				label: bucket.label || bucket.value,
 				count: bucket.count,
@@ -845,7 +1102,7 @@ export default {
 
 			// Find matching buckets based on from/to
 			const options = this.getDateHistogramOptions(fieldName)
-			return options.filter(opt => {
+			return options.filter((opt) => {
 				if (fromFilter && toFilter) {
 					return fromFilter.includes(opt.from) && toFilter.includes(opt.to)
 				}
@@ -868,8 +1125,14 @@ export default {
 			if (selectedOptions && selectedOptions.length > 0) {
 				// Use the from/to bounds from the selected buckets
 				// For multiple selections, use the min from and max to
-				const froms = selectedOptions.map(opt => opt.from).filter(Boolean).sort()
-				const tos = selectedOptions.map(opt => opt.to).filter(Boolean).sort()
+				const froms = selectedOptions
+					.map((opt) => opt.from)
+					.filter(Boolean)
+					.sort()
+				const tos = selectedOptions
+					.map((opt) => opt.to)
+					.filter(Boolean)
+					.sort()
 
 				if (froms.length > 0) {
 					currentFilters[`${fieldName}[>=]`] = [froms[0]]
@@ -911,7 +1174,10 @@ export default {
 			// Standard capitalization - capitalize first letter of each word
 			return fieldName
 				.split(/[\s_-]+/)
-				.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+				.map(
+					(word) =>
+						word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+				)
 				.join(' ')
 		},
 		/**
@@ -944,14 +1210,19 @@ export default {
 		 * @spec exclude computed read of metadata date-range bound from store facets, UI plumbing
 		 */
 		getDateRangeValue(fieldName, bound) {
-			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
+			const activeFacetData =
+				this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
 
-			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
+			if (
+				!activeFacetData
+				|| activeFacetData.type !== 'range'
+				|| !activeFacetData.ranges
+			) {
 				return null
 			}
 
 			// Find the range that matches our bound
-			const range = activeFacetData.ranges.find(r => r.from || r.to)
+			const range = activeFacetData.ranges.find((r) => r.from || r.to)
 			if (!range) {
 				return null
 			}
@@ -1028,7 +1299,7 @@ export default {
 
 			// Remove existing date range filters for this field
 			const filterPrefix = `@self.${fieldName}`
-			Object.keys(currentFilters).forEach(key => {
+			Object.keys(currentFilters).forEach((key) => {
 				if (key.startsWith(filterPrefix + '[')) {
 					delete currentFilters[key]
 				}
@@ -1036,17 +1307,23 @@ export default {
 
 			// Add new range filters if we have valid ranges
 			if (rangeFacet && rangeFacet.ranges && rangeFacet.ranges.length > 0) {
-				rangeFacet.ranges.forEach(range => {
+				rangeFacet.ranges.forEach((range) => {
 					if (range.from) {
 						// Convert to database format (Y-m-d H:i:s)
-						const fromDate = new Date(range.from).toISOString().replace('T', ' ').replace(/\.000Z$/, '')
+						const fromDate = new Date(range.from)
+							.toISOString()
+							.replace('T', ' ')
+							.replace(/\.000Z$/, '')
 						currentFilters[`@self.${fieldName}[>=]`] = [fromDate]
 					}
 					if (range.to) {
 						// Convert to database format and set to end of day for the filter
 						const toDate = new Date(range.to)
 						toDate.setHours(23, 59, 59, 999) // End of day
-						const toDateISO = toDate.toISOString().replace('T', ' ').replace(/\.000Z$/, '')
+						const toDateISO = toDate
+							.toISOString()
+							.replace('T', ' ')
+							.replace(/\.000Z$/, '')
 						currentFilters[`@self.${fieldName}[<=]`] = [toDateISO]
 					}
 				})
@@ -1062,12 +1339,15 @@ export default {
 		 * @spec exclude computed read of metadata date-range presence from store facets, UI plumbing
 		 */
 		hasDateRange(fieldName) {
-			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
-			return activeFacetData
-				   && activeFacetData.type === 'range'
-				   && activeFacetData.ranges
-				   && activeFacetData.ranges.length > 0
-				   && (activeFacetData.ranges[0].from || activeFacetData.ranges[0].to)
+			const activeFacetData =
+				this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
+			return (
+				activeFacetData
+				&& activeFacetData.type === 'range'
+				&& activeFacetData.ranges
+				&& activeFacetData.ranges.length > 0
+				&& (activeFacetData.ranges[0].from || activeFacetData.ranges[0].to)
+			)
 		},
 		/**
 		 * Clear date range for a field
@@ -1085,7 +1365,7 @@ export default {
 			// Also clear the corresponding activeFilters
 			const currentFilters = { ...this.objectStore.activeFilters }
 			const filterPrefix = `@self.${fieldName}`
-			Object.keys(currentFilters).forEach(key => {
+			Object.keys(currentFilters).forEach((key) => {
 				if (key.startsWith(filterPrefix + '[')) {
 					delete currentFilters[key]
 				}
@@ -1110,7 +1390,7 @@ export default {
 			const facetData = this.objectStore.currentFacets?.['@self']?.[fieldName]
 
 			if (facetData && facetData.buckets) {
-				facetData.buckets.forEach(bucket => {
+				facetData.buckets.forEach((bucket) => {
 					if (bucket && bucket.key !== undefined) {
 						options.push({
 							value: bucket.key,
@@ -1124,11 +1404,15 @@ export default {
 				const fieldInfo = this.objectStore.availableMetadataFacets[fieldName]
 
 				if (fieldInfo && fieldInfo.sample_values) {
-					fieldInfo.sample_values.forEach(sampleValue => {
+					fieldInfo.sample_values.forEach((sampleValue) => {
 						if (sampleValue !== null && sampleValue !== undefined) {
 							// Handle both string and object values
 							let value, label, count
-							if (typeof sampleValue === 'object' && sampleValue !== null && sampleValue.value !== undefined) {
+							if (
+								typeof sampleValue === 'object'
+								&& sampleValue !== null
+								&& sampleValue.value !== undefined
+							) {
 								value = sampleValue.value
 								label = sampleValue.label || sampleValue.value
 								count = sampleValue.count
@@ -1139,7 +1423,11 @@ export default {
 							}
 
 							// Avoid duplicates and ensure value is valid
-							if (value !== null && value !== undefined && !options.find(opt => opt.value === value)) {
+							if (
+								value !== null
+								&& value !== undefined
+								&& !options.find((opt) => opt.value === value)
+							) {
 								options.push({ value, label, count })
 							}
 						}
@@ -1149,7 +1437,12 @@ export default {
 
 			// Filter out any invalid options and sort
 			const finalOptions = options
-				.filter(option => option && option.value !== null && option.value !== undefined)
+				.filter(
+					(option) =>
+						option
+						&& option.value !== null
+						&& option.value !== undefined,
+				)
 				.sort((a, b) => {
 					if (a.count && b.count) {
 						return b.count - a.count
@@ -1177,8 +1470,8 @@ export default {
 			const options = this.getMetadataDropdownOptions(fieldName)
 			const selectedValues = []
 
-			filterValues.forEach(value => {
-				const option = options.find(opt => opt.value === value)
+			filterValues.forEach((value) => {
+				const option = options.find((opt) => opt.value === value)
 				if (option) {
 					selectedValues.push(option)
 				} else {
@@ -1202,9 +1495,14 @@ export default {
 		async updateMetadataDropdownSelection(fieldName, selectedOptions) {
 			try {
 				// Extract values from selected options
-				const selectedValues = selectedOptions && selectedOptions.length > 0
-					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
-					: []
+				const selectedValues =
+					selectedOptions && selectedOptions.length > 0
+						? selectedOptions
+								.map((option) => option.value)
+								.filter(
+									(value) => value !== null && value !== undefined,
+								)
+						: []
 
 				// Update the filter with @self. prefix for metadata fields
 				const metadataKey = `@self.${fieldName}`

@@ -28,7 +28,10 @@ test.describe('Open Register — DSAR cases visual baseline', () => {
 
 	test('cases surface', async ({ page }) => {
 		if (!fs.existsSync(STORAGE_STATE)) {
-			test.skip(true, 'storageState not present — the app is not reachable/built in this environment')
+			test.skip(
+				true,
+				'storageState not present — the app is not reachable/built in this environment',
+			)
 		}
 		// The AVG view opens on the Activities tab; the Cases tab is client-side.
 		await shootSurface(page, `${APP}/#/avg`, 'avg-cases.png')

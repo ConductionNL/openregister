@@ -10,7 +10,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'Successfully added user to organisation: {name}', { name: joinedOrganisationName }) }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'Successfully added user to organisation: {name}',
+						{ name: joinedOrganisationName },
+					)
+				}}
+			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -20,7 +28,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<div class="selection-section">
 				<!-- Organisation Selection -->
 				<div class="field-group">
-					<label for="organisation-select">{{ t('openregister', 'Organisation') }}</label>
+					<label for="organisation-select">{{
+						t('openregister', 'Organisation')
+					}}</label>
 					<NcSelect
 						v-model="selectedOrganisation"
 						input-id="organisation-select"
@@ -30,19 +40,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						:options="organisationOptions"
 						:filterable="true"
 						:filter-by="filterOrganisation"
-						:placeholder="t('openregister', 'Type to search for organisations')"
+						:placeholder="
+							t('openregister', 'Type to search for organisations')
+						"
 						label-outside
 						@search="handleOrganisationSearch">
 						<template #option="{ name, description, users, isDefault }">
 							<div class="organisation-option">
 								<div class="organisation-header">
 									<span class="organisation-name">{{ name }}</span>
-									<span v-if="isDefault" class="badge badge-default">{{ t('openregister', 'Default') }}</span>
+									<span
+										v-if="isDefault"
+										class="badge badge-default"
+										>{{ t('openregister', 'Default') }}</span
+									>
 								</div>
-								<p v-if="description" class="organisation-description">
+								<p
+									v-if="description"
+									class="organisation-description">
 									{{ description }}
 								</p>
-								<span class="organisation-meta">{{ t('openregister', '{count} members', { count: users?.length || 0 }) }}</span>
+								<span class="organisation-meta">{{
+									t('openregister', '{count} members', {
+										count: users?.length || 0,
+									})
+								}}</span>
 							</div>
 						</template>
 						<template #selected-option="{ name }">
@@ -76,13 +98,25 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 					</NcSelect>
 					<p class="helper-text">
-						{{ t('openregister', 'Defaults to current user. Select a different user if needed.') }}
+						{{
+							t(
+								'openregister',
+								'Defaults to current user. Select a different user if needed.',
+							)
+						}}
 					</p>
 				</div>
 
 				<div class="info-help">
 					<NcNoteCard type="info">
-						<p>{{ t('openregister', 'Select an organisation and user to add them as a member. Search for organisations by name.') }}</p>
+						<p>
+							{{
+								t(
+									'openregister',
+									'Select an organisation and user to add them as a member. Search for organisations by name.',
+								)
+							}}
+						</p>
 					</NcNoteCard>
 				</div>
 			</div>
@@ -93,7 +127,11 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
+				{{
+					success
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -214,10 +252,14 @@ export default {
 			try {
 				this.searchLoading = true
 				// Load first 20 organisations (empty query returns all, paginated)
-				const results = await organisationStore.searchOrganisations('', 20, 0)
+				const results = await organisationStore.searchOrganisations(
+					'',
+					20,
+					0,
+				)
 
 				// Transform results to NcSelect format with all necessary fields
-				this.organisationOptions = results.map(org => ({
+				this.organisationOptions = results.map((org) => ({
 					id: org.uuid || org.id,
 					uuid: org.uuid || org.id,
 					name: org.name,
@@ -241,11 +283,14 @@ export default {
 		async loadPreselectedOrganisation(uuid) {
 			try {
 				// Find the organisation in already loaded options
-				let orgOption = this.organisationOptions.find(org => org.uuid === uuid || org.id === uuid)
+				let orgOption = this.organisationOptions.find(
+					(org) => org.uuid === uuid || org.id === uuid,
+				)
 
 				// If not found in options, fetch it
 				if (!orgOption) {
-					const organisation = await organisationStore.getOrganisation(uuid)
+					const organisation =
+						await organisationStore.getOrganisation(uuid)
 
 					if (organisation) {
 						orgOption = {
@@ -258,7 +303,11 @@ export default {
 							isDefault: organisation.isDefault,
 						}
 						// Add to options if not already there
-						if (!this.organisationOptions.some(o => o.uuid === orgOption.uuid)) {
+						if (
+							!this.organisationOptions.some(
+								(o) => o.uuid === orgOption.uuid,
+							)
+						) {
 							this.organisationOptions.unshift(orgOption)
 						}
 					}
@@ -300,10 +349,14 @@ export default {
 
 				try {
 					// Search with limit of 20 results
-					const results = await organisationStore.searchOrganisations(query.trim(), 20, 0)
+					const results = await organisationStore.searchOrganisations(
+						query.trim(),
+						20,
+						0,
+					)
 
 					// Transform results to NcSelect format with all necessary fields
-					this.organisationOptions = results.map(org => ({
+					this.organisationOptions = results.map((org) => ({
 						id: org.uuid || org.id,
 						uuid: org.uuid || org.id,
 						name: org.name,
@@ -349,7 +402,7 @@ export default {
 				const users = data?.ocs?.data?.users || []
 
 				// Transform to NcSelect format with label property
-				this.userOptions = users.map(userId => ({
+				this.userOptions = users.map((userId) => ({
 					id: userId,
 					displayName: userId,
 					label: userId, // Required by vue-select
@@ -363,7 +416,7 @@ export default {
 						label: currentUser.displayName,
 					}
 
-					if (!this.userOptions.some(u => u.id === currentUser.id)) {
+					if (!this.userOptions.some((u) => u.id === currentUser.id)) {
 						this.userOptions.unshift(currentUserOption)
 					}
 
@@ -422,7 +475,7 @@ export default {
 					const users = data?.ocs?.data?.users || []
 
 					// Transform to NcSelect format with label property
-					this.userOptions = users.map(userId => ({
+					this.userOptions = users.map((userId) => ({
 						id: userId,
 						displayName: userId,
 						label: userId, // Required by vue-select
@@ -430,7 +483,10 @@ export default {
 
 					// Always include current user in options
 					const currentUser = this.getCurrentUser()
-					if (currentUser && !this.userOptions.some(u => u.id === currentUser.id)) {
+					if (
+						currentUser
+						&& !this.userOptions.some((u) => u.id === currentUser.id)
+					) {
 						this.userOptions.unshift({
 							...currentUser,
 							label: currentUser.displayName,
@@ -483,7 +539,10 @@ export default {
 				// We can't easily check this client-side, so we'll rely on the backend to validate
 				// and return an appropriate error message
 
-				await organisationStore.joinOrganisation(this.selectedOrganisation.uuid, userId)
+				await organisationStore.joinOrganisation(
+					this.selectedOrganisation.uuid,
+					userId,
+				)
 
 				this.success = true
 				this.joinedOrganisationName = this.selectedOrganisation.name
@@ -491,7 +550,9 @@ export default {
 				this.closeModalTimeout = setTimeout(this.closeModal, 3000)
 			} catch (error) {
 				console.error('Error joining organisation:', error)
-				this.error = error.message || t('openregister', 'Failed to add user to organisation')
+				this.error =
+					error.message
+					|| t('openregister', 'Failed to add user to organisation')
 			} finally {
 				this.joining = false
 			}

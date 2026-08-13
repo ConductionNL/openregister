@@ -24,24 +24,33 @@
 		<div v-else-if="agents.length === 0" class="empty-state">
 			<RobotOff :size="48" />
 			<h3>{{ t('openregister', 'No agents available') }}</h3>
-			<p>{{ t('openregister', 'You need an AI agent to start a conversation.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'You need an AI agent to start a conversation.',
+					)
+				}}
+			</p>
 			<div class="empty-state-help">
 				<p>
 					{{ t('openregister', 'Please create an agent in the') }}
 					<router-link to="/agents" class="agents-link">
 						{{ t('openregister', 'Agents') }}
 					</router-link>
-					{{ t('openregister', 'menu or contact someone with permission to create agents.') }}
+					{{
+						t(
+							'openregister',
+							'menu or contact someone with permission to create agents.',
+						)
+					}}
 				</p>
 			</div>
 		</div>
 
 		<!-- Agent Cards Grid -->
 		<div v-else class="agent-grid">
-			<div
-				v-for="agent in agents"
-				:key="agent.id"
-				class="agent-card">
+			<div v-for="agent in agents" :key="agent.id" class="agent-card">
 				<!-- Agent Header -->
 				<div class="agent-header">
 					<div class="agent-icon">
@@ -62,10 +71,16 @@
 						:disabled="startingAgentId === agent.id"
 						@click="handleStartConversation(agent)">
 						<template #icon>
-							<NcLoadingIcon v-if="startingAgentId === agent.id" :size="20" />
+							<NcLoadingIcon
+								v-if="startingAgentId === agent.id"
+								:size="20" />
 							<MessagePlus v-else :size="20" />
 						</template>
-						{{ startingAgentId === agent.id ? t('openregister', 'Starting...') : t('openregister', 'Start Conversation') }}
+						{{
+							startingAgentId === agent.id
+								? t('openregister', 'Starting...')
+								: t('openregister', 'Start Conversation')
+						}}
 					</NcButton>
 				</div>
 
@@ -74,11 +89,17 @@
 					<!-- Views and Tools in a grid -->
 					<div class="capabilities-grid">
 						<!-- Views -->
-						<div v-if="agent.views && agent.views.length > 0" class="capability-section">
+						<div
+							v-if="agent.views && agent.views.length > 0"
+							class="capability-section">
 							<div class="capability-header">
 								<CubeOutline :size="16" />
-								<span class="capability-label">{{ t('openregister', 'Views') }}</span>
-								<span class="capability-count">{{ agent.views.length }}</span>
+								<span class="capability-label">{{
+									t('openregister', 'Views')
+								}}</span>
+								<span class="capability-count">{{
+									agent.views.length
+								}}</span>
 							</div>
 							<div class="capability-list">
 								<span
@@ -88,7 +109,10 @@
 									{{ getViewName(view) }}
 								</span>
 								<button
-									v-if="agent.views.length > 3 && !isExpanded(agent.id, 'views')"
+									v-if="
+										agent.views.length > 3
+										&& !isExpanded(agent.id, 'views')
+									"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'views')">
 									+{{ agent.views.length - 3 }}
@@ -97,11 +121,17 @@
 						</div>
 
 						<!-- Tools -->
-						<div v-if="agent.tools && agent.tools.length > 0" class="capability-section">
+						<div
+							v-if="agent.tools && agent.tools.length > 0"
+							class="capability-section">
 							<div class="capability-header">
 								<Tools :size="16" />
-								<span class="capability-label">{{ t('openregister', 'Tools') }}</span>
-								<span class="capability-count">{{ agent.tools.length }}</span>
+								<span class="capability-label">{{
+									t('openregister', 'Tools')
+								}}</span>
+								<span class="capability-count">{{
+									agent.tools.length
+								}}</span>
 							</div>
 							<div class="capability-list">
 								<span
@@ -111,7 +141,10 @@
 									{{ getToolName(tool) }}
 								</span>
 								<button
-									v-if="agent.tools.length > 3 && !isExpanded(agent.id, 'tools')"
+									v-if="
+										agent.tools.length > 3
+										&& !isExpanded(agent.id, 'tools')
+									"
 									class="capability-more"
 									@click.stop="toggleExpand(agent.id, 'tools')">
 									+{{ agent.tools.length - 3 }}
@@ -218,7 +251,10 @@ export default {
 		 * @return {boolean} True if agent has views or tools
 		 */
 		hasCapabilities(agent) {
-			return (agent.views && agent.views.length > 0) || (agent.tools && agent.tools.length > 0)
+			return (
+				(agent.views && agent.views.length > 0)
+				|| (agent.tools && agent.tools.length > 0)
+			)
 		},
 
 		/**
@@ -599,7 +635,13 @@ export default {
 
 @media (prefers-reduced-motion: reduce) {
 	.agent-selector .agent-grid .agent-card,
-	.agent-selector .agent-grid .agent-card .agent-capabilities .capability-section .capability-list .capability-more {
+	.agent-selector
+		.agent-grid
+		.agent-card
+		.agent-capabilities
+		.capability-section
+		.capability-list
+		.capability-more {
 		transition: none;
 	}
 }

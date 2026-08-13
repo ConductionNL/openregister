@@ -1,5 +1,9 @@
 <template>
-	<div class="or-mail-sidebar-root" :class="{ 'or-mail-sidebar-root--connections-disabled': connectionsDisabled }">
+	<div
+		class="or-mail-sidebar-root"
+		:class="{
+			'or-mail-sidebar-root--connections-disabled': connectionsDisabled,
+		}">
 		<NcAppSidebar
 			v-if="!collapsed"
 			:name="sidebarTitle"
@@ -49,9 +53,7 @@
 				<template #icon>
 					<AccountMultiple :size="20" />
 				</template>
-				<EntitiesTab
-					:account-id="accountId"
-					:message-id="messageId" />
+				<EntitiesTab :account-id="accountId" :message-id="messageId" />
 			</NcAppSidebarTab>
 		</NcAppSidebar>
 
@@ -62,7 +64,9 @@
 			:title="t('openregister', 'Open connections sidebar')"
 			@click="toggleCollapsed">
 			<LinkVariant :size="16" />
-			<span class="or-mail-sidebar__collapsed-label">{{ t('openregister', 'Connections') }}</span>
+			<span class="or-mail-sidebar__collapsed-label">{{
+				t('openregister', 'Connections')
+			}}</span>
 		</button>
 	</div>
 </template>

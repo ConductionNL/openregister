@@ -77,10 +77,13 @@ export async function createQuickLink(params) {
  * @return {Promise<object>} The response data.
  */
 export async function deleteEmailLink(objectUuid, entityId) {
-	const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail/{entityId}', {
-		uuid: objectUuid,
-		entityId,
-	})
+	const url = generateUrl(
+		'/apps/openregister/api/objects/{uuid}/_linked/mail/{entityId}',
+		{
+			uuid: objectUuid,
+			entityId,
+		},
+	)
 	const response = await axios.delete(url, { timeout: TIMEOUT })
 	return response.data
 }

@@ -62,4 +62,5 @@ export const mockSchemaData = (): TSchema[] => [
 	},
 ]
 
-export const mockSchema = (data: TSchema[] = mockSchemaData()): TSchema[] => data.map(item => new Schema(item))
+export const mockSchema = (data: TSchema[] = mockSchemaData()): TSchema[] =>
+	data.map((item) => new Schema(item))

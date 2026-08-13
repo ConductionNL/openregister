@@ -20,7 +20,8 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked contacts')"
 			:description="errorMessage">
 			<template #icon>
@@ -29,18 +30,30 @@ SPDX-License-Identifier: EUPL-1.2
 		</NcEmptyContent>
 
 		<!-- Contacts app missing (HTTP 501 graceful degradation) -->
-		<NcEmptyContent v-else-if="contactsUnavailable"
+		<NcEmptyContent
+			v-else-if="contactsUnavailable"
 			:name="t('openregister', 'Contacts integration is not available')"
-			:description="t('openregister', 'The Nextcloud Contacts app is not installed or enabled on this server.')">
+			:description="
+				t(
+					'openregister',
+					'The Nextcloud Contacts app is not installed or enabled on this server.',
+				)
+			">
 			<template #icon>
 				<AccountOff :size="44" />
 			</template>
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="contacts.length === 0"
+		<NcEmptyContent
+			v-else-if="contacts.length === 0"
 			:name="t('openregister', 'No contacts linked to this object')"
-			:description="t('openregister', 'Add a contact from any of your address books to associate it with this object.')">
+			:description="
+				t(
+					'openregister',
+					'Add a contact from any of your address books to associate it with this object.',
+				)
+			">
 			<template #icon>
 				<AccountOutline :size="44" />
 			</template>
@@ -48,7 +61,8 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Linked contacts list -->
 		<ul v-else class="contacts-tab__list">
-			<li v-for="contact in contacts"
+			<li
+				v-for="contact in contacts"
 				:key="contact.uid || contact.contactUid || contact.id"
 				class="contacts-tab__item">
 				<div class="contacts-tab__icon">
@@ -56,15 +70,27 @@ SPDX-License-Identifier: EUPL-1.2
 				</div>
 				<div class="contacts-tab__content">
 					<div class="contacts-tab__name">
-						{{ contact.fullName || contact.displayName || contact.email || t('openregister', '(unnamed)') }}
+						{{
+							contact.fullName
+							|| contact.displayName
+							|| contact.email
+							|| t('openregister', '(unnamed)')
+						}}
 					</div>
 					<div class="contacts-tab__meta">
-						<span v-if="contact.email" class="contacts-tab__email">{{ contact.email }}</span>
-						<span v-if="contact.role" class="contacts-tab__separator">&middot;</span>
-						<span v-if="contact.role" class="contacts-tab__role">{{ contact.role }}</span>
+						<span v-if="contact.email" class="contacts-tab__email">{{
+							contact.email
+						}}</span>
+						<span v-if="contact.role" class="contacts-tab__separator"
+							>&middot;</span
+						>
+						<span v-if="contact.role" class="contacts-tab__role">{{
+							contact.role
+						}}</span>
 					</div>
 				</div>
-				<NcButton variant="tertiary"
+				<NcButton
+					variant="tertiary"
 					:aria-label="t('openregister', 'Remove contact')"
 					@click="unlinkContact(contact)">
 					<template #icon>
@@ -209,7 +235,12 @@ export default {
 		async unlinkContact(contact) {
 			const uid = contact.uid || contact.contactUid || contact.id
 			try {
-				await this.store.unlink(this.register, this.schema, this.objectId, uid)
+				await this.store.unlink(
+					this.register,
+					this.schema,
+					this.objectId,
+					uid,
+				)
 				this.$emit('contacts-changed', this.contacts.length)
 			} catch (err) {
 				this.error = true

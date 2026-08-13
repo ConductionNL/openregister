@@ -28,7 +28,13 @@
  * accounts come from the workflow's `playwright-seed-command`, shared with the
  * sibling spec — see the note there on why they are fixed rather than per-run.
  */
-import { test, expect, request as pwRequest, type APIRequestContext, type Page } from '@playwright/test'
+import {
+	test,
+	expect,
+	request as pwRequest,
+	type APIRequestContext,
+	type Page,
+} from '@playwright/test'
 import { resolveBaseUrl } from '../base-url'
 
 const BASE = resolveBaseUrl()
@@ -46,7 +52,10 @@ const PASS = 'E2e-Share-Pass-123'
 const GROUP = 'e2e-grantees'
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -78,7 +87,7 @@ async function dismissBlockingModals(page: Page): Promise<void> {
 	const mask = page.locator('.modal-mask:visible')
 
 	for (let attempt = 0; attempt < 3; attempt++) {
-		if (await mask.count() === 0) {
+		if ((await mask.count()) === 0) {
 			return
 		}
 		await page.keyboard.press('Escape')
@@ -118,7 +127,7 @@ async function openSharesTab(
 	await expect(
 		tab,
 		'no "Shares" tab on the object detail page — the tab is gated on relationContext, '
-		+ 'so this also fails when register/schema/id did not reach the view',
+			+ 'so this also fails when register/schema/id did not reach the view',
 	).toBeVisible({ timeout: 30_000 })
 
 	/*
@@ -130,11 +139,13 @@ async function openSharesTab(
 	 * bypasses the private scope, so the very thing under test would be gone and
 	 * nothing would go red. That is the failure this line exists to make loud.
 	 */
-	const uid = await page.evaluate(() => (window as any).OC?.getCurrentUser?.()?.uid ?? null)
+	const uid = await page.evaluate(
+		() => (window as any).OC?.getCurrentUser?.()?.uid ?? null,
+	)
 	expect(
 		uid,
 		'the browser is not authenticated as the owner — this would silently become an admin '
-		+ 'test, and an admin bypasses the private scope',
+			+ 'test, and an admin bypasses the private scope',
 	).toBe(OWNER)
 
 	await dismissBlockingModals(page)
@@ -144,7 +155,7 @@ async function openSharesTab(
 	await expect(
 		panel,
 		'the Shares tab is present but CnObjectAccessTab did not render — check that the '
-		+ 'installed @conduction/nextcloud-vue actually exports it and that js/ was rebuilt',
+			+ 'installed @conduction/nextcloud-vue actually exports it and that js/ was rebuilt',
 	).toBeVisible({ timeout: 20_000 })
 
 	return panel
@@ -210,7 +221,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 			data: {
 				title: `e2e shares tab schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: {
 					read: ['authenticated'],
 					create: ['authenticated'],
@@ -240,7 +253,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		return uuid
 	}
 
-	test('the tab renders the live access surface, not an empty panel', async ({ page }) => {
+	test('the tab renders the live access surface, not an empty panel', async ({
+		page,
+	}) => {
 		const uuid = await newObject()
 		const panel = await openSharesTab(page, registerId, schemaId, uuid)
 
@@ -254,9 +269,15 @@ test.describe('the Shares tab, driven through the browser', () => {
 		// elements — an assertion that broke on the very content it was meant to
 		// coexist with. The role also pins these as headings rather than as any
 		// element that happens to contain the words.
-		await expect(panel.getByRole('heading', { name: 'Visibility' })).toBeVisible()
-		await expect(panel.getByRole('heading', { name: 'Shared with' })).toBeVisible()
-		await expect(panel.getByRole('heading', { name: 'Add access' })).toBeVisible()
+		await expect(
+			panel.getByRole('heading', { name: 'Visibility' }),
+		).toBeVisible()
+		await expect(
+			panel.getByRole('heading', { name: 'Shared with' }),
+		).toBeVisible()
+		await expect(
+			panel.getByRole('heading', { name: 'Add access' }),
+		).toBeVisible()
 
 		// A brand-new object has no grants, and the empty state is the proof
 		// that the grants request SUCCEEDED and came back empty — the error
@@ -272,7 +293,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		).toHaveCount(0)
 	})
 
-	test('clicking Private in the UI hides the object from another user', async ({ page }) => {
+	test('clicking Private in the UI hides the object from another user', async ({
+		page,
+	}) => {
 		const uuid = await newObject()
 
 		// CONTROL. Without this, "the other user cannot see it" is unfalsifiable
@@ -293,7 +316,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		// the switch when the write is refused, so the hint flipping to the
 		// private wording means the server accepted it.
 		await expect(
-			panel.getByText('Only you, administrators, and the people below can reach this.'),
+			panel.getByText(
+				'Only you, administrators, and the people below can reach this.',
+			),
 			'the scope switch did not stick — the PUT was refused and the component reverted',
 		).toBeVisible({ timeout: 20_000 })
 
@@ -310,7 +335,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		).toBeLessThan(300)
 	})
 
-	test('granting in the UI restores access, and revoking in the UI removes it', async ({ page }) => {
+	test('granting in the UI restores access, and revoking in the UI removes it', async ({
+		page,
+	}) => {
 		const uuid = await newObject()
 
 		// Set the scope over the API: this test is about the grant controls, and
@@ -365,7 +392,7 @@ test.describe('the Shares tab, driven through the browser', () => {
 		expect(
 			await statusFor(other, registerId, schemaId, uuid),
 			'a revoked user can still reach the object — revocation takes effect on the NEXT '
-			+ 'request, so this is not a propagation delay',
+				+ 'request, so this is not a propagation delay',
 		).toBeGreaterThanOrEqual(400)
 	})
 
@@ -382,7 +409,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 	 * grant. That is the whole discriminator: under the old behaviour the share
 	 * went to a nonexistent user called "e2e-grantees" and OTHER got nothing.
 	 */
-	test('granting to a GROUP in the UI reaches a member of that group', async ({ page }) => {
+	test('granting to a GROUP in the UI reaches a member of that group', async ({
+		page,
+	}) => {
 		const uuid = await newObject()
 
 		const put = await owner.put(
@@ -415,7 +444,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		// `sharedWith`, which was the group's name under the broken behaviour too
 		// — the share went to a nonexistent USER called "e2e-grantees" and still
 		// displayed "e2e-grantees". This line would have passed either way.
-		await expect(panel.locator('.cn-object-access-tab__row')).toContainText(GROUP)
+		await expect(panel.locator('.cn-object-access-tab__row')).toContainText(
+			GROUP,
+		)
 
 		// The RENDERED ICON is a discriminator, and a measured one (task 10.6).
 		// iconFor() dispatches on the grant's `type` as the SERVER reported it, so
@@ -426,7 +457,7 @@ test.describe('the Shares tab, driven through the browser', () => {
 		await expect(
 			panel.locator('.cn-object-access-tab__row .account-group-icon'),
 			'the row is not showing the GROUP icon — the server reported a type other than '
-			+ '"group", which is what the shareType-vs-type defect produced',
+				+ '"group", which is what the shareType-vs-type defect produced',
 		).toHaveCount(1)
 		await expect(
 			panel.locator('.cn-object-access-tab__row .account-icon'),
@@ -439,11 +470,13 @@ test.describe('the Shares tab, driven through the browser', () => {
 		expect(
 			await statusFor(other, registerId, schemaId, uuid),
 			'a member of the granted group cannot reach the object — the grant was probably '
-			+ 'created as a USER share named after the group',
+				+ 'created as a USER share named after the group',
 		).toBeLessThan(300)
 
 		await panel.getByRole('button', { name: 'Revoke access' }).click()
-		await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(0, { timeout: 20_000 })
+		await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(0, {
+			timeout: 20_000,
+		})
 
 		expect(
 			await statusFor(other, registerId, schemaId, uuid),
@@ -466,7 +499,10 @@ test.describe('the Shares tab, driven through the browser', () => {
 	 * is worse than an honest gap. "Delivered" therefore remains unproven; the
 	 * FOLLOWABLE half, which is the security-relevant half, is proven.
 	 */
-	test('an email invitation is listed, followable by a stranger, and dies when revoked', async ({ page, browser }) => {
+	test('an email invitation is listed, followable by a stranger, and dies when revoked', async ({
+		page,
+		browser,
+	}) => {
 		const uuid = await newObject()
 
 		const put = await owner.put(
@@ -482,7 +518,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 
 		// The field label changing is how we know the select changed the
 		// component's state rather than only its own display.
-		await panel.getByRole('textbox', { name: 'Email address' }).fill('e2e-invitee@example.org')
+		await panel
+			.getByRole('textbox', { name: 'Email address' })
+			.fill('e2e-invitee@example.org')
 		await panel.getByRole('button', { name: 'Share', exact: true }).click()
 
 		// If the instance refuses the invitation outright, say so in the failure
@@ -495,7 +533,7 @@ test.describe('the Shares tab, driven through the browser', () => {
 		await expect(
 			panel.locator('.cn-object-access-tab__row'),
 			'no row appeared for the email invitation — before or#2311 TYPE_EMAIL was not listed '
-			+ 'at all, which is exactly the regression this guards',
+				+ 'at all, which is exactly the regression this guards',
 		).toHaveCount(1, { timeout: 20_000 })
 
 		// Task 10.6 — measured icon, so "listed" cannot be satisfied by a row of
@@ -506,27 +544,39 @@ test.describe('the Shares tab, driven through the browser', () => {
 		).toHaveCount(1)
 
 		const tokenNode = panel.locator('.cn-object-access-tab__link code')
-		await expect(tokenNode, 'no token rendered for the invitation').toBeVisible({ timeout: 20_000 })
+		await expect(tokenNode, 'no token rendered for the invitation').toBeVisible({
+			timeout: 20_000,
+		})
 		const token = (await tokenNode.innerText()).trim()
 		expect(token, 'the rendered token is empty').not.toBe('')
 
 		// The recipient has no account here, so no credentials at all.
-		const anon = await browser.newContext({ baseURL: BASE, storageState: undefined })
+		const anon = await browser.newContext({
+			baseURL: BASE,
+			storageState: undefined,
+		})
 		try {
-			const live = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const live = await anon.request.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(
 				live.status(),
 				`an invitation token must be followable without an account: ${await live.text()}`,
 			).toBeLessThan(300)
 
 			await panel.getByRole('button', { name: 'Revoke access' }).click()
-			await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(0, { timeout: 20_000 })
+			await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(
+				0,
+				{ timeout: 20_000 },
+			)
 
-			const dead = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const dead = await anon.request.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(
 				dead.status(),
 				'a revoked invitation still resolves — revoking must work after the mail has gone '
-				+ 'out, which is the whole reason the message carries no object data',
+					+ 'out, which is the whole reason the message carries no object data',
 			).toBe(404)
 		} finally {
 			await anon.close()
@@ -545,7 +595,10 @@ test.describe('the Shares tab, driven through the browser', () => {
 	 * test context makes, so reusing `page` would "prove" that the owner can read
 	 * their own object.
 	 */
-	test('a link created in the UI resolves with no credentials, and dies when revoked', async ({ page, browser }) => {
+	test('a link created in the UI resolves with no credentials, and dies when revoked', async ({
+		page,
+		browser,
+	}) => {
 		const uuid = await newObject()
 
 		const put = await owner.put(
@@ -591,9 +644,14 @@ test.describe('the Shares tab, driven through the browser', () => {
 
 		// ANONYMOUS: a context with no credentials at all, and no shared state
 		// with the authenticated one.
-		const anon = await browser.newContext({ baseURL: BASE, storageState: undefined })
+		const anon = await browser.newContext({
+			baseURL: BASE,
+			storageState: undefined,
+		})
 		try {
-			const live = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const live = await anon.request.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(
 				live.status(),
 				`a link minted through the UI must resolve anonymously: ${await live.text()}`,
@@ -607,11 +665,13 @@ test.describe('the Shares tab, driven through the browser', () => {
 				'the link row is still listed after clicking revoke',
 			).toHaveCount(0, { timeout: 20_000 })
 
-			const dead = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			const dead = await anon.request.get(
+				`/index.php/apps/openregister/api/shared/${token}`,
+			)
 			expect(
 				dead.status(),
 				'a link revoked in the UI still resolves — the token check happens per request, so '
-				+ 'this is not a cache',
+					+ 'this is not a cache',
 			).toBe(404)
 		} finally {
 			await anon.close()

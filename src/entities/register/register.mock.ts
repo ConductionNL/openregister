@@ -53,4 +53,5 @@ export const mockRegisterData = (): TRegister[] => [
 	},
 ]
 
-export const mockRegister = (data: TRegister[] = mockRegisterData()): TRegister[] => data.map(item => new Register(item))
+export const mockRegister = (data: TRegister[] = mockRegisterData()): TRegister[] =>
+	data.map((item) => new Register(item))

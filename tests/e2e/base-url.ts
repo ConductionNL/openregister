@@ -37,16 +37,17 @@
  * @return {string} The base URL, without a trailing slash.
  */
 export function resolveBaseUrl(): string {
-	const url = process.env.PLAYWRIGHT_BASE_URL
+	const url =
+		process.env.PLAYWRIGHT_BASE_URL
 		?? process.env.NEXTCLOUD_URL
 		?? process.env.BASE_URL
 
 	if (!url) {
 		throw new Error(
 			'No base URL configured for the e2e suite. Set PLAYWRIGHT_BASE_URL '
-			+ '(local) or BASE_URL (CI). There is deliberately no default — a '
-			+ 'default would silently target the shared dev instance on :8080 and '
-			+ 'write fixtures into other people\'s working trees.',
+				+ '(local) or BASE_URL (CI). There is deliberately no default — a '
+				+ 'default would silently target the shared dev instance on :8080 and '
+				+ "write fixtures into other people's working trees.",
 		)
 	}
 
@@ -76,7 +77,7 @@ export function resolveContainer(): string | null {
 	if (name === 'nextcloud') {
 		throw new Error(
 			'Refusing to target the shared dev container "nextcloud". Point '
-			+ 'NC_CONTAINER at a disposable instance.',
+				+ 'NC_CONTAINER at a disposable instance.',
 		)
 	}
 	return name

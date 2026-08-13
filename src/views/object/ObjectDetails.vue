@@ -9,34 +9,49 @@
 
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
-							<LockOutline v-if="objectStore.objectItem.locked" :size="20" />
+							<LockOutline
+								v-if="objectStore.objectItem.locked"
+								:size="20" />
 							<DotsHorizontal v-else :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="navigationStore.setModal('viewObject')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setModal('viewObject')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton v-if="!objectStore.objectItem.locked" close-after-click @click="navigationStore.setModal('lockObject')">
+						<NcActionButton
+							v-if="!objectStore.objectItem.locked"
+							close-after-click
+							@click="navigationStore.setModal('lockObject')">
 							<template #icon>
 								<LockOutline :size="20" />
 							</template>
 							Lock
 						</NcActionButton>
-						<NcActionButton v-if="objectStore.objectItem.locked" close-after-click @click="objectStore.unlockObject(objectStore.objectItem.id)">
+						<NcActionButton
+							v-if="objectStore.objectItem.locked"
+							close-after-click
+							@click="
+								objectStore.unlockObject(objectStore.objectItem.id)
+							">
 							<template #icon>
 								<LockOpenOutline :size="20" />
 							</template>
 							Unlock
 						</NcActionButton>
-						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteObject')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
 							Delete
 						</NcActionButton>
-						<NcActionButton close-after-click
+						<NcActionButton
+							close-after-click
 							:disabled="!objectStore.objectItem.folder"
 							@click="openFolder(objectStore.objectItem.folder)">
 							<template #icon>
@@ -55,31 +70,72 @@
 						<LockOutline :size="20" />
 					</template>
 					This object is locked by {{ objectStore.objectItem.locked.user }}
-					{{ objectStore.objectItem.locked.process ? `for process "${objectStore.objectItem.locked.process}"` : '' }}
-					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
+					{{
+						objectStore.objectItem.locked.process
+							? `for process "${objectStore.objectItem.locked.process}"`
+							: ''
+					}}
+					until
+					{{
+						new Date(
+							objectStore.objectItem.locked.expiration,
+						).toLocaleString()
+					}}
 				</NcNoteCard>
 
-				<span><b>Uri:</b> {{ objectStore.objectItem['@self']?.uri || objectStore.objectItem.uri }}</span>
+				<span
+					><b>Uri:</b>
+					{{
+						objectStore.objectItem['@self']?.uri
+						|| objectStore.objectItem.uri
+					}}</span
+				>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Register:</b>
-						<p>{{ objectStore.objectItem['@self']?.register || objectStore.objectItem.register }}</p>
+						<p>
+							{{
+								objectStore.objectItem['@self']?.register
+								|| objectStore.objectItem.register
+							}}
+						</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
-						<p>{{ objectStore.objectItem['@self']?.schema || objectStore.objectItem.schema }}</p>
+						<p>
+							{{
+								objectStore.objectItem['@self']?.schema
+								|| objectStore.objectItem.schema
+							}}
+						</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Folder:</b>
-						<p>{{ objectStore.objectItem['@self']?.folder || objectStore.objectItem.folder || '-' }}</p>
+						<p>
+							{{
+								objectStore.objectItem['@self']?.folder
+								|| objectStore.objectItem.folder
+								|| '-'
+							}}
+						</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
-						<p>{{ objectStore.objectItem['@self']?.updated || objectStore.objectItem.updated }}</p>
+						<p>
+							{{
+								objectStore.objectItem['@self']?.updated
+								|| objectStore.objectItem.updated
+							}}
+						</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Created:</b>
-						<p>{{ objectStore.objectItem['@self']?.created || objectStore.objectItem.created }}</p>
+						<p>
+							{{
+								objectStore.objectItem['@self']?.created
+								|| objectStore.objectItem.created
+							}}
+						</p>
 					</div>
 				</div>
 
@@ -91,15 +147,21 @@
                             </pre>
 						</AppTab>
 						<AppTab :title="t('openregister', 'Uses')">
-							<div v-if="objectStore.objectItem?.relations && Object.keys(objectStore.objectItem.relations).length > 0">
-								<NcListItem v-for="(relation, key) in objectStore.objectItem?.relations"
+							<div
+								v-if="
+									objectStore.objectItem?.relations
+									&& Object.keys(objectStore.objectItem.relations)
+										.length > 0
+								">
+								<NcListItem
+									v-for="(relation, key) in objectStore.objectItem
+										?.relations"
 									:key="key"
 									:name="key"
 									:bold="false"
 									:force-display-actions="true">
 									<template #icon>
-										<CubeOutline disable-menu
-											:size="44" />
+										<CubeOutline disable-menu :size="44" />
 									</template>
 									<template #subname>
 										{{ relation }}
@@ -112,35 +174,43 @@
 						</AppTab>
 						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.relations?.length">
-								<NcListItem v-for="(relation, key) in objectStore.relations"
+								<NcListItem
+									v-for="(relation, key) in objectStore.relations"
 									:key="key"
 									:name="relation.id"
 									:bold="false"
 									:force-display-actions="true">
 									<template #icon>
-										<CubeOutline disable-menu
-											:size="44" />
+										<CubeOutline disable-menu :size="44" />
 									</template>
 									<template #subname>
 										{{ relation.uri }}
 									</template>
 								</NcListItem>
-								<CnPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
+								<CnPagination
+									v-if="
+										!relationsLoading
+										&& objectStore.relations?.total
+											> pagination.relations.limit
+									"
 									class="tabPagination"
 									:current-page="pagination.relations.currentPage"
 									:total-pages="relationsTotalPages"
 									:total-items="objectStore.relations?.total"
 									:current-page-size="pagination.relations.limit"
 									:min-items-to-show="10"
-									@page-changed="pagination.relations.currentPage = $event"
-									@page-size-changed="onRelationsPageSizeChanged" />
+									@page-changed="
+										pagination.relations.currentPage = $event
+									"
+									@page-size-changed="
+										onRelationsPageSizeChanged
+									" />
 							</div>
-							<div v-else class="tabPanel">
-								No relations found
-							</div>
+							<div v-else class="tabPanel">No relations found</div>
 						</AppTab>
 						<AppTab :title="t('openregister', 'Files')">
-							<NcButton @click="openFolder(objectStore.objectItem.folder)">
+							<NcButton
+								@click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
 									<FolderOutline :size="20" />
 								</template>
@@ -148,30 +218,46 @@
 							</NcButton>
 
 							<div v-if="objectStore.files?.results?.length > 0">
-								<NcListItem v-for="(attachment, i) in objectStore.files?.results"
+								<NcListItem
+									v-for="(attachment, i) in objectStore.files
+										?.results"
 									:key="`${attachment}${i}`"
 									:name="attachment.name ?? attachment?.title"
 									:bold="false"
 									:active="activeAttachment === attachment.id"
 									:force-display-actions="true"
-									@click="() => {
-										if (activeAttachment === attachment.id) activeAttachment = null
-										else activeAttachment = attachment.id
-									}">
+									@click="
+										() => {
+											if (activeAttachment === attachment.id)
+												activeAttachment = null
+											else activeAttachment = attachment.id
+										}
+									">
 									<template #icon>
-										<ExclamationThick v-if="!attachment.accessUrl || !attachment.downloadUrl" class="warningIcon" :size="44" />
-										<FileOutline v-else
+										<ExclamationThick
+											v-if="
+												!attachment.accessUrl
+												|| !attachment.downloadUrl
+											"
+											class="warningIcon"
+											:size="44" />
+										<FileOutline
+											v-else
 											class="publishedIcon"
 											disable-menu
 											:size="44" />
 									</template>
 
 									<template #details>
-										<span>{{ formatFileSize(attachment?.size) }}</span>
+										<span>{{
+											formatFileSize(attachment?.size)
+										}}</span>
 									</template>
 									<template #indicator>
 										<div class="fileLabelsContainer">
-											<NcCounterBubble v-for="label of attachment.labels" :key="label">
+											<NcCounterBubble
+												v-for="label of attachment.labels"
+												:key="label">
 												{{ label }}
 											</NcCounterBubble>
 										</div>
@@ -180,7 +266,9 @@
 										{{ attachment?.type || 'Geen type' }}
 									</template>
 									<template #actions>
-										<NcActionButton close-after-click @click="openFile(attachment)">
+										<NcActionButton
+											close-after-click
+											@click="openFile(attachment)">
 											<template #icon>
 												<OpenInNew :size="20" />
 											</template>
@@ -189,14 +277,21 @@
 									</template>
 								</NcListItem>
 
-								<CnPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
+								<CnPagination
+									v-if="
+										!fileLoading
+										&& objectStore.files?.total
+											> pagination.files.limit
+									"
 									class="tabPagination"
 									:current-page="pagination.files.currentPage"
 									:total-pages="filesTotalPages"
 									:total-items="objectStore.files?.total"
 									:current-page-size="pagination.files.limit"
 									:min-items-to-show="10"
-									@page-changed="pagination.files.currentPage = $event"
+									@page-changed="
+										pagination.files.currentPage = $event
+									"
 									@page-size-changed="onFilesPageSizeChanged" />
 							</div>
 
@@ -205,8 +300,13 @@
 							</div>
 
 							<div
-								v-if="objectStore.files?.results?.length !== 0 && !objectStore.files?.results?.length > 0 && fileLoading">
-								<NcLoadingIcon :size="64"
+								v-if="
+									objectStore.files?.results?.length !== 0
+									&& !objectStore.files?.results?.length > 0
+									&& fileLoading
+								">
+								<NcLoadingIcon
+									:size="64"
 									class="loadingIcon"
 									appearance="dark"
 									name="Bijlagen aan het laden" />
@@ -247,7 +347,12 @@
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
 						</AppTab>
-						<AppTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
+						<AppTab
+							v-if="
+								relationContext
+								&& (integrationProviders?.length || 0) > 0
+							"
+							:title="t('openregister', 'Integrations')">
 							<!--
 								Registry-driven integration surface. Renders the tabbed
 								CnIntegrationWidget (nc-vue, ADR-019/024) — one app-faithful
@@ -288,30 +393,52 @@
 							object also reaches the files in its folder) are enforced
 							server-side and explained in the component's own hints.
 						-->
-						<AppTab v-if="relationContext" :title="t('openregister', 'Shares')">
+						<AppTab
+							v-if="relationContext"
+							:title="t('openregister', 'Shares')">
 							<CnObjectAccessTab
 								:register="String(relationContext.register)"
 								:schema="String(relationContext.schema)"
 								:object-id="String(relationContext.id)" />
 						</AppTab>
-						<AppTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
+						<AppTab
+							v-if="objectStore.auditTrails"
+							:title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails?.results?.length">
-								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails?.results"
+								<NcListItem
+									v-for="(auditTrail, key) in objectStore
+										.auditTrails?.results"
 									:key="key"
-									:name="new Date(auditTrail.created).toLocaleString()"
+									:name="
+										new Date(auditTrail.created).toLocaleString()
+									"
 									:bold="false"
 									:details="auditTrail.action"
-									:counter-number="Object.keys(auditTrail.changed).length"
+									:counter-number="
+										Object.keys(auditTrail.changed).length
+									"
 									:force-display-actions="true">
 									<template #icon>
-										<TimelineQuestionOutline disable-menu
+										<TimelineQuestionOutline
+											disable-menu
 											:size="44" />
 									</template>
 									<template #subname>
 										{{ auditTrail.userName }}
 									</template>
 									<template #actions>
-										<NcActionButton close-after-click @click="objectStore.setAuditTrailItem(auditTrail); navigationStore.setModal('viewObjectAuditTrail')">
+										<NcActionButton
+											close-after-click
+											@click="
+												() => {
+													objectStore.setAuditTrailItem(
+														auditTrail,
+													)
+													navigationStore.setModal(
+														'viewObjectAuditTrail',
+													)
+												}
+											">
 											<template #icon>
 												<Eye :size="20" />
 											</template>
@@ -319,15 +446,26 @@
 										</NcActionButton>
 									</template>
 								</NcListItem>
-								<CnPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
+								<CnPagination
+									v-if="
+										!auditTrailLoading
+										&& objectStore.auditTrails?.total
+											> pagination.auditTrails.limit
+									"
 									class="tabPagination"
-									:current-page="pagination.auditTrails.currentPage"
+									:current-page="
+										pagination.auditTrails.currentPage
+									"
 									:total-pages="auditTrailsTotalPages"
 									:total-items="objectStore.auditTrails?.total"
 									:current-page-size="pagination.auditTrails.limit"
 									:min-items-to-show="10"
-									@page-changed="pagination.auditTrails.currentPage = $event"
-									@page-size-changed="onAuditTrailsPageSizeChanged" />
+									@page-changed="
+										pagination.auditTrails.currentPage = $event
+									"
+									@page-size-changed="
+										onAuditTrailsPageSizeChanged
+									" />
 							</div>
 							<div v-if="!objectStore.auditTrails?.results?.length">
 								No audit trails found
@@ -371,7 +509,12 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
-import { CnIntegrationWidget, CnObjectAccessTab, CnPagination, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import {
+	CnIntegrationWidget,
+	CnObjectAccessTab,
+	CnPagination,
+	useIntegrationRegistry,
+} from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 
@@ -520,7 +663,11 @@ export default {
 		 * @return {number}
 		 */
 		filesTotalPages() {
-			return Math.ceil((objectStore.files?.total || 0) / this.pagination.files.limit) || 1
+			return (
+				Math.ceil(
+					(objectStore.files?.total || 0) / this.pagination.files.limit,
+				) || 1
+			)
 		},
 		/**
 		 * Total page count for the Audit Trails tab paginator.
@@ -529,7 +676,12 @@ export default {
 		 * @return {number}
 		 */
 		auditTrailsTotalPages() {
-			return Math.ceil((objectStore.auditTrails?.total || 0) / this.pagination.auditTrails.limit) || 1
+			return (
+				Math.ceil(
+					(objectStore.auditTrails?.total || 0)
+						/ this.pagination.auditTrails.limit,
+				) || 1
+			)
 		},
 		/**
 		 * Total page count for the Used by (relations) tab paginator.
@@ -538,7 +690,12 @@ export default {
 		 * @return {number}
 		 */
 		relationsTotalPages() {
-			return Math.ceil((objectStore.relations?.total || 0) / this.pagination.relations.limit) || 1
+			return (
+				Math.ceil(
+					(objectStore.relations?.total || 0)
+						/ this.pagination.relations.limit,
+				) || 1
+			)
 		},
 	},
 	watch: {
@@ -689,7 +846,10 @@ export default {
 				}
 				this.liveHandle = null
 				this.liveKey = ''
-				console.warn('[ObjectDetails] live subscription failed:', e?.message ?? e)
+				console.warn(
+					'[ObjectDetails] live subscription failed:',
+					e?.message ?? e,
+				)
 			}
 		},
 		/**
@@ -726,17 +886,22 @@ export default {
 		 * @return {void}
 		 */
 		getFiles() {
-			if (!objectStore.objectItem?.id || typeof objectStore.getFiles !== 'function') {
+			if (
+				!objectStore.objectItem?.id
+				|| typeof objectStore.getFiles !== 'function'
+			) {
 				return
 			}
 			this.fileLoading = true
 
-			objectStore.getFiles(objectStore.objectItem.id, {
-				limit: this.pagination.files.limit,
-				page: this.pagination.files.currentPage,
-			}).finally(() => {
-				this.fileLoading = false
-			})
+			objectStore
+				.getFiles(objectStore.objectItem.id, {
+					limit: this.pagination.files.limit,
+					page: this.pagination.files.currentPage,
+				})
+				.finally(() => {
+					this.fileLoading = false
+				})
 		},
 		/**
 		 * Fetch the object's audit trails for display (race-safe).
@@ -745,15 +910,19 @@ export default {
 		 * @return {void}
 		 */
 		getAuditTrails() {
-			if (!objectStore.objectItem?.id || typeof objectStore.getAuditTrails !== 'function') {
+			if (
+				!objectStore.objectItem?.id
+				|| typeof objectStore.getAuditTrails !== 'function'
+			) {
 				return
 			}
 			this.auditTrailLoading = true
 
-			objectStore.getAuditTrails(objectStore.objectItem.id, {
-				limit: this.pagination.auditTrails.limit,
-				page: this.pagination.auditTrails.currentPage,
-			})
+			objectStore
+				.getAuditTrails(objectStore.objectItem.id, {
+					limit: this.pagination.auditTrails.limit,
+					page: this.pagination.auditTrails.currentPage,
+				})
 				.then(({ data }) => {
 					this.auditTrails = data
 					this.auditTrailLoading = false
@@ -769,15 +938,19 @@ export default {
 		 * @return {void}
 		 */
 		getRelations() {
-			if (!objectStore.objectItem?.id || typeof objectStore.getRelations !== 'function') {
+			if (
+				!objectStore.objectItem?.id
+				|| typeof objectStore.getRelations !== 'function'
+			) {
 				return
 			}
 			this.relationsLoading = true
 
-			objectStore.getRelations(objectStore.objectItem.id, {
-				limit: this.pagination.relations.limit,
-				page: this.pagination.relations.currentPage,
-			})
+			objectStore
+				.getRelations(objectStore.objectItem.id, {
+					limit: this.pagination.relations.limit,
+					page: this.pagination.relations.currentPage,
+				})
 				.then(({ data }) => {
 					this.relations = data
 					this.relationsLoading = false
@@ -846,7 +1019,9 @@ export default {
 			const decodedUrl = url.replace(/\\\//g, '/')
 
 			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
+			const normalizedUrl = decodedUrl.startsWith('/')
+				? decodedUrl
+				: '/' + decodedUrl
 
 			// Construct the proper Nextcloud Files app URL with the normalized path
 			// Use window.location.origin to get the current domain instead of hardcoding
@@ -879,7 +1054,7 @@ export default {
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted file size (e.g. "1.5 MB")
 		 */
-		 formatFileSize(bytes) {
+		formatFileSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
 			if (bytes === 0) return 'n/a'
 			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
@@ -892,13 +1067,13 @@ export default {
 </script>
 
 <style>
-.head{
+.head {
 	display: flex;
 	justify-content: space-between;
 }
 
 h4 {
-	font-weight: bold
+	font-weight: bold;
 }
 
 .h1 {

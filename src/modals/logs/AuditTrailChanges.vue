@@ -4,7 +4,8 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'auditTrailChanges'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'auditTrailChanges'"
 		:name="t('openregister', 'Audit Trail Changes')"
 		size="large"
 		:can-close="true"
@@ -12,20 +13,46 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->
 			<div class="changes-header">
-				<h3>{{ t('openregister', 'Changes for Audit Trail #{id}', { id: auditTrailStore.auditTrailItem.id }) }}</h3>
+				<h3>
+					{{
+						t('openregister', 'Changes for Audit Trail #{id}', {
+							id: auditTrailStore.auditTrailItem.id,
+						})
+					}}
+				</h3>
 				<div class="audit-info">
-					<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-						<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-						<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-						<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-						<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
+					<span
+						class="action-badge"
+						:class="`action-${auditTrailStore.auditTrailItem.action}`">
+						<Plus
+							v-if="auditTrailStore.auditTrailItem.action === 'create'"
+							:size="16" />
+						<Pencil
+							v-else-if="
+								auditTrailStore.auditTrailItem.action === 'update'
+							"
+							:size="16" />
+						<Delete
+							v-else-if="
+								auditTrailStore.auditTrailItem.action === 'delete'
+							"
+							:size="16" />
+						<Eye
+							v-else-if="
+								auditTrailStore.auditTrailItem.action === 'read'
+							"
+							:size="16" />
 						{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
 					</span>
 					<span class="timestamp">
 						{{ formatDate(auditTrailStore.auditTrailItem.created) }}
 					</span>
 					<span class="user">
-						{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || 'Unknown User' }}
+						{{
+							auditTrailStore.auditTrailItem.userName
+							|| auditTrailStore.auditTrailItem.user
+							|| 'Unknown User'
+						}}
 					</span>
 				</div>
 			</div>
@@ -51,20 +78,29 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="(change, field) in changes" :key="field" class="change-row">
+							<tr
+								v-for="(change, field) in changes"
+								:key="field"
+								class="change-row">
 								<td class="field-name">
 									{{ field }}
 								</td>
 								<td class="old-value">
-									<pre v-if="isObject(change.old)">{{ formatValue(change.old) }}</pre>
+									<pre v-if="isObject(change.old)">{{
+										formatValue(change.old)
+									}}</pre>
 									<span v-else>{{ formatValue(change.old) }}</span>
 								</td>
 								<td class="new-value">
-									<pre v-if="isObject(change.new)">{{ formatValue(change.new) }}</pre>
+									<pre v-if="isObject(change.new)">{{
+										formatValue(change.new)
+									}}</pre>
 									<span v-else>{{ formatValue(change.new) }}</span>
 								</td>
 								<td class="change-type">
-									<span class="type-badge" :class="getChangeType(change)">
+									<span
+										class="type-badge"
+										:class="getChangeType(change)">
 										{{ getChangeTypeLabel(change) }}
 									</span>
 								</td>
@@ -76,7 +112,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<!-- Raw changes view for non-standard formats -->
 				<div v-else class="raw-changes-container">
 					<h4>{{ t('openregister', 'Raw Changes Data') }}</h4>
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
+					<pre>{{
+						formatChanges(auditTrailStore.auditTrailItem.changed)
+					}}</pre>
 				</div>
 			</div>
 
@@ -84,7 +122,12 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<div v-else class="no-changes">
 				<NcEmptyContent
 					:name="t('openregister', 'No changes recorded')"
-					:description="t('openregister', 'This audit trail entry does not contain any change information.')">
+					:description="
+						t(
+							'openregister',
+							'This audit trail entry does not contain any change information.',
+						)
+					">
 					<template #icon>
 						<InformationOutline />
 					</template>
@@ -119,11 +162,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
@@ -183,10 +222,12 @@ export default {
 			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
 				// Check if it's in the format { field: { old: value, new: value } }
-				const hasStandardFormat = Object.values(changed).every(value =>
-					typeof value === 'object'
-					&& value !== null
-					&& (Object.prototype.hasOwnProperty.call(value, 'old') || Object.prototype.hasOwnProperty.call(value, 'new')),
+				const hasStandardFormat = Object.values(changed).every(
+					(value) =>
+						typeof value === 'object'
+						&& value !== null
+						&& (Object.prototype.hasOwnProperty.call(value, 'old')
+							|| Object.prototype.hasOwnProperty.call(value, 'new')),
 				)
 
 				if (hasStandardFormat) {
@@ -303,10 +344,16 @@ export default {
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		getChangeType(change) {
-			if (!Object.prototype.hasOwnProperty.call(change, 'old') && Object.prototype.hasOwnProperty.call(change, 'new')) {
+			if (
+				!Object.prototype.hasOwnProperty.call(change, 'old')
+				&& Object.prototype.hasOwnProperty.call(change, 'new')
+			) {
 				return 'added'
 			}
-			if (Object.prototype.hasOwnProperty.call(change, 'old') && !Object.prototype.hasOwnProperty.call(change, 'new')) {
+			if (
+				Object.prototype.hasOwnProperty.call(change, 'old')
+				&& !Object.prototype.hasOwnProperty.call(change, 'new')
+			) {
 				return 'removed'
 			}
 			if (change.old !== change.new) {
@@ -325,14 +372,14 @@ export default {
 		getChangeTypeLabel(change) {
 			const type = this.getChangeType(change)
 			switch (type) {
-			case 'added':
-				return this.t('openregister', 'Added')
-			case 'removed':
-				return this.t('openregister', 'Removed')
-			case 'modified':
-				return this.t('openregister', 'Modified')
-			default:
-				return this.t('openregister', 'Unchanged')
+				case 'added':
+					return this.t('openregister', 'Added')
+				case 'removed':
+					return this.t('openregister', 'Removed')
+				case 'modified':
+					return this.t('openregister', 'Modified')
+				default:
+					return this.t('openregister', 'Unchanged')
 			}
 		},
 
@@ -344,12 +391,18 @@ export default {
 		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(
+					auditTrailStore.auditTrailItem.changed,
+				)
 				await navigator.clipboard.writeText(changes)
-				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
+				OC.Notification.showSuccess(
+					this.t('openregister', 'Changes copied to clipboard'),
+				)
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(this.t('openregister', 'Failed to copy changes'))
+				OC.Notification.showError(
+					this.t('openregister', 'Failed to copy changes'),
+				)
 			}
 		},
 

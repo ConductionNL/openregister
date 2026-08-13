@@ -121,7 +121,10 @@ export const useReportsStore = defineStore('reports', {
 				this.dashboards = response.data?.results ?? response.data ?? []
 				return this.dashboards
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch dashboards'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch dashboards'
 				console.error('[reports.fetchDashboards]', e)
 				throw e
 			} finally {
@@ -149,7 +152,10 @@ export const useReportsStore = defineStore('reports', {
 				this.activeDashboard = response.data ?? null
 				return this.activeDashboard
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch dashboard'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch dashboard'
 				console.error('[reports.fetchDashboard]', e)
 				throw e
 			} finally {
@@ -197,7 +203,10 @@ export const useReportsStore = defineStore('reports', {
 				}
 				return data
 			} catch (e) {
-				const message = e.response?.data?.error ?? e.message ?? 'Failed to fetch widget data'
+				const message =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch widget data'
 				this.widgetData = {
 					...this.widgetData,
 					[key]: {
@@ -245,7 +254,9 @@ export const useReportsStore = defineStore('reports', {
 			const schema = encodeURIComponent(dataSource.schema || '')
 			const name = encodeURIComponent(dataSource.aggregation || '')
 			if (!register || !schema || !name) {
-				throw new Error('aggregation data-source requires register, schema, and aggregation name')
+				throw new Error(
+					'aggregation data-source requires register, schema, and aggregation name',
+				)
 			}
 			const response = await axios.get(
 				`${API_BASE}/objects/aggregations/${register}/${schema}/${name}`,
@@ -280,7 +291,9 @@ export const useReportsStore = defineStore('reports', {
 			const params = {}
 			if (register) params.registerId = register
 			if (schema) params.schemaId = schema
-			const response = await axios.get(`${API_BASE}/dashboard/statistics`, { params })
+			const response = await axios.get(`${API_BASE}/dashboard/statistics`, {
+				params,
+			})
 			return response.data
 		},
 	},

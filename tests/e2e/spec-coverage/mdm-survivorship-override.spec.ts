@@ -31,8 +31,12 @@ function scopedQuery(): string {
 
 /** Navigate to a hash-mode OR route and wait for NC header + app content. */
 async function gotoApp(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
+	await page.goto(`/index.php/apps/openregister/#${route}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	await page.waitForTimeout(800)
 	await dismissFirstRun(page)
@@ -43,7 +47,13 @@ async function dismissFirstRun(page: Page): Promise<void> {
 	for (const name of [/first run/i, /welcome/i, /support/i]) {
 		const dlg = page.getByRole('dialog', { name }).first()
 		if (await dlg.isVisible().catch(() => false)) {
-			await dlg.getByRole('button', { name: /close|dismiss|got it|skip|no thanks/i }).first().click().catch(() => {})
+			await dlg
+				.getByRole('button', {
+					name: /close|dismiss|got it|skip|no thanks/i,
+				})
+				.first()
+				.click()
+				.catch(() => {})
 		}
 	}
 }
@@ -56,7 +66,9 @@ async function clickAndWaitForOptions(
 ): Promise<boolean> {
 	await combo.click()
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -86,7 +98,9 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 async function gotoMasterEntities(page: Page): Promise<boolean> {
 	if (seed) {
 		await gotoApp(page, `/master-entities${scopedQuery()}`)
-		await expect(page.getByTestId('mdm-register-select')).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByTestId('mdm-register-select')).toBeVisible({
+			timeout: 10_000,
+		})
 		return true
 	}
 	await gotoApp(page, '/master-entities')
@@ -105,12 +119,17 @@ async function openResolveConflicts(page: Page): Promise<boolean> {
 
 	let viewButton
 	if (seed) {
-		const row = page.getByTestId('mdm-master-entity-row').filter({ hasText: seed.conflictUuid }).first()
-		if (!(await row.isVisible({ timeout: 10_000 }).catch(() => false))) return false
+		const row = page
+			.getByTestId('mdm-master-entity-row')
+			.filter({ hasText: seed.conflictUuid })
+			.first()
+		if (!(await row.isVisible({ timeout: 10_000 }).catch(() => false)))
+			return false
 		viewButton = row.getByTestId('mdm-view-golden-record')
 	} else {
 		viewButton = page.getByTestId('mdm-view-golden-record').first()
-		if (!(await viewButton.isVisible({ timeout: 8_000 }).catch(() => false))) return false
+		if (!(await viewButton.isVisible({ timeout: 8_000 }).catch(() => false)))
+			return false
 	}
 
 	await viewButton.click()
@@ -124,7 +143,9 @@ async function openResolveConflicts(page: Page): Promise<boolean> {
 	await dialog.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
 	const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
 	const emptyState = dialog.getByText(/No conflicts to resolve/i)
-	await expect(conflictRow.or(emptyState)).toBeVisible({ timeout: 10_000 }).catch(() => {})
+	await expect(conflictRow.or(emptyState))
+		.toBeVisible({ timeout: 10_000 })
+		.catch(() => {})
 	return true
 }
 
@@ -136,7 +157,9 @@ async function openResolveConflicts(page: Page): Promise<boolean> {
 test.describe('mdm-survivorship-override — conflict-resolution modal opens from a golden record', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Resolve conflicts opens from the golden-record detail and lists the disagreeing attribute', async ({ page }) => {
+	test('Resolve conflicts opens from the golden-record detail and lists the disagreeing attribute', async ({
+		page,
+	}) => {
 		const opened = await openResolveConflicts(page)
 		test.skip(!opened, 'No master entities available — seed data needed')
 
@@ -158,7 +181,10 @@ test.describe('mdm-survivorship-override — conflict-resolution modal opens fro
 			expect(hasConflicts).toBe(true)
 			await expect(conflictRow.getByText(/name/i).first()).toBeVisible()
 		} else {
-			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
+			test.skip(
+				!hasConflicts,
+				'No disagreeing-source conflict present — seed data needed',
+			)
 		}
 
 		const saveButton = page.getByTestId('mdm-conflict-save')
@@ -166,7 +192,9 @@ test.describe('mdm-survivorship-override — conflict-resolution modal opens fro
 
 		const winnerCombo = dialog.getByTestId('mdm-conflict-source-select').first()
 		await winnerCombo.click()
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout: 10_000 })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout: 10_000,
+		})
 		await page.getByRole('option').first().click()
 
 		await expect(saveButton).toBeEnabled({ timeout: 5_000 })
@@ -179,35 +207,48 @@ test.describe('mdm-survivorship-override — conflict-resolution modal opens fro
 test.describe('mdm-survivorship-override — persistent outcome', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('choosing the persistent outcome and saving refreshes the golden record', async ({ page }) => {
+	test('choosing the persistent outcome and saving refreshes the golden record', async ({
+		page,
+	}) => {
 		const opened = await openResolveConflicts(page)
 		test.skip(!opened, 'No master entities available — seed data needed')
 
 		const dialog = page.getByRole('dialog', { name: /Resolve conflicts/i })
 		const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
-		const hasConflicts = await conflictRow.isVisible({ timeout: 10_000 }).catch(() => false)
+		const hasConflicts = await conflictRow
+			.isVisible({ timeout: 10_000 })
+			.catch(() => false)
 		// Reverse-FK: the seeded conflict master surfaces a real `name`
 		// disagreement across its two sourceRecord objects. Assert when seeded;
 		// unseeded instances skip.
 		if (seed) {
 			expect(hasConflicts).toBe(true)
 		} else {
-			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
+			test.skip(
+				!hasConflicts,
+				'No disagreeing-source conflict present — seed data needed',
+			)
 		}
 
 		const winnerCombo = dialog.getByTestId('mdm-conflict-source-select').first()
 		await winnerCombo.click()
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout: 10_000 })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout: 10_000,
+		})
 		await page.getByRole('option').first().click()
 
 		// Persistent is the default outcome — assert the radio and save.
-		await expect(conflictRow.getByText(/Persistent \(trust rule\)/i)).toBeVisible()
+		await expect(
+			conflictRow.getByText(/Persistent \(trust rule\)/i),
+		).toBeVisible()
 		const saveButton = page.getByTestId('mdm-conflict-save')
 		await expect(saveButton).toBeEnabled({ timeout: 5_000 })
 		await saveButton.click()
 
 		await expect(dialog).toBeHidden({ timeout: 15_000 })
-		await expect(page.locator('[data-testid="provenance-table"]')).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('[data-testid="provenance-table"]')).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 })
 
@@ -218,25 +259,34 @@ test.describe('mdm-survivorship-override — persistent outcome', () => {
 test.describe('mdm-survivorship-override — one-off outcome', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('choosing the one-off outcome pins the attribute and the golden record reflects it as a manual override', async ({ page }) => {
+	test('choosing the one-off outcome pins the attribute and the golden record reflects it as a manual override', async ({
+		page,
+	}) => {
 		const opened = await openResolveConflicts(page)
 		test.skip(!opened, 'No master entities available — seed data needed')
 
 		const dialog = page.getByRole('dialog', { name: /Resolve conflicts/i })
 		const conflictRow = dialog.locator('[data-testid="conflict-row"]').first()
-		const hasConflicts = await conflictRow.isVisible({ timeout: 10_000 }).catch(() => false)
+		const hasConflicts = await conflictRow
+			.isVisible({ timeout: 10_000 })
+			.catch(() => false)
 		// Reverse-FK: the seeded conflict master surfaces a real `name`
 		// disagreement across its two sourceRecord objects. Assert when seeded;
 		// unseeded instances skip.
 		if (seed) {
 			expect(hasConflicts).toBe(true)
 		} else {
-			test.skip(!hasConflicts, 'No disagreeing-source conflict present — seed data needed')
+			test.skip(
+				!hasConflicts,
+				'No disagreeing-source conflict present — seed data needed',
+			)
 		}
 
 		const winnerCombo = dialog.getByTestId('mdm-conflict-source-select').first()
 		await winnerCombo.click()
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout: 10_000 })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout: 10_000,
+		})
 		await page.getByRole('option').first().click()
 
 		await conflictRow.getByText(/One-off \(this record only\)/i).click()
@@ -246,6 +296,8 @@ test.describe('mdm-survivorship-override — one-off outcome', () => {
 		await saveButton.click()
 
 		await expect(dialog).toBeHidden({ timeout: 15_000 })
-		await expect(page.getByText(/Manual override/i)).toBeVisible({ timeout: 15_000 })
+		await expect(page.getByText(/Manual override/i)).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 })

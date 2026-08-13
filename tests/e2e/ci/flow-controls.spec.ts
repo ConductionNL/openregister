@@ -130,7 +130,9 @@ test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
  * @param locator The themed control to click.
  * @return {Promise<void>}
  */
-async function clickThemed(locator: import('@playwright/test').Locator): Promise<void> {
+async function clickThemed(
+	locator: import('@playwright/test').Locator,
+): Promise<void> {
 	await expect(locator).toBeVisible()
 	await expect(locator).toBeEnabled()
 	await locator.dispatchEvent('click')
@@ -146,9 +148,14 @@ async function clickThemed(locator: import('@playwright/test').Locator): Promise
  * @param uuid The flow to delete.
  * @return {Promise<void>}
  */
-async function deleteFlow(page: import('@playwright/test').Page, uuid: string): Promise<void> {
+async function deleteFlow(
+	page: import('@playwright/test').Page,
+	uuid: string,
+): Promise<void> {
 	await page.evaluate(async (id) => {
-		const meta = document.head.querySelector('meta[name=csrf-token]') as HTMLMetaElement | null
+		const meta = document.head.querySelector(
+			'meta[name=csrf-token]',
+		) as HTMLMetaElement | null
 		await fetch(`/apps/openregister/api/flows/${id}`, {
 			method: 'DELETE',
 			headers: {
@@ -163,7 +170,9 @@ async function deleteFlow(page: import('@playwright/test').Page, uuid: string): 
 	}, uuid)
 }
 
-test('flow controls render, and a flow can be built, saved and run', async ({ page }) => {
+test('flow controls render, and a flow can be built, saved and run', async ({
+	page,
+}) => {
 	let createdUuid: string | null = null
 
 	// EVERY request the flow store makes is wrapped in a `catch` that logs
@@ -199,14 +208,17 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		const palette = page.locator('.cn-flow-sidebar__palette')
 		await expect(
 			palette,
-			'the step palette did not render, so the empty state\'s own instruction cannot be followed',
+			"the step palette did not render, so the empty state's own instruction cannot be followed",
 		).toBeVisible()
 
 		const actions = page.locator('.cn-flow-sidebar__actions')
 		await expect(actions).toBeVisible()
 
 		const saveButton = actions.getByRole('button', { name: 'Save', exact: true })
-		const runButton = actions.getByRole('button', { name: 'Run now', exact: true })
+		const runButton = actions.getByRole('button', {
+			name: 'Run now',
+			exact: true,
+		})
 		await expect(saveButton).toBeVisible()
 		await expect(runButton).toBeVisible()
 
@@ -214,7 +226,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		// renders the same container, so assert it has entries.
 		await expect
 			.poll(async () => await palette.locator('> *').count(), {
-				message: 'the palette rendered but is empty — the node catalog did not load',
+				message:
+					'the palette rendered but is empty — the node catalog did not load',
 				timeout: 15_000,
 			})
 			.toBeGreaterThan(0)
@@ -244,8 +257,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		await expect(
 			sidebar.getByLabel('Name', { exact: true }),
 			'the editor never initialised — the flow store is still holding its '
-			+ 'blank initial state, whose name is empty, and a flow with no name '
-			+ 'is rejected by the server',
+				+ 'blank initial state, whose name is empty, and a flow with no name '
+				+ 'is rejected by the server',
 		).not.toHaveValue('')
 
 		// 2. A STEP CAN BE ADDED.
@@ -291,7 +304,9 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		const created = page.waitForResponse(
 			(response) =>
 				response.request().method() === 'POST'
-				&& new URL(response.url()).pathname.endsWith('/apps/openregister/api/flows'),
+				&& new URL(response.url()).pathname.endsWith(
+					'/apps/openregister/api/flows',
+				),
 			{ timeout: 10_000 },
 		)
 
@@ -301,11 +316,13 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		expect(
 			createResponse.status(),
 			`the flow was not created — the server answered ${createResponse.status()}: `
-			+ `${(await createResponse.text()).slice(0, 200)}`,
+				+ `${(await createResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		const uuid = String((await createResponse.json())?.id ?? '')
-		expect(uuid, 'the created flow came back without a uuid').toMatch(/^[0-9a-f-]{8,}$/)
+		expect(uuid, 'the created flow came back without a uuid').toMatch(
+			/^[0-9a-f-]{8,}$/,
+		)
 		createdUuid = uuid
 
 		// The route still has to catch up, or a reload lands back on `new`. With
@@ -329,7 +346,7 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 		expect(
 			runResponse.status(),
 			`Run now was refused — the server answered ${runResponse.status()}: `
-			+ `${(await runResponse.text()).slice(0, 200)}`,
+				+ `${(await runResponse.text()).slice(0, 200)}`,
 		).toBe(201)
 
 		// And the run is ATTRIBUTED to this flow — a separate claim from "a run
@@ -350,7 +367,8 @@ test('flow controls render, and a flow can be built, saved and run', async ({ pa
 						return (body?.results ?? []).length
 					}, uuid),
 				{
-					message: 'the run was accepted but is not listed against this flow',
+					message:
+						'the run was accepted but is not listed against this flow',
 					timeout: 5_000,
 				},
 			)

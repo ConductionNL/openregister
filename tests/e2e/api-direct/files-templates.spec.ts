@@ -31,7 +31,10 @@ test.describe('file-actions — file upload and management', () => {
 		const resp = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-file-test`,
 					ocName: `${RUN_ID} File Test`,
@@ -46,7 +49,9 @@ test.describe('file-actions — file upload and management', () => {
 		}
 	})
 
-	test('GET /api/objects/:r/:s/:id/files lists attached files', async ({ request }) => {
+	test('GET /api/objects/:r/:s/:id/files lists attached files', async ({
+		request,
+	}) => {
 		if (!testObjectId) test.skip(true, 'no test object for file listing test')
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}/files`,
@@ -58,11 +63,16 @@ test.describe('file-actions — file upload and management', () => {
 			const body = await resp.json()
 			// Files should be an array.
 			const files = body.results ?? body.files ?? body
-			expect(Array.isArray(files), 'files response should be an array or have results').toBeTruthy()
+			expect(
+				Array.isArray(files),
+				'files response should be an array or have results',
+			).toBeTruthy()
 		}
 	})
 
-	test('POST text file to object creates a file attachment (not 5xx)', async ({ request }) => {
+	test('POST text file to object creates a file attachment (not 5xx)', async ({
+		request,
+	}) => {
 		if (!testObjectId) test.skip(true, 'no test object for file upload test')
 
 		// Upload a simple text file.
@@ -85,9 +95,11 @@ test.describe('file-actions — file upload and management', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!testObjectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -101,7 +113,10 @@ test.describe('file-risk-classification — executable file rejection', () => {
 		const resp = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-risk-test`,
 					ocName: `${RUN_ID} Risk Test`,
@@ -117,7 +132,8 @@ test.describe('file-risk-classification — executable file rejection', () => {
 	})
 
 	test('uploading an executable file is rejected (4xx)', async ({ request }) => {
-		if (!testObjectId) test.skip(true, 'no test object for risk classification test')
+		if (!testObjectId)
+			test.skip(true, 'no test object for risk classification test')
 
 		// Try uploading an executable (.exe) file — should be rejected.
 		const resp = await request.post(
@@ -127,22 +143,30 @@ test.describe('file-risk-classification — executable file rejection', () => {
 					file: {
 						name: `${RUN_ID}-malicious.exe`,
 						mimeType: 'application/octet-stream',
-						buffer: Buffer.from('MZ\x90\x00'),  // EXE magic bytes
+						buffer: Buffer.from('MZ\x90\x00'), // EXE magic bytes
 					},
 					fileName: `${RUN_ID}-malicious.exe`,
 				},
 			},
 		)
 		// Should be rejected with 4xx — never allow executable uploads.
-		expect(resp.status(), 'executable file upload should be rejected').toBeGreaterThanOrEqual(400)
-		expect(resp.status(), 'executable file rejection should not 5xx').toBeLessThan(500)
+		expect(
+			resp.status(),
+			'executable file upload should be rejected',
+		).toBeGreaterThanOrEqual(400)
+		expect(
+			resp.status(),
+			'executable file rejection should not 5xx',
+		).toBeLessThan(500)
 	})
 
 	test.afterAll(async ({ request }) => {
 		if (!testObjectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -150,10 +174,15 @@ test.describe('file-risk-classification — executable file rejection', () => {
 // schema-property-exploration — schema properties introspection
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('schema-property-exploration — schema property introspection', () => {
-	test('GET /api/schemas/:id returns properties with type information', async ({ request }) => {
-		const listResp = await request.get('/index.php/apps/openregister/api/schemas?_limit=1', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/schemas/:id returns properties with type information', async ({
+		request,
+	}) => {
+		const listResp = await request.get(
+			'/index.php/apps/openregister/api/schemas?_limit=1',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(listResp.status()).toBe(200)
 		const list = await listResp.json()
 		const schema = (list.results ?? [])[0]
@@ -171,21 +200,33 @@ test.describe('schema-property-exploration — schema property introspection', (
 			for (const key of propKeys) {
 				const prop = body.properties[key]
 				// Each property should have at minimum a type or $ref field.
-				const hasType = prop.type || prop.$ref || prop.allOf || prop.anyOf || prop.oneOf
-				expect(hasType, `property '${key}' should have a type or $ref`).toBeTruthy()
+				const hasType =
+					prop.type || prop.$ref || prop.allOf || prop.anyOf || prop.oneOf
+				expect(
+					hasType,
+					`property '${key}' should have a type or $ref`,
+				).toBeTruthy()
 			}
 		}
 	})
 
-	test('schema required field is an array of property names', async ({ request }) => {
-		const listResp = await request.get('/index.php/apps/openregister/api/schemas?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('schema required field is an array of property names', async ({
+		request,
+	}) => {
+		const listResp = await request.get(
+			'/index.php/apps/openregister/api/schemas?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(listResp.status()).toBe(200)
 		const list = await listResp.json()
 		for (const schema of (list.results ?? []).slice(0, 3)) {
 			if (schema.required !== undefined) {
-				expect(Array.isArray(schema.required), `schema ${schema.slug} required should be array`).toBe(true)
+				expect(
+					Array.isArray(schema.required),
+					`schema ${schema.slug} required should be array`,
+				).toBe(true)
 			}
 		}
 	})
@@ -195,10 +236,15 @@ test.describe('schema-property-exploration — schema property introspection', (
 // mock-registers — seeded data surface (registers from app initialization)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mock-registers — seeded register availability', () => {
-	test('larpingapp register (id=8) exists and is accessible', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/8', {
-			headers: { Accept: 'application/json' },
-		})
+	test('larpingapp register (id=8) exists and is accessible', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/8',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		// May be 200 or 404 depending on seeding; just not 5xx.
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
@@ -208,13 +254,19 @@ test.describe('mock-registers — seeded register availability', () => {
 	})
 
 	test('registers listing includes at least one register', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		// Some API versions return {total:N} others just {results:[...]}
 		const count = body.total ?? (body.results ?? []).length
-		expect(count, 'at least one register should be present').toBeGreaterThanOrEqual(1)
+		expect(
+			count,
+			'at least one register should be present',
+		).toBeGreaterThanOrEqual(1)
 	})
 })

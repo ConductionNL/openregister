@@ -3,7 +3,14 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<h1>{{ t('openregister', 'Duplicate Candidates') }}</h1>
-				<p>{{ t('openregister', 'Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.',
+						)
+					}}
+				</p>
 			</div>
 
 			<RegisterSchemaSelector />
@@ -11,7 +18,12 @@
 			<NcEmptyContent
 				v-if="!hasSelection"
 				:name="t('openregister', 'Select a register and schema')"
-				:description="t('openregister', 'Choose a register and schema above to see its duplicate candidates.')">
+				:description="
+					t(
+						'openregister',
+						'Choose a register and schema above to see its duplicate candidates.',
+					)
+				">
 				<template #icon>
 					<ContentDuplicate :size="64" />
 				</template>
@@ -24,7 +36,12 @@
 			<template v-else-if="duplicates.length === 0">
 				<NcEmptyContent
 					:name="t('openregister', 'No duplicate candidates found')"
-					:description="t('openregister', 'No candidate pairs were detected for this register and schema.')">
+					:description="
+						t(
+							'openregister',
+							'No candidate pairs were detected for this register and schema.',
+						)
+					">
 					<template #icon>
 						<ContentDuplicate :size="64" />
 					</template>
@@ -53,13 +70,19 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(pair, index) in duplicates" :key="index" data-testid="mdm-duplicate-row">
+						<tr
+							v-for="(pair, index) in duplicates"
+							:key="index"
+							data-testid="mdm-duplicate-row">
 							<td>{{ pair.objectA }}</td>
 							<td>{{ pair.objectB }}</td>
 							<td>{{ pair.score }}</td>
 							<td>{{ (pair.matchedOn || []).join(', ') }}</td>
 							<td>
-								<NcButton variant="tertiary" data-testid="mdm-merge-launch" @click="openMergeWizard(pair)">
+								<NcButton
+									variant="tertiary"
+									data-testid="mdm-merge-launch"
+									@click="openMergeWizard(pair)">
 									{{ t('openregister', 'Merge') }}
 								</NcButton>
 							</td>
@@ -67,17 +90,28 @@
 					</tbody>
 				</table>
 				<div v-if="duplicatesTotal > duplicatesLimit" class="pagination">
-					<NcButton :disabled="duplicatesOffset === 0" @click="previousPage">
+					<NcButton
+						:disabled="duplicatesOffset === 0"
+						@click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="paginationInfo">
-						{{ t('openregister', 'Showing {from}-{to} of {total}', {
-							from: duplicatesOffset + 1,
-							to: Math.min(duplicatesOffset + duplicatesLimit, duplicatesTotal),
-							total: duplicatesTotal,
-						}) }}
+						{{
+							t('openregister', 'Showing {from}-{to} of {total}', {
+								from: duplicatesOffset + 1,
+								to: Math.min(
+									duplicatesOffset + duplicatesLimit,
+									duplicatesTotal,
+								),
+								total: duplicatesTotal,
+							})
+						}}
 					</span>
-					<NcButton :disabled="duplicatesOffset + duplicatesLimit >= duplicatesTotal" @click="nextPage">
+					<NcButton
+						:disabled="
+							duplicatesOffset + duplicatesLimit >= duplicatesTotal
+						"
+						@click="nextPage">
 						{{ t('openregister', 'Next') }}
 					</NcButton>
 				</div>
@@ -94,7 +128,12 @@
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcButton,
+} from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
@@ -187,7 +226,11 @@ export default {
 		 */
 		async loadData() {
 			if (!qualityStore.hasSelection) return
-			await qualityStore.fetchDuplicates(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: 20, offset: 0 })
+			await qualityStore.fetchDuplicates(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: 20, offset: 0 },
+			)
 		},
 
 		/**
@@ -195,7 +238,11 @@ export default {
 		 */
 		async previousPage() {
 			const offset = Math.max(0, this.duplicatesOffset - this.duplicatesLimit)
-			await qualityStore.fetchDuplicates(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: this.duplicatesLimit, offset })
+			await qualityStore.fetchDuplicates(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: this.duplicatesLimit, offset },
+			)
 		},
 
 		/**
@@ -203,7 +250,11 @@ export default {
 		 */
 		async nextPage() {
 			const offset = this.duplicatesOffset + this.duplicatesLimit
-			await qualityStore.fetchDuplicates(qualityStore.selectedRegister, qualityStore.selectedSchema, { limit: this.duplicatesLimit, offset })
+			await qualityStore.fetchDuplicates(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: this.duplicatesLimit, offset },
+			)
 		},
 
 		/**

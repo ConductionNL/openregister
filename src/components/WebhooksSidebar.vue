@@ -45,9 +45,7 @@
 
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
-			<NcButton
-				variant="secondary"
-				@click="clearFilters">
+			<NcButton variant="secondary" @click="clearFilters">
 				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
 		</div>

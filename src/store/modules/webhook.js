@@ -92,13 +92,13 @@ export const useWebhookStore = defineStore('webhook', {
 			try {
 				const response = isNewWebhook
 					? await axios.post(
-						generateUrl('/apps/openregister/api/webhooks'),
-						body,
-					)
+							generateUrl('/apps/openregister/api/webhooks'),
+							body,
+						)
 					: await axios.put(
-						generateUrl(`/apps/openregister/api/webhooks/${id}`),
-						body,
-					)
+							generateUrl(`/apps/openregister/api/webhooks/${id}`),
+							body,
+						)
 
 				const data = response.data
 				this.setWebhookItem(data)

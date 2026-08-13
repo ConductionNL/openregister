@@ -27,7 +27,10 @@ test.describe('audit-trail-immutable — audit entries created on mutations', ()
 		const created = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-audit-test`,
 					ocName: `${RUN_ID} Audit Test`,
@@ -51,10 +54,15 @@ test.describe('audit-trail-immutable — audit entries created on mutations', ()
 		expect(auditBody).toHaveProperty('results')
 		expect(Array.isArray(auditBody.results)).toBe(true)
 		// At least one entry must exist for this object.
-		expect(auditBody.results.length, 'at least one audit entry for created object').toBeGreaterThanOrEqual(1)
+		expect(
+			auditBody.results.length,
+			'at least one audit entry for created object',
+		).toBeGreaterThanOrEqual(1)
 	})
 
-	test('audit entry has required fields: action, user, object uuid, timestamp', async ({ request }) => {
+	test('audit entry has required fields: action, user, object uuid, timestamp', async ({
+		request,
+	}) => {
 		if (!testObjectId) test.skip(true, 'no test object created')
 
 		const auditResp = await request.get(
@@ -67,7 +75,10 @@ test.describe('audit-trail-immutable — audit entries created on mutations', ()
 		expect(entries.length).toBeGreaterThanOrEqual(1)
 
 		for (const entry of entries) {
-			expect(entry.action ?? entry.type, 'audit entry must have action/type').toBeTruthy()
+			expect(
+				entry.action ?? entry.type,
+				'audit entry must have action/type',
+			).toBeTruthy()
 			expect(
 				entry.user ?? entry.userId ?? entry.createdBy,
 				'audit entry must have user info',
@@ -85,9 +96,11 @@ test.describe('audit-trail-immutable — audit entries created on mutations', ()
 
 	test.afterAll(async ({ request }) => {
 		if (!testObjectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -102,7 +115,10 @@ test.describe('content-versioning — version increments on mutations', () => {
 		const created = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-version-test`,
 					ocName: `${RUN_ID} Version Test`,
@@ -117,7 +133,8 @@ test.describe('content-versioning — version increments on mutations', () => {
 		expect(objectId).toBeTruthy()
 
 		// Version should be set (either as @self.version or top-level).
-		initialVersion = (body['@self']?.version ?? body.version ?? null) as string | null
+		initialVersion = (body['@self']?.version ?? body.version ?? null) as
+			string | null
 		// Version may or may not be present depending on the schema config;
 		// just verify the field type if present.
 		if (initialVersion !== null) {
@@ -131,7 +148,10 @@ test.describe('content-versioning — version increments on mutations', () => {
 		const updateResp = await request.put(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-version-test-updated`,
 					ocName: `${RUN_ID} Version Test Updated`,
@@ -145,10 +165,15 @@ test.describe('content-versioning — version increments on mutations', () => {
 		expect(updated.description).toContain('Version updated')
 	})
 
-	test('GET /api/audit-trails returns general list (no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/audit-trails?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/audit-trails returns general list (no 5xx)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/audit-trails?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -158,9 +183,11 @@ test.describe('content-versioning — version increments on mutations', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!objectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${objectId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -168,12 +195,17 @@ test.describe('content-versioning — version increments on mutations', () => {
 // deletion-audit-trail — deletes are tracked
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('deletion-audit-trail — deleted objects are tracked', () => {
-	test('deleting an object records a delete entry in the audit trail', async ({ request }) => {
+	test('deleting an object records a delete entry in the audit trail', async ({
+		request,
+	}) => {
 		// Create, then delete a throwaway object.
 		const created = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-delete-audit`,
 					ocName: `${RUN_ID} Delete Audit`,
@@ -193,7 +225,9 @@ test.describe('deletion-audit-trail — deleted objects are tracked', () => {
 			{ headers: { Accept: 'application/json' } },
 		)
 		// DELETE returns 200 or 204 depending on implementation.
-		expect([200, 204], 'DELETE should return 200 or 204').toContain(deleted.status())
+		expect([200, 204], 'DELETE should return 200 or 204').toContain(
+			deleted.status(),
+		)
 
 		// Now query audit trail for this object id (filter by objectUuid).
 		const auditResp = await request.get(
@@ -205,7 +239,10 @@ test.describe('deletion-audit-trail — deleted objects are tracked', () => {
 
 		// Some audit entry must exist for this object (create or delete).
 		// The delete audit may be recorded even after the object is gone.
-		expect(Array.isArray(auditBody.results), 'audit results should be an array').toBe(true)
+		expect(
+			Array.isArray(auditBody.results),
+			'audit results should be an array',
+		).toBe(true)
 		// Soft check: length may be 0 if the backend doesn't retain audit for deleted objects.
 		// Just verify no 5xx and the envelope is valid.
 		expect(auditBody).toHaveProperty('results')

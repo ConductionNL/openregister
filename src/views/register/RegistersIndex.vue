@@ -1,6 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { registerStore, navigationStore, configurationStore, schemaStore } from '../../store/store.js'
+import {
+	registerStore,
+	navigationStore,
+	configurationStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +13,12 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 		<CnIndexPage
 			ref="indexPage"
 			:title="t('openregister', 'Registers')"
-			:description="t('openregister', 'Manage your data registers and their configurations')"
+			:description="
+				t(
+					'openregister',
+					'Manage your data registers and their configurations',
+				)
+			"
 			:show-title="true"
 			:objects="paginatedRegisters"
 			:columns="tableColumns"
@@ -47,17 +57,17 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:modelValue="v => updateField('title', v)" />
+						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
 						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:modelValue="v => updateField('slug', v)" />
+						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
 						:model-value="formData.description || ''"
-						@update:modelValue="v => updateField('description', v)" />
+						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
 						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
@@ -65,13 +75,22 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@update:modelValue="vals => updateField('schemas', vals)" />
+						@update:modelValue="
+							(vals) => updateField('schemas', vals)
+						" />
 				</div>
 			</template>
 
 			<!-- Custom action items in actions bar -->
 			<template #action-items>
-				<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+				<NcActionButton
+					close-after-click
+					@click="
+						() => {
+							registerStore.setRegisterItem(null)
+							navigationStore.setModal('importRegister')
+						}
+					">
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -93,7 +112,10 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<RegisterSchemaCard :item="object" type="register" @refresh="handleRefresh" />
+				<RegisterSchemaCard
+					:item="object"
+					type="register"
+					@refresh="handleRefresh" />
 			</template>
 
 			<!-- Custom column: title with managed badge -->
@@ -101,34 +123,73 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 				<div class="titleContent">
 					<strong>
 						{{ row.title }}
-						<span v-if="isManagedByExternalConfig(row)" class="managedBadge managedBadge--external">
+						<span
+							v-if="isManagedByExternalConfig(row)"
+							class="managedBadge managedBadge--external">
 							<CogOutline :size="16" />
 							{{ t('openregister', 'Managed') }}
 						</span>
-						<span v-else-if="isManagedByLocalConfig(row)" class="managedBadge managedBadge--local">
+						<span
+							v-else-if="isManagedByLocalConfig(row)"
+							class="managedBadge managedBadge--local">
 							<CogOutline :size="16" />
 							{{ t('openregister', 'Local') }}
 						</span>
 					</strong>
-					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+					<span
+						v-if="row.description"
+						class="textDescription textEllipsis"
+						>{{ row.description }}</span
+					>
 				</div>
 			</template>
 
 			<!-- Custom column: schemas count -->
 			<template #column-schemas="{ row }">
-				{{ row.schemas?.length || 0 }} {{ t('openregister', 'schema{plural}', {
-					plural: row.schemas?.length !== 1 ? 's' : ''
-				}) }}
+				{{ row.schemas?.length || 0 }}
+				{{
+					t('openregister', 'schema{plural}', {
+						plural: row.schemas?.length !== 1 ? 's' : '',
+					})
+				}}
 			</template>
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{ row.created ? new Date(row.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.created
+						? new Date(row.created).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.created).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom column: updated date -->
 			<template #column-updated="{ row }">
-				{{ row.updated ? new Date(row.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.updated
+						? new Date(row.updated).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.updated).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -138,7 +199,18 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						:title="isManagedByExternalConfig(row) ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title: getManagingConfiguration(row)?.title }) : ''"
+						:title="
+							isManagedByExternalConfig(row)
+								? t(
+										'openregister',
+										'Cannot edit: This register is managed by external configuration {title}',
+										{
+											title: getManagingConfiguration(row)
+												?.title,
+										},
+									)
+								: ''
+						"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="$refs.indexPage.openFormDialog(row)">
@@ -147,40 +219,83 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						</template>
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('publishRegister')">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setModal('publishRegister')
+							}
+						">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						{{ t('openregister', 'Publish OAS') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('importRegister')">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setModal('importRegister')
+							}
+						">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
 						{{ t('openregister', 'Import') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); viewOasDoc(row)">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								registerStore.setRegisterItem(row)
+								viewOasDoc(row)
+							}
+						">
 						<template #icon>
 							<ApiIcon :size="20" />
 						</template>
 						{{ t('openregister', 'View API Documentation') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); downloadOas(row)">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								registerStore.setRegisterItem(row)
+								downloadOas(row)
+							}
+						">
 						<template #icon>
 							<Download :size="20" />
 						</template>
 						{{ t('openregister', 'Download API Specification') }}
 					</NcActionButton>
-					<NcActionButton :title="row.stats?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
+					<NcActionButton
+						:title="
+							row.stats?.total > 0
+								? t(
+										'openregister',
+										'Cannot delete: objects are still attached',
+									)
+								: ''
+						"
 						close-after-click
 						:disabled="row.stats?.total > 0"
-						@click="registerStore.setRegisterItem(row); navigationStore.setDialog('deleteRegister')">
+						@click="
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setDialog('deleteRegister')
+							}
+						">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
 						{{ t('openregister', 'Delete') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="viewRegisterDetails(row)">
+					<NcActionButton
+						close-after-click
+						@click="viewRegisterDetails(row)">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
@@ -193,7 +308,14 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcActions,
+	NcActionButton,
+	NcTextField,
+	NcTextArea,
+	NcSelect,
+} from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -251,10 +373,30 @@ export default {
 			return {
 				title: t('openregister', 'Register'),
 				properties: {
-					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
-					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
-					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						required: true,
+						minLength: 1,
+						order: 1,
+					},
+					slug: {
+						type: 'string',
+						title: t('openregister', 'Slug'),
+						required: true,
+						minLength: 1,
+						order: 2,
+					},
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						order: 3,
+					},
+					schemas: {
+						type: 'array',
+						title: t('openregister', 'Schemas'),
+						order: 4,
+					},
 				},
 				required: ['title', 'slug'],
 			}
@@ -263,9 +405,10 @@ export default {
 		 * @spec exclude list-view list filtering of synthetic rows (computed)
 		 */
 		filteredRegisters() {
-			return registerStore.registerList.filter(register =>
-				register.title !== 'System Totals'
-				&& register.title !== 'Orphaned Items',
+			return registerStore.registerList.filter(
+				(register) =>
+					register.title !== 'System Totals'
+					&& register.title !== 'Orphaned Items',
 			)
 		},
 		/**
@@ -275,8 +418,16 @@ export default {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
 				{ key: 'schemas', label: t('openregister', 'Schemas') },
-				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
-				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
+				{
+					key: 'created',
+					label: t('openregister', 'Created'),
+					sortable: true,
+				},
+				{
+					key: 'updated',
+					label: t('openregister', 'Updated'),
+					sortable: true,
+				},
 			]
 		},
 		/**
@@ -323,7 +474,10 @@ export default {
 				configurationStore.refreshConfigurationList(),
 				schemaStore.refreshSchemaList(),
 			])
-			this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
+				id: s.id,
+				label: s.title,
+			}))
 		} catch (error) {
 			console.error('Failed to load data:', error)
 		} finally {
@@ -372,7 +526,8 @@ export default {
 		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
 		 */
 		getRowClass(register) {
-			if (this.isManagedByExternalConfig(register)) return 'viewTableRow--managed'
+			if (this.isManagedByExternalConfig(register))
+				return 'viewTableRow--managed'
 			if (this.isManagedByLocalConfig(register)) return 'viewTableRow--local'
 			return ''
 		},
@@ -383,9 +538,12 @@ export default {
 		 */
 		getManagingConfiguration(register) {
 			if (!register || !register.id) return null
-			return configurationStore.configurationList.find(
-				config => config.registers && config.registers.includes(register.id),
-			) || null
+			return (
+				configurationStore.configurationList.find(
+					(config) =>
+						config.registers && config.registers.includes(register.id),
+				) || null
+			)
 		},
 
 		/**
@@ -395,7 +553,11 @@ export default {
 		isManagedByExternalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
-			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
+			return (
+				(config.sourceType
+					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
+				|| config.isLocal === false
+			)
 		},
 
 		/**
@@ -405,7 +567,11 @@ export default {
 		isManagedByLocalConfig(register) {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
-			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
+			return (
+				config.sourceType === 'local'
+				|| config.sourceType === 'manual'
+				|| config.isLocal === true
+			)
 		},
 
 		/**
@@ -414,10 +580,13 @@ export default {
 		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
+			return schemas.map((s) => {
 				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
+				return (
+					this.schemaSelectOptions.find(
+						(o) => String(o.id) === String(id),
+					) || { id, label: String(id) }
+				)
 			})
 		},
 
@@ -429,7 +598,9 @@ export default {
 			try {
 				await registerStore.saveRegister({
 					...formData,
-					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+					schemas: (formData.schemas || []).map((s) =>
+						typeof s === 'object' ? s.id : s,
+					),
 				})
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
@@ -455,7 +626,9 @@ export default {
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
 				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
+				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+					type: 'application/json',
+				})
 				const downloadLink = document.createElement('a')
 				downloadLink.href = URL.createObjectURL(blob)
 				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
@@ -476,7 +649,10 @@ export default {
 		viewOasDoc(register) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
-			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+			window.open(
+				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
+				'_blank',
+			)
 		},
 
 		/**
@@ -485,7 +661,10 @@ export default {
 		openAllApisDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/apps/openregister/api/registers/oas`
-			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
+			window.open(
+				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
+				'_blank',
+			)
 		},
 
 		/**
@@ -498,50 +677,77 @@ export default {
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))
 
-				const response = await axios.post(apiUrl, {}, {
-					headers: {
-						'Content-Type': 'application/json',
-						Accept: 'application/json',
+				const response = await axios.post(
+					apiUrl,
+					{},
+					{
+						headers: {
+							'Content-Type': 'application/json',
+							Accept: 'application/json',
+						},
 					},
-				})
+				)
 
 				if (response.data && response.data.success) {
 					const loadedCount = response.data.loaded_names || 0
 					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
-					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
+					const oldCacheSize =
+						response.data.old_cache?.distributed_name_cache_size || 0
+					const newCacheSize =
+						response.data.new_cache?.distributed_name_cache_size || 0
 
 					let cacheMessage = ''
 					if (newCacheSize > oldCacheSize) {
-						cacheMessage = t('openregister', 'Cache grew from {old} to {new} entries.', {
-							old: oldCacheSize,
-							new: newCacheSize,
-						})
+						cacheMessage = t(
+							'openregister',
+							'Cache grew from {old} to {new} entries.',
+							{
+								old: oldCacheSize,
+								new: newCacheSize,
+							},
+						)
 					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = t('openregister', 'Cache shrunk from {old} to {new} entries.', {
-							old: oldCacheSize,
-							new: newCacheSize,
-						})
+						cacheMessage = t(
+							'openregister',
+							'Cache shrunk from {old} to {new} entries.',
+							{
+								old: oldCacheSize,
+								new: newCacheSize,
+							},
+						)
 					} else {
-						cacheMessage = t('openregister', 'Cache stayed the same at {size} entries.', {
-							size: newCacheSize,
-						})
+						cacheMessage = t(
+							'openregister',
+							'Cache stayed the same at {size} entries.',
+							{
+								size: newCacheSize,
+							},
+						)
 					}
 
-					showSuccess(t('openregister', 'Names cache warmed up successfully: {count} names loaded in {time}. {cache}', {
-						count: loadedCount,
-						time: executionTime,
-						cache: cacheMessage,
-					}))
+					showSuccess(
+						t(
+							'openregister',
+							'Names cache warmed up successfully: {count} names loaded in {time}. {cache}',
+							{
+								count: loadedCount,
+								time: executionTime,
+								cache: cacheMessage,
+							},
+						),
+					)
 				} else {
 					showSuccess(t('openregister', 'Names cache warmup completed'))
 				}
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
-				const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
-				showError(t('openregister', 'Failed to warmup names cache: {error}', {
-					error: errorMessage,
-				}))
+				const errorMessage =
+					error.response?.data?.message || error.message || 'Unknown error'
+				showError(
+					t('openregister', 'Failed to warmup names cache: {error}', {
+						error: errorMessage,
+					}),
+				)
 			}
 		},
 	},

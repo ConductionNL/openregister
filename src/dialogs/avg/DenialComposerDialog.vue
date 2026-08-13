@@ -6,7 +6,12 @@
 		@closing="$emit('close')">
 		<form class="denialForm" @submit.prevent="onSubmit">
 			<p class="denialIntro">
-				{{ t('openregister', 'Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does.') }}
+				{{
+					t(
+						'openregister',
+						'Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does.',
+					)
+				}}
 			</p>
 
 			<NcSelect
@@ -18,20 +23,36 @@
 				:reduce="(o) => o.value"
 				required />
 
-			<p v-if="selectedGround && selectedGround.citation" class="denialCitation">
-				<span class="denialCitationLabel">{{ t('openregister', 'Statutory citation') }}:</span>
+			<p
+				v-if="selectedGround && selectedGround.citation"
+				class="denialCitation">
+				<span class="denialCitationLabel"
+					>{{ t('openregister', 'Statutory citation') }}:</span
+				>
 				{{ selectedGround.citation }}
 			</p>
 
 			<div v-if="templateRef" class="denialTemplate">
-				<span class="denialTemplateLabel">{{ t('openregister', 'Denial letter template') }}:</span>
+				<span class="denialTemplateLabel"
+					>{{ t('openregister', 'Denial letter template') }}:</span
+				>
 				<code>{{ templateRef }}</code>
 				<p class="denialTemplateHint">
-					{{ t('openregister', 'The letter body is rendered from this template reference (a document leaf); it is not stored in this form.') }}
+					{{
+						t(
+							'openregister',
+							'The letter body is rendered from this template reference (a document leaf); it is not stored in this form.',
+						)
+					}}
 				</p>
 			</div>
 			<p v-else class="denialTemplateHint">
-				{{ t('openregister', 'The active policy pack supplies no denial-letter template reference for this jurisdiction.') }}
+				{{
+					t(
+						'openregister',
+						'The active policy pack supplies no denial-letter template reference for this jurisdiction.',
+					)
+				}}
 			</p>
 
 			<NcNoteCard v-if="error" type="error">
@@ -39,10 +60,16 @@
 			</NcNoteCard>
 
 			<div class="denialActions">
-				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton
+					variant="tertiary"
+					:disabled="saving"
+					@click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton variant="primary" type="submit" :disabled="saving || !ground">
+				<NcButton
+					variant="primary"
+					type="submit"
+					:disabled="saving || !ground">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>

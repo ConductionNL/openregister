@@ -1,6 +1,9 @@
 <template>
 	<NcAppContent>
-		<CnFeaturesAndRoadmapView :repo="repo" :features="features" :disabled="disabled" />
+		<CnFeaturesAndRoadmapView
+			:repo="repo"
+			:features="features"
+			:disabled="disabled" />
 	</NcAppContent>
 </template>
 
@@ -28,7 +31,11 @@ export default {
 
 	data() {
 		return {
-			repo: loadState('openregister', 'features_roadmap_repo', 'ConductionNL/openregister'),
+			repo: loadState(
+				'openregister',
+				'features_roadmap_repo',
+				'ConductionNL/openregister',
+			),
 			features: loadState('openregister', 'features_roadmap_features', []),
 			disabled: loadState('openregister', 'features_roadmap_disabled', false),
 		}

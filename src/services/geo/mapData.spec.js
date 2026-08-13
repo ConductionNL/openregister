@@ -30,7 +30,9 @@ describe('mapData base layers', () => {
 
 describe('coerceGeometry', () => {
 	it('accepts a GeoJSON Point', () => {
-		expect(coerceGeometry({ type: 'Point', coordinates: [5, 52] })).not.toBeNull()
+		expect(
+			coerceGeometry({ type: 'Point', coordinates: [5, 52] }),
+		).not.toBeNull()
 	})
 
 	it('rejects non-geometry values', () => {
@@ -43,21 +45,42 @@ describe('coerceGeometry', () => {
 
 describe('representativePoint', () => {
 	it('returns Point coordinates directly', () => {
-		expect(representativePoint({ type: 'Point', coordinates: [5.1, 52.0] })).toEqual([5.1, 52.0])
+		expect(
+			representativePoint({ type: 'Point', coordinates: [5.1, 52.0] }),
+		).toEqual([5.1, 52.0])
 	})
 
 	it('returns a polygon centroid', () => {
-		const polygon = { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]] }
+		const polygon = {
+			type: 'Polygon',
+			coordinates: [
+				[
+					[0, 0],
+					[2, 0],
+					[2, 2],
+					[0, 2],
+					[0, 0],
+				],
+			],
+		}
 		expect(representativePoint(polygon)).toEqual([0.8, 0.8])
 	})
 
 	it('returns the first vertex of a LineString', () => {
-		const line = { type: 'LineString', coordinates: [[5.1, 52.0], [5.2, 52.1]] }
+		const line = {
+			type: 'LineString',
+			coordinates: [
+				[5.1, 52.0],
+				[5.2, 52.1],
+			],
+		}
 		expect(representativePoint(line)).toEqual([5.1, 52.0])
 	})
 
 	it('returns null for invalid geometry', () => {
-		expect(representativePoint({ type: 'Point', coordinates: ['a', 'b'] })).toBeNull()
+		expect(
+			representativePoint({ type: 'Point', coordinates: ['a', 'b'] }),
+		).toBeNull()
 	})
 })
 
@@ -75,7 +98,9 @@ describe('buildMarkers', () => {
 	})
 
 	it('honours an explicit geo property name', () => {
-		const custom = [{ id: 9, title: 'Z', plek: { type: 'Point', coordinates: [4, 51] } }]
+		const custom = [
+			{ id: 9, title: 'Z', plek: { type: 'Point', coordinates: [4, 51] } },
+		]
 		expect(buildMarkers(custom, 'plek')).toHaveLength(1)
 		expect(buildMarkers(custom, 'missing')).toHaveLength(0)
 	})
@@ -91,7 +116,12 @@ describe('markerBounds', () => {
 			{ id: 1, locatie: { type: 'Point', coordinates: [5.1, 52.0] } },
 			{ id: 2, locatie: { type: 'Point', coordinates: [4.9, 52.3] } },
 		])
-		expect(markerBounds(markers)).toEqual({ west: 4.9, south: 52.0, east: 5.1, north: 52.3 })
+		expect(markerBounds(markers)).toEqual({
+			west: 4.9,
+			south: 52.0,
+			east: 5.1,
+			north: 52.3,
+		})
 	})
 
 	it('returns null for an empty marker list', () => {

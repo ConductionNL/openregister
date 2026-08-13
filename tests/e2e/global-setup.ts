@@ -48,7 +48,9 @@ function ensureBundleBuilt(): void {
 		return
 	}
 	// eslint-disable-next-line no-console
-	console.log(`[playwright globalSetup] bundle missing at ${BUNDLE_PATH}; running 'npm run build' once…`)
+	console.log(
+		`[playwright globalSetup] bundle missing at ${BUNDLE_PATH}; running 'npm run build' once…`,
+	)
 	execSync('npm run build', { cwd: APP_ROOT, stdio: 'inherit' })
 }
 
@@ -66,16 +68,22 @@ function ensureBundleBuilt(): void {
  * (ADR-074 runbook invariants).
  */
 async function ensureNextcloudReachable(baseURL: string): Promise<void> {
-	const deadline = Date.now() + Number(process.env.E2E_HEALTH_TIMEOUT_MS ?? 600_000)
+	const deadline =
+		Date.now() + Number(process.env.E2E_HEALTH_TIMEOUT_MS ?? 600_000)
 	const ctx = await request.newContext()
 	let last = 'no response'
 	try {
 		while (Date.now() < deadline) {
-			const res = await ctx.get(`${baseURL}/status.php`, { failOnStatusCode: false })
+			const res = await ctx
+				.get(`${baseURL}/status.php`, { failOnStatusCode: false })
 				.catch(() => null)
 			if (res?.ok()) {
 				const body = await res.json().catch(() => ({}))
-				if (body?.installed === true && body.maintenance === false && body.needsDbUpgrade === false) {
+				if (
+					body?.installed === true
+					&& body.maintenance === false
+					&& body.needsDbUpgrade === false
+				) {
 					return
 				}
 				last = JSON.stringify(body)
@@ -86,7 +94,7 @@ async function ensureNextcloudReachable(baseURL: string): Promise<void> {
 		}
 		throw new Error(
 			`Nextcloud at ${baseURL} did not become healthy (last: ${last}). `
-			+ 'Check for a concurrent deploy / occ upgrade, or a missing custom_apps bind mount.',
+				+ 'Check for a concurrent deploy / occ upgrade, or a missing custom_apps bind mount.',
 		)
 	} finally {
 		await ctx.dispose()
@@ -98,8 +106,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// container, which bind-mounts real host checkouts — a suite that silently
 	// retargets there writes fixtures into other people's working trees and
 	// fires failed logins at their instance. resolveBaseUrl() throws instead.
-	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined)
-		?? resolveBaseUrl()
+	const baseURL =
+		(config.projects[0]?.use?.baseURL as string | undefined) ?? resolveBaseUrl()
 	const username = process.env.NC_ADMIN_USER ?? 'admin'
 	const password = process.env.NC_ADMIN_PASS ?? 'admin'
 
@@ -118,11 +126,16 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// setup-level failure that looks like an app outage.
 	for (let attempt = 1; ; attempt++) {
 		try {
-			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			await page.goto('/index.php/login', {
+				waitUntil: 'domcontentloaded',
+				timeout: 90_000,
+			})
 			break
 		} catch (err) {
 			if (attempt >= 3) throw err
-			console.log(`[playwright globalSetup] login page load failed (attempt ${attempt}/3), retrying…`)
+			console.log(
+				`[playwright globalSetup] login page load failed (attempt ${attempt}/3), retrying…`,
+			)
 		}
 	}
 	await page.locator('input[name="user"]').fill(username)
@@ -168,7 +181,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	if (/\/login(\?|$|\/)/.test(currentUrl)) {
 		throw new Error(
 			`Login appears to have failed — still on ${currentUrl}. `
-			+ 'Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).',
+				+ 'Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).',
 		)
 	}
 
@@ -187,7 +200,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// the navigation first — `domcontentloaded`, never `networkidle`, which never
 	// fires on Nextcloud because of its notification poll (ADR-074 rule 4).
 	await page.waitForLoadState('domcontentloaded')
-	await expect(page.locator('#header, header.header').first()).toBeVisible({ timeout: 20_000 })
+	await expect(page.locator('#header, header.header').first()).toBeVisible({
+		timeout: 20_000,
+	})
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
@@ -218,6 +233,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		}
 	} catch (err) {
 		// eslint-disable-next-line no-console
-		console.warn(`[playwright globalSetup] MDM seeding failed (continuing): ${(err as Error).message}`)
+		console.warn(
+			`[playwright globalSetup] MDM seeding failed (continuing): ${(err as Error).message}`,
+		)
 	}
 }

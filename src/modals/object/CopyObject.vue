@@ -4,13 +4,27 @@ import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'copyObject'"
-		:name="'Copy ' + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
+	<NcDialog
+		v-if="navigationStore.dialog === 'copyObject'"
+		:name="
+			'Copy '
+			+ (objectStore.objectItem?.['@self']?.name
+				|| objectStore.objectItem?.name
+				|| objectStore.objectItem?.['@self']?.title
+				|| objectStore.objectItem?.id
+				|| 'Object')
+		"
 		size="normal"
 		:can-close="false">
 		<div v-if="success === null">
 			<p>
-				Create a copy of <b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>
+				Create a copy of
+				<b>{{
+					objectStore.objectItem?.['@self']?.name
+					|| objectStore.objectItem?.name
+					|| objectStore.objectItem?.['@self']?.title
+					|| objectStore.objectItem?.id
+				}}</b>
 			</p>
 
 			<div class="form-group">
@@ -91,7 +105,8 @@ export default {
 		 * @spec exclude computed display helper for default copy name
 		 */
 		defaultCopyName() {
-			const originalName = objectStore.objectItem?.['@self']?.name
+			const originalName =
+				objectStore.objectItem?.['@self']?.name
 				|| objectStore.objectItem?.name
 				|| objectStore.objectItem?.['@self']?.title
 				|| `Object ${objectStore.objectItem?.['@self']?.id}`
@@ -188,7 +203,8 @@ export default {
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while copying the object'
+				this.error =
+					error.message || 'An error occurred while copying the object'
 			} finally {
 				this.loading = false
 			}

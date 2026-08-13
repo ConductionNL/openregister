@@ -37,10 +37,15 @@ test.describe('dsar-case-ui — Cases surface', () => {
 
 	test.beforeEach(async ({ page }) => {
 		if (!fs.existsSync(STORAGE_STATE)) {
-			test.skip(true, 'storageState not present — the app is not reachable/built in this environment')
+			test.skip(
+				true,
+				'storageState not present — the app is not reachable/built in this environment',
+			)
 		}
 		await page.goto(AVG_URL, { waitUntil: 'domcontentloaded' })
-		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 25_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 25_000,
+		})
 	})
 
 	/**
@@ -49,7 +54,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-list/spec.md#handler-opens-the-case-list-from-the-avg-surface
 	 * @e2e openspec/specs/dsar-case-list/spec.md#empty-case-list-shows-an-empty-state-not-an-error
 	 */
-	test('opens the case list from the AVG surface (or a friendly empty-state)', async ({ page }) => {
+	test('opens the case list from the AVG surface (or a friendly empty-state)', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		// Either a populated table or the empty-state — never an error.
 		const listOrEmpty = page.locator('.avgTable, .empty-content')
@@ -65,10 +72,16 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-list/spec.md#status-and-tier-labels-come-from-the-pack
 	 * @e2e openspec/specs/dsar-case-list/spec.md#no-jurisdiction-wording-is-hard-coded-in-the-view
 	 */
-	test('list wording resolves from the pack, not inlined jurisdiction strings', async ({ page }) => {
+	test('list wording resolves from the pack, not inlined jurisdiction strings', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
-		await expect(page.getByRole('columnheader', { name: 'Status' })).toBeVisible()
-		await expect(page.getByRole('columnheader', { name: 'Escalation' })).toBeVisible()
+		await expect(
+			page.getByRole('columnheader', { name: 'Status' }),
+		).toBeVisible()
+		await expect(
+			page.getByRole('columnheader', { name: 'Escalation' }),
+		).toBeVisible()
 	})
 
 	/**
@@ -77,7 +90,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-list/spec.md#overdue-filter-narrows-to-breachedoverdue-cases
 	 * @e2e openspec/specs/dsar-case-list/spec.md#status-and-handler-filters-narrow-the-list
 	 */
-	test('filters narrow the authorised list and clearing restores it', async ({ page }) => {
+	test('filters narrow the authorised list and clearing restores it', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		await page.getByRole('switch', { name: 'Overdue only' }).click()
 		// The status/handler filter selects carry accessible labels (WCAG AA).
@@ -107,7 +122,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#advancing-a-case-posts-the-declared-transition
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#controls-follow-the-cases-current-state
 	 */
-	test('transition controls reflect the declared graph and post transitions', async ({ page }) => {
+	test('transition controls reflect the declared graph and post transitions', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
@@ -122,7 +139,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#finalise-is-blocked-without-a-regulator-reference
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#finalise-proceeds-once-the-reference-is-recorded
 	 */
-	test('finalise-denial is blocked until a regulator reference is recorded', async ({ page }) => {
+	test('finalise-denial is blocked until a regulator reference is recorded', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
@@ -138,7 +157,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#selecting-a-ground-records-it-on-the-case
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#a-denial-letter-is-rendered-from-a-template-reference
 	 */
-	test('denial composer shows pack grounds and template reference', async ({ page }) => {
+	test('denial composer shows pack grounds and template reference', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
@@ -159,7 +180,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
 			await firstOpen.click()
-			await expect(page.getByRole('button', { name: 'Collect evidence' })).toBeVisible()
+			await expect(
+				page.getByRole('button', { name: 'Collect evidence' }),
+			).toBeVisible()
 		}
 	})
 
@@ -188,7 +211,9 @@ test.describe('dsar-case-ui — Cases surface', () => {
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
 			await firstOpen.click()
-			await expect(page.getByRole('button', { name: 'Generate export bundle' })).toBeVisible()
+			await expect(
+				page.getByRole('button', { name: 'Generate export bundle' }),
+			).toBeVisible()
 		}
 	})
 
@@ -198,13 +223,19 @@ test.describe('dsar-case-ui — Cases surface', () => {
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#identity-verification-renders-the-real-result
 	 * @e2e openspec/specs/dsar-case-detail-actions/spec.md#regulator-escalation-renders-performed-or-refused
 	 */
-	test('seam triggers render the fail-closed result, never a false success', async ({ page }) => {
+	test('seam triggers render the fail-closed result, never a false success', async ({
+		page,
+	}) => {
 		await page.getByRole('button', { name: 'Cases' }).click()
 		const firstOpen = page.getByRole('button', { name: 'Open' }).first()
 		if (await firstOpen.isVisible().catch(() => false)) {
 			await firstOpen.click()
-			await expect(page.getByRole('button', { name: 'Verify identity' })).toBeVisible()
-			await expect(page.getByRole('button', { name: 'Escalate to regulator' })).toBeVisible()
+			await expect(
+				page.getByRole('button', { name: 'Verify identity' }),
+			).toBeVisible()
+			await expect(
+				page.getByRole('button', { name: 'Escalate to regulator' }),
+			).toBeVisible()
 		}
 	})
 })

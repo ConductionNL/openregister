@@ -7,9 +7,7 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ t('openregister', 'Webhook Logs') }}
 					</h1>
-					<NcButton
-						variant="tertiary"
-						@click="goBack">
+					<NcButton variant="tertiary" @click="goBack">
 						<template #icon>
 							<ArrowLeft :size="20" />
 						</template>
@@ -17,7 +15,12 @@
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'View webhook delivery logs and filter by webhook') }}
+					{{
+						t(
+							'openregister',
+							'View webhook delivery logs and filter by webhook',
+						)
+					}}
 				</p>
 			</div>
 
@@ -25,10 +28,16 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} log entries', {
-							showing: logsList.length,
-							total: totalLogs
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} log entries',
+								{
+									showing: logsList.length,
+									total: totalLogs,
+								},
+							)
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
@@ -44,9 +53,7 @@
 							{{ option.label }}
 						</template>
 					</NcSelect>
-					<NcButton
-						variant="secondary"
-						@click="refreshLogs">
+					<NcButton variant="secondary" @click="refreshLogs">
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
@@ -64,7 +71,12 @@
 				<NcEmptyContent
 					v-else-if="!logsList.length"
 					:name="t('openregister', 'No log entries found')"
-					:description="t('openregister', 'There are no webhook log entries matching your filters.')">
+					:description="
+						t(
+							'openregister',
+							'There are no webhook log entries matching your filters.',
+						)
+					">
 					<template #icon>
 						<FileDocumentOutline :size="64" />
 					</template>
@@ -105,11 +117,22 @@
 								{{ getWebhookName(log.webhookId) }}
 							</td>
 							<td>
-								<span class="event-class">{{ truncateEventClass(log.eventClass) }}</span>
+								<span class="event-class">{{
+									truncateEventClass(log.eventClass)
+								}}</span>
 							</td>
 							<td>
-								<span :class="log.success ? 'status-success' : 'status-failed'">
-									{{ log.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
+								<span
+									:class="
+										log.success
+											? 'status-success'
+											: 'status-failed'
+									">
+									{{
+										log.success
+											? t('openregister', 'Success')
+											: t('openregister', 'Failed')
+									}}
 								</span>
 							</td>
 							<td>
@@ -122,7 +145,10 @@
 								{{ formatDate(log.created) }}
 							</td>
 							<td>
-								<span v-if="log.errorMessage" class="error-message" :title="log.errorMessage">
+								<span
+									v-if="log.errorMessage"
+									class="error-message"
+									:title="log.errorMessage">
 									{{ truncateText(log.errorMessage, 50) }}
 								</span>
 								<span v-else>-</span>
@@ -145,16 +171,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalLogs > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalLogs"
@@ -249,7 +275,7 @@ export default {
 				{ value: null, label: t('openregister', 'All Webhooks') },
 			]
 			return options.concat(
-				this.webhooksList.map(webhook => ({
+				this.webhooksList.map((webhook) => ({
 					value: webhook.id,
 					label: webhook.name || webhook.url,
 				})),
@@ -389,8 +415,8 @@ export default {
 		 * @return {string} Webhook name
 		 */
 		getWebhookName(webhookId) {
-			const webhook = this.webhooksList.find(w => w.id === webhookId)
-			return webhook ? (webhook.name || webhook.url) : `#${webhookId}`
+			const webhook = this.webhooksList.find((w) => w.id === webhookId)
+			return webhook ? webhook.name || webhook.url : `#${webhookId}`
 		},
 
 		/**

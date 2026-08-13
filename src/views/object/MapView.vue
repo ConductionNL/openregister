@@ -1,7 +1,8 @@
 <template>
 	<div class="or-map-view">
 		<div class="or-map-view__toolbar">
-			<NcSelect v-if="hasBaseLayers"
+			<NcSelect
+				v-if="hasBaseLayers"
 				v-model="activeLayer"
 				:input-label="baseLayerLabel"
 				:options="baseLayers"
@@ -15,7 +16,8 @@
 		</div>
 
 		<!-- Map container; Leaflet (if globally available) renders here. -->
-		<div ref="mapContainer"
+		<div
+			ref="mapContainer"
 			class="or-map-view__map"
 			role="application"
 			:aria-label="mapAriaLabel" />
@@ -32,7 +34,9 @@
 			<ul v-else>
 				<li v-for="marker in markers" :key="marker.id">
 					<strong>{{ marker.title }}</strong>
-					<span class="or-map-view__coords">{{ coordsLabel(marker) }}</span>
+					<span class="or-map-view__coords">{{
+						coordsLabel(marker)
+					}}</span>
 				</li>
 			</ul>
 		</div>
@@ -101,10 +105,14 @@ export default {
 			return markerBounds(this.markers)
 		},
 		countLabel() {
-			return t('openregister', '{count} locations', { count: this.markers.length })
+			return t('openregister', '{count} locations', {
+				count: this.markers.length,
+			})
 		},
 		mapAriaLabel() {
-			return t('openregister', 'Map with {count} object locations', { count: this.markers.length })
+			return t('openregister', 'Map with {count} object locations', {
+				count: this.markers.length,
+			})
 		},
 	},
 	watch: {
@@ -136,18 +144,23 @@ export default {
 		 * @return {void}
 		 */
 		renderMap() {
-			const leaflet = (typeof window !== 'undefined') ? window.L : undefined
+			const leaflet = typeof window !== 'undefined' ? window.L : undefined
 			if (!leaflet || !this.$refs.mapContainer) {
 				return
 			}
 			if (this.map === null) {
-				this.map = leaflet.map(this.$refs.mapContainer).setView([52.1, 5.3], 7)
+				this.map = leaflet
+					.map(this.$refs.mapContainer)
+					.setView([52.1, 5.3], 7)
 			}
 			if (this.bounds !== null) {
-				this.map.fitBounds([
-					[this.bounds.south, this.bounds.west],
-					[this.bounds.north, this.bounds.east],
-				], { padding: [24, 24] })
+				this.map.fitBounds(
+					[
+						[this.bounds.south, this.bounds.west],
+						[this.bounds.north, this.bounds.east],
+					],
+					{ padding: [24, 24] },
+				)
 			}
 		},
 	},

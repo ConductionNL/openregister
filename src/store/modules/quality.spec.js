@@ -107,7 +107,14 @@ describe('Quality Store', () => {
 		it('stores candidate pairs read-only', async () => {
 			axios.get.mockResolvedValueOnce({
 				data: {
-					items: [{ objectA: 'a', objectB: 'b', score: 0.9, matchedOn: ['email'] }],
+					items: [
+						{
+							objectA: 'a',
+							objectB: 'b',
+							score: 0.9,
+							matchedOn: ['email'],
+						},
+					],
 					total: 1,
 					limit: 20,
 					offset: 0,
@@ -137,15 +144,29 @@ describe('Quality Store', () => {
 
 		it('fetches per-webhook stats and recent failures', async () => {
 			axios.get
-				.mockResolvedValueOnce({ data: { results: [{ id: 1, name: 'wh-1' }], total: 1 } })
-				.mockResolvedValueOnce({ data: { total: 5, successful: 4, failed: 1, pendingRetries: 0 } })
-				.mockResolvedValueOnce({ data: { results: [{ id: 99, webhook: 1, success: false }], total: 1 } })
+				.mockResolvedValueOnce({
+					data: { results: [{ id: 1, name: 'wh-1' }], total: 1 },
+				})
+				.mockResolvedValueOnce({
+					data: { total: 5, successful: 4, failed: 1, pendingRetries: 0 },
+				})
+				.mockResolvedValueOnce({
+					data: {
+						results: [{ id: 99, webhook: 1, success: false }],
+						total: 1,
+					},
+				})
 
 			const store = useQualityStore()
 			await store.fetchWebhookHealth()
 
 			expect(store.webhooks).toHaveLength(1)
-			expect(store.webhookStats[1]).toEqual({ total: 5, successful: 4, failed: 1, pendingRetries: 0 })
+			expect(store.webhookStats[1]).toEqual({
+				total: 5,
+				successful: 4,
+				failed: 1,
+				pendingRetries: 0,
+			})
 			expect(store.webhookFailures).toHaveLength(1)
 		})
 	})
@@ -172,7 +193,9 @@ describe('Quality Store', () => {
 		})
 
 		it('records an error on failure', async () => {
-			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Forbidden' } } })
+			axios.post.mockRejectedValueOnce({
+				response: { data: { error: 'Forbidden' } },
+			})
 			const store = useQualityStore()
 
 			await expect(store.previewMerge('obj-a', 'obj-b')).rejects.toBeTruthy()
@@ -182,11 +205,20 @@ describe('Quality Store', () => {
 
 	describe('executeMerge', () => {
 		it('posts { from, into, reason } to the execute endpoint and returns the persisted operation', async () => {
-			const operation = { id: 'op-1', from: 'obj-a', into: 'obj-b', reason: 'duplicate-confirmed' }
+			const operation = {
+				id: 'op-1',
+				from: 'obj-a',
+				into: 'obj-b',
+				reason: 'duplicate-confirmed',
+			}
 			axios.post.mockResolvedValueOnce({ data: operation })
 
 			const store = useQualityStore()
-			const result = await store.executeMerge('obj-a', 'obj-b', 'duplicate-confirmed')
+			const result = await store.executeMerge(
+				'obj-a',
+				'obj-b',
+				'duplicate-confirmed',
+			)
 
 			expect(axios.post).toHaveBeenCalledWith(
 				expect.stringContaining('/objects/merge/execute'),
@@ -199,7 +231,9 @@ describe('Quality Store', () => {
 			axios.post.mockRejectedValueOnce({ message: 'boom' })
 			const store = useQualityStore()
 
-			await expect(store.executeMerge('obj-a', 'obj-b', 'reason')).rejects.toBeTruthy()
+			await expect(
+				store.executeMerge('obj-a', 'obj-b', 'reason'),
+			).rejects.toBeTruthy()
 			expect(store.error).toBe('boom')
 		})
 	})
@@ -208,7 +242,14 @@ describe('Quality Store', () => {
 		it('fetches and paginates merge-operation rows via the generic object-read surface', async () => {
 			axios.get.mockResolvedValueOnce({
 				data: {
-					results: [{ id: 'op-1', from: 'obj-a', into: 'obj-b', reversible: true }],
+					results: [
+						{
+							id: 'op-1',
+							from: 'obj-a',
+							into: 'obj-b',
+							reversible: true,
+						},
+					],
 					total: 1,
 					limit: 20,
 					offset: 0,
@@ -237,31 +278,50 @@ describe('Quality Store', () => {
 
 	describe('setAttributeOverride', () => {
 		it('posts { attribute, value, rationale } to the override endpoint and returns the recomputed object', async () => {
-			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Steward Co' } }
+			const recomputed = {
+				id: 'obj-1',
+				goldenRecord: { legalName: 'Steward Co' },
+			}
 			axios.post.mockResolvedValueOnce({ data: recomputed })
 
 			const store = useQualityStore()
-			const result = await store.setAttributeOverride('obj-1', 'legalName', 'Steward Co', 'Confirmed with client')
+			const result = await store.setAttributeOverride(
+				'obj-1',
+				'legalName',
+				'Steward Co',
+				'Confirmed with client',
+			)
 
 			expect(axios.post).toHaveBeenCalledWith(
 				expect.stringContaining('/objects/survivorship/obj-1/override'),
-				{ attribute: 'legalName', value: 'Steward Co', rationale: 'Confirmed with client' },
+				{
+					attribute: 'legalName',
+					value: 'Steward Co',
+					rationale: 'Confirmed with client',
+				},
 			)
 			expect(result).toEqual(recomputed)
 		})
 
 		it('records an error on failure', async () => {
-			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Forbidden' } } })
+			axios.post.mockRejectedValueOnce({
+				response: { data: { error: 'Forbidden' } },
+			})
 			const store = useQualityStore()
 
-			await expect(store.setAttributeOverride('obj-1', 'legalName', 'Steward Co')).rejects.toBeTruthy()
+			await expect(
+				store.setAttributeOverride('obj-1', 'legalName', 'Steward Co'),
+			).rejects.toBeTruthy()
 			expect(store.error).toBe('Forbidden')
 		})
 	})
 
 	describe('clearAttributeOverride', () => {
 		it('posts { attribute, clear: true } to the override endpoint', async () => {
-			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Gold Co' } }
+			const recomputed = {
+				id: 'obj-1',
+				goldenRecord: { legalName: 'Gold Co' },
+			}
 			axios.post.mockResolvedValueOnce({ data: recomputed })
 
 			const store = useQualityStore()
@@ -278,14 +338,22 @@ describe('Quality Store', () => {
 			axios.post.mockRejectedValueOnce({ message: 'boom' })
 			const store = useQualityStore()
 
-			await expect(store.clearAttributeOverride('obj-1', 'legalName')).rejects.toBeTruthy()
+			await expect(
+				store.clearAttributeOverride('obj-1', 'legalName'),
+			).rejects.toBeTruthy()
 			expect(store.error).toBe('boom')
 		})
 	})
 
 	describe('persistTrustRule', () => {
 		it('posts a trustConfiguration row to the generic objects surface and returns the created row', async () => {
-			const created = { id: 'trust-1', entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold' }
+			const created = {
+				id: 'trust-1',
+				entityType: 'organisation',
+				attribute: 'legalName',
+				sourceSystem: 'registry',
+				trustTier: 'gold',
+			}
 			axios.post.mockResolvedValueOnce({ data: created })
 
 			const store = useQualityStore()
@@ -298,8 +366,16 @@ describe('Quality Store', () => {
 			})
 
 			expect(axios.post).toHaveBeenCalledWith(
-				expect.stringContaining('/objects/trust-configuration/trustConfiguration'),
-				{ entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold', rationale: 'Confirmed' },
+				expect.stringContaining(
+					'/objects/trust-configuration/trustConfiguration',
+				),
+				{
+					entityType: 'organisation',
+					attribute: 'legalName',
+					sourceSystem: 'registry',
+					trustTier: 'gold',
+					rationale: 'Confirmed',
+				},
 			)
 			expect(result).toEqual(created)
 		})
@@ -308,14 +384,24 @@ describe('Quality Store', () => {
 			axios.post.mockRejectedValueOnce({ message: 'boom' })
 			const store = useQualityStore()
 
-			await expect(store.persistTrustRule({ entityType: 'organisation', attribute: 'legalName', sourceSystem: 'registry', trustTier: 'gold' })).rejects.toBeTruthy()
+			await expect(
+				store.persistTrustRule({
+					entityType: 'organisation',
+					attribute: 'legalName',
+					sourceSystem: 'registry',
+					trustTier: 'gold',
+				}),
+			).rejects.toBeTruthy()
 			expect(store.error).toBe('boom')
 		})
 	})
 
 	describe('touchObject', () => {
 		it('sends an empty PATCH to the generic object endpoint and returns the recomputed object', async () => {
-			const recomputed = { id: 'obj-1', goldenRecord: { legalName: 'Gold Co' } }
+			const recomputed = {
+				id: 'obj-1',
+				goldenRecord: { legalName: 'Gold Co' },
+			}
 			axios.patch.mockResolvedValueOnce({ data: recomputed })
 
 			const store = useQualityStore()
@@ -332,7 +418,9 @@ describe('Quality Store', () => {
 			axios.patch.mockRejectedValueOnce({ message: 'boom' })
 			const store = useQualityStore()
 
-			await expect(store.touchObject('16', '1207', 'obj-1')).rejects.toBeTruthy()
+			await expect(
+				store.touchObject('16', '1207', 'obj-1'),
+			).rejects.toBeTruthy()
 			expect(store.error).toBe('boom')
 		})
 	})
@@ -352,7 +440,9 @@ describe('Quality Store', () => {
 		})
 
 		it('records an error on failure', async () => {
-			axios.post.mockRejectedValueOnce({ response: { data: { error: 'Not found' } } })
+			axios.post.mockRejectedValueOnce({
+				response: { data: { error: 'Not found' } },
+			})
 			const store = useQualityStore()
 
 			await expect(store.reverseMerge('op-1')).rejects.toBeTruthy()

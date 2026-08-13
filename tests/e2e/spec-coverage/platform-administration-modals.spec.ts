@@ -68,7 +68,9 @@ const ADMIN_SETTINGS_URL = `${BASE_URL}/index.php/settings/admin/openregister`
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('platform-administration-modals — LLM modal settings load', () => {
 	// @e2e openspec/specs/platform-administration-modals/spec.md#llm-modal-loads-existing-settings-on-open
-	test('llm-modal-loads-existing-settings-on-open — GET /api/settings/llm returns populated config', async ({ request }) => {
+	test('llm-modal-loads-existing-settings-on-open — GET /api/settings/llm returns populated config', async ({
+		request,
+	}) => {
 		// The LLMConfigModal calls loadConfiguration() on mount which GETs this endpoint.
 		// Assert the endpoint is reachable and returns the expected fields.
 		const resp = await request.get(
@@ -87,35 +89,53 @@ test.describe('platform-administration-modals — LLM modal settings load', () =
 		// selectedChatProvider, openaiConfig, ollamaConfig
 		expect(body, 'response body should be an object').toBeTruthy()
 		// 'enabled' key maps to llmEnabled
-		expect(Object.prototype.hasOwnProperty.call(body, 'enabled'),
-			'llm settings should have "enabled" key').toBe(true)
+		expect(
+			Object.prototype.hasOwnProperty.call(body, 'enabled'),
+			'llm settings should have "enabled" key',
+		).toBe(true)
 		// openaiConfig and ollamaConfig sections must exist
-		expect(body.openaiConfig, 'openaiConfig section should be present').toBeTruthy()
-		expect(body.ollamaConfig, 'ollamaConfig section should be present').toBeTruthy()
+		expect(
+			body.openaiConfig,
+			'openaiConfig section should be present',
+		).toBeTruthy()
+		expect(
+			body.ollamaConfig,
+			'ollamaConfig section should be present',
+		).toBeTruthy()
 	})
 
 	// @e2e openspec/specs/platform-administration-modals/spec.md#llm-modal-loads-existing-settings-on-open
-	test('llm-modal-loads-existing-settings-on-open — admin settings page renders LLM section', async ({ page }) => {
+	test('llm-modal-loads-existing-settings-on-open — admin settings page renders LLM section', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
 		// Nextcloud header visible
 		await expect(
-			page.locator('#header, header.header-appcontainer, .header-appcontainer').first(),
+			page
+				.locator('#header, header.header-appcontainer, .header-appcontainer')
+				.first(),
 		).toBeVisible({ timeout: 25_000 })
 
 		// The settings page must render the main content area
 		await expect(
-			page.locator('.settings-section, #app-settings-content, .section, main').first(),
+			page
+				.locator('.settings-section, #app-settings-content, .section, main')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 
 		// The LLM configuration section title is 'LLM Configuration'
 		// or similar text, rendered by LlmConfiguration.vue on the page
-		const llmSection = page.locator(
-			'text="LLM", text="Large Language Model", [data-test="llm-section"], h2:has-text("LLM"), h3:has-text("LLM")',
-		).first()
+		const llmSection = page
+			.locator(
+				'text="LLM", text="Large Language Model", [data-test="llm-section"], h2:has-text("LLM"), h3:has-text("LLM")',
+			)
+			.first()
 		// If visible, assert it; if not, check the page renders any settings content at all
-		const llmVisible = await llmSection.isVisible({ timeout: 8_000 }).catch(() => false)
+		const llmVisible = await llmSection
+			.isVisible({ timeout: 8_000 })
+			.catch(() => false)
 		if (llmVisible) {
 			await expect(llmSection).toBeVisible()
 		} else {
@@ -132,7 +152,9 @@ test.describe('platform-administration-modals — LLM modal settings load', () =
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('platform-administration-modals — save persists modal on failure', () => {
 	// @e2e openspec/specs/platform-administration-modals/spec.md#settings-save-preserves-modal-on-backend-failure
-	test('settings-save-preserves-modal-on-backend-failure — 500 response from settings endpoint does not redirect', async ({ request }) => {
+	test('settings-save-preserves-modal-on-backend-failure — 500 response from settings endpoint does not redirect', async ({
+		request,
+	}) => {
 		// CollectionManagementModal sends a PUT/POST to /api/settings/collection.
 		// Simulate a bad-payload request and assert the server returns 4xx/5xx but
 		// the app contract means the modal stays open (tested via API — if the
@@ -165,19 +187,24 @@ test.describe('platform-administration-modals — save persists modal on failure
 		if (status < 500 || status === 500) {
 			// Best effort: check it's application/json or the body starts with {
 			const bodyText = await resp.text()
-			const isJson = contentType.includes('application/json')
+			const isJson =
+				contentType.includes('application/json')
 				|| bodyText.trim().startsWith('{')
 				|| bodyText.trim().startsWith('[')
 			// For 401/403 (auth), HTML is expected — that's ok
 			if (status !== 401 && status !== 403) {
-				expect(isJson || bodyText.trim().length === 0,
-					'settings API should return JSON on error, not HTML').toBe(true)
+				expect(
+					isJson || bodyText.trim().length === 0,
+					'settings API should return JSON on error, not HTML',
+				).toBe(true)
 			}
 		}
 	})
 
 	// @e2e openspec/specs/platform-administration-modals/spec.md#settings-save-preserves-modal-on-backend-failure
-	test('settings-save-preserves-modal-on-backend-failure — admin settings page stays on failure', async ({ page }) => {
+	test('settings-save-preserves-modal-on-backend-failure — admin settings page stays on failure', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
@@ -187,12 +214,13 @@ test.describe('platform-administration-modals — save persists modal on failure
 
 		// The settings page must stay mounted (no hard redirect to login)
 		// even when background API calls fail
-		expect(
-			page.url(),
-			'should not have redirected to login',
-		).not.toContain('/login')
+		expect(page.url(), 'should not have redirected to login').not.toContain(
+			'/login',
+		)
 		await expect(
-			page.locator('.settings-section, .section, main, #app-settings-content').first(),
+			page
+				.locator('.settings-section, .section, main, #app-settings-content')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 	})
 })
@@ -202,7 +230,9 @@ test.describe('platform-administration-modals — save persists modal on failure
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('platform-administration-modals — SOLR warmup close-block', () => {
 	// @e2e openspec/specs/platform-administration-modals/spec.md#solr-warmup-blocks-close-while-running
-	test('solr-warmup-blocks-close-while-running — warmup endpoint reachable, SOLR disabled in env', async ({ request }) => {
+	test('solr-warmup-blocks-close-while-running — warmup endpoint reachable, SOLR disabled in env', async ({
+		request,
+	}) => {
 		// SolrWarmupModal only renders the "Object Warmup" button when
 		// solrOptions.enabled === true. In this env SOLR is disabled.
 		// We assert the settings endpoint reports SOLR as disabled,
@@ -225,7 +255,9 @@ test.describe('platform-administration-modals — SOLR warmup close-block', () =
 	})
 
 	// @e2e openspec/specs/platform-administration-modals/spec.md#solr-warmup-blocks-close-while-running
-	test('solr-warmup-blocks-close-while-running — admin page renders SOLR section without warmup button', async ({ page }) => {
+	test('solr-warmup-blocks-close-while-running — admin page renders SOLR section without warmup button', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
@@ -235,7 +267,9 @@ test.describe('platform-administration-modals — SOLR warmup close-block', () =
 
 		// The settings page renders without crash
 		await expect(
-			page.locator('.settings-section, .section, main, #app-settings-content').first(),
+			page
+				.locator('.settings-section, .section, main, #app-settings-content')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 
 		// Since SOLR is disabled, the "Object Warmup" button should not be visible
@@ -251,7 +285,9 @@ test.describe('platform-administration-modals — SOLR warmup close-block', () =
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('platform-administration-modals — clear cache idle on success', () => {
 	// @e2e openspec/specs/platform-administration-modals/spec.md#clear-cache-returns-to-idle-on-success
-	test('clear-cache-returns-to-idle-on-success — DELETE /api/settings/cache returns success response', async ({ request }) => {
+	test('clear-cache-returns-to-idle-on-success — DELETE /api/settings/cache returns success response', async ({
+		request,
+	}) => {
 		// ClearCacheModal.vue calls confirmClear() → emits → CacheManagement calls
 		// settingsStore.performClearCache() → clearCache() → DELETE /api/settings/cache
 		// Assert the endpoint returns a success JSON with a results object.
@@ -271,12 +307,20 @@ test.describe('platform-administration-modals — clear cache idle on success', 
 		// The response structure must include a 'results' object and a 'type' field
 		// so the modal can transition to success state
 		expect(body, 'response should be non-null').toBeTruthy()
-		expect(body.type, '"type" field should be present in clear-cache response').toBeTruthy()
-		expect(body.results, '"results" field should be present in clear-cache response').toBeTruthy()
+		expect(
+			body.type,
+			'"type" field should be present in clear-cache response',
+		).toBeTruthy()
+		expect(
+			body.results,
+			'"results" field should be present in clear-cache response',
+		).toBeTruthy()
 	})
 
 	// @e2e openspec/specs/platform-administration-modals/spec.md#clear-cache-returns-to-idle-on-success
-	test('clear-cache-returns-to-idle-on-success — admin settings page renders Cache section', async ({ page }) => {
+	test('clear-cache-returns-to-idle-on-success — admin settings page renders Cache section', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
@@ -285,29 +329,43 @@ test.describe('platform-administration-modals — clear cache idle on success', 
 		).toBeVisible({ timeout: 25_000 })
 
 		// Wait for the Vue app to mount (the #settings div is the mount point)
-		await expect(page.locator('main#app-content, .settings-section, .app-settings').first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page
+				.locator('main#app-content, .settings-section, .app-settings')
+				.first(),
+		).toBeVisible({ timeout: 15_000 })
 
 		// Wait for the CacheManagement section to render by looking for its
 		// section heading or the "Clear Cache" button text
 		// The Vue app renders asynchronously inside #settings
-		const cacheSection = page.locator(
-			'.settings-section, section[class*="cache"], '
-			+ 'h2:has-text("Cache"), h3:has-text("Cache"), '
-			+ '[class*="cache-management"], button:has-text("Clear Cache")',
-		).first()
+		const cacheSection = page
+			.locator(
+				'.settings-section, section[class*="cache"], '
+					+ 'h2:has-text("Cache"), h3:has-text("Cache"), '
+					+ '[class*="cache-management"], button:has-text("Clear Cache")',
+			)
+			.first()
 
 		// Give the Vue app time to render (it loads settings asynchronously)
-		const cacheVisible = await cacheSection.isVisible({ timeout: 15_000 }).catch(() => false)
+		const cacheVisible = await cacheSection
+			.isVisible({ timeout: 15_000 })
+			.catch(() => false)
 		if (cacheVisible) {
 			await expect(cacheSection).toBeVisible()
 		} else {
 			// Fallback: at least the #settings mount point is rendered
-			await expect(page.locator('main#app-content, .settings-section, .app-settings').first()).toBeVisible()
+			await expect(
+				page
+					.locator('main#app-content, .settings-section, .app-settings')
+					.first(),
+			).toBeVisible()
 		}
 	})
 
 	// @e2e openspec/specs/platform-administration-modals/spec.md#clear-cache-returns-to-idle-on-success
-	test('clear-cache-returns-to-idle-on-success — can open and close the clear-cache dialog', async ({ page }) => {
+	test('clear-cache-returns-to-idle-on-success — can open and close the clear-cache dialog', async ({
+		page,
+	}) => {
 		if (!fs.existsSync(STORAGE_STATE)) test.skip(true, 'no auth state')
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
@@ -315,30 +373,46 @@ test.describe('platform-administration-modals — clear cache idle on success', 
 			page.locator('#header, .header-appcontainer').first(),
 		).toBeVisible({ timeout: 25_000 })
 		await expect(
-			page.locator('main#app-content, .settings-section, .app-settings').first(),
+			page
+				.locator('main#app-content, .settings-section, .app-settings')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 
 		// Wait for Vue app to settle (cache stats load asynchronously)
 		// Then find the Clear Cache button — it may be disabled while loading
 		const clearCacheBtn = page.locator('button:has-text("Clear Cache")').first()
-		const btnVisible = await clearCacheBtn.isVisible({ timeout: 15_000 }).catch(() => false)
+		const btnVisible = await clearCacheBtn
+			.isVisible({ timeout: 15_000 })
+			.catch(() => false)
 
 		if (btnVisible) {
 			// Wait for button to become enabled (loading state may take a moment)
-			await clearCacheBtn.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
+			await clearCacheBtn
+				.waitFor({ state: 'visible', timeout: 5_000 })
+				.catch(() => {})
 
 			// If button is enabled, click it; otherwise just assert page is functional
-			const isEnabled = await clearCacheBtn.isEnabled({ timeout: 5_000 }).catch(() => false)
+			const isEnabled = await clearCacheBtn
+				.isEnabled({ timeout: 5_000 })
+				.catch(() => false)
 			if (isEnabled) {
 				await clearCacheBtn.click()
 				// The dialog should appear
 				const dialog = page.locator('[role="dialog"], .nc-dialog').first()
-				const dialogVisible = await dialog.isVisible({ timeout: 8_000 }).catch(() => false)
+				const dialogVisible = await dialog
+					.isVisible({ timeout: 8_000 })
+					.catch(() => false)
 				if (dialogVisible) {
 					await expect(dialog).toBeVisible()
 					// Cancel button closes the modal without clearing
-					const cancelBtn = dialog.locator('button:has-text("Cancel")').first()
-					if (await cancelBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+					const cancelBtn = dialog
+						.locator('button:has-text("Cancel")')
+						.first()
+					if (
+						await cancelBtn
+							.isVisible({ timeout: 3_000 })
+							.catch(() => false)
+					) {
 						await cancelBtn.click()
 					}
 				}
@@ -346,7 +420,9 @@ test.describe('platform-administration-modals — clear cache idle on success', 
 		}
 		// In any case the page remains functional
 		await expect(
-			page.locator('main#app-content, .settings-section, .app-settings').first(),
+			page
+				.locator('main#app-content, .settings-section, .app-settings')
+				.first(),
 		).toBeVisible({ timeout: 5_000 })
 	})
 })

@@ -26,7 +26,10 @@
 import { type APIRequestContext, expect } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 
 /** A run-unique prefix. Call once per spec file (top-level const). */
 export function makeRunId(): string {
@@ -68,7 +71,12 @@ export async function createRegister(
 	const slug = `${runId}-${suffix}`
 	const resp = await request.post(`${API}/registers`, {
 		headers: JSON_HEADERS,
-		data: { slug, title: `E2E ${suffix}`, description: 'fixture register', ...overrides },
+		data: {
+			slug,
+			title: `E2E ${suffix}`,
+			description: 'fixture register',
+			...overrides,
+		},
 	})
 	expect(resp.status(), `createRegister(${slug})`).toBeLessThanOrEqual(201)
 	const body = await resp.json()
@@ -88,7 +96,10 @@ export async function updateRegister(
 	return resp.json()
 }
 
-export async function deleteRegister(request: APIRequestContext, id: number): Promise<void> {
+export async function deleteRegister(
+	request: APIRequestContext,
+	id: number,
+): Promise<void> {
 	await request.delete(`${API}/registers/${id}`).catch(() => {})
 }
 
@@ -113,7 +124,12 @@ export async function createSchema(
 	const slug = `${runId}-${suffix}`
 	const resp = await request.post(`${API}/schemas`, {
 		headers: JSON_HEADERS,
-		data: { slug, title: `E2E ${suffix}`, description: 'fixture schema', properties },
+		data: {
+			slug,
+			title: `E2E ${suffix}`,
+			description: 'fixture schema',
+			properties,
+		},
 	})
 	expect(resp.status(), `createSchema(${slug})`).toBeLessThanOrEqual(201)
 	const body = await resp.json()
@@ -134,7 +150,10 @@ export async function updateSchema(
 	return resp.json()
 }
 
-export async function deleteSchema(request: APIRequestContext, id: number): Promise<void> {
+export async function deleteSchema(
+	request: APIRequestContext,
+	id: number,
+): Promise<void> {
 	await request.delete(`${API}/schemas/${id}`).catch(() => {})
 }
 
@@ -178,9 +197,12 @@ export async function getObject(
 	schemaId: number,
 	id: string,
 ): Promise<{ status: number; body: Record<string, any> | null }> {
-	const resp = await request.get(`${API}/objects/${registerId}/${schemaId}/${id}`, {
-		headers: { Accept: 'application/json' },
-	})
+	const resp = await request.get(
+		`${API}/objects/${registerId}/${schemaId}/${id}`,
+		{
+			headers: { Accept: 'application/json' },
+		},
+	)
 	const body = resp.ok() ? await resp.json().catch(() => null) : null
 	return { status: resp.status(), body }
 }
@@ -192,10 +214,13 @@ export async function updateObject(
 	id: string,
 	data: Record<string, unknown>,
 ): Promise<Record<string, any>> {
-	const resp = await request.put(`${API}/objects/${registerId}/${schemaId}/${id}`, {
-		headers: JSON_HEADERS,
-		data,
-	})
+	const resp = await request.put(
+		`${API}/objects/${registerId}/${schemaId}/${id}`,
+		{
+			headers: JSON_HEADERS,
+			data,
+		},
+	)
 	expect(resp.status(), 'updateObject').toBe(200)
 	return resp.json()
 }
@@ -206,7 +231,9 @@ export async function deleteObject(
 	schemaId: number,
 	id: string,
 ): Promise<void> {
-	await request.delete(`${API}/objects/${registerId}/${schemaId}/${id}`).catch(() => {})
+	await request
+		.delete(`${API}/objects/${registerId}/${schemaId}/${id}`)
+		.catch(() => {})
 }
 
 /** List objects under register+schema (findAll). Returns the {results,total} envelope. */
@@ -245,7 +272,10 @@ export async function seedRegisterWithSchema(
 	return { register, schema }
 }
 
-export async function teardownTarget(request: APIRequestContext, target: SeededTarget): Promise<void> {
+export async function teardownTarget(
+	request: APIRequestContext,
+	target: SeededTarget,
+): Promise<void> {
 	// Objects are removed with the register/schema teardown; delete the pair.
 	await deleteSchema(request, target.schema.id)
 	await deleteRegister(request, target.register.id)

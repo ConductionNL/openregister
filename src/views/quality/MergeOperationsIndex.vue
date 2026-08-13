@@ -7,7 +7,14 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<h1>{{ t('openregister', 'Merge Operations') }}</h1>
-				<p>{{ t('openregister', 'Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Audit trail of recent reversible merges. Reverse an operation while it is still within its reversal window.',
+						)
+					}}
+				</p>
 			</div>
 
 			<template v-if="loading">
@@ -17,7 +24,12 @@
 			<template v-else-if="mergeOperations.length === 0">
 				<NcEmptyContent
 					:name="t('openregister', 'No merge operations found')"
-					:description="t('openregister', 'Merges executed from the Duplicate Candidates view will show up here.')">
+					:description="
+						t(
+							'openregister',
+							'Merges executed from the Duplicate Candidates view will show up here.',
+						)
+					">
 					<template #icon>
 						<Merge :size="64" />
 					</template>
@@ -49,14 +61,29 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="operation in mergeOperations" :key="operation.id" data-testid="mdm-merge-operation-row">
+						<tr
+							v-for="operation in mergeOperations"
+							:key="operation.id"
+							data-testid="mdm-merge-operation-row">
 							<td>{{ operation.into }}</td>
 							<td>{{ operation.from }}</td>
 							<td>{{ operation.reason || '—' }}</td>
-							<td>{{ operation.mergedAt || operation.created || '—' }}</td>
 							<td>
-								<span :class="'badge badge-status-' + (isReversible(operation) ? 'reversible' : 'final')">
-									{{ isReversible(operation) ? t('openregister', 'Reversible') : t('openregister', 'Reversed / final') }}
+								{{ operation.mergedAt || operation.created || '—' }}
+							</td>
+							<td>
+								<span
+									:class="
+										'badge badge-status-'
+										+ (isReversible(operation)
+											? 'reversible'
+											: 'final')
+									">
+									{{
+										isReversible(operation)
+											? t('openregister', 'Reversible')
+											: t('openregister', 'Reversed / final')
+									}}
 								</span>
 							</td>
 							<td>
@@ -67,7 +94,9 @@
 									:disabled="reversingId === operation.id"
 									@click="reverse(operation)">
 									<template #icon>
-										<NcLoadingIcon v-if="reversingId === operation.id" :size="20" />
+										<NcLoadingIcon
+											v-if="reversingId === operation.id"
+											:size="20" />
 									</template>
 									{{ t('openregister', 'Reverse') }}
 								</NcButton>
@@ -75,18 +104,32 @@
 						</tr>
 					</tbody>
 				</table>
-				<div v-if="mergeOperationsTotal > mergeOperationsLimit" class="pagination">
-					<NcButton :disabled="mergeOperationsOffset === 0" @click="previousPage">
+				<div
+					v-if="mergeOperationsTotal > mergeOperationsLimit"
+					class="pagination">
+					<NcButton
+						:disabled="mergeOperationsOffset === 0"
+						@click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="paginationInfo">
-						{{ t('openregister', 'Showing {from}-{to} of {total}', {
-							from: mergeOperationsOffset + 1,
-							to: Math.min(mergeOperationsOffset + mergeOperationsLimit, mergeOperationsTotal),
-							total: mergeOperationsTotal,
-						}) }}
+						{{
+							t('openregister', 'Showing {from}-{to} of {total}', {
+								from: mergeOperationsOffset + 1,
+								to: Math.min(
+									mergeOperationsOffset + mergeOperationsLimit,
+									mergeOperationsTotal,
+								),
+								total: mergeOperationsTotal,
+							})
+						}}
 					</span>
-					<NcButton :disabled="mergeOperationsOffset + mergeOperationsLimit >= mergeOperationsTotal" @click="nextPage">
+					<NcButton
+						:disabled="
+							mergeOperationsOffset + mergeOperationsLimit
+							>= mergeOperationsTotal
+						"
+						@click="nextPage">
 						{{ t('openregister', 'Next') }}
 					</NcButton>
 				</div>
@@ -96,7 +139,12 @@
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcButton,
+} from '@nextcloud/vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import { qualityStore } from '../../store/store.js'
 
@@ -184,8 +232,14 @@ export default {
 		 * @spec exclude UI pagination handler — delegates to fetchMergeOperations
 		 */
 		async previousPage() {
-			const offset = Math.max(0, this.mergeOperationsOffset - this.mergeOperationsLimit)
-			await qualityStore.fetchMergeOperations({ limit: this.mergeOperationsLimit, offset })
+			const offset = Math.max(
+				0,
+				this.mergeOperationsOffset - this.mergeOperationsLimit,
+			)
+			await qualityStore.fetchMergeOperations({
+				limit: this.mergeOperationsLimit,
+				offset,
+			})
 		},
 
 		/**
@@ -193,7 +247,10 @@ export default {
 		 */
 		async nextPage() {
 			const offset = this.mergeOperationsOffset + this.mergeOperationsLimit
-			await qualityStore.fetchMergeOperations({ limit: this.mergeOperationsLimit, offset })
+			await qualityStore.fetchMergeOperations({
+				limit: this.mergeOperationsLimit,
+				offset,
+			})
 		},
 
 		/**

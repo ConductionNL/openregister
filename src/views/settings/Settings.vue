@@ -13,10 +13,16 @@
 				:disabled="settingsStore.clearingAppStoreCache"
 				@click="settingsStore.clearAppStoreCache('all')">
 				<template #icon>
-					<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
+					<NcLoadingIcon
+						v-if="settingsStore.clearingAppStoreCache"
+						:size="20" />
 					<Refresh v-else :size="20" />
 				</template>
-				{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
+				{{
+					settingsStore.clearingAppStoreCache
+						? 'Clearing...'
+						: 'Clear App Store Cache'
+				}}
 			</NcButton>
 		</template>
 

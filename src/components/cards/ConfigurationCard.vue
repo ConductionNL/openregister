@@ -1,12 +1,16 @@
 <template>
-	<div class="configurationCard"
+	<div
+		class="configurationCard"
 		:class="{
 			'configurationCard--imported': isImported,
 			'configurationCard--local': isImported && isLocalConfiguration,
-			'configurationCard--external': isImported && !isLocalConfiguration
+			'configurationCard--external': isImported && !isLocalConfiguration,
 		}">
 		<div class="cardHeader">
-			<h2 :title="configuration.description || configuration.config?.description">
+			<h2
+				:title="
+					configuration.description || configuration.config?.description
+				">
 				<CogOutline :size="20" />
 				{{ configuration.title || configuration.config?.title }}
 				<!-- Status Badges -->
@@ -16,7 +20,9 @@
 							<CheckCircle :size="16" />
 							Local
 						</span>
-						<span v-if="displayConfiguration.app" class="configBadge configBadge--app">
+						<span
+							v-if="displayConfiguration.app"
+							class="configBadge configBadge--app">
 							<ApplicationCog :size="16" />
 							{{ displayConfiguration.app }}
 						</span>
@@ -25,24 +31,41 @@
 						<Cloud :size="16" />
 						External
 					</span>
-					<span v-if="!isLocalConfiguration && displayConfiguration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + displayConfiguration.syncStatus">
-						<Sync v-if="displayConfiguration.syncStatus === 'success'" :size="16" />
-						<AlertCircle v-else-if="displayConfiguration.syncStatus === 'failed'" :size="16" />
+					<span
+						v-if="
+							!isLocalConfiguration && displayConfiguration.syncEnabled
+						"
+						class="configBadge"
+						:class="
+							'configBadge--sync-' + displayConfiguration.syncStatus
+						">
+						<Sync
+							v-if="displayConfiguration.syncStatus === 'success'"
+							:size="16" />
+						<AlertCircle
+							v-else-if="displayConfiguration.syncStatus === 'failed'"
+							:size="16" />
 						<ClockOutline v-else :size="16" />
 						{{ getSyncStatusText(displayConfiguration) }}
 					</span>
-					<span v-if="hasUpdateAvailable" class="configBadge configBadge--update">
+					<span
+						v-if="hasUpdateAvailable"
+						class="configBadge configBadge--update">
 						<Update :size="16" />
 						Update Available
 					</span>
-					<span v-if="isPublished" class="configBadge configBadge--published">
+					<span
+						v-if="isPublished"
+						class="configBadge configBadge--published">
 						<CloudUploadOutline :size="16" />
 						Published
 					</span>
 				</template>
 				<template v-else>
 					<!-- For discovered/external configurations -->
-					<span v-if="configuration.config?.app" class="configBadge configBadge--app">
+					<span
+						v-if="configuration.config?.app"
+						class="configBadge configBadge--app">
 						{{ configuration.config.app }}
 					</span>
 					<span class="configBadge configBadge--discovered">
@@ -63,13 +86,19 @@
 						</template>
 						View
 					</NcActionButton>
-					<NcActionButton v-if="hasUpdateAvailable" close-after-click @click="handlePreviewUpdate">
+					<NcActionButton
+						v-if="hasUpdateAvailable"
+						close-after-click
+						@click="handlePreviewUpdate">
 						<template #icon>
 							<EyeOutline :size="20" />
 						</template>
 						Preview Update
 					</NcActionButton>
-					<NcActionButton v-if="isRemoteConfiguration" close-after-click @click="handleCheckVersion">
+					<NcActionButton
+						v-if="isRemoteConfiguration"
+						close-after-click
+						@click="handleCheckVersion">
 						<template #icon>
 							<Sync :size="20" />
 						</template>
@@ -87,13 +116,19 @@
 						</template>
 						Export
 					</NcActionButton>
-					<NcActionButton v-if="isLocalConfiguration && !isPublished" close-after-click @click="handlePublish">
+					<NcActionButton
+						v-if="isLocalConfiguration && !isPublished"
+						close-after-click
+						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						Publish
 					</NcActionButton>
-					<NcActionButton v-if="isPublished" close-after-click @click="handlePublish">
+					<NcActionButton
+						v-if="isPublished"
+						close-after-click
+						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
@@ -108,13 +143,18 @@
 				</template>
 				<!-- Actions for discovered/external configurations -->
 				<template v-else>
-					<NcActionButton close-after-click @click="$emit('import', configuration)">
+					<NcActionButton
+						close-after-click
+						@click="$emit('import', configuration)">
 						<template #icon>
 							<CloudUpload :size="20" />
 						</template>
 						Import
 					</NcActionButton>
-					<NcActionButton v-if="viewSourceUrl" close-after-click @click="openInNewTab(viewSourceUrl)">
+					<NcActionButton
+						v-if="viewSourceUrl"
+						close-after-click
+						@click="openInNewTab(viewSourceUrl)">
 						<template #icon>
 							<OpenInNew :size="20" />
 						</template>
@@ -161,24 +201,43 @@
 				</span>
 
 				<!-- App ID badge (fallback if no repo info) -->
-				<span v-if="displayConfiguration.app && !repositoryFullName" class="metaItem">
+				<span
+					v-if="displayConfiguration.app && !repositoryFullName"
+					class="metaItem">
 					<ApplicationCog :size="16" />
 					{{ displayConfiguration.app }}
 				</span>
 
 				<!-- Source type (fallback if no repo info) -->
-				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="metaItem">
+				<span
+					v-if="displayConfiguration.sourceType && !repositoryFullName"
+					class="metaItem">
 					<Cloud :size="16" />
 					{{ getSourceTypeLabel(displayConfiguration.sourceType) }}
 				</span>
 
 				<!-- Version info -->
-				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="metaItem">
+				<span
+					v-if="
+						displayConfiguration.version
+						|| displayConfiguration.localVersion
+					"
+					class="metaItem">
 					<Tag :size="16" />
-					v{{ displayConfiguration.version || displayConfiguration.localVersion }}
+					v{{
+						displayConfiguration.version
+						|| displayConfiguration.localVersion
+					}}
 				</span>
 
-				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="metaItem">
+				<span
+					v-if="
+						displayConfiguration.remoteVersion
+						&& displayConfiguration.remoteVersion
+							!== (displayConfiguration.version
+								|| displayConfiguration.localVersion)
+					"
+					class="metaItem">
 					<Update :size="16" />
 					v{{ displayConfiguration.remoteVersion }} available
 				</span>
@@ -269,7 +328,15 @@ export default {
 			required: true,
 		},
 	},
-	emits: ['view', 'edit', 'export', 'delete', 'import', 'check-version', 'preview-update'],
+	emits: [
+		'view',
+		'edit',
+		'export',
+		'delete',
+		'import',
+		'check-version',
+		'preview-update',
+	],
 	data() {
 		return {
 			// Track if this discovered config is already imported (fetched from backend)
@@ -318,7 +385,7 @@ export default {
 
 			// Try to find in store first (fast)
 			const found = configurationStore.configurationList.find(
-				config => config.id === this.importedConfigId,
+				(config) => config.id === this.importedConfigId,
 			)
 
 			if (found) return found
@@ -361,8 +428,12 @@ export default {
 					owner: this.configuration.owner, // Repository owner
 					repo: this.configuration.repo, // Repository name
 					// Ensure isLocal and sourceType are preserved
-					isLocal: this.existingConfiguration.isLocal ?? this.configuration.isLocal,
-					sourceType: this.existingConfiguration.sourceType ?? this.configuration.sourceType,
+					isLocal:
+						this.existingConfiguration.isLocal
+						?? this.configuration.isLocal,
+					sourceType:
+						this.existingConfiguration.sourceType
+						?? this.configuration.sourceType,
 				}
 			}
 			// For imported configurations, ensure we have the properties
@@ -436,7 +507,10 @@ export default {
 		 * @spec exclude computed remote-source display flag, UI plumbing
 		 */
 		isRemoteConfiguration() {
-			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
+			const result =
+				this.isImported
+				&& this.displayConfiguration.sourceType
+				&& this.displayConfiguration.sourceType !== 'local'
 
 			return result
 		},
@@ -463,7 +537,11 @@ export default {
 		isPublished() {
 			const config = this.displayConfiguration
 			// Published if: isLocal=true AND has githubRepo (or sourceType is github/gitlab with repo info)
-			return this.isLocalConfiguration && (config.githubRepo || (config.sourceType === 'github' && config.githubRepo))
+			return (
+				this.isLocalConfiguration
+				&& (config.githubRepo
+					|| (config.sourceType === 'github' && config.githubRepo))
+			)
 		},
 		/**
 		 * Get view source URL
@@ -514,7 +592,9 @@ export default {
 
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
-				const githubMatch = config.sourceUrl.match(/github\.com\/([^/]+\/[^/]+)/)
+				const githubMatch = config.sourceUrl.match(
+					/github\.com\/([^/]+\/[^/]+)/,
+				)
 				if (githubMatch) {
 					return githubMatch[1].replace(/\/blob\/.*$/, '')
 				}
@@ -534,7 +614,10 @@ export default {
 			const config = this.displayConfiguration
 
 			// Check if it's a GitLab repo
-			if (config.sourceType === 'gitlab' || config.sourceUrl?.includes('gitlab')) {
+			if (
+				config.sourceType === 'gitlab'
+				|| config.sourceUrl?.includes('gitlab')
+			) {
 				return `https://gitlab.com/${this.repositoryFullName}`
 			}
 
@@ -608,9 +691,10 @@ export default {
 						this.importedConfigId = importedConfig.id
 
 						// Add to store if not already there (for pagination support)
-						const existsInStore = configurationStore.configurationList.find(
-							c => c.id === importedConfig.id,
-						)
+						const existsInStore =
+							configurationStore.configurationList.find(
+								(c) => c.id === importedConfig.id,
+							)
 						if (!existsInStore) {
 							configurationStore.configurationList.push(importedConfig)
 						}
@@ -654,7 +738,10 @@ export default {
 		 * @spec exclude sync-status display formatter, UI plumbing
 		 */
 		getSyncStatusText(configuration) {
-			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
+			if (
+				configuration.syncStatus === 'success'
+				&& configuration.lastSyncDate
+			) {
 				const now = new Date()
 				const lastSync = new Date(configuration.lastSyncDate)
 				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))

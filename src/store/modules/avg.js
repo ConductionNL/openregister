@@ -67,17 +67,68 @@ export const DEFAULT_JURISDICTION = 'default'
  * single source drives the buttons.
  */
 export const CASE_LIFECYCLE_TRANSITIONS = Object.freeze([
-	{ action: 'startVerifying', from: ['received', 'verifying', 'in-progress'], to: 'verifying' },
-	{ action: 'startProgress', from: ['received', 'verifying', 'in-progress'], to: 'in-progress' },
-	{ action: 'assign', from: ['received', 'verifying', 'in-progress', 'evidence-collection', 'denial-drafted'], to: 'verifying' },
-	{ action: 'collectEvidence', from: ['verifying', 'in-progress', 'evidence-collection'], to: 'evidence-collection' },
-	{ action: 'draftDenial', from: ['verifying', 'in-progress', 'evidence-collection', 'denial-drafted'], to: 'denial-drafted' },
-	{ action: 'finaliseDenial', from: ['denial-drafted'], to: 'refused', guarded: 'regulatorReference' },
-	{ action: 'redact', from: ['in-progress', 'evidence-collection'], to: 'in-progress' },
-	{ action: 'bundle', from: ['in-progress', 'evidence-collection'], to: 'fulfilled' },
-	{ action: 'fulfil', from: ['received', 'verifying', 'in-progress'], to: 'fulfilled' },
-	{ action: 'refuse', from: ['received', 'verifying', 'in-progress'], to: 'refused' },
-	{ action: 'close', from: ['received', 'verifying', 'in-progress'], to: 'closed' },
+	{
+		action: 'startVerifying',
+		from: ['received', 'verifying', 'in-progress'],
+		to: 'verifying',
+	},
+	{
+		action: 'startProgress',
+		from: ['received', 'verifying', 'in-progress'],
+		to: 'in-progress',
+	},
+	{
+		action: 'assign',
+		from: [
+			'received',
+			'verifying',
+			'in-progress',
+			'evidence-collection',
+			'denial-drafted',
+		],
+		to: 'verifying',
+	},
+	{
+		action: 'collectEvidence',
+		from: ['verifying', 'in-progress', 'evidence-collection'],
+		to: 'evidence-collection',
+	},
+	{
+		action: 'draftDenial',
+		from: ['verifying', 'in-progress', 'evidence-collection', 'denial-drafted'],
+		to: 'denial-drafted',
+	},
+	{
+		action: 'finaliseDenial',
+		from: ['denial-drafted'],
+		to: 'refused',
+		guarded: 'regulatorReference',
+	},
+	{
+		action: 'redact',
+		from: ['in-progress', 'evidence-collection'],
+		to: 'in-progress',
+	},
+	{
+		action: 'bundle',
+		from: ['in-progress', 'evidence-collection'],
+		to: 'fulfilled',
+	},
+	{
+		action: 'fulfil',
+		from: ['received', 'verifying', 'in-progress'],
+		to: 'fulfilled',
+	},
+	{
+		action: 'refuse',
+		from: ['received', 'verifying', 'in-progress'],
+		to: 'refused',
+	},
+	{
+		action: 'close',
+		from: ['received', 'verifying', 'in-progress'],
+		to: 'closed',
+	},
 	{ action: 'retain', from: ['fulfilled', 'refused', 'closed'], to: 'closed' },
 ])
 
@@ -101,7 +152,12 @@ export const CASE_STATUS_VOCABULARY = Object.freeze([
  * calculation, in ascending severity. Their human LABELS resolve from the
  * active pack (see `resolveTierLabel`), never inlined here.
  */
-export const CASE_ESCALATION_TIERS = Object.freeze(['on-track', 'reminder', 'escalation', 'breached'])
+export const CASE_ESCALATION_TIERS = Object.freeze([
+	'on-track',
+	'reminder',
+	'escalation',
+	'breached',
+])
 
 /**
  * Humanise a generic kebab/enum key into an English source label
@@ -167,7 +223,11 @@ export function resolveGroundOptions(pack) {
 	const grounds = Array.isArray(pack?.denialGrounds) ? pack.denialGrounds : []
 	return grounds
 		.filter((g) => g && g.key)
-		.map((g) => ({ value: g.key, label: g.label ?? humaniseKey(g.key), citation: g.citation ?? '' }))
+		.map((g) => ({
+			value: g.key,
+			label: g.label ?? humaniseKey(g.key),
+			citation: g.citation ?? '',
+		}))
 }
 
 /**
@@ -254,7 +314,10 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.get(`${API_BASE}/verwerkingsactiviteiten`, { params })
+				const response = await axios.get(
+					`${API_BASE}/verwerkingsactiviteiten`,
+					{ params },
+				)
 				this.activities = response.data?.results ?? []
 				return this.activities
 			} catch (e) {
@@ -312,7 +375,10 @@ export const useAvgStore = defineStore('avg', {
 				this.activeActivity = created
 				return created
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to create verwerkingsactiviteit'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to create verwerkingsactiviteit'
 				console.error('[avg.createActivity]', e)
 				throw e
 			} finally {
@@ -345,7 +411,10 @@ export const useAvgStore = defineStore('avg', {
 				}
 				return updated
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to update verwerkingsactiviteit'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to update verwerkingsactiviteit'
 				console.error('[avg.updateActivity]', e)
 				throw e
 			} finally {
@@ -370,13 +439,18 @@ export const useAvgStore = defineStore('avg', {
 				)
 				// Reflect locally — flip status to archived.
 				this.activities = this.activities.map((a) =>
-					(a.id === identifier || a.uuid === identifier || a.code === identifier)
+					a.id === identifier
+					|| a.uuid === identifier
+					|| a.code === identifier
 						? { ...a, status: 'archived' }
 						: a,
 				)
 				return true
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to archive verwerkingsactiviteit'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to archive verwerkingsactiviteit'
 				console.error('[avg.archiveActivity]', e)
 				throw e
 			} finally {
@@ -428,7 +502,8 @@ export const useAvgStore = defineStore('avg', {
 				this.dsarResults = response.data
 				return this.dsarResults
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to run inzage'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to run inzage'
 				console.error('[avg.runInzage]', e)
 				throw e
 			} finally {
@@ -455,11 +530,16 @@ export const useAvgStore = defineStore('avg', {
 				const params = { subject }
 				if (type) params.type = type
 				if (dryRun) params.dryRun = 'true'
-				const response = await axios.post(`${API_BASE}/vergetelheid`, null, { params })
+				const response = await axios.post(`${API_BASE}/vergetelheid`, null, {
+					params,
+				})
 				this.dsarSummary = response.data
 				return this.dsarSummary
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to run vergetelheid'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to run vergetelheid'
 				console.error('[avg.runVergetelheid]', e)
 				throw e
 			} finally {
@@ -483,10 +563,15 @@ export const useAvgStore = defineStore('avg', {
 			try {
 				const params = { subject }
 				if (type) params.type = type
-				const response = await axios.get(`${API_BASE}/portabiliteit`, { params })
+				const response = await axios.get(`${API_BASE}/portabiliteit`, {
+					params,
+				})
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to run portabiliteit'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to run portabiliteit'
 				console.error('[avg.runPortabiliteit]', e)
 				throw e
 			} finally {
@@ -505,10 +590,16 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${API_BASE}/rectificatie`, payload)
+				const response = await axios.post(
+					`${API_BASE}/rectificatie`,
+					payload,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to run rectificatie'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to run rectificatie'
 				console.error('[avg.runRectificatie]', e)
 				throw e
 			} finally {
@@ -530,7 +621,10 @@ export const useAvgStore = defineStore('avg', {
 				this.complianceReport = response.data
 				return this.complianceReport
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch compliance report'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch compliance report'
 				console.error('[avg.fetchCompliance]', e)
 				throw e
 			} finally {
@@ -564,7 +658,8 @@ export const useAvgStore = defineStore('avg', {
 				this.cases = response.data?.results ?? response.data ?? []
 				return this.cases
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch cases'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to fetch cases'
 				console.error('[avg.fetchCases]', e)
 				throw e
 			} finally {
@@ -590,7 +685,8 @@ export const useAvgStore = defineStore('avg', {
 				this.activeCase = response.data ?? null
 				return this.activeCase
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch case'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to fetch case'
 				console.error('[avg.fetchCase]', e)
 				throw e
 			} finally {
@@ -618,7 +714,8 @@ export const useAvgStore = defineStore('avg', {
 				this.activeCase = response.data ?? this.activeCase
 				return this.activeCase
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to update case'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to update case'
 				console.error('[avg.updateCase]', e)
 				throw e
 			} finally {
@@ -638,11 +735,15 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/transition`, { action })
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/transition`,
+					{ action },
+				)
 				this.activeCase = response.data ?? this.activeCase
 				return this.activeCase
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Transition refused'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Transition refused'
 				console.error('[avg.transitionCase]', e)
 				throw e
 			} finally {
@@ -689,10 +790,13 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/evidence`)
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/evidence`,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Evidence harvest failed'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Evidence harvest failed'
 				console.error('[avg.collectEvidence]', e)
 				throw e
 			} finally {
@@ -712,10 +816,14 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/redactions`, payload)
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/redactions`,
+					payload,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Redaction failed'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Redaction failed'
 				console.error('[avg.applyRedaction]', e)
 				throw e
 			} finally {
@@ -735,10 +843,15 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/bundle`)
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/bundle`,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Bundle generation failed'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Bundle generation failed'
 				console.error('[avg.generateBundle]', e)
 				throw e
 			} finally {
@@ -765,7 +878,8 @@ export const useAvgStore = defineStore('avg', {
 				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Download failed'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Download failed'
 				console.error('[avg.downloadBundle]', e)
 				throw e
 			} finally {
@@ -785,10 +899,15 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/verify-identity`)
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/verify-identity`,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Identity verification failed'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Identity verification failed'
 				console.error('[avg.verifyIdentity]', e)
 				throw e
 			} finally {
@@ -808,10 +927,15 @@ export const useAvgStore = defineStore('avg', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${CASE_API_BASE}/${encodeURIComponent(identifier)}/escalate`)
+				const response = await axios.post(
+					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/escalate`,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Regulator escalation failed'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Regulator escalation failed'
 				console.error('[avg.escalateRegulator]', e)
 				throw e
 			} finally {
@@ -841,13 +965,17 @@ export const useAvgStore = defineStore('avg', {
 				)
 				const packs = response.data?.results ?? response.data ?? []
 				const wanted = jurisdiction || DEFAULT_JURISDICTION
-				this.activePolicyPack = packs.find((p) => p.jurisdiction === wanted)
+				this.activePolicyPack =
+					packs.find((p) => p.jurisdiction === wanted)
 					?? packs.find((p) => p.jurisdiction === DEFAULT_JURISDICTION)
 					?? packs[0]
 					?? null
 				return this.activePolicyPack
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch policy pack'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch policy pack'
 				console.error('[avg.fetchActivePolicyPack]', e)
 				throw e
 			} finally {

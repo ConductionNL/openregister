@@ -1,7 +1,11 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { auditTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
-
+import {
+	auditTrailStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -13,7 +17,10 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 		:subname="t('openregister', 'Export, view, or delete audit trails')"
 		:open="navigationStore.sidebarState.auditTrail"
 		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
+		<NcAppSidebarTab
+			id="filters-tab"
+			:name="t('openregister', 'Filters')"
+			:order="1">
 			<template #icon>
 				<FilterOutline :size="20" />
 			</template>
@@ -22,7 +29,9 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
 					<NcSelect
 						id="registerSelect"
 						v-bind="registerOptions"
@@ -33,7 +42,9 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
 					<NcSelect
 						id="schemaSelect"
 						v-bind="schemaOptions"
@@ -45,7 +56,9 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
+					<label for="actionSelect">{{
+						t('openregister', 'Actions')
+					}}</label>
 					<NcSelect
 						id="actionSelect"
 						v-model="selectedActions"
@@ -90,7 +103,9 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
+					<label for="objectFilter">{{
+						t('openregister', 'Object ID')
+					}}</label>
 					<NcTextField
 						id="objectFilter"
 						v-model="objectFilter"
@@ -117,11 +132,19 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			</div>
 
 			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.') }}
+				{{
+					t(
+						'openregister',
+						'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
+					)
+				}}
 			</NcNoteCard>
 		</NcAppSidebarTab>
 
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
+		<NcAppSidebarTab
+			id="stats-tab"
+			:name="t('openregister', 'Statistics')"
+			:order="2">
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
@@ -166,7 +189,8 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			<!-- Action Distribution -->
 			<div class="actionDistribution">
 				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem v-for="(action, index) in actionDistribution"
+				<NcListItem
+					v-for="(action, index) in actionDistribution"
 					:key="index"
 					:name="action.action"
 					:bold="false">
@@ -177,7 +201,11 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						<Eye v-else :size="32" />
 					</template>
 					<template #subname>
-						{{ t('openregister', '{count} entries', { count: action.count }) }}
+						{{
+							t('openregister', '{count} entries', {
+								count: action.count,
+							})
+						}}
 					</template>
 				</NcListItem>
 			</div>
@@ -185,7 +213,8 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			<!-- Top Objects -->
 			<div class="topObjects">
 				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem v-for="(object, index) in topObjects"
+				<NcListItem
+					v-for="(object, index) in topObjects"
 					:key="index"
 					:name="object.name"
 					:bold="false">
@@ -193,7 +222,11 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						<CogOutline :size="32" />
 					</template>
 					<template #subname>
-						{{ t('openregister', '{count} entries', { count: object.count }) }}
+						{{
+							t('openregister', '{count} entries', {
+								count: object.count,
+							})
+						}}
 					</template>
 				</NcListItem>
 			</div>
@@ -289,16 +322,21 @@ export default {
 		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -310,17 +348,26 @@ export default {
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -354,12 +401,21 @@ export default {
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		userOptions() {
-			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
+			if (
+				!auditTrailStore.auditTrailList
+				|| !auditTrailStore.auditTrailList.length
+			) {
 				return []
 			}
 			// Get unique users from audit trail list
-			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
-			return users.map(user => ({
+			const users = [
+				...new Set(
+					auditTrailStore.auditTrailList
+						.map((trail) => trail.userName || trail.user)
+						.filter(Boolean),
+				),
+			]
+			return users.map((user) => ({
 				label: user,
 				value: user,
 			}))
@@ -501,7 +557,9 @@ export default {
 		 */
 		updateFilteredCount() {
 			this.filteredCount = auditTrailStore.auditTrailList.length
-			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
+			this.totalAuditTrails =
+				auditTrailStore.auditTrailPagination.total
+				|| auditTrailStore.auditTrailList.length
 		},
 		/**
 		 * Load statistics
@@ -529,7 +587,7 @@ export default {
 		async loadActionDistribution() {
 			try {
 				const actionData = await auditTrailStore.getActionDistribution()
-				this.actionDistribution = actionData.map(action => ({
+				this.actionDistribution = actionData.map((action) => ({
 					action: action.action || action.name,
 					count: action.count || 0,
 					percentage: action.percentage || 0,
@@ -547,7 +605,7 @@ export default {
 		async loadTopObjects() {
 			try {
 				const objectData = await auditTrailStore.getTopObjects()
-				this.topObjects = objectData.map(object => ({
+				this.topObjects = objectData.map((object) => ({
 					name: object.objectId || object.name || `Object ${object.id}`,
 					count: object.count || 0,
 				}))
@@ -592,15 +650,24 @@ export default {
 			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
 				query.schema = String(schemaStore.schemaItem.id)
 			}
-			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
-				query.action = this.selectedActions.map(a => a.value).join(',')
+			if (
+				Array.isArray(this.selectedActions)
+				&& this.selectedActions.length > 0
+			) {
+				query.action = this.selectedActions.map((a) => a.value).join(',')
 			}
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				query.user = this.selectedUsers.map(u => u.value).join(',')
+				query.user = this.selectedUsers.map((u) => u.value).join(',')
 			}
 			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
-			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			if (this.dateFrom)
+				query.dateFrom = new Date(this.dateFrom).getDate()
+					? new Date(this.dateFrom).toISOString()
+					: null
+			if (this.dateTo)
+				query.dateTo = new Date(this.dateTo).getDate()
+					? new Date(this.dateTo).toISOString()
+					: null
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
 			return query
@@ -646,28 +713,49 @@ export default {
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/audit-trails') return
-			const { register, schema, action, user, dateFrom, dateTo, object, onlyWithChanges } = this.$route.query || {}
+			const {
+				register,
+				schema,
+				action,
+				user,
+				dateFrom,
+				dateTo,
+				object,
+				onlyWithChanges,
+			} = this.$route.query || {}
 
 			// Set simple fields
 			// JS dates are awful, so we first check if its a valid date and then create the date. (dateFrom is a ISO string)
-			this.dateFrom = dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo = dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
+			this.dateFrom =
+				dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
+			this.dateTo =
+				dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
 			this.objectFilter = object ? String(object) : ''
-			this.showOnlyWithChanges = !!(onlyWithChanges)
+			this.showOnlyWithChanges = !!onlyWithChanges
 
 			// Actions
 			if (typeof action === 'string' && action.length > 0) {
-				const values = action.split(',').map(s => s.trim()).filter(Boolean)
-				const mapByValue = Object.fromEntries(this.actionOptions.map(o => [o.value, o]))
-				this.selectedActions = values.map(v => mapByValue[v] || { value: v, label: v })
+				const values = action
+					.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean)
+				const mapByValue = Object.fromEntries(
+					this.actionOptions.map((o) => [o.value, o]),
+				)
+				this.selectedActions = values.map(
+					(v) => mapByValue[v] || { value: v, label: v },
+				)
 			} else {
 				this.selectedActions = []
 			}
 
 			// Users
 			if (typeof user === 'string' && user.length > 0) {
-				const values = user.split(',').map(s => s.trim()).filter(Boolean)
-				this.selectedUsers = values.map(u => ({ value: u, label: u }))
+				const values = user
+					.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean)
+				this.selectedUsers = values.map((u) => ({ value: u, label: u }))
 			} else {
 				this.selectedUsers = []
 			}
@@ -676,14 +764,18 @@ export default {
 			const applyRegister = () => {
 				if (!register) return true
 				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
+				const reg = registerStore.registerList.find(
+					(r) => String(r.id) === String(register),
+				)
 				if (reg) registerStore.setRegisterItem(reg)
 				return true
 			}
 			const applySchema = () => {
 				if (!schema) return true
 				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
+				const sch = schemaStore.schemaList.find(
+					(s) => String(s.id) === String(schema),
+				)
 				if (sch) schemaStore.setSchemaItem(sch)
 				return true
 			}
@@ -710,10 +802,13 @@ export default {
 		 */
 		applyFiltersToStore() {
 			const filters = {}
-			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
+			if (
+				Array.isArray(this.selectedActions)
+				&& this.selectedActions.length > 0
+			) {
 				const actions = this.selectedActions.slice()
 				if (actions.length > 0) {
-					filters.action = actions.map(a => a.value).join(',')
+					filters.action = actions.map((a) => a.value).join(',')
 				}
 			}
 			if (registerStore.registerItem) {
@@ -725,7 +820,7 @@ export default {
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
 				const users = this.selectedUsers.slice()
 				if (users.length > 0) {
-					filters.user = users.map(u => u.value).join(',')
+					filters.user = users.map((u) => u.value).join(',')
 				}
 			}
 			if (this.dateFrom) filters.dateFrom = this.dateFrom

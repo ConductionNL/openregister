@@ -40,22 +40,30 @@ ensureIntegrationRegistry()
 // components come from the registry's resolveWidget AD-19 fallback to the
 // default CnIntegrationTab / CnIntegrationCard set via the leaf descriptor.
 try {
-	const xwikiAlreadyRegistered = window?.OCA?.OpenRegister?.integrations?.has?.('xwiki')
-	if (window?.OCA?.OpenRegister?.integrations?.register && !xwikiAlreadyRegistered) {
-		import('@conduction/nextcloud-vue').then(({ CnIntegrationTab, CnIntegrationCard }) => {
-			window.OCA.OpenRegister.integrations.register({
-				id: 'xwiki',
-				label: t('openregister', 'Articles'),
-				icon: 'FileDocumentMultiple',
-				requiredApp: 'openconnector',
-				order: 31,
-				group: 'external',
-				referenceType: 'xwiki',
-				tab: CnIntegrationTab,
-				widget: CnIntegrationCard,
-				defaultSize: { w: 4, h: 3 },
+	const xwikiAlreadyRegistered =
+		window?.OCA?.OpenRegister?.integrations?.has?.('xwiki')
+	if (
+		window?.OCA?.OpenRegister?.integrations?.register
+		&& !xwikiAlreadyRegistered
+	) {
+		import('@conduction/nextcloud-vue')
+			.then(({ CnIntegrationTab, CnIntegrationCard }) => {
+				window.OCA.OpenRegister.integrations.register({
+					id: 'xwiki',
+					label: t('openregister', 'Articles'),
+					icon: 'FileDocumentMultiple',
+					requiredApp: 'openconnector',
+					order: 31,
+					group: 'external',
+					referenceType: 'xwiki',
+					tab: CnIntegrationTab,
+					widget: CnIntegrationCard,
+					defaultSize: { w: 4, h: 3 },
+				})
 			})
-		}).catch(e => console.error('[main] failed to register xwiki descriptor', e))
+			.catch((e) =>
+				console.error('[main] failed to register xwiki descriptor', e),
+			)
 	}
 } catch (e) {
 	console.error('[main] xwiki registry guard failed', e)
@@ -86,7 +94,10 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // by this app's own webpack build, so it stays app-local — then hand the base
 // manifest, fragments, and menu-layout to the shared pipeline.
 const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
-const fragments = fragmentCtx.keys().sort().map((key) => fragmentCtx(key))
+const fragments = fragmentCtx
+	.keys()
+	.sort()
+	.map((key) => fragmentCtx(key))
 const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
 
 /**
@@ -139,11 +150,12 @@ const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
 
 const app = createApp({
-	render: () => h(App, {
-		manifest: mergedManifest,
-		registry: registryProp,
-		pageTypes: pageTypesProp,
-	}),
+	render: () =>
+		h(App, {
+			manifest: mergedManifest,
+			registry: registryProp,
+			pageTypes: pageTypesProp,
+		}),
 })
 
 app.mixin({ methods: { t, n } })

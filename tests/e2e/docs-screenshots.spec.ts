@@ -41,7 +41,15 @@ import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
 
-const SHOT_ROOT = path.resolve(__dirname, '..', '..', 'docs', 'static', 'screenshots', 'tutorials')
+const SHOT_ROOT = path.resolve(
+	__dirname,
+	'..',
+	'..',
+	'docs',
+	'static',
+	'screenshots',
+	'tutorials',
+)
 const APP = '/apps/openregister'
 
 /**
@@ -50,12 +58,20 @@ const APP = '/apps/openregister'
  * Lives under `static/` so Docusaurus copies the PNG into the build
  * root — markdown image refs use `/screenshots/...` (root-absolute).
  */
-async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise<void> {
+async function shoot(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+): Promise<void> {
 	const dir = path.join(SHOT_ROOT, track)
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir, { recursive: true })
 	}
-	await page.screenshot({ path: path.join(dir, file), fullPage: false, type: 'png' })
+	await page.screenshot({
+		path: path.join(dir, file),
+		fullPage: false,
+		type: 'png',
+	})
 }
 
 /**
@@ -66,7 +82,9 @@ async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise
 async function dismissOverlays(page: Page): Promise<void> {
 	const wizard = page.locator('#firstrunwizard')
 	if (await wizard.isVisible().catch(() => false)) {
-		const close = wizard.getByRole('button', { name: /close|got it|finish|skip/i }).first()
+		const close = wizard
+			.getByRole('button', { name: /close|got it|finish|skip/i })
+			.first()
 		if (await close.isVisible().catch(() => false)) {
 			await close.click().catch(() => {})
 		} else {
@@ -75,7 +93,12 @@ async function dismissOverlays(page: Page): Promise<void> {
 		await wizard.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {})
 	}
 	const stray = page.locator('[role="dialog"]:not(#firstrunwizard)')
-	if (await stray.first().isVisible().catch(() => false)) {
+	if (
+		await stray
+			.first()
+			.isVisible()
+			.catch(() => false)
+	) {
 		await page.keyboard.press('Escape').catch(() => {})
 		await page.waitForTimeout(300)
 	}
@@ -85,20 +108,27 @@ async function dismissOverlays(page: Page): Promise<void> {
 async function go(page: Page, route: string): Promise<void> {
 	// OR routes use HASH form — the router runs in hash mode (src/main.js);
 	// path-form deep-links render the dashboard instead of the target page.
-	const url = route.startsWith('/apps/') || route.startsWith('/settings/')
-		? `/index.php${route}`
-		: `/index.php${APP}/#${route}`
+	const url =
+		route.startsWith('/apps/') || route.startsWith('/settings/')
+			? `/index.php${route}`
+			: `/index.php${APP}/#${route}`
 	// `networkidle` NEVER settles on Nextcloud (ADR-074 rule 4): the
 	// notification long-poll keeps a request in flight for the life of the
 	// page, so this wait always ran to its timeout and the `.catch()` hid
 	// that it was doing nothing but costing 30s per route.
-	await page.goto(url, { waitUntil: 'domcontentloaded' })
-		.catch(() => { /* tolerate a 404 — caller decides */ })
+	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => {
+		/* tolerate a 404 — caller decides */
+	})
 	// Wait for the app to have painted SOMETHING addressable rather than for
 	// the network: `#content` is Nextcloud's own main region and is present
 	// on every route this harness visits, including the settings pages.
-	await page.locator('#content').first().waitFor({ state: 'visible', timeout: 15_000 })
-		.catch(() => { /* a 404/blank route is the caller's decision, as above */ })
+	await page
+		.locator('#content')
+		.first()
+		.waitFor({ state: 'visible', timeout: 15_000 })
+		.catch(() => {
+			/* a 404/blank route is the caller's decision, as above */
+		})
 	await dismissOverlays(page)
 	await page.waitForTimeout(900)
 }
@@ -108,14 +138,21 @@ async function go(page: Page, route: string): Promise<void> {
  * "Add Object" / etc.) if the button is present, screenshot it, and
  * close it again. Returns whether the dialog appeared.
  */
-async function captureCreateDialog(page: Page, track: 'user' | 'admin', file: string, buttonRe: RegExp): Promise<boolean> {
+async function captureCreateDialog(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+	buttonRe: RegExp,
+): Promise<boolean> {
 	const addBtn = page.getByRole('button', { name: buttonRe }).first()
 	if (!(await addBtn.isVisible().catch(() => false))) {
 		return false
 	}
 	await addBtn.click().catch(() => {})
 	const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
-	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { /* no dialog */ })
+	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+		/* no dialog */
+	})
 	await page.waitForTimeout(500)
 	await shoot(page, track, file)
 	const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
@@ -151,18 +188,30 @@ test.describe('docs: user track', () => {
 	test('UN create-a-register', async ({ page }) => {
 		// docs/tutorials/user/02-create-a-register.md
 		await go(page, '/registers')
-		const had = await captureCreateDialog(page, 'user', '02-create-a-register-01.png', /Add Register/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'02-create-a-register-01.png',
+			/Add Register/i,
+		)
 		if (had) {
 			// Re-open and fall through to the same dialog for step 2 (the
 			// "fields filled in" step — no actual typing because saving
 			// would mutate the dev container).
-			await captureCreateDialog(page, 'user', '02-create-a-register-02.png', /Add Register/i)
+			await captureCreateDialog(
+				page,
+				'user',
+				'02-create-a-register-02.png',
+				/Add Register/i,
+			)
 		}
 		await go(page, '/registers')
 		await shoot(page, 'user', '02-create-a-register-03.png')
 		// Steps 4-5 (register detail page + URL) need an existing register;
 		// the registers list / first card stand in if no detail is reachable.
-		const firstCard = page.locator('.app-content a, .app-content .card a, table tbody tr').first()
+		const firstCard = page
+			.locator('.app-content a, .app-content .card a, table tbody tr')
+			.first()
 		if (await firstCard.isVisible().catch(() => false)) {
 			await firstCard.click().catch(() => {})
 			await page.waitForTimeout(1200)
@@ -175,9 +224,19 @@ test.describe('docs: user track', () => {
 	test('UN create-a-schema', async ({ page }) => {
 		// docs/tutorials/user/03-create-a-schema.md
 		await go(page, '/schemas')
-		const had = await captureCreateDialog(page, 'user', '03-create-a-schema-01.png', /Add Schema/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'03-create-a-schema-01.png',
+			/Add Schema/i,
+		)
 		if (had) {
-			await captureCreateDialog(page, 'user', '03-create-a-schema-02.png', /Add Schema/i)
+			await captureCreateDialog(
+				page,
+				'user',
+				'03-create-a-schema-02.png',
+				/Add Schema/i,
+			)
 		}
 		await go(page, '/schemas')
 		await shoot(page, 'user', '03-create-a-schema-03.png')
@@ -206,15 +265,18 @@ test.describe('docs: user track', () => {
 		let reg = ''
 		let sch = ''
 		try {
-			const res = await page.request.get(`/index.php${APP}/api/registers?_extend=schemas&limit=50`, {
-				headers: { 'OCS-APIRequest': 'true' },
-			})
+			const res = await page.request.get(
+				`/index.php${APP}/api/registers?_extend=schemas&limit=50`,
+				{
+					headers: { 'OCS-APIRequest': 'true' },
+				},
+			)
 			if (res.ok()) {
 				const json = await res.json()
-				for (const r of (json.results || [])) {
+				for (const r of json.results || []) {
 					const schemas = Array.isArray(r.schemas) ? r.schemas : []
 					const first = schemas[0]
-					const fid = (first && typeof first === 'object') ? first.id : first
+					const fid = first && typeof first === 'object' ? first.id : first
 					if (r.id && fid) {
 						reg = String(r.id)
 						sch = String(fid)
@@ -222,9 +284,12 @@ test.describe('docs: user track', () => {
 					}
 				}
 			}
-		} catch { /* fall back to a bare /tables view */ }
+		} catch {
+			/* fall back to a bare /tables view */
+		}
 
-		const route = (reg && sch) ? `/#/tables?register=${reg}&schema=${sch}` : '/#/tables'
+		const route =
+			reg && sch ? `/#/tables?register=${reg}&schema=${sch}` : '/#/tables'
 		await go(page, route)
 		// Wait for the deep-linked register/schema selection to actually apply
 		// (SearchSideBar.applyQueryParamsFromRoute retries while the register
@@ -232,11 +297,18 @@ test.describe('docs: user track', () => {
 		// the "0 register(s) selected" pre-apply state. On a clean env this is
 		// ~1s; the long timeout tolerates populated dev containers.
 		if (reg && sch) {
-			await page.waitForFunction(
-				() => !document.body.innerText.includes('register(s) selected')
-					|| !document.body.innerText.includes('0 register(s) selected'),
-				{ timeout: 30000 },
-			).catch(() => { /* proceed even if it never settles */ })
+			await page
+				.waitForFunction(
+					() =>
+						!document.body.innerText.includes('register(s) selected')
+						|| !document.body.innerText.includes(
+							'0 register(s) selected',
+						),
+					{ timeout: 30000 },
+				)
+				.catch(() => {
+					/* proceed even if it never settles */
+				})
 			await page.waitForTimeout(1200)
 		}
 		await shoot(page, 'user', '04-create-an-object-01.png')
@@ -245,15 +317,23 @@ test.describe('docs: user track', () => {
 		// and "fields filled" (03) steps from the same open instance — re-opening
 		// the dialog a second time was the slow/flaky path. No typing: saving
 		// would mutate the dev container.
-		const addBtn = page.getByRole('button', { name: /Add Object|Add Item/i }).first()
+		const addBtn = page
+			.getByRole('button', { name: /Add Object|Add Item/i })
+			.first()
 		if (await addBtn.isVisible().catch(() => false)) {
 			await addBtn.click().catch(() => {})
-			const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
-			await dialog.waitFor({ state: 'visible', timeout: 8000 }).catch(() => { /* no dialog */ })
+			const dialog = page
+				.locator('[role="dialog"]:not(#firstrunwizard)')
+				.first()
+			await dialog.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {
+				/* no dialog */
+			})
 			await page.waitForTimeout(500)
 			await shoot(page, 'user', '04-create-an-object-02.png')
 			await shoot(page, 'user', '04-create-an-object-03.png')
-			const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+			const cancel = dialog
+				.getByRole('button', { name: /Cancel|Close/i })
+				.first()
 			if (await cancel.isVisible().catch(() => false)) {
 				await cancel.click().catch(() => {})
 			} else {
@@ -276,7 +356,9 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '05-search-and-filter-01.png')
 		// Type into the search box if one is present. Locator is generic
 		// to survive component swaps.
-		const searchInput = page.locator('input[type="search"], input[placeholder*="Search" i]').first()
+		const searchInput = page
+			.locator('input[type="search"], input[placeholder*="Search" i]')
+			.first()
 		if (await searchInput.isVisible().catch(() => false)) {
 			await searchInput.fill('a').catch(() => {})
 			await page.waitForTimeout(1000)
@@ -377,7 +459,12 @@ test.describe('docs: admin track', () => {
 		// docs/tutorials/admin/02-data-sources-sync.md
 		await go(page, '/sources')
 		await shoot(page, 'admin', '02-data-sources-sync-01.png')
-		const had = await captureCreateDialog(page, 'admin', '02-data-sources-sync-02.png', /Add Source|Add Item/i)
+		const had = await captureCreateDialog(
+			page,
+			'admin',
+			'02-data-sources-sync-02.png',
+			/Add Source|Add Item/i,
+		)
 		if (!had) {
 			await shoot(page, 'admin', '02-data-sources-sync-02.png')
 		}

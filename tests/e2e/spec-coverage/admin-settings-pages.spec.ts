@@ -22,10 +22,16 @@ import * as path from 'path'
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 const NOISE = [
-	'user_status', 'heartbeat', 'Failed to load user status',
-	'/apps/activity/', '/notifications/api/', 'dashboard/api/v1/widgets',
+	'user_status',
+	'heartbeat',
+	'Failed to load user status',
+	'/apps/activity/',
+	'/notifications/api/',
+	'dashboard/api/v1/widgets',
 	// Benign OR bootstrap network-abort race (page still renders fully).
-	'[AppInit]', 'Failed to fetch', 'Failed to load data',
+	'[AppInit]',
+	'Failed to fetch',
+	'Failed to load data',
 	// Anonymous browser mirror of a failed request (no URL → can't attribute).
 	// Genuine OR 4xx/5xx are still caught BY URL in the response tracker below;
 	// named OR JS errors are NOT matched here and still fail.
@@ -36,7 +42,9 @@ const NOISE = [
 	// every route. Filtered BY URL, not by status: any other 404 still fails.
 	'/apps/hermiq/',
 ]
-function isNoise(t: string): boolean { return NOISE.some((n) => t.includes(n)) }
+function isNoise(t: string): boolean {
+	return NOISE.some((n) => t.includes(n))
+}
 
 function trackErrors(page: Page): { console: string[]; http: string[] } {
 	const errors = { console: [] as string[], http: [] as string[] }
@@ -53,7 +61,8 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 	page.on('response', (r) => {
 		if (r.status() < 400) return
 		const u = r.url()
-		if (!isNoise(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
+		if (!isNoise(u))
+			errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})
 	return errors
 }
@@ -61,15 +70,25 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 async function gotoPage(page: Page, route: string): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
-	await page.waitForSelector('#app-content-vue, .app-content, main', { timeout: 20_000 })
+	await page.goto(`/index.php/apps/openregister/#${route}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
+	await page.waitForSelector('#app-content-vue, .app-content, main', {
+		timeout: 20_000,
+	})
 	// Race a heading against a content button — some Index views (Endpoints)
 	// render no page <h1>, so a button fallback keeps the wait short.
 	await Promise.race([
-		page.locator('#app-content-vue h1, .app-content h1, main h1').first()
+		page
+			.locator('#app-content-vue h1, .app-content h1, main h1')
+			.first()
 			.waitFor({ state: 'visible', timeout: 15_000 }),
-		page.locator('.app-content button, main button').first()
+		page
+			.locator('.app-content button, main button')
+			.first()
 			.waitFor({ state: 'visible', timeout: 15_000 }),
 	]).catch(() => {})
 	await page.waitForTimeout(800)
@@ -80,26 +99,31 @@ async function expectListSurface(page: Page): Promise<void> {
 	// to the real table, so `.first()` could resolve to an invisible node.
 	const surface = page.locator(
 		'table:visible, .v-data-table:visible, [role="table"]:visible, '
-		+ '.empty-content:visible, [class*="empty-content"]:visible, '
-		+ '.list:visible, .viewContainer:visible, .viewTableContainer:visible, '
-		+ '.pageContent:visible, .titleContent:visible',
+			+ '.empty-content:visible, [class*="empty-content"]:visible, '
+			+ '.list:visible, .viewContainer:visible, .viewTableContainer:visible, '
+			+ '.pageContent:visible, .titleContent:visible',
 	)
 	await expect(surface.first()).toBeVisible({ timeout: 15_000 })
 }
 async function expectHeading(page: Page, text: RegExp): Promise<void> {
 	// getByRole normalises whitespace in the accessible name; OR headings
 	// carry template whitespace so anchored /^X$/ would miss the raw node text.
-	await expect(page.getByRole('heading', { name: text }).first())
-		.toBeVisible({ timeout: 15_000 })
+	await expect(page.getByRole('heading', { name: text }).first()).toBeVisible({
+		timeout: 15_000,
+	})
 }
 async function expectButton(page: Page, name: RegExp): Promise<void> {
-	await expect(page.getByRole('button', { name }).first()).toBeVisible({ timeout: 12_000 })
+	await expect(page.getByRole('button', { name }).first()).toBeVisible({
+		timeout: 12_000,
+	})
 }
 
 test.describe('admin-settings-pages — real UI render + actions', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Organisations: heading + Create Organisation + active organisation + list', async ({ page }) => {
+	test('Organisations: heading + Create Organisation + active organisation + list', async ({
+		page,
+	}) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/organisation')
 		await expectHeading(page, /^Organisations$/)
@@ -116,8 +140,12 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		const activeBanner = page.locator('text=/Active Organisation:/i').first()
 		await expect(activeBanner).toBeVisible({ timeout: 12_000 })
 		const activeName = (await activeBanner.locator('xpath=..').innerText())
-			.replace(/.*Active Organisation:\s*/is, '').trim()
-		expect(activeName, 'active organisation banner names no organisation').not.toBe('')
+			.replace(/.*Active Organisation:\s*/is, '')
+			.trim()
+		expect(
+			activeName,
+			'active organisation banner names no organisation',
+		).not.toBe('')
 
 		// NOT expectListSurface(): this page renders a CARD GRID
 		// (`div.card` / `.cardHeader`, OrganisationsIndex.vue), and the shared
@@ -154,7 +182,9 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
 	})
 
-	test('Webhook logs: heading + Back to Webhooks + list/empty', async ({ page }) => {
+	test('Webhook logs: heading + Back to Webhooks + list/empty', async ({
+		page,
+	}) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/webhooks/logs')
 		await expectHeading(page, /Webhook Logs/i)
@@ -174,7 +204,9 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)
 	})
 
-	test('Search Trails: heading + tabs (Filters/Statistics/Analytics) switch', async ({ page }) => {
+	test('Search Trails: heading + tabs (Filters/Statistics/Analytics) switch', async ({
+		page,
+	}) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/search-trails')
 		await expectHeading(page, /Search Trail/i)
@@ -182,8 +214,12 @@ test.describe('admin-settings-pages — real UI render + actions', () => {
 		// Switch through the three tabs and assert each pane heading renders.
 		for (const tab of ['Statistics', 'Analytics', 'Filters']) {
 			await page.getByRole('tab', { name: tab }).first().click()
-			await expect(page.locator('h2, h3').filter({ hasText: new RegExp(tab) }).first())
-				.toBeVisible({ timeout: 8_000 })
+			await expect(
+				page
+					.locator('h2, h3')
+					.filter({ hasText: new RegExp(tab) })
+					.first(),
+			).toBeVisible({ timeout: 8_000 })
 		}
 		expect(e.console, e.console.join(' | ')).toHaveLength(0)
 		expect(e.http, e.http.join(' | ')).toHaveLength(0)

@@ -14,15 +14,9 @@ import { objectStore } from '../store/store.js'
  * @spec exclude Upstream-derived VueUse dropzone/file-dialog wrapper; generic file-picker plumbing not tied to a register-data contract.
  */
 export function useFileSelection(options) {
-
 	// Extract options
-	const {
-		dropzone,
-		allowMultiple,
-		allowedFileTypes,
-		onFileDrop,
-		onFileSelect,
-	} = options
+	const { dropzone, allowMultiple, allowedFileTypes, onFileDrop, onFileSelect } =
+		options
 
 	// Data types computed ref
 	const dataTypes = computed(() => {
@@ -49,7 +43,7 @@ export function useFileSelection(options) {
 	})
 
 	// Handling of files drop
-	const onDrop = files => {
+	const onDrop = (files) => {
 		if (!files || files.length === 0) {
 			return
 		}
@@ -71,9 +65,11 @@ export function useFileSelection(options) {
 		}
 
 		if (filesList.value?.length > 0 && allowMultiple) {
-			const filteredFiles = files.filter(file => !filesList.value.some(f => f.name === file.name))
+			const filteredFiles = files.filter(
+				(file) => !filesList.value.some((f) => f.name === file.name),
+			)
 
-			const filteredFilesWithLabels = filteredFiles.map(file => {
+			const filteredFilesWithLabels = filteredFiles.map((file) => {
 				// Create new File object using the original file's binary data
 				const newFile = new File([file], file.name, {
 					type: file.type,
@@ -127,7 +123,10 @@ export function useFileSelection(options) {
 
 	const reset = (name = null) => {
 		if (name) {
-			filesList.value = filesList.value.filter(file => file.name !== name).length > 0 ? filesList.value.filter(file => file.name !== name) : null
+			filesList.value =
+				filesList.value.filter((file) => file.name !== name).length > 0
+					? filesList.value.filter((file) => file.name !== name)
+					: null
 		} else {
 			filesList.value = null
 		}
@@ -147,7 +146,7 @@ export function useFileSelection(options) {
 	const filesList = ref(null)
 
 	// Use onChange handler
-	onChange(fileList => onDrop(fileList))
+	onChange((fileList) => onDrop(fileList))
 
 	// Expose interface
 	return {

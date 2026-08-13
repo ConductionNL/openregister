@@ -33,8 +33,12 @@ function createObjectStore(id, options = {}) {
 			registerObjectType(type) {
 				if (!this.objectTypes.includes(type)) this.objectTypes.push(type)
 			},
-			fetchCollection() { return [] },
-			getPagination() { return { total: 0, page: 1, pages: 0, limit: 25 } },
+			fetchCollection() {
+				return []
+			},
+			getPagination() {
+				return { total: 0, page: 1, pages: 0, limit: 25 }
+			},
 		},
 	}
 	for (const p of plugins) {
@@ -45,7 +49,12 @@ function createObjectStore(id, options = {}) {
 	return defineStore(id, merged)
 }
 
-const noopPlugin = name => () => ({ name, state: () => ({}), getters: {}, actions: {} })
+const noopPlugin = (name) => () => ({
+	name,
+	state: () => ({}),
+	getters: {},
+	actions: {},
+})
 
 /**
  * Mirrors the REAL liveUpdatesPlugin contract (plugin name, contributed state
@@ -68,7 +77,12 @@ function liveUpdatesPlugin() {
 		actions: {
 			async subscribe(type, id) {
 				this.liveSubscriptions += 1
-				return { _livePlugin: true, type, id, eventKey: id ? `or-object-${id}` : `or-collection-${type}` }
+				return {
+					_livePlugin: true,
+					type,
+					id,
+					eventKey: id ? `or-object-${id}` : `or-collection-${type}`,
+				}
 			},
 			unsubscribe(handle) {
 				if (!handle || !handle._livePlugin) return

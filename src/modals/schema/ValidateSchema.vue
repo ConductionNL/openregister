@@ -5,14 +5,19 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'validateSchema'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
 		:can-close="false">
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
-			<p>Validating objects against schema '{{ schemaStore.schemaItem?.title }}'...</p>
+			<p>
+				Validating objects against schema '{{
+					schemaStore.schemaItem?.title
+				}}'...
+			</p>
 			<p class="loading-subtitle">
 				This may take a moment for large datasets.
 			</p>
@@ -22,7 +27,12 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-else-if="!validationResults && !error" class="confirmation-container">
 			<NcNoteCard type="info">
 				<h4>Validate Schema Objects</h4>
-				<p>This validation will check all objects belonging to this schema against their schema definition. The process involves examining each object's data structure and identifying any validation errors.</p>
+				<p>
+					This validation will check all objects belonging to this schema
+					against their schema definition. The process involves examining
+					each object's data structure and identifying any validation
+					errors.
+				</p>
 			</NcNoteCard>
 
 			<div class="object-count-section">
@@ -49,13 +59,31 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-else-if="validationResults" class="results-container">
 			<!-- Summary -->
 			<div class="summary-section">
-				<NcNoteCard :type="validationResults.invalid_count > 0 ? 'warning' : 'success'">
+				<NcNoteCard
+					:type="
+						validationResults.invalid_count > 0 ? 'warning' : 'success'
+					">
 					<h3>Validation Summary</h3>
-					<p><strong>Total Objects:</strong> {{ validationResults.valid_count + validationResults.invalid_count }}</p>
-					<p><strong>Valid Objects:</strong> {{ validationResults.valid_count }}</p>
-					<p><strong>Invalid Objects:</strong> {{ validationResults.invalid_count }}</p>
-					<p v-if="validationResults.invalid_count > 0" class="warning-text">
-						⚠️ {{ validationResults.invalid_count }} object(s) have validation errors that need attention.
+					<p>
+						<strong>Total Objects:</strong>
+						{{
+							validationResults.valid_count
+							+ validationResults.invalid_count
+						}}
+					</p>
+					<p>
+						<strong>Valid Objects:</strong>
+						{{ validationResults.valid_count }}
+					</p>
+					<p>
+						<strong>Invalid Objects:</strong>
+						{{ validationResults.invalid_count }}
+					</p>
+					<p
+						v-if="validationResults.invalid_count > 0"
+						class="warning-text">
+						⚠️ {{ validationResults.invalid_count }} object(s) have
+						validation errors that need attention.
 					</p>
 					<p v-else class="success-text">
 						✅ All objects are valid according to the schema definition.
@@ -79,35 +107,34 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<table class="validation-table">
 						<thead>
 							<tr>
-								<th scope="col">
-									Status
-								</th>
-								<th scope="col">
-									ID
-								</th>
-								<th scope="col">
-									Name
-								</th>
-								<th scope="col">
-									UUID
-								</th>
-								<th scope="col">
-									Errors
-								</th>
-								<th scope="col">
-									Actions
-								</th>
+								<th scope="col">Status</th>
+								<th scope="col">ID</th>
+								<th scope="col">Name</th>
+								<th scope="col">UUID</th>
+								<th scope="col">Errors</th>
+								<th scope="col">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="object in filteredResults"
+							<tr
+								v-for="object in filteredResults"
 								:key="object.uuid"
-								:class="{ 'invalid-row': object.errors && object.errors.length > 0 }">
+								:class="{
+									'invalid-row':
+										object.errors && object.errors.length > 0,
+								}">
 								<td class="status-cell">
-									<CheckCircle v-if="!object.errors || object.errors.length === 0"
+									<CheckCircle
+										v-if="
+											!object.errors
+											|| object.errors.length === 0
+										"
 										:size="20"
 										class="valid-icon" />
-									<AlertCircle v-else :size="20" class="invalid-icon" />
+									<AlertCircle
+										v-else
+										:size="20"
+										class="invalid-icon" />
 								</td>
 								<td>{{ object.id }}</td>
 								<td>{{ object.name || 'Unnamed' }}</td>
@@ -115,16 +142,33 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 									{{ object.uuid }}
 								</td>
 								<td class="errors-cell">
-									<div v-if="object.errors && object.errors.length > 0" class="errors-list">
-										<div v-for="validationError in object.errors" :key="validationError.path" class="error-item">
-											<strong>{{ validationError.path }}:</strong> {{ validationError.message }}
-											<span class="error-keyword">({{ validationError.keyword }})</span>
+									<div
+										v-if="
+											object.errors && object.errors.length > 0
+										"
+										class="errors-list">
+										<div
+											v-for="validationError in object.errors"
+											:key="validationError.path"
+											class="error-item">
+											<strong
+												>{{ validationError.path }}:</strong
+											>
+											{{ validationError.message }}
+											<span class="error-keyword"
+												>({{
+													validationError.keyword
+												}})</span
+											>
 										</div>
 									</div>
 									<span v-else class="no-errors">No errors</span>
 								</td>
 								<td class="actions-cell">
-									<NcButton v-if="object.errors && object.errors.length > 0"
+									<NcButton
+										v-if="
+											object.errors && object.errors.length > 0
+										"
 										size="small"
 										@click="viewObjectDetails(object)">
 										<template #icon>
@@ -142,8 +186,16 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<!-- No Results -->
 			<div v-else class="no-results">
 				<NcEmptyContent
-					:title="showOnlyInvalid ? 'No invalid objects found' : 'No objects found'"
-					:description="showOnlyInvalid ? 'All objects are valid!' : 'This schema has no objects to validate.'">
+					:title="
+						showOnlyInvalid
+							? 'No invalid objects found'
+							: 'No objects found'
+					"
+					:description="
+						showOnlyInvalid
+							? 'All objects are valid!'
+							: 'This schema has no objects to validate.'
+					">
 					<template #icon>
 						<CheckCircle v-if="showOnlyInvalid" :size="40" />
 						<DatabaseOutline v-else :size="40" />
@@ -165,7 +217,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				</template>
 				{{ validationResults ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!validationResults && !loading && !error"
+			<NcButton
+				v-if="!validationResults && !loading && !error"
 				:disabled="loading"
 				variant="primary"
 				@click="startValidation()">
@@ -229,12 +282,17 @@ export default {
 			if (!this.validationResults) return []
 
 			const allResults = [
-				...this.validationResults.valid_objects.map(obj => ({ ...obj, errors: [] })),
+				...this.validationResults.valid_objects.map((obj) => ({
+					...obj,
+					errors: [],
+				})),
 				...this.validationResults.invalid_objects,
 			]
 
 			if (this.showOnlyInvalid) {
-				return allResults.filter(obj => obj.errors && obj.errors.length > 0)
+				return allResults.filter(
+					(obj) => obj.errors && obj.errors.length > 0,
+				)
 			}
 
 			return allResults
@@ -282,7 +340,9 @@ export default {
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					const stats = await schemaStore.getSchemaStats(
+						schemaStore.schemaItem.id,
+					)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
 				}
@@ -323,7 +383,6 @@ export default {
 				}
 
 				this.validationResults = data
-
 			} catch (err) {
 				this.error = err.message || 'An error occurred during validation'
 				console.error('Validation error:', err)

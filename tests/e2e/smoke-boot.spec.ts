@@ -55,9 +55,7 @@ const BOOT_KILLERS = [
 	'MIME type',
 ]
 
-test.use(
-	fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {},
-)
+test.use(fs.existsSync(STORAGE_STATE) ? { storageState: STORAGE_STATE } : {})
 
 for (const route of ROUTES) {
 	test(`boot smoke: ${route.name} mounts`, async ({ page }) => {
@@ -96,13 +94,7 @@ for (const route of ROUTES) {
 			`#openregister rendered no children on ${route.name} — the app did not mount`,
 		).toBeGreaterThan(0)
 
-		expect(
-			pageErrors,
-			`uncaught page error(s) on ${route.name}`,
-		).toEqual([])
-		expect(
-			killers,
-			`boot-killer console error(s) on ${route.name}`,
-		).toEqual([])
+		expect(pageErrors, `uncaught page error(s) on ${route.name}`).toEqual([])
+		expect(killers, `boot-killer console error(s) on ${route.name}`).toEqual([])
 	})
 }

@@ -14,15 +14,27 @@
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
 import { test, expect, type Page } from '@playwright/test'
-import { dismissSupportDialog, waitForContentReady, freezePage, SHOT_OPTIONS, dynamicMasks } from './_visual-helpers'
+import {
+	dismissSupportDialog,
+	waitForContentReady,
+	freezePage,
+	SHOT_OPTIONS,
+	dynamicMasks,
+} from './_visual-helpers'
 
 const APP = '/index.php/apps/openregister'
 
 /** Click a combobox and wait for its options to appear; returns false on timeout. */
-async function clickAndWaitForOptions(page: Page, combo: ReturnType<Page['getByRole']>, timeout = 15_000): Promise<boolean> {
+async function clickAndWaitForOptions(
+	page: Page,
+	combo: ReturnType<Page['getByRole']>,
+	timeout = 15_000,
+): Promise<boolean> {
 	await combo.click()
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -48,23 +60,36 @@ test.describe('mdm-survivorship-override — visual baselines', () => {
 	test('MdmConflictResolutionModal', async ({ page }) => {
 		// Manifest route is kebab-case '/master-entities' (src/manifest.json);
 		// '#/masterEntities' hits the catch-all and redirects to the dashboard.
-		await page.goto(`${APP}/#/master-entities`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/#/master-entities`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await dismissSupportDialog(page)
 		await waitForContentReady(page)
 
 		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		test.skip(
+			!selected,
+			'No register/schema options available — seed data needed',
+		)
 
-		const viewButton = page.getByRole('button', { name: /view golden record/i }).first()
-		const hasEntity = await viewButton.isVisible({ timeout: 8_000 }).catch(() => false)
+		const viewButton = page
+			.getByRole('button', { name: /view golden record/i })
+			.first()
+		const hasEntity = await viewButton
+			.isVisible({ timeout: 8_000 })
+			.catch(() => false)
 		test.skip(!hasEntity, 'No master entities available — seed data needed')
 		await viewButton.click()
 
-		const resolveButton = page.getByRole('button', { name: /resolve conflicts/i })
+		const resolveButton = page.getByRole('button', {
+			name: /resolve conflicts/i,
+		})
 		await resolveButton.waitFor({ state: 'visible', timeout: 10_000 })
 		await resolveButton.click()
 
-		await page.getByRole('dialog', { name: /Resolve conflicts/i }).waitFor({ state: 'visible', timeout: 10_000 })
+		await page
+			.getByRole('dialog', { name: /Resolve conflicts/i })
+			.waitFor({ state: 'visible', timeout: 10_000 })
 		await page.waitForTimeout(500)
 		await freezePage(page)
 		await expect(page).toHaveScreenshot('MdmConflictResolutionModal.png', {

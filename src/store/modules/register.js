@@ -102,7 +102,8 @@ export const useRegisterStore = defineStore('register', {
 			if (search === null && inFlightRefresh) {
 				return inFlightRefresh
 			}
-			let endpoint = '/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
+			let endpoint =
+				'/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats'
 			if (search !== null && search !== '') {
 				endpoint = endpoint + '&_search=' + encodeURIComponent(search)
 			}
@@ -113,7 +114,9 @@ export const useRegisterStore = defineStore('register', {
 				return { response, data }
 			})()
 			if (search === null) {
-				inFlightRefresh = work.finally(() => { inFlightRefresh = null })
+				inFlightRefresh = work.finally(() => {
+					inFlightRefresh = null
+				})
 				return inFlightRefresh
 			}
 			return work
@@ -211,16 +214,13 @@ export const useRegisterStore = defineStore('register', {
 			const cleanedData = this.cleanRegisterForSave(registerItem)
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(cleanedData),
+				const response = await fetch(endpoint, {
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(cleanedData),
+				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -275,16 +275,13 @@ export const useRegisterStore = defineStore('register', {
 				: `/index.php/apps/openregister/api/registers/upload/${this.registerItem.id}`
 			const method = isNewRegister ? 'POST' : 'PUT'
 
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(register),
+			const response = await fetch(endpoint, {
+				method,
+				headers: {
+					'Content-Type': 'application/json',
 				},
-			)
+				body: JSON.stringify(register),
+			})
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`)
@@ -302,7 +299,6 @@ export const useRegisterStore = defineStore('register', {
 			this.refreshRegisterList()
 
 			return { response, data }
-
 		},
 		/**
 		 * Start a heartbeat mechanism to prevent gateway timeouts during long imports
@@ -322,18 +318,23 @@ export const useRegisterStore = defineStore('register', {
 					heartbeatCount++
 
 					// Send a lightweight request to keep the session alive
-					const response = await fetch('/index.php/apps/openregister/api/heartbeat', {
-						method: 'GET',
-						headers: {
-							'X-Requested-With': 'XMLHttpRequest',
-							'Cache-Control': 'no-cache',
+					const response = await fetch(
+						'/index.php/apps/openregister/api/heartbeat',
+						{
+							method: 'GET',
+							headers: {
+								'X-Requested-With': 'XMLHttpRequest',
+								'Cache-Control': 'no-cache',
+							},
+							// Add timeout to prevent hanging requests
+							signal: AbortSignal.timeout(10000), // 10 second timeout
 						},
-						// Add timeout to prevent hanging requests
-						signal: AbortSignal.timeout(10000), // 10 second timeout
-					})
+					)
 
 					if (!response.ok) {
-						throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+						throw new Error(
+							`HTTP ${response.status}: ${response.statusText}`,
+						)
 					}
 
 					// Reset failure count on success
@@ -341,19 +342,30 @@ export const useRegisterStore = defineStore('register', {
 						failureCount = 0
 						isHealthy = true
 						if (onStatusChange) {
-							onStatusChange({ healthy: true, failures: 0, count: heartbeatCount })
+							onStatusChange({
+								healthy: true,
+								failures: 0,
+								count: heartbeatCount,
+							})
 						}
 					}
-
 				} catch (error) {
 					failureCount++
 					const wasHealthy = isHealthy
 					isHealthy = failureCount < 3 // Consider unhealthy after 3 consecutive failures
 
-					console.error(`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`, error.message)
+					console.error(
+						`RegisterStore: Heartbeat #${heartbeatCount} failed (failure ${failureCount}):`,
+						error.message,
+					)
 
-					if (onStatusChange && (!wasHealthy !== !isHealthy)) {
-						onStatusChange({ healthy: isHealthy, failures: failureCount, count: heartbeatCount, error: error.message })
+					if (onStatusChange && !wasHealthy !== !isHealthy) {
+						onStatusChange({
+							healthy: isHealthy,
+							failures: failureCount,
+							count: heartbeatCount,
+							error: error.message,
+						})
 					}
 				}
 			}, intervalMs)
@@ -366,7 +378,11 @@ export const useRegisterStore = defineStore('register', {
 					clearInterval(heartbeatInterval)
 				},
 				getStatus() {
-					return { healthy: isHealthy, failures: failureCount, count: heartbeatCount }
+					return {
+						healthy: isHealthy,
+						failures: failureCount,
+						count: heartbeatCount,
+					}
 				},
 			}
 		},
@@ -390,7 +406,10 @@ export const useRegisterStore = defineStore('register', {
 			const fileExtension = file.name.split('.').pop().toLowerCase()
 			const { useSchemaStore } = await import('./schema.js')
 			const schemaStore = useSchemaStore()
-			const schemaId = (fileExtension === 'csv' && schemaStore.schemaItem) ? schemaStore.schemaItem.id : null
+			const schemaId =
+				fileExtension === 'csv' && schemaStore.schemaItem
+					? schemaStore.schemaItem.id
+					: null
 
 			// Build basic endpoint
 			let endpoint = `/index.php/apps/openregister/api/registers/${registerId}/import`
@@ -411,18 +430,18 @@ export const useRegisterStore = defineStore('register', {
 			try {
 				// Create controller for potential timeout handling
 				const controller = new AbortController()
-				const timeoutId = setTimeout(() => {
-					// Import taking longer than expected (5 minutes); no action taken.
-				}, 5 * 60 * 1000) // 5 minutes warning
-
-				const response = await fetch(
-					endpoint,
-					{
-						method: 'POST',
-						body: formData,
-						signal: controller.signal,
+				const timeoutId = setTimeout(
+					() => {
+						// Import taking longer than expected (5 minutes); no action taken.
 					},
-				)
+					5 * 60 * 1000,
+				) // 5 minutes warning
+
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+					signal: controller.signal,
+				})
 
 				clearTimeout(timeoutId)
 				const responseData = await response.json()
@@ -441,8 +460,11 @@ export const useRegisterStore = defineStore('register', {
 
 				// Start the register refresh in the background without waiting for it to complete
 				// This way the import can complete and the loading state can be turned off
-				this.refreshRegisterList().catch(error => {
-					console.error('RegisterStore: Error refreshing register list:', error)
+				this.refreshRegisterList().catch((error) => {
+					console.error(
+						'RegisterStore: Error refreshing register list:',
+						error,
+					)
 				})
 
 				return { response, responseData }

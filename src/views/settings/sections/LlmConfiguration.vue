@@ -65,20 +65,32 @@
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Large Language Models (LLMs) power AI features including semantic search, text generation, document summarization,
-				and content classification. When enabled, OpenRegister will automatically vectorize objects and files for semantic
-				search capabilities and provide AI-powered content understanding. Choose from providers like OpenAI, Fireworks AI,
-				Ollama (local), or Azure OpenAI.
+				Large Language Models (LLMs) power AI features including semantic
+				search, text generation, document summarization, and content
+				classification. When enabled, OpenRegister will automatically
+				vectorize objects and files for semantic search capabilities and
+				provide AI-powered content understanding. Choose from providers like
+				OpenAI, Fireworks AI, Ollama (local), or Azure OpenAI.
 			</p>
 			<p class="main-description info-note">
-				<strong>📝 Note:</strong> File vectorization requires text extraction to be enabled. Large files are split into smaller
-				<strong>chunks</strong> (text portions), which are then converted into <strong>embeddings</strong> (vector representations)
-				for semantic search. Without text extraction, files cannot be processed into chunks and embeddings.
+				<strong>📝 Note:</strong> File vectorization requires text extraction
+				to be enabled. Large files are split into smaller
+				<strong>chunks</strong> (text portions), which are then converted
+				into <strong>embeddings</strong> (vector representations) for
+				semantic search. Without text extraction, files cannot be processed
+				into chunks and embeddings.
 			</p>
 			<p class="toggle-status">
 				<strong>Current Status:</strong>
-				<span :class="llmSettings.enabled ? 'status-enabled' : 'status-disabled'">
-					{{ llmSettings.enabled ? 'LLM features enabled' : 'LLM features disabled' }}
+				<span
+					:class="
+						llmSettings.enabled ? 'status-enabled' : 'status-disabled'
+					">
+					{{
+						llmSettings.enabled
+							? 'LLM features enabled'
+							: 'LLM features disabled'
+					}}
 				</span>
 			</p>
 		</div>
@@ -90,10 +102,19 @@
 				:disabled="saving"
 				type="switch"
 				@update:modelValue="onLlmEnabledChange">
-				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
+				{{
+					llmSettings.enabled
+						? t('openregister', 'LLM features enabled')
+						: t('openregister', 'LLM features disabled')
+				}}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
-				{{ t('openregister', 'Enable or disable LLM features. Configure providers and models using the LLM configuration button above.') }}
+				{{
+					t(
+						'openregister',
+						'Enable or disable LLM features. Configure providers and models using the LLM configuration button above.',
+					)
+				}}
 				<span v-if="saving" class="saving-indicator">
 					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
 				</span>
@@ -107,9 +128,7 @@
 				<p v-if="providerConfig.embeddingProvider" class="provider-name">
 					{{ getProviderDisplayName(providerConfig.embeddingProvider) }}
 				</p>
-				<p v-else class="not-configured">
-					Not configured
-				</p>
+				<p v-else class="not-configured">Not configured</p>
 				<p v-if="providerConfig.embeddingModel" class="model-info">
 					{{ providerConfig.embeddingModel }}
 				</p>
@@ -120,15 +139,15 @@
 				<p v-if="providerConfig.chatProvider" class="provider-name">
 					{{ getProviderDisplayName(providerConfig.chatProvider) }}
 				</p>
-				<p v-else class="not-configured">
-					Not configured
-				</p>
+				<p v-else class="not-configured">Not configured</p>
 				<p v-if="providerConfig.chatModel" class="model-info">
 					{{ providerConfig.chatModel }}
 				</p>
 			</div>
 
-			<div class="provider-info-card" :class="{'warning-card': !databaseInfo.vectorSupport}">
+			<div
+				class="provider-info-card"
+				:class="{ 'warning-card': !databaseInfo.vectorSupport }">
 				<div class="card-header">
 					<h5>Vector Storage</h5>
 					<NcButton
@@ -148,18 +167,38 @@
 				<p v-if="databaseInfo.version !== 'Unknown'" class="model-info">
 					{{ databaseInfo.version }}
 				</p>
-				<p v-if="databaseInfo.recommendedPlugin" class="plugin-info" :class="{'warning-text': !databaseInfo.vectorSupport, 'success-text': databaseInfo.vectorSupport}">
+				<p
+					v-if="databaseInfo.recommendedPlugin"
+					class="plugin-info"
+					:class="{
+						'warning-text': !databaseInfo.vectorSupport,
+						'success-text': databaseInfo.vectorSupport,
+					}">
 					{{ databaseInfo.recommendedPlugin }}
 				</p>
-				<p v-if="databaseInfo.performanceNote" class="performance-note" :title="databaseInfo.performanceNote">
+				<p
+					v-if="databaseInfo.performanceNote"
+					class="performance-note"
+					:title="databaseInfo.performanceNote">
 					{{ databaseInfo.performanceNote }}
 				</p>
 				<!-- PostgreSQL Extensions -->
-				<div v-if="databaseInfo.extensions && databaseInfo.extensions.length > 0" class="extensions-section">
+				<div
+					v-if="
+						databaseInfo.extensions && databaseInfo.extensions.length > 0
+					"
+					class="extensions-section">
 					<details>
-						<summary>{{ t('openregister', 'Extensions') }} ({{ databaseInfo.extensions.length }})</summary>
+						<summary>
+							{{ t('openregister', 'Extensions') }} ({{
+								databaseInfo.extensions.length
+							}})
+						</summary>
 						<ul class="extensions-list">
-							<li v-for="ext in databaseInfo.extensions" :key="ext.name" class="extension-item">
+							<li
+								v-for="ext in databaseInfo.extensions"
+								:key="ext.name"
+								class="extension-item">
 								<span class="ext-name">{{ ext.name }}</span>
 								<span class="ext-version">v{{ ext.version }}</span>
 							</li>
@@ -169,41 +208,77 @@
 				<!-- Hybrid search readiness (hybrid-document-search) -->
 				<div v-if="databaseInfo.hybridSearch" class="extensions-section">
 					<details>
-						<summary>{{ t('openregister', 'Hybrid search readiness') }}</summary>
+						<summary>
+							{{ t('openregister', 'Hybrid search readiness') }}
+						</summary>
 						<ul class="extensions-list">
 							<li class="extension-item">
-								<span class="ext-name">{{ t('openregister', 'pgvector ANN sidecar') }}</span>
+								<span class="ext-name">{{
+									t('openregister', 'pgvector ANN sidecar')
+								}}</span>
 								<span class="ext-version">
-									{{ databaseInfo.hybridSearch.annSidecarTable
-										? '✓' + (databaseInfo.hybridSearch.embeddingVectorDimension ? ' (' + databaseInfo.hybridSearch.embeddingVectorDimension + 'd)' : '')
-										: '✗' }}
+									{{
+										databaseInfo.hybridSearch.annSidecarTable
+											? '✓'
+												+ (databaseInfo.hybridSearch
+													.embeddingVectorDimension
+													? ' ('
+														+ databaseInfo.hybridSearch
+															.embeddingVectorDimension
+														+ 'd)'
+													: '')
+											: '✗'
+									}}
 								</span>
 							</li>
 							<li class="extension-item">
-								<span class="ext-name">{{ t('openregister', 'HNSW index') }}</span>
-								<span class="ext-version">{{ databaseInfo.hybridSearch.hnswIndex ? '✓' : '✗' }}</span>
+								<span class="ext-name">{{
+									t('openregister', 'HNSW index')
+								}}</span>
+								<span class="ext-version">{{
+									databaseInfo.hybridSearch.hnswIndex ? '✓' : '✗'
+								}}</span>
 							</li>
 							<li class="extension-item">
-								<span class="ext-name">{{ t('openregister', 'Keyword GIN index') }}</span>
-								<span class="ext-version">{{ databaseInfo.hybridSearch.textSearchGinIndex ? '✓' : '✗' }}</span>
+								<span class="ext-name">{{
+									t('openregister', 'Keyword GIN index')
+								}}</span>
+								<span class="ext-version">{{
+									databaseInfo.hybridSearch.textSearchGinIndex
+										? '✓'
+										: '✗'
+								}}</span>
 							</li>
 							<li class="extension-item">
-								<span class="ext-name">{{ t('openregister', 'Chunks vectorized') }}</span>
+								<span class="ext-name">{{
+									t('openregister', 'Chunks vectorized')
+								}}</span>
 								<span class="ext-version">
-									{{ databaseInfo.hybridSearch.chunks.vectorized }}/{{ databaseInfo.hybridSearch.chunks.total }}
+									{{
+										databaseInfo.hybridSearch.chunks.vectorized
+									}}/{{ databaseInfo.hybridSearch.chunks.total }}
 								</span>
 							</li>
 							<li class="extension-item">
-								<span class="ext-name">{{ t('openregister', 'Vectors on pgvector fast path') }}</span>
+								<span class="ext-name">{{
+									t(
+										'openregister',
+										'Vectors on pgvector fast path',
+									)
+								}}</span>
 								<span class="ext-version">
-									{{ databaseInfo.hybridSearch.vectors.pgvectorPopulated }}/{{ databaseInfo.hybridSearch.vectors.total }}
+									{{
+										databaseInfo.hybridSearch.vectors
+											.pgvectorPopulated
+									}}/{{ databaseInfo.hybridSearch.vectors.total }}
 								</span>
 							</li>
 						</ul>
 					</details>
 				</div>
 				<p v-if="databaseInfo.lastUpdated" class="last-updated">
-					{{ t('openregister', 'Updated:') }} {{ formatDate(databaseInfo.lastUpdated) }}
+					{{ t('openregister', 'Updated:') }}
+					{{ formatDate(databaseInfo.lastUpdated) }}
 				</p>
 			</div>
 		</div>
@@ -214,49 +289,37 @@
 				<div class="stat-value">
 					{{ formatNumber(chatStats.totalAgents) }}
 				</div>
-				<div class="stat-label">
-					Agents
-				</div>
+				<div class="stat-label">Agents</div>
 			</div>
 			<div class="stat-tile">
 				<div class="stat-value">
 					{{ formatNumber(chatStats.totalConversations) }}
 				</div>
-				<div class="stat-label">
-					Conversations
-				</div>
+				<div class="stat-label">Conversations</div>
 			</div>
 			<div class="stat-tile">
 				<div class="stat-value">
 					{{ formatNumber(chatStats.totalMessages) }}
 				</div>
-				<div class="stat-label">
-					Messages
-				</div>
+				<div class="stat-label">Messages</div>
 			</div>
 			<div class="stat-tile">
 				<div class="stat-value">
 					{{ formatNumber(vectorStats.totalVectors) }}
 				</div>
-				<div class="stat-label">
-					Total Vectors
-				</div>
+				<div class="stat-label">Total Vectors</div>
 			</div>
 			<div class="stat-tile">
 				<div class="stat-value">
 					{{ formatNumber(vectorStats.objectVectors) }}
 				</div>
-				<div class="stat-label">
-					Object Embeddings
-				</div>
+				<div class="stat-label">Object Embeddings</div>
 			</div>
 			<div class="stat-tile">
 				<div class="stat-value">
 					{{ formatNumber(vectorStats.fileVectors) }}
 				</div>
-				<div class="stat-label">
-					File Embeddings
-				</div>
+				<div class="stat-label">File Embeddings</div>
 			</div>
 		</div>
 
@@ -270,9 +333,7 @@
 
 			<!-- Error State -->
 			<div v-else-if="llmError" class="error-section">
-				<p class="error-message">
-					❌ {{ llmErrorMessage }}
-				</p>
+				<p class="error-message">❌ {{ llmErrorMessage }}</p>
 				<NcButton variant="primary" @click="retryConnection">
 					<template #icon>
 						<Refresh :size="20" />
@@ -464,10 +525,16 @@ export default {
 		 * @return {string}
 		 */
 		connectionStatusClass() {
-			if (this.llmConnectionStatus === 'Connected' || this.llmConnectionStatus.includes('✓')) {
+			if (
+				this.llmConnectionStatus === 'Connected'
+				|| this.llmConnectionStatus.includes('✓')
+			) {
 				return 'status-connected'
 			}
-			if (this.llmConnectionStatus === 'Disconnected' || this.llmConnectionStatus.includes('✗')) {
+			if (
+				this.llmConnectionStatus === 'Disconnected'
+				|| this.llmConnectionStatus.includes('✗')
+			) {
 				return 'status-disconnected'
 			}
 			return 'status-unknown'
@@ -498,24 +565,31 @@ export default {
 					this.llmSettings = { ...this.llmSettings, ...settings }
 
 					// Extract provider configuration
-					this.providerConfig.embeddingProvider = settings.embeddingProvider || null
+					this.providerConfig.embeddingProvider =
+						settings.embeddingProvider || null
 					this.providerConfig.chatProvider = settings.chatProvider || null
 
 					// Extract model names based on provider
 					if (settings.embeddingProvider === 'openai') {
-						this.providerConfig.embeddingModel = settings.openaiConfig?.model || null
+						this.providerConfig.embeddingModel =
+							settings.openaiConfig?.model || null
 					} else if (settings.embeddingProvider === 'fireworks') {
-						this.providerConfig.embeddingModel = settings.fireworksConfig?.embeddingModel || null
+						this.providerConfig.embeddingModel =
+							settings.fireworksConfig?.embeddingModel || null
 					} else if (settings.embeddingProvider === 'ollama') {
-						this.providerConfig.embeddingModel = settings.ollamaConfig?.model || null
+						this.providerConfig.embeddingModel =
+							settings.ollamaConfig?.model || null
 					}
 
 					if (settings.chatProvider === 'openai') {
-						this.providerConfig.chatModel = settings.openaiConfig?.chatModel || null
+						this.providerConfig.chatModel =
+							settings.openaiConfig?.chatModel || null
 					} else if (settings.chatProvider === 'fireworks') {
-						this.providerConfig.chatModel = settings.fireworksConfig?.chatModel || null
+						this.providerConfig.chatModel =
+							settings.fireworksConfig?.chatModel || null
 					} else if (settings.chatProvider === 'ollama') {
-						this.providerConfig.chatModel = settings.ollamaConfig?.chatModel || null
+						this.providerConfig.chatModel =
+							settings.ollamaConfig?.chatModel || null
 					}
 				}
 			} catch (error) {
@@ -564,7 +638,8 @@ export default {
 				const response = await this.settingsStore.getChatStats()
 				if (response) {
 					this.chatStats.totalAgents = response.total_agents || 0
-					this.chatStats.totalConversations = response.total_conversations || 0
+					this.chatStats.totalConversations =
+						response.total_conversations || 0
 					this.chatStats.totalMessages = response.total_messages || 0
 				}
 			} catch (error) {
@@ -581,12 +656,16 @@ export default {
 		async refreshDatabaseInfo() {
 			this.refreshingDatabase = true
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/database/refresh'))
+				await axios.post(
+					generateUrl('/apps/openregister/api/settings/database/refresh'),
+				)
 				await this.loadDatabaseInfo()
 				showSuccess(this.t('openregister', 'Database information refreshed'))
 			} catch (error) {
 				console.error('Failed to refresh database info:', error)
-				showError(this.t('openregister', 'Failed to refresh database information'))
+				showError(
+					this.t('openregister', 'Failed to refresh database information'),
+				)
 			} finally {
 				this.refreshingDatabase = false
 			}
@@ -611,7 +690,9 @@ export default {
 		 */
 		async loadDatabaseInfo() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/database'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/database'),
+				)
 				if (response.data && response.data.success) {
 					const db = response.data.database
 
@@ -624,14 +705,19 @@ export default {
 					// Check LLM settings for vector backend
 					let recommendedPlugin = db.recommendedPlugin
 					try {
-						const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+						const llmResponse = await axios.get(
+							generateUrl('/apps/openregister/api/settings/llm'),
+						)
 						const vectorBackend = llmResponse.data.vectorConfig?.backend
 
 						if (vectorBackend === 'database' && db.vectorSupport) {
 							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
 							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
 							vectorSupport = true
-						} else if (vectorBackend === 'database' && !db.vectorSupport) {
+						} else if (
+							vectorBackend === 'database'
+							&& !db.vectorSupport
+						) {
 							performanceNote = db.performanceNote
 							recommendedPlugin = db.recommendedPlugin
 						} else {
@@ -671,12 +757,13 @@ export default {
 			this.llmError = false
 
 			try {
-			// Reload all statistics and test connection
+				// Reload all statistics and test connection
 				await this.loadAllStats()
 				this.llmConnectionStatus = 'Connected ✓'
 			} catch (error) {
 				this.llmError = true
-				this.llmErrorMessage = error.message || 'Failed to connect to LLM service'
+				this.llmErrorMessage =
+					error.message || 'Failed to connect to LLM service'
 				this.llmConnectionStatus = 'Disconnected ✗'
 			} finally {
 				this.loadingStats = false
@@ -717,7 +804,9 @@ export default {
 		 */
 		async onLlmEnabledChange() {
 			// Only send the enabled field via PATCH
-			await this.settingsStore.patchLlmSettings({ enabled: this.llmSettings.enabled })
+			await this.settingsStore.patchLlmSettings({
+				enabled: this.llmSettings.enabled,
+			})
 			if (this.llmSettings.enabled) {
 				await this.loadVectorStats()
 			}
@@ -742,35 +831,48 @@ export default {
 					const stats = response.stats || response
 
 					// Update connection status
-					this.llmConnectionStatus = response.success ? 'Connected' : 'Disconnected'
+					this.llmConnectionStatus = response.success
+						? 'Connected'
+						: 'Disconnected'
 
 					// Update vector stats
 					this.vectorStats.totalVectors = stats.total_vectors || 0
-					this.vectorStats.objectVectors = stats.by_type?.object || stats.object_vectors || 0
-					this.vectorStats.fileVectors = stats.by_type?.file || stats.file_vectors || 0
-					this.vectorStats.storageMB = stats.storage?.total_mb?.toFixed(1) || '0.0'
+					this.vectorStats.objectVectors =
+						stats.by_type?.object || stats.object_vectors || 0
+					this.vectorStats.fileVectors =
+						stats.by_type?.file || stats.file_vectors || 0
+					this.vectorStats.storageMB =
+						stats.storage?.total_mb?.toFixed(1) || '0.0'
 
 					// Update file stats
 					if (response.files) {
 						this.fileStats.totalFiles = response.files.total_files || 0
-						this.fileStats.filesExtracted = response.files.files_extracted || 0
-						this.fileStats.vectorizedFiles = response.files.vectorized_files || 0
-						this.fileStats.pendingFiles = response.files.pending_files || 0
+						this.fileStats.filesExtracted =
+							response.files.files_extracted || 0
+						this.fileStats.vectorizedFiles =
+							response.files.vectorized_files || 0
+						this.fileStats.pendingFiles =
+							response.files.pending_files || 0
 						this.fileStats.totalChunks = response.files.total_chunks || 0
 					}
 
 					// Update object stats
 					if (response.objects) {
-						this.objectStats.totalObjects = response.objects.total_objects || 0
-						this.objectStats.vectorizedObjects = response.objects.vectorized_objects || 0
-						this.objectStats.pendingObjects = response.objects.pending_objects || 0
-						this.objectStats.progressPercentage = response.objects.percentage_complete || 0
+						this.objectStats.totalObjects =
+							response.objects.total_objects || 0
+						this.objectStats.vectorizedObjects =
+							response.objects.vectorized_objects || 0
+						this.objectStats.pendingObjects =
+							response.objects.pending_objects || 0
+						this.objectStats.progressPercentage =
+							response.objects.percentage_complete || 0
 					}
 				}
 			} catch (error) {
 				console.error('Failed to load vector stats:', error)
 				this.llmError = true
-				this.llmErrorMessage = error.message || 'Failed to connect to LLM service'
+				this.llmErrorMessage =
+					error.message || 'Failed to connect to LLM service'
 				this.llmConnectionStatus = 'Disconnected'
 			} finally {
 				this.loadingStats = false
@@ -815,17 +917,31 @@ export default {
 
 			try {
 				// Start background job
-				await axios.post(generateUrl('/apps/openregister/api/files/vectorize/batch'), {
-					batchSize: 25,
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/files/vectorize/batch'),
+					{
+						batchSize: 25,
+					},
+				)
 
-				showSuccess(this.t('openregister', 'File vectorization started. Check the statistics section for progress.'))
+				showSuccess(
+					this.t(
+						'openregister',
+						'File vectorization started. Check the statistics section for progress.',
+					),
+				)
 				await this.loadAllStats()
 			} catch (error) {
 				console.error('Failed to start file vectorization:', error)
-				showError(this.t('openregister', 'Failed to start vectorization: {error}', {
-					error: error.response?.data?.error || error.message,
-				}))
+				showError(
+					this.t(
+						'openregister',
+						'Failed to start vectorization: {error}',
+						{
+							error: error.response?.data?.error || error.message,
+						},
+					),
+				)
 			} finally {
 				this.vectorizing = false
 			}

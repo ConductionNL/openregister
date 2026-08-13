@@ -1,31 +1,22 @@
 <template>
 	<div class="workflow-execution-panel">
 		<h3>Execution History</h3>
-		<div v-if="loading" class="loading">
-			Loading...
-		</div>
+		<div v-if="loading" class="loading">Loading...</div>
 		<table v-else-if="executions.length" class="execution-table">
 			<thead>
 				<tr>
-					<th scope="col">
-						Timestamp
-					</th>
-					<th scope="col">
-						Hook
-					</th>
-					<th scope="col">
-						Object
-					</th>
-					<th scope="col">
-						Status
-					</th>
-					<th scope="col">
-						Duration
-					</th>
+					<th scope="col">Timestamp</th>
+					<th scope="col">Hook</th>
+					<th scope="col">Object</th>
+					<th scope="col">Status</th>
+					<th scope="col">Duration</th>
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="exec in executions" :key="exec.id" @click="selectedExecution = exec">
+				<tr
+					v-for="exec in executions"
+					:key="exec.id"
+					@click="selectedExecution = exec">
 					<td>{{ formatDate(exec.executedAt) }}</td>
 					<td>{{ exec.hookId }}</td>
 					<td>{{ exec.objectUuid }}</td>
@@ -38,14 +29,15 @@
 				</tr>
 			</tbody>
 		</table>
-		<p v-else>
-			No executions found.
-		</p>
+		<p v-else>No executions found.</p>
 		<div v-if="total > limit" class="pagination">
 			<NcButton :disabled="offset === 0" @click="prevPage">
 				Previous
 			</NcButton>
-			<span>{{ offset + 1 }} - {{ Math.min(offset + limit, total) }} of {{ total }}</span>
+			<span
+				>{{ offset + 1 }} - {{ Math.min(offset + limit, total) }} of
+				{{ total }}</span
+			>
 			<NcButton :disabled="offset + limit >= total" @click="nextPage">
 				Next
 			</NcButton>
@@ -131,19 +123,49 @@ export default {
 </script>
 
 <style scoped>
-.execution-table { width: 100%; border-collapse: collapse; }
+.execution-table {
+	width: 100%;
+	border-collapse: collapse;
+}
 
-.execution-table th, .execution-table td { padding: 8px; border-bottom: 1px solid var(--color-border); }
+.execution-table th,
+.execution-table td {
+	padding: 8px;
+	border-bottom: 1px solid var(--color-border);
+}
 
-.execution-table tr:hover { background: var(--color-background-hover); cursor: pointer; }
+.execution-table tr:hover {
+	background: var(--color-background-hover);
+	cursor: pointer;
+}
 
-.status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+.status-badge {
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 0.85em;
+}
 
-.status-approved { background: var(--color-success); color: white; }
+.status-approved {
+	background: var(--color-success);
+	color: white;
+}
 
-.status-error, .status-rejected { background: var(--color-error); color: white; }
+.status-error,
+.status-rejected {
+	background: var(--color-error);
+	color: white;
+}
 
-.status-modified, .status-delivered { background: var(--color-warning); color: white; }
+.status-modified,
+.status-delivered {
+	background: var(--color-warning);
+	color: white;
+}
 
-.pagination { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.pagination {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+}
 </style>

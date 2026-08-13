@@ -65,7 +65,9 @@ describe('translations utilities', () => {
 	describe('TRANSLATION_STATUSES', () => {
 		it('mirrors backend status constants', () => {
 			expect(TRANSLATION_STATUSES.DRAFT).toBe('draft')
-			expect(TRANSLATION_STATUSES.MACHINE_TRANSLATED).toBe('machine_translated')
+			expect(TRANSLATION_STATUSES.MACHINE_TRANSLATED).toBe(
+				'machine_translated',
+			)
 			expect(TRANSLATION_STATUSES.HUMAN_REVIEWED).toBe('human_reviewed')
 			expect(TRANSLATION_STATUSES.APPROVED).toBe('approved')
 		})
@@ -102,7 +104,9 @@ describe('Translations Store', () => {
 		it('returns cached data for known uuids', () => {
 			store.byObject = {
 				abc: {
-					translations: [{ property: 'title', language: 'nl', value: 'X' }],
+					translations: [
+						{ property: 'title', language: 'nl', value: 'X' },
+					],
 					completeness: { nl: { translated: 1, total: 1, ratio: 1 } },
 				},
 			}
@@ -127,7 +131,9 @@ describe('Translations Store', () => {
 		it('fetches and caches translations + completeness', async () => {
 			axios.get.mockResolvedValueOnce({
 				data: {
-					translations: [{ property: 'title', language: 'nl', value: 'Hallo' }],
+					translations: [
+						{ property: 'title', language: 'nl', value: 'Hallo' },
+					],
 					completeness: { nl: { translated: 1, total: 1, ratio: 1 } },
 				},
 			})
@@ -144,7 +150,9 @@ describe('Translations Store', () => {
 		})
 
 		it('omits schema param when not provided', async () => {
-			axios.get.mockResolvedValueOnce({ data: { translations: [], completeness: {} } })
+			axios.get.mockResolvedValueOnce({
+				data: { translations: [], completeness: {} },
+			})
 
 			await store.fetchByObject('uuid-2')
 
@@ -157,13 +165,17 @@ describe('Translations Store', () => {
 		it('records error on failure', async () => {
 			axios.get.mockRejectedValueOnce(new Error('network down'))
 
-			await expect(store.fetchByObject('uuid-3', 'schema-1')).rejects.toThrow('network down')
+			await expect(store.fetchByObject('uuid-3', 'schema-1')).rejects.toThrow(
+				'network down',
+			)
 			expect(store.error).toBe('network down')
 			expect(store.loading).toBe(false)
 		})
 
 		it('url-encodes the uuid', async () => {
-			axios.get.mockResolvedValueOnce({ data: { translations: [], completeness: {} } })
+			axios.get.mockResolvedValueOnce({
+				data: { translations: [], completeness: {} },
+			})
 
 			await store.fetchByObject('weird/uuid', 'schema-1')
 
@@ -176,7 +188,9 @@ describe('Translations Store', () => {
 
 	describe('setStatus', () => {
 		it('rejects invalid statuses without calling the API', async () => {
-			await expect(store.setStatus('uuid', 'title', 'nl', 'bogus')).rejects.toThrow(/Invalid translation status/)
+			await expect(
+				store.setStatus('uuid', 'title', 'nl', 'bogus'),
+			).rejects.toThrow(/Invalid translation status/)
 			expect(axios.post).not.toHaveBeenCalled()
 		})
 
@@ -184,15 +198,30 @@ describe('Translations Store', () => {
 			store.byObject = {
 				'uuid-x': {
 					translations: [
-						{ property: 'title', language: 'nl', value: 'A', status: 'draft' },
-						{ property: 'title', language: 'en', value: 'B', status: 'draft' },
+						{
+							property: 'title',
+							language: 'nl',
+							value: 'A',
+							status: 'draft',
+						},
+						{
+							property: 'title',
+							language: 'en',
+							value: 'B',
+							status: 'draft',
+						},
 					],
 					completeness: {},
 				},
 			}
 			axios.post.mockResolvedValueOnce({ data: {} })
 
-			await store.setStatus('uuid-x', 'title', 'nl', TRANSLATION_STATUSES.APPROVED)
+			await store.setStatus(
+				'uuid-x',
+				'title',
+				'nl',
+				TRANSLATION_STATUSES.APPROVED,
+			)
 
 			expect(axios.post).toHaveBeenCalledWith(
 				expect.stringContaining('/object/uuid-x/title/nl/status'),
@@ -206,7 +235,12 @@ describe('Translations Store', () => {
 			axios.post.mockRejectedValueOnce(new Error('forbidden'))
 
 			await expect(
-				store.setStatus('uuid', 'title', 'nl', TRANSLATION_STATUSES.APPROVED),
+				store.setStatus(
+					'uuid',
+					'title',
+					'nl',
+					TRANSLATION_STATUSES.APPROVED,
+				),
 			).rejects.toThrow('forbidden')
 			expect(store.error).toBe('forbidden')
 		})
@@ -234,7 +268,9 @@ describe('Translations Store', () => {
 		it('records errors and rethrows', async () => {
 			axios.post.mockRejectedValueOnce(new Error('provider down'))
 
-			await expect(store.bulkTranslate('uuid', 'nl', 'en')).rejects.toThrow('provider down')
+			await expect(store.bulkTranslate('uuid', 'nl', 'en')).rejects.toThrow(
+				'provider down',
+			)
 			expect(store.error).toBe('provider down')
 		})
 	})
@@ -257,10 +293,9 @@ describe('Translations Store', () => {
 
 			await store.search()
 
-			expect(axios.get).toHaveBeenCalledWith(
-				expect.any(String),
-				{ params: {} },
-			)
+			expect(axios.get).toHaveBeenCalledWith(expect.any(String), {
+				params: {},
+			})
 		})
 	})
 })

@@ -1,466 +1,466 @@
 :root {
-  --OR-margin-10: 10px;
-  --OR-margin-20: 20px;
-  --OR-margin-50: 50px;
+	--OR-margin-10: 10px;
+	--OR-margin-20: 20px;
+	--OR-margin-50: 50px;
 }
 
 /* Card Components */
 
 /* Card Grid Layouts */
 .cardGrid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	display: grid;
+	gap: 1.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .chartGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  padding: 20px;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+	padding: 20px;
 }
 
 /* Base Card Styles */
 .card {
-  background: var(--color-main-background);
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px var(--color-box-shadow);
-  min-height: 200px;
-  transition: transform 0.2s ease-in-out;
-  border: 1px solid var(--color-border);
+	background: var(--color-main-background);
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+	min-height: 200px;
+	transition: transform 0.2s ease-in-out;
+	border: 1px solid var(--color-border);
 }
 
 .card:hover {
-  transform: scale(1.01);
-  box-shadow: 0 4px 12px var(--color-box-shadow);
+	transform: scale(1.01);
+	box-shadow: 0 4px 12px var(--color-box-shadow);
 }
 
 .cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--color-border);
 }
 
 .cardHeader h2,
 .cardHeader h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: var(--color-main-text);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	color: var(--color-main-text);
 }
 
 .cardHeader h2 {
-  font-size: 1.2em;
+	font-size: 1.2em;
 }
 
 .cardHeader h3 {
-  font-size: 1.1em;
+	font-size: 1.1em;
 }
 
 /* Chart Card Specific */
 .chartCard {
-  background: var(--color-main-background);
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px var(--color-box-shadow);
-  border: 1px solid var(--color-border);
+	background: var(--color-main-background);
+	border-radius: 8px;
+	padding: 20px;
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+	border: 1px solid var(--color-border);
 }
 
 .chartCard h3 {
-  margin: 0 0 20px 0;
-  font-size: 1.2em;
-  color: var(--color-main-text);
+	margin: 0 0 20px 0;
+	font-size: 1.2em;
+	color: var(--color-main-text);
 }
 
 /* Nested Card Components */
 .nestedCardContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid var(--color-border);
 }
 
 .nestedCard {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  margin-bottom: 8px;
-  background-color: var(--color-main-background);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	margin-bottom: 8px;
+	background-color: var(--color-main-background);
 }
 
 .nestedCard:last-child {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .nestedCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
 
 .nestedCardHeader:hover {
-  background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 }
 
 .nestedCardTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.9em;
 }
 
 .nestedCardContent {
-  border-top: 1px solid var(--color-border);
-  background-color: var(--color-background-hover);
-  padding: 12px;
+	border-top: 1px solid var(--color-border);
+	background-color: var(--color-background-hover);
+	padding: 12px;
 }
 
 /* Stat Components */
 .statGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	margin-bottom: 16px;
 }
 
 .statItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .statLabel {
-  color: var(--color-text-maxcontrast);
-  font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
 }
 
 .statValue {
-  font-size: 1.1em;
-  font-weight: 600;
+	font-size: 1.1em;
+	font-weight: 600;
 }
 
 /* Toggle Buttons */
 .toggleButton {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  padding: 4px 8px;
-  cursor: pointer;
-  color: var(--color-text-maxcontrast);
-  font-size: 0.9em;
-  transition: all 0.2s ease;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 4px 8px;
+	cursor: pointer;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	transition: all 0.2s ease;
 }
 
 .toggleButton:hover {
-  color: var(--color-main-text);
-  background-color: var(--color-background-hover);
+	color: var(--color-main-text);
+	background-color: var(--color-background-hover);
 }
 
 /* Content and Layout Containers */
 .dashboardContent {
-  margin-inline: auto;
-  max-width: 1200px;
-  padding-block: 20px;
-  padding-inline: 20px;
+	margin-inline: auto;
+	max-width: 1200px;
+	padding-block: 20px;
+	padding-inline: 20px;
 }
 
 .loadingContainer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--color-text-maxcontrast);
-  justify-content: center;
-  padding-block: 40px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: var(--color-text-maxcontrast);
+	justify-content: center;
+	padding-block: 40px;
 }
 
 /* Header Actions */
 .headerActionsContainer {
-  display: flex;
-  align-items: end;
-  gap: 1em;
-  padding-block-start: 0.5em;
-  padding-inline-end: 0.9em;
+	display: flex;
+	align-items: end;
+	gap: 1em;
+	padding-block-start: 0.5em;
+	padding-inline-end: 0.9em;
 }
 
 .viewModeSwitchContainer {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .viewModeSwitchContainer span {
-  max-height: 34px;
+	max-height: 34px;
 }
 
 /* Responsive Design */
 @media screen and (max-width: 1024px) {
-  .chartGrid {
-    grid-template-columns: 1fr;
-  }
+	.chartGrid {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* Pages */
 
 .pageHeader {
-  margin-block-start: var(--app-navigation-padding);
-  margin-inline-start: calc(
-    var(--default-clickable-area) + var(--app-navigation-padding) * 2
-  );
-  min-height: var(--default-clickable-area);
-  line-height: var(--default-clickable-area);
+	margin-block-start: var(--app-navigation-padding);
+	margin-inline-start: calc(
+		var(--default-clickable-area) + var(--app-navigation-padding) * 2
+	);
+	min-height: var(--default-clickable-area);
+	line-height: var(--default-clickable-area);
 }
 
 /* Lists */
 
 .searchListHeader {
-  display: flex;
+	display: flex;
 
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background-color: var(--color-main-background);
-  flex-direction: row;
-  align-items: center;
+	position: sticky;
+	top: 0;
+	z-index: 1000;
+	background-color: var(--color-main-background);
+	flex-direction: row;
+	align-items: center;
 }
 
 .listHeader {
-  border-bottom: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border);
 }
 
 .searchField {
-  padding-inline-start: 65px;
-  padding-inline-end: 20px;
-  margin-block-start: 11px !important;
-  margin-block-end: 11px !important;
+	padding-inline-start: 65px;
+	padding-inline-end: 20px;
+	margin-block-start: 11px !important;
+	margin-block-end: 11px !important;
 }
 
 .selectedZaakIcon > svg {
-  fill: white;
+	fill: white;
 }
 
 .listPagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-block-end: 3px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-block-end: 3px;
 }
 
 /* Detail pages */
 
 .detailContainer {
-  margin-block-start: var(--OR-margin-20);
-  margin-inline-start: var(--OR-margin-20);
-  margin-inline-end: var(--OR-margin-20);
+	margin-block-start: var(--OR-margin-20);
+	margin-inline-start: var(--OR-margin-20);
+	margin-inline-end: var(--OR-margin-20);
 }
 
 .tabContainer > * ul > li {
-  display: flex;
-  flex: 1;
+	display: flex;
+	flex: 1;
 }
 
 .tabContainer > * ul > li:hover {
-  background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 }
 
 .tabContainer > * ul > li > a {
-  flex: 1;
-  text-align: center;
+	flex: 1;
+	text-align: center;
 }
 
 .tabContainer > * ul > li > .active {
-  background: transparent !important;
-  color: var(--color-main-text) !important;
-  border-bottom: var(--default-grid-baseline) solid var(--color-primary-element) !important;
+	background: transparent !important;
+	color: var(--color-main-text) !important;
+	border-bottom: var(--default-grid-baseline) solid var(--color-primary-element) !important;
 }
 
-.tabContainer > * ul[role="tablist"] {
-  display: flex;
-  margin: 10px 8px 0 8px;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--color-border);
+.tabContainer > * ul[role='tablist'] {
+	display: flex;
+	margin: 10px 8px 0 8px;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--color-border);
 }
 
-.tabContainer > * ul[role="tablist"] > * a[role="tab"] {
-  padding-inline-start: 10px;
-  padding-inline-end: 10px;
-  padding-block-start: 10px;
-  padding-block-end: 10px;
+.tabContainer > * ul[role='tablist'] > * a[role='tab'] {
+	padding-inline-start: 10px;
+	padding-inline-end: 10px;
+	padding-block-start: 10px;
+	padding-block-end: 10px;
 }
 
-.tabContainer > * div[role="tabpanel"] {
-  margin-block-start: var(--OR-margin-10);
+.tabContainer > * div[role='tabpanel'] {
+	margin-block-start: var(--OR-margin-10);
 }
 
 .tabPanel {
-  padding: 20px 10px;
-  min-height: 100%;
-  max-height: 100%;
-  height: 100%;
-  overflow: auto;
+	padding: 20px 10px;
+	min-height: 100%;
+	max-height: 100%;
+	height: 100%;
+	overflow: auto;
 }
 
 .tabPanelFileUpload {
-  margin-block-end: 15px !important;
+	margin-block-end: 15px !important;
 }
 
 .detailGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
 }
 
 .publishedIcon,
 .publishedIcon > svg {
-  color: var(--color-success);
-  fill: var(--color-success);
+	color: var(--color-success);
+	fill: var(--color-success);
 }
 
 .warningIcon,
 .warningIcon > svg {
-  color: var(--color-warning);
-  fill: var(--color-warning);
+	color: var(--color-warning);
+	fill: var(--color-warning);
 }
 
 .notSharedIcon,
 .notSharedIcon > svg {
-  color: var(--color-text-maxcontrast);
-  fill: var(--color-text-maxcontrast);
+	color: var(--color-text-maxcontrast);
+	fill: var(--color-text-maxcontrast);
 }
 
 .tabPagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 /* Modals */
 .modalContent {
-  margin: var(--OR-margin-50);
-  text-align: center;
+	margin: var(--OR-margin-50);
+	text-align: center;
 }
 
 .form-group > * {
-  margin-block-end: 10px;
+	margin-block-end: 10px;
 }
 
 .input-field__label {
-  margin-block: -6px;
+	margin-block: -6px;
 }
 
 .input-field__input:focus + .input-field__label {
-  margin-block: 0px;
+	margin-block: 0px;
 }
 
 .successMessage {
-  color: var(--color-success);
+	color: var(--color-success);
 }
 .errorMessage {
-  color: var(--color-error);
+	color: var(--color-error);
 }
 
 /* File drag and drop */
 
 .filesListDragDropNotice {
-  width: 100%;
-  min-height: 113px;
-  margin: 0;
-  user-select: none;
-  color: var(--color-text-maxcontrast);
-  background-color: var(--color-main-background);
-  border-color: #000;
+	width: 100%;
+	min-height: 113px;
+	margin: 0;
+	user-select: none;
+	color: var(--color-text-maxcontrast);
+	background-color: var(--color-main-background);
+	border-color: #000;
 }
 
 .filesListDragDropNoticeWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  height: fit-content;
-  max-height: 70%;
-  padding: 0 5vw;
-  border: 2px var(--color-border-dark) dashed;
-  border-radius: var(--border-radius-large);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	height: fit-content;
+	max-height: 70%;
+	padding: 0 5vw;
+	border: 2px var(--color-border-dark) dashed;
+	border-radius: var(--border-radius-large);
 }
 
 .filesListDragDropNoticeWrapperIcon {
-  display: flex;
+	display: flex;
 }
 
 .filesListDragDropNoticeTitle {
-  margin: 12px 0;
+	margin: 12px 0;
 }
 
 .filesListDragDropNoticeTitle {
-  margin-left: 16px;
-  color: inherit;
+	margin-left: 16px;
+	color: inherit;
 }
 
 /* Common View Patterns */
 
 /* Container and Layout */
 .viewContainer {
-  padding: 20px;
-  max-width: 100%;
+	padding: 20px;
+	max-width: 100%;
 }
 
 .viewHeader {
-  margin-bottom: 30px;
+	margin-bottom: 30px;
 }
 
 .viewHeader h1 {
-  margin: 0 0 10px 0;
-  font-size: 2rem;
-  font-weight: 300;
+	margin: 0 0 10px 0;
+	font-size: 2rem;
+	font-weight: 300;
 }
 
 .viewHeaderTitleIndented {
-  padding-left: 24px;
+	padding-left: 24px;
 }
 
 .viewHeader p {
-  color: var(--color-text-maxcontrast);
-  margin: 0;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
 }
 
 /* Actions Bar */
 .viewActionsBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 10px;
-  background: var(--color-background-hover);
-  border-radius: var(--border-radius);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding: 10px;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
 }
 
 .viewInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 .viewTotalCount {
-  font-weight: 500;
-  color: var(--color-main-text);
+	font-weight: 500;
+	color: var(--color-main-text);
 }
 
 .viewIndicator {
-  font-size: 0.9rem;
-  color: var(--color-primary);
+	font-size: 0.9rem;
+	color: var(--color-primary);
 }
 
 .viewActions {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+	display: flex;
+	align-items: center;
+	gap: 15px;
 }
 
 /* ========================================
@@ -469,338 +469,338 @@
 
 /* Enhanced Table Container */
 .viewTableContainer {
-  background: var(--color-main-background);
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  box-shadow: 0 2px 4px var(--color-box-shadow);
-  border: 1px solid var(--color-border);
-  margin-bottom: 20px;
+	background: var(--color-main-background);
+	border-radius: var(--border-radius);
+	overflow: hidden;
+	box-shadow: 0 2px 4px var(--color-box-shadow);
+	border: 1px solid var(--color-border);
+	margin-bottom: 20px;
 }
 
 /* Scrollable Table Container */
 .viewTableContainer.scrollable {
-  max-height: 400px;
-  overflow-y: auto;
+	max-height: 400px;
+	overflow-y: auto;
 }
 
 .viewTable {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: var(--color-main-background);
+	width: 100%;
+	border-collapse: collapse;
+	background-color: var(--color-main-background);
 }
 
 .viewTable th,
 .viewTable td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+	vertical-align: middle;
 }
 
 .viewTable th {
-  background: var(--color-background-hover);
-  font-weight: 500;
-  color: var(--color-text-maxcontrast);
-  background-color: var(--color-background-dark);
+	background: var(--color-background-hover);
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+	background-color: var(--color-background-dark);
 }
 
 /* Table Row States */
 .viewTableRow {
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+	border-bottom: 1px solid var(--color-border);
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
 
 .viewTableRow:hover {
-  background: var(--color-background-hover);
+	background: var(--color-background-hover);
 }
 
 .viewTableRow.active,
 .viewTableRowSelected {
-  background: var(--color-primary-light);
+	background: var(--color-primary-light);
 }
 
 .viewTable tbody tr.selected-row {
-  background-color: var(--color-primary-light);
-  border-left: 3px solid var(--color-primary);
+	background-color: var(--color-primary-light);
+	border-left: 3px solid var(--color-primary);
 }
 
 .viewTable tbody tr.selected-row:hover {
-  background-color: var(--color-primary-light);
+	background-color: var(--color-primary-light);
 }
 
 .viewTable tbody tr.modified-row {
-  background-color: var(--color-warning-light);
-  border-left: 3px solid var(--color-warning);
+	background-color: var(--color-warning-light);
+	border-left: 3px solid var(--color-warning);
 }
 
 .viewTable tbody tr.modified-row:hover {
-  background-color: var(--color-warning-light);
+	background-color: var(--color-warning-light);
 }
 
 .viewTable tbody tr.modified-row.selected-row {
-  background-color: var(--color-primary-light);
-  border-left: 3px solid var(--color-primary);
+	background-color: var(--color-primary-light);
+	border-left: 3px solid var(--color-primary);
 }
 
 /* Table Column Types */
 .tableColumnCheckbox {
-  width: 50px;
-  text-align: center;
+	width: 50px;
+	text-align: center;
 }
 
 .tableColumnActions {
-  width: 120px;
-  text-align: center;
-  min-width: 120px;
+	width: 120px;
+	text-align: center;
+	min-width: 120px;
 }
 
 .tableColumnConstrained {
-  width: 150px;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	width: 150px;
+	max-width: 150px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .tableColumnExpanded {
-  width: auto;
-  min-width: 200px;
+	width: auto;
+	min-width: 200px;
 }
 
 .tableColumnTitle {
-  min-width: 120px;
-  max-width: 200px;
-  word-wrap: break-word;
-  overflow: hidden;
+	min-width: 120px;
+	max-width: 200px;
+	word-wrap: break-word;
+	overflow: hidden;
 }
 
 /* Property-specific Table Cells */
 .prop-cell {
-  width: 30%;
-  font-weight: 600;
-  border-left: 3px solid var(--color-primary);
+	width: 30%;
+	font-weight: 600;
+	border-left: 3px solid var(--color-primary);
 }
 
 .prop-cell-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .value-cell {
-  width: 70%;
-  word-break: break-word;
-  border-radius: 4px;
+	width: 70%;
+	word-break: break-word;
+	border-radius: 4px;
 }
 
 .table-row-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 /* Inline Editing Styles */
 .viewTable td span {
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s ease;
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	transition: background-color 0.2s ease;
 }
 
 .viewTable td span:hover {
-  background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 }
 
 .viewTable .nc-text-field,
 .viewTable .nc-select {
-  width: 100%;
+	width: 100%;
 }
 
 /* Small form controls for inline editing */
 .viewTable :deep(.nc-text-field--small input) {
-  padding: 4px 8px;
-  font-size: 0.9em;
+	padding: 4px 8px;
+	font-size: 0.9em;
 }
 
 .viewTable :deep(.nc-select--small .vs__dropdown-toggle) {
-  padding: 2px 4px;
-  min-height: 32px;
+	padding: 2px 4px;
+	min-height: 32px;
 }
 
 /* Title Content Layout */
 .titleContent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 /* Pagination */
 .viewPagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-  margin-top: 30px;
-  padding: 20px;
-  flex-wrap: nowrap;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 15px;
+	margin-top: 30px;
+	padding: 20px;
+	flex-wrap: nowrap;
 }
 
 .viewPaginationPageSize {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+	min-width: 0;
 }
 
 .viewPaginationPageSize label {
-  font-size: 0.9rem;
-  color: var(--color-text-maxcontrast);
-  white-space: nowrap;
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	white-space: nowrap;
 }
 
 .viewPaginationPageSize .select {
-  min-width: 100px !important;
-  max-width: 120px !important;
+	min-width: 100px !important;
+	max-width: 120px !important;
 }
 
 .pagination-page-size-select {
-  min-width: 100px !important;
-  max-width: 120px !important;
+	min-width: 100px !important;
+	max-width: 120px !important;
 }
 
 .pagination-page-size-select .vs__dropdown-toggle {
-  min-width: 100px !important;
-  max-width: 120px !important;
+	min-width: 100px !important;
+	max-width: 120px !important;
 }
 
 .pagination-page-size-select .vs__selected {
-  overflow: visible !important;
-  text-overflow: clip !important;
-  white-space: nowrap !important;
+	overflow: visible !important;
+	text-overflow: clip !important;
+	white-space: nowrap !important;
 }
 
 .pagination-page-size-select .vs__dropdown-menu {
-  min-width: 100px !important;
+	min-width: 100px !important;
 }
 
 .viewPaginationNav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-grow: 1;
-  justify-content: center;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-grow: 1;
+	justify-content: center;
 }
 
 .viewPaginationNumbers {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
 }
 
 .viewPaginationEllipsis {
-  padding: 0 5px;
-  color: var(--color-text-maxcontrast);
-  font-size: 0.9rem;
+	padding: 0 5px;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9rem;
 }
 
 .viewPaginationInfo {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
 }
 
 .viewPageInfo {
-  color: var(--color-text-maxcontrast);
-  font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9rem;
 }
 
 /* Loading States */
 .viewLoading {
-  text-align: center;
-  padding: 50px;
+	text-align: center;
+	padding: 50px;
 }
 
 .viewLoading p {
-  margin-top: 20px;
-  color: var(--color-text-maxcontrast);
+	margin-top: 20px;
+	color: var(--color-text-maxcontrast);
 }
 
 /* Text Utilities */
 .textEllipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .textDescription {
-  font-size: 0.9em;
-  color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
 }
 
 /* Statistics Table Styling */
 .statisticsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9em;
-  background: var(--color-main-background);
-  border-radius: var(--border-radius);
-  overflow: hidden;
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9em;
+	background: var(--color-main-background);
+	border-radius: var(--border-radius);
+	overflow: hidden;
 }
 
 .statisticsTable th,
 .statisticsTable td {
-  padding: 8px 12px;
-  text-align: start;
-  border-bottom: 1px solid var(--color-border);
+	padding: 8px 12px;
+	text-align: start;
+	border-bottom: 1px solid var(--color-border);
 }
 
 .statisticsTable th {
-  background-color: var(--color-background-darker);
-  color: var(--color-text-maxcontrast);
-  font-weight: normal;
+	background-color: var(--color-background-darker);
+	color: var(--color-text-maxcontrast);
+	font-weight: normal;
 }
 
 .statisticsTable tr:last-child td {
-  border-bottom: none;
+	border-bottom: none;
 }
 
 .statisticsTable .subRow td {
-  color: var(--color-text-maxcontrast);
+	color: var(--color-text-maxcontrast);
 }
 
 .statisticsTable .indented {
-  padding-left: 24px;
+	padding-left: 24px;
 }
 
 /* Table styling variations */
 .tableOfContents thead th {
-  background-color: var(--color-primary-light);
-  font-weight: 600;
+	background-color: var(--color-primary-light);
+	font-weight: 600;
 }
 
 .tableOfContents tbody tr:nth-child(odd) {
-  background-color: transparent;
+	background-color: transparent;
 }
 
 .tableOfContents tbody tr:nth-child(even) {
-  background-color: var(--color-border);
+	background-color: var(--color-border);
 }
 
 /* Generic table row selection styles */
 .table-row-selected {
-  background-color: var(--color-primary-light) !important;
-  border-left: 3px solid var(--color-primary) !important;
+	background-color: var(--color-primary-light) !important;
+	border-left: 3px solid var(--color-primary) !important;
 }
 
 .table-row-selectable {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
 }
 
 .table-row-selectable:hover {
-  background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 }
 
 /* ========================================
@@ -853,7 +853,9 @@
 	border-radius: var(--border-radius);
 	border-left: 3px solid var(--color-primary);
 	box-shadow: 0 1px 3px var(--color-box-shadow);
-	transition: transform 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		transform 0.1s ease,
+		box-shadow 0.1s ease;
 }
 
 .detail-item:hover {
@@ -913,35 +915,35 @@
    ======================================== */
 
 .tabContainer {
-  margin-top: 20px;
+	margin-top: 20px;
 }
 
 /* Bootstrap Vue Tab Styling */
 :deep(.nav-tabs) {
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 15px;
+	border-bottom: 1px solid var(--color-border);
+	margin-bottom: 15px;
 }
 
 :deep(.nav-tabs .nav-link) {
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--color-text-maxcontrast);
-  padding: 8px 16px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--color-text-maxcontrast);
+	padding: 8px 16px;
 }
 
 :deep(.nav-tabs .nav-link.active) {
-  color: var(--color-main-text);
-  border-bottom: 2px solid var(--color-primary);
-  background-color: transparent;
+	color: var(--color-main-text);
+	border-bottom: 2px solid var(--color-primary);
+	background-color: transparent;
 }
 
 :deep(.nav-tabs .nav-link:hover) {
-  border-bottom: 2px solid var(--color-border);
+	border-bottom: 2px solid var(--color-border);
 }
 
 :deep(.tab-content) {
-  padding: 16px;
-  background-color: var(--color-main-background);
+	padding: 16px;
+	background-color: var(--color-main-background);
 }
 
 /* ========================================
@@ -950,36 +952,36 @@
 
 /* Form Editor Layout */
 .form-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
 }
 
 .form-field {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .field-label-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 4px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 6px;
+	margin-bottom: 4px;
 }
 
 /* Array Editor */
 .array-editor {
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 6px;
+	list-style: none;
+	padding-left: 0;
+	margin-bottom: 6px;
 }
 
 .array-editor li {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 4px;
 }
 
 /* ========================================
@@ -988,40 +990,40 @@
 
 /* Property Validation States */
 .property-valid {
-  border-left: 4px solid var(--color-success) !important;
+	border-left: 4px solid var(--color-success) !important;
 }
 
 .property-invalid {
-  border-left: 4px solid var(--color-error) !important;
+	border-left: 4px solid var(--color-error) !important;
 }
 
 .property-warning {
-  border-left: 4px solid var(--color-warning) !important;
+	border-left: 4px solid var(--color-warning) !important;
 }
 
 /* Override default borders for validated properties */
 .property-valid .prop-cell,
 .property-invalid .prop-cell,
 .property-warning .prop-cell {
-  border-left: none;
+	border-left: none;
 }
 
 /* Validation Icons */
 .validation-icon {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 .validation-icon.error-icon {
-  color: var(--color-error);
+	color: var(--color-error);
 }
 
 .validation-icon.warning-icon {
-  color: var(--color-warning);
+	color: var(--color-warning);
 }
 
 .warning-icon {
-  color: var(--color-warning);
-  flex-shrink: 0;
+	color: var(--color-warning);
+	flex-shrink: 0;
 }
 
 /* ========================================
@@ -1029,57 +1031,57 @@
    ======================================== */
 
 .property-name {
-  font-weight: 500;
+	font-weight: 500;
 }
 
 /* Enum Chips */
 .enum-section {
-  padding: 8px 16px;
+	padding: 8px 16px;
 }
 
 .enum-values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-  max-width: 250px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 8px;
+	max-width: 250px;
 }
 
 .enum-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  background-color: var(--color-primary-light);
-  color: var(--color-primary-text);
-  border-radius: 12px;
-  font-size: 0.8em;
-  gap: 4px;
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 8px;
+	background-color: var(--color-primary-light);
+	color: var(--color-primary-text);
+	border-radius: 12px;
+	font-size: 0.8em;
+	gap: 4px;
 }
 
 .enum-remove {
-  background: none;
-  border: none;
-  color: var(--color-primary-text);
-  cursor: pointer;
-  font-size: 1.2em;
-  line-height: 1;
-  padding: 0;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+	background: none;
+	border: none;
+	color: var(--color-primary-text);
+	cursor: pointer;
+	font-size: 1.2em;
+	line-height: 1;
+	padding: 0;
+	width: 16px;
+	height: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
 }
 
 .enum-remove:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+	background-color: rgba(255, 255, 255, 0.2);
 }
 
 /* File Labels */
 .fileLabelsContainer {
-  display: inline-flex;
-  gap: 3px;
+	display: inline-flex;
+	gap: 3px;
 }
 
 /* ========================================
@@ -1088,22 +1090,22 @@
 
 /* Name Input Containers */
 .name-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 /* JSON Value Display */
 .json-value {
-  background: var(--color-background-dark);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 6px 8px;
-  margin: 6px;
-  white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .875rem;
-  line-height: 1.35;
+	background: var(--color-background-dark);
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	padding: 6px 8px;
+	margin: 6px;
+	white-space: pre-wrap;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 0.875rem;
+	line-height: 1.35;
 }
 
 /* ========================================
@@ -1112,123 +1114,123 @@
 
 /* JSON Editor */
 .json-editor {
-  position: relative;
-  margin-bottom: 2.5rem;
+	position: relative;
+	margin-bottom: 2.5rem;
 }
 
 .json-editor label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
+	display: block;
+	margin-bottom: 0.5rem;
+	font-weight: bold;
 }
 
 /* CodeMirror Container */
 .codeMirrorContainer {
-  margin-block-start: 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
+	margin-block-start: 6px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
 }
 
 .codeMirrorContainer :deep(.cm-editor) {
-  height: 100%;
-  outline: none !important;
+	height: 100%;
+	outline: none !important;
 }
 
 .codeMirrorContainer :deep(.cm-scroller) {
-  overflow: auto;
+	overflow: auto;
 }
 
 .codeMirrorContainer :deep(.cm-content) {
-  border-radius: 0 !important;
-  border: none !important;
+	border-radius: 0 !important;
+	border: none !important;
 }
 
 /* Light/Dark Mode Borders */
 .codeMirrorContainer.light > .vue-codemirror {
-  border: 1px dotted silver;
+	border: 1px dotted silver;
 }
 
 .codeMirrorContainer.dark > .vue-codemirror {
-  border: 1px dotted grey;
+	border: 1px dotted grey;
 }
 
 /* Dark Mode Specific Styles */
 .codeMirrorContainer.dark :deep(.cm-editor) {
-  background-color: var(--color-background-darker);
+	background-color: var(--color-background-darker);
 }
 
 .codeMirrorContainer.light :deep(.cm-editor) {
-  background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 }
 
 /* CodeMirror Syntax Highlighting */
 /* String values */
 .codeMirrorContainer.light :deep(.ͼe) {
-  color: #448c27;
+	color: #448c27;
 }
 .codeMirrorContainer.dark :deep(.ͼe) {
-  color: #88c379;
+	color: #88c379;
 }
 
 /* Boolean values */
 .codeMirrorContainer.light :deep(.ͼc) {
-  color: #221199;
+	color: #221199;
 }
 .codeMirrorContainer.dark :deep(.ͼc) {
-  color: #8d64f7;
+	color: #8d64f7;
 }
 
 /* Null values */
 .codeMirrorContainer.light :deep(.ͼb) {
-  color: #770088;
+	color: #770088;
 }
 .codeMirrorContainer.dark :deep(.ͼb) {
-  color: #be55cd;
+	color: #be55cd;
 }
 
 /* Number values */
 .codeMirrorContainer.light :deep(.ͼd) {
-  color: #d19a66;
+	color: #d19a66;
 }
 .codeMirrorContainer.dark :deep(.ͼd) {
-  color: #9d6c3a;
+	color: #9d6c3a;
 }
 
 /* Text cursor */
 .codeMirrorContainer :deep(.cm-content) * {
-  cursor: text !important;
+	cursor: text !important;
 }
 
 /* Selection colors */
 .codeMirrorContainer.light :deep(.cm-line)::selection,
 .codeMirrorContainer.light :deep(.cm-line) ::selection {
-  background-color: #d7eaff !important;
-  color: black;
+	background-color: #d7eaff !important;
+	color: black;
 }
 .codeMirrorContainer.dark :deep(.cm-line)::selection,
 .codeMirrorContainer.dark :deep(.cm-line) ::selection {
-  background-color: #8fb3e6 !important;
-  color: black;
+	background-color: #8fb3e6 !important;
+	color: black;
 }
 
 /* Format JSON Button */
 .format-json-button {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  transform: translateY(100%);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	transform: translateY(100%);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
 }
 
 .error-message {
-  position: absolute;
-  bottom: 0;
-  right: 50%;
-  transform: translateY(100%) translateX(50%);
-  color: var(--color-error);
-  font-size: 0.8rem;
-  padding-top: 0.25rem;
+	position: absolute;
+	bottom: 0;
+	right: 50%;
+	transform: translateY(100%) translateX(50%);
+	color: var(--color-error);
+	font-size: 0.8rem;
+	padding-top: 0.25rem;
 }
 
 /* ========================================
@@ -1237,20 +1239,20 @@
 
 /* Hide arrow icons and fix spacing in NcActionInput */
 :deep(.action-input__icon-wrapper) {
-  display: none !important;
+	display: none !important;
 }
 
 /* Adjust input padding when icon wrapper is hidden */
 :deep(.action-input .action-input__text-label) {
-  padding-left: 16px !important;
+	padding-left: 16px !important;
 }
 
 :deep(.action-input input) {
-  padding-left: 16px !important;
+	padding-left: 16px !important;
 }
 
 :deep(.action-input .vs__dropdown-toggle) {
-  padding-left: 16px !important;
+	padding-left: 16px !important;
 }
 
 /* ========================================
@@ -1258,44 +1260,44 @@
    ======================================== */
 
 @media (max-width: 1200px) {
-  .tableColumnTitle {
-    min-width: 150px;
-    max-width: 200px;
-  }
-  
-  .detail-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-  }
+	.tableColumnTitle {
+		min-width: 150px;
+		max-width: 200px;
+	}
+
+	.detail-grid {
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 16px;
+	}
 }
 
 @media (max-width: 768px) {
-  .viewPagination {
-    gap: 10px;
-    padding: 15px 10px;
-  }
-  
-  .viewPaginationPageSize label {
-    display: none;
-  }
-  
-  .viewPaginationNav {
-    gap: 5px;
-  }
-  
-  .viewPaginationNumbers {
-    gap: 3px;
-  }
-  
-  .detail-grid {
-    grid-template-columns: 1fr;
-    padding: 0 10px;
-    gap: 15px;
-  }
-  
-  .viewTableContainer.scrollable {
-    max-height: 300px;
-  }
+	.viewPagination {
+		gap: 10px;
+		padding: 15px 10px;
+	}
+
+	.viewPaginationPageSize label {
+		display: none;
+	}
+
+	.viewPaginationNav {
+		gap: 5px;
+	}
+
+	.viewPaginationNumbers {
+		gap: 3px;
+	}
+
+	.detail-grid {
+		grid-template-columns: 1fr;
+		padding: 0 10px;
+		gap: 15px;
+	}
+
+	.viewTableContainer.scrollable {
+		max-height: 300px;
+	}
 }
 
 /* Reduced motion (WCAG 2.2 SC 2.3.3 Animation from Interactions).
@@ -1316,18 +1318,18 @@
  * are deliberately left alone, so hover is still visibly hover.
  */
 @media (prefers-reduced-motion: reduce) {
-  .card,
-  .nestedCardHeader,
-  .toggleButton,
-  .viewTableRow,
-  .viewTable td span,
-  .table-row-selectable,
-  .detail-item {
-    transition: none;
-  }
+	.card,
+	.nestedCardHeader,
+	.toggleButton,
+	.viewTableRow,
+	.viewTable td span,
+	.table-row-selectable,
+	.detail-item {
+		transition: none;
+	}
 
-  .card:hover,
-  .detail-item:hover {
-    transform: none;
-  }
+	.card:hover,
+	.detail-item:hover {
+		transform: none;
+	}
 }

@@ -4,7 +4,10 @@ import { defineStore } from 'pinia'
 // still has objects). See @conduction/nextcloud-vue src/utils/schemaApi.js.
 // Aliased: this store's own actions are also called saveSchema/deleteSchema, and an
 // unaliased call inside them would read like recursion.
-import { saveSchema as apiSaveSchema, deleteSchema as apiDeleteSchema } from '@conduction/nextcloud-vue'
+import {
+	saveSchema as apiSaveSchema,
+	deleteSchema as apiDeleteSchema,
+} from '@conduction/nextcloud-vue'
 import { Schema } from '../../entities/index.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -57,15 +60,21 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude store setter (local list state + presentation normalization)
 		 */
 		setSchemaList(schemas) {
-			this.schemaList = schemas.map(schema => {
-				const existing = this.schemaList.find(item => item.id === schema.id) || {}
+			this.schemaList = schemas.map((schema) => {
+				const existing =
+					this.schemaList.find((item) => item.id === schema.id) || {}
 				// Convert properties array to object if needed (backend sometimes returns array when empty)
-				const normalizedProperties = Array.isArray(schema.properties) ? {} : (schema.properties || {})
+				const normalizedProperties = Array.isArray(schema.properties)
+					? {}
+					: schema.properties || {}
 				return {
 					...schema,
 					properties: normalizedProperties,
 					// keep previously toggled value if available, otherwise default false
-					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
+					showProperties:
+						typeof existing.showProperties === 'boolean'
+							? existing.showProperties
+							: false,
 				}
 			})
 		},
@@ -109,7 +118,9 @@ export const useSchemaStore = defineStore('schema', {
 				return { response, data }
 			})()
 			if (search === null) {
-				inFlightSchemaRefresh = work.finally(() => { inFlightSchemaRefresh = null })
+				inFlightSchemaRefresh = work.finally(() => {
+					inFlightSchemaRefresh = null
+				})
 				return inFlightSchemaRefresh
 			}
 			return work
@@ -239,7 +250,6 @@ export const useSchemaStore = defineStore('schema', {
 			this.refreshSchemaList()
 
 			return { response: { ok: true }, data }
-
 		},
 		/**
 		 * Clean schema data for saving - remove read-only fields and fix structure.
@@ -274,9 +284,13 @@ export const useSchemaStore = defineStore('schema', {
 			}
 
 			// Convert required array to individual property required fields
-			if (cleaned.required && Array.isArray(cleaned.required) && cleaned.properties) {
+			if (
+				cleaned.required
+				&& Array.isArray(cleaned.required)
+				&& cleaned.properties
+			) {
 				// Set required: true on properties that are in the required array
-				cleaned.required.forEach(propertyName => {
+				cleaned.required.forEach((propertyName) => {
 					if (cleaned.properties[propertyName]) {
 						cleaned.properties[propertyName].required = true
 					}
@@ -306,16 +320,13 @@ export const useSchemaStore = defineStore('schema', {
 				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(schema),
+			const response = await fetch(endpoint, {
+				method,
+				headers: {
+					'Content-Type': 'application/json',
 				},
-			)
+				body: JSON.stringify(schema),
+			})
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`)
@@ -333,7 +344,6 @@ export const useSchemaStore = defineStore('schema', {
 			this.refreshSchemaList()
 
 			return { response, data }
-
 		},
 		/**
 		 * Download a schema as a JSON file (triggers a browser download).
@@ -475,14 +485,18 @@ export const useSchemaStore = defineStore('schema', {
 				const schemaIdStr = String(schemaId)
 
 				// First check if we already have stats for this schema
-				const existingSchema = this.schemas.find(s => String(s.id) === schemaIdStr)
+				const existingSchema = this.schemas.find(
+					(s) => String(s.id) === schemaIdStr,
+				)
 				if (existingSchema?.stats?.objects?.total !== undefined) {
 					return existingSchema.stats.objects.total
 				}
 
 				// Try using the objects API to count objects for this schema
 				try {
-					const countResponse = await fetch(`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`)
+					const countResponse = await fetch(
+						`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`,
+					)
 					if (countResponse.ok) {
 						const countData = await countResponse.json()
 						const count = countData.count || countData.total || 0
@@ -493,7 +507,9 @@ export const useSchemaStore = defineStore('schema', {
 				}
 
 				// Fallback to stats endpoint
-				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
+				const statsResponse = await fetch(
+					`/index.php/apps/openregister/api/schemas/${schemaId}/stats`,
+				)
 
 				if (statsResponse.ok) {
 					const stats = await statsResponse.json()

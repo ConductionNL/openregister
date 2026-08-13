@@ -51,7 +51,9 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 */
 		setAuditTrailList(auditTrailList) {
 			// Ensure we have a clean array without reactive references
-			this.auditTrailList = Array.isArray(auditTrailList) ? [...auditTrailList] : []
+			this.auditTrailList = Array.isArray(auditTrailList)
+				? [...auditTrailList]
+				: []
 		},
 
 		/**
@@ -167,7 +169,9 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				}
 
 				// Update store state - ensure we pass clean data
-				this.setAuditTrailList(data.results ? JSON.parse(JSON.stringify(data.results)) : [])
+				this.setAuditTrailList(
+					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
+				)
 				this.setAuditTrailPagination({
 					total: data.total || 0,
 					page: data.page || 1,
@@ -243,7 +247,9 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				}
 
 				// Remove from audit trail list
-				this.auditTrailList = this.auditTrailList.filter(item => item.id !== id)
+				this.auditTrailList = this.auditTrailList.filter(
+					(item) => item.id !== id,
+				)
 
 				return data
 			} catch (error) {
@@ -277,7 +283,9 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				}
 
 				// Remove deleted audit trails from list
-				this.auditTrailList = this.auditTrailList.filter(item => !ids.includes(item.id))
+				this.auditTrailList = this.auditTrailList.filter(
+					(item) => !ids.includes(item.id),
+				)
 
 				return data
 			} catch (error) {
@@ -333,14 +341,19 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				const actions = ['create', 'update', 'delete', 'read']
 				const total = this.auditTrailList.length
 
-				return actions.map(action => {
-					const count = this.auditTrailList.filter(item => item.action === action).length
-					return {
-						action,
-						count,
-						percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-					}
-				}).filter(item => item.count > 0)
+				return actions
+					.map((action) => {
+						const count = this.auditTrailList.filter(
+							(item) => item.action === action,
+						).length
+						return {
+							action,
+							count,
+							percentage:
+								total > 0 ? Math.round((count / total) * 100) : 0,
+						}
+					})
+					.filter((item) => item.count > 0)
 			} catch (error) {
 				console.error('Error getting action distribution:', error)
 				return []
@@ -357,9 +370,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			try {
 				// Count audit trails per object
 				const objectCounts = {}
-				this.auditTrailList.forEach(item => {
+				this.auditTrailList.forEach((item) => {
 					if (item.object) {
-						objectCounts[item.object] = (objectCounts[item.object] || 0) + 1
+						objectCounts[item.object] =
+							(objectCounts[item.object] || 0) + 1
 					}
 				})
 

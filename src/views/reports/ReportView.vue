@@ -12,7 +12,8 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ dashboard?.titel || t('openregister', 'Dashboard') }}
 					</h1>
-					<NcButton variant="tertiary"
+					<NcButton
+						variant="tertiary"
 						:disabled="loading"
 						:aria-label="t('openregister', 'Refresh dashboard')"
 						@click="refresh">
@@ -25,7 +26,9 @@
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="downloadAs('xlsx')">
+						<NcActionButton
+							close-after-click
+							@click="downloadAs('xlsx')">
 							<template #icon>
 								<MicrosoftExcel :size="20" />
 							</template>
@@ -65,7 +68,12 @@
 			<NcEmptyContent
 				v-if="!dashboard && !loading"
 				:name="t('openregister', 'Dashboard not found')"
-				:description="t('openregister', 'The requested dashboard could not be loaded. Verify the URL or pick another dashboard from the list.')">
+				:description="
+					t(
+						'openregister',
+						'The requested dashboard could not be loaded. Verify the URL or pick another dashboard from the list.',
+					)
+				">
 				<template #icon>
 					<AlertCircleOutline :size="64" />
 				</template>
@@ -89,7 +97,9 @@
 							<NcLoadingIcon :size="32" />
 						</div>
 
-						<div v-else-if="widgetState(index).error" class="widgetError">
+						<div
+							v-else-if="widgetState(index).error"
+							class="widgetError">
 							<AlertCircleOutline :size="20" />
 							<span>{{ widgetState(index).error }}</span>
 						</div>
@@ -103,7 +113,9 @@
 								class="widgetKpiIcon" />
 							<div>
 								<div class="widgetKpiValue">
-									{{ formatValue(widgetState(index).data, widget) }}
+									{{
+										formatValue(widgetState(index).data, widget)
+									}}
 								</div>
 								<div v-if="widget.subtitle" class="widgetKpiLabel">
 									{{ widget.subtitle }}
@@ -116,7 +128,9 @@
 							v-else-if="widget.type === 'chart'"
 							:type="widget.options?.chartType || 'bar'"
 							:series="chartSeries(widgetState(index).data, widget)"
-							:categories="chartCategories(widgetState(index).data, widget)"
+							:categories="
+								chartCategories(widgetState(index).data, widget)
+							"
 							:labels="chartLabels(widgetState(index).data, widget)" />
 
 						<!-- Table -->
@@ -130,8 +144,18 @@
 						<CnChartWidget
 							v-else-if="widget.type === 'sparkline'"
 							type="line"
-							:series="[{ name: widget.title, data: sparklineData(widgetState(index).data, widget) }]"
-							:categories="sparklineCategories(widgetState(index).data)"
+							:series="[
+								{
+									name: widget.title,
+									data: sparklineData(
+										widgetState(index).data,
+										widget,
+									),
+								},
+							]"
+							:categories="
+								sparklineCategories(widgetState(index).data)
+							"
 							:hide-axes="true"
 							:height="80" />
 
@@ -148,7 +172,13 @@
 						<!-- Stats -->
 						<div v-else-if="widget.type === 'stats'" class="widgetStats">
 							<dl>
-								<div v-for="entry in statsEntries(widgetState(index).data, widget)" :key="entry.label" class="widgetStatsRow">
+								<div
+									v-for="entry in statsEntries(
+										widgetState(index).data,
+										widget,
+									)"
+									:key="entry.label"
+									class="widgetStatsRow">
 									<dt>{{ entry.label }}</dt>
 									<dd>{{ entry.value }}</dd>
 								</div>
@@ -157,7 +187,11 @@
 
 						<!-- Unknown -->
 						<div v-else class="widgetUnknown">
-							{{ t('openregister', 'Unknown widget type: {type}', { type: widget.type }) }}
+							{{
+								t('openregister', 'Unknown widget type: {type}', {
+									type: widget.type,
+								})
+							}}
 						</div>
 					</div>
 				</section>
@@ -169,7 +203,14 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcActions,
+	NcActionButton,
+} from '@nextcloud/vue'
 import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 
@@ -320,18 +361,23 @@ export default {
 				}
 			}
 
-			await Promise.all(widgets.map(async (widget, i) => {
-				const data = await reportsStore.fetchWidgetData(widget, forceRefresh)
-				const cached = reportsStore.getWidgetData(this._cacheKey(widget))
-				this.widgetStates = {
-					...this.widgetStates,
-					[i]: {
-						loading: false,
-						error: cached?.error ?? null,
-						data,
-					},
-				}
-			}))
+			await Promise.all(
+				widgets.map(async (widget, i) => {
+					const data = await reportsStore.fetchWidgetData(
+						widget,
+						forceRefresh,
+					)
+					const cached = reportsStore.getWidgetData(this._cacheKey(widget))
+					this.widgetStates = {
+						...this.widgetStates,
+						[i]: {
+							loading: false,
+							error: cached?.error ?? null,
+							data,
+						},
+					}
+				}),
+			)
 		},
 
 		/**
@@ -356,11 +402,15 @@ export default {
 			if (!id) return
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`),
+					generateUrl(
+						`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
+					),
 					null,
 					{ params: { format }, responseType: 'blob' },
 				)
-				const filename = this._extractFilename(response) || `${this.dashboard?.titel || 'dashboard'}.${format}`
+				const filename =
+					this._extractFilename(response)
+					|| `${this.dashboard?.titel || 'dashboard'}.${format}`
 				const url = URL.createObjectURL(response.data)
 				const a = document.createElement('a')
 				a.href = url
@@ -382,7 +432,9 @@ export default {
 		openHtmlPreview() {
 			const id = this.$route.params.id
 			if (!id) return
-			const url = generateUrl(`/apps/openregister/api/reports/${encodeURIComponent(id)}/preview`)
+			const url = generateUrl(
+				`/apps/openregister/api/reports/${encodeURIComponent(id)}/preview`,
+			)
 			window.open(url, '_blank')
 		},
 
@@ -407,7 +459,13 @@ export default {
 		 * @return {object}
 		 */
 		widgetState(index) {
-			return this.widgetStates[index] ?? { loading: false, error: null, data: null }
+			return (
+				this.widgetStates[index] ?? {
+					loading: false,
+					error: null,
+					data: null,
+				}
+			)
 		},
 
 		/**
@@ -420,9 +478,12 @@ export default {
 		_cacheKey(widget) {
 			const ds = widget?.dataSource
 			if (!ds) return ''
-			if (ds.mode === 'aggregation') return `agg:${ds.register || ''}:${ds.schema || ''}:${ds.aggregation || ''}`
-			if (ds.mode === 'graphql') return `gql:${(ds.graphqlQuery || '').slice(0, 200)}`
-			if (ds.mode === 'statistics') return `stats:${ds.register || ''}:${ds.schema || ''}`
+			if (ds.mode === 'aggregation')
+				return `agg:${ds.register || ''}:${ds.schema || ''}:${ds.aggregation || ''}`
+			if (ds.mode === 'graphql')
+				return `gql:${(ds.graphqlQuery || '').slice(0, 200)}`
+			if (ds.mode === 'statistics')
+				return `stats:${ds.register || ''}:${ds.schema || ''}`
 			return `unknown:${ds.mode}`
 		},
 
@@ -464,7 +525,10 @@ export default {
 		formatValue(data, widget) {
 			if (data === null || data === undefined) return '—'
 			const field = widget.options?.valueField || 'count'
-			const raw = (data && typeof data === 'object') ? (data[field] ?? data.count ?? data) : data
+			const raw =
+				data && typeof data === 'object'
+					? (data[field] ?? data.count ?? data)
+					: data
 			if (raw === null || raw === undefined) return '—'
 
 			const format = widget.options?.valueFormat || 'number'
@@ -472,7 +536,10 @@ export default {
 				return `${(Number(raw) * 100).toFixed(1)}%`
 			}
 			if (format === 'currency') {
-				return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(Number(raw))
+				return new Intl.NumberFormat('nl-NL', {
+					style: 'currency',
+					currency: 'EUR',
+				}).format(Number(raw))
 			}
 			if (format === 'duration') {
 				return `${Number(raw).toFixed(0)}s`
@@ -503,15 +570,20 @@ export default {
 			// If the aggregation returned grouped data: { groups: [{ key, value }] }
 			if (Array.isArray(data.groups)) {
 				const valueField = widget.options?.valueField || 'value'
-				return [{
-					name: widget.title,
-					data: data.groups.map((g) => Number(g[valueField] ?? g.value ?? 0)),
-				}]
+				return [
+					{
+						name: widget.title,
+						data: data.groups.map((g) =>
+							Number(g[valueField] ?? g.value ?? 0),
+						),
+					},
+				]
 			}
 			// Pie/donut wants a flat number array.
 			const chartType = widget.options?.chartType || 'bar'
 			if (chartType === 'pie' || chartType === 'donut') {
-				if (Array.isArray(data)) return data.map((d) => Number(d.value ?? d.count ?? 0))
+				if (Array.isArray(data))
+					return data.map((d) => Number(d.value ?? d.count ?? 0))
 				return []
 			}
 			return []
@@ -540,7 +612,10 @@ export default {
 		 */
 		chartLabels(data, widget) {
 			const chartType = widget.options?.chartType || 'bar'
-			if ((chartType === 'pie' || chartType === 'donut') && Array.isArray(data?.groups)) {
+			if (
+				(chartType === 'pie' || chartType === 'donut')
+				&& Array.isArray(data?.groups)
+			) {
 				return data.groups.map((g) => String(g.key ?? g.label ?? ''))
 			}
 			return []
@@ -571,7 +646,11 @@ export default {
 		tableColumns(widget) {
 			const cols = widget.options?.columns
 			if (Array.isArray(cols) && cols.length > 0) {
-				return cols.map((c) => ({ key: c.key, label: c.label || c.key, sortable: true }))
+				return cols.map((c) => ({
+					key: c.key,
+					label: c.label || c.key,
+					sortable: true,
+				}))
 			}
 			// Default: try to infer from the first row.
 			return [
@@ -591,9 +670,15 @@ export default {
 		sparklineData(data, widget) {
 			if (!data) return []
 			const field = widget.options?.trendField || 'groups'
-			const arr = Array.isArray(data[field]) ? data[field] : (Array.isArray(data) ? data : [])
+			const arr = Array.isArray(data[field])
+				? data[field]
+				: Array.isArray(data)
+					? data
+					: []
 			const valueField = widget.options?.valueField || 'value'
-			return arr.map((entry) => Number(entry[valueField] ?? entry.value ?? entry.count ?? entry))
+			return arr.map((entry) =>
+				Number(entry[valueField] ?? entry.value ?? entry.count ?? entry),
+			)
 		},
 
 		/**
@@ -622,16 +707,36 @@ export default {
 			if (Array.isArray(data.groups)) {
 				return data.groups.map((g) => ({
 					label: String(g.key ?? g.label ?? ''),
-					value: this.formatValue(g[valueField] ?? g.value ?? g.count ?? 0, widget),
+					value: this.formatValue(
+						g[valueField] ?? g.value ?? g.count ?? 0,
+						widget,
+					),
 				}))
 			}
 			// Fall back to top-level numeric fields. Includes the
 			// AggregationRunner's flat-output keys (name, metric, value).
-			const candidates = ['name', 'metric', 'value', 'count', 'sum', 'avg', 'min', 'max', 'count_distinct']
-			return candidates.filter((k) => k in data && data[k] !== null && data[k] !== undefined).map((k) => ({
-				label: k,
-				value: (typeof data[k] === 'number') ? this.formatValue(data[k], widget) : String(data[k]),
-			}))
+			const candidates = [
+				'name',
+				'metric',
+				'value',
+				'count',
+				'sum',
+				'avg',
+				'min',
+				'max',
+				'count_distinct',
+			]
+			return candidates
+				.filter(
+					(k) => k in data && data[k] !== null && data[k] !== undefined,
+				)
+				.map((k) => ({
+					label: k,
+					value:
+						typeof data[k] === 'number'
+							? this.formatValue(data[k], widget)
+							: String(data[k]),
+				}))
 		},
 	},
 }

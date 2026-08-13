@@ -70,7 +70,8 @@ export const useQualityStore = defineStore('quality', {
 	getters: {
 		isLoading: (state) => state.loading,
 		getError: (state) => state.error,
-		hasSelection: (state) => Boolean(state.selectedRegister && state.selectedSchema),
+		hasSelection: (state) =>
+			Boolean(state.selectedRegister && state.selectedSchema),
 	},
 	actions: {
 		/**
@@ -110,7 +111,10 @@ export const useQualityStore = defineStore('quality', {
 				this.registers = response.data?.results ?? response.data ?? []
 				return this.registers
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch registers'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch registers'
 				console.error('[quality.fetchRegisters]', e)
 				throw e
 			} finally {
@@ -138,7 +142,8 @@ export const useQualityStore = defineStore('quality', {
 				this.schemas = response.data?.results ?? response.data ?? []
 				return this.schemas
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch schemas'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to fetch schemas'
 				console.error('[quality.fetchSchemasForRegister]', e)
 				throw e
 			} finally {
@@ -165,7 +170,10 @@ export const useQualityStore = defineStore('quality', {
 				this.qualityStats = response.data ?? null
 				return this.qualityStats
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch quality statistics'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch quality statistics'
 				console.error('[quality.fetchQualityStats]', e)
 				throw e
 			} finally {
@@ -199,7 +207,10 @@ export const useQualityStore = defineStore('quality', {
 				this.lowQualityOffset = data.offset ?? offset
 				return data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch lowest-quality objects'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch lowest-quality objects'
 				console.error('[quality.fetchLowQualityObjects]', e)
 				throw e
 			} finally {
@@ -233,7 +244,10 @@ export const useQualityStore = defineStore('quality', {
 				this.duplicatesOffset = data.offset ?? offset
 				return data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch duplicate candidates'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch duplicate candidates'
 				console.error('[quality.fetchDuplicates]', e)
 				throw e
 			} finally {
@@ -266,7 +280,10 @@ export const useQualityStore = defineStore('quality', {
 				this.masterEntitiesTotal = data.total ?? this.masterEntities.length
 				return data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch master entities'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch master entities'
 				console.error('[quality.fetchMasterEntities]', e)
 				throw e
 			} finally {
@@ -294,7 +311,10 @@ export const useQualityStore = defineStore('quality', {
 				this.goldenRecord = response.data ?? null
 				return this.goldenRecord
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch golden record'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch golden record'
 				console.error('[quality.fetchGoldenRecord]', e)
 				throw e
 			} finally {
@@ -339,10 +359,14 @@ export const useQualityStore = defineStore('quality', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${API_BASE}/objects/merge/preview`, { from, into })
+				const response = await axios.post(
+					`${API_BASE}/objects/merge/preview`,
+					{ from, into },
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to preview merge'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to preview merge'
 				console.error('[quality.previewMerge]', e)
 				throw e
 			} finally {
@@ -364,10 +388,14 @@ export const useQualityStore = defineStore('quality', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${API_BASE}/objects/merge/execute`, { from, into, reason })
+				const response = await axios.post(
+					`${API_BASE}/objects/merge/execute`,
+					{ from, into, reason },
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to execute merge'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to execute merge'
 				console.error('[quality.executeMerge]', e)
 				throw e
 			} finally {
@@ -403,7 +431,10 @@ export const useQualityStore = defineStore('quality', {
 				this.mergeOperationsOffset = data.offset ?? offset
 				return data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch merge operations'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch merge operations'
 				console.error('[quality.fetchMergeOperations]', e)
 				throw e
 			} finally {
@@ -423,10 +454,13 @@ export const useQualityStore = defineStore('quality', {
 			this.loading = true
 			this.error = null
 			try {
-				const response = await axios.post(`${API_BASE}/objects/merge/${encodeURIComponent(id)}/reverse`)
+				const response = await axios.post(
+					`${API_BASE}/objects/merge/${encodeURIComponent(id)}/reverse`,
+				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to reverse merge'
+				this.error =
+					e.response?.data?.error ?? e.message ?? 'Failed to reverse merge'
 				console.error('[quality.reverseMerge]', e)
 				throw e
 			} finally {
@@ -456,7 +490,10 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to set the attribute override'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to set the attribute override'
 				console.error('[quality.setAttributeOverride]', e)
 				throw e
 			} finally {
@@ -482,7 +519,10 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to clear the attribute override'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to clear the attribute override'
 				console.error('[quality.clearAttributeOverride]', e)
 				throw e
 			} finally {
@@ -503,7 +543,13 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string} [params.rationale]  Optional steward rationale.
 		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-persisttrustrule-creates-a-trust-configuration-object
 		 */
-		async persistTrustRule({ entityType, attribute, sourceSystem, trustTier, rationale }) {
+		async persistTrustRule({
+			entityType,
+			attribute,
+			sourceSystem,
+			trustTier,
+			rationale,
+		}) {
 			this.loading = true
 			this.error = null
 			try {
@@ -513,7 +559,10 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to persist the trust rule'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to persist the trust rule'
 				console.error('[quality.persistTrustRule]', e)
 				throw e
 			} finally {
@@ -544,7 +593,10 @@ export const useQualityStore = defineStore('quality', {
 				)
 				return response.data
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to recompute the master object'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to recompute the master object'
 				console.error('[quality.touchObject]', e)
 				throw e
 			} finally {
@@ -583,21 +635,34 @@ export const useQualityStore = defineStore('quality', {
 							)
 							return [webhook.id, statsResponse.data ?? {}]
 						} catch (e) {
-							console.error('[quality.fetchWebhookHealth] per-webhook stats failed', { webhook, error: e })
+							console.error(
+								'[quality.fetchWebhookHealth] per-webhook stats failed',
+								{ webhook, error: e },
+							)
 							return [webhook.id, null]
 						}
 					}),
 				)
 				this.webhookStats = Object.fromEntries(statsEntries)
 
-				const failuresResponse = await axios.get(`${API_BASE}/webhooks/logs`, {
-					params: { success: 'false' },
-				})
+				const failuresResponse = await axios.get(
+					`${API_BASE}/webhooks/logs`,
+					{
+						params: { success: 'false' },
+					},
+				)
 				this.webhookFailures = failuresResponse.data?.results ?? []
 
-				return { webhooks: this.webhooks, stats: this.webhookStats, failures: this.webhookFailures }
+				return {
+					webhooks: this.webhooks,
+					stats: this.webhookStats,
+					failures: this.webhookFailures,
+				}
 			} catch (e) {
-				this.error = e.response?.data?.error ?? e.message ?? 'Failed to fetch webhook health'
+				this.error =
+					e.response?.data?.error
+					?? e.message
+					?? 'Failed to fetch webhook health'
 				console.error('[quality.fetchWebhookHealth]', e)
 				throw e
 			} finally {

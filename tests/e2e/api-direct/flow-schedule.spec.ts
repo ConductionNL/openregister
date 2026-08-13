@@ -19,7 +19,10 @@ import { execSync } from 'node:child_process'
 import { resolveContainer } from '../base-url'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 // ⚠️ No `|| 'nextcloud'` default — see resolveContainer(). The old default
 // executed background jobs inside the SHARED dev container, which bind-mounts
 // real host checkouts.
@@ -30,21 +33,29 @@ function occ(args: string): string {
 	if (CONTAINER === null) {
 		throw new Error('NC_CONTAINER is not set; refusing to guess a container.')
 	}
-	return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, { encoding: 'utf8' })
+	return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, {
+		encoding: 'utf8',
+	})
 }
 
 /** The FlowScheduleWorker's job id, or null when it can't be reached. */
 function scheduleWorkerJobId(): string | null {
 	try {
 		const list = occ('background-job:list')
-		const line = list.split('\n').find((l) => l.includes('Cron\\FlowScheduleWorker'))
+		const line = list
+			.split('\n')
+			.find((l) => l.includes('Cron\\FlowScheduleWorker'))
 		return line ? (line.match(/\|\s*(\d+)\s*\|/)?.[1] ?? null) : null
 	} catch {
 		return null
 	}
 }
 
-async function idBySlug(request: APIRequestContext, kind: 'registers' | 'schemas', slug: string): Promise<number> {
+async function idBySlug(
+	request: APIRequestContext,
+	kind: 'registers' | 'schemas',
+	slug: string,
+): Promise<number> {
 	const resp = await request.get(`${API}/${kind}?limit=1000`)
 	expect(resp.ok()).toBeTruthy()
 	const body = await resp.json()
@@ -68,12 +79,19 @@ test.describe('Scheduled flow trigger', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const id of created) {
-			await request.delete(`${API}/objects/${reg}/${sch}/${id}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${reg}/${sch}/${id}`)
+				.catch(() => {})
 		}
 	})
 
-	test('a due scheduled flow is fired by the worker and shows in history', async ({ request }) => {
-		test.skip(jobId === null, 'FlowScheduleWorker not reachable via occ (not on the dev host)')
+	test('a due scheduled flow is fired by the worker and shows in history', async ({
+		request,
+	}) => {
+		test.skip(
+			jobId === null,
+			'FlowScheduleWorker not reachable via occ (not on the dev host)',
+		)
 
 		const resp = await request.post(`${API}/objects/${reg}/${sch}`, {
 			headers: JSON_HEADERS,
@@ -83,7 +101,15 @@ test.describe('Scheduled flow trigger', () => {
 				trigger: 'schedule',
 				cron: '* * * * *',
 				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [{ id: 's1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { ran: true } } }],
+				edges: [
+					{
+						id: 's1',
+						from: 'a',
+						to: 'b',
+						type: 'openregister.set-fields',
+						config: { set: { ran: true } },
+					},
+				],
 			},
 		})
 		expect(resp.status()).toBeLessThanOrEqual(201)
@@ -97,7 +123,10 @@ test.describe('Scheduled flow trigger', () => {
 		const hist = await request.get(`${API}/flow-runs?flowId=${uuid}`)
 		expect(hist.status()).toBe(200)
 		const body = await hist.json()
-		expect(body.results.length, 'a scheduled run was queued').toBeGreaterThanOrEqual(1)
+		expect(
+			body.results.length,
+			'a scheduled run was queued',
+		).toBeGreaterThanOrEqual(1)
 		expect(body.results[0].trigger).toBe('schedule')
 	})
 
@@ -112,7 +141,15 @@ test.describe('Scheduled flow trigger', () => {
 				trigger: 'manual',
 				cron: '* * * * *',
 				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [{ id: 's1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { ran: true } } }],
+				edges: [
+					{
+						id: 's1',
+						from: 'a',
+						to: 'b',
+						type: 'openregister.set-fields',
+						config: { set: { ran: true } },
+					},
+				],
 			},
 		})
 		const uuid = (await resp.json())?.['@self']?.id

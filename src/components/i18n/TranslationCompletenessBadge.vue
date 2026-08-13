@@ -1,12 +1,21 @@
 <template>
-	<div class="translation-completeness-badge"
+	<div
+		class="translation-completeness-badge"
 		:title="tooltipText"
 		:aria-label="tooltipText">
-		<div v-for="lang in languages"
+		<div
+			v-for="lang in languages"
 			:key="lang"
-			:class="['translation-completeness-badge__pill', completenessClassFor(lang)]">
-			<span class="translation-completeness-badge__lang">{{ lang.toUpperCase() }}</span>
-			<span class="translation-completeness-badge__ratio">{{ ratioPercent(lang) }}</span>
+			:class="[
+				'translation-completeness-badge__pill',
+				completenessClassFor(lang),
+			]">
+			<span class="translation-completeness-badge__lang">{{
+				lang.toUpperCase()
+			}}</span>
+			<span class="translation-completeness-badge__ratio">{{
+				ratioPercent(lang)
+			}}</span>
 		</div>
 	</div>
 </template>
@@ -53,7 +62,9 @@ export default {
 			const present = Object.keys(this.completeness)
 			if (this.languageOrder?.length) {
 				const ordered = this.languageOrder.filter((l) => present.includes(l))
-				const extras = present.filter((l) => !this.languageOrder.includes(l)).sort()
+				const extras = present
+					.filter((l) => !this.languageOrder.includes(l))
+					.sort()
 				return [...ordered, ...extras]
 			}
 			return present.slice().sort()

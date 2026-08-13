@@ -6,20 +6,32 @@ import { translate as t } from '@nextcloud/l10n'
 	<SettingsSection
 		id="api-tokens"
 		:name="t('openregister', 'API Token Configuration')"
-		:description="t('openregister', 'Configure API tokens for external service integrations')"
+		:description="
+			t(
+				'openregister',
+				'Configure API tokens for external service integrations',
+			)
+		"
 		:loading="loading"
 		:loading-message="t('openregister', 'Loading API tokens...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				API tokens enable <strong>discovering, importing, and publishing OpenRegister configurations</strong> to GitHub and GitLab repositories.
-				With the appropriate token scopes, you can search for configurations published by the community, import them into your system,
-				and publish your own configurations back to repositories for sharing and version control.
+				API tokens enable
+				<strong
+					>discovering, importing, and publishing OpenRegister
+					configurations</strong
+				>
+				to GitHub and GitLab repositories. With the appropriate token scopes,
+				you can search for configurations published by the community, import
+				them into your system, and publish your own configurations back to
+				repositories for sharing and version control.
 			</p>
 			<p class="main-description info-note">
-				<strong>🔐 Note:</strong> Tokens are <strong>optional</strong> for basic workflows. You can import configurations manually using direct URLs
-				without tokens. However, tokens with appropriate scopes are required for:
-				<strong>(1)</strong> Discovery/search features, and
+				<strong>🔐 Note:</strong> Tokens are <strong>optional</strong> for
+				basic workflows. You can import configurations manually using direct
+				URLs without tokens. However, tokens with appropriate scopes are
+				required for: <strong>(1)</strong> Discovery/search features, and
 				<strong>(2)</strong> Publishing configurations to repositories.
 			</p>
 		</div>
@@ -38,13 +50,18 @@ import { translate as t } from '@nextcloud/l10n'
 					</div>
 					<p><strong>Required Scope:</strong> <code>repo</code></p>
 					<p class="scope-description">
-						<strong>✅ Discover & Import:</strong> Search and read configuration files from repositories<br>
-						<strong>✅ Publish & Export:</strong> Write and update configuration files to repositories
+						<strong>✅ Discover & Import:</strong> Search and read
+						configuration files from repositories<br />
+						<strong>✅ Publish & Export:</strong> Write and update
+						configuration files to repositories
 					</p>
 					<p class="scope-note">
-						The <code>repo</code> scope provides full repository access (read and write), enabling both discovery and publishing workflows.
+						The <code>repo</code> scope provides full repository access
+						(read and write), enabling both discovery and publishing
+						workflows.
 					</p>
-					<a href="https://github.com/settings/tokens/new"
+					<a
+						href="https://github.com/settings/tokens/new"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="external-link">
@@ -59,17 +76,28 @@ import { translate as t } from '@nextcloud/l10n'
 					</div>
 					<p><strong>Required Scopes:</strong></p>
 					<ul class="scope-list">
-						<li><code>read_api</code> - For <strong>discovery only</strong> (read-only access)</li>
-						<li><code>api</code> - For <strong>discovery AND publishing</strong> (full read/write access)</li>
+						<li>
+							<code>read_api</code> - For
+							<strong>discovery only</strong> (read-only access)
+						</li>
+						<li>
+							<code>api</code> - For
+							<strong>discovery AND publishing</strong> (full
+							read/write access)
+						</li>
 					</ul>
 					<p class="scope-description">
-						<strong>🔍 Discovery Only:</strong> Use <code>read_api</code> to search and import configurations<br>
-						<strong>📤 Discovery + Publishing:</strong> Use <code>api</code> to also export and update configurations
+						<strong>🔍 Discovery Only:</strong> Use
+						<code>read_api</code> to search and import configurations<br />
+						<strong>📤 Discovery + Publishing:</strong> Use
+						<code>api</code> to also export and update configurations
 					</p>
 					<p class="scope-note">
-						If you plan to publish configurations back to GitLab, select the <code>api</code> scope when creating your token.
+						If you plan to publish configurations back to GitLab, select
+						the <code>api</code> scope when creating your token.
 					</p>
-					<a href="https://gitlab.com/-/user_settings/personal_access_tokens"
+					<a
+						href="https://gitlab.com/-/user_settings/personal_access_tokens"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="external-link">
@@ -79,8 +107,12 @@ import { translate as t } from '@nextcloud/l10n'
 
 				<div class="documentation-link">
 					<InformationOutline :size="20" />
-					<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">
-						View complete documentation on obtaining and configuring API tokens
+					<a
+						href="https://docs.openregister.nl/user-guide/configuration/api-tokens"
+						target="_blank"
+						rel="noopener noreferrer">
+						View complete documentation on obtaining and configuring API
+						tokens
 					</a>
 				</div>
 			</div>
@@ -113,7 +145,11 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="token-actions">
 							<NcButton
 								variant="primary"
-								:disabled="saving || !githubToken || githubToken === originalGithubToken"
+								:disabled="
+									saving
+									|| !githubToken
+									|| githubToken === originalGithubToken
+								"
 								@click="saveGitHubToken">
 								<template #icon>
 									<NcLoadingIcon v-if="saving" :size="20" />
@@ -140,20 +176,33 @@ import { translate as t } from '@nextcloud/l10n'
 								</template>
 								Clear Token
 							</NcButton>
-							<span v-if="githubToken && githubToken === originalGithubToken && !githubTestResult" class="saved-indicator">
+							<span
+								v-if="
+									githubToken
+									&& githubToken === originalGithubToken
+									&& !githubTestResult
+								"
+								class="saved-indicator">
 								<CheckCircle :size="20" /> Token saved
 							</span>
-							<span v-if="githubTestResult && githubTestResult.success" class="test-result-success">
-								<CheckCircle :size="20" /> {{ githubTestResult.message }}
+							<span
+								v-if="githubTestResult && githubTestResult.success"
+								class="test-result-success">
+								<CheckCircle :size="20" />
+								{{ githubTestResult.message }}
 							</span>
-							<span v-if="githubTestResult && !githubTestResult.success" class="test-result-error">
-								<AlertCircle :size="20" /> {{ githubTestResult.message }}
+							<span
+								v-if="githubTestResult && !githubTestResult.success"
+								class="test-result-error">
+								<AlertCircle :size="20" />
+								{{ githubTestResult.message }}
 							</span>
 						</div>
 					</div>
 
 					<p class="field-hint">
-						<LockOutline :size="16" /> Optional: Required for discovering and publishing configurations to/from GitHub
+						<LockOutline :size="16" /> Optional: Required for discovering
+						and publishing configurations to/from GitHub
 					</p>
 				</div>
 			</div>
@@ -186,7 +235,11 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="token-actions">
 							<NcButton
 								variant="primary"
-								:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
+								:disabled="
+									saving
+									|| !gitlabToken
+									|| gitlabToken === originalGitlabToken
+								"
 								@click="saveGitLabToken">
 								<template #icon>
 									<NcLoadingIcon v-if="saving" :size="20" />
@@ -213,20 +266,34 @@ import { translate as t } from '@nextcloud/l10n'
 								</template>
 								Clear Token
 							</NcButton>
-							<span v-if="gitlabToken && gitlabToken === originalGitlabToken && !gitlabTestResult" class="saved-indicator">
+							<span
+								v-if="
+									gitlabToken
+									&& gitlabToken === originalGitlabToken
+									&& !gitlabTestResult
+								"
+								class="saved-indicator">
 								<CheckCircle :size="20" /> Token saved
 							</span>
-							<span v-if="gitlabTestResult && gitlabTestResult.success" class="test-result-success">
-								<CheckCircle :size="20" /> {{ gitlabTestResult.message }}
+							<span
+								v-if="gitlabTestResult && gitlabTestResult.success"
+								class="test-result-success">
+								<CheckCircle :size="20" />
+								{{ gitlabTestResult.message }}
 							</span>
-							<span v-if="gitlabTestResult && !gitlabTestResult.success" class="test-result-error">
-								<AlertCircle :size="20" /> {{ gitlabTestResult.message }}
+							<span
+								v-if="gitlabTestResult && !gitlabTestResult.success"
+								class="test-result-error">
+								<AlertCircle :size="20" />
+								{{ gitlabTestResult.message }}
 							</span>
 						</div>
 					</div>
 
 					<p class="field-hint">
-						<LockOutline :size="16" /> Optional: Use <code>read_api</code> for discovery, or <code>api</code> for discovery + publishing
+						<LockOutline :size="16" /> Optional: Use
+						<code>read_api</code> for discovery, or <code>api</code> for
+						discovery + publishing
 					</p>
 				</div>
 
@@ -245,7 +312,9 @@ import { translate as t } from '@nextcloud/l10n'
 							</template>
 						</NcTextField>
 						<p class="field-hint">
-							<InformationOutline :size="16" /> Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL
+							<InformationOutline :size="16" /> Leave empty to use
+							GitLab.com. For self-hosted GitLab instances, enter your
+							API URL
 						</p>
 					</div>
 
@@ -261,7 +330,9 @@ import { translate as t } from '@nextcloud/l10n'
 							</template>
 							Save URL
 						</NcButton>
-						<span v-if="gitlabUrl && gitlabUrl === originalGitlabUrl" class="saved-indicator">
+						<span
+							v-if="gitlabUrl && gitlabUrl === originalGitlabUrl"
+							class="saved-indicator">
 							<CheckCircle :size="20" /> URL saved
 						</span>
 					</div>
@@ -279,7 +350,12 @@ import { translate as t } from '@nextcloud/l10n'
 <script>
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
-import { NcPasswordField, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcPasswordField,
+	NcTextField,
+	NcButton,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import Web from 'vue-material-design-icons/Web.vue'
@@ -358,7 +434,9 @@ export default {
 		async loadTokens() {
 			this.loading = true
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/api-tokens'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+				)
 				this.githubToken = response.data.github_token || ''
 				this.gitlabToken = response.data.gitlab_token || ''
 				this.gitlabUrl = response.data.gitlab_url || ''
@@ -415,11 +493,16 @@ export default {
 		async saveGitHubToken() {
 			this.saving = true
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens'), {
-					github_token: this.githubToken,
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+					{
+						github_token: this.githubToken,
+					},
+				)
 				this.originalGithubToken = this.githubToken
-				showSuccess(this.t('openregister', 'GitHub token saved successfully'))
+				showSuccess(
+					this.t('openregister', 'GitHub token saved successfully'),
+				)
 			} catch (error) {
 				console.error('Failed to save GitHub token:', error)
 				showError(this.t('openregister', 'Failed to save GitHub token'))
@@ -437,11 +520,16 @@ export default {
 		async saveGitLabToken() {
 			this.saving = true
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens'), {
-					gitlab_token: this.gitlabToken,
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+					{
+						gitlab_token: this.gitlabToken,
+					},
+				)
 				this.originalGitlabToken = this.gitlabToken
-				showSuccess(this.t('openregister', 'GitLab token saved successfully'))
+				showSuccess(
+					this.t('openregister', 'GitLab token saved successfully'),
+				)
 			} catch (error) {
 				console.error('Failed to save GitLab token:', error)
 				showError(this.t('openregister', 'Failed to save GitLab token'))
@@ -459,9 +547,12 @@ export default {
 		async saveGitLabUrl() {
 			this.saving = true
 			try {
-				await axios.post(generateUrl('/apps/openregister/api/settings/api-tokens'), {
-					gitlab_url: this.gitlabUrl,
-				})
+				await axios.post(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+					{
+						gitlab_url: this.gitlabUrl,
+					},
+				)
 				this.originalGitlabUrl = this.gitlabUrl
 				showSuccess(this.t('openregister', 'GitLab URL saved successfully'))
 			} catch (error) {
@@ -522,7 +613,9 @@ export default {
 			try {
 				// Send the current token value for testing
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens/test/github'),
+					generateUrl(
+						'/apps/openregister/api/settings/api-tokens/test/github',
+					),
 					{ token: this.githubToken },
 				)
 				this.githubTestResult = {
@@ -531,18 +624,27 @@ export default {
 					username: response.data.username,
 					scopes: response.data.scopes,
 				}
-				showSuccess(this.t('openregister', 'GitHub token is valid! Username: {username}', {
-					username: response.data.username,
-				}))
+				showSuccess(
+					this.t(
+						'openregister',
+						'GitHub token is valid! Username: {username}',
+						{
+							username: response.data.username,
+						},
+					),
+				)
 			} catch (error) {
-				const message = error.response?.data?.message || error.message || 'Unknown error'
+				const message =
+					error.response?.data?.message || error.message || 'Unknown error'
 				this.githubTestResult = {
 					success: false,
 					message,
 				}
-				showError(this.t('openregister', 'GitHub token test failed: {message}', {
-					message,
-				}))
+				showError(
+					this.t('openregister', 'GitHub token test failed: {message}', {
+						message,
+					}),
+				)
 			} finally {
 				this.testingGithub = false
 			}
@@ -560,7 +662,9 @@ export default {
 			try {
 				// Send the current token value for testing
 				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens/test/gitlab'),
+					generateUrl(
+						'/apps/openregister/api/settings/api-tokens/test/gitlab',
+					),
 					{ token: this.gitlabToken, url: this.gitlabUrl },
 				)
 				this.gitlabTestResult = {
@@ -569,18 +673,27 @@ export default {
 					username: response.data.username,
 					instance: response.data.instance,
 				}
-				showSuccess(this.t('openregister', 'GitLab token is valid! Username: {username}', {
-					username: response.data.username,
-				}))
+				showSuccess(
+					this.t(
+						'openregister',
+						'GitLab token is valid! Username: {username}',
+						{
+							username: response.data.username,
+						},
+					),
+				)
 			} catch (error) {
-				const message = error.response?.data?.message || error.message || 'Unknown error'
+				const message =
+					error.response?.data?.message || error.message || 'Unknown error'
 				this.gitlabTestResult = {
 					success: false,
 					message,
 				}
-				showError(this.t('openregister', 'GitLab token test failed: {message}', {
-					message,
-				}))
+				showError(
+					this.t('openregister', 'GitLab token test failed: {message}', {
+						message,
+					}),
+				)
 			} finally {
 				this.testingGitlab = false
 			}

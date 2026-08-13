@@ -5,21 +5,19 @@
 		:can-close="!removing"
 		class="remove-user-dialog"
 		@closing="$emit('cancel')">
-		<p>Are you sure you want to remove user <strong>{{ userId }}</strong> from this organisation?</p>
+		<p>
+			Are you sure you want to remove user <strong>{{ userId }}</strong> from
+			this organisation?
+		</p>
 
 		<template #actions>
-			<NcButton
-				:disabled="removing"
-				@click="$emit('cancel')">
+			<NcButton :disabled="removing" @click="$emit('cancel')">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton
-				:disabled="removing"
-				variant="error"
-				@click="$emit('confirm')">
+			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />
 					<AccountMinus v-else :size="20" />
@@ -31,11 +29,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'

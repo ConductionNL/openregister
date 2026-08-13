@@ -147,4 +147,6 @@ export const mockAuditTrailData = (): TAuditTrail[] => [
 	},
 ]
 
-export const mockAuditTrail = (data: TAuditTrail[] = mockAuditTrailData()): TAuditTrail[] => data.map(item => new AuditTrail(item))
+export const mockAuditTrail = (
+	data: TAuditTrail[] = mockAuditTrailData(),
+): TAuditTrail[] => data.map((item) => new AuditTrail(item))

@@ -18,39 +18,55 @@ import { test, expect } from '@playwright/test'
 test.describe('auth-system — authentication methods', () => {
 	test('Basic auth allows access to /api/registers', async ({ request }) => {
 		// Basic auth is pre-wired via extraHTTPHeaders in playwright.config.ts.
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=1',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status(), 'authenticated request should return 200').toBe(200)
 	})
 
-	test('unauthenticated request to /api/registers returns 200 with only published registers (PR #1950)', async ({ request }) => {
+	test('unauthenticated request to /api/registers returns 200 with only published registers (PR #1950)', async ({
+		request,
+	}) => {
 		// PR #1950 made /api/registers @PublicPage so anonymous callers can discover
 		// published registers. The response must be 200 with a valid JSON envelope;
 		// unpublished registers must NOT appear in the results.
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
-			headers: {
-				Authorization: '', // Strip Basic auth.
-				Accept: 'application/json',
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=1',
+			{
+				headers: {
+					Authorization: '', // Strip Basic auth.
+					Accept: 'application/json',
+				},
 			},
-		})
-		expect(resp.status(), 'anonymous read of registers should return 200').toBe(200)
+		)
+		expect(resp.status(), 'anonymous read of registers should return 200').toBe(
+			200,
+		)
 		const contentType = resp.headers()['content-type'] ?? ''
 		expect(contentType, 'response must be JSON').toContain('application/json')
-		const body = await resp.json() as Record<string, unknown>
+		const body = (await resp.json()) as Record<string, unknown>
 		expect(body, 'response must have results array').toHaveProperty('results')
 		expect(Array.isArray(body['results']), 'results must be an array').toBe(true)
 	})
 
 	test('wrong credentials return 401', async ({ request }) => {
 		const badCredentials = Buffer.from('admin:wrongpassword').toString('base64')
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
-			headers: {
-				Authorization: `Basic ${badCredentials}`,
-				Accept: 'application/json',
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=1',
+			{
+				headers: {
+					Authorization: `Basic ${badCredentials}`,
+					Accept: 'application/json',
+				},
 			},
-		})
-		expect(resp.status(), 'wrong credentials should return 4xx').toBeGreaterThanOrEqual(400)
+		)
+		expect(
+			resp.status(),
+			'wrong credentials should return 4xx',
+		).toBeGreaterThanOrEqual(400)
 		expect(resp.status(), 'wrong credentials should not 5xx').toBeLessThan(500)
 	})
 
@@ -67,9 +83,12 @@ test.describe('auth-system — authentication methods', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('rbac-scopes — OAS scope generation', () => {
 	test('OAS document includes securitySchemes', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		// securitySchemes should be present in the components block.
@@ -83,18 +102,27 @@ test.describe('rbac-scopes — OAS scope generation', () => {
 		expect(body.openapi).toMatch(/^3\.\d+\.\d+$/)
 	})
 
-	test('OAS paths include security entries on CRUD operations', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas')
+	test('OAS paths include security entries on CRUD operations', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		const paths = body.paths ?? {}
 		// Verify at least one path operation has a security block.
 		const hasSecurity = Object.values(paths).some((pathItem: unknown) => {
 			if (typeof pathItem !== 'object' || pathItem === null) return false
-			return Object.values(pathItem as Record<string, unknown>).some((op: unknown) => {
-				if (typeof op !== 'object' || op === null) return false
-				return 'security' in (op as object) || 'x-security' in (op as object)
-			})
+			return Object.values(pathItem as Record<string, unknown>).some(
+				(op: unknown) => {
+					if (typeof op !== 'object' || op === null) return false
+					return (
+						'security' in (op as object)
+						|| 'x-security' in (op as object)
+					)
+				},
+			)
 		})
 		// Soft check: OAS security generation may be partially implemented.
 		// Just verify the shape is valid OpenAPI.
@@ -116,7 +144,10 @@ test.describe('row-field-level-security — property access control', () => {
 		const objects = body.results as Array<Record<string, unknown>>
 		if (objects.length > 0) {
 			// Admin should see all non-null properties.
-			expect(Object.keys(objects[0]).length, 'admin should see object properties').toBeGreaterThan(0)
+			expect(
+				Object.keys(objects[0]).length,
+				'admin should see object properties',
+			).toBeGreaterThan(0)
 		}
 	})
 })
@@ -126,16 +157,20 @@ test.describe('row-field-level-security — property access control', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('tenant-isolation-audit — user-scoped request handling', () => {
 	test('audit trail entries have an owner/user field', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/audit-trails?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/audit-trails?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
 			const entries = (body.results ?? []) as Array<Record<string, unknown>>
 			for (const entry of entries) {
 				// Each audit entry must be attributed to a user.
-				const hasUser = entry.user ?? entry.userId ?? entry.createdBy ?? entry.owner
+				const hasUser =
+					entry.user ?? entry.userId ?? entry.createdBy ?? entry.owner
 				if (hasUser) {
 					expect(hasUser).toBeTruthy()
 				}

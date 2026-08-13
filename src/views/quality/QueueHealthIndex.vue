@@ -3,7 +3,14 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<h1>{{ t('openregister', 'Queue / sync health') }}</h1>
-				<p>{{ t('openregister', 'Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.',
+						)
+					}}
+				</p>
 			</div>
 
 			<template v-if="loading">
@@ -13,7 +20,12 @@
 			<template v-else-if="webhooks.length === 0">
 				<NcEmptyContent
 					:name="t('openregister', 'No webhooks configured')"
-					:description="t('openregister', 'Configure a webhook to see its delivery health here.')">
+					:description="
+						t(
+							'openregister',
+							'Configure a webhook to see its delivery health here.',
+						)
+					">
 					<template #icon>
 						<Webhook :size="64" />
 					</template>
@@ -45,7 +57,9 @@
 								<td>{{ webhook.name || webhook.url }}</td>
 								<td>{{ statsFor(webhook.id).successful ?? 0 }}</td>
 								<td>{{ statsFor(webhook.id).failed ?? 0 }}</td>
-								<td>{{ statsFor(webhook.id).pendingRetries ?? 0 }}</td>
+								<td>
+									{{ statsFor(webhook.id).pendingRetries ?? 0 }}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -81,7 +95,9 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="(log, index) in webhookFailures" :key="log.id || index">
+							<tr
+								v-for="(log, index) in webhookFailures"
+								:key="log.id || index">
 								<td>{{ log.webhook }}</td>
 								<td>{{ log.eventClass }}</td>
 								<td>{{ log.statusCode ?? '—' }}</td>
