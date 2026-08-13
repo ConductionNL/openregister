@@ -5405,6 +5405,108 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findInRegisterSchemaTable()
 
 	/**
+	 * Find objects by a list of uuids within ONE register+schema table.
+	 *
+	 * The batched counterpart of {@see findInRegisterSchemaTable()}: one indexed
+	 * `IN` query answers "which of these uuids already exist here" for a whole
+	 * batch, where the single-object method answers it one round trip at a time.
+	 *
+	 * Bulk save needs exactly this question — it has to classify every row of a
+	 * batch as create or update before it writes any of them — and asking it per
+	 * row made the create/update probe the dominant cost of a bulk write, and
+	 * O(N) queries in the one code path whose entire purpose is to avoid them.
+	 *
+	 * Deliberately bounded to the given register+schema. The unbounded
+	 * equivalent ({@see findMultipleAcrossAllMagicTables()}) unions every magic
+	 * table on the instance, which answers a DIFFERENT question — "does this
+	 * uuid exist anywhere" — and is the wrong one when the caller is deciding
+	 * how to write into one specific table.
+	 *
+	 * No access-control filters are applied: this is an existence probe for
+	 * callers that then run their own per-row RBAC check against the returned
+	 * entity's owner, exactly as the per-row lookup it replaces did with
+	 * `_rbac: false, _multitenancy: false`.
+	 *
+	 * @param Register $register The register whose table to search.
+	 * @param Schema $schema The schema whose table to search.
+	 * @param array<int, string> $uuids The uuids to look for.
+	 * @param bool $includeDeleted Whether to include soft-deleted rows.
+	 *
+	 * @return array<string, ObjectEntity> Found entities keyed by uuid; missing uuids are simply absent.
+	 */
+	public function findObjectsByUuidsInRegisterSchema(
+		Register $register,
+		Schema $schema,
+		array $uuids,
+		bool $includeDeleted = false,
+	): array {
+		if (empty($uuids) === true) {
+			return [];
+		}
+
+		if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$uuidCol = self::METADATA_PREFIX . 'uuid';
+
+		$found = [];
+
+		// Chunked so the parameter list cannot outgrow what the driver accepts;
+		// a bulk save chunk can carry tens of thousands of rows.
+		foreach (array_chunk(array_values(array_unique($uuids)), 1000) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from($tableName)
+				->where(
+					$qb->expr()->in(
+						$uuidCol,
+						$qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)
+					)
+				);
+
+			if ($includeDeleted === false) {
+				$qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+			}
+
+			try {
+				$result = $qb->executeQuery();
+				while (($row = $result->fetch()) !== false) {
+					$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
+					if ($entity === null) {
+						continue;
+					}
+
+					$entity->setSource('orm');
+					$found[(string)$entity->getUuid()] = $entity;
+				}
+
+				$result->closeCursor();
+			} catch (Exception $e) {
+				// An unreadable probe must not be reported as "none of these
+				// exist" — that would classify every row as a create and, on a
+				// re-run, write duplicates. Let the caller fall back to its
+				// per-row lookup instead.
+				$this->logger->error(
+					message: '[MagicMapper] Bulk uuid existence probe failed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'tableName' => $tableName,
+						'uuids' => count($chunk),
+						'error' => $e->getMessage(),
+					]
+				);
+
+				throw $e;
+			}//end try
+		}//end foreach
+
+		return $found;
+	}//end findObjectsByUuidsInRegisterSchema()
+
+	/**
 	 * Fetch the set of existing integer primary keys from a metadata table.
 	 *
 	 * Used to filter out orphaned magic tables in findAcrossAllMagicTables: a
