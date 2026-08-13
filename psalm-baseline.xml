@@ -336,9 +336,6 @@
       <code><![CDATA[self::$registerCache]]></code>
       <code><![CDATA[self::$schemaCache]]></code>
     </ImplicitToStringCast>
-    <UnusedParam>
-      <code><![CDATA[$rowSchema]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Service/Object/SchemaTypeConverter.php">
     <UnusedParam>
