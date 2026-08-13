@@ -35,14 +35,27 @@
  *     nothing. That is the most expensive failure mode available: the flow looks
  *     green and the data is not there.
  *
- * DELETION is offered, behind four independent guards, so that no single mistake
+ * DELETION is offered, behind five independent guards, so that no single mistake
  * reaches a removal: an explicit `match` is mandatory (there is no shape that
  * means "delete everything in scope"), the match must resolve to exactly one
- * object, `confirmDelete: true` must be present and boolean, and the removal goes
- * through the ordinary `deleteObject()` path so RBAC, the audit trail,
- * soft-delete, append-only and archival immutability all still apply. The first
- * and third are enforced when the flow is SAVED, because a flow that could delete
+ * object, `confirmDelete: true` must be present and boolean, `permanent` — if
+ * named at all — must be boolean and may only qualify a delete, and the removal
+ * goes through the ordinary `deleteObject()` path so RBAC, the audit trail,
+ * append-only and archival immutability all still apply. The first, third and
+ * fourth are enforced when the flow is SAVED, because a flow that could delete
  * unboundedly must not be persistable at all.
+ *
+ * The delete is SOFT unless `permanent: true` says otherwise, and that default
+ * does not move: a tombstone is what makes a mistaken flow recoverable. The
+ * opt-out exists for a row that is a CLAIM rather than a record — a lock, a slot,
+ * a lease — whose identifier is deliberately a pure function of the thing being
+ * claimed, because that is what makes two concurrent claimants collide on it.
+ * Such an identifier cannot be varied per attempt without giving up the mutual
+ * exclusion it exists for, and the `_uuid` unique index carries no
+ * `WHERE _deleted IS NULL` predicate, so a soft-deleted claim goes on holding its
+ * identifier forever: the claim can be taken exactly once, and every attempt
+ * after that is refused with `already exists` about an object every read reports
+ * as absent (openregister#2459).
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -397,6 +410,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 			'replace',
 			'output',
 			'confirmDelete',
+			'permanent',
 			'maxWrites',
 			'onConflict',
 			'onMissing',
@@ -775,13 +789,25 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 
 		// Guard 4: the ordinary delete path, with the run owner as the explicit
 		// acting user and the register / schema scope confining the lookup to
-		// one magic table. No `_retentionSweep`, no hard delete — a soft delete
-		// is what makes a mistaken flow recoverable.
+		// one magic table. No `_retentionSweep`, and a SOFT delete unless the
+		// author asked for otherwise — a soft delete is what makes a mistaken
+		// flow recoverable, so it stays the default.
+		//
+		// `permanent: true` is for a row that is a CLAIM rather than a record —
+		// a lock, a slot, a lease. Such a row's identifier is deliberately a
+		// pure function of the thing being claimed, which is what makes two
+		// concurrent claimants collide on it; it therefore cannot be varied per
+		// attempt. A soft delete leaves the tombstone holding that identifier
+		// (the `_uuid` unique index has no `WHERE _deleted IS NULL` predicate),
+		// so a claim that cannot destroy its own row can be taken exactly once,
+		// ever — and the second attempt is refused with `already exists` about
+		// an object every read reports as absent. See openregister#2459.
 		$this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,
 			schema: $schema,
-			currentUser: $owner
+			currentUser: $owner,
+			permanent: (($config['permanent'] ?? false) === true)
 		);
 		$writes++;
 
@@ -1505,8 +1531,26 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys {
 				);
 			}
 
+			// Guard 5, and the only one that is about IRREVERSIBILITY rather
+			// than about aim. The four above stop a delete from touching the
+			// wrong rows; this one stops a delete from being unrecoverable
+			// without the author having said so in as many words. Same rule as
+			// `confirmDelete`: a boolean, because the string "false" is truthy
+			// and would turn a paste into a destruction.
+			if (array_key_exists('permanent', $config) === true && is_bool($config['permanent']) === false) {
+				throw new UnexpectedValueException(
+					$this->l10n->t('"permanent" must be true or false, as a boolean.')
+				);
+			}
+
 			return;
 		}//end if
+
+		if (array_key_exists('permanent', $config) === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('"permanent" has no meaning for a "%s" step; it only qualifies a delete.', [$operation])
+			);
+		}
 
 		if ($operation === self::OP_CREATE && array_key_exists('replace', $config) === true) {
 			throw new UnexpectedValueException(
