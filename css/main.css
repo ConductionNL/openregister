@@ -396,9 +396,6 @@
 
 .filesListDragDropNoticeTitle {
 	margin: 12px 0;
-}
-
-.filesListDragDropNoticeTitle {
 	margin-left: 16px;
 	color: inherit;
 }
@@ -810,11 +807,6 @@
 /* Modal Container Styling */
 .modal-container:has(.viewObjectDialog) {
 	width: 1000px !important;
-}
-
-/* Ensure nested modals appear above main modal */
-.modal-container:has([data-v-*] .modal-content) {
-	z-index: 10001 !important;
 }
 
 /* Modal Actions */
