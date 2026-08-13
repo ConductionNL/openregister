@@ -616,13 +616,13 @@ class ObjectService
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
      * @param bool                     $_render       Whether to render the entity before returning (default: true).
      *                                                Pass false when the caller performs its own single render
      *                                                (e.g. ObjectsController::show()) so the object is not
      *                                                rendered twice; permission checks and read logging still run.
+     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
+     *                                                Pass false for machine-to-machine reads inside one
+     *                                                operation; the instance setting is all-or-nothing.
      *
      * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
      *
@@ -1915,6 +1915,15 @@ class ObjectService
      *                                                  import pipeline) MUST pass one: anonymous is
      *                                                  default-deny, so without it the delete is
      *                                                  neither attributable nor permitted.
+     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
+     *                                                  its identifier becomes reusable. Defaults to
+     *                                                  false — the soft delete every existing caller
+     *                                                  already gets, and the thing that makes a
+     *                                                  mistaken delete recoverable. Reserve it for
+     *                                                  rows that are a CLAIM rather than a record;
+     *                                                  see the parameter's full note on
+     *                                                  `DeleteObject::deleteObject()` and
+     *                                                  openregister#2459.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1937,7 +1946,8 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $_retentionSweep=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $permanent=false
     ): bool {
         // Explicit acting user for the permission check; null keeps today's
         // session-resolved behaviour for every existing caller.
@@ -2052,7 +2062,8 @@ class ObjectService
             originalObjectId: null,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            scoped: $hasScope
+            scoped: $hasScope,
+            permanent: $permanent
         );
     }//end deleteObject()
 
