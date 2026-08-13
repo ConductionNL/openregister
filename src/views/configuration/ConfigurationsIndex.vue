@@ -76,8 +76,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							:primary="true"
 							close-after-click
 							@click="
-								configurationStore.setConfigurationItem(null)
-								navigationStore.setModal('editConfiguration')
+								() => {
+									configurationStore.setConfigurationItem(null)
+									navigationStore.setModal('editConfiguration')
+								}
 							">
 							<template #icon>
 								<Plus :size="20" />
@@ -311,12 +313,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<NcActionButton
 												close-after-click
 												@click="
-													configurationStore.setConfigurationItem(
-														configuration,
-													)
-													navigationStore.setModal(
-														'viewConfiguration',
-													)
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'viewConfiguration',
+														)
+													}
 												">
 												<template #icon>
 													<Eye :size="20" />
@@ -326,12 +330,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<NcActionButton
 												close-after-click
 												@click="
-													configurationStore.setConfigurationItem(
-														configuration,
-													)
-													navigationStore.setModal(
-														'editConfiguration',
-													)
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'editConfiguration',
+														)
+													}
 												">
 												<template #icon>
 													<Pencil :size="20" />
@@ -367,12 +373,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<NcActionButton
 												close-after-click
 												@click="
-													configurationStore.setConfigurationItem(
-														configuration,
-													)
-													navigationStore.setModal(
-														'exportConfiguration',
-													)
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setModal(
+															'exportConfiguration',
+														)
+													}
 												">
 												<template #icon>
 													<Download :size="20" />
@@ -382,12 +390,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 											<NcActionButton
 												close-after-click
 												@click="
-													configurationStore.setConfigurationItem(
-														configuration,
-													)
-													navigationStore.setDialog(
-														'deleteConfiguration',
-													)
+													() => {
+														configurationStore.setConfigurationItem(
+															configuration,
+														)
+														navigationStore.setDialog(
+															'deleteConfiguration',
+														)
+													}
 												">
 												<template #icon>
 													<TrashCanOutline :size="20" />

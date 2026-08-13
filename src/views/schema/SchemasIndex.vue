@@ -36,8 +36,10 @@ import {
 			:row-class="getRowClass"
 			:refreshing="isRefreshing"
 			@add="
-				schemaStore.setSchemaItem(null)
-				navigationStore.setModal('editSchema')
+				() => {
+					schemaStore.setSchemaItem(null)
+					navigationStore.setModal('editSchema')
+				}
 			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
@@ -147,8 +149,10 @@ import {
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="
-							schemaStore.setSchemaItem(row)
-							navigationStore.setModal('editSchema')
+							() => {
+								schemaStore.setSchemaItem(row)
+								navigationStore.setModal('editSchema')
+							}
 						">
 						<template #icon>
 							<Pencil :size="20" />
@@ -164,8 +168,10 @@ import {
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
 						@click="
-							schemaStore.setSchemaItem(row)
-							navigationStore.setDialog('deleteSchema')
+							() => {
+								schemaStore.setSchemaItem(row)
+								navigationStore.setDialog('deleteSchema')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline :size="20" />

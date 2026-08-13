@@ -607,12 +607,14 @@ import {
 												<td>
 													<NcButton
 														@click="
-															objectStore.setObjectItem(
-																use,
-															)
-															navigationStore.setModal(
-																'viewObject',
-															)
+															() => {
+																objectStore.setObjectItem(
+																	use,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
 														">
 														<template #icon>
 															<Eye :size="20" />
@@ -659,12 +661,14 @@ import {
 												<td>
 													<NcButton
 														@click="
-															objectStore.setObjectItem(
-																usedBy,
-															)
-															navigationStore.setModal(
-																'viewObject',
-															)
+															() => {
+																objectStore.setObjectItem(
+																	usedBy,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
 														">
 														<template #icon>
 															<Eye :size="20" />
@@ -712,12 +716,14 @@ import {
 												<td>
 													<NcButton
 														@click="
-															objectStore.setObjectItem(
-																contract,
-															)
-															navigationStore.setModal(
-																'viewObject',
-															)
+															() => {
+																objectStore.setObjectItem(
+																	contract,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
 														">
 														<template #icon>
 															<Eye :size="20" />
@@ -1130,8 +1136,10 @@ import {
 				<NcButton
 					v-if="!isNewObject"
 					@click="
-						navigationStore.setModal('uploadFiles')
-						objectStore.setObjectItem(objectStore.objectItem)
+						() => {
+							navigationStore.setModal('uploadFiles')
+							objectStore.setObjectItem(objectStore.objectItem)
+						}
 					">
 					<template #icon>
 						<Upload :size="20" />

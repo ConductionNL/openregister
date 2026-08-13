@@ -34,8 +34,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			:empty-text="emptyContentName"
 			:refreshing="isRefreshing"
 			@add="
-				sourceStore.setSourceItem(null)
-				navigationStore.setModal('editSource')
+				() => {
+					sourceStore.setSourceItem(null)
+					navigationStore.setModal('editSource')
+				}
 			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
@@ -57,8 +59,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 							<NcActionButton
 								close-after-click
 								@click="
-									sourceStore.setSourceItem(object)
-									navigationStore.setModal('viewSource')
+									() => {
+										sourceStore.setSourceItem(object)
+										navigationStore.setModal('viewSource')
+									}
 								">
 								<template #icon>
 									<Eye :size="20" />
@@ -68,8 +72,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 							<NcActionButton
 								close-after-click
 								@click="
-									sourceStore.setSourceItem(object)
-									navigationStore.setModal('editSource')
+									() => {
+										sourceStore.setSourceItem(object)
+										navigationStore.setModal('editSource')
+									}
 								">
 								<template #icon>
 									<Pencil :size="20" />
@@ -79,8 +85,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 							<NcActionButton
 								close-after-click
 								@click="
-									sourceStore.setSourceItem(object)
-									navigationStore.setDialog('deleteSource')
+									() => {
+										sourceStore.setSourceItem(object)
+										navigationStore.setDialog('deleteSource')
+									}
 								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
@@ -197,8 +205,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<NcActionButton
 						close-after-click
 						@click="
-							sourceStore.setSourceItem(row)
-							navigationStore.setModal('viewSource')
+							() => {
+								sourceStore.setSourceItem(row)
+								navigationStore.setModal('viewSource')
+							}
 						">
 						<template #icon>
 							<Eye :size="20" />
@@ -208,8 +218,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<NcActionButton
 						close-after-click
 						@click="
-							sourceStore.setSourceItem(row)
-							navigationStore.setModal('editSource')
+							() => {
+								sourceStore.setSourceItem(row)
+								navigationStore.setModal('editSource')
+							}
 						">
 						<template #icon>
 							<Pencil :size="20" />
@@ -219,8 +231,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<NcActionButton
 						close-after-click
 						@click="
-							sourceStore.setSourceItem(row)
-							navigationStore.setDialog('deleteSource')
+							() => {
+								sourceStore.setSourceItem(row)
+								navigationStore.setDialog('deleteSource')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline :size="20" />

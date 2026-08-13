@@ -27,8 +27,10 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				<NcActionButton
 					close-after-click
 					@click="
-						endpointStore.setEndpointItem({})
-						navigationStore.setModal('editEndpoint')
+						() => {
+							endpointStore.setEndpointItem({})
+							navigationStore.setModal('editEndpoint')
+						}
 					">
 					<template #icon>
 						<Plus :size="20" />
@@ -66,8 +68,10 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 					<NcActionButton
 						close-after-click
 						@click="
-							endpointStore.setEndpointItem(endpoint)
-							navigationStore.setModal('editEndpoint')
+							() => {
+								endpointStore.setEndpointItem(endpoint)
+								navigationStore.setModal('editEndpoint')
+							}
 						">
 						<template #icon>
 							<Pencil />
@@ -77,8 +81,10 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 					<NcActionButton
 						close-after-click
 						@click="
-							endpointStore.setEndpointItem(endpoint)
-							navigationStore.setDialog('deleteEndpoint')
+							() => {
+								endpointStore.setEndpointItem(endpoint)
+								navigationStore.setDialog('deleteEndpoint')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline />

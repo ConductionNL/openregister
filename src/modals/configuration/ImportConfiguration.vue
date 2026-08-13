@@ -78,8 +78,10 @@ import {
 								class="github-button"
 								:disabled="!hasGithubToken || searchLoading"
 								@click="
-									searchSource = 'github'
-									searchConfigurations()
+									() => {
+										searchSource = 'github'
+										searchConfigurations()
+									}
 								">
 								<template #icon>
 									<Github :size="20" />
@@ -91,8 +93,10 @@ import {
 								class="gitlab-button"
 								:disabled="!hasGitlabToken || searchLoading"
 								@click="
-									searchSource = 'gitlab'
-									searchConfigurations()
+									() => {
+										searchSource = 'gitlab'
+										searchConfigurations()
+									}
 								">
 								<template #icon>
 									<Gitlab :size="20" />

@@ -30,8 +30,10 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			:empty-text="emptyContentName"
 			:refreshing="isRefreshing"
 			@add="
-				applicationStore.setApplicationItem(null)
-				navigationStore.setModal('editApplication')
+				() => {
+					applicationStore.setApplicationItem(null)
+					navigationStore.setModal('editApplication')
+				}
 			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
@@ -53,8 +55,10 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<NcActionButton
 								close-after-click
 								@click="
-									applicationStore.setApplicationItem(object)
-									navigationStore.setModal('editApplication')
+									() => {
+										applicationStore.setApplicationItem(object)
+										navigationStore.setModal('editApplication')
+									}
 								">
 								<template #icon>
 									<Pencil :size="20" />
@@ -64,8 +68,12 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<NcActionButton
 								close-after-click
 								@click="
-									applicationStore.setApplicationItem(object)
-									navigationStore.setDialog('deleteApplication')
+									() => {
+										applicationStore.setApplicationItem(object)
+										navigationStore.setDialog(
+											'deleteApplication',
+										)
+									}
 								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
@@ -197,8 +205,10 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<NcActionButton
 						close-after-click
 						@click="
-							applicationStore.setApplicationItem(row)
-							navigationStore.setModal('editApplication')
+							() => {
+								applicationStore.setApplicationItem(row)
+								navigationStore.setModal('editApplication')
+							}
 						">
 						<template #icon>
 							<Pencil :size="20" />
@@ -208,8 +218,10 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<NcActionButton
 						close-after-click
 						@click="
-							applicationStore.setApplicationItem(row)
-							navigationStore.setDialog('deleteApplication')
+							() => {
+								applicationStore.setApplicationItem(row)
+								navigationStore.setDialog('deleteApplication')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline :size="20" />

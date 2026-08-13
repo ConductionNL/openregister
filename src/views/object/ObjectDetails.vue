@@ -430,12 +430,14 @@
 										<NcActionButton
 											close-after-click
 											@click="
-												objectStore.setAuditTrailItem(
-													auditTrail,
-												)
-												navigationStore.setModal(
-													'viewObjectAuditTrail',
-												)
+												() => {
+													objectStore.setAuditTrailItem(
+														auditTrail,
+													)
+													navigationStore.setModal(
+														'viewObjectAuditTrail',
+													)
+												}
 											">
 											<template #icon>
 												<Eye :size="20" />

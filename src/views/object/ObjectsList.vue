@@ -38,8 +38,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							objectStore.setObjectItem(null)
-							navigationStore.setModal('uploadObject')
+							() => {
+								objectStore.setObjectItem(null)
+								navigationStore.setModal('uploadObject')
+							}
 						">
 						<template #icon>
 							<Upload :size="20" />
@@ -112,8 +114,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							objectStore.setObjectItem(object)
-							navigationStore.setModal('viewObject')
+							() => {
+								objectStore.setObjectItem(object)
+								navigationStore.setModal('viewObject')
+							}
 						">
 						<template #icon>
 							<Pencil />
@@ -124,8 +128,10 @@ import {
 						v-if="!object.locked"
 						close-after-click
 						@click="
-							objectStore.setObjectItem(object)
-							navigationStore.setModal('lockObject')
+							() => {
+								objectStore.setObjectItem(object)
+								navigationStore.setModal('lockObject')
+							}
 						">
 						<template #icon>
 							<LockOutline />
@@ -144,8 +150,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							objectStore.setObjectItem(object)
-							navigationStore.setDialog('deleteObject')
+							() => {
+								objectStore.setObjectItem(object)
+								navigationStore.setDialog('deleteObject')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline />

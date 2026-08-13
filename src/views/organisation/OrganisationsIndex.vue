@@ -153,8 +153,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								v-if="canDeleteOrganisation(object)"
 								close-after-click
 								@click="
-									organisationStore.setOrganisationItem(object)
-									navigationStore.setModal('deleteOrganisation')
+									() => {
+										organisationStore.setOrganisationItem(object)
+										navigationStore.setModal(
+											'deleteOrganisation',
+										)
+									}
 								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
@@ -297,8 +301,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						v-if="canDeleteOrganisation(row)"
 						close-after-click
 						@click="
-							organisationStore.setOrganisationItem(row)
-							navigationStore.setModal('deleteOrganisation')
+							() => {
+								organisationStore.setOrganisationItem(row)
+								navigationStore.setModal('deleteOrganisation')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline :size="20" />

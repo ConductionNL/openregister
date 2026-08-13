@@ -56,8 +56,10 @@ import {
 						<NcActionButton
 							close-after-click
 							@click="
-								registerStore.setRegisterItem(item)
-								navigationStore.setModal('publishRegister')
+								() => {
+									registerStore.setRegisterItem(item)
+									navigationStore.setModal('publishRegister')
+								}
 							">
 							<template #icon>
 								<CloudUploadOutline :size="20" />
@@ -67,8 +69,10 @@ import {
 						<NcActionButton
 							close-after-click
 							@click="
-								registerStore.setRegisterItem(item)
-								navigationStore.setModal('importRegister')
+								() => {
+									registerStore.setRegisterItem(item)
+									navigationStore.setModal('importRegister')
+								}
 							">
 							<template #icon>
 								<Upload :size="20" />
@@ -293,11 +297,13 @@ import {
 									<NcActionButton
 										close-after-click
 										@click="
-											registerStore.setRegisterItem(item)
-											schemaStore.setSchemaItem(schema)
-											navigationStore.setModal(
-												'exportRegister',
-											)
+											() => {
+												registerStore.setRegisterItem(item)
+												schemaStore.setSchemaItem(schema)
+												navigationStore.setModal(
+													'exportRegister',
+												)
+											}
 										">
 										<template #icon>
 											<Export :size="20" />
@@ -307,11 +313,13 @@ import {
 									<NcActionButton
 										close-after-click
 										@click="
-											registerStore.setRegisterItem(item)
-											schemaStore.setSchemaItem(schema)
-											navigationStore.setModal(
-												'importRegister',
-											)
+											() => {
+												registerStore.setRegisterItem(item)
+												schemaStore.setSchemaItem(schema)
+												navigationStore.setModal(
+													'importRegister',
+												)
+											}
 										">
 										<template #icon>
 											<Upload :size="20" />

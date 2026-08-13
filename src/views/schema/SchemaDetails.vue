@@ -44,8 +44,10 @@ import formatBytes from '../../services/formatBytes.js'
 						<NcActionButton
 							close-after-click
 							@click="
-								schemaStore.setSchemaPropertyKey(null)
-								navigationStore.setModal('editSchemaProperty')
+								() => {
+									schemaStore.setSchemaPropertyKey(null)
+									navigationStore.setModal('editSchemaProperty')
+								}
 							">
 							<template #icon>
 								<PlusCircleOutline />

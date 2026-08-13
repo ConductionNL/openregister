@@ -86,8 +86,10 @@ import {
 				<NcActionButton
 					close-after-click
 					@click="
-						registerStore.setRegisterItem(null)
-						navigationStore.setModal('importRegister')
+						() => {
+							registerStore.setRegisterItem(null)
+							navigationStore.setModal('importRegister')
+						}
 					">
 					<template #icon>
 						<Upload :size="20" />
@@ -220,8 +222,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							registerStore.setRegisterItem(row)
-							navigationStore.setModal('publishRegister')
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setModal('publishRegister')
+							}
 						">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
@@ -231,8 +235,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							registerStore.setRegisterItem(row)
-							navigationStore.setModal('importRegister')
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setModal('importRegister')
+							}
 						">
 						<template #icon>
 							<Upload :size="20" />
@@ -242,8 +248,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							registerStore.setRegisterItem(row)
-							viewOasDoc(row)
+							() => {
+								registerStore.setRegisterItem(row)
+								viewOasDoc(row)
+							}
 						">
 						<template #icon>
 							<ApiIcon :size="20" />
@@ -253,8 +261,10 @@ import {
 					<NcActionButton
 						close-after-click
 						@click="
-							registerStore.setRegisterItem(row)
-							downloadOas(row)
+							() => {
+								registerStore.setRegisterItem(row)
+								downloadOas(row)
+							}
 						">
 						<template #icon>
 							<Download :size="20" />
@@ -273,8 +283,10 @@ import {
 						close-after-click
 						:disabled="row.stats?.total > 0"
 						@click="
-							registerStore.setRegisterItem(row)
-							navigationStore.setDialog('deleteRegister')
+							() => {
+								registerStore.setRegisterItem(row)
+								navigationStore.setDialog('deleteRegister')
+							}
 						">
 						<template #icon>
 							<TrashCanOutline :size="20" />

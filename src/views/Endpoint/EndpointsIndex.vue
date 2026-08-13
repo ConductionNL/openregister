@@ -23,8 +23,10 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<NcButton
 						variant="primary"
 						@click="
-							endpointStore.setEndpointItem({})
-							navigationStore.setModal('editEndpoint')
+							() => {
+								endpointStore.setEndpointItem({})
+								navigationStore.setModal('editEndpoint')
+							}
 						">
 						Add endpoint
 					</NcButton>

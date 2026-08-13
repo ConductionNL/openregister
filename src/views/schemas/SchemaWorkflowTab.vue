@@ -7,8 +7,10 @@
 				<HookList
 					:hooks="hooks"
 					@add="
-						showHookForm = true
-						editingHookIndex = null
+						() => {
+							showHookForm = true
+							editingHookIndex = null
+						}
 					"
 					@edit="editHook"
 					@delete="deleteHook"
