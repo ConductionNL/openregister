@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -78,6 +79,7 @@ class FederationControllerConfidentialityTest extends TestCase {
 			$this->createMock(FederatedShareMapper::class),
 			$this->createMock(ObjectService::class),
 			$this->createMock(FederationShareService::class),
+			$this->createMock(IThrottler::class),
 			$this->createMock(LoggerInterface::class)
 		);
 

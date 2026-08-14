@@ -38,8 +38,10 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,6 +49,16 @@ use Throwable;
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
  */
 class FederationController extends Controller {
+
+	/**
+	 * Brute-force throttler action name for failed share-token presentations.
+	 *
+	 * Shared by every endpoint on this controller so a caller cannot spread
+	 * guesses across the six entry points to stay under the per-action ceiling.
+	 *
+	 * @var string
+	 */
+	private const THROTTLE_ACTION = 'openregister_federation_share_token';
 
 	/**
 	 * Confidentiality values treated as public (servable through a schema share).
@@ -103,6 +115,7 @@ class FederationController extends Controller {
 		private readonly FederatedShareMapper $shareMapper,
 		private readonly ObjectService $objectService,
 		private readonly FederationShareService $shareService,
+		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -207,6 +220,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function objects(string $shareToken): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -249,6 +263,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function object(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -293,6 +308,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 20, period: 60)]
 	public function createObject(string $shareToken): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -333,6 +349,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 20, period: 60)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -376,6 +393,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 20, period: 60)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -466,6 +484,7 @@ class FederationController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function meta(string $shareToken): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -491,25 +510,62 @@ class FederationController extends Controller {
 	 */
 	private function resolveAcceptedShare(string $shareToken): ?FederatedShare {
 		if ($shareToken === '') {
+			$this->registerFailedTokenAttempt();
 			return null;
 		}
 
 		try {
 			$share = $this->shareMapper->findByToken(shareToken: $shareToken);
 		} catch (DoesNotExistException $e) {
+			$this->registerFailedTokenAttempt();
 			return null;
 		} catch (Throwable $e) {
 			$this->logger->warning('[Federation] token lookup failed: ' . $e->getMessage());
+			$this->registerFailedTokenAttempt();
 			return null;
 		}
 
 		// Only outgoing shares are served here, and only once accepted.
 		if ($share->getDirection() !== 'outgoing' || $share->getStatus() === 'revoked' || $share->getStatus() === 'declined') {
+			$this->registerFailedTokenAttempt();
 			return null;
 		}
 
 		return $share;
 	}//end resolveAcceptedShare()
+
+	/**
+	 * Record a failed share-token presentation with the brute-force throttler.
+	 *
+	 * Every federation endpoint is `#[PublicPage]` and the share token is the
+	 * ONLY credential, so an unthrottled endpoint lets a caller guess tokens at
+	 * line rate — and three of these endpoints WRITE (`createObject`,
+	 * `updateObject`, `deleteObject`).
+	 *
+	 * This sits in the shared resolver rather than in each of the six call
+	 * sites deliberately: a guard added per-endpoint is a guard that the
+	 * seventh endpoint forgets. It also registers the attempt where the failure
+	 * is actually known, rather than relying on the caller to remember to
+	 * throttle its own response.
+	 *
+	 * `sleepDelayOrThrowOnMax()` is NOT called here — the delay is applied on
+	 * the next attempt from the same address, which is the standard Nextcloud
+	 * federated-share posture: a legitimate peer presenting a valid token is
+	 * never delayed by another peer's failures.
+	 *
+	 * @return void
+	 */
+	private function registerFailedTokenAttempt(): void {
+		try {
+			$this->throttler->registerAttempt(
+				action: self::THROTTLE_ACTION,
+				ip: $this->request->getRemoteAddress()
+			);
+		} catch (Throwable $e) {
+			// Never let throttler bookkeeping turn a 404 into a 500.
+			$this->logger->warning('[Federation] throttler registerAttempt failed: ' . $e->getMessage());
+		}
+	}//end registerFailedTokenAttempt()
 
 	/**
 	 * Build the ObjectService findAll config for a share's scope.
