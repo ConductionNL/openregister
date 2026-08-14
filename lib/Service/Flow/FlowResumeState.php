@@ -71,6 +71,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * Build the state over stored slots.
 	 *
 	 * @param array<string, array<string, mixed>> $byNode The stored slots.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(array $byNode = []) {
 		$this->byNode = $byNode;
@@ -83,6 +85,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * @param string $nodeId The node's id in the flow document.
 	 *
 	 * @return FlowNodeResumeState The scoped handle handed to that node.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function forNode(string $nodeId): FlowNodeResumeState {
 		return new FlowNodeResumeState(parent: $this, nodeId: $nodeId);
@@ -94,6 +98,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * @param string $nodeId The node's id.
 	 *
 	 * @return array<string, mixed> The stored values, empty when it has none.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function read(string $nodeId): array {
 		return ($this->byNode[$nodeId] ?? []);
@@ -106,6 +112,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * @param array<string, mixed> $values The values to hold.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function write(string $nodeId, array $values): void {
 		if ($values === []) {
@@ -129,6 +137,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * @param string $nodeId The node's id.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function forget(string $nodeId): void {
 		unset($this->byNode[$nodeId]);
@@ -139,6 +149,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * Whether any node holds progress.
 	 *
 	 * @return boolean True when at least one slot is occupied.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function isEmpty(): bool {
 		return ($this->byNode === []);
@@ -148,6 +160,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * Every slot.
 	 *
 	 * @return array<string, array<string, mixed>> The slots, keyed by node id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function all(): array {
 		return $this->byNode;
@@ -164,6 +178,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * @param mixed $stored The stored value, of any shape.
 	 *
 	 * @return self The state.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public static function fromArray(mixed $stored): self {
 		if ($stored instanceof self === true) {
@@ -219,6 +235,8 @@ final class FlowResumeState implements JsonSerializable {
 	 * The storable form.
 	 *
 	 * @return array<string, array<string, mixed>> The slots.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function jsonSerialize(): array {
 		return $this->byNode;
