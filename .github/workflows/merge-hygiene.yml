@@ -84,6 +84,13 @@ jobs:
       # JSON that will not parse breaks register fragments and app metadata,
       # and is the other thing a bad merge leaves behind.
       #
+      # SCOPED TWICE, because each widening found another honest file. The
+      # first version parsed every tracked .json and died on tsconfig/eslint
+      # JSONC. The second still reached `lib/**/*.json`, which in openbuild
+      # includes an entire app TEMPLATE — `.vscode/settings.json` and all.
+      # A template is not this app's configuration, and an editor file is not
+      # loaded by anything. What is left is what OpenRegister actually reads.
+      #
       # SCOPED, because the first version was not and failed immediately on
       # honest files: editor and tooling configs (tsconfig, eslint, devcontainer)
       # are JSONC — comments and trailing commas — which is valid for their
@@ -98,6 +105,7 @@ jobs:
             [ -f "$f" ] || continue
             python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" \
               || { echo "::error file=$f::invalid JSON"; fail=1; }
-          done < <(git ls-files 'composer.json' 'package.json' 'appinfo/*.json' 'lib/**/*.json' \
-                     | grep -v '^vendor/' | grep -v '^node_modules/')
+          done < <(git ls-files 'composer.json' 'package.json' 'appinfo/*.json' 'lib/Settings/**/*.json' \
+                     | grep -v '^vendor/' | grep -v '^node_modules/' \
+                     | grep -v '/\.vscode/' | grep -v '^lib/Resources/template/')
           exit "$fail"
