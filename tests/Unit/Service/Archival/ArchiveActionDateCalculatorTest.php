@@ -24,7 +24,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Test class for ArchiveActionDateCalculator
  */
-class ArchiefactiedatumCalculatorTest extends TestCase {
+class ArchiveActionDateCalculatorTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 	private ArchiveActionDateCalculator $calculator;
 

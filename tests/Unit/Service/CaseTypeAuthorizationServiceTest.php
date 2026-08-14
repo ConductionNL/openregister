@@ -23,7 +23,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * VNG-compliance unit coverage for the zaaktype authorization config layer.
  */
-class ZaaktypeAuthorizationServiceTest extends TestCase {
+class CaseTypeAuthorizationServiceTest extends TestCase {
 	private CaseTypeAuthorizationService $service;
 
 	protected function setUp(): void {

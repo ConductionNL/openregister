@@ -288,7 +288,7 @@ return [
         ['name' => 'verwerkingsactiviteiten#create',         'url' => '/api/avg/verwerkingsactiviteiten',        'verb' => 'POST'],
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'verwerkingsactiviteiten#verantwoording', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
+        ['name' => 'verwerkingsactiviteiten#accountability', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
         // AVG / GDPR data-subject rights endpoints (Phase 2b).
         ['name' => 'dsar#inzage',         'url' => '/api/avg/inzage',         'verb' => 'GET'],
         ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
@@ -321,7 +321,7 @@ return [
         // AVG / GDPR per-access processing log (verwerkingenlogging) — read-only,
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
-        ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
+        ['name' => 'processingLog#involvedParty', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
         // Translation sidecar — search, per-object slots + completeness, status updates.
         ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
         ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],

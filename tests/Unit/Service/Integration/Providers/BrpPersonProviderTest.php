@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Unit tests for BrpPersonProvider.
  */
-class BrpPersoonProviderTest extends TestCase {
+class BrpPersonProviderTest extends TestCase {
 
 	/**
 	 * Mocked external-call router.
