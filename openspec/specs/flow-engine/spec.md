@@ -630,3 +630,106 @@ correctness property the serial loop has for a performance one.
 - **AND** the failure MUST reach the step's `onError` policy exactly as it does
   from the serial loop
 - @e2e exclude covered by the dispatcher's tests
+
+### Requirement: A node MUST be able to resume from where it stopped
+
+`FlowSuspension` lets a node pause a run, and the engine already preserves what
+the RUN was carrying: the marking is not advanced, items and context are stored,
+and `FlowToken` is rehydrated on the way back in. What a resumed node learned
+about ITSELF was one boolean, `context.resuming`.
+
+That is sufficient for `WaitNode`, whose wait is over by construction, and
+insufficient for every other reason to pause. A synchronisation parked on a rate
+limit must come back to its page and its shard; a step awaiting an answer must
+come back knowing which question it asked. Without somewhere to record that, such
+a node restarts — and a resume that restarts is a retry wearing the wrong name.
+
+**Measured 2026-08-13.** A twelve-shard crawl whose early shards spent the whole
+`code_search` budget cancelled the rest. Three consecutive runs, 65 s apart, each
+returned the same 641 repositories: the starved shards were never reached because
+every run began again at the first one.
+
+The engine MUST therefore carry per-node resume state across a suspension, and it
+MUST be scoped per node: a flow may hold two nodes of the same type, and one flat
+bag would have them overwrite each other's position — a defect that appears only
+on the second node.
+
+A node MUST NOT be able to read or write another node's slot. `context.resuming`
+answers a question about the RUN and is true for every node downstream of a
+suspension; whether THIS node has somewhere to continue from is the thing worth
+branching on, and MUST be answerable separately.
+
+Resume state MUST live from a suspension to the resume that answers it, and no
+longer. A node that returns normally has finished, so its slot MUST be dropped —
+otherwise the next pass through that node, inside a loop or on a later scheduled
+tick, is handed a finished node's cursor.
+
+#### Scenario: A node continues from where it stopped
+- **GIVEN** a node that records its page and then suspends
+- **WHEN** the run resumes and the node runs again
+- **THEN** the node MUST read back the page it recorded
+- @e2e exclude engine-internal — covered by RegistryStepDispatcherResumeTest
+
+#### Scenario: Two nodes do not share a position
+- **GIVEN** two nodes in one flow, each recording a page under the same key
+- **WHEN** both have suspended
+- **THEN** each MUST read back its OWN page
+- @e2e exclude engine-internal — covered by FlowResumeStateTest
+
+#### Scenario: A finished node keeps nothing
+- **GIVEN** a node that records a position and then returns normally
+- **WHEN** the step completes
+- **THEN** its resume slot MUST be empty
+- @e2e exclude engine-internal — covered by RegistryStepDispatcherResumeTest
+
+### Requirement: A run suspended on an external signal MUST be reachable
+
+`FlowSuspension` has always documented a null `resumeAt` as "waits for an
+external signal". Nothing could deliver one. `FlowRunMapper::findDue()`
+deliberately excludes runs with no `resume_at` — correctly, since waking them on
+a clock would run them before their answer arrived — `findStale()` reads only
+`running`, and no endpoint existed to say the signal had come.
+
+The consequence was worse than an unusable feature. `hasActiveRun()` counts
+`suspended`, so a run waiting on a signal it could never receive also stopped its
+flow from ever being scheduled again. The documented case silently retired the
+flow that used it.
+
+The engine MUST provide a way to deliver that signal, guarded by the same
+ownership check as retry — resuming another user's run is the same IDOR as
+re-running it. The payload MUST reach the node that suspended, and MUST be
+consumed by the walk it wakes: a signal answers ONE question, and a flow with two
+awaiting steps MUST NOT have the second read the answer given to the first.
+
+A node that suspends waiting on a signal MUST ALSO carry a heartbeat `resumeAt`.
+A delivery can fail, and can arrive while the run is still mid-walk and has not
+suspended yet; either loses the only wake-up the run would ever get. The
+heartbeat costs a no-op wake per interval and bounds the damage of a lost signal
+to that interval instead of to the flow.
+
+A signal that never arrives MUST eventually be reaped rather than left forever,
+and MUST be FAILED rather than resumed: resuming would run the awaiting node as
+though it had been answered, when what happened is that nobody answered.
+
+#### Scenario: An answer wakes the run
+- **GIVEN** a run suspended awaiting an answer
+- **WHEN** the resume endpoint is posted a decision
+- **THEN** the run MUST become due, and the awaiting node MUST receive the decision
+
+#### Scenario: A nudge is not an answer
+- **GIVEN** a run suspended awaiting an answer
+- **WHEN** the resume endpoint is posted with no decision
+- **THEN** the run MUST remain suspended
+- @e2e exclude node-internal — covered by AwaitSignalNodeTest
+
+#### Scenario: An answer is consumed once
+- **GIVEN** a flow with two awaiting steps, the first already answered
+- **WHEN** the second suspends
+- **THEN** it MUST NOT read the first step's answer
+- @e2e exclude engine-internal — covered by FlowRunService's persist path
+
+#### Scenario: A signal that never comes does not retire the flow
+- **GIVEN** a run suspended on a signal past the configured wait
+- **WHEN** the worker passes
+- **THEN** the run MUST be failed with a reason naming the missing signal
+- **AND** its flow MUST become schedulable again
