@@ -1006,6 +1006,45 @@ class FileService {
 	}//end checkOwnership()
 
 	/**
+	 * Transfer folder ownership to the OpenRegister user, sharing it back.
+	 *
+	 * The facade seam FolderManagementHandler needs. Four call sites there
+	 * carried `// TODO: Call $this->fileService->transferFolderOwnershipIfNeeded()
+	 * once FileOwnershipHandler is extracted.` — the extraction happened, but
+	 * this delegation never did, so the literal call in those TODOs would have
+	 * been a fatal: the facade exposed neither ownership-transfer variant.
+	 *
+	 * FILES were transferred and FOLDERS were not. CreateFileHandler and
+	 * UpdateFileHandler both call transferFileOwnershipIfNeeded() directly on
+	 * the handler, so a register's files ended up owned by the OpenRegister
+	 * user while the folder containing them stayed owned by whoever created
+	 * it — two halves of one register with different owners and, when that
+	 * user is deleted, different lifetimes.
+	 *
+	 * The sharing handler is passed explicitly because the ownership handler's
+	 * own docblock requires it: without it the transfer would move the folder
+	 * away from the current user WITHOUT sharing it back, which takes their
+	 * access away instead of preserving it.
+	 *
+	 * @param Node $folder The folder to potentially transfer ownership for.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If ownership transfer fails.
+	 *
+	 * @psalm-return   void
+	 * @phpstan-return void
+	 *
+	 * @spec exclude Ownership-transfer delegation; the behaviour is specified on FileOwnershipHandler, this adds no rule of its own.
+	 */
+	public function transferFolderOwnershipIfNeeded(Node $folder): void {
+		$this->fileOwnershipHandler->transferFolderOwnershipIfNeeded(
+			folder: $folder,
+			fileSharingHandler: $this->fileSharingHandler
+		);
+	}//end transferFolderOwnershipIfNeeded()
+
+	/**
 	 * Formats a single Node file into a metadata array (DELEGATED to FileFormattingHandler).
 	 *
 	 * @param Node $file The Node file to format.
