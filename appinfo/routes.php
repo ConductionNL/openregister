@@ -49,10 +49,6 @@ return [
         ['name' => 'credential#registerApp',   'url' => '/api/credentials/apps/{appId}/register', 'verb' => 'POST',   'requirements' => ['appId' => '[a-z0-9_-]+']],
         ['name' => 'credential#brokerRequest', 'url' => '/api/credentials/{id}/request',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#sessionBrokerRequest', 'url' => '/api/credentials/{id}/session-request', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        // The streaming twin of brokerRequest. Same token, same binding, same guards —
-        // only the transport differs, so an SDK that speaks server-sent events can be
-        // pointed at the broker instead of being handed the secret.
-        ['name' => 'credential#brokerStream', 'url' => '/api/credentials/{id}/stream', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         // Web Push channel (openregister-web-push-engine).
         // VAPID public key (browser subscribe key) + current-user subscription CRUD

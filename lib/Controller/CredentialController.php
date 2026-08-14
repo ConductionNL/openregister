@@ -36,7 +36,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Http\BrokeredStreamResponse;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
@@ -51,7 +50,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Response;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -655,70 +653,6 @@ class CredentialController extends Controller {
 
 		return new JSONResponse($result);
 	}//end brokerRequest()
-
-	/**
-	 * POST /api/credentials/{id}/stream — the guarded broker call, relayed as a stream.
-	 *
-	 * Identical to {@see brokerRequest()} in every respect that decides whether the
-	 * call is allowed: same token verification, same request-binding of that token
-	 * to this exact method+path, same credential-mismatch refusal, and the same
-	 * five guards behind it — `streamRequest()` and `request()` share one
-	 * authorisation chain rather than each carrying a copy.
-	 *
-	 * The only difference is the transport. `brokerRequest()` reads the whole
-	 * upstream body and answers with `{status, headers, body}` as JSON, which is
-	 * right for a label write or a tree commit. This one leaves the body open and
-	 * relays it chunk by chunk, which is the only way to carry a streaming API:
-	 * a model completion arrives as server-sent events over minutes, and buffering
-	 * it means the caller waits for the last token to see the first.
-	 *
-	 * 🔑 THE UPSTREAM STATUS IS RELAYED AS THIS RESPONSE'S STATUS, so an upstream
-	 * 4xx does not arrive dressed as a 200 with an error in the body. That is a
-	 * real difference from the JSON path, where the upstream status is a FIELD and
-	 * the HTTP status is always 200 — fine when the caller is PHP reading a map,
-	 * wrong when the caller is an SDK that decides what to do from the status line.
-	 *
-	 * @param string $id The credential UUID.
-	 *
-	 * @return Response The relayed upstream response, or a static error.
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md
-	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	public function brokerStream(string $id): Response {
-		if ($this->currentUid() === null) {
-			return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$token = $this->request->getHeader('X-Credential-Token');
-		$method = (string)$this->request->getParam('method', 'GET');
-		$path = (string)$this->request->getParam('path', '');
-
-		try {
-			$claims = $this->tokenService->verify(token: $token, method: $method, path: $path);
-			if ($claims['credentialId'] !== $id) {
-				throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
-			}
-
-			$stream = $this->broker->streamRequest(
-				credentialId: $id,
-				appId: $claims['appId'],
-				method: $method,
-				path: $path,
-				headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
-				body: $this->normaliseBody(value: $this->request->getParam('body'))
-			);
-		} catch (CredentialAccessDeniedException $e) {
-			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
-		} catch (CredentialUpstreamException $e) {
-			return new JSONResponse(['message' => 'Upstream request failed'], Http::STATUS_BAD_GATEWAY);
-		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
-		}//end try
-
-		return new BrokeredStreamResponse(stream: $stream);
-	}//end brokerStream()
 
 	/**
 	 * POST /api/credentials/{id}/session-request — the session-authenticated browser broker call.
