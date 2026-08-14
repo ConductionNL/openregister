@@ -146,6 +146,8 @@ class WaitNode implements IFlowNode, IFlowNodeConfigKeys {
 	 *
 	 * @return array The items, unchanged, once the wait is over.
 	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-suspending-is-a-run-level-act-so-an-empty-firing-must-not-suspend
+	 *
 	 * @throws FlowSuspension On the first pass that carries items, to pause the
 	 *                        run. An EMPTY firing never suspends: there is
 	 *                        nothing to wait for, and pausing on it would pause
