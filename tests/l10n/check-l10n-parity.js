@@ -18,32 +18,45 @@
  *   • frontend  l10n/en.js   (OC.L10N.register)  -> l10n/<locale>.js
  *   • backend   l10n/en.json ({ translations })  -> l10n/<locale>.json
  * it asserts, for every required locale:
- *   1. the locale file exists,
- *   2. it contains every key present in the English source (no MISSING keys),
- *   3. no value is empty / whitespace-only (no UNTRANSLATED placeholders);
- *      for plural arrays, no element may be empty,
- *   4. no value is byte-identical to the English source (see below),
- *   5. every plural array has exactly as many forms as the locale's OWN
- *      declared nplurals — the only defect here that breaks the runtime.
+ *   1. the locale file exists and parses,
+ *   2. no value is empty / whitespace-only; for plural arrays, no element may be
+ *      empty,
+ *   3. every plural array has exactly as many forms as the locale's OWN declared
+ *      nplurals,
+ * and additionally, for every locale in the FINISHED set:
+ *   4. it contains every key present in the English source (no MISSING keys).
  *
- * On (4): a value equal to the English source used to be allowed and merely
- * counted, on the theory that cognates and acronyms are legitimately identical.
- * That polarity is backwards. An ABSENT key falls back to the English source, so
- * it renders correct text AND stays visibly untranslated to tooling. An entry
- * written as value===key renders the same characters but is indistinguishable
- * from finished work, so it is never revisited — a permanent invisible hole.
- * Cognates therefore belong ABSENT, not written out. Pass --allow-identical to
- * restore the old tolerance during a bulk migration.
+ * What is FATAL and what is not:
+ *   • (2) and (3) are RUNTIME faults — the string renders blank — so they fail
+ *     for every locale, finished or not.
+ *   • (4) fails only for a locale declared finished. Elsewhere a missing key is
+ *     simply work not yet done, and is reported as a backlog so CI stays green
+ *     while translation continues.
+ *   • A value byte-identical to the English source is TOLERATED by default. The
+ *     project writes deliberate cognates out ("CSV", "PDF", "RBAC", or "Flows" in
+ *     Dutch, German and Danish) precisely so a finished locale stays key-for-key
+ *     identical to en.js. Pass --strict-identical to fail on them instead, which
+ *     is the right mode when auditing one locale for placeholder-shaped filler
+ *     but the wrong mode for CI, where it would flag every legitimate cognate.
+ *
+ * A key that is genuinely untranslatable — an input placeholder or example value
+ * — does not belong in t() at all: unwrap it in src/ and delete it from all 37
+ * bundles including en.js, so no locale owes a value for it.
  *
  * Sparse override locales (en, en_US and any other regional en_*) are skipped.
  *
  * Dependency-free pure Node so CI can run it in a bare node container:
- *   node tests/l10n/check-l10n-parity.js [--allow-identical]
+ *   node tests/l10n/check-l10n-parity.js [--strict-identical]
+ *
+ * Env:
+ *   L10N_REQUIRED_LOCALES  override the required set
+ *   L10N_FINISHED_LOCALES  override the finished set
  *
  * Exit codes:
- *   0  every required locale is at full parity for every existing source set
- *   1  one or more locales are missing keys/files, or have empty, English-
- *      identical, or wrong-arity values
+ *   0  every finished locale is at full parity, and no locale has an empty value
+ *      or a wrong-arity plural array
+ *   1  a finished locale is missing a key or file, or any locale has an empty or
+ *      wrong-arity value
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -93,7 +106,7 @@ const REQUIRED = (process.env.L10N_REQUIRED_LOCALES || EUROPEAN)
 // a build pass.
 const FINISHED_DEFAULT = [
 	'nl', 'de', 'fr', 'es', 'it', 'pt', 'sv', 'da', 'nb',
-	'pl', 'cs', 'ru', 'uk', 'el', 'fi', 'hu', 'tr', 'ca',
+	'pl', 'cs', 'ru', 'uk', 'el', 'fi', 'hu', 'tr', 'ca', 'et',
 ].join(',')
 const FINISHED = new Set((process.env.L10N_FINISHED_LOCALES || FINISHED_DEFAULT)
 	.split(',').map((s) => s.trim()).filter(Boolean))
