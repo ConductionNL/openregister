@@ -105,7 +105,7 @@ class FlowRunService {
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $mapper,
-		private readonly FlowStateMapper $stateMapper,
+		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,
 		private readonly LoggerInterface $logger,
