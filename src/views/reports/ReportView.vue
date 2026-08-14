@@ -22,37 +22,35 @@
 							<Refresh v-else :size="20" />
 						</template>
 					</NcButton>
-					<NcActions :force-name="true" :inline="0" menu-name="Export">
+					<NcActions :forceName="true" :inline="0" menuName="Export">
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						<NcActionButton
-							close-after-click
-							@click="downloadAs('xlsx')">
+						<NcActionButton closeAfterClick @click="downloadAs('xlsx')">
 							<template #icon>
 								<MicrosoftExcel :size="20" />
 							</template>
 							{{ t('openregister', 'Excel (.xlsx)') }}
 						</NcActionButton>
-						<NcActionButton close-after-click @click="downloadAs('ods')">
+						<NcActionButton closeAfterClick @click="downloadAs('ods')">
 							<template #icon>
 								<FileDocumentOutline :size="20" />
 							</template>
 							{{ t('openregister', 'OpenDocument (.ods)') }}
 						</NcActionButton>
-						<NcActionButton close-after-click @click="downloadAs('csv')">
+						<NcActionButton closeAfterClick @click="downloadAs('csv')">
 							<template #icon>
 								<FileDelimitedOutline :size="20" />
 							</template>
 							{{ t('openregister', 'CSV') }}
 						</NcActionButton>
-						<NcActionButton close-after-click @click="downloadAs('pdf')">
+						<NcActionButton closeAfterClick @click="downloadAs('pdf')">
 							<template #icon>
 								<FilePdfBox :size="20" />
 							</template>
 							{{ t('openregister', 'PDF') }}
 						</NcActionButton>
-						<NcActionButton close-after-click @click="openHtmlPreview">
+						<NcActionButton closeAfterClick @click="openHtmlPreview">
 							<template #icon>
 								<Printer :size="20" />
 							</template>
@@ -156,7 +154,7 @@
 							:categories="
 								sparklineCategories(widgetState(index).data)
 							"
-							:hide-axes="true"
+							:hideAxes="true"
 							:height="80" />
 
 						<!-- Tile -->
@@ -201,32 +199,30 @@
 </template>
 
 <script>
+import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
 } from '@nextcloud/vue'
-import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
-
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import ChevronLeft from 'vue-material-design-icons/ChevronLeft.vue'
+import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import ChevronLeft from 'vue-material-design-icons/ChevronLeft.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
 import FileDelimitedOutline from 'vue-material-design-icons/FileDelimitedOutline.vue'
-import Printer from 'vue-material-design-icons/Printer.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
-
+import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
+import Printer from 'vue-material-design-icons/Printer.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import { reportsStore } from '../../store/store.js'
 
 const ICON_MAP = {
@@ -278,6 +274,7 @@ export default {
 		dashboard() {
 			return reportsStore.getActiveDashboard
 		},
+
 		/**
 		 * Whether the reports store is loading, for spinner display.
 		 *
@@ -287,6 +284,7 @@ export default {
 		loading() {
 			return reportsStore.isLoading
 		},
+
 		/**
 		 * Widget list for the active dashboard, for display.
 		 *
@@ -296,6 +294,7 @@ export default {
 		widgets() {
 			return this.dashboard?.widgets || []
 		},
+
 		/**
 		 * CSS grid custom properties derived from the dashboard layout.
 		 *

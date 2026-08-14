@@ -4,23 +4,24 @@
  * and exposes getCollection, objectItem, refreshObjectList, etc. via the package store API.
  */
 
-import { getActivePinia } from 'pinia'
 import {
+	auditTrailsPlugin,
 	createObjectStore,
 	filesPlugin,
-	auditTrailsPlugin,
-	relationsPlugin,
-	registerMappingPlugin,
 	lifecyclePlugin,
+	liveUpdatesPlugin,
+	registerMappingPlugin,
+	relationsPlugin,
 	searchPlugin,
 	selectionPlugin,
-	liveUpdatesPlugin,
 } from '@conduction/nextcloud-vue'
+import { getActivePinia } from 'pinia'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 
 /**
  * Derive current type slug from register and schema stores.
+ *
  * @param {import('pinia').Pinia} pinia - The pinia instance
  * @return {string} - The current type slug
  */
@@ -33,6 +34,9 @@ function getCurrentType(pinia) {
 	return `${registerId}-${schemaId}`.replace(/^-|-$/g, '') || ''
 }
 
+/**
+ *
+ */
 function openregisterObjectPlugin() {
 	return {
 		name: 'openregisterObject',
@@ -114,6 +118,7 @@ function openregisterObjectPlugin() {
 
 			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
+			 *
 			 * @param {object} [options] Fetch options: register, schema, limit, page, search
 			 *
 			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (fetchCollection); the data-fetch contract is owned by the shared library, not this app.

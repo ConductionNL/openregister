@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
 
 export const useWebhookStore = defineStore('webhook', {
 	state: () => ({

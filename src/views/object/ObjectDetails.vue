@@ -7,7 +7,7 @@
 						{{ objectStore.objectItem.id }}
 					</h1>
 
-					<NcActions :primary="true" menu-name="Actions">
+					<NcActions :primary="true" menuName="Actions">
 						<template #icon>
 							<LockOutline
 								v-if="objectStore.objectItem.locked"
@@ -15,7 +15,7 @@
 							<DotsHorizontal v-else :size="20" />
 						</template>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('viewObject')">
 							<template #icon>
 								<Pencil :size="20" />
@@ -24,7 +24,7 @@
 						</NcActionButton>
 						<NcActionButton
 							v-if="!objectStore.objectItem.locked"
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('lockObject')">
 							<template #icon>
 								<LockOutline :size="20" />
@@ -33,7 +33,7 @@
 						</NcActionButton>
 						<NcActionButton
 							v-if="objectStore.objectItem.locked"
-							close-after-click
+							closeAfterClick
 							@click="
 								objectStore.unlockObject(objectStore.objectItem.id)
 							">
@@ -43,7 +43,7 @@
 							Unlock
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setDialog('deleteObject')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -51,7 +51,7 @@
 							Delete
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							:disabled="!objectStore.objectItem.folder"
 							@click="openFolder(objectStore.objectItem.folder)">
 							<template #icon>
@@ -65,7 +65,7 @@
 				<NcNoteCard
 					v-if="objectStore.objectItem.locked"
 					type="warning"
-					:show-close="false">
+					:showClose="false">
 					<template #icon>
 						<LockOutline :size="20" />
 					</template>
@@ -140,7 +140,7 @@
 				</div>
 
 				<div class="tabContainer">
-					<AppTabs content-class="mt-3" justified>
+					<AppTabs contentClass="mt-3" justified>
 						<AppTab :title="t('openregister', 'Data')" active>
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
@@ -159,9 +159,9 @@
 									:key="key"
 									:name="key"
 									:bold="false"
-									:force-display-actions="true">
+									:forceDisplayActions="true">
 									<template #icon>
-										<CubeOutline disable-menu :size="44" />
+										<CubeOutline disableMenu :size="44" />
 									</template>
 									<template #subname>
 										{{ relation }}
@@ -179,9 +179,9 @@
 									:key="key"
 									:name="relation.id"
 									:bold="false"
-									:force-display-actions="true">
+									:forceDisplayActions="true">
 									<template #icon>
-										<CubeOutline disable-menu :size="44" />
+										<CubeOutline disableMenu :size="44" />
 									</template>
 									<template #subname>
 										{{ relation.uri }}
@@ -194,17 +194,15 @@
 											> pagination.relations.limit
 									"
 									class="tabPagination"
-									:current-page="pagination.relations.currentPage"
-									:total-pages="relationsTotalPages"
-									:total-items="objectStore.relations?.total"
-									:current-page-size="pagination.relations.limit"
-									:min-items-to-show="10"
-									@page-changed="
+									:currentPage="pagination.relations.currentPage"
+									:totalPages="relationsTotalPages"
+									:totalItems="objectStore.relations?.total"
+									:currentPageSize="pagination.relations.limit"
+									:minItemsToShow="10"
+									@pageChanged="
 										pagination.relations.currentPage = $event
 									"
-									@page-size-changed="
-										onRelationsPageSizeChanged
-									" />
+									@pageSizeChanged="onRelationsPageSizeChanged" />
 							</div>
 							<div v-else class="tabPanel">No relations found</div>
 						</AppTab>
@@ -225,7 +223,7 @@
 									:name="attachment.name ?? attachment?.title"
 									:bold="false"
 									:active="activeAttachment === attachment.id"
-									:force-display-actions="true"
+									:forceDisplayActions="true"
 									@click="
 										() => {
 											if (activeAttachment === attachment.id)
@@ -244,7 +242,7 @@
 										<FileOutline
 											v-else
 											class="publishedIcon"
-											disable-menu
+											disableMenu
 											:size="44" />
 									</template>
 
@@ -267,7 +265,7 @@
 									</template>
 									<template #actions>
 										<NcActionButton
-											close-after-click
+											closeAfterClick
 											@click="openFile(attachment)">
 											<template #icon>
 												<OpenInNew :size="20" />
@@ -284,15 +282,15 @@
 											> pagination.files.limit
 									"
 									class="tabPagination"
-									:current-page="pagination.files.currentPage"
-									:total-pages="filesTotalPages"
-									:total-items="objectStore.files?.total"
-									:current-page-size="pagination.files.limit"
-									:min-items-to-show="10"
-									@page-changed="
+									:currentPage="pagination.files.currentPage"
+									:totalPages="filesTotalPages"
+									:totalItems="objectStore.files?.total"
+									:currentPageSize="pagination.files.limit"
+									:minItemsToShow="10"
+									@pageChanged="
 										pagination.files.currentPage = $event
 									"
-									@page-size-changed="onFilesPageSizeChanged" />
+									@pageSizeChanged="onFilesPageSizeChanged" />
 							</div>
 
 							<div v-if="objectStore.files?.results?.length === 0">
@@ -321,31 +319,31 @@
 							<EmailsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
-								:object-id="relationContext.id" />
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Events">
 							<EventsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
-								:object-id="relationContext.id" />
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Contacts">
 							<ContactsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
-								:object-id="relationContext.id" />
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Deck">
 							<DeckTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
-								:object-id="relationContext.id" />
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Relations">
 							<RelationsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
-								:object-id="relationContext.id" />
+								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab
 							v-if="
@@ -374,7 +372,7 @@
 							<CnIntegrationWidget
 								:register="String(relationContext.register)"
 								:schema="String(relationContext.schema)"
-								:object-id="String(relationContext.id)"
+								:objectId="String(relationContext.id)"
 								surface="detail-page" />
 						</AppTab>
 						<!--
@@ -399,7 +397,7 @@
 							<CnObjectAccessTab
 								:register="String(relationContext.register)"
 								:schema="String(relationContext.schema)"
-								:object-id="String(relationContext.id)" />
+								:objectId="String(relationContext.id)" />
 						</AppTab>
 						<AppTab
 							v-if="objectStore.auditTrails"
@@ -414,13 +412,13 @@
 									"
 									:bold="false"
 									:details="auditTrail.action"
-									:counter-number="
+									:counterNumber="
 										Object.keys(auditTrail.changed).length
 									"
-									:force-display-actions="true">
+									:forceDisplayActions="true">
 									<template #icon>
 										<TimelineQuestionOutline
-											disable-menu
+											disableMenu
 											:size="44" />
 									</template>
 									<template #subname>
@@ -428,7 +426,7 @@
 									</template>
 									<template #actions>
 										<NcActionButton
-											close-after-click
+											closeAfterClick
 											@click="
 												() => {
 													objectStore.setAuditTrailItem(
@@ -453,17 +451,15 @@
 											> pagination.auditTrails.limit
 									"
 									class="tabPagination"
-									:current-page="
-										pagination.auditTrails.currentPage
-									"
-									:total-pages="auditTrailsTotalPages"
-									:total-items="objectStore.auditTrails?.total"
-									:current-page-size="pagination.auditTrails.limit"
-									:min-items-to-show="10"
-									@page-changed="
+									:currentPage="pagination.auditTrails.currentPage"
+									:totalPages="auditTrailsTotalPages"
+									:totalItems="objectStore.auditTrails?.total"
+									:currentPageSize="pagination.auditTrails.limit"
+									:minItemsToShow="10"
+									@pageChanged="
 										pagination.auditTrails.currentPage = $event
 									"
-									@page-size-changed="
+									@pageSizeChanged="
 										onAuditTrailsPageSizeChanged
 									" />
 							</div>
@@ -480,43 +476,42 @@
 
 <script>
 import {
-	NcActions,
-	NcActionButton,
-	NcListItem,
-	NcNoteCard,
-	NcButton,
-	NcCounterBubble,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
-import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import EmailsTab from '../../components/object-relations/EmailsTab.vue'
-import EventsTab from '../../components/object-relations/EventsTab.vue'
-import ContactsTab from '../../components/object-relations/ContactsTab.vue'
-import DeckTab from '../../components/object-relations/DeckTab.vue'
-import RelationsTab from '../../components/object-relations/RelationsTab.vue'
-import { computed } from 'vue'
-import {
 	CnIntegrationWidget,
 	CnObjectAccessTab,
 	CnPagination,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import {
+	NcActionButton,
+	NcActions,
+	NcButton,
+	NcCounterBubble,
+	NcListItem,
+	NcLoadingIcon,
+	NcNoteCard,
+} from '@nextcloud/vue'
+import { computed } from 'vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ContactsTab from '../../components/object-relations/ContactsTab.vue'
+import DeckTab from '../../components/object-relations/DeckTab.vue'
+import EmailsTab from '../../components/object-relations/EmailsTab.vue'
+import EventsTab from '../../components/object-relations/EventsTab.vue'
+import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import { navigationStore, objectStore } from '../../store/store.js'
 
 export default {
 	name: 'ObjectDetails',
@@ -551,6 +546,7 @@ export default {
 		CnIntegrationWidget,
 		CnObjectAccessTab,
 	},
+
 	/**
 	 * Composition-API setup: expose the integration-provider registry and
 	 * template helpers to the Options-API template.
@@ -584,6 +580,7 @@ export default {
 			navigationStore,
 		}
 	},
+
 	data() {
 		return {
 			currentActiveObject: undefined,
@@ -617,10 +614,12 @@ export default {
 					limit: 200,
 					currentPage: objectStore.files?.page || 1,
 				},
+
 				auditTrails: {
 					limit: 200,
 					currentPage: objectStore.auditTrails?.page || 1,
 				},
+
 				relations: {
 					limit: 200,
 					currentPage: objectStore.relations?.page || 1,
@@ -628,6 +627,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Build the (register, schema, id) triple used by the entity-relations
@@ -654,6 +654,7 @@ export default {
 
 			return { register, schema, id }
 		},
+
 		/**
 		 * Total page count for the Files tab paginator. CnPagination does not
 		 * derive this from totalItems/pageSize, unlike bootstrap-vue's
@@ -669,6 +670,7 @@ export default {
 				) || 1
 			)
 		},
+
 		/**
 		 * Total page count for the Audit Trails tab paginator.
 		 *
@@ -683,6 +685,7 @@ export default {
 				) || 1
 			)
 		},
+
 		/**
 		 * Total page count for the Used by (relations) tab paginator.
 		 *
@@ -698,6 +701,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		'pagination.files.currentPage': {
 			/**
@@ -710,6 +714,7 @@ export default {
 				this.getFiles()
 			},
 		},
+
 		'pagination.auditTrails.currentPage': {
 			/**
 			 * Reload audit trails when the audit-trails page changes.
@@ -721,6 +726,7 @@ export default {
 				this.getAuditTrails()
 			},
 		},
+
 		'pagination.relations.currentPage': {
 			/**
 			 * Reload relations when the relations page changes.
@@ -733,6 +739,7 @@ export default {
 			},
 		},
 	},
+
 	/**
 	 * Lifecycle hook: load files, audit trails and relations on mount.
 	 *
@@ -748,6 +755,7 @@ export default {
 		}
 		this.syncLiveSubscription()
 	},
+
 	/**
 	 * Lifecycle hook: reload sub-resources when the viewed object changes.
 	 *
@@ -763,6 +771,7 @@ export default {
 			this.syncLiveSubscription()
 		}
 	},
+
 	/**
 	 * Lifecycle hook: release the live object subscription on unmount.
 	 *
@@ -772,6 +781,7 @@ export default {
 	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
+
 	methods: {
 		/**
 		 * Subscribe to live updates for the currently opened object
@@ -852,6 +862,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Release the current live object subscription and its cache watcher,
 		 * and invalidate any in-flight subscribe (its resolution unsubscribes
@@ -873,6 +884,7 @@ export default {
 			this.liveHandle = null
 			this.liveKey = ''
 		},
+
 		// Race-safe sub-resource fetches. Deep-link navigation primes
 		// objectStore.objectItem from the REST API before the plugins
 		// that own these actions (filesPlugin / auditTrailsPlugin /
@@ -903,6 +915,7 @@ export default {
 					this.fileLoading = false
 				})
 		},
+
 		/**
 		 * Fetch the object's audit trails for display (race-safe).
 		 *
@@ -931,6 +944,7 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+
 		/**
 		 * Fetch the object's relations for display (race-safe).
 		 *
@@ -959,6 +973,7 @@ export default {
 					this.relationsLoading = false
 				})
 		},
+
 		// Page-size handlers. Each mirrors the other paginated views'
 		// onPageSizeChanged: set the new limit, reset to page 1, refetch. The
 		// refetch normally rides the `pagination.<tab>.currentPage` watcher, so
@@ -979,6 +994,7 @@ export default {
 			}
 			this.getFiles()
 		},
+
 		/**
 		 * Apply a new page size to the Audit Trails tab.
 		 *
@@ -994,6 +1010,7 @@ export default {
 			}
 			this.getAuditTrails()
 		},
+
 		/**
 		 * Apply a new page size to the Used by (relations) tab.
 		 *
@@ -1009,8 +1026,10 @@ export default {
 			}
 			this.getRelations()
 		},
+
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
+		 *
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
 		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
@@ -1030,8 +1049,10 @@ export default {
 			// Open URL in new tab
 			window.open(nextcloudUrl, '_blank')
 		},
+
 		/**
 		 * Opens a file in the Nextcloud Files app
+		 *
 		 * @param {object} file - The file object containing id, path, and other metadata
 		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
@@ -1048,8 +1069,10 @@ export default {
 			// Open URL in new tab
 			window.open(filesAppUrl, '_blank')
 		},
+
 		/**
 		 * Formats a file size in bytes to a human readable string
+		 *
 		 * @param {number} bytes - The file size in bytes
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted file size (e.g. "1.5 MB")

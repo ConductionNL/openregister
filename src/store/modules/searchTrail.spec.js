@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { useSearchTrailStore } from './searchTrail.js'
 
 // Mock fetch globally

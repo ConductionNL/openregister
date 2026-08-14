@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 import { createPinia, setActivePinia } from 'pinia'
-
 import { useSearchStore } from './search'
 
 describe('Search Store', () => {

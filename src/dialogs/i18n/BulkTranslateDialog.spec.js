@@ -27,10 +27,12 @@ jest.mock('../../store/modules/translations.js', () => ({
  * @return {*} The invocation result.
  */
 const callComputed = (key, ctx) => BulkTranslateDialog.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) =>
-	BulkTranslateDialog.methods[key].apply(ctx, args)
-const callWatcher = (key, ctx, value) =>
-	BulkTranslateDialog.watch[key].call(ctx, value)
+function callMethod(key, ctx, ...args) {
+	return BulkTranslateDialog.methods[key].apply(ctx, args)
+}
+function callWatcher(key, ctx, value) {
+	return BulkTranslateDialog.watch[key].call(ctx, value)
+}
 
 const baseData = () => BulkTranslateDialog.data()
 

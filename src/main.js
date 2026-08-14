@@ -1,23 +1,24 @@
+import {
+	buildManifest,
+	CnPageRenderer,
+	defaultPageTypes,
+	registerBuiltinDashboardWidgets,
+	registerIcons,
+} from '@conduction/nextcloud-vue'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import pinia from './pinia.js'
 import App from './App.vue'
-import {
-	CnPageRenderer,
-	defaultPageTypes,
-	registerIcons,
-	buildManifest,
-	registerBuiltinDashboardWidgets,
-} from '@conduction/nextcloud-vue'
-import '@conduction/nextcloud-vue/css/index.css'
-import 'gridstack/dist/gridstack.min.css'
+import appIcons from './icons.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
+import pinia from './pinia.js'
 import registry from './registry.js'
-import appIcons from './icons.js'
+
+import '@conduction/nextcloud-vue/css/index.css'
+import 'gridstack/dist/gridstack.min.css'
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.

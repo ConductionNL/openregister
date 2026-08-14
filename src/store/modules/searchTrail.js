@@ -72,6 +72,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 	actions: {
 		/**
 		 * Set search trail list
+		 *
 		 * @param {Array} searchTrailList - The search trail list to set
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -85,6 +86,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set search trail item
+		 *
 		 * @param {object} searchTrailItem - The search trail item to set
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -95,6 +97,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set search trail pagination
+		 *
 		 * @param {object} pagination - The pagination object
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -108,6 +111,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set statistics
+		 *
 		 * @param {object} stats - The statistics object
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -134,6 +138,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set popular terms
+		 *
 		 * @param {object} response - The popular terms response object
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -146,6 +151,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set activity data
+		 *
 		 * @param {object} activityResponse - The activity data response
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -172,6 +178,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set register schema statistics
+		 *
 		 * @param {object} response - The register schema statistics response
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -184,6 +191,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set user agent statistics
+		 *
 		 * @param {object} response - The user agent statistics response
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -196,6 +204,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set search trail filters
+		 *
 		 * @param {object} filters - The filters to set
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -206,6 +215,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Set search trail search
+		 *
 		 * @param {string} search - The search term
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -216,6 +226,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search trails with optional filtering and pagination
+		 *
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
@@ -293,6 +304,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search trail statistics
+		 *
 		 * @param {object} options - Optional { from, to } ISO date filters
 		 * @return {Promise<object>} The statistics data
 		 *
@@ -335,6 +347,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch popular search terms
+		 *
 		 * @param {number} limit - Number of terms to fetch
 		 * @return {Promise<Array>} The popular terms data
 		 *
@@ -373,6 +386,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch search activity data
+		 *
 		 * @param {string} period - The period to fetch (hourly, daily, weekly, monthly)
 		 * @return {Promise<Array>} The activity data
 		 *
@@ -411,6 +425,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch register schema statistics
+		 *
 		 * @return {Promise<Array>} The register schema statistics
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -446,6 +461,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Fetch user agent statistics
+		 *
 		 * @return {Promise<Array>} The user agent statistics
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -481,6 +497,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Delete search trail logs older than specified days
+		 *
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data
 		 *
@@ -512,6 +529,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Refresh search trail list with current filters
+		 *
 		 * @return {Promise} The refresh promise
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -525,6 +543,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get search trail statistics
+		 *
 		 * @return {Promise<object>} The statistics
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -555,6 +574,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get popular search terms
+		 *
 		 * @param {number} limit - Number of terms to get
 		 * @return {Promise<Array>} The popular terms
 		 *
@@ -572,6 +592,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get search activity data
+		 *
 		 * @param {string} period - The period to get data for
 		 * @return {Promise<Array>} The activity data
 		 *
@@ -589,6 +610,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get register schema usage statistics
+		 *
 		 * @return {Promise<Array>} The register schema statistics
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -605,6 +627,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 
 		/**
 		 * Get user agent statistics
+		 *
 		 * @return {Promise<Array>} The user agent statistics
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails

@@ -1,7 +1,7 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
+import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -9,7 +9,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
-		:can-close="false">
+		:canClose="false">
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
@@ -37,8 +37,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 			<div class="object-count-section">
 				<SchemaStatsBlock
-					:object-count="objectCount"
-					:object-stats="objectStats"
+					:objectCount="objectCount"
+					:objectStats="objectStats"
 					:loading="objectCount === 0"
 					:title="t('openregister', 'Objects to be validated')" />
 			</div>
@@ -95,8 +95,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<div v-if="validationResults.invalid_count > 0" class="filter-section">
 				<NcCheckboxRadioSwitch
 					v-model="showOnlyInvalid"
-					:name="'showOnlyInvalid'"
-					:label="'Show only invalid objects'"
+					name="showOnlyInvalid"
+					label="Show only invalid objects"
 					type="switch" />
 			</div>
 
@@ -235,18 +235,17 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
+	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcEmptyContent,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
 
 export default {
 	name: 'ValidateSchema',
@@ -264,6 +263,7 @@ export default {
 		DatabaseOutline,
 		SchemaStatsBlock,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -274,6 +274,7 @@ export default {
 			objectStats: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI display helper — flattens/filters validation results for the table.
@@ -298,6 +299,7 @@ export default {
 			return allResults
 		},
 	},
+
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
@@ -310,8 +312,10 @@ export default {
 					this.loadObjectCount()
 				}
 			},
+
 			immediate: true,
 		},
+
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
 			/**
@@ -323,15 +327,18 @@ export default {
 					this.loadObjectCount()
 				}
 			},
+
 			immediate: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
 	 */
 	async mounted() {
 		await this.loadObjectCount()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.

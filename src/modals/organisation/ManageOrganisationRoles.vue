@@ -6,7 +6,7 @@ import { translate as t } from '@nextcloud/l10n'
 	<NcDialog
 		:name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Roles updated successfully') }}</p>
@@ -66,8 +66,8 @@ import { translate as t } from '@nextcloud/l10n'
 					"
 					:loading="loadingGroups"
 					:filterable="true"
-					label-outside
-					:input-label="t('openregister', 'Nextcloud Groups')"
+					labelOutside
+					:inputLabel="t('openregister', 'Nextcloud Groups')"
 					@update:modelValue="addRole">
 					<template #option="{ name, userCount }">
 						<div class="group-option">
@@ -112,6 +112,8 @@ import { translate as t } from '@nextcloud/l10n'
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcDialog,
@@ -119,15 +121,11 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
-
-import { organisationStore, navigationStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import { navigationStore, organisationStore } from '../../store/store.js'
 
 /**
  * ManageOrganisationRoles
@@ -155,12 +153,14 @@ export default {
 		Close,
 		AccountGroup,
 	},
+
 	data() {
 		return {
 			organisationItem: {
 				name: '',
 				roles: [],
 			},
+
 			selectedRoles: [],
 			originalRoles: [],
 			availableGroups: [],
@@ -172,6 +172,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get available groups that haven't been selected yet
@@ -201,6 +202,7 @@ export default {
 			return JSON.stringify(originalIds) !== JSON.stringify(currentIds)
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook loading initial modal data
 	 */
@@ -208,6 +210,7 @@ export default {
 		this.initializeOrganisationItem()
 		this.loadNextcloudGroups()
 	},
+
 	methods: {
 		/**
 		 * Initialize organisation data

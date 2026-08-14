@@ -48,8 +48,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcTextField } from '@nextcloud/vue'
 
@@ -66,6 +66,7 @@ export default {
 			canChangePassword: true,
 		}
 	},
+
 	/**
 	 * Detect whether the auth backend supports password changes.
 	 *
@@ -82,6 +83,7 @@ export default {
 			// Default to showing the form.
 		}
 	},
+
 	methods: {
 		t,
 		/**

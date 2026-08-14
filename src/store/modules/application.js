@@ -58,6 +58,7 @@ export const useApplicationStore = defineStore('application', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -68,6 +69,7 @@ export const useApplicationStore = defineStore('application', {
 		},
 		/**
 		 * Set query filters for application list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the application list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.

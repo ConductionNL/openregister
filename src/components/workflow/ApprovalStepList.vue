@@ -1,8 +1,8 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 </script>
 
 <template>
@@ -16,7 +16,7 @@ import { generateUrl } from '@nextcloud/router'
 				>{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span
 			>
 			<span class="step-role">{{ t('openregister', step.role) }}</span>
-			<span :class="['status-badge', `status-${step.status}`]">{{
+			<span class="status-badge" :class="[`status-${step.status}`]">{{
 				t('openregister', step.status)
 			}}</span>
 			<span v-if="step.decidedBy" class="decided-by"
@@ -51,15 +51,18 @@ export default {
 	props: {
 		objectUuid: { type: String, required: true },
 	},
+
 	data() {
 		return {
 			steps: [],
 			comments: {},
 		}
 	},
+
 	mounted() {
 		this.fetchSteps()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/approval-workflow/spec.md
@@ -75,12 +78,14 @@ export default {
 				console.error('Failed to fetch steps:', error)
 			}
 		},
+
 		/**
 		 * @spec exclude computed decide-permission display flag (stub returns true), UI plumbing
 		 */
 		canDecide() {
 			return true
 		},
+
 		/**
 		 * @param step
 		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
@@ -96,6 +101,7 @@ export default {
 				console.error('Failed to approve:', error)
 			}
 		},
+
 		/**
 		 * @param step
 		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability

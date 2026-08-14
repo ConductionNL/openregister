@@ -7,12 +7,12 @@
  */
 
 import {
+	applicationStore,
+	organisationStore,
 	registerStore,
 	schemaStore,
-	organisationStore,
-	applicationStore,
-	viewsStore,
 	sourceStore,
+	viewsStore,
 } from '../store/store.js'
 
 /**

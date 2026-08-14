@@ -1,11 +1,11 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	registerStore,
-	schemaStore,
+	dashboardStore,
 	navigationStore,
 	objectStore,
-	dashboardStore,
+	registerStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -15,7 +15,7 @@ import {
 		name="import"
 		:title="t('openregister', 'Import Data into Register')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard
 			v-if="success && importSummary && !hasImportErrors"
@@ -421,7 +421,7 @@ import {
 						|| getFileExtension(selectedFile.name) === 'csv')
 				"
 				v-bind="registerOptions"
-				:model-value="selectedRegisterValue"
+				:modelValue="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
 				:aria-label-combobox="t('openregister', 'Select a register')"
@@ -431,7 +431,7 @@ import {
 			<NcSelect
 				v-if="selectedFile && getFileExtension(selectedFile?.name) === 'csv'"
 				v-bind="schemaOptions"
-				:model-value="selectedSchemaValue"
+				:modelValue="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
 				:aria-label-combobox="t('openregister', 'Select a schema')"
@@ -488,7 +488,7 @@ import {
 
 			<div class="importOptions">
 				<NcCheckboxRadioSwitch
-					:model-value="includeObjects"
+					:modelValue="includeObjects"
 					type="switch"
 					@update:modelValue="includeObjects = $event">
 					Include objects in the import
@@ -498,7 +498,7 @@ import {
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:model-value="validation"
+					:modelValue="validation"
 					type="switch"
 					@update:modelValue="validation = $event">
 					Enable validation
@@ -509,7 +509,7 @@ import {
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:model-value="events"
+					:modelValue="events"
 					type="switch"
 					@update:modelValue="events = $event">
 					Enable events (experimental)
@@ -520,7 +520,7 @@ import {
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:model-value="rbac"
+					:modelValue="rbac"
 					type="switch"
 					@update:modelValue="rbac = $event">
 					Enable RBAC (Role-Based Access Control)
@@ -531,7 +531,7 @@ import {
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:model-value="multi"
+					:modelValue="multi"
 					type="switch"
 					@update:modelValue="multi = $event">
 					Enable Multi-tenancy
@@ -575,17 +575,16 @@ import {
  */
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 
 export default {
 	name: 'ImportRegister',
@@ -602,8 +601,10 @@ export default {
 		Upload,
 		ChevronDown,
 	},
+
 	/**
 	 * Component data properties
+	 *
 	 * @return {object}
 	 */
 	data() {
@@ -629,9 +630,11 @@ export default {
 			heartbeatStatus: null, // Current heartbeat status (healthy, failure count, etc.)
 		}
 	},
+
 	computed: {
 		/**
 		 * Check if the selected file type is valid
+		 *
 		 * @return {boolean}
 		 * @spec exclude computed client-side file-type validation
 		 */
@@ -640,6 +643,7 @@ export default {
 			const extension = this.getFileExtension(this.selectedFile.name)
 			return this.allowedFileTypes.includes(extension)
 		},
+
 		/**
 		 * @spec exclude computed display helper building register select options
 		 */
@@ -651,6 +655,7 @@ export default {
 					title: register.title,
 					register,
 				})),
+
 				reduce: (option) => option.register,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -663,6 +668,7 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * @spec openspec/specs/data-import-export/spec.md
 		 */
@@ -695,6 +701,7 @@ export default {
 						title: schema.title,
 						schema,
 					})),
+
 				reduce: (option) => option.schema,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -707,6 +714,7 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * @spec exclude computed display helper for selected register value
 		 */
@@ -720,6 +728,7 @@ export default {
 				register,
 			}
 		},
+
 		/**
 		 * @spec openspec/specs/data-import-export/spec.md
 		 */
@@ -733,8 +742,10 @@ export default {
 				schema,
 			}
 		},
+
 		/**
 		 * Check if there are any errors in the import results
+		 *
 		 * @return {boolean} - Whether there are import errors
 		 * @spec exclude computed flag for import errors
 		 */
@@ -748,6 +759,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook preloading registers/schemas
 	 */
@@ -768,17 +780,21 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
+
 	methods: {
 		/**
 		 * Get the file extension from a filename
+		 *
 		 * @param {string} filename - The name of the file to get extension from
 		 * @return {string}
 		 */
 		getFileExtension(filename) {
 			return filename.split('.').pop().toLowerCase()
 		},
+
 		/**
 		 * Get the file type label for display
+		 *
 		 * @param {string} filename - The name of the file to get type label from
 		 * @return {string}
 		 * @spec exclude display helper mapping extension to label
@@ -797,8 +813,10 @@ export default {
 					return 'Unknown'
 			}
 		},
+
 		/**
 		 * Handle file input change event
+		 *
 		 * @param {Event} event - The file input change event
 		 * @spec exclude file-input UI handler with client-side validation
 		 */
@@ -820,8 +838,10 @@ export default {
 			this.selectedFile = file
 			this.error = null
 		},
+
 		/**
 		 * Close the import modal and reset state
+		 *
 		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
@@ -842,8 +862,10 @@ export default {
 			this.isHeartbeatActive = false // Reset heartbeat state
 			this.heartbeatStatus = null // Reset heartbeat status
 		},
+
 		/**
 		 * Handle dialog close event from X button
+		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @spec exclude modal open/close UI handler
 		 */
@@ -852,8 +874,10 @@ export default {
 				this.closeModal()
 			}
 		},
+
 		/**
 		 * Import the selected register file and handle the summary
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude modal submit handler delegating to registerStore.importRegister
 		 */
@@ -903,8 +927,10 @@ export default {
 				this.isHeartbeatActive = false
 			}
 		},
+
 		/**
 		 * Format file size for display
+		 *
 		 * @param {number} bytes - The size in bytes
 		 * @return {string}
 		 * @spec exclude display helper formatting file size
@@ -916,6 +942,7 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
+
 		/**
 		 * @param option
 		 * @spec exclude select-change UI handler updating register/schema stores
@@ -945,6 +972,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @param option
 		 * @spec openspec/specs/data-import-export/spec.md
@@ -956,8 +984,10 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
 		/**
 		 * Check based on the selected file type if all the required data is selected
+		 *
 		 * @return {boolean}
 		 * @spec exclude computed form-completion gate
 		 */
@@ -977,8 +1007,10 @@ export default {
 			}
 			return false
 		},
+
 		/**
 		 * Toggle the expanded state for a sheet's details
+		 *
 		 * @param {string} sheetName - The name of the sheet to toggle
 		 * @spec exclude UI toggle for sheet details
 		 */
@@ -986,16 +1018,20 @@ export default {
 			// Use Vue.set to ensure reactivity for dynamic object properties
 			this.expandedSheets[sheetName] = !this.expandedSheets[sheetName]
 		},
+
 		/**
 		 * Toggle the expanded state for a sheet's error details
+		 *
 		 * @param {string} sheetName - The name of the sheet to toggle
 		 * @spec exclude UI toggle for sheet error details
 		 */
 		toggleErrorDetails(sheetName) {
 			this.expandedErrors[sheetName] = !this.expandedErrors[sheetName]
 		},
+
 		/**
 		 * Get the count of invalid objects from validation errors
+		 *
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {number} - The number of invalid objects
 		 * @spec exclude display helper counting validation errors
@@ -1010,8 +1046,10 @@ export default {
 				(error) => error.type === 'ValidationException',
 			).length
 		},
+
 		/**
 		 * Check if the error might be cache-related
+		 *
 		 * @param {object} sheetSummary - The sheet summary object
 		 * @return {boolean} - Whether cache issues might be causing problems
 		 * @spec exclude display helper detecting cache-related errors

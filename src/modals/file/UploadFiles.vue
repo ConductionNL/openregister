@@ -8,7 +8,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 	<NcModal
 		v-if="navigationStore.modal === 'uploadFiles'"
 		ref="modalRef"
-		label-id="AddAttachmentModal"
+		labelId="AddAttachmentModal"
 		@close="closeModal()">
 		<div class="modal__content TestMappingMainModal">
 			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
@@ -17,7 +17,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<NcSelect
 					v-bind="labelOptions"
 					v-model="labelOptions.value"
-					input-label="Label Options Value"
+					inputLabel="Label Options Value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"
 					:taggable="true"
@@ -35,8 +35,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			<div class="container">
 				<div
 					v-if="!labelOptions.value?.length || loading"
-					class="filesListDragDropNotice"
-					:class="'tabPanelFileUpload'">
+					class="filesListDragDropNotice tabPanelFileUpload">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
 							<p>
@@ -114,8 +113,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<div
 					v-if="labelOptions.value?.length && !loading"
 					ref="dropzone"
-					class="filesListDragDropNotice"
-					:class="'tabPanelFileUpload'">
+					class="filesListDragDropNotice tabPanelFileUpload">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
 							<p>
@@ -395,26 +393,26 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import { ref } from 'vue'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
 	NcModal,
 	NcNoteCard,
 	NcSelect,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import { useFileSelection } from './../../composables/UseFileSelection.js'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
-import TagEdit from 'vue-material-design-icons/TagEdit.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import { ref } from 'vue'
 import AlphaXCircle from 'vue-material-design-icons/AlphaXCircle.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import TagEdit from 'vue-material-design-icons/TagEdit.vue'
+import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
+import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
 
@@ -443,6 +441,7 @@ export default {
 		Exclamation,
 		Minus,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -455,13 +454,16 @@ export default {
 				inputLabel: 'Labels',
 				multiple: true,
 			},
+
 			labelOptionsEdit: {
 				inputLabel: 'Labels',
 				multiple: true,
 			},
+
 			tagsLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed passthrough exposing objectStore.objectItem to the template; UI state helper.
@@ -469,6 +471,7 @@ export default {
 		objectItem() {
 			return objectStore.objectItem
 		},
+
 		/**
 		 * @spec exclude Computed register-id extraction from the object's @self metadata; UI state helper.
 		 */
@@ -478,6 +481,7 @@ export default {
 				? register.id
 				: register
 		},
+
 		/**
 		 * @spec exclude Computed schema-id extraction from the object's @self metadata; UI state helper.
 		 */
@@ -485,12 +489,14 @@ export default {
 			const schema = this.objectItem?.['@self']?.schema
 			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
+
 		/**
 		 * @spec exclude Computed object-id extraction from the object's @self metadata; UI state helper.
 		 */
 		objectId() {
 			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
+
 		/**
 		 * @spec exclude Computed passthrough exposing the upload-queue ref to the template; UI state helper.
 		 */
@@ -498,6 +504,7 @@ export default {
 			return files.value
 		},
 	},
+
 	watch: {
 		filesComputed: {
 			/**
@@ -510,8 +517,10 @@ export default {
 					this.addAttachments()
 				}
 			},
+
 			deep: true,
 		},
+
 		labelOptions: {
 			/**
 			 * @spec exclude UI handler/computed reactive label-options sync
@@ -519,12 +528,15 @@ export default {
 			handler() {
 				setTags(this.getLabels())
 			},
+
 			deep: true,
 		},
 	},
+
 	mounted() {
 		this.getAllTags()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close handler resetting upload state and navigationStore.modal; UI plumbing.
@@ -535,6 +547,7 @@ export default {
 			reset()
 			navigationStore.setModal(false)
 		},
+
 		/**
 		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
@@ -643,6 +656,7 @@ export default {
 
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
+		 *
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
 		 * @spec exclude Opens the Files app at the object's folder in a new tab; UI navigation helper.
 		 */
@@ -687,6 +701,7 @@ export default {
 				this.editingTags = null
 			}
 		},
+
 		/**
 		 * @spec exclude Computed-style enablement guard for the upload action; UI state helper.
 		 */

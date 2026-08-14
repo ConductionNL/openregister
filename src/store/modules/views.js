@@ -18,24 +18,28 @@ export const useViewsStore = defineStore('views', {
 	state: () => ({
 		/**
 		 * The currently active view
+		 *
 		 * @type {object|null}
 		 */
 		activeView: null,
 
 		/**
 		 * List of all views
+		 *
 		 * @type {Array}
 		 */
 		viewsList: [],
 
 		/**
 		 * Loading state
+		 *
 		 * @type {boolean}
 		 */
 		loading: false,
 
 		/**
 		 * Error state
+		 *
 		 * @type {string|null}
 		 */
 		error: null,
@@ -44,6 +48,7 @@ export const useViewsStore = defineStore('views', {
 	getters: {
 		/**
 		 * Get the active view
+		 *
 		 * @param {object} state - Store state
 		 * @return {object|null} The active view
 		 */
@@ -51,6 +56,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get all views
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} All views
 		 */
@@ -58,6 +64,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get public views (shared by other users)
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} Public views
 		 */
@@ -66,6 +73,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get user's private views
+		 *
 		 * @param {object} state - Store state
 		 * @return {Array} Private views
 		 */
@@ -74,6 +82,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get default view if one exists
+		 *
 		 * @param {object} state - Store state
 		 * @return {object|null} Default view
 		 */
@@ -82,6 +91,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Check if loading
+		 *
 		 * @param {object} state - Store state
 		 * @return {boolean} Loading state
 		 */
@@ -89,6 +99,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Get error message
+		 *
 		 * @param {object} state - Store state
 		 * @return {string|null} Error message
 		 */
@@ -98,6 +109,7 @@ export const useViewsStore = defineStore('views', {
 	actions: {
 		/**
 		 * Set the active view
+		 *
 		 * @param {object|null} view - The view to set as active
 		 * @return {void}
 		 *
@@ -109,6 +121,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Clear the active view
+		 *
 		 * @return {void}
 		 *
 		 * @spec exclude Pure client UI-state mutator — clears the active saved view. No backend contract.
@@ -119,6 +132,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Fetch all views from the API
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec exclude Thin API passthrough — GET /api/views list; observable contract owned by zoeken-filteren.
@@ -155,6 +169,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Fetch a specific view by ID
+		 *
 		 * @param {string} id - The view ID
 		 * @return {Promise<object>}
 		 *
@@ -196,6 +211,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Create a new view
+		 *
 		 * @param {object} viewData - The view data
 		 * @return {Promise<object>}
 		 *
@@ -241,6 +257,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Update an existing view
+		 *
 		 * @param {string} id - The view ID
 		 * @param {object} viewData - The updated view data
 		 * @return {Promise<object>}
@@ -303,6 +320,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Clean view data for saving - remove read-only fields
+		 *
 		 * @param {object} viewData - The view data to clean
 		 * @return {object} Cleaned view data
 		 *
@@ -322,6 +340,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Delete a view
+		 *
 		 * @param {string} id - The view ID
 		 * @return {Promise<void>}
 		 *
@@ -369,6 +388,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Apply a view's configuration to the current search state
+		 *
 		 * @param {object} view - The view to apply
 		 * @param {object} searchStore - The search store instance
 		 * @return {void}
@@ -435,6 +455,7 @@ export const useViewsStore = defineStore('views', {
 
 		/**
 		 * Create a view from current search state
+		 *
 		 * @param {object} searchStore - The search store instance
 		 * @param {string} name - The name for the new view
 		 * @param {string} description - Optional description
@@ -475,6 +496,7 @@ export const useViewsStore = defineStore('views', {
 		 * Fetch the kanban board for a view: columns derived from
 		 * `presentation.kanban.groupByField` (columnOrder > enum > discovered),
 		 * with cards paginated per the existing object-query machinery.
+		 *
 		 * @param {string} id - The view ID
 		 * @param {object} [params] - Optional query params (`_limit`/`_offset`, applied to every column)
 		 * @return {Promise<{viewType: string, groupByField: string, columns: Array<object>}>}
@@ -519,6 +541,7 @@ export const useViewsStore = defineStore('views', {
 		/**
 		 * Fetch the objects for a calendar view whose `presentation.calendar.dateField`
 		 * falls within the visible range (spanning to `endDateField` when configured).
+		 *
 		 * @param {string} id - The view ID
 		 * @param {string} rangeStart - Inclusive range start (ISO 8601 date/datetime)
 		 * @param {string} rangeEnd - Inclusive range end (ISO 8601 date/datetime)

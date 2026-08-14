@@ -27,11 +27,11 @@
 			<TestHookDialog
 				v-if="testHook"
 				:hook="testHook"
-				:engine-id="testEngineId"
+				:engineId="testEngineId"
 				@close="testHook = null" />
 
 			<section class="tab-section">
-				<WorkflowExecutionPanel :schema-id="schemaId" />
+				<WorkflowExecutionPanel :schemaId="schemaId" />
 			</section>
 
 			<section class="tab-section">
@@ -39,7 +39,7 @@
 			</section>
 
 			<section class="tab-section">
-				<ApprovalChainPanel :schema-id="schemaId" />
+				<ApprovalChainPanel :schemaId="schemaId" />
 			</section>
 		</NcAppContentDetails>
 	</div>
@@ -47,12 +47,12 @@
 
 <script>
 import { NcAppContentDetails } from '@nextcloud/vue'
-import HookList from '../../components/workflow/HookList.vue'
-import HookForm from '../../components/workflow/HookForm.vue'
-import TestHookDialog from '../../dialogs/TestHookDialog.vue'
-import WorkflowExecutionPanel from '../../components/workflow/WorkflowExecutionPanel.vue'
-import ScheduledWorkflowPanel from '../../components/workflow/ScheduledWorkflowPanel.vue'
 import ApprovalChainPanel from '../../components/workflow/ApprovalChainPanel.vue'
+import HookForm from '../../components/workflow/HookForm.vue'
+import HookList from '../../components/workflow/HookList.vue'
+import ScheduledWorkflowPanel from '../../components/workflow/ScheduledWorkflowPanel.vue'
+import WorkflowExecutionPanel from '../../components/workflow/WorkflowExecutionPanel.vue'
+import TestHookDialog from '../../dialogs/TestHookDialog.vue'
 
 export default {
 	name: 'SchemaWorkflowTab',
@@ -65,9 +65,11 @@ export default {
 		ScheduledWorkflowPanel,
 		ApprovalChainPanel,
 	},
+
 	props: {
 		schema: { type: Object, required: true },
 	},
+
 	data() {
 		return {
 			showHookForm: false,
@@ -77,6 +79,7 @@ export default {
 			engines: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude tab-view prop passthrough for the schema id (computed)
@@ -84,6 +87,7 @@ export default {
 		schemaId() {
 			return this.schema?.id || null
 		},
+
 		/**
 		 * @spec exclude tab-view prop passthrough for the schema hooks list (computed)
 		 */
@@ -91,6 +95,7 @@ export default {
 			return this.schema?.hooks || []
 		},
 	},
+
 	methods: {
 		/**
 		 * @param index
@@ -100,6 +105,7 @@ export default {
 			this.editingHookIndex = index
 			this.showHookForm = true
 		},
+
 		/**
 		 * @param index
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the entry removed
@@ -109,6 +115,7 @@ export default {
 			hooks.splice(index, 1)
 			this.$emit('update:hooks', hooks)
 		},
+
 		/**
 		 * @param hookData
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the saved entry
@@ -125,6 +132,7 @@ export default {
 			this.showHookForm = false
 			this.editingHookIndex = null
 		},
+
 		/**
 		 * @param hook
 		 * @spec exclude tab-view test-dialog open plumbing for a hook

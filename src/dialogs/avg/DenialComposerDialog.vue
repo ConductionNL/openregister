@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Compose denial')"
 		size="normal"
-		:can-close="!saving"
+		:canClose="!saving"
 		@closing="$emit('close')">
 		<form class="denialForm" @submit.prevent="onSubmit">
 			<p class="denialIntro">
@@ -17,8 +17,8 @@
 			<NcSelect
 				v-model="ground"
 				:options="groundOptions"
-				:label-outside="false"
-				:input-label="t('openregister', 'Denial ground')"
+				:labelOutside="false"
+				:inputLabel="t('openregister', 'Denial ground')"
 				:aria-label-combobox="t('openregister', 'Denial ground')"
 				:reduce="(o) => o.value"
 				required />
@@ -82,15 +82,14 @@
 
 <script>
 import {
-	NcDialog,
-	NcSelect,
 	NcButton,
+	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
-
-import { avgStore } from '../../store/store.js'
 import { resolveGroundOptions, resolveTemplateRef } from '../../store/modules/avg.js'
+import { avgStore } from '../../store/store.js'
 
 export default {
 	name: 'DenialComposerDialog',
@@ -108,6 +107,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		pack: {
 			type: Object,
 			default: null,
@@ -131,12 +131,14 @@ export default {
 		groundOptions() {
 			return resolveGroundOptions(this.pack)
 		},
+
 		/**
 		 * @spec exclude Presentation glue: looks up the selected option for the citation display.
 		 */
 		selectedGround() {
 			return this.groundOptions.find((o) => o.value === this.ground) ?? null
 		},
+
 		/**
 		 * @spec exclude Presentation glue: resolves the denial-letter template reference (leaf) from the pack.
 		 */

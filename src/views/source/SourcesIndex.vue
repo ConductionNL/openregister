@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { sourceStore, navigationStore } from '../../store/store.js'
+import { navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -14,24 +14,24 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					'Manage your data sources and their configurations',
 				)
 			"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedSources"
 			:columns="tableColumns"
 			:pagination="paginationData"
-			:view-mode="viewMode"
+			:viewMode="viewMode"
 			:selectable="true"
-			:selected-ids="selectedSources"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			:show-mass-delete="false"
-			show-view-toggle
-			:add-label="t('openregister', 'Add Source')"
-			row-key="id"
-			:empty-text="emptyContentName"
+			:selectedIds="selectedSources"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			:showMassDelete="false"
+			showViewToggle
+			:addLabel="t('openregister', 'Add Source')"
+			rowKey="id"
+			:emptyText="emptyContentName"
 			:refreshing="isRefreshing"
 			@add="
 				() => {
@@ -40,9 +40,9 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				}
 			"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
-			@view-mode-change="viewMode = $event"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
+			@viewModeChange="viewMode = $event"
 			@select="onSelect">
 			<!-- Custom card template -->
 			<template #card="{ object }">
@@ -52,12 +52,12 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 							<DatabaseArrowRightOutline :size="20" />
 							{{ object.title }}
 						</h2>
-						<NcActions :primary="true" menu-name="Actions">
+						<NcActions :primary="true" menuName="Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										sourceStore.setSourceItem(object)
@@ -70,7 +70,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'View') }}
 							</NcActionButton>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										sourceStore.setSourceItem(object)
@@ -83,7 +83,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'Edit') }}
 							</NcActionButton>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										sourceStore.setSourceItem(object)
@@ -203,7 +203,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								sourceStore.setSourceItem(row)
@@ -216,7 +216,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'View') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								sourceStore.setSourceItem(row)
@@ -229,7 +229,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								sourceStore.setSourceItem(row)
@@ -248,13 +248,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 
 export default {
 	name: 'SourcesIndex',
@@ -269,6 +269,7 @@ export default {
 		TrashCanOutline,
 		Eye,
 	},
+
 	data() {
 		return {
 			viewMode: 'cards',
@@ -280,6 +281,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Column definitions for the sources table.
@@ -305,6 +307,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Pagination state for display.
 		 *
@@ -318,6 +321,7 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+
 		/**
 		 * Current page slice of the source list. The full list is loaded
 		 * client-side, so CnIndexPage (prop mode) does not slice — we slice here
@@ -331,6 +335,7 @@ export default {
 			const start = (page - 1) * limit
 			return sourceStore.sourceList.slice(start, start + limit)
 		},
+
 		/**
 		 * Empty-state title reflecting loading/empty.
 		 *
@@ -344,6 +349,7 @@ export default {
 			return t('openregister', 'Loading sources...')
 		},
 	},
+
 	/**
 	 * Soft-refresh the source list on mount.
 	 *
@@ -354,6 +360,7 @@ export default {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		sourceStore.refreshSourceList(null, true)
 	},
+
 	methods: {
 		/**
 		 * Reload the source list from the store.
@@ -369,6 +376,7 @@ export default {
 				this.isRefreshing = false
 			}
 		},
+
 		/**
 		 * Handle a page change from the paginator.
 		 *
@@ -379,6 +387,7 @@ export default {
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+
 		/**
 		 * Handle a page-size change from the paginator.
 		 *
@@ -390,6 +399,7 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+
 		/**
 		 * Track the selected source ids for bulk actions.
 		 *
@@ -400,6 +410,7 @@ export default {
 		onSelect(ids) {
 			this.selectedSources = ids
 		},
+
 		/**
 		 * Placeholder register-count display for a source.
 		 *

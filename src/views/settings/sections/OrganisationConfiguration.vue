@@ -38,8 +38,8 @@
 					:loading="loadingOrganisations"
 					:placeholder="t('openregister', 'Select default organisation')"
 					:clearable="false"
-					label-outside
-					:input-label="t('openregister', 'Default Organisation')"
+					labelOutside
+					:inputLabel="t('openregister', 'Default Organisation')"
 					@update:modelValue="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
@@ -77,7 +77,7 @@
 			<div class="setting-control">
 				<NcCheckboxRadioSwitch
 					id="auto-create-default"
-					:model-value="autoCreateDefault"
+					:modelValue="autoCreateDefault"
 					type="switch"
 					@update:modelValue="handleAutoCreateDefaultChange">
 					{{ t('openregister', 'Enable auto-creation') }}
@@ -159,6 +159,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -167,18 +170,14 @@ import {
 	NcSelect,
 	NcSettingsSection,
 } from '@nextcloud/vue'
-
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-
-import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 
 /**
  * OrganisationConfiguration
+ *
  * @module Components
  *
  * Settings section for organisation-related configuration
@@ -201,6 +200,7 @@ export default {
 		Refresh,
 		OfficeBuilding,
 	},
+
 	data() {
 		return {
 			// Current values
@@ -230,6 +230,7 @@ export default {
 			saveSuccessTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Format organisations for NcSelect
@@ -259,12 +260,15 @@ export default {
 			)
 		},
 	},
+
 	async mounted() {
 		await this.loadData()
 	},
+
 	beforeUnmount() {
 		clearTimeout(this.saveSuccessTimeout)
 	},
+
 	methods: {
 		/**
 		 * Load all data

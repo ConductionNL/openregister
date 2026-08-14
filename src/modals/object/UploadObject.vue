@@ -1,15 +1,15 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
-	schemaStore,
+	objectStore,
 	registerStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Upload Object" size="normal" :can-close="false">
+	<NcDialog name="Upload Object" size="normal" :canClose="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
@@ -75,7 +75,7 @@ import {
 				<NcSelect
 					v-bind="registers"
 					v-model="registers.value"
-					:input-label="t('openregister', 'Register')"
+					:inputLabel="t('openregister', 'Register')"
 					:loading="registersLoading"
 					:disabled="loading" />
 			</div>
@@ -85,7 +85,7 @@ import {
 				<NcSelect
 					v-bind="schemas"
 					v-model="schemas.value"
-					:input-label="t('openregister', 'Schemas')"
+					:inputLabel="t('openregister', 'Schemas')"
 					:loading="schemasLoading"
 					:disabled="loading" />
 			</div>
@@ -95,7 +95,7 @@ import {
 				<NcSelect
 					v-bind="mappings"
 					v-model="mappings.value"
-					:input-label="t('openregister', 'Mappings')"
+					:inputLabel="t('openregister', 'Mappings')"
 					:loading="mappingsLoading"
 					:disabled="loading || !mappings.options?.length" />
 
@@ -124,6 +124,7 @@ import {
 </template>
 
 <script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import {
 	NcButton,
 	NcDialog,
@@ -131,14 +132,12 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import { getTheme } from '../../services/getTheme.js'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import { getTheme } from '../../services/getTheme.js'
 
 export default {
 	name: 'UploadObject',
@@ -152,6 +151,7 @@ export default {
 		Cancel,
 		Upload,
 	},
+
 	data() {
 		return {
 			object: '{}',
@@ -167,6 +167,7 @@ export default {
 			hasUpdated: false,
 		}
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook initializing modal data
 	 */
@@ -175,6 +176,7 @@ export default {
 		this.initializeSchemas()
 		this.initializeRegisters()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -199,6 +201,7 @@ export default {
 					this.mappingsLoading = false
 				})
 		},
+
 		/**
 		 * @spec exclude form-state loader populating schema select options
 		 */
@@ -222,6 +225,7 @@ export default {
 					this.schemasLoading = false
 				})
 		},
+
 		/**
 		 * @spec exclude form-state loader populating register select options
 		 */
@@ -245,6 +249,7 @@ export default {
 					this.registersLoading = false
 				})
 		},
+
 		/**
 		 * @spec exclude modal close + form-state reset handler
 		 */
@@ -259,6 +264,7 @@ export default {
 				url: '',
 			}
 		},
+
 		/**
 		 * @spec exclude modal submit handler delegating to objectStore.saveObject
 		 */
@@ -296,12 +302,14 @@ export default {
 					this.loading = false
 				})
 		},
+
 		/**
 		 * @spec exclude JSON formatting UI helper
 		 */
 		prettifyJson() {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
+
 		/**
 		 * @param json
 		 * @spec exclude client-side JSON validation helper

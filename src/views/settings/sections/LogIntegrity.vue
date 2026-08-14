@@ -11,7 +11,7 @@
 		<div class="integrity">
 			<!-- Seal coverage: cheap, loaded on open -->
 			<div v-if="status === null" class="integrity__hint">
-				{{ t('openregister', 'Reading seal coverage …') }}
+				{{ t('openregister', 'Reading seal coverage …') }}
 			</div>
 
 			<div v-else class="integrity__coverage">
@@ -126,7 +126,7 @@
 					</template>
 					{{
 						verifying
-							? t('openregister', 'Verifying …')
+							? t('openregister', 'Verifying …')
 							: t('openregister', 'Verify chain')
 					}}
 				</NcButton>
@@ -205,14 +205,14 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import ShieldAlert from 'vue-material-design-icons/ShieldAlert.vue'
 import ShieldCheck from 'vue-material-design-icons/ShieldCheck.vue'
 import ShieldSearch from 'vue-material-design-icons/ShieldSearch.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * Log Integrity section.

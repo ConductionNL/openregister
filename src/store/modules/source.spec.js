@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
+import { mockSource, Source } from '../../entities/index.js'
 import { useSourceStore } from './source.js'
-import { Source, mockSource } from '../../entities/index.js'
 
 describe('Source Store', () => {
 	beforeEach(() => {

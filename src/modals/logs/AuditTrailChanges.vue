@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +8,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'auditTrailChanges'"
 		:name="t('openregister', 'Audit Trail Changes')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->
@@ -163,14 +163,13 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import { NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
-
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 export default {
 	name: 'AuditTrailChanges',
@@ -187,9 +186,11 @@ export default {
 		Delete,
 		InformationOutline,
 	},
+
 	computed: {
 		/**
 		 * Check if audit trail has changes data
+		 *
 		 * @return {boolean} True if has changes
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -211,6 +212,7 @@ export default {
 
 		/**
 		 * Get processed changes data
+		 *
 		 * @return {object} Processed changes
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -226,8 +228,8 @@ export default {
 					(value) =>
 						typeof value === 'object'
 						&& value !== null
-						&& (Object.prototype.hasOwnProperty.call(value, 'old')
-							|| Object.prototype.hasOwnProperty.call(value, 'new')),
+						&& (Object.hasOwn(value, 'old')
+							|| Object.hasOwn(value, 'new')),
 				)
 
 				if (hasStandardFormat) {
@@ -240,6 +242,7 @@ export default {
 
 		/**
 		 * Check if changes are in table format
+		 *
 		 * @return {boolean} True if table format
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -248,9 +251,11 @@ export default {
 			return Object.keys(this.changes).length > 0
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -261,6 +266,7 @@ export default {
 
 		/**
 		 * Format date for display
+		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
@@ -277,6 +283,7 @@ export default {
 
 		/**
 		 * Format changes data for display
+		 *
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
@@ -304,6 +311,7 @@ export default {
 
 		/**
 		 * Format value for display
+		 *
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
@@ -327,6 +335,7 @@ export default {
 
 		/**
 		 * Check if value is an object
+		 *
 		 * @param {*} value - Value to check
 		 * @return {boolean} True if object
 		 *
@@ -338,22 +347,17 @@ export default {
 
 		/**
 		 * Get change type class
+		 *
 		 * @param {object} change - Change object
 		 * @return {string} CSS class for change type
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		getChangeType(change) {
-			if (
-				!Object.prototype.hasOwnProperty.call(change, 'old')
-				&& Object.prototype.hasOwnProperty.call(change, 'new')
-			) {
+			if (!Object.hasOwn(change, 'old') && Object.hasOwn(change, 'new')) {
 				return 'added'
 			}
-			if (
-				Object.prototype.hasOwnProperty.call(change, 'old')
-				&& !Object.prototype.hasOwnProperty.call(change, 'new')
-			) {
+			if (Object.hasOwn(change, 'old') && !Object.hasOwn(change, 'new')) {
 				return 'removed'
 			}
 			if (change.old !== change.new) {
@@ -364,6 +368,7 @@ export default {
 
 		/**
 		 * Get change type label
+		 *
 		 * @param {object} change - Change object
 		 * @return {string} Human readable change type
 		 *
@@ -385,6 +390,7 @@ export default {
 
 		/**
 		 * Copy changes data to clipboard
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -408,6 +414,7 @@ export default {
 
 		/**
 		 * Switch to full details view
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining

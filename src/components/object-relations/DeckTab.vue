@@ -109,12 +109,12 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
 
 /**
@@ -147,10 +147,12 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		schema: {
 			type: [String, Number],
 			required: true,
 		},
+
 		objectId: {
 			type: String,
 			required: true,
@@ -172,18 +174,21 @@ export default {
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+
 		/**
 		 * @spec exclude computed read of linked deck cards from store; deck-relations contract owned by integration-deck capability
 		 */
 		cards() {
 			return this.store.byObject[this.key] || []
 		},
+
 		/**
 		 * @spec exclude computed read of loading state from store, UI plumbing
 		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */

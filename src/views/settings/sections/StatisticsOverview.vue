@@ -4,7 +4,7 @@
 			name="System Statistics"
 			description="Overview of your Open Register data and potential issues"
 			:loading="loadingStats"
-			:loading-message="t('openregister', 'Loading statistics...')">
+			:loadingMessage="t('openregister', 'Loading statistics...')">
 			<template #actions>
 				<NcButton
 					variant="secondary"
@@ -439,15 +439,15 @@
 		<!-- Mass Validate Modal -->
 		<MassValidateModal
 			:show="showMassValidateModal"
-			:object-stats="objectStats"
-			:mass-validating="massValidating"
+			:objectStats="objectStats"
+			:massValidating="massValidating"
 			:completed="massValidateCompleted"
 			:results="massValidateResults"
 			:config="massValidateConfig"
-			:memory-prediction="memoryPrediction"
-			:memory-prediction-loading="memoryPredictionLoading"
+			:memoryPrediction="memoryPrediction"
+			:memoryPredictionLoading="memoryPredictionLoading"
 			@close="closeMassValidateModal"
-			@start-validate="handleStartMassValidate"
+			@startValidate="handleStartMassValidate"
 			@retry="handleRetryMassValidate"
 			@reset="handleResetMassValidate" />
 
@@ -456,7 +456,7 @@
 			v-if="showClearAuditTrailsConfirmation"
 			:open="showClearAuditTrailsConfirmation"
 			:clearing="clearingAuditTrails"
-			:total-audit-trails="stats.totals.totalAuditTrails"
+			:totalAuditTrails="stats.totals.totalAuditTrails"
 			@closing="hideClearAuditTrailsDialog"
 			@confirm="clearAllAuditTrails" />
 
@@ -465,7 +465,7 @@
 			v-if="showClearSearchTrailsConfirmation"
 			:open="showClearSearchTrailsConfirmation"
 			:clearing="clearingSearchTrails"
-			:total-search-trails="stats.totals.totalSearchTrails"
+			:totalSearchTrails="stats.totals.totalSearchTrails"
 			@closing="hideClearSearchTrailsDialog"
 			@confirm="clearAllSearchTrails" />
 
@@ -474,26 +474,26 @@
 			v-if="showClearBlobObjectsConfirmation"
 			:open="showClearBlobObjectsConfirmation"
 			:clearing="clearingBlobObjects"
-			:total-blob-objects="stats.totals.totalBlobObjects"
+			:totalBlobObjects="stats.totals.totalBlobObjects"
 			@closing="hideClearBlobObjectsDialog"
 			@confirm="clearAllBlobObjects" />
 	</div>
 </template>
 
 <script>
-import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { mapStores } from 'pinia'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ClearAuditTrailsDialog from '../../../dialogs/settings/ClearAuditTrailsDialog.vue'
+import ClearBlobObjectsDialog from '../../../dialogs/settings/ClearBlobObjectsDialog.vue'
+import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrailsDialog.vue'
 // eslint-disable-next-line n/no-unpublished-import -- false positive: this bundled dialog (identical in shape to the sibling dialogs imported below, which lint clean) is app source shipped via webpack, not an npm package.
 import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
-import ClearAuditTrailsDialog from '../../../dialogs/settings/ClearAuditTrailsDialog.vue'
-import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrailsDialog.vue'
-import ClearBlobObjectsDialog from '../../../dialogs/settings/ClearBlobObjectsDialog.vue'
+import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'StatisticsOverview',
@@ -520,12 +520,14 @@ export default {
 				loading: false,
 				totalObjects: 0,
 			},
+
 			massValidateConfig: {
 				mode: 'serial',
 				maxObjects: 0,
 				batchSize: 1000,
 				collectErrors: false,
 			},
+
 			memoryPrediction: {
 				prediction_safe: true,
 				formatted: {
@@ -533,6 +535,7 @@ export default {
 					available: 'Unknown',
 				},
 			},
+
 			memoryPredictionLoading: false,
 		}
 	},

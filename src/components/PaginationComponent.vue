@@ -63,10 +63,10 @@
 			<NcSelect
 				id="pageSize"
 				class="pagination-page-size-select"
-				:model-value="currentPageSizeOption"
+				:modelValue="currentPageSizeOption"
 				:options="pageSizeOptions"
 				:clearable="false"
-				input-label="Items per page"
+				inputLabel="Items per page"
 				@option:selected="changePageSize" />
 		</div>
 	</div>
@@ -90,9 +90,11 @@ export default {
 		NcButton,
 		NcSelect,
 	},
+
 	props: {
 		/**
 		 * Current page number
+		 *
 		 * @type {number}
 		 * @default 1
 		 */
@@ -100,8 +102,10 @@ export default {
 			type: Number,
 			default: 1,
 		},
+
 		/**
 		 * Total number of pages
+		 *
 		 * @type {number}
 		 * @default 1
 		 */
@@ -109,8 +113,10 @@ export default {
 			type: Number,
 			default: 1,
 		},
+
 		/**
 		 * Total number of items
+		 *
 		 * @type {number}
 		 * @default 0
 		 */
@@ -118,8 +124,10 @@ export default {
 			type: Number,
 			default: 0,
 		},
+
 		/**
 		 * Current page size/limit
+		 *
 		 * @type {number}
 		 * @default 20
 		 */
@@ -127,8 +135,10 @@ export default {
 			type: Number,
 			default: 20,
 		},
+
 		/**
 		 * Available page size options
+		 *
 		 * @type {Array<object>}
 		 * @default Standard options array
 		 */
@@ -144,8 +154,10 @@ export default {
 				{ value: 1000, label: '1000' },
 			],
 		},
+
 		/**
 		 * Minimum items needed to show pagination
+		 *
 		 * @type {number}
 		 * @default 10
 		 */
@@ -154,9 +166,11 @@ export default {
 			default: 10,
 		},
 	},
+
 	computed: {
 		/**
 		 * Get current page size option object
+		 *
 		 * @return {object} Current page size option object
 		 * @spec exclude computed lookup of current page-size option, UI plumbing
 		 */
@@ -167,8 +181,10 @@ export default {
 				) || this.pageSizeOptions[1]
 			)
 		},
+
 		/**
 		 * Calculate visible page numbers for pagination
+		 *
 		 * @return {Array} Array of page numbers and ellipsis
 		 * @spec exclude computed ellipsis-aware page-number list for display, UI plumbing
 		 */
@@ -213,9 +229,11 @@ export default {
 			return pages
 		},
 	},
+
 	methods: {
 		/**
 		 * Change to a specific page
+		 *
 		 * @param {number} page - The page number to change to
 		 * @return {void}
 		 * @spec openspec/specs/shared-ui-components/spec.md
@@ -224,14 +242,17 @@ export default {
 			if (page !== this.currentPage && page >= 1 && page <= this.totalPages) {
 				/**
 				 * Emitted when page changes
+				 *
 				 * @event page-changed
 				 * @type {number} The new page number
 				 */
 				this.$emit('page-changed', page)
 			}
 		},
+
 		/**
 		 * Change page size
+		 *
 		 * @param {object} option - Selected page size option
 		 * @return {void}
 		 * @spec exclude emit page-size-changed UI plumbing
@@ -240,6 +261,7 @@ export default {
 			if (option.value !== this.currentPageSize) {
 				/**
 				 * Emitted when page size changes
+				 *
 				 * @event page-size-changed
 				 * @type {number} The new page size
 				 */

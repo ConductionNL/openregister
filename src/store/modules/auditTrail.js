@@ -45,6 +45,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 	actions: {
 		/**
 		 * Set audit trail list
+		 *
 		 * @param {Array} auditTrailList - The audit trail list to set
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -58,6 +59,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Set audit trail item
+		 *
 		 * @param {object} auditTrailItem - The audit trail item to set
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -68,6 +70,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Set audit trail pagination
+		 *
 		 * @param {object} pagination - The pagination object
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -81,6 +84,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Set statistics
+		 *
 		 * @param {object} stats - The statistics object
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -94,6 +98,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Set audit trail filters
+		 *
 		 * @param {object} filters - The filters to set
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -104,6 +109,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Set audit trail search
+		 *
 		 * @param {string} search - The search term
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -114,6 +120,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Fetch audit trails with optional filtering and pagination
+		 *
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
@@ -191,6 +198,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Fetch audit trail statistics
+		 *
 		 * @return {Promise<object>} The statistics data
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -225,6 +233,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Delete a single audit trail
+		 *
 		 * @param {string|number} id - The ID of the audit trail to delete
 		 * @return {Promise<object>} The response data
 		 *
@@ -260,6 +269,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Delete multiple audit trails
+		 *
 		 * @param {Array} ids - Array of audit trail IDs to delete
 		 * @return {Promise<object>} The response data
 		 *
@@ -296,6 +306,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Refresh audit trail list with current filters
+		 *
 		 * @return {Promise} The refresh promise
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -309,6 +320,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Get audit trail statistics
+		 *
 		 * @return {Promise<object>} The statistics
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -331,6 +343,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Get action distribution data
+		 *
 		 * @return {Promise<Array>} The action distribution
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -362,6 +375,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Get top objects by audit trail count
+		 *
 		 * @return {Promise<Array>} The top objects
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining

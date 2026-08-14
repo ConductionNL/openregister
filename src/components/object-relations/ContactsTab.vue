@@ -104,11 +104,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import AccountOff from 'vue-material-design-icons/AccountOff.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AccountOff from 'vue-material-design-icons/AccountOff.vue'
+import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import { useContactRelationsStore } from '../../store/modules/object-relations/contacts.js'
 
@@ -143,10 +143,12 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		schema: {
 			type: [String, Number],
 			required: true,
 		},
+
 		objectId: {
 			type: String,
 			required: true,
@@ -168,18 +170,21 @@ export default {
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+
 		/**
 		 * @spec exclude computed read of linked contacts from store; contact-relations contract owned by integration-contacts capability
 		 */
 		contacts() {
 			return this.store.byObject[this.key] || []
 		},
+
 		/**
 		 * @spec exclude computed read of loading state from store, UI plumbing
 		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */

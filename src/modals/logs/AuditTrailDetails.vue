@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +8,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'auditTrailDetails'"
 		:name="t('openregister', 'Audit Trail Details')"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-details">
 			<!-- Header Information -->
@@ -156,14 +156,13 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import { NcButton, NcDialog } from '@nextcloud/vue'
-
 import Close from 'vue-material-design-icons/Close.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 
 export default {
 	name: 'AuditTrailDetails',
@@ -179,9 +178,11 @@ export default {
 		Delete,
 		Eye,
 	},
+
 	computed: {
 		/**
 		 * Check if audit trail has changes data
+		 *
 		 * @return {boolean} True if has changes
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -203,6 +204,7 @@ export default {
 
 		/**
 		 * Get additional fields that aren't in the main display
+		 *
 		 * @return {Array} Array of key-value pairs
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -232,9 +234,11 @@ export default {
 				)
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -245,6 +249,7 @@ export default {
 
 		/**
 		 * Format date for display
+		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
@@ -261,6 +266,7 @@ export default {
 
 		/**
 		 * Format changes data for display
+		 *
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
@@ -288,6 +294,7 @@ export default {
 
 		/**
 		 * Format JSON data for display
+		 *
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
 		 *
@@ -315,6 +322,7 @@ export default {
 
 		/**
 		 * Format field name for display
+		 *
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
 		 *
@@ -329,6 +337,7 @@ export default {
 
 		/**
 		 * Format field value for display
+		 *
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
@@ -350,6 +359,7 @@ export default {
 
 		/**
 		 * Copy full audit trail data to clipboard
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -371,6 +381,7 @@ export default {
 
 		/**
 		 * Copy changes data to clipboard
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining

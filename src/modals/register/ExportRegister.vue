@@ -1,8 +1,8 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { registerStore, navigationStore, schemaStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,7 +11,7 @@ import axios from '@nextcloud/axios'
 		name="export-register-dialog"
 		:title="t('openregister', 'Export Objects')"
 		size="small"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -31,10 +31,10 @@ import axios from '@nextcloud/axios'
 				<label>{{ t('openregister', 'Export Format:') }}</label>
 				<NcSelect
 					v-model="exportFormat"
-					input-label="Export Format"
+					inputLabel="Export Format"
 					:options="exportFormats"
-					option-label="label"
-					option-value="value"
+					optionLabel="label"
+					optionValue="value"
 					:reduce="(option) => option.value" />
 			</div>
 		</div>
@@ -65,7 +65,6 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
 
@@ -81,6 +80,7 @@ export default {
 		Export,
 		Cancel,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -92,6 +92,7 @@ export default {
 			],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed register title for display; UI presentation helper.
@@ -100,6 +101,7 @@ export default {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+
 		/**
 		 * @spec exclude Computed schema title for display; UI presentation helper.
 		 */
@@ -108,6 +110,7 @@ export default {
 			return item?.title || 'Unknown'
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
@@ -118,6 +121,7 @@ export default {
 			this.error = null
 			this.exportFormat = 'excel'
 		},
+
 		/**
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */

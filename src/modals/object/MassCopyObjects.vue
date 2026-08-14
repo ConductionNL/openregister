@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'massCopyObjects'"
 		:name="`Copy ${objectStore.selectedObjects.length} Objects`"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<div v-if="success === null">
 			<p>
 				{{ t('openregister', 'Create copies of') }}
@@ -24,11 +24,11 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				}}</label>
 				<NcSelect
 					v-model="selectedNamingPattern"
-					input-label="Selected Naming Pattern"
+					inputLabel="Selected Naming Pattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
 					label="label"
-					track-by="value" />
+					trackBy="value" />
 				<p class="help-text">
 					{{ t('openregister', 'Preview:') }} "{{
 						getPreviewName(objectStore.selectedObjects[0])
@@ -87,10 +87,9 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcTextField,
 	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 
@@ -107,6 +106,7 @@ export default {
 		ContentCopy,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -141,8 +141,9 @@ export default {
 			],
 		}
 	},
+
 	watch: {
-		'navigationStore.dialog'(newDialog) {
+		'navigationStore.dialog': function (newDialog) {
 			if (newDialog === 'massCopyObjects') {
 				this.selectedNamingPattern = this.namingPatternOptions[0]
 				this.customPattern = 'Copy of {name}'
@@ -154,6 +155,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -169,6 +171,7 @@ export default {
 			// Clear selection after closing
 			objectStore.selectedObjects = []
 		},
+
 		/**
 		 * @param object
 		 * @spec exclude computed display helper for copy-name preview
@@ -191,6 +194,7 @@ export default {
 				.replace('{name}', originalName)
 				.replace('{id}', object['@self']?.id || object.id || 'ID')
 		},
+
 		/**
 		 * @spec exclude form-state UI helper to refresh preview
 		 */
@@ -198,6 +202,7 @@ export default {
 			// Trigger reactivity for preview update
 			this.$forceUpdate()
 		},
+
 		/**
 		 * @spec exclude modal bulk-submit handler delegating to objectStore.saveObject
 		 */

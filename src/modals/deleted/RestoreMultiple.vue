@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -16,7 +16,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 			)
 		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="restore-step">
 			<h3 class="step-title">
@@ -123,11 +123,9 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Restore from 'vue-material-design-icons/Restore.vue'
 import Close from 'vue-material-design-icons/Close.vue'
-
+import Restore from 'vue-material-design-icons/Restore.vue'
 import eventBus from '../../eventBus.js'
 
 export default {
@@ -143,6 +141,7 @@ export default {
 		Cancel,
 		Close,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -153,6 +152,7 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed passthrough exposing the selected-objects list to the template; UI state helper.
@@ -161,19 +161,23 @@ export default {
 			return this.selectedObjects
 		},
 	},
+
 	watch: {
-		'navigationStore.dialog'(newValue, oldValue) {
+		'navigationStore.dialog': function (newValue, oldValue) {
 			if (newValue === 'restoreMultiple' && oldValue !== 'restoreMultiple') {
 				this.initializeSelection()
 			}
 		},
 	},
+
 	mounted() {
 		this.initializeSelection()
 	},
+
 	methods: {
 		/**
 		 * Initialize selection from transfer data
+		 *
 		 * @return {void}
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
@@ -184,8 +188,10 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * Remove object from selection
+		 *
 		 * @param {string} objectId - ID of object to remove
 		 * @return {void}
 		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
@@ -198,8 +204,10 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * Close the dialog and reset state
+		 *
 		 * @return {void}
 		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
@@ -215,6 +223,7 @@ export default {
 
 		/**
 		 * Restore multiple objects
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
@@ -260,6 +269,7 @@ export default {
 
 		/**
 		 * Get object title from object data
+		 *
 		 * @param {object} object - The object
 		 * @return {string} The object title
 		 */

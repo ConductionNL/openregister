@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * AvgIndex — Cases surface unit tests.
  *

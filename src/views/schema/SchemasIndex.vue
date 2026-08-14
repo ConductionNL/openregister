@@ -1,9 +1,9 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
-	schemaStore,
-	navigationStore,
 	configurationStore,
+	navigationStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -15,25 +15,25 @@ import {
 			:description="
 				t('openregister', 'Manage your data schemas and their properties')
 			"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedSchemas"
 			:columns="tableColumns"
 			:pagination="paginationData"
-			:view-mode="schemaStore.viewMode"
+			:viewMode="schemaStore.viewMode"
 			:selectable="true"
-			:selected-ids="selectedSchemas"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			:show-mass-delete="false"
-			show-view-toggle
-			:add-label="t('openregister', 'Add Schema')"
-			row-key="id"
-			:empty-text="emptyContentName"
-			:row-class="getRowClass"
+			:selectedIds="selectedSchemas"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			:showMassDelete="false"
+			showViewToggle
+			:addLabel="t('openregister', 'Add Schema')"
+			rowKey="id"
+			:emptyText="emptyContentName"
+			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
 			@add="
 				() => {
@@ -42,9 +42,9 @@ import {
 				}
 			"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
-			@view-mode-change="schemaStore.setViewMode($event)"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
+			@viewModeChange="schemaStore.setViewMode($event)"
 			@select="onSelect">
 			<!-- TODO: Convert EditSchema.vue to a component in @conduction/nextcloud-vue -->
 
@@ -146,7 +146,7 @@ import {
 									+ (getManagingConfiguration(row)?.title || '')
 								: ''
 						"
-						close-after-click
+						closeAfterClick
 						:disabled="isManagedByExternalConfig(row)"
 						@click="
 							() => {
@@ -165,7 +165,7 @@ import {
 								? 'Cannot delete: objects are still attached'
 								: ''
 						"
-						close-after-click
+						closeAfterClick
 						:disabled="row.stats?.objects?.total > 0"
 						@click="
 							() => {
@@ -185,12 +185,12 @@ import {
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 
 export default {
@@ -206,12 +206,14 @@ export default {
 		CogOutline,
 		RegisterSchemaCard,
 	},
+
 	data() {
 		return {
 			selectedSchemas: [],
 			isRefreshing: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Column definitions for the schemas table.
@@ -235,6 +237,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Pagination state derived from the schema store, for display.
 		 *
@@ -248,6 +251,7 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+
 		/**
 		 * The schemas for the current page. The full list is loaded client-side,
 		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
@@ -260,6 +264,7 @@ export default {
 			const start = (page - 1) * limit
 			return schemaStore.schemaList.slice(start, start + limit)
 		},
+
 		/**
 		 * Empty-content label shown when the schema list is empty or loading.
 		 *
@@ -273,6 +278,7 @@ export default {
 			return t('openregister', 'Loading schemas...')
 		},
 	},
+
 	/**
 	 * Lifecycle hook: load schemas and configurations on mount.
 	 *
@@ -289,6 +295,7 @@ export default {
 			console.error('Failed to load data:', error)
 		}
 	},
+
 	methods: {
 		/**
 		 * Reload the schema list from the store.

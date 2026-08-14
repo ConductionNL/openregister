@@ -31,7 +31,7 @@
 			v-if="showConfirmModal"
 			:username="username"
 			:reason="reason"
-			:confirm-username="confirmUsername"
+			:confirmUsername="confirmUsername"
 			@close="showConfirmModal = false"
 			@confirm="requestDeactivation"
 			@update:reason="reason = $event"
@@ -46,8 +46,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
@@ -67,6 +67,7 @@ export default {
 			isError: false,
 		}
 	},
+
 	/**
 	 * Prime username + deactivation status on mount.
 	 *
@@ -90,6 +91,7 @@ export default {
 			// Default to active.
 		}
 	},
+
 	methods: {
 		t,
 		/**
@@ -118,6 +120,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Cancel a pending deactivation request.
 		 *
@@ -140,6 +143,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Format a date string for display.
 		 *

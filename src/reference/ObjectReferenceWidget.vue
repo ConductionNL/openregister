@@ -70,10 +70,12 @@ export default {
 			type: String,
 			default: 'openregister-object',
 		},
+
 		richObject: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		accessible: {
 			type: Boolean,
 			default: true,
@@ -87,18 +89,21 @@ export default {
 		title() {
 			return this.richObject.title || t('openregister', 'Unknown Object')
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		objectUrl() {
 			return this.richObject.url || '#'
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		iconUrl() {
 			return this.richObject.icon_url || ''
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
@@ -107,6 +112,7 @@ export default {
 				this.richObject.schema?.title || t('openregister', 'Unknown Schema')
 			)
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
@@ -116,15 +122,18 @@ export default {
 				|| t('openregister', 'Unknown Register')
 			)
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		properties() {
 			return this.richObject.properties || []
 		},
+
 		updated() {
 			return this.richObject.updated || ''
 		},
+
 		/**
 		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */

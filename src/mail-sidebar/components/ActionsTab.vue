@@ -97,7 +97,7 @@
 		<CreateConnectedObjectDialog
 			:show="createDialog.show"
 			:schema="createDialog.schema"
-			:initial-data="createDialog.data"
+			:initialData="createDialog.data"
 			:saving="createSaving"
 			@cancel="closeCreate"
 			@confirm="submitCreate" />
@@ -105,13 +105,13 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
  */
 import { translate as t } from '@nextcloud/l10n'
-import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 
@@ -121,10 +121,12 @@ export default {
 		NcLoadingIcon,
 		CreateConnectedObjectDialog,
 	},
+
 	props: {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			schemas: [],
@@ -143,20 +145,24 @@ export default {
 			createSaving: false,
 		}
 	},
+
 	async created() {
 		await this.loadSchemas()
 	},
+
 	methods: {
 		t,
 		/**
 		 * A schema block is busy while it is creating a new record or
 		 * connecting an existing one — used to swap the search UI for a
 		 * spinner so the user sees the work happening.
+		 *
 		 * @param schema
 		 */
 		isBusy(schema) {
 			return !!this.creating[schema.id] || !!this.linking[schema.id]
 		},
+
 		/**
 		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -171,6 +177,7 @@ export default {
 				|| obj.id
 			)
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -212,6 +219,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -242,6 +250,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -249,6 +258,7 @@ export default {
 		showResults(schema) {
 			this.visibleResults[schema.id] = true
 		},
+
 		/**
 		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -261,6 +271,7 @@ export default {
 				this.searchObjects(schema)
 			}, 300)
 		},
+
 		/**
 		 * @param schema
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -298,6 +309,7 @@ export default {
 				this.searching[schema.id] = false
 			}
 		},
+
 		/**
 		 * Fetch every schema page by page (capped at 10 pages of 500).
 		 *
@@ -320,6 +332,7 @@ export default {
 			}
 			return all
 		},
+
 		/**
 		 * Schemas opt into create-from-email by declaring a field template in
 		 * `configuration.mailObjectTemplate` (e.g. pipelinq lead, shillinq invoice).
@@ -331,6 +344,7 @@ export default {
 			const tpl = schema.configuration?.mailObjectTemplate
 			return tpl && typeof tpl === 'object' && Object.keys(tpl).length > 0
 		},
+
 		/**
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
@@ -346,6 +360,7 @@ export default {
 			this.envelopeCache[this.messageId] = envelope
 			return envelope
 		},
+
 		/**
 		 * Build the placeholder map available to mailObjectTemplate values.
 		 *
@@ -378,6 +393,7 @@ export default {
 				mailRef: `${this.accountId}/${this.messageId}`,
 			}
 		},
+
 		/**
 		 * Substitute {{placeholder}} tokens in string template values; pass
 		 * non-string values (numbers, booleans) through untouched.
@@ -399,6 +415,7 @@ export default {
 			}
 			return data
 		},
+
 		/**
 		 * Open the create-object dialog, prefilled from the schema's
 		 * mailObjectTemplate applied to the current email.
@@ -426,6 +443,7 @@ export default {
 				this.creating[schema.id] = false
 			}
 		},
+
 		/**
 		 * Dismiss the create-object dialog.
 		 *
@@ -435,6 +453,7 @@ export default {
 			if (this.createSaving) return
 			this.createDialog = { show: false, schema: null, data: {} }
 		},
+
 		/**
 		 * Create the object from the (possibly edited) dialog data, then
 		 * connect the email to it.
@@ -472,6 +491,7 @@ export default {
 				this.createSaving = false
 			}
 		},
+
 		/**
 		 * @param schema
 		 * @param obj

@@ -32,12 +32,11 @@
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import BellIcon from 'vue-material-design-icons/Bell.vue'
 import BellOutlineIcon from 'vue-material-design-icons/BellOutline.vue'
-
 import {
+	hasSubscription,
 	listSubscriptions,
 	subscribe,
 	unsubscribe,
-	hasSubscription,
 } from '../services/notificationSubscriptions.js'
 
 export default {
@@ -48,6 +47,7 @@ export default {
 		BellIcon,
 		BellOutlineIcon,
 	},
+
 	props: {
 		/**
 		 * Register id to subscribe to. Either registerId or schemaId
@@ -57,6 +57,7 @@ export default {
 			type: [Number, String],
 			default: null,
 		},
+
 		/**
 		 * Schema id to subscribe to.
 		 */
@@ -65,12 +66,14 @@ export default {
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			loading: false,
 			subscriptions: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed numeric coercion of registerId prop, UI plumbing
@@ -80,6 +83,7 @@ export default {
 				? Number(this.registerId)
 				: null
 		},
+
 		/**
 		 * @spec exclude computed numeric coercion of schemaId prop, UI plumbing
 		 */
@@ -88,6 +92,7 @@ export default {
 				? Number(this.schemaId)
 				: null
 		},
+
 		/**
 		 * @spec exclude computed subscription-state read via service helper; subscription contract owned by notificatie-engine
 		 */
@@ -97,6 +102,7 @@ export default {
 				schemaId: this.schemaIdNum,
 			})
 		},
+
 		/**
 		 * @spec exclude computed button-label display helper, UI plumbing
 		 */
@@ -105,6 +111,7 @@ export default {
 				? t('openregister', 'Subscribed')
 				: t('openregister', 'Subscribe')
 		},
+
 		/**
 		 * @spec exclude computed tooltip/title display helper, UI plumbing
 		 */
@@ -114,9 +121,11 @@ export default {
 				: t('openregister', 'Click to subscribe to notifications')
 		},
 	},
+
 	async mounted() {
 		await this.refresh()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude service passthrough loading subscriptions; subscription contract owned by notificatie-engine
@@ -129,6 +138,7 @@ export default {
 				console.error('Failed to load notification subscriptions:', error)
 			}
 		},
+
 		/**
 		 * @spec exclude service passthrough toggling subscribe/unsubscribe with optimistic UI; contract owned by notificatie-engine
 		 */

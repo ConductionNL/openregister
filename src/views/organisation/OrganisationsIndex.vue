@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -14,31 +14,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					'Manage your organisations and switch between them',
 				)
 			"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedOrganisations"
 			:columns="tableColumns"
 			:pagination="paginationData"
-			:view-mode="organisationStore.viewMode"
+			:viewMode="organisationStore.viewMode"
 			:selectable="true"
-			:selected-ids="selectedOrganisations"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			:show-mass-delete="false"
-			show-view-toggle
-			:add-label="t('openregister', 'Create Organisation')"
-			row-key="uuid"
-			:empty-text="emptyContentName"
-			:row-class="getRowClass"
+			:selectedIds="selectedOrganisations"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			:showMassDelete="false"
+			showViewToggle
+			:addLabel="t('openregister', 'Create Organisation')"
+			rowKey="uuid"
+			:emptyText="emptyContentName"
+			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
 			@add="createOrganisation"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
-			@view-mode-change="organisationStore.setViewMode($event)"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
+			@viewModeChange="organisationStore.setViewMode($event)"
 			@select="onSelect">
 			<!-- Active Organisation Status -->
 			<template #below-header>
@@ -73,7 +73,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<!-- Custom action items in actions bar -->
 			<template #action-items>
 				<NcActionButton
-					close-after-click
+					closeAfterClick
 					@click="navigationStore.setModal('joinOrganisation')">
 					<template #icon>
 						<AccountPlus :size="20" />
@@ -102,12 +102,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</h2>
 						<NcActions
 							:primary="true"
-							:menu-name="t('openregister', 'Actions')">
+							:menuName="t('openregister', 'Actions')">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="viewOrganisation(object)">
 								<template #icon>
 									<Eye :size="20" />
@@ -116,7 +116,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</NcActionButton>
 							<NcActionButton
 								v-if="!isActiveOrganisation(object)"
-								close-after-click
+								closeAfterClick
 								@click="setActiveOrganisation(object.uuid)">
 								<template #icon>
 									<Check :size="20" />
@@ -125,7 +125,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</NcActionButton>
 							<NcActionButton
 								v-if="canEditOrganisation(object)"
-								close-after-click
+								closeAfterClick
 								@click="editOrganisation(object)">
 								<template #icon>
 									<Pencil :size="20" />
@@ -134,7 +134,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</NcActionButton>
 							<NcActionButton
 								v-if="object.website"
-								close-after-click
+								closeAfterClick
 								@click="goToOrganisation(object)">
 								<template #icon>
 									<OpenInNew :size="20" />
@@ -142,7 +142,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'Go to organisation') }}
 							</NcActionButton>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="openJoinModal(object)">
 								<template #icon>
 									<AccountMultiplePlus :size="20" />
@@ -151,7 +151,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</NcActionButton>
 							<NcActionButton
 								v-if="canDeleteOrganisation(object)"
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										organisationStore.setOrganisationItem(object)
@@ -258,7 +258,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="viewOrganisation(row)">
+					<NcActionButton closeAfterClick @click="viewOrganisation(row)">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
@@ -266,7 +266,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					</NcActionButton>
 					<NcActionButton
 						v-if="!isActiveOrganisation(row)"
-						close-after-click
+						closeAfterClick
 						@click="setActiveOrganisation(row.uuid)">
 						<template #icon>
 							<Check :size="20" />
@@ -275,7 +275,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					</NcActionButton>
 					<NcActionButton
 						v-if="canEditOrganisation(row)"
-						close-after-click
+						closeAfterClick
 						@click="editOrganisation(row)">
 						<template #icon>
 							<Pencil :size="20" />
@@ -284,14 +284,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					</NcActionButton>
 					<NcActionButton
 						v-if="row.website"
-						close-after-click
+						closeAfterClick
 						@click="goToOrganisation(row)">
 						<template #icon>
 							<OpenInNew :size="20" />
 						</template>
 						{{ t('openregister', 'Go to organisation') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="openJoinModal(row)">
+					<NcActionButton closeAfterClick @click="openJoinModal(row)">
 						<template #icon>
 							<AccountMultiplePlus :size="20" />
 						</template>
@@ -299,7 +299,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					</NcActionButton>
 					<NcActionButton
 						v-if="canDeleteOrganisation(row)"
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								organisationStore.setOrganisationItem(row)
@@ -319,7 +319,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<SwitchOrganisationModal
 			:show="showOrganisationSwitcher"
 			:organisations="organisationStore.userStats.list"
-			:active-organisation-uuid="organisationStore.userStats.active?.uuid"
+			:activeOrganisationUuid="organisationStore.userStats.active?.uuid"
 			@close="showOrganisationSwitcher = false"
 			@switch="switchToOrganisation" />
 
@@ -328,22 +328,21 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton, NcButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
-import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
+import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
-import Check from 'vue-material-design-icons/Check.vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -365,6 +364,7 @@ export default {
 		Check,
 		SwitchOrganisationModal,
 	},
+
 	data() {
 		return {
 			selectedOrganisations: [],
@@ -372,6 +372,7 @@ export default {
 			isRefreshing: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Column definitions for the organisations table.
@@ -397,6 +398,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Pagination state derived from the organisation store, for display.
 		 *
@@ -410,6 +412,7 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+
 		/**
 		 * Current page slice of the organisation list. The full list is loaded
 		 * client-side, so CnIndexPage (prop mode) does not slice — we slice here
@@ -423,6 +426,7 @@ export default {
 			const start = (page - 1) * limit
 			return organisationStore.userStats.list.slice(start, start + limit)
 		},
+
 		/**
 		 * Empty-state title shown when the organisation list is empty.
 		 *
@@ -436,6 +440,7 @@ export default {
 			return t('openregister', 'Loading organisations...')
 		},
 	},
+
 	/**
 	 * Load Nextcloud groups, organisations, and active org on mount.
 	 *
@@ -453,6 +458,7 @@ export default {
 			console.error('Error loading organisation data:', error)
 		}
 	},
+
 	methods: {
 		/**
 		 * Reload the organisation list from the store.
@@ -468,6 +474,7 @@ export default {
 				this.isRefreshing = false
 			}
 		},
+
 		/**
 		 * Compute the CSS row class marking the active organisation.
 		 *
@@ -480,6 +487,7 @@ export default {
 				? 'viewTableRow--active'
 				: ''
 		},
+
 		/**
 		 * Whether an organisation is the active one.
 		 *
@@ -493,6 +501,7 @@ export default {
 				&& organisationStore.userStats.active.uuid === organisation.uuid
 			)
 		},
+
 		/**
 		 * Resolve the current Nextcloud user id.
 		 *
@@ -503,6 +512,7 @@ export default {
 			// Get current user from global OC object (Nextcloud's way)
 			return window.OC?.getCurrentUser?.()?.uid || 'unknown'
 		},
+
 		/**
 		 * Whether the current user may edit an organisation.
 		 *
@@ -517,6 +527,7 @@ export default {
 				|| organisation.owner === this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * Whether the current user may leave an organisation.
 		 *
@@ -532,6 +543,7 @@ export default {
 				&& organisation.owner !== this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * Whether the current user may delete an organisation.
 		 *
@@ -546,6 +558,7 @@ export default {
 				&& organisation.owner === this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * Set the active organisation and reload app data.
 		 *
@@ -572,6 +585,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Switch to an organisation from the switcher modal.
 		 *
@@ -591,6 +605,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Leave an organisation after confirmation.
 		 *
@@ -620,6 +635,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Track the selected organisation uuids for bulk actions.
 		 *
@@ -630,6 +646,7 @@ export default {
 		onSelect(ids) {
 			this.selectedOrganisations = ids
 		},
+
 		/**
 		 * Handle a page change from the paginator.
 		 *
@@ -640,6 +657,7 @@ export default {
 		onPageChanged(page) {
 			organisationStore.setPagination(page, organisationStore.pagination.limit)
 		},
+
 		/**
 		 * Handle a page-size change from the paginator.
 		 *
@@ -650,6 +668,7 @@ export default {
 		onPageSizeChanged(pageSize) {
 			organisationStore.setPagination(1, pageSize)
 		},
+
 		/**
 		 * Format a date for display.
 		 *
@@ -671,6 +690,7 @@ export default {
 				})
 			)
 		},
+
 		// Organisation Modal Methods
 		/**
 		 * Open the create-organisation modal.
@@ -682,6 +702,7 @@ export default {
 			organisationStore.setOrganisationItem(null)
 			navigationStore.setModal('editOrganisation')
 		},
+
 		/**
 		 * Open the edit-organisation modal for a row.
 		 *
@@ -693,6 +714,7 @@ export default {
 			organisationStore.setOrganisationItem(organisation)
 			navigationStore.setModal('editOrganisation')
 		},
+
 		/**
 		 * Open the join-organisation modal with transfer data.
 		 *
@@ -708,6 +730,7 @@ export default {
 			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
 		},
+
 		/**
 		 * Open the manage-roles modal for a row.
 		 *
@@ -721,6 +744,7 @@ export default {
 			// Open the manage organisation roles modal
 			navigationStore.setModal('manageOrganisationRoles')
 		},
+
 		// Organisation Action Methods
 		/**
 		 * Open the organisation's public catalogue page.
@@ -733,6 +757,7 @@ export default {
 			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisation.id}`
 			window.open(publicationUrl, '_blank')
 		},
+
 		/**
 		 * Open the organisation's website in a new tab.
 		 *

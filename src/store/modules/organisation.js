@@ -70,6 +70,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -80,6 +81,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		},
 		/**
 		 * Set query filters for organisation list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the organisation list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.

@@ -8,6 +8,8 @@
 </template>
 
 <script>
+import { CnFeaturesAndRoadmapView } from '@conduction/nextcloud-vue'
+import { loadState } from '@nextcloud/initial-state'
 /**
  * Features & Roadmap route view (pilot — add-features-roadmap-menu).
  *
@@ -18,8 +20,6 @@
  * below keep the route usable.
  */
 import { NcAppContent } from '@nextcloud/vue'
-import { loadState } from '@nextcloud/initial-state'
-import { CnFeaturesAndRoadmapView } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'FeaturesRoadmapIndex',
@@ -36,6 +36,7 @@ export default {
 				'features_roadmap_repo',
 				'ConductionNL/openregister',
 			),
+
 			features: loadState('openregister', 'features_roadmap_features', []),
 			disabled: loadState('openregister', 'features_roadmap_disabled', false),
 		}

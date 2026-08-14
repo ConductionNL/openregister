@@ -1,7 +1,7 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, schemaStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import formatBytes from '../../services/formatBytes.js'
+import { dashboardStore, navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -29,12 +29,12 @@ import formatBytes from '../../services/formatBytes.js'
 					{{ schemaStore.schemaItem.title }}
 				</h2>
 				<div class="headerActionsContainer">
-					<NcActions :primary="true" menu-name="Actions">
+					<NcActions :primary="true" menuName="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('editSchema')">
 							<template #icon>
 								<Pencil :size="20" />
@@ -42,7 +42,7 @@ import formatBytes from '../../services/formatBytes.js'
 							Edit
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="
 								() => {
 									schemaStore.setSchemaPropertyKey(null)
@@ -55,7 +55,7 @@ import formatBytes from '../../services/formatBytes.js'
 							Add Property
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('uploadSchema')">
 							<template #icon>
 								<Upload :size="20" />
@@ -63,7 +63,7 @@ import formatBytes from '../../services/formatBytes.js'
 							Upload
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="
 								schemaStore.downloadSchema(schemaStore.schemaItem)
 							">
@@ -73,7 +73,7 @@ import formatBytes from '../../services/formatBytes.js'
 							Download
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setDialog('deleteSchema')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -87,19 +87,22 @@ import formatBytes from '../../services/formatBytes.js'
 			<!-- Tab navigation -->
 			<div class="schemaTabNav">
 				<button
-					:class="['tabButton', { active: activeTab === 'dashboard' }]"
+					class="tabButton"
+					:class="[{ active: activeTab === 'dashboard' }]"
 					@click="activeTab = 'dashboard'">
 					<ChartBox :size="16" />
 					{{ t('openregister', 'Dashboard') }}
 				</button>
 				<button
-					:class="['tabButton', { active: activeTab === 'calendar' }]"
+					class="tabButton"
+					:class="[{ active: activeTab === 'calendar' }]"
 					@click="activeTab = 'calendar'">
 					<CalendarMonth :size="16" />
 					{{ t('openregister', 'Calendar') }}
 				</button>
 				<button
-					:class="['tabButton', { active: activeTab === 'workflows' }]"
+					class="tabButton"
+					:class="[{ active: activeTab === 'workflows' }]"
 					@click="activeTab = 'workflows'">
 					<Cog :size="16" />
 					{{ t('openregister', 'Workflows') }}
@@ -186,7 +189,7 @@ import formatBytes from '../../services/formatBytes.js'
 					<!-- Audit Trail Actions Chart -->
 					<div class="chartCard">
 						<h3>Audit Trail Actions</h3>
-						<apexchart
+						<Apexchart
 							type="line"
 							height="350"
 							:options="auditTrailChartOptions"
@@ -199,7 +202,7 @@ import formatBytes from '../../services/formatBytes.js'
 					<!-- Objects by Register Chart -->
 					<div class="chartCard">
 						<h3>Objects by Register</h3>
-						<apexchart
+						<Apexchart
 							type="pie"
 							height="350"
 							:options="registerChartOptions"
@@ -216,7 +219,7 @@ import formatBytes from '../../services/formatBytes.js'
 					<!-- Objects by Size Chart -->
 					<div class="chartCard">
 						<h3>Objects by Size Distribution</h3>
-						<apexchart
+						<Apexchart
 							type="bar"
 							height="350"
 							:options="sizeChartOptions"
@@ -237,25 +240,25 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 import {
-	NcActions,
 	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import VueApexCharts from 'vue3-apexcharts'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
 import ChartBox from 'vue-material-design-icons/ChartBox.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
-import CalendarProviderTab from './CalendarProviderTab.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
+import CalendarProviderTab from './CalendarProviderTab.vue'
 
 export default {
 	name: 'SchemaDetails',
@@ -265,7 +268,7 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		apexchart: VueApexCharts,
+		Apexchart: VueApexCharts,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -279,6 +282,7 @@ export default {
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 	},
+
 	data() {
 		return {
 			activeTab: 'dashboard',
@@ -287,9 +291,11 @@ export default {
 			statsError: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Chart options for the Audit Trail Actions chart
+		 *
 		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
@@ -300,11 +306,14 @@ export default {
 					toolbar: { show: true },
 					zoom: { enabled: true },
 				},
+
 				xaxis: {
 					categories:
 						dashboardStore.chartData?.auditTrailActions?.labels || [],
+
 					title: { text: 'Date' },
 				},
+
 				yaxis: { title: { text: 'Number of Actions' } },
 				colors: ['#41B883', '#E46651', '#00D8FF'],
 				stroke: { curve: 'smooth', width: 2 },
@@ -312,8 +321,10 @@ export default {
 				theme: { mode: 'light' },
 			}
 		},
+
 		/**
 		 * Chart options for the Objects by Register chart
+		 *
 		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
@@ -333,8 +344,10 @@ export default {
 				],
 			}
 		},
+
 		/**
 		 * Chart options for the Objects by Size Distribution chart
+		 *
 		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
@@ -348,16 +361,20 @@ export default {
 						endingShape: 'rounded',
 					},
 				},
+
 				xaxis: {
 					categories:
 						dashboardStore.chartData?.objectsBySize?.labels || [],
+
 					title: { text: 'Size Range' },
 				},
+
 				yaxis: { title: { text: 'Number of Objects' } },
 				fill: { opacity: 1 },
 			}
 		},
 	},
+
 	/**
 	 * Lifecycle hook: load chart data and schema stats on mount.
 	 *
@@ -378,9 +395,11 @@ export default {
 			await this.loadSchemaStats()
 		}
 	},
+
 	methods: {
 		/**
 		 * Load schema statistics from the dedicated stats endpoint
+		 *
 		 * @spec exclude UI plumbing — delegates to the schema store stats fetch
 		 * @return {Promise<void>}
 		 */
@@ -403,8 +422,10 @@ export default {
 				this.statsLoading = false
 			}
 		},
+
 		/**
 		 * Set the active property for editing
+		 *
 		 * @param {string|null} key - The key to process
 		 * @spec exclude UI plumbing — toggles active-property selection state
 		 * @return {void}

@@ -36,54 +36,6 @@ import { h } from 'vue'
  */
 export default {
 	name: 'AppTabs',
-	props: {
-		/** Index of the active tab. */
-		modelValue: {
-			type: Number,
-			default: null,
-		},
-		/** Class applied to the content area (bootstrap-vue compatibility). */
-		contentClass: {
-			type: String,
-			default: '',
-		},
-		/** Stretch the tab buttons to fill the strip. */
-		justified: {
-			type: Boolean,
-			default: false,
-		},
-		/** Pill-shaped tab buttons (bootstrap-vue compatibility). */
-		pills: {
-			type: Boolean,
-			default: false,
-		},
-	},
-	emits: ['update:modelValue'],
-	data() {
-		return {
-			/** Internal index, used when no v-model is bound. */
-			internalIndex: 0,
-			/** Bumped on every child registration to force a re-render. */
-			registrationTick: 0,
-			/** Registered child tabs, in declaration order. */
-			tabs: [],
-		}
-	},
-	computed: {
-		/**
-		 * Currently active tab index.
-		 *
-		 * @return {number} The active index.
-		 */
-		activeIndex() {
-			return this.modelValue === null ? this.internalIndex : this.modelValue
-		},
-	},
-	created() {
-		// Children register through provide/inject rather than by walking
-		// $children, which Vue 3 removed.
-		this.$.provides = this.$.provides || {}
-	},
 	provide() {
 		return {
 			appTabs: {
@@ -99,6 +51,62 @@ export default {
 			},
 		}
 	},
+
+	props: {
+		/** Index of the active tab. */
+		modelValue: {
+			type: Number,
+			default: null,
+		},
+
+		/** Class applied to the content area (bootstrap-vue compatibility). */
+		contentClass: {
+			type: String,
+			default: '',
+		},
+
+		/** Stretch the tab buttons to fill the strip. */
+		justified: {
+			type: Boolean,
+			default: false,
+		},
+
+		/** Pill-shaped tab buttons (bootstrap-vue compatibility). */
+		pills: {
+			type: Boolean,
+			default: false,
+		},
+	},
+
+	emits: ['update:modelValue'],
+	data() {
+		return {
+			/** Internal index, used when no v-model is bound. */
+			internalIndex: 0,
+			/** Bumped on every child registration to force a re-render. */
+			registrationTick: 0,
+			/** Registered child tabs, in declaration order. */
+			tabs: [],
+		}
+	},
+
+	computed: {
+		/**
+		 * Currently active tab index.
+		 *
+		 * @return {number} The active index.
+		 */
+		activeIndex() {
+			return this.modelValue === null ? this.internalIndex : this.modelValue
+		},
+	},
+
+	created() {
+		// Children register through provide/inject rather than by walking
+		// $children, which Vue 3 removed.
+		this.$.provides = this.$.provides || {}
+	},
+
 	methods: {
 		/**
 		 * Register a child tab.
@@ -117,6 +125,7 @@ export default {
 			}
 			this.registrationTick += 1
 		},
+
 		/**
 		 * Unregister a child tab.
 		 *
@@ -127,6 +136,7 @@ export default {
 			this.tabs = this.tabs.filter((entry) => entry.uid !== uid)
 			this.registrationTick += 1
 		},
+
 		/**
 		 * Select a tab by index.
 		 *
@@ -143,6 +153,7 @@ export default {
 			this.internalIndex = index
 			this.$emit('update:modelValue', index)
 		},
+
 		/**
 		 * Arrow-key navigation across the tab strip.
 		 *
@@ -168,6 +179,7 @@ export default {
 				buttons?.[this.activeIndex]?.focus()
 			})
 		},
+
 		/**
 		 * Render the tab strip.
 		 *
@@ -217,6 +229,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * Render the tab strip above the (slot-provided) tab panels.
 	 *
@@ -224,7 +237,7 @@ export default {
 	 */
 	render() {
 		// Referenced so a child registration invalidates this render.
-		// eslint-disable-next-line no-unused-expressions
+
 		this.registrationTick
 		return h('div', { class: 'app-tabs' }, [
 			this.renderTabList(),

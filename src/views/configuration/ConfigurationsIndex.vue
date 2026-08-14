@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -52,29 +52,29 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
 							title="See configurations as cards"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="cards"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Cards
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
 							title="See configurations as a table"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="table"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Table
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions :force-name="true" :inline="3" menu-name="Actions">
+					<NcActions :forceName="true" :inline="3" menuName="Actions">
 						<NcActionButton
 							:primary="true"
-							close-after-click
+							closeAfterClick
 							@click="
 								() => {
 									configurationStore.setConfigurationItem(null)
@@ -87,7 +87,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							Create Configuration
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('importConfiguration')">
 							<template #icon>
 								<CloudUpload :size="20" />
@@ -95,7 +95,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							Import Configuration
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="configurationStore.refreshConfigurationList()">
 							<template #icon>
 								<Refresh :size="20" />
@@ -133,8 +133,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							@edit="handleEdit(configuration)"
 							@export="handleExport(configuration)"
 							@delete="handleDelete(configuration)"
-							@check-version="checkVersion(configuration)"
-							@preview-update="previewUpdate(configuration)" />
+							@checkVersion="checkVersion(configuration)"
+							@previewUpdate="previewUpdate(configuration)" />
 					</div>
 				</template>
 				<template v-else>
@@ -144,7 +144,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:model-value="allSelected"
+											:modelValue="allSelected"
 											:indeterminate="someSelected"
 											:aria-label="
 												t('openregister', 'Select All')
@@ -187,7 +187,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:model-value="
+											:modelValue="
 												selectedConfigurations.includes(
 													configuration.id,
 												)
@@ -311,7 +311,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 												<DotsHorizontal :size="20" />
 											</template>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="
 													() => {
 														configurationStore.setConfigurationItem(
@@ -328,7 +328,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 												View
 											</NcActionButton>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="
 													() => {
 														configurationStore.setConfigurationItem(
@@ -350,7 +350,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 														configuration,
 													)
 												"
-												close-after-click
+												closeAfterClick
 												@click="checkVersion(configuration)">
 												<template #icon>
 													<Sync :size="20" />
@@ -361,7 +361,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 												v-if="
 													hasUpdateAvailable(configuration)
 												"
-												close-after-click
+												closeAfterClick
 												@click="
 													previewUpdate(configuration)
 												">
@@ -371,7 +371,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 												Preview Update
 											</NcActionButton>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="
 													() => {
 														configurationStore.setConfigurationItem(
@@ -388,7 +388,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 												Export
 											</NcActionButton>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="
 													() => {
 														configurationStore.setConfigurationItem(
@@ -416,54 +416,53 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<!-- Pagination -->
 			<PaginationComponent
 				v-if="configurationStore.configurationList.length > 0"
-				:current-page="pagination.page || 1"
-				:total-pages="
+				:currentPage="pagination.page || 1"
+				:totalPages="
 					Math.ceil(
 						configurationStore.configurationList.length
 							/ (pagination.limit || 20),
 					)
 				"
-				:total-items="configurationStore.configurationList.length"
-				:current-page-size="pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:totalItems="configurationStore.configurationList.length"
+				:currentPageSize="pagination.limit || 20"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
+	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Update from 'vue-material-design-icons/Update.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Cloud from 'vue-material-design-icons/Cloud.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
-
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -494,6 +493,7 @@ export default {
 		ApplicationCog,
 		PaginationComponent,
 	},
+
 	data() {
 		return {
 			viewMode: 'cards',
@@ -504,6 +504,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Current page slice of the configuration list.
@@ -517,6 +518,7 @@ export default {
 			const end = start + (this.pagination.limit || 20)
 			return configurationStore.configurationList.slice(start, end)
 		},
+
 		/**
 		 * Whether every configuration is selected.
 		 *
@@ -531,6 +533,7 @@ export default {
 				)
 			)
 		},
+
 		/**
 		 * Whether a partial selection exists (indeterminate state).
 		 *
@@ -540,6 +543,7 @@ export default {
 		someSelected() {
 			return this.selectedConfigurations.length > 0 && !this.allSelected
 		},
+
 		/**
 		 * Empty-state title reflecting loading/error/empty.
 		 *
@@ -556,6 +560,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * Empty-state description reflecting loading/error/empty.
 		 *
@@ -576,6 +581,7 @@ export default {
 			return ''
 		},
 	},
+
 	/**
 	 * Soft-refresh the configuration list on mount.
 	 *
@@ -586,6 +592,7 @@ export default {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		configurationStore.refreshConfigurationList(null, true)
 	},
+
 	methods: {
 		/**
 		 * Toggle selection state for every configuration in the current list.
@@ -604,6 +611,7 @@ export default {
 				this.selectedConfigurations = []
 			}
 		},
+
 		/**
 		 * Toggle selection for a single configuration row.
 		 *
@@ -621,6 +629,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Handle a page change from the paginator.
 		 *
@@ -631,6 +640,7 @@ export default {
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+
 		/**
 		 * Handle a page-size change from the paginator.
 		 *
@@ -642,6 +652,7 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+
 		/**
 		 * Whether a configuration has a remote update available.
 		 *
@@ -656,12 +667,15 @@ export default {
 			// Simple version comparison - remote version different from local
 			return configuration.remoteVersion !== configuration.localVersion
 		},
+
 		isRemoteConfiguration(configuration) {
 			return configuration.sourceType && configuration.sourceType !== 'local'
 		},
+
 		isManualConfiguration(configuration) {
 			return !configuration.sourceType || configuration.sourceType === 'local'
 		},
+
 		/**
 		 * Map a source-type id to a human label.
 		 *
@@ -678,6 +692,7 @@ export default {
 			}
 			return labels[sourceType] || 'Unknown'
 		},
+
 		/**
 		 * Check a configuration's remote version and refresh the list.
 		 *
@@ -715,6 +730,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Open the view-configuration modal for a row.
 		 *
@@ -726,6 +742,7 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('viewConfiguration')
 		},
+
 		/**
 		 * Open the edit-configuration modal for a row.
 		 *
@@ -737,6 +754,7 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('editConfiguration')
 		},
+
 		/**
 		 * Open the export-configuration modal for a row.
 		 *
@@ -748,6 +766,7 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('exportConfiguration')
 		},
+
 		/**
 		 * Open the delete-configuration dialog for a row.
 		 *
@@ -759,6 +778,7 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setDialog('deleteConfiguration')
 		},
+
 		/**
 		 * Open the preview-update modal for a row.
 		 *
@@ -771,6 +791,7 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
+
 		/**
 		 * Build a relative sync-status label for a configuration.
 		 *

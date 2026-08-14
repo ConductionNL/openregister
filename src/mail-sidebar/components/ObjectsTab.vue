@@ -89,6 +89,8 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * Objects tab — linked-objects list inside the three-tab sidebar; also acts
  * as the drop target for Mail attachments (drops upload the file to the
@@ -98,16 +100,13 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
 
 export default {
@@ -121,10 +120,12 @@ export default {
 		LinkVariant,
 		RemoveConnectionDialog,
 	},
+
 	props: {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			objects: [],
@@ -135,6 +136,7 @@ export default {
 			removing: false,
 		}
 	},
+
 	watch: {
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -143,9 +145,11 @@ export default {
 			this.loadObjects()
 		},
 	},
+
 	created() {
 		this.loadObjects()
 	},
+
 	methods: {
 		t,
 		schemaIconComponent,
@@ -153,6 +157,7 @@ export default {
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
 		 *
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		displayName(obj) {
@@ -169,12 +174,14 @@ export default {
 			}
 			return raw
 		},
+
 		/**
 		 * Link to the owning app's detail page when the backend resolved a
 		 * deep link for this object's schema (registered by leaf apps via the
 		 * deep-link registry); otherwise fall back to OpenRegister's own
 		 * object page.
 		 *
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectUrl(obj) {
@@ -190,6 +197,7 @@ export default {
 				},
 			)
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -214,14 +222,17 @@ export default {
 				this.$emit('count', this.objects.length)
 			}
 		},
+
 		/**
 		 * Open the confirmation dialog for removing a connection.
 		 *
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		promptUnlink(obj) {
 			this.removeTarget = obj
 		},
+
 		/**
 		 * Dismiss the confirmation dialog without removing.
 		 */
@@ -231,6 +242,7 @@ export default {
 			}
 			this.removeTarget = null
 		},
+
 		/**
 		 * Confirmed removal of the pending connection.
 		 *
@@ -261,7 +273,9 @@ export default {
 				this.removing = false
 			}
 		},
+
 		/**
+		 * @param event
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onAttachmentDragOver(event) {
@@ -269,7 +283,10 @@ export default {
 				event.dataTransfer.dropEffect = 'copy'
 			}
 		},
+
 		/**
+		 * @param event
+		 * @param obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
@@ -306,7 +323,10 @@ export default {
 				this.uploadingObjectUuid = null
 			}
 		},
+
 		/**
+		 * @param attachment
+		 * @param target
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {

@@ -1,11 +1,11 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
+	configurationStore,
 	dashboardStore,
+	navigationStore,
 	registerStore,
 	schemaStore,
-	navigationStore,
-	configurationStore,
 } from '../../store/store.js'
 </script>
 
@@ -30,7 +30,7 @@ import {
 						<span class="cardTitleText">{{ item.title }}</span>
 					</h2>
 				</div>
-				<NcActions :primary="true" menu-name="Actions">
+				<NcActions :primary="true" menuName="Actions">
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
@@ -43,7 +43,7 @@ import {
 									+ (managingConfiguration?.title || '')
 								: ''
 						"
-						close-after-click
+						closeAfterClick
 						:disabled="isManagedByExternalConfig"
 						@click="openEdit">
 						<template #icon>
@@ -54,7 +54,7 @@ import {
 					<!-- Register-only actions -->
 					<template v-if="type === 'register'">
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="
 								() => {
 									registerStore.setRegisterItem(item)
@@ -67,7 +67,7 @@ import {
 							Publish OAS
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="
 								() => {
 									registerStore.setRegisterItem(item)
@@ -79,13 +79,13 @@ import {
 							</template>
 							Import
 						</NcActionButton>
-						<NcActionButton close-after-click @click="viewOasDoc">
+						<NcActionButton closeAfterClick @click="viewOasDoc">
 							<template #icon>
 								<ApiIcon :size="20" />
 							</template>
 							View API Documentation
 						</NcActionButton>
-						<NcActionButton close-after-click @click="downloadOas">
+						<NcActionButton closeAfterClick @click="downloadOas">
 							<template #icon>
 								<Download :size="20" />
 							</template>
@@ -94,7 +94,7 @@ import {
 					</template>
 					<NcActionButton
 						:title="deleteDisabledTooltip"
-						close-after-click
+						closeAfterClick
 						:disabled="deleteDisabled"
 						@click="openDelete">
 						<template #icon>
@@ -105,7 +105,7 @@ import {
 					<!-- Register-only: View Details -->
 					<NcActionButton
 						v-if="type === 'register'"
-						close-after-click
+						closeAfterClick
 						@click="viewRegisterDetails">
 						<template #icon>
 							<InformationOutline :size="20" />
@@ -242,7 +242,7 @@ import {
 										<DotsHorizontal :size="20" />
 									</template>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="
 											setSchemaConfiguration(schema, 'magic')
 										">
@@ -256,7 +256,7 @@ import {
 										}}Use Magic Table
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="
 											setSchemaConfiguration(schema, 'blob')
 										">
@@ -279,7 +279,7 @@ import {
 												: ''
 										"
 										:disabled="!hasMagicMapping(schema)"
-										close-after-click
+										closeAfterClick
 										@click="syncMagicTable(schema)">
 										<template #icon>
 											<Sync :size="20" />
@@ -287,7 +287,7 @@ import {
 										{{ t('openregister', 'Sync Table') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="validateSchemaObjects(schema)">
 										<template #icon>
 											<CheckCircle :size="20" />
@@ -295,7 +295,7 @@ import {
 										{{ t('openregister', 'Validate') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="
 											() => {
 												registerStore.setRegisterItem(item)
@@ -311,7 +311,7 @@ import {
 										{{ t('openregister', 'Export') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="
 											() => {
 												registerStore.setRegisterItem(item)
@@ -349,7 +349,7 @@ import {
 										:disabled="
 											getSchemaObjectCount(schema) === 0
 										"
-										close-after-click
+										closeAfterClick
 										@click="deleteSchemaObjects(schema, false)">
 										<template #icon>
 											<DeleteOutline :size="20" />
@@ -371,7 +371,7 @@ import {
 												},
 											)
 										"
-										close-after-click
+										closeAfterClick
 										@click="deleteSchemaObjects(schema, true)">
 										<template #icon>
 											<DeleteOutline :size="20" />
@@ -403,7 +403,7 @@ import {
 												: ''
 										"
 										:disabled="getSchemaObjectCount(schema) > 0"
-										close-after-click
+										closeAfterClick
 										@click="removeSchemaFromRegister(schema)">
 										<template #icon>
 											<TrashCanOutline :size="20" />
@@ -482,33 +482,33 @@ import {
 			ref="editRegisterDialog"
 			:schema="registerSchema"
 			:item="item"
-			:dialog-title="t('openregister', 'Edit Register')"
+			:dialogTitle="t('openregister', 'Edit Register')"
 			@confirm="onSaveRegister"
 			@close="showEditRegisterDialog = false">
 			<template #form="{ formData, errors, updateField }">
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:model-value="formData.title || ''"
+						:modelValue="formData.title || ''"
 						:error="!!errors.title"
-						:helper-text="errors.title"
+						:helperText="errors.title"
 						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:model-value="formData.slug || ''"
+						:modelValue="formData.slug || ''"
 						:error="!!errors.slug"
-						:helper-text="errors.slug"
+						:helperText="errors.slug"
 						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:model-value="formData.description || ''"
+						:modelValue="formData.description || ''"
 						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						inputLabel="Schemas"
 						:options="schemaSelectOptions"
-						:model-value="getSchemaSelectValue(formData.schemas)"
+						:modelValue="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:loading="schemasLoading"
 						@update:modelValue="
 							(vals) => updateField('schemas', vals)
@@ -520,35 +520,35 @@ import {
 </template>
 
 <script>
-import {
-	NcActions,
-	NcActionButton,
-	NcButton,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
-} from '@nextcloud/vue'
 import { CnFormDialog } from '@conduction/nextcloud-vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import Export from 'vue-material-design-icons/Export.vue'
-import ApiIcon from 'vue-material-design-icons/Api.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Sync from 'vue-material-design-icons/Sync.vue'
-import Table from 'vue-material-design-icons/Table.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import {
+	NcActionButton,
+	NcActions,
+	NcButton,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import ApiIcon from 'vue-material-design-icons/Api.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Export from 'vue-material-design-icons/Export.vue'
+import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
+import Table from 'vue-material-design-icons/Table.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 
 export default {
 	name: 'RegisterSchemaCard',
@@ -580,17 +580,20 @@ export default {
 		CheckCircle,
 		DeleteOutline,
 	},
+
 	props: {
 		item: {
 			type: Object,
 			required: true,
 		},
+
 		type: {
 			type: String,
 			required: true,
 			validator: (v) => ['register', 'schema'].includes(v),
 		},
 	},
+
 	emits: ['refresh'],
 	/**
 	 * @spec exclude local data state; showEditRegisterDialog toggles the edit dialog, UI plumbing
@@ -604,6 +607,7 @@ export default {
 			schemasLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed lookup of managing configuration from store, UI plumbing
@@ -628,6 +632,7 @@ export default {
 				) || null
 			)
 		},
+
 		/**
 		 * @spec exclude computed external-management display flag, UI plumbing
 		 */
@@ -640,6 +645,7 @@ export default {
 				|| config.isLocal === false
 			)
 		},
+
 		/**
 		 * @spec exclude computed local-management display flag, UI plumbing
 		 */
@@ -652,9 +658,11 @@ export default {
 				|| config.isLocal === true
 			)
 		},
+
 		hasObjects() {
 			return this.item.stats?.objects?.total > 0
 		},
+
 		/**
 		 * @spec exclude computed delete-disabled display flag from object stats, UI plumbing
 		 */
@@ -664,6 +672,7 @@ export default {
 			}
 			return this.item.stats?.objects?.total > 0
 		},
+
 		/**
 		 * @spec exclude computed delete-disabled tooltip display helper, UI plumbing
 		 */
@@ -673,6 +682,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * @spec exclude computed paginated schema/property list for display, UI plumbing
 		 */
@@ -688,6 +698,7 @@ export default {
 			if (this.itemsExpanded) return sorted
 			return Object.fromEntries(entries.slice(0, 5))
 		},
+
 		/**
 		 * @spec exclude computed remaining-items count for "view more" display, UI plumbing
 		 */
@@ -699,6 +710,7 @@ export default {
 			const total = Object.keys(this.item.properties || {}).length
 			return Math.max(0, total - 5)
 		},
+
 		/**
 		 * @spec exclude computed inline form-schema definition for edit dialog, UI plumbing
 		 */
@@ -713,6 +725,7 @@ export default {
 						minLength: 1,
 						order: 1,
 					},
+
 					slug: {
 						type: 'string',
 						title: t('openregister', 'Slug'),
@@ -720,20 +733,24 @@ export default {
 						minLength: 1,
 						order: 2,
 					},
+
 					description: {
 						type: 'string',
 						title: t('openregister', 'Description'),
 						order: 3,
 					},
+
 					schemas: {
 						type: 'array',
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
+
 		/**
 		 * @spec exclude computed order-sorted property list for display, UI plumbing
 		 */
@@ -756,6 +773,7 @@ export default {
 				}, {})
 		},
 	},
+
 	watch: {
 		/**
 		 * @param val
@@ -767,6 +785,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		// Common methods
 		/**
@@ -780,6 +799,7 @@ export default {
 				navigationStore.setModal('editSchema')
 			}
 		},
+
 		/**
 		 * @spec exclude store passthrough loading schema select options, UI plumbing
 		 */
@@ -797,6 +817,7 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+
 		/**
 		 * @param schemas
 		 * @spec exclude computed mapping of schema ids to select options, UI plumbing
@@ -812,6 +833,7 @@ export default {
 				)
 			})
 		},
+
 		/**
 		 * @param formData
 		 * @spec exclude store passthrough saving register from dialog + refresh emit, contract owned by register capability
@@ -830,6 +852,7 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+
 		/**
 		 * @spec exclude store/dialog-dispatch UI handler opening delete, contract owned by register/schema capability
 		 */

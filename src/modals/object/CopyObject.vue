@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -15,7 +15,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<div v-if="success === null">
 			<p>
 				Create a copy of
@@ -75,7 +75,6 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 
@@ -91,6 +90,7 @@ export default {
 		ContentCopy,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -100,6 +100,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed display helper for default copy name
@@ -114,8 +115,9 @@ export default {
 			return `Copy of ${originalName}`
 		},
 	},
+
 	watch: {
-		'navigationStore.dialog'(newDialog) {
+		'navigationStore.dialog': function (newDialog) {
 			if (newDialog === 'copyObject') {
 				this.copyName = this.defaultCopyName
 				this.success = null
@@ -124,6 +126,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -136,6 +139,7 @@ export default {
 			this.error = false
 			this.copyName = ''
 		},
+
 		/**
 		 * @spec exclude modal submit handler delegating to objectStore.saveObject
 		 */

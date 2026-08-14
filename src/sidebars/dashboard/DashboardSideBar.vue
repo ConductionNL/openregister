@@ -1,10 +1,10 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
+	dashboardStore,
 	objectStore,
 	registerStore,
 	schemaStore,
-	dashboardStore,
 } from '../../store/store.js'
 </script>
 
@@ -40,10 +40,10 @@ import {
 					<NcSelect
 						v-bind="registerOptions"
 						id="registerSelect"
-						:model-value="selectedRegisterValue"
+						:modelValue="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
-						:input-label="t('openregister', 'Register')"
+						:inputLabel="t('openregister', 'Register')"
 						:placeholder="t('openregister', 'Select a register')"
 						@update:modelValue="handleRegisterChange" />
 				</div>
@@ -54,10 +54,10 @@ import {
 					<NcSelect
 						v-bind="schemaOptions"
 						id="schemaSelect"
-						:model-value="selectedSchemaValue"
+						:modelValue="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
-						:input-label="t('openregister', 'Schema')"
+						:inputLabel="t('openregister', 'Schema')"
 						:placeholder="t('openregister', 'Select a schema')"
 						@update:modelValue="handleSchemaChange" />
 				</div>
@@ -277,14 +277,14 @@ import {
 </template>
 
 <script>
-import formatBytes from '../../services/formatBytes.js'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcSelect,
 	NcLoadingIcon,
+	NcSelect,
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
+import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'DashboardSideBar',
@@ -295,6 +295,7 @@ export default {
 		NcLoadingIcon,
 		Magnify,
 	},
+
 	data() {
 		return {
 			registerLoading: false,
@@ -308,6 +309,7 @@ export default {
 			isSidebarOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Build the register dropdown options for the dashboard filter.
@@ -323,6 +325,7 @@ export default {
 					title: register.title,
 					register,
 				})),
+
 				reduce: (option) => option.register,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -335,6 +338,7 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Build the schema dropdown options scoped to the selected register.
 		 *
@@ -357,6 +361,7 @@ export default {
 						title: schema.title,
 						schema,
 					})),
+
 				reduce: (option) => option.schema,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -369,6 +374,7 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected register into NcSelect value shape.
 		 *
@@ -385,6 +391,7 @@ export default {
 				register,
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected schema into NcSelect value shape.
 		 *
@@ -401,6 +408,7 @@ export default {
 				schema,
 			}
 		},
+
 		/**
 		 * Flatten the object metadata map into column descriptors for display.
 		 *
@@ -413,8 +421,10 @@ export default {
 				...meta,
 			}))
 		},
+
 		/**
 		 * Get system totals from dashboardStore
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
@@ -423,8 +433,10 @@ export default {
 				(register) => register.title === 'System Totals',
 			)
 		},
+
 		/**
 		 * Get orphaned items from dashboardStore
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
@@ -433,8 +445,10 @@ export default {
 				(register) => register.title === 'Orphaned Items',
 			)
 		},
+
 		/**
 		 * Get filtered registers (excluding system and orphaned)
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array}
 		 */
@@ -445,8 +459,10 @@ export default {
 					&& register.title !== 'Orphaned Items',
 			)
 		},
+
 		/**
 		 * Get total number of schemas in filtered registers
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {number}
 		 */
@@ -456,6 +472,7 @@ export default {
 			}, 0)
 		},
 	},
+
 	watch: {
 		searchQuery(value) {
 			if (this.searchTimeout) {
@@ -473,6 +490,7 @@ export default {
 				}
 			}, 1000)
 		},
+
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
@@ -489,9 +507,11 @@ export default {
 					objectStore.initializeColumnFilters()
 				}
 			},
+
 			deep: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Lifecycle plumbing; fire-and-forget load of register/schema/object lists for the dashboard filter, no domain logic.
 	 */
@@ -522,6 +542,7 @@ export default {
 			objectStore.refreshObjectList()
 		}
 	},
+
 	methods: {
 		/**
 		 * Apply a new register selection and reset the dependent schema state.
@@ -534,6 +555,7 @@ export default {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+
 		/**
 		 * Apply a schema selection: set the schema, initialise its properties, and
 		 * refresh the object list for the new filter context.
@@ -549,6 +571,7 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
 		/**
 		 * Re-run the object search for the current register/schema with the search term.
 		 *

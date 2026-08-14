@@ -1,14 +1,14 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
+import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
-		:name="'Analyze Schema Properties'"
+		name="Analyze Schema Properties"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -54,8 +54,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<div v-else-if="!explorationData" class="no-analysis">
 					<div class="analysis-info">
 						<SchemaStatsBlock
-							:object-count="objectCount"
-							:object-stats="objectStats"
+							:objectCount="objectCount"
+							:objectStats="objectStats"
 							:loading="false"
 							:title="t('openregister', 'Objects to be analyzed')" />
 
@@ -327,7 +327,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						}}</label>
 						<NcSelect
 							v-model="confidenceFilter"
-							input-label="Confidence Filter"
+							inputLabel="Confidence Filter"
 							:options="confidenceFilterOptions" />
 					</div>
 
@@ -337,7 +337,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						}}</label>
 						<NcSelect
 							v-model="typeFilter"
-							input-label="Type Filter"
+							inputLabel="Type Filter"
 							:options="typeFilterOptions" />
 					</div>
 				</div>
@@ -425,7 +425,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 							<div class="property-actions">
 								<NcCheckboxRadioSwitch
-									:model-value="
+									:modelValue="
 										isPropertySelected(suggestion.property_name)
 									"
 									:aria-labelledby="`explore-property-${index}`"
@@ -677,8 +677,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 										].type
 									"
 									:options="typeOptions"
-									:input-label="t('openregister', 'Property Type')"
-									:label-outside="true" />
+									:inputLabel="t('openregister', 'Property Type')"
+									:labelOutside="true" />
 
 								<NcSelect
 									v-if="suggestion.detected_format"
@@ -688,8 +688,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 										].format
 									"
 									:options="formatOptions(suggestion)"
-									:input-label="t('openregister', 'Format')"
-									:label-outside="true" />
+									:inputLabel="t('openregister', 'Format')"
+									:labelOutside="true" />
 
 								<!-- String constraints -->
 								<div
@@ -1000,13 +1000,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					v-if="filteredSuggestions.length > itemsPerPage"
 					class="pagination-controls">
 					<PaginationComponent
-						:current-page="currentPage"
-						:total-pages="totalPages"
-						:total-items="filteredSuggestions.length"
-						:current-page-size="itemsPerPage"
-						:min-items-to-show="5"
-						@page-changed="onPageChanged"
-						@page-size-changed="onPageSizeChanged" />
+						:currentPage="currentPage"
+						:totalPages="totalPages"
+						:totalItems="filteredSuggestions.length"
+						:currentPageSize="itemsPerPage"
+						:minItemsToShow="5"
+						@pageChanged="onPageChanged"
+						@pageSizeChanged="onPageSizeChanged" />
 				</div>
 
 				<!-- Selection Summary and Actions -->
@@ -1075,19 +1075,19 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 <script>
 import {
-	NcDialog,
-	NcNoteCard,
 	NcButton,
-	NcProgressBar,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
 	NcCheckboxRadioSwitch,
+	NcDialog,
 	NcLoadingIcon,
+	NcNoteCard,
+	NcProgressBar,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
+import Check from 'vue-material-design-icons/Check.vue'
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Check from 'vue-material-design-icons/Check.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
@@ -1108,6 +1108,7 @@ export default {
 		PaginationComponent,
 		SchemaStatsBlock,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -1127,6 +1128,7 @@ export default {
 			objectStats: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI display helper — static property-type select options.
@@ -1141,6 +1143,7 @@ export default {
 				{ label: 'Object', value: 'object', key: 'object' },
 			]
 		},
+
 		/**
 		 * @spec exclude UI display helper — builds format select options including any detected format.
 		 */
@@ -1181,6 +1184,7 @@ export default {
 				return commonFormats
 			}
 		},
+
 		/**
 		 * @spec exclude UI display helper — static confidence-filter select options.
 		 */
@@ -1208,6 +1212,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * @spec exclude UI display helper — static type-filter select options.
 		 */
@@ -1226,6 +1231,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * @spec exclude UI display helper — applies search/confidence/type/selection filters to suggestions.
 		 */
@@ -1274,6 +1280,7 @@ export default {
 
 			return filtered
 		},
+
 		/**
 		 * @spec exclude UI pagination helper — slices filtered suggestions for the current page.
 		 */
@@ -1282,6 +1289,7 @@ export default {
 			const end = start + this.itemsPerPage
 			return this.filteredSuggestions.slice(start, end)
 		},
+
 		/**
 		 * @spec exclude UI pagination helper — computes the total page count.
 		 */
@@ -1289,6 +1297,7 @@ export default {
 			return Math.ceil(this.filteredSuggestions.length / this.itemsPerPage)
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — counts objects for the schema on mount.
 	 */
@@ -1301,6 +1310,7 @@ export default {
 			this.countObjects()
 		}
 	},
+
 	methods: {
 		t,
 		/**
@@ -1310,6 +1320,7 @@ export default {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+
 		/**
 		 * @spec exclude Modal state plumbing — resets all local exploration state.
 		 */
@@ -1329,6 +1340,7 @@ export default {
 			this.objectCount = 0
 			this.objectStats = null
 		},
+
 		/**
 		 * @spec exclude Modal data-load plumbing — fetches object-count stats for the schema.
 		 */
@@ -1347,6 +1359,7 @@ export default {
 				this.objectStats = null
 			}
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — runs the schema-explore endpoint and seeds suggestion config.
 		 */
@@ -1425,6 +1438,7 @@ export default {
 				this.analysisStarted = false
 			}
 		},
+
 		/**
 		 * @param propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
@@ -1472,9 +1486,11 @@ export default {
 				}
 			}
 		},
+
 		isPropertySelected(propertyName) {
 			return this.selectedProperties.includes(propertyName)
 		},
+
 		/**
 		 * @spec exclude UI selection plumbing — clears the property selection.
 		 */
@@ -1482,6 +1498,7 @@ export default {
 			this.selectedProperties = []
 			this.selectedPropertiesConfig = {}
 		},
+
 		/**
 		 * @spec exclude UI selection plumbing — selects all suggested properties.
 		 */
@@ -1501,6 +1518,7 @@ export default {
 				}
 			})
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — posts selected property updates to the schema-update endpoint.
 		 */
@@ -1568,6 +1586,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
@@ -1587,6 +1606,7 @@ export default {
 
 			return String(value)
 		},
+
 		/**
 		 * @param page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
@@ -1600,6 +1620,7 @@ export default {
 				container.scrollTop = 0
 			}
 		},
+
 		/**
 		 * @param pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
@@ -1608,6 +1629,7 @@ export default {
 			this.itemsPerPage = pageSize
 			this.currentPage = 1
 		},
+
 		/**
 		 * @spec exclude Modal close plumbing — closes the dialog and resets state.
 		 */
@@ -1615,6 +1637,7 @@ export default {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+
 		/**
 		 * @param issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
@@ -1628,6 +1651,7 @@ export default {
 				}
 			})
 		},
+
 		/**
 		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
@@ -1649,6 +1673,7 @@ export default {
 			}
 			return typeMap[issueType] || 'general'
 		},
+
 		/**
 		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
@@ -1666,6 +1691,7 @@ export default {
 			}
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
+
 		/**
 		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
@@ -1677,42 +1703,52 @@ export default {
 					'openregister',
 					'Data type does not match observed values',
 				),
+
 				missing_max_length: this.t(
 					'openregister',
 					'Maximum length constraint is missing',
 				),
+
 				max_length_too_small: this.t(
 					'openregister',
 					'Maximum length is too restrictive',
 				),
+
 				missing_format: this.t(
 					'openregister',
 					'Format constraint is missing',
 				),
+
 				missing_pattern: this.t(
 					'openregister',
 					'Pattern constraint is missing',
 				),
+
 				missing_minimum: this.t(
 					'openregister',
 					'Minimum value constraint is missing',
 				),
+
 				minimum_too_high: this.t(
 					'openregister',
 					'Minimum value is too restrictive',
 				),
+
 				missing_maximum: this.t(
 					'openregister',
 					'Maximum value constraint is missing',
 				),
+
 				maximum_too_low: this.t(
 					'openregister',
 					'Maximum value is too restrictive',
 				),
+
 				inconsistent_required: this.t(
 					'openregister',
 					'Required status is inconsistent',
 				),
+
 				missing_enum: this.t('openregister', 'Enum constraint is missing'),
 			}
 			return (

@@ -1,14 +1,17 @@
 <script>
+import {
+	CnIndexPage,
+	CnObjectCalendar,
+	CnObjectKanban,
+} from '@conduction/nextcloud-vue'
 /**
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
  */
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
-import {
-	CnIndexPage,
-	CnObjectKanban,
-	CnObjectCalendar,
-} from '@conduction/nextcloud-vue'
+import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import {
 	navigationStore,
 	objectStore,
@@ -16,12 +19,10 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
+ *
  * @param {Array} raw - Raw collection from store
  * @return {Array} Rows with row.id set from @self.id
  */
@@ -46,6 +47,7 @@ export default {
 		ContentCopy,
 		TrashCanOutline,
 	},
+
 	data() {
 		return {
 			objectStore,
@@ -67,6 +69,7 @@ export default {
 			calendarLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Normalized search result objects for table display.
@@ -77,15 +80,18 @@ export default {
 		normalizedObjects() {
 			return normalizeObjects(objectStore.searchCollection)
 		},
+
 		/**
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
 		 */
 		hasSelectedRegisters() {
 			return objectStore.searchParams.register != null
 		},
+
 		hasSelectedSchemas() {
 			return objectStore.searchParams.schema != null
 		},
+
 		/**
 		 * Page title derived from the selected register and schema.
 		 *
@@ -105,6 +111,7 @@ export default {
 			const schemaTitle = schema ? schema.label || schema.title : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
+
 		/**
 		 * Selected object ids for the current page, as strings.
 		 *
@@ -115,6 +122,7 @@ export default {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
 		},
+
 		/**
 		 * Object-type slug derived from the selected register and schema.
 		 *
@@ -127,6 +135,7 @@ export default {
 				objectStore.searchSchema,
 			)
 		},
+
 		/**
 		 * Search schema with inherited (allOf) properties merged in, for columns.
 		 *
@@ -163,6 +172,7 @@ export default {
 			}
 			return { ...schema, properties }
 		},
+
 		/**
 		 * The currently active saved view, if any.
 		 *
@@ -172,6 +182,7 @@ export default {
 		activeView() {
 			return viewsStore.activeView
 		},
+
 		/**
 		 * Stable identity for the active view, used to key the kanban/calendar
 		 * components (forces a remount — and for the calendar, a fresh
@@ -186,6 +197,7 @@ export default {
 				? this.activeView.id || this.activeView.uuid
 				: null
 		},
+
 		/**
 		 * The active view's presentation type. A view with no `presentation`
 		 * (legacy view, or none selected) renders as `table` — unchanged from
@@ -198,6 +210,7 @@ export default {
 		presentationType() {
 			return this.activeView?.presentation?.viewType || 'table'
 		},
+
 		/**
 		 * The active view's kanban config (`groupByField`/`columnOrder`/`cardFields`).
 		 *
@@ -207,6 +220,7 @@ export default {
 		kanbanConfig() {
 			return this.activeView?.presentation?.kanban || {}
 		},
+
 		/**
 		 * The active view's calendar config (`dateField`/`endDateField`).
 		 *
@@ -216,6 +230,7 @@ export default {
 		calendarConfig() {
 			return this.activeView?.presentation?.calendar || {}
 		},
+
 		/**
 		 * Kanban board columns with each column's cards normalized the same way
 		 * as the table's `normalizedObjects` (top-level `id` from `@self.id`),
@@ -232,6 +247,7 @@ export default {
 				cards: normalizeObjects(column.cards),
 			}))
 		},
+
 		/**
 		 * Calendar objects normalized the same way as the table's
 		 * `normalizedObjects`, for `CnObjectCalendar`'s `row-key="id"`.
@@ -243,18 +259,21 @@ export default {
 			return normalizeObjects(this.calendarObjects)
 		},
 	},
+
 	watch: {
-		'navigationStore.modal'(newVal, oldVal) {
+		'navigationStore.modal': function (newVal, oldVal) {
 			if (oldVal === 'viewObject' && !newVal && this.isAddingNewObject) {
 				this.isAddingNewObject = false
 			}
 		},
+
 		/**
 		 * Reset kanban/calendar state and (for kanban) fetch the board when the
 		 * active saved view changes. Calendar's initial fetch instead comes
 		 * from CnObjectCalendar's own `range-change` on (re)mount — the `:key`
 		 * binding on the component forces that remount.
 		 *
+		 * @param newVal
 		 * @spec openspec/specs/saved-search-views/spec.md#requirement-presentation-components-are-shared-and-wired-not-owned-by-or-req-view-pres-05
 		 */
 		activeViewId(newVal) {
@@ -266,6 +285,7 @@ export default {
 			}
 		},
 	},
+
 	/**
 	 * @spec exclude UI plumbing — fetch the kanban board on initial mount when a kanban view is already active (e.g. restored from route params)
 	 */
@@ -274,6 +294,7 @@ export default {
 			this.fetchKanbanBoard()
 		}
 	},
+
 	methods: {
 		/**
 		 * Open the new-object dialog for the selected register and schema.
@@ -293,6 +314,7 @@ export default {
 			}
 			navigationStore.setModal('viewObject')
 		},
+
 		/**
 		 * Re-run the current search.
 		 *
@@ -302,6 +324,7 @@ export default {
 		handleRefresh() {
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * Apply a sort change and re-run the search.
 		 *
@@ -315,6 +338,7 @@ export default {
 			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * Apply a page change and re-run the search.
 		 *
@@ -326,6 +350,7 @@ export default {
 			objectStore.updateSearchParams({ page })
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * Apply a page-size change and re-run the search.
 		 *
@@ -337,6 +362,7 @@ export default {
 			objectStore.updateSearchParams({ page: 1, limit })
 			objectStore.refetchSearchCollection()
 		},
+
 		/**
 		 * Track the selected object ids.
 		 *
@@ -347,6 +373,7 @@ export default {
 		handleSelect(ids) {
 			objectStore.setSelectedObjects(ids)
 		},
+
 		/**
 		 * Open the view-object modal for a clicked row.
 		 *
@@ -358,6 +385,7 @@ export default {
 			objectStore.setObjectItem(row)
 			navigationStore.setModal('viewObject')
 		},
+
 		/**
 		 * Open the copy-object dialog for a row.
 		 *
@@ -369,6 +397,7 @@ export default {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('copyObject')
 		},
+
 		/**
 		 * Open the delete-object dialog for a row.
 		 *
@@ -380,6 +409,7 @@ export default {
 			objectStore.setObjectItem(row)
 			navigationStore.setDialog('deleteObject')
 		},
+
 		/**
 		 * Open the mass-delete dialog for the selected ids.
 		 *
@@ -394,6 +424,7 @@ export default {
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massDeleteObject')
 		},
+
 		/**
 		 * Open the mass-copy dialog for the selected ids.
 		 *
@@ -409,6 +440,7 @@ export default {
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massCopyObjects')
 		},
+
 		/**
 		 * Fetch the kanban board for the active view (REQ-VIEW-KANBAN-02).
 		 *
@@ -430,6 +462,7 @@ export default {
 				this.kanbanLoading = false
 			}
 		},
+
 		/**
 		 * Handle a column's "load more" — the backend paginates every column
 		 * with the same `_limit`, so a bigger board is refetched wholesale and
@@ -468,6 +501,7 @@ export default {
 				this.loadingColumns = this.loadingColumns.filter((v) => v !== value)
 			}
 		},
+
 		/**
 		 * Drag-to-move (REQ-VIEW-KANBAN-03): persist the card's `groupByField`
 		 * through the existing guarded object PUT path — no bespoke move
@@ -500,6 +534,7 @@ export default {
 				|| t('openregister', 'The move was rejected by the server.')
 			kanbanRef?.rejectMove(object.id, reason)
 		},
+
 		/**
 		 * Surface a rejected move's reason (e.g. an illegal lifecycle
 		 * transition) after `CnObjectKanban` has snapped the card back.
@@ -514,6 +549,7 @@ export default {
 				console.warn('[SearchIndex] Kanban move rejected:', reason)
 			}
 		},
+
 		/**
 		 * Refetch calendar objects for the newly visible range
 		 * (REQ-VIEW-CAL-04), on mount and after every month navigation.
@@ -565,55 +601,55 @@ export default {
 			:register="objectStore.searchRegister"
 			:objects="normalizedObjects"
 			:store="objectStore"
-			:object-type="computedObjectType"
+			:objectType="computedObjectType"
 			:loading="objectStore.searchLoading"
 			:pagination="objectStore.searchPagination"
-			row-key="id"
-			:include-columns="
+			rowKey="id"
+			:includeColumns="
 				objectStore.searchVisibleColumns
 				&& objectStore.searchVisibleColumns.length
 					? objectStore.searchVisibleColumns
 					: null
 			"
 			:selectable="hasSelectedRegisters && hasSelectedSchemas"
-			:selected-ids="selectedIdsForPage"
-			:sort-key="objectStore.searchParams.sortKey"
-			:sort-order="objectStore.searchParams.sortOrder"
-			:show-title="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			use-advanced-form-dialog
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			show-mass-copy
-			show-mass-delete
-			mass-action-name-field="title"
-			empty-text="No objects found. Select registers and schemas in the sidebar, then search."
+			:selectedIds="selectedIdsForPage"
+			:sortKey="objectStore.searchParams.sortKey"
+			:sortOrder="objectStore.searchParams.sortOrder"
+			:showTitle="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			useAdvancedFormDialog
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			showMassCopy
+			showMassDelete
+			massActionNameField="title"
+			emptyText="No objects found. Select registers and schemas in the sidebar, then search."
 			@add="handleAddObject"
 			@refresh="handleRefresh"
-			@mass-delete="handleMassDelete"
-			@mass-copy="handleMassCopy"
-			@row-click="handleRowClick"
+			@massDelete="handleMassDelete"
+			@massCopy="handleMassCopy"
+			@rowClick="handleRowClick"
 			@sort="handleSort"
-			@page-changed="handlePageChanged"
-			@page-size-changed="handlePageSizeChanged"
+			@pageChanged="handlePageChanged"
+			@pageSizeChanged="handlePageSizeChanged"
 			@select="handleSelect">
 			<template #row-actions="{ row }">
 				<NcActions>
-					<NcActionButton close-after-click @click="handleRowClick(row)">
+					<NcActionButton closeAfterClick @click="handleRowClick(row)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleCopyRow(row)">
+					<NcActionButton closeAfterClick @click="handleCopyRow(row)">
 						<template #icon>
 							<ContentCopy :size="20" />
 						</template>
 						Copy
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleDeleteRow(row)">
+					<NcActionButton closeAfterClick @click="handleDeleteRow(row)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -628,29 +664,29 @@ export default {
 			:key="`kanban-${activeViewId}`"
 			ref="kanban"
 			:columns="normalizedKanbanColumns"
-			:group-by-field="kanbanConfig.groupByField"
-			:column-order="kanbanConfig.columnOrder || null"
-			:card-fields="kanbanConfig.cardFields || []"
+			:groupByField="kanbanConfig.groupByField"
+			:columnOrder="kanbanConfig.columnOrder || null"
+			:cardFields="kanbanConfig.cardFields || []"
 			:schema="normalizedSchema"
 			:loading="kanbanLoading"
-			:loading-columns="loadingColumns"
-			row-key="id"
+			:loadingColumns="loadingColumns"
+			rowKey="id"
 			@move="handleKanbanMove"
-			@move-rejected="handleKanbanMoveRejected"
-			@load-more="handleKanbanLoadMore"
-			@card-click="handleRowClick" />
+			@moveRejected="handleKanbanMoveRejected"
+			@loadMore="handleKanbanLoadMore"
+			@cardClick="handleRowClick" />
 
 		<CnObjectCalendar
 			v-else-if="presentationType === 'calendar'"
 			:key="`calendar-${activeViewId}`"
 			ref="calendar"
 			:objects="normalizedCalendarObjects"
-			:date-field="calendarConfig.dateField"
-			:end-date-field="calendarConfig.endDateField || null"
+			:dateField="calendarConfig.dateField"
+			:endDateField="calendarConfig.endDateField || null"
 			:loading="calendarLoading"
-			row-key="id"
-			@range-change="handleCalendarRangeChange"
-			@object-click="handleRowClick" />
+			rowKey="id"
+			@rangeChange="handleCalendarRangeChange"
+			@objectClick="handleRowClick" />
 	</NcAppContent>
 </template>
 

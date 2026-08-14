@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
+import { mockOrganisation, Organisation } from '../../entities/index.js'
 import { useOrganisationStore } from './organisation.js'
-import { Organisation, mockOrganisation } from '../../entities/index.js'
 
 describe('Organisation Store', () => {
 	beforeEach(() => {

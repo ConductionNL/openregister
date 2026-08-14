@@ -29,7 +29,7 @@
 			v-model="form.retentionDays"
 			type="number"
 			:label="t('openregister', 'Keep run history for (days)')"
-			:helper-text="
+			:helperText="
 				t(
 					'openregister',
 					'Runs and their per-step history are deleted once they exceed this age. A flow may keep less than this, or more.',
@@ -81,7 +81,7 @@
 			}}
 		</p>
 
-		<NcButton type="primary" :disabled="saving" @click="save">
+		<NcButton variant="primary" :disabled="saving" @click="save">
 			{{
 				saving
 					? t('openregister', 'Saving…')

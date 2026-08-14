@@ -4,7 +4,7 @@
 			<NcSelect
 				v-if="hasBaseLayers"
 				v-model="activeLayer"
-				:input-label="baseLayerLabel"
+				:inputLabel="baseLayerLabel"
 				:options="baseLayers"
 				:reduce="reduceLayer"
 				label="label"
@@ -44,6 +44,7 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 /**
  * MapView — thin Leaflet host for OpenRegister geo objects.
  *
@@ -58,13 +59,12 @@
  * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-014
  */
 import { NcSelect } from '@nextcloud/vue'
-import { translate as t } from '@nextcloud/l10n'
 import {
 	BASE_LAYERS,
-	defaultBaseLayer,
 	buildMarkers,
-	markerBounds,
+	defaultBaseLayer,
 	formatWgs84,
+	markerBounds,
 } from '../../services/geo/mapData.js'
 
 export default {
@@ -72,18 +72,21 @@ export default {
 	components: {
 		NcSelect,
 	},
+
 	props: {
 		/** Object rows to plot. */
 		objects: {
 			type: Array,
 			default: () => [],
 		},
+
 		/** Geo property name, or null to auto-detect. */
 		geoProperty: {
 			type: String,
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			baseLayers: BASE_LAYERS,
@@ -91,49 +94,61 @@ export default {
 			map: null,
 		}
 	},
+
 	computed: {
 		hasBaseLayers() {
 			return this.baseLayers.length !== 0
 		},
+
 		baseLayerLabel() {
 			return t('openregister', 'Base map layer')
 		},
+
 		markers() {
 			return buildMarkers(this.objects, this.geoProperty)
 		},
+
 		bounds() {
 			return markerBounds(this.markers)
 		},
+
 		countLabel() {
 			return t('openregister', '{count} locations', {
 				count: this.markers.length,
 			})
 		},
+
 		mapAriaLabel() {
 			return t('openregister', 'Map with {count} object locations', {
 				count: this.markers.length,
 			})
 		},
 	},
+
 	watch: {
 		markers() {
 			this.renderMap()
 		},
+
 		activeLayer() {
 			this.renderMap()
 		},
 	},
+
 	mounted() {
 		this.renderMap()
 	},
+
 	methods: {
 		t,
 		reduceLayer(layer) {
 			return layer.id
 		},
+
 		coordsLabel(marker) {
 			return formatWgs84(marker.lon, marker.lat)
 		},
+
 		/**
 		 * Render markers into Leaflet when the library is available.
 		 *

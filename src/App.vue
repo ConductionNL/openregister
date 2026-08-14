@@ -1,11 +1,11 @@
 <template>
 	<CnAppRoot
-		app-id="openregister"
-		:ai-companion="true"
+		appId="openregister"
+		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"
-		:page-types="pageTypes"
-		:requires-apps="[]"
+		:pageTypes="pageTypes"
+		:requiresApps="[]"
 		:translate="translateForApp">
 		<!--
 			Keep OpenRegister's own MainMenu as the #menu override. It wraps
@@ -29,14 +29,14 @@
 			<SideBars />
 			<CnObjectSidebar
 				v-if="objectSidebarState.active"
-				:use-registry="true"
+				:useRegistry="true"
 				:title="objectSidebarState.title"
 				:subtitle="objectSidebarState.subtitle"
-				:object-type="objectSidebarState.objectType"
-				:object-id="objectSidebarState.objectId"
+				:objectType="objectSidebarState.objectType"
+				:objectId="objectSidebarState.objectId"
 				:register="objectSidebarState.register"
 				:schema="objectSidebarState.schema"
-				:hidden-tabs="objectSidebarState.hiddenTabs"
+				:hiddenTabs="objectSidebarState.hiddenTabs"
 				:open="objectSidebarState.open"
 				@update:open="objectSidebarState.open = $event" />
 		</template>
@@ -49,15 +49,15 @@
 </template>
 
 <script>
-import { reactive } from 'vue'
-import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot, CnObjectSidebar } from '@conduction/nextcloud-vue'
-import MainMenu from './navigation/MainMenu.vue'
-import Modals from './modals/Modals.vue'
+import { translate as ncT } from '@nextcloud/l10n'
+import { reactive } from 'vue'
 import Dialogs from './dialogs/Dialogs.vue'
+import Modals from './modals/Modals.vue'
+import MainMenu from './navigation/MainMenu.vue'
 import SideBars from './sidebars/SideBars.vue'
-import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 import { initializeAppData } from './services/AppInitializationService.js'
+import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
 export default {
 	name: 'App',
@@ -69,6 +69,7 @@ export default {
 		Dialogs,
 		SideBars,
 	},
+
 	/**
 	 * Expose the shared object-sidebar state to descendant components.
 	 *
@@ -79,6 +80,7 @@ export default {
 			objectSidebarState: this.objectSidebarState,
 		}
 	},
+
 	props: {
 		/**
 		 * Bundled manifest — passed from main.js. CnAppRoot reads
@@ -89,6 +91,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * V2 kind-tagged registry (ADR-036) — each entry is
 		 * `{ kind: "page", component: ... }`. CnPageRenderer resolves
@@ -100,6 +103,7 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/**
 		 * Page-type registry (`defaultPageTypes`) wired through to descendant
 		 * CnPageRenderer instances via CnAppRoot's provide/inject.
@@ -109,6 +113,7 @@ export default {
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			objectSidebarState: reactive({
@@ -124,6 +129,7 @@ export default {
 			}),
 		}
 	},
+
 	/**
 	 * On mount, kick off application-data hot-loading and dashboard watchers.
 	 *
@@ -137,6 +143,7 @@ export default {
 		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
 	},
+
 	methods: {
 		/**
 		 * Translate function passed down to CnAppRoot / CnAppNav /

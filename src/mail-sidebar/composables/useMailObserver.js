@@ -8,7 +8,7 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 /**
  * Parse the Mail app URL to extract accountId and messageId.
@@ -101,6 +101,9 @@ export function useMailObserver(options = {}) {
 	let lastUrl = ''
 	let urlPollInterval = null
 
+	/**
+	 *
+	 */
 	function checkUrlChange() {
 		const currentUrl = window.location.href
 

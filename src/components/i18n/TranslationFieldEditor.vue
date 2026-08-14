@@ -77,6 +77,7 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/**
 		 * Languages to render inputs for. Order is preserved.
 		 */
@@ -84,6 +85,7 @@ export default {
 			type: Array,
 			required: true,
 		},
+
 		/**
 		 * Optional per-language status map (from translations sidecar).
 		 *
@@ -93,18 +95,22 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		label: {
 			type: String,
 			default: '',
 		},
+
 		multiline: {
 			type: Boolean,
 			default: false,
 		},
+
 		disabled: {
 			type: Boolean,
 			default: false,
 		},
+
 		/**
 		 * Hide languages that have no value. Useful in read-mostly
 		 * views to reduce noise. Defaults to false (show all configured
@@ -115,6 +121,7 @@ export default {
 			default: false,
 		},
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed visible-language list filter, UI plumbing
@@ -124,6 +131,7 @@ export default {
 			return this.languages.filter((lang) => this.getValue(lang) !== '')
 		},
 	},
+
 	methods: {
 		/**
 		 * @param lang
@@ -133,9 +141,11 @@ export default {
 			const v = this.value?.[lang]
 			return typeof v === 'string' ? v : ''
 		},
+
 		getStatus(lang) {
 			return this.statuses?.[lang] ?? null
 		},
+
 		/**
 		 * @param lang
 		 * @spec exclude computed text-direction (rtl/ltr) display helper, UI plumbing
@@ -143,6 +153,7 @@ export default {
 		dirFor(lang) {
 			return isRtlLanguage(lang) ? 'rtl' : 'ltr'
 		},
+
 		/**
 		 * @param lang
 		 * @spec exclude computed placeholder display helper, UI plumbing
@@ -150,6 +161,7 @@ export default {
 		placeholderFor(lang) {
 			return `Translation in ${lang.toUpperCase()}`
 		},
+
 		/**
 		 * @param lang
 		 * @param newValue

@@ -222,18 +222,18 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcDialog,
 	NcButton,
 	NcCheckboxRadioSwitch,
-	NcProgressBar,
+	NcDialog,
 	NcLoadingIcon,
+	NcProgressBar,
 } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'ObjectVectorizationModal',
@@ -267,6 +267,7 @@ export default {
 				totalObjects: 0,
 				objectsToProcess: 0,
 			},
+
 			processing: false,
 			processed: 0,
 			vectorized: 0,
@@ -329,6 +330,7 @@ export default {
 		vectorizeAllViews() {
 			this.loadStats()
 		},
+
 		selectedViews: {
 			/**
 			 * @spec exclude Watcher reloading stats when the view selection changes; UI reactivity plumbing.
@@ -336,6 +338,7 @@ export default {
 			handler() {
 				this.loadStats()
 			},
+
 			deep: true,
 		},
 	},

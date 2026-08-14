@@ -9,25 +9,25 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			ref="indexPage"
 			:title="t('openregister', 'Applications')"
 			:description="t('openregister', 'Manage your applications and modules')"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedApplications"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="applicationStore.loading"
-			:view-mode="applicationStore.viewMode"
+			:viewMode="applicationStore.viewMode"
 			:selectable="true"
-			:selected-ids="selectedApplications"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			:show-mass-delete="false"
-			show-view-toggle
-			:add-label="t('openregister', 'Add Application')"
-			row-key="id"
-			:empty-text="emptyContentName"
+			:selectedIds="selectedApplications"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			:showMassDelete="false"
+			showViewToggle
+			:addLabel="t('openregister', 'Add Application')"
+			rowKey="id"
+			:emptyText="emptyContentName"
 			:refreshing="isRefreshing"
 			@add="
 				() => {
@@ -36,9 +36,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				}
 			"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
-			@view-mode-change="applicationStore.setViewMode($event)"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
+			@viewModeChange="applicationStore.setViewMode($event)"
 			@select="onSelect">
 			<!-- Custom card template -->
 			<template #card="{ object }">
@@ -48,12 +48,12 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<ApplicationOutline :size="20" />
 							{{ object.name }}
 						</h2>
-						<NcActions :primary="true" menu-name="Actions">
+						<NcActions :primary="true" menuName="Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										applicationStore.setApplicationItem(object)
@@ -66,7 +66,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'Edit') }}
 							</NcActionButton>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="
 									() => {
 										applicationStore.setApplicationItem(object)
@@ -203,7 +203,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								applicationStore.setApplicationItem(row)
@@ -216,7 +216,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								applicationStore.setApplicationItem(row)
@@ -235,8 +235,8 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -254,12 +254,14 @@ export default {
 		Pencil,
 		TrashCanOutline,
 	},
+
 	data() {
 		return {
 			selectedApplications: [],
 			isRefreshing: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Column definitions for the applications table.
@@ -285,6 +287,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Pagination state derived from the application store, for display.
 		 *
@@ -298,6 +301,7 @@ export default {
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
+
 		/**
 		 * The applications for the current page. The full list is loaded
 		 * client-side, so CnIndexPage (prop mode) does not slice — we slice here
@@ -311,6 +315,7 @@ export default {
 			const start = (page - 1) * limit
 			return applicationStore.applicationList.slice(start, start + limit)
 		},
+
 		/**
 		 * Empty-content label shown when the application list is empty or loading.
 		 *
@@ -326,6 +331,7 @@ export default {
 			return t('openregister', 'Loading applications...')
 		},
 	},
+
 	/**
 	 * @spec exclude list-view lifecycle group preload + soft-refresh of the application list on mount
 	 */
@@ -335,6 +341,7 @@ export default {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		applicationStore.refreshApplicationList(null, true)
 	},
+
 	methods: {
 		/**
 		 * Reload the application list from the store.
@@ -350,6 +357,7 @@ export default {
 				this.isRefreshing = false
 			}
 		},
+
 		/**
 		 * Update store pagination when the page changes.
 		 *
@@ -360,6 +368,7 @@ export default {
 		onPageChanged(page) {
 			applicationStore.setPagination(page, applicationStore.pagination.limit)
 		},
+
 		/**
 		 * Update store pagination when the page size changes.
 		 *
@@ -370,6 +379,7 @@ export default {
 		onPageSizeChanged(pageSize) {
 			applicationStore.setPagination(1, pageSize)
 		},
+
 		/**
 		 * Track the selected application ids for bulk actions.
 		 *

@@ -9,7 +9,7 @@ SPDX-License-Identifier: EUPL-1.2
 			<NcCheckboxRadioSwitch
 				v-for="type in availableTypes"
 				:key="type"
-				:model-value="selectedTypes.includes(type)"
+				:modelValue="selectedTypes.includes(type)"
 				type="button"
 				@update:modelValue="toggleType(type)">
 				{{ typeLabels[type] || type }}
@@ -92,16 +92,16 @@ SPDX-License-Identifier: EUPL-1.2
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { NcEmptyContent, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
-import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
-import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 
 /**
@@ -139,10 +139,12 @@ export default {
 			type: [String, Number],
 			required: true,
 		},
+
 		schema: {
 			type: [String, Number],
 			required: true,
 		},
+
 		objectId: {
 			type: String,
 			required: true,

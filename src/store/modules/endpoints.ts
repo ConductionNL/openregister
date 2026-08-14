@@ -1,5 +1,5 @@
-import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
@@ -15,6 +15,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Set the active endpoint item.
+	 *
 	 * @param item - The endpoint item to set
 	 */
 	const setEndpointItem = (item) => {
@@ -37,12 +38,13 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointItem = computed(() => useEndpointStore().getEndpointItem())
 	 * ```
 	 *
-	 * @return {object | null} The active endpoint item
+	 * @return The active endpoint item
 	 */
 	const getEndpointItem = () => endpointItem.value
 
 	/**
 	 * Set the active endpoint list.
+	 *
 	 * @param list - The endpoint list to set
 	 */
 	const setEndpointList = (list) => {
@@ -65,7 +67,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointList = computed(() => useEndpointStore().getEndpointList())
 	 * ```
 	 *
-	 * @return {Array} The active endpoint list
+	 * @return The active endpoint list
 	 */
 	const getEndpointList = () => endpointList.value
 
@@ -92,6 +94,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Create a new endpoint on the API
+	 *
 	 * @param item - The endpoint item to create
 	 */
 	const createEndpoint = (item) => {
@@ -121,6 +124,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Update an existing endpoint on the API
+	 *
 	 * @param item - The endpoint item to update
 	 */
 	const updateEndpoint = (item) => {
@@ -154,6 +158,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Delete an endpoint from the API
+	 *
 	 * @param item - The endpoint item to delete
 	 */
 	const deleteEndpoint = (item) => {
@@ -182,6 +187,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Test an endpoint by executing it
+	 *
 	 * @param item - The endpoint item to test
 	 * @param testData - Optional test data to send
 	 */

@@ -59,27 +59,27 @@
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
 							title="See entities as cards"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="cards"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Cards
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
 							title="See entities as a table"
-							:button-variant="true"
+							:buttonVariant="true"
 							value="table"
 							name="view_mode_radio"
 							type="radio"
-							button-variant-grouped="horizontal">
+							buttonVariantGrouped="horizontal">
 							Table
 						</NcCheckboxRadioSwitch>
 					</div>
 
-					<NcActions :force-name="true" :inline="1" menu-name="Actions">
-						<NcActionButton close-after-click @click="refreshEntities">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshEntities">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -133,12 +133,12 @@
 								<NcActions
 									class="cardActions"
 									:primary="true"
-									menu-name="Actions">
+									menuName="Actions">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click.stop="viewEntity(entity)">
 										<template #icon>
 											<EyeOutline :size="20" />
@@ -193,7 +193,7 @@
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:model-value="allSelected"
+											:modelValue="allSelected"
 											:indeterminate="someSelected"
 											:aria-label="
 												t(
@@ -234,7 +234,7 @@
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:model-value="
+											:modelValue="
 												selectedEntities.includes(entity.id)
 											"
 											:aria-label="
@@ -278,7 +278,7 @@
 												<DotsHorizontal :size="20" />
 											</template>
 											<NcActionButton
-												close-after-click
+												closeAfterClick
 												@click="viewEntity(entity)">
 												<template #icon>
 													<EyeOutline :size="20" />
@@ -297,39 +297,36 @@
 			<!-- Pagination -->
 			<PaginationComponent
 				v-if="entitiesList.length > 0"
-				:current-page="currentPage"
-				:total-pages="totalPages"
-				:total-items="totalEntities"
-				:current-page-size="limit"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:currentPage="currentPage"
+				:totalPages="totalPages"
+				:totalItems="totalEntities"
+				:currentPageSize="limit"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
-	NcEmptyContent,
 	NcCheckboxRadioSwitch,
+	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import eventBus from '../../eventBus.js'
 import { navigationStore } from '../../store/store.js'
@@ -362,6 +359,7 @@ export default {
 		DotsHorizontal,
 		PaginationComponent,
 	},
+
 	data() {
 		return {
 			entitiesList: [],
@@ -376,6 +374,7 @@ export default {
 			selectedEntities: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the entities filter sidebar is currently open (driven by navigationStore).
@@ -386,6 +385,7 @@ export default {
 		sidebarOpen() {
 			return navigationStore.sidebarState.entities
 		},
+
 		/**
 		 * Get total number of pages
 		 *
@@ -433,6 +433,7 @@ export default {
 			return this.selectedEntities.length > 0 && !this.allSelected
 		},
 	},
+
 	/**
 	 * @spec exclude Lifecycle plumbing; loads entity list and wires root event bus listeners from EntitiesSideBar.
 	 */
@@ -443,6 +444,7 @@ export default {
 		eventBus.on('entities-type-changed', this.handleTypeUpdate)
 		eventBus.on('entities-category-changed', this.handleCategoryUpdate)
 	},
+
 	/**
 	 * @spec exclude Lifecycle teardown; removes root event bus listeners to prevent memory leaks.
 	 */
@@ -451,6 +453,7 @@ export default {
 		eventBus.off('entities-type-changed', this.handleTypeUpdate)
 		eventBus.off('entities-category-changed', this.handleCategoryUpdate)
 	},
+
 	methods: {
 		t,
 

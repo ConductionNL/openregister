@@ -1,12 +1,10 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
 import axios from '@nextcloud/axios'
+import { createPinia, setActivePinia } from 'pinia'
 import {
-	useTranslationsStore,
 	isRtlLanguage,
 	RTL_LANGUAGES,
 	TRANSLATION_STATUSES,
+	useTranslationsStore,
 } from './translations.js'
 
 jest.mock('@nextcloud/axios', () => ({

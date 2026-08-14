@@ -12,26 +12,26 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						{{ endpointStore.endpointItem.name }}
 					</h1>
 
-					<NcActions :primary="true" menu-name="Actions">
+					<NcActions :primary="true" menuName="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setModal('editEndpoint')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click @click="testEndpoint()">
+						<NcActionButton closeAfterClick @click="testEndpoint()">
 							<template #icon>
 								<PlayCircle :size="20" />
 							</template>
 							Test
 						</NcActionButton>
 						<NcActionButton
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setDialog('deleteEndpoint')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -84,7 +84,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcActionButton, NcActions } from '@nextcloud/vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
@@ -100,6 +100,7 @@ export default {
 		PlayCircle,
 		TrashCanOutline,
 	},
+
 	methods: {
 		/**
 		 * @spec exclude detail-view action button wiring; delegates to endpointStore.testEndpoint and surfaces a toast (endpoint test contract owned by oas-validation)

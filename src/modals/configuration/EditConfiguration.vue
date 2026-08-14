@@ -1,10 +1,10 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
+	applicationStore,
 	configurationStore,
 	navigationStore,
 	organisationStore,
-	applicationStore,
 } from '../../store/store.js'
 </script>
 
@@ -17,7 +17,7 @@ import {
 				: t('openregister', 'New Configuration')
 		"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">
@@ -25,7 +25,7 @@ import {
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<AppTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Settings Tab -->
 				<AppTab active>
 					<template #title>
@@ -39,7 +39,7 @@ import {
 							:placeholder="
 								t('openregister', 'Enter configuration title')
 							"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.title || ''
 							"
 							:error="
@@ -55,7 +55,7 @@ import {
 									'Enter configuration description (optional)',
 								)
 							"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.description
 								|| ''
 							"
@@ -68,11 +68,11 @@ import {
 							<NcSelect
 								id="type-select"
 								v-model="selectedType"
-								input-label="Selected Type"
+								inputLabel="Selected Type"
 								:options="typeOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t('openregister', 'Select configuration type...')
 								"
@@ -101,7 +101,7 @@ import {
 						<NcTextField
 							:label="t('openregister', 'App ID')"
 							:placeholder="t('openregister', 'myapp')"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.app || ''
 							"
 							@update:modelValue="updateApp">
@@ -136,19 +136,19 @@ import {
 							<NcSelect
 								id="registers-select"
 								v-model="selectedRegisters"
-								input-label="Selected Registers"
+								inputLabel="Selected Registers"
 								:options="registerOptions"
 								:loading="loadingRegisters"
 								:multiple="true"
 								label="title"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="
 									t('openregister', 'Search registers...')
 								"
-								:close-on-select="false"
-								@search-change="searchRegisters"
+								:closeOnSelect="false"
+								@searchChange="searchRegisters"
 								@update:modelValue="updateRegisters">
 								<template #option="{ title, description }">
 									<div class="option-content">
@@ -181,17 +181,17 @@ import {
 							<NcSelect
 								id="schemas-select"
 								v-model="selectedSchemas"
-								input-label="Selected Schemas"
+								inputLabel="Selected Schemas"
 								:options="schemaOptions"
 								:loading="loadingSchemas"
 								:multiple="true"
 								label="title"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="t('openregister', 'Search schemas...')"
-								:close-on-select="false"
-								@search-change="searchSchemas"
+								:closeOnSelect="false"
+								@searchChange="searchSchemas"
 								@update:modelValue="updateSchemas">
 								<template #option="{ title, description }">
 									<div class="option-content">
@@ -224,21 +224,21 @@ import {
 							<NcSelect
 								id="objects-select"
 								v-model="selectedObjects"
-								input-label="Selected Objects"
+								inputLabel="Selected Objects"
 								:options="objectOptions"
 								:loading="loadingObjects"
 								:multiple="true"
 								label="title"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="t('openregister', 'Search objects...')"
-								:close-on-select="false"
+								:closeOnSelect="false"
 								:disabled="
 									selectedRegisters.length === 0
 									&& selectedSchemas.length === 0
 								"
-								@search-change="searchObjects"
+								@searchChange="searchObjects"
 								@update:modelValue="updateObjects">
 								<template #option="{ title, description }">
 									<div class="option-content">
@@ -290,19 +290,19 @@ import {
 							<NcSelect
 								id="sources-select"
 								v-model="selectedSources"
-								input-label="Selected Sources"
+								inputLabel="Selected Sources"
 								:options="sourceOptions"
 								:loading="loadingSources"
 								:multiple="true"
 								label="title"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="
 									t('openregister', 'Search data sources...')
 								"
-								:close-on-select="false"
-								@search-change="searchSources"
+								:closeOnSelect="false"
+								@searchChange="searchSources"
 								@update:modelValue="updateSources">
 								<template #option="{ title, description }">
 									<div class="option-content">
@@ -335,17 +335,17 @@ import {
 							<NcSelect
 								id="agents-select"
 								v-model="selectedAgents"
-								input-label="Selected Agents"
+								inputLabel="Selected Agents"
 								:options="agentOptions"
 								:loading="loadingAgents"
 								:multiple="true"
 								label="name"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="t('openregister', 'Search agents...')"
-								:close-on-select="false"
-								@search-change="searchAgents"
+								:closeOnSelect="false"
+								@searchChange="searchAgents"
 								@update:modelValue="updateAgents">
 								<template #option="{ name, description }">
 									<div class="option-content">
@@ -378,17 +378,17 @@ import {
 							<NcSelect
 								id="views-select"
 								v-model="selectedViews"
-								input-label="Selected Views"
+								inputLabel="Selected Views"
 								:options="viewOptions"
 								:loading="loadingViews"
 								:multiple="true"
 								label="name"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="t('openregister', 'Search views...')"
-								:close-on-select="false"
-								@search-change="searchViews"
+								:closeOnSelect="false"
+								@searchChange="searchViews"
 								@update:modelValue="updateViews">
 								<template #option="{ name, description }">
 									<div class="option-content">
@@ -417,19 +417,19 @@ import {
 							<NcSelect
 								id="managed-applications-select"
 								v-model="selectedManagedApplications"
-								input-label="Selected Managed Applications"
+								inputLabel="Selected Managed Applications"
 								:options="applicationOptions"
 								:loading="loadingApplications"
 								:multiple="true"
 								label="name"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:filterable="true"
 								:placeholder="
 									t('openregister', 'Search applications...')
 								"
-								:close-on-select="false"
-								@search-change="searchApplications"
+								:closeOnSelect="false"
+								@searchChange="searchApplications"
 								@update:modelValue="updateManagedApplications">
 								<template #option="{ name, description }">
 									<div class="option-content">
@@ -469,11 +469,11 @@ import {
 							<NcSelect
 								id="source-type-select"
 								v-model="selectedSourceType"
-								input-label="Selected Source Type"
+								inputLabel="Selected Source Type"
 								:options="sourceTypeOptions"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t('openregister', 'Select source type...')
 								"
@@ -501,7 +501,7 @@ import {
 							"
 							label="Source URL"
 							placeholder="https://raw.githubusercontent.com/..."
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.sourceUrl || ''
 							"
 							@update:modelValue="updateSourceUrl">
@@ -516,7 +516,7 @@ import {
 						<NcTextField
 							label="Version"
 							placeholder="1.0.0"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.version || ''
 							"
 							@update:modelValue="updateVersion">
@@ -530,11 +530,11 @@ import {
 							<NcSelect
 								id="application-select"
 								v-model="selectedApplication"
-								input-label="Selected Application"
+								inputLabel="Selected Application"
 								:options="applicationOptions"
 								label="name"
-								track-by="id"
-								:label-outside="true"
+								trackBy="id"
+								:labelOutside="true"
 								:placeholder="
 									t(
 										'openregister',
@@ -565,7 +565,7 @@ import {
 						<NcTextField
 							label="Local Version"
 							placeholder="1.0.0"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.localVersion
 								|| ''
 							"
@@ -583,7 +583,7 @@ import {
 								configurationStore.configurationItem?.remoteVersion
 							"
 							label="Remote Version (Read-only)"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.remoteVersion
 								|| '-'
 							"
@@ -595,7 +595,7 @@ import {
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:model-value="
+								:modelValue="
 									configurationStore.configurationItem?.autoUpdate
 									|| false
 								"
@@ -615,16 +615,16 @@ import {
 							<NcSelect
 								id="notification-groups-select"
 								v-model="selectedNotificationGroups"
-								input-label="Selected Notification Groups"
+								inputLabel="Selected Notification Groups"
 								:options="notificationGroupOptions"
 								:multiple="true"
 								label="label"
-								track-by="value"
-								:label-outside="true"
+								trackBy="value"
+								:labelOutside="true"
 								:placeholder="
 									t('openregister', 'Select groups to notify...')
 								"
-								:close-on-select="false"
+								:closeOnSelect="false"
 								@update:modelValue="updateNotificationGroups">
 								<template #option="{ label }">
 									<span>{{ label }}</span>
@@ -652,7 +652,7 @@ import {
 							"
 							label="GitHub Repository"
 							placeholder="owner/repository"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.githubRepo
 								|| ''
 							"
@@ -669,7 +669,7 @@ import {
 							"
 							label="GitHub Branch"
 							placeholder="main"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.githubBranch
 								|| 'main'
 							"
@@ -686,7 +686,7 @@ import {
 							"
 							label="GitHub Path"
 							placeholder="configs/configuration.json"
-							:model-value="
+							:modelValue="
 								configurationStore.configurationItem?.githubPath
 								|| ''
 							"
@@ -732,18 +732,16 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
-	NcTextField,
 	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import Database from 'vue-material-design-icons/Database.vue'
 import CloudSync from 'vue-material-design-icons/CloudSync.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import Database from 'vue-material-design-icons/Database.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
 
 export default {
 	name: 'EditConfiguration',
@@ -765,6 +763,7 @@ export default {
 		Database,
 		CloudSync,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -808,6 +807,7 @@ export default {
 			applicationSearchDebounce: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed form-validity guard (title non-empty); UI validation helper.
@@ -816,6 +816,7 @@ export default {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.title?.trim())
 		},
+
 		/**
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
@@ -843,6 +844,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
@@ -865,6 +867,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * @spec exclude Computed static select-option list (placeholder groups); UI presentation data.
 		 */
@@ -877,6 +880,7 @@ export default {
 			]
 		},
 	},
+
 	/**
 	 * @spec exclude Vue created() lifecycle hook — hydrates store lists and seeds a blank configurationItem; modal init plumbing.
 	 */
@@ -949,6 +953,7 @@ export default {
 			this.loadExistingSelections()
 		}
 	},
+
 	methods: {
 		/**
 		 * @param value
@@ -960,6 +965,7 @@ export default {
 			}
 			configurationStore.configurationItem.title = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
@@ -970,6 +976,7 @@ export default {
 			}
 			configurationStore.configurationItem.description = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
@@ -980,6 +987,7 @@ export default {
 			}
 			configurationStore.configurationItem.version = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
@@ -993,6 +1001,7 @@ export default {
 				: 'default'
 			this.selectedType = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
@@ -1003,6 +1012,7 @@ export default {
 			}
 			configurationStore.configurationItem.app = value || ''
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
@@ -1017,6 +1027,7 @@ export default {
 				: ''
 			this.selectedApplication = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
@@ -1031,6 +1042,7 @@ export default {
 			)
 			this.selectedRegisters = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
@@ -1045,6 +1057,7 @@ export default {
 			)
 			this.selectedSchemas = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
@@ -1059,6 +1072,7 @@ export default {
 			)
 			this.selectedObjects = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
@@ -1073,6 +1087,7 @@ export default {
 			)
 			this.selectedSources = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
@@ -1087,6 +1102,7 @@ export default {
 			)
 			this.selectedAgents = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
@@ -1101,6 +1117,7 @@ export default {
 			)
 			this.selectedViews = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
@@ -1115,6 +1132,7 @@ export default {
 			)
 			this.selectedManagedApplications = value
 		},
+
 		// Management tab update methods
 		/**
 		 * @param value
@@ -1129,6 +1147,7 @@ export default {
 				: 'local'
 			this.selectedSourceType = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
@@ -1139,6 +1158,7 @@ export default {
 			}
 			configurationStore.configurationItem.sourceUrl = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
@@ -1149,6 +1169,7 @@ export default {
 			}
 			configurationStore.configurationItem.localVersion = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
@@ -1159,6 +1180,7 @@ export default {
 			}
 			configurationStore.configurationItem.autoUpdate = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
@@ -1172,6 +1194,7 @@ export default {
 			)
 			this.selectedNotificationGroups = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
@@ -1182,6 +1205,7 @@ export default {
 			}
 			configurationStore.configurationItem.githubRepo = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
@@ -1192,6 +1216,7 @@ export default {
 			}
 			configurationStore.configurationItem.githubBranch = value
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
@@ -1202,6 +1227,7 @@ export default {
 			}
 			configurationStore.configurationItem.githubPath = value
 		},
+
 		/**
 		 * @spec exclude Hydrates local select-model refs from an existing configurationItem on edit-open; modal init plumbing.
 		 */
@@ -1395,6 +1421,7 @@ export default {
 				}
 			}
 		},
+
 		// Search methods with debouncing
 		/**
 		 * @param query
@@ -1426,6 +1453,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
@@ -1454,6 +1482,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
@@ -1501,6 +1530,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
@@ -1529,6 +1559,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
@@ -1557,6 +1588,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
@@ -1585,6 +1617,7 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
@@ -1617,12 +1650,14 @@ export default {
 				}
 			}, 300)
 		},
+
 		/**
 		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
 		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal and local select-model refs; UI plumbing.
 		 */
@@ -1638,6 +1673,7 @@ export default {
 			this.selectedViews = []
 			this.selectedApplication = null
 		},
+
 		/**
 		 * @spec exclude Save-button handler delegating to configurationStore.saveConfiguration; entity persistence lives in the store, this is modal orchestration plumbing.
 		 */

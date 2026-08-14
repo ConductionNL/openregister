@@ -1,11 +1,11 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
+	dashboardStore,
+	navigationStore,
 	objectStore,
 	registerStore,
 	schemaStore,
-	dashboardStore,
-	navigationStore,
 } from '../../store/store.js'
 </script>
 
@@ -40,7 +40,7 @@ import {
 					<NcSelect
 						v-bind="registerOptions"
 						id="registerSelect"
-						:model-value="selectedRegisterValue"
+						:modelValue="selectedRegisterValue"
 						:loading="registerLoading"
 						:disabled="registerLoading"
 						:aria-label-combobox="t('openregister', 'Select a register')"
@@ -54,7 +54,7 @@ import {
 					<NcSelect
 						v-bind="schemaOptions"
 						id="schemaSelect"
-						:model-value="selectedSchemaValue"
+						:modelValue="selectedSchemaValue"
 						:loading="schemaLoading"
 						:disabled="!registerStore.registerItem || schemaLoading"
 						:aria-label-combobox="t('openregister', 'Select a schema')"
@@ -76,7 +76,7 @@ import {
 					<CnStatsBlock
 						:title="t('openregister', 'Registers')"
 						:count="filteredRegisters.length"
-						:count-label="
+						:countLabel="
 							t('openregister', 'register{plural}', {
 								plural: filteredRegisters.length !== 1 ? 's' : '',
 							})
@@ -84,11 +84,11 @@ import {
 						:icon="DatabaseOutline"
 						variant="primary"
 						horizontal
-						show-zero-count />
+						showZeroCount />
 					<CnStatsBlock
 						:title="t('openregister', 'Schemas')"
 						:count="totalSchemas"
-						:count-label="
+						:countLabel="
 							t('openregister', 'schema{plural}', {
 								plural: totalSchemas !== 1 ? 's' : '',
 							})
@@ -96,11 +96,11 @@ import {
 						:icon="TableIcon"
 						variant="primary"
 						horizontal
-						show-zero-count />
+						showZeroCount />
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="systemTotals.stats?.objects?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'object{plural}', {
 								plural:
 									systemTotals.stats?.objects?.total !== 1
@@ -111,12 +111,12 @@ import {
 						:icon="PackageVariantClosed"
 						variant="primary"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="objectsBreakdown(systemTotals)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="systemTotals.stats?.logs?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'log{plural}', {
 								plural:
 									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
@@ -124,12 +124,12 @@ import {
 						"
 						:icon="TextBoxOutline"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="sizeBreakdown(systemTotals.stats?.logs?.size)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="systemTotals.stats?.files?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'file{plural}', {
 								plural:
 									systemTotals.stats?.files?.total !== 1
@@ -139,7 +139,7 @@ import {
 						"
 						:icon="FileDocumentOutline"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="
 							sizeBreakdown(systemTotals.stats?.files?.size)
 						" />
@@ -159,7 +159,7 @@ import {
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="orphanedItems.stats?.objects?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'object{plural}', {
 								plural:
 									systemTotals.stats?.objects?.total !== 1
@@ -170,12 +170,12 @@ import {
 						:icon="PackageVariantClosed"
 						variant="warning"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="objectsBreakdown(orphanedItems)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="orphanedItems.stats?.logs?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'log{plural}', {
 								plural:
 									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
@@ -184,14 +184,14 @@ import {
 						:icon="TextBoxOutline"
 						variant="warning"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="
 							sizeBreakdown(orphanedItems.stats?.logs?.size)
 						" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="orphanedItems.stats?.files?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'file{plural}', {
 								plural:
 									systemTotals.stats?.files?.total !== 1
@@ -202,7 +202,7 @@ import {
 						:icon="FileDocumentOutline"
 						variant="warning"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="
 							sizeBreakdown(orphanedItems.stats?.files?.size)
 						" />
@@ -213,19 +213,19 @@ import {
 </template>
 
 <script>
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
 	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import TableIcon from 'vue-material-design-icons/Table.vue'
-import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import TableIcon from 'vue-material-design-icons/Table.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
 // Ensure data is loaded
 dashboardStore.preload()
@@ -240,6 +240,7 @@ export default {
 		CnStatsBlock,
 		ChartBar,
 	},
+
 	data() {
 		return {
 			activeTab: 'overview-tab',
@@ -249,6 +250,7 @@ export default {
 				from: null,
 				till: null,
 			},
+
 			registerLoading: false,
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
@@ -261,25 +263,31 @@ export default {
 			FileDocumentOutline,
 		}
 	},
+
 	computed: {
 		/**
 		 * System totals stats from the dashboard store.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null}
 		 */
 		systemTotals() {
 			return dashboardStore.getSystemTotals
 		},
+
 		/**
 		 * Orphaned-items stats from the dashboard store.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null}
 		 */
 		orphanedItems() {
 			return dashboardStore.getOrphanedItems
 		},
+
 		/**
 		 * Registers excluding the synthetic System Totals / Orphaned Items rows.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array}
 		 */
@@ -290,8 +298,10 @@ export default {
 					&& register.title !== 'Orphaned Items',
 			)
 		},
+
 		/**
 		 * Total schema count across the filtered registers.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {number}
 		 */
@@ -300,8 +310,10 @@ export default {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
+
 		/**
 		 * Build the register dropdown options for the registers-overview filter.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for registers
 		 */
@@ -313,6 +325,7 @@ export default {
 					title: register.title,
 					register,
 				})),
+
 				reduce: (option) => option.register,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -325,8 +338,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Build the schema dropdown options scoped to the selected register.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for schemas
 		 */
@@ -346,6 +361,7 @@ export default {
 						title: schema.title,
 						schema,
 					})),
+
 				reduce: (option) => option.schema,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -358,8 +374,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected register into NcSelect value shape.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null} Selected register option, or null
 		 */
@@ -373,8 +391,10 @@ export default {
 				register,
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected schema into NcSelect value shape.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null} Selected schema option, or null
 		 */
@@ -389,9 +409,11 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Apply a register selection and reset dependent schema state (cascade).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object|null} option - Selected register (or null to clear)
 		 * @return {void}
@@ -400,8 +422,10 @@ export default {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+
 		/**
 		 * Apply a schema selection, initialise properties, and refresh the object list.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object|null} option - Selected schema (or null to clear)
 		 * @return {void}
@@ -413,14 +437,17 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+
 		/**
 		 * Push the selected date range into the dashboard store for stats scoping.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {void}
 		 */
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
+
 		/**
 		 * @spec exclude Presentation-only formatter; builds the objects stats breakdown descriptor for a stats source.
 		 * @param {object} source - Stats-bearing record
@@ -436,6 +463,7 @@ export default {
 			if (stats.locked) breakdown.locked = stats.locked
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
+
 		/**
 		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
 		 * @param {number} size - Byte size

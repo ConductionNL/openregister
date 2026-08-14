@@ -95,53 +95,65 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		label: {
 			type: String,
 			default: '',
 		},
+
 		helperText: {
 			type: String,
 			default: '',
 		},
+
 		disabled: {
 			type: Boolean,
 			default: false,
 		},
+
 		defaultLabel: {
 			type: String,
 			default: 'default',
 		},
+
 		emptyLabel: {
 			type: String,
 			default: 'No languages configured',
 		},
+
 		addPlaceholder: {
 			type: String,
 			default: 'BCP 47 tag (e.g. nl, en, ar-SA)',
 		},
+
 		addLabel: {
 			type: String,
 			default: 'Add',
 		},
+
 		moveUpLabel: {
 			type: String,
 			default: 'Move up',
 		},
+
 		moveDownLabel: {
 			type: String,
 			default: 'Move down',
 		},
+
 		removeLabel: {
 			type: String,
 			default: 'Remove',
 		},
 	},
+
 	data() {
 		return {
 			draft: '',
 			error: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed add-enabled form-validation flag, UI plumbing
@@ -153,6 +165,7 @@ export default {
 				&& this.validateDraft(this.normalizedDraft) === null
 			)
 		},
+
 		/**
 		 * @spec exclude computed normalized draft input value, UI plumbing
 		 */
@@ -160,6 +173,7 @@ export default {
 			return (this.draft || '').trim().toLowerCase()
 		},
 	},
+
 	methods: {
 		/**
 		 * @param candidate
@@ -172,6 +186,7 @@ export default {
 			if (seen.includes(candidate)) return 'duplicate'
 			return null
 		},
+
 		/**
 		 * @spec exclude list-editor add emitting v-model input; languages contract owned by register-i18n capability
 		 */
@@ -187,6 +202,7 @@ export default {
 			this.$emit('input', next)
 			this.draft = ''
 		},
+
 		/**
 		 * @param reason
 		 * @spec exclude computed validation-error message display helper, UI plumbing
@@ -203,6 +219,7 @@ export default {
 					return 'Invalid input.'
 			}
 		},
+
 		/**
 		 * @param idx
 		 * @spec exclude list-editor remove emitting v-model input; languages contract owned by register-i18n capability
@@ -213,6 +230,7 @@ export default {
 			next.splice(idx, 1)
 			this.$emit('input', next)
 		},
+
 		/**
 		 * @param from
 		 * @param to

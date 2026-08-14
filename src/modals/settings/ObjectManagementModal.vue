@@ -351,18 +351,18 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcDialog,
 	NcButton,
-	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 
 export default {
 	name: 'ObjectManagementModal',

@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
-import { Ref, ref } from 'vue'
+import type { Ref } from 'vue'
+
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useSearchStore = defineStore('search', () => {
 	/*
@@ -14,13 +16,24 @@ export const useSearchStore = defineStore('search', () => {
 	const searchResults = ref<any>('')
 	const searchError = ref<any>('')
 
+	/**
+	 *
+	 * @param _search
+	 */
 	function setSearch(_search: string) {
 		search.value = _search
 	}
+	/**
+	 *
+	 * @param _searchResults
+	 */
 	function setSearchResults(_searchResults: string) {
 		searchResults.value = _searchResults
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
+	/**
+	 *
+	 */
 	function getSearchResults() {
 		fetch('/index.php/apps/openregister/api/search?_search=' + search.value, {
 			method: 'GET',
@@ -40,6 +53,9 @@ export const useSearchStore = defineStore('search', () => {
 				console.error(err.message ?? err)
 			})
 	}
+	/**
+	 *
+	 */
 	function clearSearch() {
 		search.value = ''
 		searchError.value = ''
@@ -65,8 +81,8 @@ export const useSearchStore = defineStore('search', () => {
 	 * Search for objects in the database.
 	 * This function returns refs immediately while updating them asynchronously as the search results come in.
 	 *
-	 * @param {Record<string, string>} searchQuery - Key-value pairs of search parameters
-	 * @return {object} Object containing refs that will be updated with search results
+	 * @param searchQuery - Key-value pairs of search parameters
+	 * @return Object containing refs that will be updated with search results
 	 */
 	function searchObjects(searchQuery: Record<string, string> = {}): {
 		success: Ref<boolean>
@@ -124,12 +140,18 @@ export const useSearchStore = defineStore('search', () => {
 		}
 	}
 
+	/**
+	 *
+	 */
 	function reDoSearch() {
 		return searchObjects({
 			...oldSearchQuery.value,
 		})
 	}
 
+	/**
+	 *
+	 */
 	function clearObjectSearchResults() {
 		searchObjectsSuccess.value = false
 		searchObjectsLoading.value = false

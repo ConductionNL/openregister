@@ -1,13 +1,13 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import formatBytes from '../../services/formatBytes.js'
 import {
-	dashboardStore,
-	registerStore,
-	navigationStore,
 	configurationStore,
+	dashboardStore,
+	navigationStore,
+	registerStore,
 	schemaStore,
 } from '../../store/store.js'
-import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
@@ -15,18 +15,18 @@ import formatBytes from '../../services/formatBytes.js'
 		<CnDetailPage
 			:title="register?.title || ''"
 			:loading="dashboardStore.loading || hydrating"
-			:loading-label="t('openregister', 'Loading register data...')"
+			:loadingLabel="t('openregister', 'Loading register data...')"
 			:error="
 				!!dashboardStore.error
 				|| (!dashboardStore.loading && !hydrating && !register)
 			"
-			:error-message="
+			:errorMessage="
 				dashboardStore.error || t('openregister', 'Register not found')
 			"
-			:stats-title="
+			:statsTitle="
 				registerStats ? t('openregister', 'Register Statistics') : ''
 			"
-			:stats-columns="
+			:statsColumns="
 				registerStats
 					? [
 							{ key: 'type', label: t('openregister', 'Type') },
@@ -85,7 +85,7 @@ import formatBytes from '../../services/formatBytes.js'
 				<!-- Audit Trail Actions Chart -->
 				<div class="chartCard">
 					<h3>Audit Trail Actions</h3>
-					<apexchart
+					<Apexchart
 						type="line"
 						height="350"
 						:options="auditTrailChartOptions"
@@ -97,7 +97,7 @@ import formatBytes from '../../services/formatBytes.js'
 				<!-- Objects by Schema Chart -->
 				<div class="chartCard">
 					<h3>Objects by Schema</h3>
-					<apexchart
+					<Apexchart
 						type="pie"
 						height="350"
 						:options="schemaChartOptions"
@@ -112,7 +112,7 @@ import formatBytes from '../../services/formatBytes.js'
 				<!-- Objects by Size Chart -->
 				<div class="chartCard">
 					<h3>Objects by Size Distribution</h3>
-					<apexchart
+					<Apexchart
 						type="bar"
 						height="350"
 						:options="sizeChartOptions"
@@ -163,12 +163,12 @@ import formatBytes from '../../services/formatBytes.js'
 								Managed
 							</span>
 						</h3>
-						<NcActions :primary="true" menu-name="Schema Actions">
+						<NcActions :primary="true" menuName="Schema Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
 							<NcActionButton
-								close-after-click
+								closeAfterClick
 								@click="viewObjects(schema)">
 								<template #icon>
 									<TableEye :size="20" />
@@ -177,7 +177,7 @@ import formatBytes from '../../services/formatBytes.js'
 							</NcActionButton>
 							<NcActionButton
 								v-if="!managingConfiguration"
-								close-after-click
+								closeAfterClick
 								@click="editSchema(schema)">
 								<template #icon>
 									<Pencil :size="20" />
@@ -205,7 +205,7 @@ import formatBytes from '../../services/formatBytes.js'
 						</div>
 					</div>
 					<div class="schemaChart">
-						<apexchart
+						<Apexchart
 							type="pie"
 							height="200"
 							:options="getSchemaChartOptions(schema)"
@@ -225,33 +225,33 @@ import formatBytes from '../../services/formatBytes.js'
 			ref="editRegisterDialog"
 			:schema="registerSchema"
 			:item="register"
-			:dialog-title="t('openregister', 'Edit Register')"
+			:dialogTitle="t('openregister', 'Edit Register')"
 			@confirm="onSaveRegister"
 			@close="showEditDialog = false">
 			<template #form="{ formData, errors, updateField }">
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:model-value="formData.title || ''"
+						:modelValue="formData.title || ''"
 						:error="!!errors.title"
-						:helper-text="errors.title"
+						:helperText="errors.title"
 						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:model-value="formData.slug || ''"
+						:modelValue="formData.slug || ''"
 						:error="!!errors.slug"
-						:helper-text="errors.slug"
+						:helperText="errors.slug"
 						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:model-value="formData.description || ''"
+						:modelValue="formData.description || ''"
 						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
-						:input-label="t('openregister', 'Schemas')"
+						:inputLabel="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:model-value="getSchemaSelectValue(formData.schemas)"
+						:modelValue="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
-						:close-on-select="false"
+						:closeOnSelect="false"
 						:loading="schemasLoading"
 						@update:modelValue="
 							(vals) => updateField('schemas', vals)
@@ -263,24 +263,24 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
+import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
-	NcButton,
-	NcTextField,
-	NcTextArea,
 	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue3-apexcharts'
+import Database from 'vue-material-design-icons/Database.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Database from 'vue-material-design-icons/Database.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
 import { getTheme } from '@/services/getTheme.js'
 
@@ -298,7 +298,7 @@ export default {
 		NcSelect,
 		CnDetailPage,
 		CnFormDialog,
-		apexchart: VueApexCharts,
+		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
 		DotsHorizontal,
@@ -306,6 +306,7 @@ export default {
 		Database,
 		TableEye,
 	},
+
 	data() {
 		return {
 			registerStats: null,
@@ -322,6 +323,7 @@ export default {
 			hydrating: true,
 		}
 	},
+
 	computed: {
 		/**
 		 * Inline JSON-schema describing the register edit form.
@@ -340,6 +342,7 @@ export default {
 						minLength: 1,
 						order: 1,
 					},
+
 					slug: {
 						type: 'string',
 						title: t('openregister', 'Slug'),
@@ -347,20 +350,24 @@ export default {
 						minLength: 1,
 						order: 2,
 					},
+
 					description: {
 						type: 'string',
 						title: t('openregister', 'Description'),
 						order: 3,
 					},
+
 					schemas: {
 						type: 'array',
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
+
 		/**
 		 * Resolve the active register from the dashboard store.
 		 *
@@ -380,6 +387,7 @@ export default {
 				(r) => String(r.id) === String(registerId),
 			)
 		},
+
 		/**
 		 * ApexCharts options for the audit-trail line chart.
 		 *
@@ -393,35 +401,43 @@ export default {
 					toolbar: {
 						show: true,
 					},
+
 					zoom: {
 						enabled: true,
 					},
 				},
+
 				xaxis: {
 					categories:
 						dashboardStore.chartData.auditTrailActions?.labels || [],
+
 					title: {
 						text: 'Date',
 					},
 				},
+
 				yaxis: {
 					title: {
 						text: 'Number of Actions',
 					},
 				},
+
 				colors: ['#41B883', '#E46651', '#00D8FF'],
 				stroke: {
 					curve: 'smooth',
 					width: 2,
 				},
+
 				legend: {
 					position: 'top',
 				},
+
 				theme: {
 					mode: getTheme(),
 				},
 			}
 		},
+
 		/**
 		 * ApexCharts options for the objects-by-schema pie chart.
 		 *
@@ -433,10 +449,12 @@ export default {
 				chart: {
 					type: 'pie',
 				},
+
 				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
 				legend: {
 					position: 'bottom',
 				},
+
 				responsive: [
 					{
 						breakpoint: 480,
@@ -444,6 +462,7 @@ export default {
 							chart: {
 								width: 200,
 							},
+
 							legend: {
 								position: 'bottom',
 							},
@@ -452,6 +471,7 @@ export default {
 				],
 			}
 		},
+
 		/**
 		 * ApexCharts options for the objects-by-size bar chart.
 		 *
@@ -463,6 +483,7 @@ export default {
 				chart: {
 					type: 'bar',
 				},
+
 				plotOptions: {
 					bar: {
 						horizontal: false,
@@ -470,23 +491,27 @@ export default {
 						endingShape: 'rounded',
 					},
 				},
+
 				xaxis: {
 					categories: dashboardStore.chartData.objectsBySize?.labels || [],
 					title: {
 						text: 'Size Range',
 					},
 				},
+
 				yaxis: {
 					title: {
 						text: 'Number of Objects',
 					},
 				},
+
 				fill: {
 					opacity: 1,
 				},
 			}
 		},
 	},
+
 	watch: {
 		register: {
 			/**
@@ -500,8 +525,10 @@ export default {
 				this.loadSchemas()
 				this.checkManagingConfiguration()
 			},
+
 			deep: true,
 		},
+
 		/**
 		 * Lazy-load schema options when the edit dialog opens.
 		 *
@@ -515,6 +542,7 @@ export default {
 			}
 		},
 	},
+
 	/**
 	 * Fetch register/dashboard data and stats on mount.
 	 *
@@ -563,6 +591,7 @@ export default {
 		await this.loadSchemas()
 		await this.checkManagingConfiguration()
 	},
+
 	methods: {
 		/**
 		 * Load register statistics from the dedicated stats endpoint
@@ -589,6 +618,7 @@ export default {
 				this.statsLoading = false
 			}
 		},
+
 		/**
 		 * ApexCharts options for a per-schema validity pie chart.
 		 *
@@ -600,11 +630,13 @@ export default {
 				chart: {
 					type: 'pie',
 				},
+
 				labels: ['Valid', 'Invalid', 'Deleted', 'Locked'],
 				legend: {
 					position: 'bottom',
 					fontSize: '14px',
 				},
+
 				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20'],
 				tooltip: {
 					y: {
@@ -643,6 +675,7 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+
 		/**
 		 * Map schema ids/objects to NcSelect option values.
 		 *
@@ -661,6 +694,7 @@ export default {
 				)
 			})
 		},
+
 		/**
 		 * Persist the register edit form and refresh dashboard data.
 		 *
@@ -682,6 +716,7 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+
 		/**
 		 * Open the edit-schema modal for a schema row.
 		 *
@@ -693,6 +728,7 @@ export default {
 			schemaStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
 		},
+
 		/**
 		 * Drill into this register's objects for the given schema by deep-linking
 		 * to the search/tables view with both ids preselected. The SearchSideBar
@@ -717,6 +753,7 @@ export default {
 				})
 				.catch(() => {})
 		},
+
 		/**
 		 * Normalise one schema for the cards.
 		 *
@@ -732,6 +769,7 @@ export default {
 			}
 			return schema
 		},
+
 		/**
 		 * Load full schema details for the register's schemas.
 		 *
@@ -779,6 +817,7 @@ export default {
 				this.loadingSchemas = false
 			}
 		},
+
 		/**
 		 * Check if this register is managed by a configuration
 		 *
