@@ -11,7 +11,7 @@
 		<div class="integrity">
 			<!-- Seal coverage: cheap, loaded on open -->
 			<div v-if="status === null" class="integrity__hint">
-				{{ t('openregister', 'Reading seal coverage …') }}
+				{{ t('openregister', 'Reading seal coverage …') }}
 			</div>
 
 			<div v-else class="integrity__coverage">
@@ -126,7 +126,7 @@
 					</template>
 					{{
 						verifying
-							? t('openregister', 'Verifying …')
+							? t('openregister', 'Verifying …')
 							: t('openregister', 'Verify chain')
 					}}
 				</NcButton>

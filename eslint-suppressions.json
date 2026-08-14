@@ -1849,6 +1849,9 @@
     }
   },
   "src/views/settings/sections/LogIntegrity.vue": {
+    "@nextcloud/l10n-non-breaking-space": {
+      "count": 2
+    },
     "jsdoc/check-tag-names": {
       "count": 1
     },
@@ -1895,6 +1898,9 @@
     }
   },
   "src/views/settings/sections/PushNotificationsConfiguration.vue": {
+    "@nextcloud/l10n-non-breaking-space": {
+      "count": 1
+    },
     "jsdoc/check-tag-names": {
       "count": 1
     },
