@@ -19,16 +19,26 @@ use OCP\IUser;
  * ## Why this exists
  *
  * A leaf app cannot mock what it cannot load. OpenRegister's concrete classes
- * are absent from a leaf app's standalone composer test environment, so before
- * this package every app either reached through an untyped `ContainerInterface`
- * -- hiding the dependency from readers and tooling alike -- or hand-rolled a
- * double. Measured 2026-08-14: exactly one of the sixteen consuming apps
- * shipped such a double, and it declared 10 of the real class's 88 methods.
- * Seven more copies would have been seven more things to drift.
+ * are absent from a leaf app's standalone composer test environment, so every
+ * consuming app either reaches through an untyped `ContainerInterface` --
+ * hiding the dependency from readers and tooling alike -- or hand-rolls a
+ * double.
  *
- * This interface ships in its own composer package, so it is autoloadable in
- * every consumer's `vendor/` at runtime AND under PHPUnit. One definition,
- * owned by OpenRegister.
+ * The doubles are not a hypothetical cost. Measured 2026-08-14, TEN of the
+ * sixteen consuming apps already ship one:
+ *
+ *     opencatalogi 13   docudesk 12   openbuild 12   openconnector 10
+ *     hermiq        8   pipelinq  7
+ *     softwarecatalog, zaakafhandelapp, scholiq, decidesk: 0
+ *
+ * Against a real class of 88 methods. Their UNION is 23 -- ten files, ten
+ * maintainers, and between them barely a quarter of the surface. The four
+ * declaring zero methods are empty shells: they satisfy a type-hint and
+ * nothing else, so any call through them is unchecked by construction.
+ *
+ * That is what this interface replaces: one definition, owned by the app that
+ * implements it, which cannot drift from the implementation without PHP
+ * refusing to declare the class.
  *
  * ## Scope is measured, not guessed
  *
