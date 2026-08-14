@@ -27,6 +27,7 @@ use DateInterval;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OC\Files\Node\File;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
@@ -56,7 +57,6 @@ use OCP\IUserSession;
  *
  * Adding fields? Check if they should trigger change detection or be database-managed.
  *
- * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
  * @method string|null getSlug()
  * @method void setSlug(?string $slug)
@@ -64,11 +64,8 @@ use OCP\IUserSession;
  * @method void setUri(?string $uri)
  * @method string|null getVersion()
  * @method void setVersion(?string $version)
- * @method string|null getRegister()
  * @method void setRegister(?string $register)
- * @method string|null getSchema()
  * @method void setSchema(?string $schema)
- * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
  * @method void setFiles(?array $files)
@@ -76,7 +73,6 @@ use OCP\IUserSession;
  * @method void setRelations(?array $relations)
  * @method array|null getLocked()
  * @method void setLocked(?array $locked)
- * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
@@ -84,7 +80,6 @@ use OCP\IUserSession;
  * @method void setFolder(?string $folder)
  * @method string|null getApplication()
  * @method void setApplication(?string $application)
- * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
  * @method array|null getValidation()
  * @method void setValidation(?array $validation)
@@ -143,7 +138,7 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class ObjectEntity extends Entity implements JsonSerializable {
+class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
 
 	/**
 	 * Unique identifier for the object.
@@ -772,6 +767,62 @@ class ObjectEntity extends Entity implements JsonSerializable {
 
 		return $objectData;
 	}//end getObject()
+
+	/**
+	 * The object's UUID.
+	 *
+	 * 🔑 EXPLICIT ON PURPOSE — an interface cannot be satisfied by `__call`.
+	 *
+	 * These five getters were magic (`@method` annotations over Nextcloud's
+	 * Entity `__call`). Magic methods do not implement an interface: PHP checks
+	 * DECLARED methods, so `implements ObjectEntityInterface` would have been a
+	 * fatal error with the annotations alone. The same blind spot has bitten
+	 * this fleet before — `method_exists()` is false for every magic method.
+	 *
+	 * Declaring them also makes the entity honest to static analysis and to
+	 * readers, which the annotations only approximated.
+	 *
+	 * @return string|null
+	 */
+	public function getUuid(): ?string {
+		return $this->uuid;
+	}//end getUuid()
+
+	/**
+	 * The register this object belongs to.
+	 *
+	 * @return string|null
+	 */
+	public function getRegister(): ?string {
+		return $this->register;
+	}//end getRegister()
+
+	/**
+	 * The schema this object conforms to.
+	 *
+	 * @return string|null
+	 */
+	public function getSchema(): ?string {
+		return $this->schema;
+	}//end getSchema()
+
+	/**
+	 * The owning organisation.
+	 *
+	 * @return string|null
+	 */
+	public function getOrganisation(): ?string {
+		return $this->organisation;
+	}//end getOrganisation()
+
+	/**
+	 * The owner's user id.
+	 *
+	 * @return string|null
+	 */
+	public function getOwner(): ?string {
+		return $this->owner;
+	}//end getOwner()
 
 	/**
 	 * Get array of field names that are JSON type
