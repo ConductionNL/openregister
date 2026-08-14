@@ -7620,7 +7620,13 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @psalm-return list<array<string, mixed>>
 	 */
-	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName): array {
+	public function bulkUpsert(
+		array $objects,
+		Register $register,
+		Schema $schema,
+		string $tableName,
+		bool $needsPreUpdateState = true,
+	): array {
 		$this->logger->debug(
 			message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
 			context: [
@@ -7638,7 +7644,8 @@ class MagicMapper extends AbstractObjectMapper {
 				objects: $objects,
 				register: $register,
 				schema: $schema,
-				tableName: $tableName
+				tableName: $tableName,
+				needsPreUpdateState: $needsPreUpdateState
 			);
 		} catch (\Exception $e) {
 			// Check if this is a "table does not exist" error (PostgreSQL: 42P01, MySQL: 1146).
@@ -9210,6 +9217,7 @@ class MagicMapper extends AbstractObjectMapper {
 		array $updateObjects = [],
 		?Register $register = null,
 		?Schema $schema = null,
+		bool $needsPreUpdateState = true,
 	): array {
 		$this->logger->debug(
 			message: '[MagicMapper] ultraFastBulkSave called',
@@ -9270,7 +9278,8 @@ class MagicMapper extends AbstractObjectMapper {
 						insertObjects: $groupObjects,
 						updateObjects: [],
 						register: $groupRegister,
-						schema: $groupSchema
+						schema: $groupSchema,
+						needsPreUpdateState: $needsPreUpdateState
 					);
 
 					$allResults = array_merge($allResults, $groupResults);
@@ -9284,7 +9293,8 @@ class MagicMapper extends AbstractObjectMapper {
 			insertObjects: $insertObjects,
 			updateObjects: $updateObjects,
 			register: $register,
-			schema: $schema
+			schema: $schema,
+			needsPreUpdateState: $needsPreUpdateState
 		);
 	}//end ultraFastBulkSave()
 
@@ -9305,6 +9315,7 @@ class MagicMapper extends AbstractObjectMapper {
 		array $updateObjects,
 		?Register $register,
 		?Schema $schema,
+		bool $needsPreUpdateState = true,
 	): array {
 		if ($register === null || $schema === null) {
 			$firstObject = $insertObjects[0] ?? [];
@@ -9346,7 +9357,8 @@ class MagicMapper extends AbstractObjectMapper {
 			objects: $insertObjects,
 			register: $register,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			needsPreUpdateState: $needsPreUpdateState
 		);
 
 		return $result;

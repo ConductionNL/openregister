@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -63,6 +64,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param ExplodeNode $explode The built-in "Explode" node.
 	 * @param FilterNode $filter The built-in "Filter" node.
 	 * @param WaitNode $wait The built-in "Wait" node.
+	 * @param AwaitSignalNode $awaitSignal The built-in "Wait for an answer" node.
 	 * @param SwitchNode $switch The built-in "Switch" node.
 	 * @param EndNode $end The built-in "End" node.
 	 * @param MergeNode $merge The built-in "Merge" node.
@@ -83,6 +85,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly ExplodeNode $explode,
 		private readonly FilterNode $filter,
 		private readonly WaitNode $wait,
+		private readonly AwaitSignalNode $awaitSignal,
 		private readonly SwitchNode $switch,
 		private readonly EndNode $end,
 		private readonly MergeNode $merge,
@@ -119,6 +122,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->explode);
 		$event->registerNode(node: $this->filter);
 		$event->registerNode(node: $this->wait);
+		$event->registerNode(node: $this->awaitSignal);
 		$event->registerNode(node: $this->switch);
 		$event->registerNode(node: $this->end);
 		$event->registerNode(node: $this->merge);

@@ -2,7 +2,32 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, beta, development, feature/**, bugfix/**, hotfix/**]
+    # An ALLOW-LIST of prefixes is a gate with a hole in it, and the hole is
+    # silent: a branch matching nothing gets no CI, and its last visible status
+    # is whatever it inherited. Two live examples, both on 2026-08-14:
+    # `perf/**` was uncovered in openconnector (a merge with conflict markers and
+    # 84 red tests sailed through), and `feat/**` is uncovered HERE — note the
+    # list says `feature/**`, so every branch anyone named `feat/...` has been
+    # running without checks.
+    #
+    # Prefixes added rather than `**` because this workflow is expensive. The
+    # fast structural checks DO run on `**` — see merge-hygiene.yml.
+    #
+    # ⚠️ Adding prefixes is not the durable fix; the next invented one is
+    # uncovered again. The durable fix is branch protection requiring a PR into
+    # development, which the pull_request trigger below already gates properly.
+    branches:
+      - main
+      - beta
+      - development
+      - feature/**
+      - feat/**
+      - bugfix/**
+      - hotfix/**
+      - perf/**
+      - refactor/**
+      - chore/**
+      - fix/**
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after

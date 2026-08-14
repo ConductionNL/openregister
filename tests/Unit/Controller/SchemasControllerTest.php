@@ -8,6 +8,7 @@ use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -44,6 +45,7 @@ class SchemasControllerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 
 	private MagicMapper&MockObject $objectMapper;
+	private RegisterMapper&MockObject $registerMapper;
 
 	private UploadService&MockObject $uploadService;
 
@@ -80,6 +82,7 @@ class SchemasControllerTest extends TestCase {
 		$this->config = $this->createMock(IAppConfig::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->uploadService = $this->createMock(UploadService::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
@@ -132,6 +135,11 @@ class SchemasControllerTest extends TestCase {
 			$this->request,
 			$this->config,
 			$this->schemaMapper,
+			// Slot 5. `$registerMapper` was inserted HERE rather than appended,
+			// which shifted every later argument: without it the MagicMapper mock
+			// lands on the RegisterMapper parameter and the TypeError names the
+			// production constructor, not this line.
+			$this->registerMapper,
 			$this->objectMapper,
 			$this->uploadService,
 			$this->auditTrailMapper,

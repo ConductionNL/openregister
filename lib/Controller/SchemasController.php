@@ -29,6 +29,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
@@ -125,6 +126,7 @@ class SchemasController extends Controller {
 		IRequest $request,
 		private readonly IAppConfig $config,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapper $registerMapper,
 		private readonly MagicMapper $objectEntityMapper,
 		private readonly UploadService $uploadService,
 		private readonly AuditTrailMapper $auditTrailMapper,
@@ -293,6 +295,109 @@ class SchemasController extends Controller {
 	}//end index()
 
 	/**
+	 * Resolve the {id} route parameter to a Schema, register-scoped when possible.
+	 *
+	 * WHY this exists. Schema slugs are unique WITHIN a register, never across the
+	 * instance, but `SchemaMapper::find()` matches `LOWER(slug)` globally and returns
+	 * the first row it fetches. Two apps that both own an `agent`, `conversation`,
+	 * `order` or `task` schema therefore fight over the name and the loser silently
+	 * reads the winner's schema. Measured on the shared dev instance 2026-08-13:
+	 * hermiq and openbuild both own slug `agent`, and `GET /api/schemas/agent`
+	 * returned openbuild's 6-property schema instead of hermiq's 36-property one —
+	 * a bug hermiq carries a permanent layout workaround for.
+	 *
+	 * `?register=` is OPTIONAL and absence keeps the previous behaviour exactly.
+	 * This is a foundation repository consumed by 18 apps; turning a currently-working
+	 * (if silently wrong) request into a 409 for every existing consumer at once is
+	 * disproportionate to fixing the lookup. The ambiguity that remains without the
+	 * parameter is now LOGGED with its candidates instead of being invisible, so the
+	 * next investigation starts from evidence.
+	 *
+	 * @param int|string $id The {id} route parameter — a numeric id, a uuid, or a slug.
+	 *
+	 * @return Schema The resolved schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When nothing matches.
+	 */
+	private function resolveSchema(int|string $id): Schema {
+		$registerParam = $this->request->getParam(key: 'register', default: null);
+
+		// Register-scoped first. findBySlugInIds() returns null for a numeric id, a
+		// uuid, or a slug the register does not carry, so every one of those cases
+		// falls through to the global lookup untouched.
+		if ($registerParam !== null && $registerParam !== '' && is_string($id) === true && is_numeric($id) === false) {
+			try {
+				$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
+				$scoped = $this->schemaMapper->findBySlugInIds(
+					slug: $id,
+					schemaIds: ($register->getSchemas() ?? [])
+				);
+				if ($scoped !== null) {
+					return $scoped;
+				}
+			} catch (Exception $e) {
+				// An unresolvable register is not a reason to fail the schema read —
+				// fall through to the global lookup, which is what the caller would
+				// have got without the parameter at all.
+				$this->logger->debug(
+					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
+					['register' => $registerParam, 'schema' => $id]
+				);
+			}
+		}
+
+		$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
+
+		// Leave evidence when a slug was ambiguous and nobody said which register they
+		// meant. Silence here is what made the `agent` collision cost a workaround
+		// instead of a bug report.
+		if (is_string($id) === true && is_numeric($id) === false && $registerParam === null) {
+			$this->logAmbiguousSlug(slug: $id, resolved: $schema);
+		}
+
+		return $schema;
+	}//end resolveSchema()
+
+	/**
+	 * Log a debug line naming every schema a slug could have resolved to.
+	 *
+	 * Only emits when the slug genuinely matches more than one schema, so a normal
+	 * unambiguous read stays silent.
+	 *
+	 * @param string $slug     The slug that was resolved.
+	 * @param Schema $resolved The schema the global lookup returned.
+	 *
+	 * @return void
+	 */
+	private function logAmbiguousSlug(string $slug, Schema $resolved): void {
+		try {
+			$candidates = $this->schemaMapper->findAll(
+				filters: ['slug' => $slug],
+				_rbac: false,
+				_multitenancy: false
+			);
+
+			if (count($candidates) < 2) {
+				return;
+			}
+
+			$this->logger->debug(
+				sprintf(
+					'[SchemasController] slug "%s" is ambiguous across %d schemas and no ?register= was supplied; '
+					. 'returned id %s. Pass ?register=<slug> to resolve deterministically.',
+					$slug,
+					count($candidates),
+					(string)$resolved->getId()
+				),
+				['candidateIds' => array_map(static fn (Schema $s): int => (int)$s->getId(), $candidates)]
+			);
+		} catch (Exception $e) {
+			// Diagnostics must never break the read they are diagnosing.
+			$this->logger->debug('[SchemasController] ambiguity check failed: ' . $e->getMessage());
+		}
+	}//end logAmbiguousSlug()
+
+	/**
 	 * Retrieves a single schema by ID
 	 *
 	 * @param int|string $id The ID of the schema
@@ -320,7 +425,7 @@ class SchemasController extends Controller {
 				$extend = [$extend];
 			}
 
-			$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
+			$schema = $this->resolveSchema(id: $id);
 
 			// Read-visibility guard (@PublicPage): an anonymous caller may only
 			// view a schema whose RBAC authorization grants read access to the

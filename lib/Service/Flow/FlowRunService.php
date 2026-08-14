@@ -63,6 +63,28 @@ class FlowRunService {
 	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
 
 	/**
+	 * The context key an arriving signal's payload lands at.
+	 *
+	 * Read by whichever node suspended waiting for it, and cleared once that
+	 * walk finishes — a signal answers one question, and leaving it behind would
+	 * let a later suspension read an answer meant for an earlier one.
+	 *
+	 * @var string
+	 */
+	public const SIGNAL_CONTEXT_KEY = 'signal';
+
+	/**
+	 * Loads and writes back the state that belongs to the FLOW, not the run.
+	 *
+	 * A separate collaborator because it handles a different lifetime: the token
+	 * dies with its run, this outlives every run of the flow. See
+	 * {@see FlowStateBinding}.
+	 *
+	 * @var FlowStateBinding
+	 */
+	private readonly FlowStateBinding $flowState;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowRunMapper $mapper Persists runs.
@@ -83,7 +105,7 @@ class FlowRunService {
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $mapper,
-		private readonly FlowStateMapper $stateMapper,
+		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
 		private readonly FlowNodeRegistry $registry,
 		private readonly LoggerInterface $logger,
@@ -91,6 +113,11 @@ class FlowRunService {
 		private readonly ?FlowRunStepMapper $steps = null,
 		private readonly ?IAppConfig $appConfig = null,
 	) {
+		// Built here rather than injected, deliberately: this service's
+		// constructor is called explicitly by three test suites, and inserting or
+		// swapping a parameter would silently shift every later slot for them.
+		// The binding needs nothing this service was not already given.
+		$this->flowState = new FlowStateBinding(stateMapper: $stateMapper, logger: $logger);
 
 	}//end __construct()
 
@@ -126,33 +153,51 @@ class FlowRunService {
 	}//end baseContextFor()
 
 	/**
-	 * Put the flow's carried state into the node context.
+	 * Assemble the context a walk's steps are handed.
 	 *
-	 * Flow state is the token's long-lived sibling: the token belongs to THIS run
-	 * and dies with it, this belongs to the FLOW and outlives every run of it.
-	 * Loaded from its own table rather than from the run's context, because a
-	 * scheduled flow's next tick is a different run and would otherwise start
-	 * blank — which is the whole gap OR#2216 exists to close.
+	 * Three things travel as OBJECTS rather than values, for one shared reason:
+	 * `IFlowNode::execute()` takes `$context` by value, so a plain array could
+	 * only ever be read. A handle survives the copy and buys every node write
+	 * access without changing the signature any node implements.
 	 *
-	 * Handed over as an object for the same reason as the token: nodes take
-	 * $context by value, so only a handle gives them write access.
+	 * They answer different questions, and conflating them is the trap:
+	 *
+	 * - the TOKEN is what the run carries — a correlation id, a resolved
+	 *   reference. Belongs to the run and dies with it.
+	 * - the RESUME STATE is how far each node got. Belongs to the node, and only
+	 *   between a suspension and the resume that answers it.
+	 * - the GUARD is the run's liveness signal and deadline. Also handed to the
+	 *   dispatcher, which checkpoints between steps — but between-steps is not
+	 *   enough alone, because a single step that runs past the threshold gets
+	 *   the run failed underneath it. A node working in pages checkpoints
+	 *   itself; one that returns quickly never needs to.
 	 *
 	 * @param FlowRun $run The run being executed.
-	 * @param array $context The node context, modified in place.
+	 * @param boolean $resuming Whether this walk resumes a suspended run.
+	 * @param FlowRunGuard $guard The run's liveness handle.
 	 *
-	 * @return void
+	 * @return array The node context.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray and
+	 * FlowResumeState::fromArray are stateless rehydrators for value objects;
+	 * injecting a factory to call them would add a dependency without removing
+	 * any coupling. Carried over from execute(), which held the same suppression
+	 * for the same two calls before they moved here.
 	 */
-	private function attachFlowState(FlowRun $run, array &$context): void {
-		if (trim((string)$run->getFlowId()) === '') {
-			return;
-		}
+	private function nodeContextFor(FlowRun $run, bool $resuming, FlowRunGuard $guard): array {
+		$context = $this->baseContextFor(run: $run, resuming: $resuming);
 
-		$stored = $this->stateMapper->findByFlow(flowId: (string)$run->getFlowId());
-		$context[FlowStateHandle::CONTEXT_KEY] = new FlowStateHandle(values: ($stored?->getState() ?? []));
+		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
+		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
+		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
 
-	}//end attachFlowState()
+		$this->flowState->attach(run: $run, context: $context);
+
+		return $context;
+	}//end nodeContextFor()
+
 
 	/**
 	 * The liveness-and-deadline handle for one run of one flow.
@@ -405,50 +450,6 @@ class FlowRunService {
 		return $this->mapper->hasActiveRun(flowId: $flowId);
 	}//end hasActiveRun()
 
-	/**
-	 * Write a run's flow state back to its own table, when a node changed it.
-	 *
-	 * @param FlowRun $run The run that just finished a pass.
-	 * @param array $context The context the engine returned.
-	 *
-	 * @return void
-	 */
-	private function persistFlowState(FlowRun $run, array $context): void {
-		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
-		if (($handle instanceof FlowStateHandle) === false) {
-			return;
-		}
-
-		if ($handle->isDirty() === false) {
-			return;
-		}
-
-		$flowId = trim((string)$run->getFlowId());
-		if ($flowId === '') {
-			return;
-		}
-
-		try {
-			$this->stateMapper->put(flowId: $flowId, state: $handle->all());
-		} catch (Throwable $e) {
-			// Deliberately non-fatal, and deliberately LOUD. A run that did its
-			// work should not be recorded as failed because its bookkeeping
-			// could not be saved — but a silently dropped state write would let
-			// a flow repeat work forever while looking healthy, so this must be
-			// visible rather than swallowed.
-			$this->logger->error(
-				message: '[FlowRunService] Could not persist flow state',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'run' => $run->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-
-	}//end persistFlowState()
 
 	/**
 	 * Queue a fresh run that repeats a finished one.
@@ -485,6 +486,55 @@ class FlowRunService {
 		);
 
 	}//end retry()
+
+	/**
+	 * Deliver the external signal a suspended run is waiting for.
+	 *
+	 * The missing half of {@see FlowSuspension}. That exception has always
+	 * documented `resumeAt: null` as "waits for an external signal (a child run,
+	 * a webhook)", and the engine has always suspended correctly on it — but
+	 * nothing could ever wake such a run, because no query reads it and no
+	 * endpoint existed to say the signal had arrived. The documented case was
+	 * unreachable, and any run that used it stranded its flow.
+	 *
+	 * The run is PARKED, not advanced inline: a signal arrives on an HTTP
+	 * request, and that request has to return. Setting `resume_at` to now makes
+	 * the run due, so the next worker pass picks it up through the ordinary
+	 * `findDue()` path rather than through a second execution route that would
+	 * have to re-implement guards, fairness and error handling. The cost is
+	 * latency — up to one worker pass, and the stock system cron is every five
+	 * minutes — which is the right trade for an approval and the wrong one for a
+	 * tight machine-to-machine handshake. Worth knowing before using it for the
+	 * latter.
+	 *
+	 * The payload lands at `$context['signal']` and is consumed by the next
+	 * walk ({@see self::persistResult()}), so a node reads the answer to ITS
+	 * question rather than one left behind by an earlier suspension.
+	 *
+	 * @param FlowRun $run The suspended run to wake.
+	 * @param array $payload What the signaller wants the run to know.
+	 *
+	 * @return FlowRun|null The updated run, or null when it was not suspended.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	public function signal(FlowRun $run, array $payload = []): ?FlowRun {
+		if ($run->getStatus() !== FlowRun::STATUS_SUSPENDED) {
+			// A queued or running run has not asked for anything yet, and a
+			// terminal one is past asking. Signalling either would either be
+			// lost or would resurrect a finished run.
+			return null;
+		}
+
+		$context = ($run->getContext() ?? []);
+		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
+
+		$run->setContext($context);
+		$run->setResumeAt(new DateTime());
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end signal()
 
 	/**
 	 * Execute (or continue) a run to its next stopping point.
@@ -529,25 +579,8 @@ class FlowRunService {
 			$start = null;
 		}
 
-		$context = $this->baseContextFor(run: $run, resuming: $resuming);
-
-		// The token is stored as plain values but handed to steps as an object:
-		// a step receives $context by value, so only a handle gives it write
-		// access. Rehydrating here (and serialising in persistResult) is what
-		// carries a value across a suspension — the run that resumes days later
-		// gets back exactly what it held when it stopped.
-		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
-
-		// The run's liveness signal and its deadline. Handed to the dispatcher,
-		// which checkpoints between steps, AND put in the node context, because
-		// between-steps is not enough on its own: a single step that runs past the
-		// threshold gets the run failed underneath it. A node that works in pages,
-		// batches or records checkpoints between them; one that returns quickly
-		// never needs to.
 		$guard = $this->guardFor(run: $run, flow: $flow);
-		$context[FlowRunGuard::CONTEXT_KEY] = $guard;
-
-		$this->attachFlowState(run: $run, context: $context);
+		$context = $this->nodeContextFor(run: $run, resuming: $resuming, guard: $guard);
 
 		try {
 			$result = $this->engine->run(
@@ -742,7 +775,7 @@ class FlowRunService {
 		// Only written when a node actually changed something: a flow that
 		// merely READS its state should not touch the row on every tick, and a
 		// five-minute schedule makes that difference thousands of writes a week.
-		$this->persistFlowState(run: $run, context: $context);
+		$this->flowState->persist(run: $run, context: $context);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
 
 		// Same reason as the state handle one line up: it is a live collaborator,
@@ -750,6 +783,28 @@ class FlowRunService {
 		// column as a meaningless object and handed back to a resumed run as
 		// something that no longer beats.
 		unset($context[FlowRunGuard::CONTEXT_KEY]);
+
+		// The per-node view the dispatcher scopes for whichever node ran last.
+		// A view, not data: it is rebuilt on every dispatch, and persisting it
+		// would write one arbitrary node's slot into the run under a key every
+		// other node also reads from.
+		unset($context[FlowNodeResumeState::CONTEXT_KEY]);
+
+		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		unset($context[FlowResumeState::CONTEXT_KEY]);
+		if ($resumeState instanceof FlowResumeState === true) {
+			$storable = $resumeState->storableWhen(suspended: ($status === FlowRun::STATUS_SUSPENDED));
+			if ($storable !== null) {
+				$context[FlowResumeState::CONTEXT_KEY] = $storable;
+			}
+		}
+
+		// A signal is consumed by the walk it woke. Kept, it would still be
+		// sitting there the NEXT time this run suspends on a signal, and that
+		// node would resume immediately on an answer to somebody else's
+		// question — a flow with two approval steps would auto-approve the
+		// second one the moment the first was granted.
+		unset($context[self::SIGNAL_CONTEXT_KEY]);
 
 		$run->setStatus($status);
 		$run->setItems((array)($result['items'] ?? []));

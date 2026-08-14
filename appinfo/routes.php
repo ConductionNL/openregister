@@ -1304,6 +1304,7 @@ return [
 		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#resume', 'url' => '/api/flow-runs/{uuid}/resume', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
 		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.

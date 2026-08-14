@@ -397,6 +397,59 @@ class FlowRunController extends Controller {
 	}//end retry()
 
 	/**
+	 * Tell a suspended run that the thing it was waiting for has happened.
+	 *
+	 * The delivery point for {@see FlowSuspension} with no `resumeAt` — an
+	 * approval granted, a webhook received, a child run finished. Without it
+	 * such a run could never be woken by anything, and because `hasActiveRun()`
+	 * counts suspended runs, it also blocked its flow from being scheduled ever
+	 * again.
+	 *
+	 * Guarded by the same ownership check as `retry()`, and for the same reason:
+	 * resuming somebody else's run is the same IDOR as re-running it.
+	 *
+	 * Accepted on a SUSPENDED run only. The response is the parked run, not a
+	 * finished one — the worker advances it on its next pass.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The parked run, or a 4xx when it cannot be signalled.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function resume(string $uuid): JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		$refusal = $this->refuseUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$payload = $this->request->getParams();
+		// Routing artefacts, not part of what the signaller is telling the run.
+		unset($payload['uuid'], $payload['_route']);
+
+		$signalled = $this->runner->signal(run: $run, payload: $payload);
+		if ($signalled === null) {
+			return new JSONResponse(
+				['error' => 'Only a suspended run can be resumed; this one is ' . $run->getStatus() . '.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		return new JSONResponse($signalled->jsonSerialize());
+	}//end resume()
+
+	/**
 	 * Refuse unless the caller may RUN this flow.
 	 *
 	 * WHY THE CONTROLLER AND NOT THE RESOLVER. `FlowLocator::resolveSubject()`
