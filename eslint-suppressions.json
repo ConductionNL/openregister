@@ -1832,6 +1832,11 @@
       "count": 13
     }
   },
+  "src/views/settings/sections/FlowConfiguration.vue": {
+    "@nextcloud/no-deprecated-library-props": {
+      "count": 1
+    }
+  },
   "src/views/settings/sections/LlmConfiguration.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2

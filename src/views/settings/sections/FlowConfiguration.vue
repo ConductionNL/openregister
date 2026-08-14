@@ -81,7 +81,7 @@
 			}}
 		</p>
 
-		<NcButton variant="primary" :disabled="saving" @click="save">
+		<NcButton type="primary" :disabled="saving" @click="save">
 			{{
 				saving
 					? t('openregister', 'Saving…')
