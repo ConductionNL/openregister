@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -374,6 +375,7 @@ class NamesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(string $id): JSONResponse {
 		$startTime = microtime(true);
 
@@ -470,6 +472,7 @@ class NamesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function stats(): JSONResponse {
 		try {
 			$stats = $this->objectCacheService->getStats();
@@ -517,6 +520,9 @@ class NamesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	#[PublicPage]
+	// Much tighter than its siblings: warmup REBUILDS the cache, so it is the
+	// one endpoint here where a caller can make the server do real work.
+	#[AnonRateLimit(limit: 5, period: 60)]
 	public function warmup(): JSONResponse {
 		$startTime = microtime(true);
 
