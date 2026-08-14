@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Поиск имён свойств...",
     "Search recording mode" : "Режим записи поисковых запросов",
     "Search registers..." : "Поиск реестров...",
+    "Search Results" : "Результаты поиска",
     "Search schemas..." : "Поиск схем...",
     "Search Term" : "Поисковый запрос",
     "Search Trail Details" : "Детали журнала поиска",

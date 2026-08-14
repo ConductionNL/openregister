@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Hae ominaisuuksien nimiä...",
     "Search recording mode" : "Hakujen tallennustila",
     "Search registers..." : "Hae rekistereitä...",
+    "Search Results" : "Hakutulokset",
     "Search schemas..." : "Hae skeemoja...",
     "Search Term" : "Hakutermi",
     "Search Trail Details" : "Hakuketjun tiedot",

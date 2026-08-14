@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Hledat názvy vlastností...",
     "Search recording mode" : "Režim zaznamenávání hledání",
     "Search registers..." : "Hledat registry...",
+    "Search Results" : "Výsledky hledání",
     "Search schemas..." : "Hledat schémata...",
     "Search Term" : "Hledaný výraz",
     "Search Trail Details" : "Podrobnosti záznamu vyhledávání",

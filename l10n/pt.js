@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Pesquisar nomes de propriedades...",
     "Search recording mode" : "Modo de registo das pesquisas",
     "Search registers..." : "Pesquisar registos...",
+    "Search Results" : "Resultados da pesquisa",
     "Search schemas..." : "Pesquisar esquemas...",
     "Search Term" : "Termo de Pesquisa",
     "Search Trail Details" : "Detalhes do Registo de Pesquisa",

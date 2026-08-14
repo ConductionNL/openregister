@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Αναζήτηση ονομάτων ιδιοτήτων...",
     "Search recording mode" : "Λειτουργία καταγραφής αναζητήσεων",
     "Search registers..." : "Αναζήτηση μητρώων...",
+    "Search Results" : "Αποτελέσματα αναζήτησης",
     "Search schemas..." : "Αναζήτηση σχημάτων...",
     "Search Term" : "Όρος αναζήτησης",
     "Search Trail Details" : "Λεπτομέρειες ίχνους αναζήτησης",

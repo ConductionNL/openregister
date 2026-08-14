@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Sök egenskapsnamn...",
     "Search recording mode" : "Läge för sökloggning",
     "Search registers..." : "Sök Register...",
+    "Search Results" : "Sökresultat",
     "Search schemas..." : "Sök Scheman...",
     "Search Term" : "Sökterm",
     "Search Trail Details" : "Sökloggdetaljer",

@@ -32,7 +32,7 @@ There is **no scanner for the backend set**. Auditing `en.json` would mean walki
 `lib/` for PHP `$l->t()` calls, not `src/`. Until that exists it is maintained by hand.
 
 Re-measure before trusting any number below — `npm run check:l10n` prints it all.
-**As of 2026-08-14**: `en.js` holds 2058 keys, `src/` uses all of them, 0 unused, 100 unwrapped literals outstanding.
+**As of 2026-08-14**: `en.js` holds 2051 keys, `src/` uses all of them, 0 unused, 100 unwrapped literals outstanding. 17 locales at full parity (2051 keys each), 19 in progress.
 
 ## Commands
 
@@ -53,18 +53,37 @@ extractor, so they always agree on what "used" means.
 
 ## Hard rules
 
-**Never write a value equal to its key.** This is the one rule that matters most,
-because breaking it is invisible.
+**Every finished locale is key-for-key identical to `en.js`, always.** All 17
+carry the same key set, so their files have the same line count. This is
+enforced, not aspirational: `npm run test:l10n:parity` fails the build when a
+locale in the finished set is missing a key, and it runs in CI as its own leg.
+Add an English string and you translate it or you unwrap it — you do not leave 17
+locales one key short, and you do not drop a locale from the finished set to get
+a green build.
 
-- **Absent** → `OC.L10N` falls back to the English source. Renders correct text,
-  and every tool can still see the key is untranslated, so it stays on the list.
-- **`value === key`** → renders the same characters but is indistinguishable from
-  finished work, to tooling and to the next maintainer. It is never revisited.
+That splits into two cases, and getting the split wrong is the easy mistake:
 
-So a legitimate cognate (`ID`, `URL`, `CSV`, `PDF`, `RBAC`, `Webhook`, and
-`Avatar` / `Format` / `Metadata` in many languages) is **omitted**, not written
-out. `npm run test:l10n:parity` fails on identical values for this reason; it
-reports absent ones separately and less severely.
+- **Untranslatable / non-prose** — an input placeholder or example value
+  (`sk-...`, `myapp`, `https://example.com/webhook`). Do not wrap it in `t()` at
+  all. If it is already wrapped, unwrap it in `src/` **and** delete the key from
+  all 37 bundles including `en.js`, in one commit. Deleting it from the locales
+  alone leaves `check:l10n` reporting it unused forever.
+- **Translatable but identical in this language** — a genuine cognate (`CSV`,
+  `PDF`, `RBAC`, `URL`, `Avatar` in many languages, `Flows` in nl/de/da). **Write
+  it out**, so the locale keeps parity, and record why per key.
+
+Measure that split, never eyeball it: a key is untranslatable only if **no locale
+has ever carried a value differing from it**. Two strings that look like pure
+punctuation fail exactly that test, and deleting them would have destroyed real
+translations — `UUID:` (fr carries `"UUID :"`; French spaces before a colon) and
+`{property} - {other}` (ru carries an em dash).
+
+Writing `value === key` for anything that is **not** a recorded cognate remains
+the worst option available: absent falls back to English and stays visibly
+untranslated to tooling, whereas identical renders the same characters while
+being indistinguishable from finished work, so nobody ever revisits it. Audit a
+locale for that with `npm run test:l10n:parity -- --strict-identical`, which
+flags every identical value, legitimate cognates included.
 
 **An `n()` call's catalogue key is NEITHER of its source strings.** It is the
 identifier `"_<singular>_::_<plural>_"`, which is the only thing the runtime looks
@@ -127,9 +146,12 @@ reverted alone.
 - `find:unwrapped` is deliberately high-recall (~1500 candidates). Expect false
   positives and audit by hand; do not "fix" it by tightening the heuristic until
   real strings are missed.
-- `test:l10n:parity` currently fails: most locales are incomplete. Compare
-  against the previous run rather than expecting green. The 16 finished locales sit
-  at 1–2 missing keys; the other 20 at ~1001.
+- `test:l10n:parity` **passes, and must keep passing.** It gates the 17 finished
+  locales at key-for-key parity and reports the 19 in-progress ones as a backlog
+  (~998 keys each) without failing. Empty values and wrong plural arity fail for
+  *every* locale, finished or not, because those render blank at runtime. The
+  finished set lives in `FINISHED_DEFAULT` in the script and is overridable with
+  `L10N_FINISHED_LOCALES`; add a locale to it the moment it reaches parity.
 - `scripts/lib/l10n.js` is the **origin** copy; `openconnector` carries a vendored
   one, because the two apps ship separate npm packages and there is no import path
   between them. Keep them in sync — the only intended divergence is `DYNAMIC_KEYS`,

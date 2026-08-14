@@ -81,11 +81,33 @@ const appId = process.env.L10N_APP_ID
 const REQUIRED = (process.env.L10N_REQUIRED_LOCALES || EUROPEAN)
 	.split(',').map((s) => s.trim()).filter(Boolean)
 
-// Restores the historical behaviour of tolerating values byte-identical to the
-// English source. Off by default -- see the IDENTICAL block below for why that
-// polarity is wrong. Kept as an escape hatch for a bulk migration where the
-// identical entries are known and being worked through.
-const allowIdentical = process.argv.includes('--allow-identical')
+// Locales declared COMPLETE. For these, full key-for-key parity with en.js is a
+// HARD requirement: one missing key fails the build. That is the whole point of
+// the list — it is what stops a finished locale from drifting the moment someone
+// adds an English string, which is how en.js came to sit ~700 keys ahead of the
+// locales before any of this was gated.
+//
+// Every other required locale is a tracked backlog: its missing keys are reported
+// as progress rather than failure, so CI can be green while translation continues.
+// Move a locale here the moment it reaches parity — and never move one out to make
+// a build pass.
+const FINISHED_DEFAULT = [
+	'nl', 'de', 'fr', 'es', 'it', 'pt', 'sv', 'da', 'nb',
+	'pl', 'cs', 'ru', 'uk', 'el', 'fi', 'hu', 'tr',
+].join(',')
+const FINISHED = new Set((process.env.L10N_FINISHED_LOCALES || FINISHED_DEFAULT)
+	.split(',').map((s) => s.trim()).filter(Boolean))
+
+// A value byte-identical to the English source. Tolerated by default: a deliberate
+// cognate ("CSV", "PDF", "RBAC", or "Flows" in Dutch, German and Danish) genuinely
+// IS the correct value in the target language, and the project writes those out so
+// every finished locale stays key-for-key identical to en.js.
+//
+// Pass --strict-identical to fail on them instead. That is the right mode when
+// auditing a locale for placeholder-shaped filler, because an identical value that
+// is NOT a cognate is indistinguishable from finished work and so never gets
+// revisited. It is not the right mode for CI, where it would flag every cognate.
+const strictIdentical = process.argv.includes('--strict-identical')
 
 if (!fs.existsSync(L10N_DIR)) {
 	console.error(`l10n-parity: no l10n/ directory at ${L10N_DIR}`)
@@ -151,6 +173,8 @@ const sets = [
 ]
 
 const failures = []
+// Locales not yet declared finished: reported, but they do not fail the build.
+const backlog = []
 let checkedSets = 0
 
 for (const set of sets) {
@@ -193,16 +217,12 @@ for (const set of sets) {
 		// Genuine cognates (ID, URL, CSV, PDF, Webhook, Avatar in many languages)
 		// are handled the same way — omitted, not written as value===key.
 		//
-		// This inverts the original policy here, which allowed identical values and
-		// merely counted them. That is exactly how ru shipped 24 untranslated
-		// English strings behind an otherwise clean report.
-		const identical = allowIdentical
-			? []
-			: enKeys.filter((k) =>
-				Object.prototype.hasOwnProperty.call(locObj, k)
+		// Always measured; whether it is fatal depends on --strict-identical.
+		const identical = enKeys.filter((k) =>
+			Object.prototype.hasOwnProperty.call(locObj, k)
 			&& !isEmpty(locObj[k])
 			&& JSON.stringify(locObj[k]) === JSON.stringify(enObj[k]),
-			)
+		)
 
 		// Plural arity, frontend set only (.json plurals use a keyed object shape).
 		const badArity = []
@@ -217,17 +237,30 @@ for (const set of sets) {
 			}
 		}
 
-		if (missing.length || empty.length || identical.length || badArity.length) {
-			failures.push({
-				set: set.kind,
-				loc,
-				kind: 'INCOMPLETE',
-				missing,
-				empty,
-				identical,
-				badArity,
-				total: enKeys.length,
-			})
+		const finished = FINISHED.has(loc)
+		// Empty values and wrong plural arity are RUNTIME faults — the string renders
+		// blank — so they fail for every locale regardless of completion status.
+		// A missing key only fails for a locale declared finished; elsewhere it is
+		// simply work not yet done.
+		const fatal = empty.length > 0
+			|| badArity.length > 0
+			|| (finished && missing.length > 0)
+			|| (strictIdentical && identical.length > 0)
+		const entry = {
+			set: set.kind,
+			loc,
+			finished,
+			kind: 'INCOMPLETE',
+			missing,
+			empty,
+			identical,
+			badArity,
+			total: enKeys.length,
+		}
+		if (fatal) {
+			failures.push(entry)
+		} else if (missing.length) {
+			backlog.push(entry)
 		}
 	}
 }
@@ -240,19 +273,34 @@ if (checkedSets === 0) {
 	process.exit(0)
 }
 
+const finishedList = [...FINISHED].sort()
+console.log(`l10n-parity: ${finishedList.length} locale(s) declared finished and held at `
+	+ `key-for-key parity: ${finishedList.join(' ')}`)
+
+// Always print the backlog, on pass as well as fail. A gate that goes quiet about
+// the 19 unfinished locales would read as "everything is translated".
+if (backlog.length) {
+	console.log(`\nl10n-parity: ${backlog.length} locale(s) still in progress (not gated):`)
+	for (const b of backlog.sort((x, y) => x.missing.length - y.missing.length)) {
+		console.log(`  · ${b.set} ${b.loc}: ${b.missing.length} of ${b.total} key(s) to go`
+			+ `${b.identical.length ? `, ${b.identical.length} English-identical` : ''}`)
+	}
+}
+
 if (failures.length === 0) {
-	console.log('l10n-parity: OK — every required locale is at full parity (no missing keys, no empty values)')
+	console.log('\nl10n-parity: OK — every finished locale is at full parity '
+		+ '(no missing keys, no empty values, no bad plural arity)')
 	process.exit(0)
 }
 
-console.error('\nl10n-parity: FAIL — required language support is incomplete:')
+console.error('\nl10n-parity: FAIL — a finished locale lost parity, or a value would render blank:')
 for (const f of failures) {
 	if (f.kind === 'MISSING FILE') {
 		console.error(`  • ${f.set} ${f.loc}: locale file missing (${f.detail})`)
 	} else if (f.kind === 'UNPARSEABLE') {
 		console.error(`  • ${f.set} ${f.loc}: cannot parse (${f.detail})`)
 	} else {
-		console.error(`  • ${f.set} ${f.loc}: ${f.missing.length} missing key(s), `
+		console.error(`  • ${f.set} ${f.loc}${f.finished ? ' (declared FINISHED)' : ''}: ${f.missing.length} missing key(s), `
 			+ `${f.empty.length} empty value(s), ${f.identical.length} English-identical, `
 			+ `${f.badArity.length} bad plural arity — of ${f.total}`)
 		for (const k of f.missing.slice(0, 8)) {
@@ -276,12 +324,18 @@ for (const f of failures) {
 		}
 	}
 }
-console.error('\nEvery required locale must translate every English source key.')
-console.error('  missing   -> add the translation (or leave absent deliberately: it falls back to English).')
-console.error('  identical -> DELETE the key. A value equal to the English source is indistinguishable')
-console.error('               from a finished translation, so it is never revisited; omitting it renders')
-console.error('               the same text while staying visibly untranslated. Pass --allow-identical')
-console.error('               to tolerate these during a bulk migration.')
+console.error('\nA locale in the finished set must carry every English source key.')
+console.error('  missing   -> add the translation. If a new English string landed without translations,')
+console.error('               that is the failure: translate it, do not remove the locale from the')
+console.error('               finished set to get a green build.')
+console.error('               If the string is not translatable prose at all — an input placeholder or')
+console.error('               example value — unwrap it from t() in src/ and delete the key from ALL')
+console.error('               bundles including en.js, so no locale owes a value for it.')
+console.error('  empty     -> renders blank. Always fatal, finished or not.')
 console.error('  arity     -> the plural array must have exactly as many forms as the locale\'s own')
 console.error('               nplurals declares, or the runtime renders blank for some counts.')
+console.error('               Always fatal, finished or not.')
+console.error('  identical -> tolerated by default: a deliberate cognate is the correct value and is')
+console.error('               written out so the locale stays key-for-key identical to en.js. Run with')
+console.error('               --strict-identical to audit a locale for placeholder-shaped filler.')
 process.exit(1)

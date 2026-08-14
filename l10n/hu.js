@@ -1589,6 +1589,7 @@ OC.L10N.register(
     "Search property names..." : "Tulajdonságnevek keresése…",
     "Search recording mode" : "Keresésrögzítési mód",
     "Search registers..." : "Nyilvántartások keresése…",
+    "Search Results" : "Keresési találatok",
     "Search schemas..." : "Sémák keresése…",
     "Search Term" : "Keresési kifejezés",
     "Search Trail Details" : "Keresési napló részletei",
