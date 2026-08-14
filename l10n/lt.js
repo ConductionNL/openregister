@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n įrašas dar neturi maišos","%n įrašai dar neturi maišos","%n įrašų dar neturi maišos"],
     "(no subject)" : "(be temos)",
     "(no title)" : "(be pavadinimo)",
     "(unnamed)" : "(be vardo)",
     "(untitled card)" : "(kortelė be pavadinimo)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n įrašas dar neturi maišos","%n įrašai dar neturi maišos","%n įrašų dar neturi maišos"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Veiksmas",
     "Action Distribution" : "Veiksmų pasiskirstymas",

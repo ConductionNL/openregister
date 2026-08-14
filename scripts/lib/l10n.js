@@ -1,9 +1,15 @@
 /* eslint-disable jsdoc/require-param */
 /**
- * Shared l10n helpers used by check-l10n.js, clean-l10n.js, and l10n-ai.js.
+ * Shared l10n helpers used by scripts/check-l10n.js, scripts/clean-l10n.js,
+ * scripts/l10n-ai.js and tests/l10n/check-l10n.js.
  *
  * Operates on l10n/*.js (frontend translation files). Backend .json files are
  * a separate concern and are not handled here.
+ *
+ * This is the ORIGIN copy. openconnector carries a VENDORED copy of this file —
+ * the two apps ship separate npm packages, so there is no import path between
+ * them. Keep the two in sync when either changes; the only intended divergence
+ * is DYNAMIC_KEYS below, which is app-specific data.
  */
 
 const fs = require('fs')
@@ -195,9 +201,14 @@ function readStringLiteral(text, start) {
  * Extract every static translation call for `app` from one file's text.
  *
  * Returns { calls, unanalyzable }:
- *   calls        [{ fn, keys, index }] -- `keys` holds 1 entry for t(), and 2
- *                for n() (singular AND plural; both are real catalogue keys and
- *                both must count as "used").
+ *   calls        [{ fn, keys, index }] -- `keys` holds the call's SOURCE STRINGS:
+ *                1 for t(), and 2 for n() (singular then plural).
+ *
+ * Neither n() argument is a catalogue key on its own. The key is the identifier
+ * the two combine into -- see pluralIdentifier() -- so a caller deciding "is this
+ * key present?" must build it rather than reading keys[0]. Callers deciding "may I
+ * delete this?" should treat all three as used; collectUsedKeys() does both.
+ *
  *   unanalyzable [{ index }] -- calls whose key argument is not a static string
  *                literal (template literal, concatenation, variable).
  *
@@ -237,15 +248,60 @@ function extractTranslationCalls(text, app) {
 }
 
 /**
- * Scan src/ for translation calls and return the set of literal keys
- * referenced. Shared by check-l10n.js, clean-l10n.js and l10n-ai.js so
- * "is this key still in use?" answers stay consistent across all three.
+ * The catalogue key an n() call looks up.
+ *
+ * The nextcloud/l10n package builds this identifier from the two source strings
+ * and looks up nothing else (translatePlural, dist/chunks/translation-*.mjs).
+ * Storing the forms under the bare singular instead renders correctly for
+ * count === 1 — translate() takes element 0 of an array — and falls back to
+ * English for every other count, because the fallback then looks up the
+ * untranslated plural source string, which no locale bundle contains.
+ */
+function pluralIdentifier(singular, plural) {
+	return `_${singular}_::_${plural}_`
+}
+
+/**
+ * Source extensions every "is this key used?" scan walks.
+ *
+ * ONE list, exported, because the two directions this feeds are not symmetric in
+ * consequence. The CI gate asserts en.js COVERS what src/ uses; clean-l10n.js
+ * --apply DELETES from all 37 locales what src/ does not. A file type the gate
+ * scans but the cleaner does not is a silent data-loss path: the gate stays green
+ * while --apply drops that file's keys from every locale. The gate's list was the
+ * broader of the two, so this takes it wholesale rather than narrowing to the
+ * intersection.
+ *
+ * `.mjs`/`.jsx`/`.tsx` match nothing in src/ today. They are here for the day one
+ * appears, which is exactly the day the divergence would have cost something.
+ */
+const SRC_EXTS = ['.vue', '.js', '.ts', '.mjs', '.jsx', '.tsx']
+
+/**
+ * Scan src/ for translation calls and return the set of keys that count as
+ * USED. Shared by clean-l10n.js and l10n-ai.js — the paths that DELETE or refuse
+ * to overwrite — so they cannot disagree about what is live.
+ *
+ * An n() call contributes THREE entries: the plural identifier, which is the key
+ * the runtime actually looks up, plus both source strings. The identifier is the
+ * one that matters; the two source strings are over-counted on purpose, because
+ * this set gates deletion from 37 files at once. Over-counting leaves a dead key
+ * in place, which someone notices later; under-counting deletes a live
+ * translation, which nobody notices at all.
+ *
+ * That makes this set deliberately WIDER than the audit set in
+ * scripts/check-l10n.js, which reports the bare singular of a converted plural as
+ * unused precisely so a human is told about it. Audit informs; cleaner destroys —
+ * so they err in opposite directions.
  */
 function collectUsedKeys(srcDir, app) {
 	const used = new Set()
-	for (const file of walk(srcDir, ['.vue', '.js', '.ts'])) {
+	for (const file of walk(srcDir, SRC_EXTS)) {
 		const { calls } = extractTranslationCalls(fs.readFileSync(file, 'utf8'), app)
-		for (const c of calls) for (const k of c.keys) used.add(k)
+		for (const c of calls) {
+			if (c.fn === 'n' && c.keys.length === 2) used.add(pluralIdentifier(c.keys[0], c.keys[1]))
+			for (const k of c.keys) used.add(k)
+		}
 	}
 	return used
 }
@@ -274,7 +330,7 @@ function makeLineResolver(text) {
  */
 function findKeyReferences(srcDir, app, key) {
 	const hits = []
-	for (const file of walk(srcDir, ['.vue', '.js', '.ts'])) {
+	for (const file of walk(srcDir, SRC_EXTS)) {
 		const text = fs.readFileSync(file, 'utf8')
 		const { calls } = extractTranslationCalls(text, app)
 		if (!calls.length) continue
@@ -376,7 +432,9 @@ module.exports = {
 	extractTranslationCalls,
 	makeLineResolver,
 	collectUsedKeys,
+	pluralIdentifier,
 	findKeyReferences,
+	SRC_EXTS,
 	listJsLocaleFiles,
 	localeNameOf,
 	DYNAMIC_KEYS,

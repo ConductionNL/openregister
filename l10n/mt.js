@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n entrata għadha m'għandhiex hash","%n entrati għadhom m'għandhomx hash","%n entrata għadha m'għandhiex hash","%n entrata għadha m'għandhiex hash"],
     "(no subject)" : "(l-ebda suġġett)",
     "(no title)" : "(l-ebda titlu)",
     "(unnamed)" : "(bla isem)",
     "(untitled card)" : "(karta bla titlu)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n entrata għadha m'għandhiex hash","%n entrati għadhom m'għandhomx hash","%n entrata għadha m'għandhiex hash","%n entrata għadha m'għandhiex hash"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Azzjoni",
     "Action Distribution" : "Distribuzzjoni tal-Azzjonijiet",

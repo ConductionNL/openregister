@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n zë ende nuk ka hash","%n zëra ende nuk kanë hash"],
     "(no subject)" : "(pa temë)",
     "(no title)" : "(pa titull)",
     "(unnamed)" : "(pa emër)",
     "(untitled card)" : "(kartë pa titull)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n zë ende nuk ka hash","%n zëra ende nuk kanë hash"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Veprim",
     "Action Distribution" : "Shpërndarja e Veprimeve",

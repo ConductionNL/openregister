@@ -23,10 +23,16 @@ They are **separate catalogues with separate consumers**, not two renderings of
 one source. Both are real and both are maintained. Do not assume a change to one
 implies the other.
 
-Current state worth knowing: `en.js` holds 1410 keys while `src/` uses ~2011, so
-the frontend English catalogue is ~600 keys behind the code. `npm run
-test:l10n:write` extracts into **`en.json` only** — nothing maintains `en.js`.
-`npm run check:l10n` is the only thing that audits it.
+**A `t()` call in `.vue`/`.js` belongs in `en.js`, never in `en.json`.**
+`tests/l10n/check-l10n.js` used to assert frontend keys against `en.json` — a file
+no frontend code path reads — which demanded bookkeeping in the backend catalogue
+while the one the browser loads went unaudited. It targets `en.js` now.
+
+There is **no scanner for the backend set**. Auditing `en.json` would mean walking
+`lib/` for PHP `$l->t()` calls, not `src/`. Until that exists it is maintained by hand.
+
+Re-measure before trusting any number below — `npm run check:l10n` prints it all.
+**As of 2026-08-14**: `en.js` holds 2058 keys, `src/` uses all of them, 0 unused, 100 unwrapped literals outstanding.
 
 ## Commands
 
@@ -36,10 +42,14 @@ test:l10n:write` extracts into **`en.json` only** — nothing maintains `en.js`.
 | Add, update, remove, rename a key | `node scripts/l10n-ai.js add\|set\|rm\|rename` |
 | Audit `en.js` vs `src/` (missing / unused / unwrapped) | `npm run check:l10n` |
 | Gate every locale (missing, identical, plural arity) | `npm run test:l10n:parity` |
-| Assert `en.json` covers every `t()`/`n()` call | `npm run test:l10n` |
-| Extract new keys into `en.json` | `npm run test:l10n:write` |
+| Assert `en.js` covers every `t()`/`n()` call (**the CI gate**) | `npm run test:l10n` |
+| Extract new keys into `en.js` | `npm run test:l10n:write` |
 | Find prose in `.vue` that isn't wrapped yet | `npm run find:unwrapped` |
-| Delete keys no source file references | `node scripts/clean-l10n.js` (dry-run) |
+| Delete keys no source file references | `npm run clean:l10n` (dry-run) |
+
+`test:l10n` is the gate CI runs; `check:l10n` is the richer developer audit (it
+adds unused + unwrapped but has no write mode). Both read `en.js` through the same
+extractor, so they always agree on what "used" means.
 
 ## Hard rules
 
@@ -56,12 +66,27 @@ So a legitimate cognate (`ID`, `URL`, `CSV`, `PDF`, `RBAC`, `Webhook`, and
 out. `npm run test:l10n:parity` fails on identical values for this reason; it
 reports absent ones separately and less severely.
 
+**An `n()` call's catalogue key is NEITHER of its source strings.** It is the
+identifier `"_<singular>_::_<plural>_"`, which is the only thing the runtime looks
+up — see `pluralIdentifier` in `scripts/lib/l10n.js`, and `translatePlural` in
+`@nextcloud/l10n`. Storing the forms under the bare singular renders correctly for
+count === 1, because `translate()` takes element 0 of an array, and falls back to
+English for every other count. That shape shipped in all 37 bundles until
+2026-08-14 and passed every gate while `3 objects` rendered English everywhere.
+
 **Plural arrays must match that locale's own `nplurals`.** The count comes from
 the locale file's own header, and the *expression* differs between languages that
 share a count — Russian, Polish and Czech are all `nplurals=3` with three
 mutually incompatible rules. Never copy a plural array from one language to
-another. A wrong-length array makes the string render blank at runtime, and it is
-the only l10n defect you cannot see by reading the file.
+another. An array SHORTER than the form index the runtime asks for renders blank,
+and it is the only l10n defect you cannot see by reading the file.
+
+At runtime the form index comes from the library's own per-language `getPlural`,
+**not** from the file's `plural=` expression: `register(app, bundle)` ignores a
+plural function passed to it. So the header governs the arity gate, while the
+library governs which element is shown. They agree everywhere today except `ga`
+(header 5, library 3), `rm` and `tr` (header 2, library 1) — extra forms that are
+simply never selected. No array is short anywhere.
 
 **Never overwrite an existing real translation.** `l10n-ai.js` refuses without
 `--force`; trust the refusal and investigate. Only replace a real value when it
@@ -80,17 +105,19 @@ reverted alone.
 ## Gotchas
 
 - **`clean:l10n` needs review before every run.** It removes keys from **all 37**
-  locale files. Of its current 405-key list, 8 occur in `src/` as a complete
-  quoted literal, and **2 of those are live UI prose that was simply never
-  wrapped** (`Copy`, `Creating...`). Deleting those discards translations that are
-  needed the moment someone wraps the string. The other 6 are safe: `Cleanup
-  completed` and `Forbidden` appear only in `.spec.js` mocks, `3`/`30` are numeric
-  webhook defaults, and two are placeholder example URLs.
-  Dry-run (`node scripts/clean-l10n.js`), cross-check against
-  `npm run find:unwrapped`, then remove by hand.
+  locale files. Its list is empty today (0 unused), so any entry that appears is
+  new and worth reading before acting on. Some candidates are live UI prose nobody
+  has wrapped in `t()` yet — deleting those discards translations needed the moment
+  someone wraps the string. The npm alias is deliberately the dry run, not
+  `--apply`. Cross-check against `npm run find:unwrapped`, then remove by hand.
   When checking a key yourself, match the **whole quoted literal**, not a
   substring — `Cleanup completed` occurs inside `Cleanup completed successfully.
   Deleted {count} entries.`, which is not a reference to it.
+- **`collectUsedKeys` is deliberately wider than the audit set.** It counts an
+  `n()` call's identifier *and* both source strings as used, so `clean-l10n.js`
+  cannot delete a live plural key; `scripts/check-l10n.js` counts only the
+  identifier, so it still tells a human when a bare singular is dead. Audit informs,
+  cleaner destroys — they err in opposite directions on purpose.
 - Locale files are **not** linted, by design. `serializeJs` emits the exact
   on-disk Nextcloud/Transifex layout; `eslint --fix` would rewrite all ~4400
   lines to tabs and single quotes and diverge from what Transifex regenerates.
@@ -101,7 +128,14 @@ reverted alone.
   positives and audit by hand; do not "fix" it by tightening the heuristic until
   real strings are missed.
 - `test:l10n:parity` currently fails: most locales are incomplete. Compare
-  against the previous run rather than expecting green.
+  against the previous run rather than expecting green. The 16 finished locales sit
+  at 1–2 missing keys; the other 20 at ~1001.
+- `scripts/lib/l10n.js` is the **origin** copy; `openconnector` carries a vendored
+  one, because the two apps ship separate npm packages and there is no import path
+  between them. Keep them in sync — the only intended divergence is `DYNAMIC_KEYS`,
+  which is app-specific. As of 2026-08-14 openconnector is BEHIND on two counts: it
+  still stores plurals under the bare singular, and its `check-l10n-parity.js`
+  predates the arity and identical-value gates here.
 
 ## Translating a whole locale
 

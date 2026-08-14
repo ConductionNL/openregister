@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n færsla hefur ekki enn tætigildi","%n færslur hafa ekki enn tætigildi"],
     "(no subject)" : "(ekkert efni)",
     "(no title)" : "(ekkert titill)",
     "(unnamed)" : "(ónefnt)",
     "(untitled card)" : "(kort án titils)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n færsla hefur ekki enn tætigildi","%n færslur hafa ekki enn tætigildi"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Aðgerð",
     "Action Distribution" : "Dreifing aðgerða",

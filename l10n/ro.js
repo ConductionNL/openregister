@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n intrare nu are încă un hash","%n intrări nu au încă un hash","%n de intrări nu au încă un hash"],
     "(no subject)" : "(fără subiect)",
     "(no title)" : "(fără titlu)",
     "(unnamed)" : "(fără nume)",
     "(untitled card)" : "(card fără titlu)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n intrare nu are încă un hash","%n intrări nu au încă un hash","%n de intrări nu au încă un hash"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Acțiune",
     "Action Distribution" : "Distribuție acțiuni",

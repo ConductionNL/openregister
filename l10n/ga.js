@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["Níl hais ag %n iontráil fós","Níl hais ag %n iontráil fós","Níl hais ag %n iontráil fós","Níl hais ag %n n-iontráil fós","Níl hais ag %n iontráil fós"],
     "(no subject)" : "(gan ábhar)",
     "(no title)" : "(gan teideal)",
     "(unnamed)" : "(gan ainm)",
     "(untitled card)" : "(cárta gan teideal)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["Níl hais ag %n iontráil fós","Níl hais ag %n iontráil fós","Níl hais ag %n iontráil fós","Níl hais ag %n n-iontráil fós","Níl hais ag %n iontráil fós"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Gníomh",
     "Action Distribution" : "Dáileadh Gníomhartha",

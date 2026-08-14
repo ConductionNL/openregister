@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n ierakstam vēl nav jaucējkoda","%n ierakstiem vēl nav jaucējkoda","%n ierakstu vēl nav jaucējkoda"],
     "(no subject)" : "(bez temata)",
     "(no title)" : "(bez nosaukuma)",
     "(unnamed)" : "(bez nosaukuma)",
     "(untitled card)" : "(kartīte bez nosaukuma)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n ierakstam vēl nav jaucējkoda","%n ierakstiem vēl nav jaucējkoda","%n ierakstu vēl nav jaucējkoda"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Darbība",
     "Action Distribution" : "Darbību sadalījums",

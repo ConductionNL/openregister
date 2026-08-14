@@ -29,7 +29,7 @@
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "check:l10n": "node scripts/check-l10n.js",
-    "clean:l10n": "node scripts/clean-l10n.js --apply",
+    "clean:l10n": "node scripts/clean-l10n.js",
     "find:unwrapped": "node scripts/find-unwrapped.js",
     "check:json-strict": "node tests/validate-json-strict.js",
     "check:manifest": "node tests/validate-manifest.js",

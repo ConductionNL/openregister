@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n запис сè уште нема хеш","%n записи сè уште немаат хеш"],
     "(no subject)" : "(без тема)",
     "(no title)" : "(без наслов)",
     "(unnamed)" : "(неименувано)",
     "(untitled card)" : "(картичка без наслов)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n запис сè уште нема хеш","%n записи сè уште немаат хеш"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Дејство",
     "Action Distribution" : "Распределба на дејства",

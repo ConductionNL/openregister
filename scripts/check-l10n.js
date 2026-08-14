@@ -26,6 +26,7 @@ const {
 	extractTranslationCalls,
 	makeLineResolver,
 	collectDynamicKeys,
+	pluralIdentifier,
 } = require('./lib/l10n.js')
 
 const ROOT = path.resolve(__dirname, '..')
@@ -49,19 +50,15 @@ function rel(p) {
  * $t/$n template variants, via the shared extractor in lib/l10n.js so this
  * script, clean-l10n.js and l10n-ai.js always agree on what "used" means.
  *
- * Both of an n() call's key arguments are recorded: the singular and the plural
- * are each a real catalogue key.
+ * An n() call contributes ONE key: the identifier its two source strings combine
+ * into, which is what the runtime looks up. Reporting the bare singular and
+ * plural instead produces two "missing" keys that adding can never satisfy.
  *
  * Returns { found: Map<key, [{file,line}]>, unanalyzable: [{file,line,snippet}] }.
  */
 function extractTCalls(files, app) {
 	const found = new Map()
 	const unanalyzable = []
-	// plural source string -> the singular key that owns it. An n() call has two
-	// source strings but only ONE catalogue key (the singular); the plural lives
-	// in that key's value array. Without this, every plural source reads as a
-	// missing key that can never be satisfied.
-	const pluralOf = new Map()
 
 	for (const file of files) {
 		const text = fs.readFileSync(file, 'utf8')
@@ -70,8 +67,10 @@ function extractTCalls(files, app) {
 
 		for (const c of calls) {
 			const line = posToLine(c.index)
-			if (c.fn === 'n' && c.keys.length === 2) pluralOf.set(c.keys[1], c.keys[0])
-			for (const key of c.keys) {
+			const callKeys = c.fn === 'n' && c.keys.length === 2
+				? [pluralIdentifier(c.keys[0], c.keys[1])]
+				: c.keys
+			for (const key of callKeys) {
 				if (!found.has(key)) found.set(key, [])
 				found.get(key).push({ file, line })
 			}
@@ -85,7 +84,7 @@ function extractTCalls(files, app) {
 		}
 	}
 
-	return { found, unanalyzable, pluralOf }
+	return { found, unanalyzable }
 }
 
 /**
@@ -178,19 +177,26 @@ function main() {
 	const files = walk(SRC_DIR, ['.vue', '.js', '.ts'])
 	const vueFiles = files.filter(f => f.endsWith('.vue'))
 
-	const { found, unanalyzable, pluralOf } = extractTCalls(files, app)
+	const { found, unanalyzable } = extractTCalls(files, app)
 	const usedKeys = new Set(found.keys())
 
-	// A plural source is satisfied by its singular key holding a forms array.
-	const satisfiedByPlural = (k) => {
-		const singular = pluralOf.get(k)
-		return singular !== undefined && Array.isArray(translations[singular])
-	}
-	const missing = [...usedKeys].filter(k => !keys.has(k) && !satisfiedByPlural(k)).sort()
+	const missing = [...usedKeys].filter(k => !keys.has(k)).sort()
 	// Variable-keyed t() calls are invisible to the scan; those keys are live.
 	const dynamic = collectDynamicKeys(ROOT)
 	const unused = [...keys].filter(k => !usedKeys.has(k) && !dynamic.has(k)).sort()
-	const unwrapped = findUnwrapped(vueFiles, keys)
+	// A plural key is stored as "_<singular>_::_<plural>_", so neither English source
+	// string is a key in its own right -- but an unwrapped literal matching one still
+	// means a translation exists (inside that key's forms array) and never renders,
+	// which is exactly what this check is for. Match on the source strings too.
+	const unwrappedKeys = new Set(keys)
+	for (const k of keys) {
+		const m = /^_([\s\S]*)_::_([\s\S]*)_$/.exec(k)
+		if (m) {
+			unwrappedKeys.add(m[1])
+			unwrappedKeys.add(m[2])
+		}
+	}
+	const unwrapped = findUnwrapped(vueFiles, unwrappedKeys)
 
 	console.log(`${BOLD}${CYAN}${app} l10n check${RESET}`)
 	console.log(`${DIM}Scanned ${files.length} files (${vueFiles.length} .vue), ${keys.size} keys in en.js${RESET}`)

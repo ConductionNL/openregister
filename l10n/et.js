@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n kirjel pole veel räsi","%n kirjel pole veel räsi"],
     "(no subject)" : "(teemata)",
     "(no title)" : "(pealkirjata)",
     "(unnamed)" : "(nimetu)",
     "(untitled card)" : "(pealkirjata kaart)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n kirjel pole veel räsi","%n kirjel pole veel räsi"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Tegevus",
     "Action Distribution" : "Tegevuste jaotus",

@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n záznam zatiaľ nemá odtlačok","%n záznamy zatiaľ nemajú odtlačok","%n záznamov zatiaľ nemá odtlačok"],
     "(no subject)" : "(bez predmetu)",
     "(no title)" : "(bez názvu)",
     "(unnamed)" : "(bez názvu)",
     "(untitled card)" : "(karta bez názvu)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n záznam zatiaľ nemá odtlačok","%n záznamy zatiaľ nemajú odtlačok","%n záznamov zatiaľ nemá odtlačok"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Akcia",
     "Action Distribution" : "Rozloženie akcií",

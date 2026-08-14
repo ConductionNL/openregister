@@ -1,11 +1,11 @@
 OC.L10N.register(
     "openregister",
     {
-    "%n entry has no hash yet" : ["%n Antrag huet nach kee Hash","%n Anträg hunn nach kee Hash"],
     "(no subject)" : "(kee Sujet)",
     "(no title)" : "(keen Titel)",
     "(unnamed)" : "(ouni Numm)",
     "(untitled card)" : "(Kaart ouni Titel)",
+    "_%n entry has no hash yet_::_%n entries have no hash yet_" : ["%n Antrag huet nach kee Hash","%n Anträg hunn nach kee Hash"],
     "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed." : "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
     "Action" : "Aktioun",
     "Action Distribution" : "Aktiounsverdeelung",
