@@ -42,10 +42,23 @@ Formality is a per-language fact, and neighbouring languages disagree. Measure
 by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
-Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`;
-formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`. Russian was the least
-ambiguous of any: 328 formal pronouns and 164 formal imperatives against **zero**
-of either informal marker in 3905 strings.
+Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
+`et`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`.
+Russian was the least ambiguous of any: 328 formal pronouns and 164 formal
+imperatives against **zero** of either informal marker in 3905 strings.
+
+**Some languages split by string ROLE, not globally.** `ca`, `et` and `hr` all use
+a bare 2sg imperative for buttons (`Desa`, `Salvesta`, `Spremi`) regardless of how
+prose addresses the user, so a single verdict for the locale would be meaningless.
+Measure the *prose* and treat button labels separately. In all three the bare
+imperative is also a homograph — of the Catalan/Croatian 3sg present indicative
+(`uredi` = "edit!" / "he edits") or of Estonian nouns and names (`Lisa`, `Ava`) —
+so it must be excluded from the detector rather than counted as informal.
+
+Three consecutive locales came out three different ways (`tr` formal 841:0, `ca`
+formal 491:32, `et` **informal** 415:3). Carrying an answer over from the previous
+locale would pass every automated check while being wrong in every string that
+addresses the user.
 
 Two traps make pronoun-counting insufficient on its own:
 
@@ -64,6 +77,23 @@ register-neutral button labels and must not be "corrected" to imperatives.
 | `pl` | `Państwo` = formal plural *you* **and** the noun *state/country* | mid-sentence capital for `Państwo`; `Pan`/`Pani` match anywhere |
 | `cs` | `ty` = informal *you* **and** the plural demonstrative *those* | unsolvable by position — same case, same slot. Deliberately left unmatched; the possessives and imperatives are unambiguous, so nothing is lost |
 | `ru` | `вы`/`ваш` are the ordinary polite address, not a plural-only form | not evidence of anything — don't match them at all |
+| `hr` | `ti` = informal *you* **and** the masculine nominative plural of `taj` (`ti objekti` = *those objects*) — the same collision as `cs` `ty` | leave bare `ti` unmatched; the oblique forms (`tebe`/`tebi`/`tobom`) and the `tvoj-` possessive are unambiguous |
+| `hr` | `si` = 2sg of *biti* **and** the reflexive dative clitic, which occurs in formal sentences (`možete si odabrati`) | leave bare `si` unmatched; use `nisi`/`jesi` |
+| `et` | `teist` = elative of `teie` (*of you*) **and** partitive of `teine` (*another*) — `Proovi teist otsingut` is *informal* 2sg | exclude `teist` entirely. Half of core's apparent formal signal was this one word: removing it took the count 6 → 3 |
+| `tr` | 2sg possessive is spelled identically to the plural genitive (`dosyaların` = *your files* / *of the files*), and 3sg-possessive+accusative collides too (`hesabını`) | all 35 first-pass "informal" hits in core were this. Only `şifre`/`parola` are safe anchors |
+
+**Never use suffix patterns for these languages.** Croatian is the clearest case:
+`-te` looks like the 2pl ending but is the accusative plural of every masculine
+noun (`dokumente`, `objekte`, `atribute`), and `-š` looks like the 2sg ending but
+ends `naš` (*our*) and **`vaš` (*your*-FORMAL)** — so a `-š` rule scores the formal
+possessive as informal and inverts the polarity outright. Estonian `-ge`/`-ke` is
+not a 2pl marker either (`selge`, `märge`). Use closed word lists.
+
+Two JavaScript traps that silently weaken any detector: `\b` is ASCII-only, so use
+`(?<!\p{L})…(?!\p{L})` with the `u` flag; and a reused `/g/` regex carries
+`lastIndex`, turning later matches into misses — rebuild it per call. Turkish also
+needs explicit case folding: `/i/ui` does not match `İ`, and `toLowerCase()` turns
+it into `i + U+0307`.
 
 Danish opens quotes with `”`, the glyph English uses to *close* one, so quote
 handling must treat both directions as sentence-start.
@@ -120,9 +150,16 @@ locale's expression**. Equal counts do not mean equal boundaries:
 - `ru` — `nplurals=3`, form 0 on `n%10==1 && n%100!=11`
 - `pl` — `nplurals=3`, keyed on `n%10` ranges
 - `cs` — `nplurals=3`, plain `1 / 2-4 / 5+`
+- `hr` — `nplurals=3`, same expression as `ru`; the three forms are Croatian
+  nominative singular / genitive singular / genitive plural
+  (`1 objekt` / `3 objekta` / `7 objekata`)
 
-All three are 3-form and mutually incompatible. `npm run test:l10n:parity`
-catches wrong *length*; nothing can catch a Polish array pasted into Czech.
+All are 3-form and mutually incompatible. `npm run test:l10n:parity` catches
+wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
+forms are reachable by driving the real `@nextcloud/l10n`: call `unregister()` and
+`setLanguage(loc)` first, because `register(app, bundle)` **ignores** a plural
+function passed to it and installs the library's own `getPlural`. For `hr`,
+counts 1/3/7 must select three *different* indices.
 
 ## Known source-side defect: `object{plural}`
 
@@ -132,6 +169,30 @@ degrades with morphological complexity — harmless in `es`/`pt`, a parenthetica
 approximation in `da`/`nb`/`sv`, and genuinely lossy in `pl`/`cs`/`ru` where three
 forms mean a parenthetical cannot cover the genitive. Current locales use
 approximations like `объект(ы)`.
+
+What each finished locale actually does, so the next one has a precedent to pick
+from rather than reinventing it:
+
+| Shape | Locales | Example |
+| --- | --- | --- |
+| keep the placeholder — the plural really is `+s` | `es`, `ca` (4 of 5) | `fitxer{plural}` |
+| parenthetical | `nl` `de` `fi` `ru` `pl` `cs` `et` | `bestand(en)`, `fail(i)` |
+| slash, where the stem changes | `fr`, `ca` (`schema`), `et` (`register`) | `journal/journaux`, `esquema/esquemes` |
+| bare noun — no plural suffix after a numeral | `hu`, `tr` | `fájl`, `dosya` |
+| the form correct for the most counts | `hr` | see below |
+
+Catalan learned this the hard way: masculine nouns in `-a` pluralise in `-es`, so
+`schema{plural}` rendered **`esquemas`** until the runtime harness caught it.
+Estonian drops the placeholder for all five keys, because a numeral above one takes
+the *partitive singular* (`5 faili`, not `5 failid`), so an appended `s` is wrong at
+every count.
+
+Croatian has **three** numeral cases (1 → nom.sg, 2–4 → gen.sg, 5+ → gen.pl), so no
+invariant string is right everywhere. Each value picks the form correct for the most
+counts, which depends on the noun's gender: `datoteka` and `shema` (feminine —
+correct for 1, 0 and 5+) but `zapisnika`, `objekata`, `registara` (masculine, where
+gen.sg and gen.pl coincide — correct for 2–4 *and* 5+). Always runtime-assert that
+no `{plural}` residue and no stray trailing `-s` survives.
 
 The real fix is in the source: use `n()` instead of interpolating a literal.
 Worth a separate issue rather than more translation workarounds.
@@ -154,11 +215,27 @@ Per-language decisions that later work should stay consistent with, and which ar
 - **Terminology** — `nb` `endepunkt` vs `da` `endpoint`; `ru` `Реестр` / `Схема` /
   `Объект` / `Дашборд` / `Поиск` / `конечная точка`, `Редактировать` for
   `Edit`-prefixed keys.
+- **`hr`** — `trag revizije` for *audit trail* (measured 24:4 against
+  `revizijski trag` in the file's own existing values), `prikaz` for the *view*
+  noun but `Pregledaj` for the *View* button, `vektorska ugrađivanja` for *vector
+  embeddings*, `Pravo` for the RBAC *Right*, `ispitanik` for the GDPR *data
+  subject* (the term used by the official Croatian text of the regulation),
+  `Razred` for a histogram *Bucket*, and `Mapiranja` for *Mappings* — **not**
+  openconnector's `Mappingi`, a non-standard transliteration. Two app-internal
+  conventions deliberately override core: `Tip` for *Type* (core says `Vrsta`) and
+  `lozinka` for *password* (core prefers `zaporka` 195:62, but the file already
+  shipped `Lozinka` and it is valid Croatian, so it was not churned).
 
-Twelve locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`, `nb`,
-`pl`, `cs`, `ru`. Remaining high-confidence order: `uk`, `el`, `fi`, `hu`, `tr`,
-`ca`, `et`, `hr`, `lt`, `lv`, `ro`, `sk`, `sl`. The nine low-resource locales
-(`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are deliberately last.
+**Check the existing values before coining a term.** For `hr` the audit-trail,
+view, embeddings and `Tip`/`Filtri` conventions were all already present in the
+1053 keys the file arrived with; deriving them from core instead would have split
+the locale's own terminology.
+
+Twenty locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`, `nb`,
+`pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`. Remaining
+high-confidence order: `lt`, `lv`, `ro`, `sk`, `sl`, `bg`, `sr`. The nine
+low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
+deliberately last — **ask before starting them.**
 
 For non-Latin locales (`ru`, `uk`, `bg`, `be`, `mk`, `sr`, `el`) a script-coverage
 check replaces the English-leftover check. Note it cannot distinguish an
