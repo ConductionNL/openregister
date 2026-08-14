@@ -273,7 +273,7 @@ class SaveObjectDeepTest extends TestCase {
 
 	public function testResolveSchemaReferencePathBySlug(): void {
 		$ref = '#/components/schemas/Organisatie';
-		$schema = $this->createMockSchema(5, 'organisation');
+		$schema = $this->createMockSchema(5, 'organisatie');
 
 		$this->schemaMapper->method('findAll')
 			->willReturn([$schema]);
