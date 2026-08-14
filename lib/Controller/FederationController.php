@@ -39,6 +39,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
@@ -221,6 +222,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function objects(string $shareToken): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -264,6 +266,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function object(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -309,6 +312,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function createObject(string $shareToken): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -350,6 +354,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -394,6 +399,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -485,6 +491,7 @@ class FederationController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function meta(string $shareToken): JSONResponse {
 		$share = $this->resolveAcceptedShare(shareToken: $shareToken);
 		if ($share === null) {
@@ -548,10 +555,16 @@ class FederationController extends Controller {
 	 * is actually known, rather than relying on the caller to remember to
 	 * throttle its own response.
 	 *
-	 * `sleepDelayOrThrowOnMax()` is NOT called here — the delay is applied on
-	 * the next attempt from the same address, which is the standard Nextcloud
-	 * federated-share posture: a legitimate peer presenting a valid token is
-	 * never delayed by another peer's failures.
+	 * `sleepDelayOrThrowOnMax()` is NOT called here, and that is only safe
+	 * because every endpoint carries `#[BruteForceProtection]`. The framework's
+	 * BruteForceMiddleware calls it on the way IN, per request, using the
+	 * attribute's action. Registering without that attribute would write a
+	 * counter nobody ever reads — an attempt log, not a control. (That is
+	 * exactly what the first draft of this change did.)
+	 *
+	 * Enforcing on the way in rather than here also keeps a legitimate peer
+	 * holding a valid token from being delayed by another peer's failures:
+	 * the delay is keyed to the failing address.
 	 *
 	 * @return void
 	 */
