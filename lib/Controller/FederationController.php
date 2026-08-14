@@ -48,6 +48,16 @@ use Throwable;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The count went one over the
+ * threshold when `IThrottler` was injected to close the unthrottled-share-token
+ * exposure (ADR-082). Each dependency here is one distinct capability the
+ * endpoints genuinely need — share persistence, object read/write, share
+ * management, brute-force accounting, logging — and the honest ways to get back
+ * under the limit are worse than the warning: a facade would hide which
+ * security boundary each handler crosses, and dropping the throttler would
+ * restore an exposure. Suppressed with that trade stated rather than silently
+ * baselined.
  */
 class FederationController extends Controller {
 
