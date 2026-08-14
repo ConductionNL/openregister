@@ -189,6 +189,33 @@ final class FlowResumeState implements JsonSerializable {
 	}//end fromArray()
 
 	/**
+	 * The storable form, or null when there is nothing worth storing.
+	 *
+	 * Only a SUSPENDED run has anywhere to continue from. A terminal one does
+	 * not, so keeping its slots would put a stale cursor in front of anyone
+	 * reading the run to find out what happened — and the dispatcher has already
+	 * cleared every node that returned, so anything still held belongs to a node
+	 * the run never came back to.
+	 *
+	 * Lives here rather than in the run service because it is a question about
+	 * this value, not about persistence: the state knows when it is worth
+	 * keeping.
+	 *
+	 * @param boolean $suspended Whether the walk ended suspended.
+	 *
+	 * @return array<string, array<string, mixed>>|null The slots, or null to drop them.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 */
+	public function storableWhen(bool $suspended): ?array {
+		if ($suspended === false || $this->byNode === []) {
+			return null;
+		}
+
+		return $this->byNode;
+	}//end storableWhen()
+
+	/**
 	 * The storable form.
 	 *
 	 * @return array<string, array<string, mixed>> The slots.
