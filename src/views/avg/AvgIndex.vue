@@ -143,10 +143,10 @@
 			</section>
 
 			<!-- Verantwoording -->
-			<section v-else-if="activeTab === 'verantwoording'">
+			<section v-else-if="activeTab === 'accountability'">
 				<div class="viewActionsBar">
 					<div class="viewInfo">
-						<span v-if="verantwoording" class="viewTotalCount">
+						<span v-if="accountability" class="viewTotalCount">
 							{{
 								t('openregister', 'Generated: {time}', {
 									time: formatTime(verantwoording.generated),
@@ -1193,7 +1193,7 @@ export default {
 					icon: 'ShieldLockOutline',
 				},
 				{
-					id: 'verantwoording',
+					id: 'accountability',
 					label: t('openregister', 'Verantwoording'),
 					icon: 'FileDocumentOutline',
 				},

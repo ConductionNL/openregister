@@ -235,7 +235,7 @@ class RetentionServiceTest extends TestCase {
 			'defaultExtensionPeriod' => 'P1Y',
 		]);
 
-		$result = $this->service->extendArchiefactiedatum($object);
+		$result = $this->service->extendArchiveActionDate($object);
 		$retention = $result->getRetention();
 
 		$this->assertEquals('2027-01-01', $retention['archiefactiedatum']);

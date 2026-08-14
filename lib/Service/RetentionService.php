@@ -179,7 +179,7 @@ class RetentionService {
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
-			$retention['archiefactiedatum'] = $this->calculateArchiefactiedatum(
+			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
 				object: $object,
 				schema: $schema,
 				retentionPeriod: $retentionPeriod
@@ -203,7 +203,7 @@ class RetentionService {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiefactiedatum(
+	public function calculateArchiveActionDate(
 		ObjectEntity $object,
 		Schema $schema,
 		string $retentionPeriod,
@@ -246,7 +246,7 @@ class RetentionService {
 		$brondatum->add($interval);
 
 		return $brondatum->format('Y-m-d');
-	}//end calculateArchiefactiedatum()
+	}//end calculateArchiveActionDate()
 
 	/**
 	 * Determine the brondatum (source date) based on afleidingswijze.
@@ -315,7 +315,7 @@ class RetentionService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function recalculateArchiefactiedatum(
+	public function recalculateArchiveActionDate(
 		ObjectEntity $object,
 		Schema $schema,
 		array $oldObject,
@@ -370,7 +370,7 @@ class RetentionService {
 		}
 
 		$oldDate = $retention['archiefactiedatum'] ?? null;
-		$newDate = $this->calculateArchiefactiedatum(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
+		$newDate = $this->calculateArchiveActionDate(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
 
 		if ($newDate !== null && $newDate !== $oldDate) {
 			$retention['archiefactiedatum'] = $newDate;
@@ -386,7 +386,7 @@ class RetentionService {
 		}
 
 		return $object;
-	}//end recalculateArchiefactiedatum()
+	}//end recalculateArchiveActionDate()
 
 	/**
 	 * Look up a selectielijst entry by categorie code.
@@ -560,7 +560,7 @@ class RetentionService {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function extendArchiefactiedatum(ObjectEntity $object, ?string $extensionPeriod = null): ObjectEntity {
+	public function extendArchiveActionDate(ObjectEntity $object, ?string $extensionPeriod = null): ObjectEntity {
 		$retention = $object->getRetention() ?? [];
 
 		if (empty($retention['archiefactiedatum']) === true) {
@@ -590,7 +590,7 @@ class RetentionService {
 		}
 
 		return $object;
-	}//end extendArchiefactiedatum()
+	}//end extendArchiveActionDate()
 
 	/**
 	 * Find objects eligible for destruction.
@@ -826,7 +826,7 @@ class RetentionService {
 			'destructionListUuid' => $destructionList['uuid'] ?? null,
 			'totalDestroyed' => $destroyedCount,
 			'groupedBySchema' => array_values($grouped),
-			'selectielijstBron' => $this->extractSelectielijstBron(destructionList: $destructionList),
+			'selectielijstBron' => $this->extractSelectionListSource(destructionList: $destructionList),
 			'complianceStatement' => 'Vernietiging conform Archiefwet 1995 en Archiefbesluit 1995',
 			'immutable' => true,
 		];
@@ -839,7 +839,7 @@ class RetentionService {
 	 *
 	 * @return string[] Unique selectielijst bron references
 	 */
-	private function extractSelectielijstBron(array $destructionList): array {
+	private function extractSelectionListSource(array $destructionList): array {
 		$bronnen = [];
 		foreach ($destructionList['objects'] ?? [] as $obj) {
 			$source = $obj['selectielijstBron'] ?? null;
@@ -849,5 +849,5 @@ class RetentionService {
 		}
 
 		return array_values(array_unique($bronnen));
-	}//end extractSelectielijstBron()
+	}//end extractSelectionListSource()
 }//end class

@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 use OCA\OpenRegister\Controller\CompanyLookupController;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
-use OCA\OpenRegister\Service\Integration\Providers\BrpPersoonProvider;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
@@ -196,8 +196,8 @@ class IntegrationMockModeTest extends TestCase {
 			],
 		];
 
-		// @var BrpPersoonProvider $brp
-		$brp = $this->provider(BrpPersoonProvider::class, $fixture);
+		// @var BrpPersonProvider $brp
+		$brp = $this->provider(BrpPersonProvider::class, $fixture);
 		$result = $brp->lookupByBsn('999990019');
 
 		$this->assertArrayNotHasKey('unavailable', $result);

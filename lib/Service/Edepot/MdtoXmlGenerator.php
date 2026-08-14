@@ -311,11 +311,11 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
 	private function addFile(DOMDocument $dom, DOMElement $parent, array $file): void {
-		$bestand = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':bestand');
+		$fileElement = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':bestand');
 
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'naam', content: $file['name']);
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'omvang', content: (string)$file['size']);
-		$this->addTextElement(dom: $dom, parent: $bestand, name: 'bestandsformaat', content: $file['format']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'naam', content: $file['name']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'omvang', content: (string)$file['size']);
+		$this->addTextElement(dom: $dom, parent: $fileElement, name: 'bestandsformaat', content: $file['format']);
 
 		$checksumElement = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX . ':checksum');
 
@@ -327,8 +327,8 @@ class MdtoXmlGenerator {
 		$value->textContent = $file['checksum'];
 		$checksumElement->appendChild($value);
 
-		$bestand->appendChild($checksumElement);
-		$parent->appendChild($bestand);
+		$fileElement->appendChild($checksumElement);
+		$parent->appendChild($fileElement);
 	}//end addBestand()
 
 	/**

@@ -289,7 +289,7 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		$this->auditMapper->createAuditTrail(old: $existing, new: $modified, action: 'update');
 
 		$controller = $this->makeController();
-		$response = $controller->verantwoording();
+		$response = $controller->accountability();
 		$body = $response->getData();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());

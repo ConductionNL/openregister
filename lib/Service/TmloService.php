@@ -215,7 +215,7 @@ class TmloService {
 
 		// Calculate archiefactiedatum from bewaarTermijn if not explicitly set.
 		if (($tmlo['archiefactiedatum'] ?? null) === null && ($tmlo['bewaarTermijn'] ?? null) !== null) {
-			$tmlo['archiefactiedatum'] = $this->calculateArchiefactiedatum(duration: $tmlo['bewaarTermijn']);
+			$tmlo['archiefactiedatum'] = $this->calculateArchiveActionDate(duration: $tmlo['bewaarTermijn']);
 		}
 
 		$object->setTmlo($tmlo);
@@ -232,7 +232,7 @@ class TmloService {
 	 *
 	 * @spec openspec/specs/tmlo-validation/spec.md#scenario-valid-iso-8601-duration-accepted
 	 */
-	public function calculateArchiefactiedatum(string $duration): ?string {
+	public function calculateArchiveActionDate(string $duration): ?string {
 		try {
 			$interval = new DateInterval($duration);
 			$date = new DateTime();
@@ -245,7 +245,7 @@ class TmloService {
 			);
 			return null;
 		}
-	}//end calculateArchiefactiedatum()
+	}//end calculateArchiveActionDate()
 
 	/**
 	 * Validate TMLO field values.

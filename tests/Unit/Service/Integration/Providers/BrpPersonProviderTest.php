@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for BrpPersoonProvider.
+ * Unit tests for BrpPersonProvider.
  *
  * Covers:
  *  - metadata matches the leaf spec (id / label / icon / group /
@@ -43,14 +43,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
-use OCA\OpenRegister\Service\Integration\Providers\BrpPersoonProvider;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for BrpPersoonProvider.
+ * Unit tests for BrpPersonProvider.
  */
 class BrpPersoonProviderTest extends TestCase {
 
@@ -71,9 +71,9 @@ class BrpPersoonProviderTest extends TestCase {
 	/**
 	 * System under test.
 	 *
-	 * @var BrpPersoonProvider
+	 * @var BrpPersonProvider
 	 */
-	private BrpPersoonProvider $provider;
+	private BrpPersonProvider $provider;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -84,7 +84,7 @@ class BrpPersoonProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new BrpPersoonProvider(
+		$this->provider = new BrpPersonProvider(
 			router: $this->router,
 			appManager: $this->appManager,
 			l10n: $l10n,
@@ -100,7 +100,7 @@ class BrpPersoonProviderTest extends TestCase {
 		$this->assertSame('openconnector', $this->provider->getRequiredApp());
 		$this->assertSame('external', $this->provider->getStorageStrategy());
 		$this->assertSame('brp-haalcentraal', $this->provider->getOpenConnectorSource());
-		$this->assertSame('brp-haalcentraal', BrpPersoonProvider::SOURCE_ID);
+		$this->assertSame('brp-haalcentraal', BrpPersonProvider::SOURCE_ID);
 		$this->assertNull($this->provider->requiresPermission());
 	}//end testMetadataMatchesLeafSpec()
 

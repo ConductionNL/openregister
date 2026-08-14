@@ -5241,9 +5241,9 @@ class SaveObject {
 		// Also try the 'naam' field as a fallback (common in Dutch schemas).
 		// This covers cases where objectNameField is not configured but naam exists in data.
 		if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
-			$naam = trim((string)$data['naam']);
-			if ($naam !== '') {
-				$this->cacheHandler->setObjectName(identifier: $uuid, name: $naam);
+			$name = trim((string)$data['naam']);
+			if ($name !== '') {
+				$this->cacheHandler->setObjectName(identifier: $uuid, name: $name);
 			}
 		}
 	}//end preCacheParentName()
@@ -5322,7 +5322,7 @@ class SaveObject {
 		// Recalculate archiefactiedatum if source property changed.
 		try {
 			$retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
-			$preparedObject = $retentionService->recalculateArchiefactiedatum(
+			$preparedObject = $retentionService->recalculateArchiveActionDate(
 				$preparedObject,
 				$schema,
 				$oldObject->getObject()

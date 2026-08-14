@@ -413,7 +413,7 @@ class TmloServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCalculateArchiefactiedatumValid(): void {
-		$result = $this->service->calculateArchiefactiedatum('P7Y');
+		$result = $this->service->calculateArchiveActionDate('P7Y');
 		$this->assertNotNull($result);
 
 		$expected = (new \DateTime())->modify('+7 years')->format('Y-m-d');
@@ -426,7 +426,7 @@ class TmloServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCalculateArchiefactiedatumInvalid(): void {
-		$result = $this->service->calculateArchiefactiedatum('invalid');
+		$result = $this->service->calculateArchiveActionDate('invalid');
 		$this->assertNull($result);
 	}//end testCalculateArchiefactiedatumInvalid()
 

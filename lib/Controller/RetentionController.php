@@ -161,7 +161,7 @@ class RetentionController extends Controller {
 							false
 						);
 						if ($exclObject !== null) {
-							$this->retentionService->extendArchiefactiedatum($exclObject);
+							$this->retentionService->extendArchiveActionDate($exclObject);
 							$this->objectMapper->update($exclObject);
 						}
 					} catch (Exception $e) {
@@ -312,7 +312,7 @@ class RetentionController extends Controller {
 				try {
 					$object = $this->objectMapper->find($uuid, null, null, false, false, false);
 					if ($object !== null) {
-						$this->retentionService->extendArchiefactiedatum($object);
+						$this->retentionService->extendArchiveActionDate($object);
 						$this->objectMapper->update($object);
 					}
 				} catch (Exception $e) {

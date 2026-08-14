@@ -43,14 +43,14 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class ArchiefactiedatumCalculator {
+class ArchiveActionDateCalculator {
 
 	/**
 	 * Supported derivation methods.
 	 */
-	private const AFLEIDINGSWIJZE_AFGEHANDELD = 'afgehandeld';
-	private const AFLEIDINGSWIJZE_EIGENSCHAP = 'eigenschap';
-	private const AFLEIDINGSWIJZE_TERMIJN = 'termijn';
+	private const DERIVATION_METHOD_COMPLETED = 'afgehandeld';
+	private const DERIVATION_METHOD_ATTRIBUTE = 'eigenschap';
+	private const DERIVATION_METHOD_TERM = 'termijn';
 
 	/**
 	 * Logger instance.
@@ -90,7 +90,7 @@ class ArchiefactiedatumCalculator {
 
 		if ($afleidingswijze === null || $retentionPeriod === null) {
 			$this->logger->debug(
-				message: '[ArchiefactiedatumCalculator] Missing afleidingswijze or bewaartermijn in archive config',
+				message: '[ArchiveActionDateCalculator] Missing afleidingswijze or bewaartermijn in archive config',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -104,7 +104,7 @@ class ArchiefactiedatumCalculator {
 			$duration = new DateInterval($retentionPeriod);
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[ArchiefactiedatumCalculator] Invalid bewaartermijn format: ' . $retentionPeriod,
+				message: '[ArchiveActionDateCalculator] Invalid bewaartermijn format: ' . $retentionPeriod,
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -123,7 +123,7 @@ class ArchiefactiedatumCalculator {
 
 		if ($brondatum === null) {
 			$this->logger->debug(
-				message: '[ArchiefactiedatumCalculator] Could not determine brondatum',
+				message: '[ArchiveActionDateCalculator] Could not determine brondatum',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -137,7 +137,7 @@ class ArchiefactiedatumCalculator {
 		$archiveActionDate->add($duration);
 
 		$this->logger->info(
-			message: '[ArchiefactiedatumCalculator] Calculated archiefactiedatum',
+			message: '[ArchiveActionDateCalculator] Calculated archiefactiedatum',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
@@ -170,15 +170,15 @@ class ArchiefactiedatumCalculator {
 		?DateTime $closureDate,
 	): ?DateTime {
 		switch ($afleidingswijze) {
-			case self::AFLEIDINGSWIJZE_AFGEHANDELD:
+			case self::DERIVATION_METHOD_COMPLETED:
 				return $this->brondatumFromClosure(closureDate: $closureDate);
-			case self::AFLEIDINGSWIJZE_EIGENSCHAP:
+			case self::DERIVATION_METHOD_ATTRIBUTE:
 				return $this->brondatumFromProperty(archiveConfig: $archiveConfig, objectData: $objectData);
-			case self::AFLEIDINGSWIJZE_TERMIJN:
-				return $this->brondatumFromTermijn(archiveConfig: $archiveConfig, closureDate: $closureDate);
+			case self::DERIVATION_METHOD_TERM:
+				return $this->sourceDateFromTerm(archiveConfig: $archiveConfig, closureDate: $closureDate);
 			default:
 				$this->logger->warning(
-					message: '[ArchiefactiedatumCalculator] Unknown afleidingswijze: ' . $afleidingswijze,
+					message: '[ArchiveActionDateCalculator] Unknown afleidingswijze: ' . $afleidingswijze,
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
@@ -201,7 +201,7 @@ class ArchiefactiedatumCalculator {
 	private function brondatumFromClosure(?DateTime $closureDate): ?DateTime {
 		if ($closureDate === null) {
 			$this->logger->debug(
-				message: '[ArchiefactiedatumCalculator] No closure date provided for afgehandeld method',
+				message: '[ArchiveActionDateCalculator] No closure date provided for afgehandeld method',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
@@ -224,7 +224,7 @@ class ArchiefactiedatumCalculator {
 		$propertyName = $archiveConfig['eigenschap'] ?? null;
 		if ($propertyName === null) {
 			$this->logger->warning(
-				message: '[ArchiefactiedatumCalculator] No eigenschap configured for eigenschap method',
+				message: '[ArchiveActionDateCalculator] No eigenschap configured for eigenschap method',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
@@ -233,7 +233,7 @@ class ArchiefactiedatumCalculator {
 		$propertyValue = $objectData[$propertyName] ?? null;
 		if ($propertyValue === null) {
 			$this->logger->debug(
-				message: '[ArchiefactiedatumCalculator] Property value not found on object',
+				message: '[ArchiveActionDateCalculator] Property value not found on object',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -247,7 +247,7 @@ class ArchiefactiedatumCalculator {
 			return new DateTime($propertyValue);
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[ArchiefactiedatumCalculator] Invalid date in property: ' . $propertyName,
+				message: '[ArchiveActionDateCalculator] Invalid date in property: ' . $propertyName,
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -269,10 +269,10 @@ class ArchiefactiedatumCalculator {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function brondatumFromTermijn(array $archiveConfig, ?DateTime $closureDate): ?DateTime {
+	private function sourceDateFromTerm(array $archiveConfig, ?DateTime $closureDate): ?DateTime {
 		if ($closureDate === null) {
 			$this->logger->debug(
-				message: '[ArchiefactiedatumCalculator] No closure date provided for termijn method',
+				message: '[ArchiveActionDateCalculator] No closure date provided for termijn method',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
@@ -281,7 +281,7 @@ class ArchiefactiedatumCalculator {
 		$procestermijn = $archiveConfig['procestermijn'] ?? null;
 		if ($procestermijn === null) {
 			$this->logger->warning(
-				message: '[ArchiefactiedatumCalculator] No procestermijn configured for termijn method',
+				message: '[ArchiveActionDateCalculator] No procestermijn configured for termijn method',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
@@ -294,7 +294,7 @@ class ArchiefactiedatumCalculator {
 			return $brondatum;
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[ArchiefactiedatumCalculator] Invalid procestermijn format: ' . $procestermijn,
+				message: '[ArchiveActionDateCalculator] Invalid procestermijn format: ' . $procestermijn,
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -303,5 +303,5 @@ class ArchiefactiedatumCalculator {
 			);
 			return null;
 		}
-	}//end brondatumFromTermijn()
+	}//end sourceDateFromTerm()
 }//end class

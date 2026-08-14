@@ -217,7 +217,7 @@ describe('AvgIndex — Cases surface', () => {
 		const ids = computedCall('tabs', {}).map((t) => t.id)
 		expect(ids).toEqual([
 			'activities',
-			'verantwoording',
+			'accountability',
 			'dsar',
 			'cases',
 			'compliance',

@@ -324,7 +324,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function verantwoording(): JSONResponse {
+	public function accountability(): JSONResponse {
 		// SECURITY (#1825): the Art 30 §4 report exposes one tenant's full
 		// processing register + audit aggregates. Non-admins only get
 		// their own organisation(s); admins get the full report.
@@ -369,7 +369,7 @@ class VerwerkingsactiviteitenController extends Controller {
 			]
 		);
 
-	}//end verantwoording()
+	}//end accountability()
 
 	/**
 	 * Hydrate (or update) a Verwerkingsactiviteit from a request payload.
