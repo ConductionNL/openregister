@@ -1,10 +1,10 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Delete Organisation" size="normal" :can-close="false">
+	<NcDialog name="Delete Organisation" size="normal" :canClose="false">
 		<p v-if="!success && canDelete">
 			Are you sure you want to permanently delete
 			<b>{{ organisationStore.organisationItem?.name }}</b
@@ -77,7 +77,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -92,6 +91,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -100,6 +100,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed ownership check gating the delete UI; UI state helper.
@@ -109,6 +110,7 @@ export default {
 			const currentUser = this.getCurrentUser()
 			return organisationStore.organisationItem?.owner === currentUser
 		},
+
 		/**
 		 * @spec exclude Computed member-presence check for the delete warning; UI state helper.
 		 */
@@ -116,12 +118,14 @@ export default {
 			// Check if organisation has members (excluding the owner)
 			return (organisationStore.organisationItem?.users?.length || 0) > 1
 		},
+
 		/**
 		 * @spec exclude Computed member count for display; UI presentation helper.
 		 */
 		memberCount() {
 			return organisationStore.organisationItem?.users?.length || 0
 		},
+
 		/**
 		 * @spec exclude Computed check whether this org is the active one; UI state helper.
 		 */
@@ -133,6 +137,7 @@ export default {
 					=== organisationStore.organisationItem?.uuid
 			)
 		},
+
 		/**
 		 * @spec exclude Computed delete-enablement guard combining ownership/membership/active checks; UI validation helper.
 		 */
@@ -150,6 +155,7 @@ export default {
 			)
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -158,6 +164,7 @@ export default {
 			// Implementation would depend on how you get current user
 			return 'current-user' // Placeholder
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
 		 */
@@ -168,6 +175,7 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
 		/**
 		 * @spec exclude Delete-confirm handler delegating to organisationStore.deleteOrganisation; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */

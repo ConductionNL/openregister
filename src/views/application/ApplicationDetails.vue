@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { applicationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -276,24 +276,24 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
-	NcActions,
-	NcActionButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
+import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'ApplicationDetails',
@@ -316,6 +316,7 @@ export default {
 		Database,
 		FileOutline,
 	},
+
 	/**
 	 * @spec exclude detail-view lifecycle fetch of the application by route id on mount
 	 */

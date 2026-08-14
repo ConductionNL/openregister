@@ -2,9 +2,9 @@
 import { translate as t } from '@nextcloud/l10n'
 import {
 	navigationStore,
-	schemaStore,
 	objectStore,
 	registerStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -12,7 +12,7 @@ import {
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
 		name="Verwijder Schema-eigenschap"
-		:can-close="false">
+		:canClose="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
 				<p>Schema-eigenschap succesvol verwijderd</p>
@@ -66,8 +66,7 @@ import {
 </template>
 
 <script>
-import { NcButton, NcDialog, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
@@ -82,6 +81,7 @@ export default {
 		Cancel,
 		Delete,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -92,6 +92,7 @@ export default {
 			isUpdated: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed delete-enablement guard (no objects use the property); UI validation helper.
@@ -100,6 +101,7 @@ export default {
 			return this.objects.length === 0
 		},
 	},
+
 	/**
 	 * @spec exclude Vue updated() hook running one-time dialog init when the modal opens; modal init plumbing.
 	 */
@@ -109,6 +111,7 @@ export default {
 			this.initDialog()
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Scans registers/objects for usage of the property to populate the warning list; UI form-loading plumbing.
@@ -142,6 +145,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
 		 */
@@ -154,6 +158,7 @@ export default {
 			this.objects = []
 			this.isUpdated = false
 		},
+
 		/**
 		 * @spec exclude Delete-confirm handler removing the property and delegating to schemaStore.saveSchema; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */

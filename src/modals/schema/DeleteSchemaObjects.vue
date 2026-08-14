@@ -1,7 +1,7 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -9,7 +9,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -59,8 +59,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 			<div v-if="objectCount > 0" class="object-count-info">
 				<SchemaStatsBlock
-					:object-count="objectCount"
-					:object-stats="objectStats"
+					:objectCount="objectCount"
+					:objectStats="objectStats"
 					:loading="false"
 					:title="t('openregister', 'Objects to be deleted')" />
 
@@ -70,7 +70,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					class="hard-delete-option">
 					<NcCheckboxRadioSwitch
 						v-model="hardDelete"
-						:name="'hardDelete'"
+						name="hardDelete"
 						:label="
 							t(
 								'openregister',
@@ -78,7 +78,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 							)
 						"
 						type="checkbox"
-						:value="'hardDelete'" />
+						value="hardDelete" />
 					<p class="hard-delete-description">
 						{{
 							t(
@@ -93,8 +93,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 			<div v-else class="no-objects-info">
 				<SchemaStatsBlock
-					:object-count="0"
-					:object-stats="null"
+					:objectCount="0"
+					:objectStats="null"
 					:loading="false"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
@@ -154,15 +154,14 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 <script>
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 
 export default {
 	name: 'DeleteSchemaObjects',
@@ -177,6 +176,7 @@ export default {
 		AlertCircle,
 		SchemaStatsBlock,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -188,6 +188,7 @@ export default {
 			hardDelete: [],
 		}
 	},
+
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
@@ -200,8 +201,10 @@ export default {
 					this.loadObjectCount()
 				}
 			},
+
 			immediate: true,
 		},
+
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
 			/**
@@ -216,15 +219,18 @@ export default {
 					this.loadObjectCount()
 				}
 			},
+
 			immediate: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook loading object count
 	 */
 	async mounted() {
 		await this.loadObjectCount()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude form-state loader for schema object count via schemaStore

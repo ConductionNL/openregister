@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'ObjectCard',
@@ -62,11 +62,13 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		showUnlink: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	computed: {
 		/**
 		 * OR sometimes derives `@self.name` as a JSON-encoded locale map
@@ -90,6 +92,7 @@ export default {
 			}
 			return raw
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -99,6 +102,7 @@ export default {
 			const objectUuid = this.object.objectUuid || ''
 			return `/apps/openregister/registers/${registerId}/${schemaId}/${objectUuid}`
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -117,6 +121,7 @@ export default {
 			return parts.join(', ')
 		},
 	},
+
 	methods: {
 		t,
 		n,

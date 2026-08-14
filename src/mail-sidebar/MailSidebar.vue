@@ -6,10 +6,10 @@
 		}">
 		<NcAppSidebar
 			v-if="!collapsed"
+			v-model:active="activeTab"
 			:name="sidebarTitle"
 			:subname="sidebarSubname"
 			:compact="true"
-			v-model:active="activeTab"
 			class="or-mail-sidebar"
 			@close="toggleCollapsed">
 			<template #description>
@@ -27,10 +27,10 @@
 				</template>
 				<ObjectsTab
 					ref="objectsTab"
-					:account-id="accountId"
-					:message-id="messageId"
+					:accountId="accountId"
+					:messageId="messageId"
 					@count="onObjectsCount"
-					@switch-tab="switchTab" />
+					@switchTab="switchTab" />
 			</NcAppSidebarTab>
 
 			<NcAppSidebarTab
@@ -41,8 +41,8 @@
 					<Plus :size="20" />
 				</template>
 				<ActionsTab
-					:account-id="accountId"
-					:message-id="messageId"
+					:accountId="accountId"
+					:messageId="messageId"
 					@linked="onLinked" />
 			</NcAppSidebarTab>
 
@@ -53,7 +53,7 @@
 				<template #icon>
 					<AccountMultiple :size="20" />
 				</template>
-				<EntitiesTab :account-id="accountId" :message-id="messageId" />
+				<EntitiesTab :accountId="accountId" :messageId="messageId" />
 			</NcAppSidebarTab>
 		</NcAppSidebar>
 
@@ -78,15 +78,14 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
-import ActionsTab from './components/ActionsTab.vue'
-import ObjectsTab from './components/ObjectsTab.vue'
-import EntitiesTab from './components/EntitiesTab.vue'
-import { useMailObserver } from './composables/useMailObserver.js'
-import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
-
+import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
+import ActionsTab from './components/ActionsTab.vue'
+import EntitiesTab from './components/EntitiesTab.vue'
+import ObjectsTab from './components/ObjectsTab.vue'
+import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
+import { useMailObserver } from './composables/useMailObserver.js'
 
 const COLLAPSED_STORAGE_KEY = 'openregister-mail-sidebar-collapsed'
 
@@ -102,6 +101,7 @@ export default {
 		Plus,
 		AccountMultiple,
 	},
+
 	/**
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
@@ -110,6 +110,7 @@ export default {
 		useAttachmentDrag()
 		return { ...mailObserver }
 	},
+
 	data() {
 		return {
 			collapsed: false,
@@ -122,6 +123,7 @@ export default {
 			autoSelectPending: true,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -129,12 +131,14 @@ export default {
 		sidebarTitle() {
 			return t('openregister', 'Connections')
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		sidebarSubname() {
 			return ''
 		},
+
 		/**
 		 * The Connections tab is disabled once we know this email has no
 		 * connections yet — there is nothing to show, so we steer the user
@@ -144,6 +148,7 @@ export default {
 			return this.objectsCount === 0
 		},
 	},
+
 	watch: {
 		/**
 		 * A new email is selected: forget the previous count and re-arm the
@@ -154,6 +159,7 @@ export default {
 			this.autoSelectPending = true
 		},
 	},
+
 	/**
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
@@ -163,6 +169,7 @@ export default {
 			this.collapsed = true
 		}
 	},
+
 	methods: {
 		t,
 		/**
@@ -172,6 +179,7 @@ export default {
 			this.collapsed = !this.collapsed
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))
 		},
+
 		/**
 		 * @param tabId
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -179,6 +187,7 @@ export default {
 		switchTab(tabId) {
 			this.activeTab = tabId
 		},
+
 		/**
 		 * The Connections tab reports how many connections the current email
 		 * has. On a freshly-selected email we auto-open the Connect tab when
@@ -186,6 +195,8 @@ export default {
 		 * Connections tab when there are some. After that first decision we
 		 * leave the user's tab choice alone — only the enabled/disabled state
 		 * keeps tracking the count.
+		 *
+		 * @param count
 		 */
 		onObjectsCount(count) {
 			this.objectsCount = count
@@ -197,6 +208,7 @@ export default {
 				this.activeTab = 'actions'
 			}
 		},
+
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
 		 */

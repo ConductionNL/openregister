@@ -22,9 +22,9 @@
  * @license   EUPL-1.2
  */
 
-import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
 
 const API_BASE = generateUrl('/apps/openregister/api')
 

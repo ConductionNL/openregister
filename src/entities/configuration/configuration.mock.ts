@@ -1,4 +1,4 @@
-import { TConfiguration } from './configuration.types'
+import type { TConfiguration } from './configuration.types'
 
 // Configuration entity was refactored from the legacy `@self`-wrapped
 // shape to a flat shape (id, title, description, version, type, …) with

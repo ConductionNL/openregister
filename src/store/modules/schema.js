@@ -1,13 +1,13 @@
-import { defineStore } from 'pinia'
 // The OpenRegister schema API contract lives in nc-vue, shared with OpenBuild's
 // editor, so the two cannot drift on what a 409 means (breaking change / schema
 // still has objects). See @conduction/nextcloud-vue src/utils/schemaApi.js.
 // Aliased: this store's own actions are also called saveSchema/deleteSchema, and an
 // unaliased call inside them would read like recursion.
 import {
-	saveSchema as apiSaveSchema,
 	deleteSchema as apiDeleteSchema,
+	saveSchema as apiSaveSchema,
 } from '@conduction/nextcloud-vue'
+import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -80,6 +80,7 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 * @spec exclude store setter (local pagination state)
@@ -89,6 +90,7 @@ export const useSchemaStore = defineStore('schema', {
 		},
 		/**
 		 * Set query filters for schema list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the schema list
 		 * @spec exclude store setter (local filter state)
 		 */
@@ -475,6 +477,7 @@ export const useSchemaStore = defineStore('schema', {
 
 		/**
 		 * Get object count for a schema
+		 *
 		 * @param {number} schemaId The schema ID to get object count for
 		 * @return {Promise<number>} The number of objects in the schema
 		 * @spec exclude API passthrough to GET /api/objects/count with stats-endpoint fallback

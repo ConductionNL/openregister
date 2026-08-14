@@ -8,7 +8,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'previewConfiguration'"
 		name="Preview Configuration Changes"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">
@@ -66,7 +66,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						}">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:model-value="isRegisterSelected(change.slug)"
+								:modelValue="isRegisterSelected(change.slug)"
 								:aria-labelledby="`preview-register-title-${index}`"
 								@update:modelValue="
 									(checked) =>
@@ -148,7 +148,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						}">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:model-value="isSchemaSelected(change.slug)"
+								:modelValue="isSchemaSelected(change.slug)"
 								:aria-labelledby="`preview-schema-title-${index}`"
 								@update:modelValue="
 									(checked) =>
@@ -228,7 +228,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isObjectSelected(change) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:model-value="isObjectSelected(change)"
+								:modelValue="isObjectSelected(change)"
 								:aria-labelledby="`preview-object-title-${index}`"
 								@update:modelValue="
 									(checked) =>
@@ -337,26 +337,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
+	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
-	NcEmptyContent,
 } from '@nextcloud/vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import Database from 'vue-material-design-icons/Database.vue'
-import FileDocument from 'vue-material-design-icons/FileDocument.vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import CheckAll from 'vue-material-design-icons/CheckAll.vue'
-import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
+import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
+import Database from 'vue-material-design-icons/Database.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 
 export default {
 	name: 'PreviewConfiguration',
@@ -377,6 +376,7 @@ export default {
 		CloseCircle,
 		CheckCircle,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -387,6 +387,7 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed boolean true when any preview item is selected; UI state helper.
@@ -398,6 +399,7 @@ export default {
 				|| this.selectedObjects.length > 0
 			)
 		},
+
 		/**
 		 * @spec exclude Computed total count of selected preview items; UI state helper.
 		 */
@@ -409,9 +411,11 @@ export default {
 			)
 		},
 	},
+
 	async mounted() {
 		await this.loadPreview()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -446,12 +450,15 @@ export default {
 				this.loading = false
 			}
 		},
+
 		isRegisterSelected(slug) {
 			return this.selectedRegisters.includes(slug)
 		},
+
 		isSchemaSelected(slug) {
 			return this.selectedSchemas.includes(slug)
 		},
+
 		/**
 		 * @param change
 		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
@@ -460,6 +467,7 @@ export default {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			return this.selectedObjects.includes(objectId)
 		},
+
 		/**
 		 * @param slug
 		 * @param checked
@@ -476,6 +484,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param slug
 		 * @param checked
@@ -490,6 +499,7 @@ export default {
 				this.selectedSchemas = this.selectedSchemas.filter((s) => s !== slug)
 			}
 		},
+
 		/**
 		 * @param change
 		 * @param checked
@@ -507,6 +517,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @spec exclude Selects all non-skip preview items; UI bulk-selection plumbing.
 		 */
@@ -530,6 +541,7 @@ export default {
 					.map((o) => `${o.register}:${o.schema}:${o.slug}`)
 			}
 		},
+
 		/**
 		 * @spec exclude Clears all preview selections; UI bulk-selection plumbing.
 		 */
@@ -538,6 +550,7 @@ export default {
 			this.selectedSchemas = []
 			this.selectedObjects = []
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
@@ -548,6 +561,7 @@ export default {
 				return JSON.stringify(value).substring(0, 50) + '...'
 			return String(value).substring(0, 50)
 		},
+
 		/**
 		 * @spec exclude Posts the selected preview subset to the configurations/import endpoint and refreshes the list; UI orchestration plumbing.
 		 */
@@ -607,12 +621,14 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
 		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal and preview/selection state; UI plumbing.
 		 */

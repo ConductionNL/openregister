@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TSource } from './source.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TSource } from './source.types'
+
+import { z } from 'zod'
 
 export class Source implements TSource {
 	public id: string | number

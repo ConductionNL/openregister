@@ -141,9 +141,9 @@
 <script>
 import {
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcButton,
 } from '@nextcloud/vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import { qualityStore } from '../../store/store.js'

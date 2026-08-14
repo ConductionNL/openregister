@@ -1,6 +1,7 @@
 <template>
 	<span
-		:class="['translation-status-chip', `translation-status-chip--${status}`]"
+		class="translation-status-chip"
+		:class="[`translation-status-chip--${status}`]"
 		:title="tooltipText"
 		:aria-label="tooltipText">
 		<span class="translation-status-chip__icon" aria-hidden="true">
@@ -28,11 +29,13 @@ export default {
 			required: true,
 			validator: (v) => Object.values(TRANSLATION_STATUSES).includes(v),
 		},
+
 		language: {
 			type: String,
 			default: '',
 		},
 	},
+
 	computed: {
 		/**
 		 * @spec exclude computed status-metadata lookup; translation-status contract owned by register-i18n capability
@@ -40,18 +43,21 @@ export default {
 		meta() {
 			return STATUS_META[this.status] ?? { icon: '?', label: this.status }
 		},
+
 		/**
 		 * @spec exclude computed icon-char display helper, UI plumbing
 		 */
 		iconChar() {
 			return this.meta.icon
 		},
+
 		/**
 		 * @spec exclude computed status-label display helper, UI plumbing
 		 */
 		labelText() {
 			return this.meta.label
 		},
+
 		/**
 		 * @spec exclude computed tooltip display helper, UI plumbing
 		 */

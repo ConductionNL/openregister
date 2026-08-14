@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'New {name}', { name: schemaTitle })"
-		:can-close="!saving"
+		:canClose="!saving"
 		size="normal"
 		class="or-create-connected-dialog"
 		@closing="$emit('cancel')">
@@ -92,7 +92,6 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 
@@ -105,31 +104,37 @@ export default {
 		Cancel,
 		Plus,
 	},
+
 	props: {
 		show: {
 			type: Boolean,
 			required: true,
 		},
+
 		// The full schema object (title + properties + configuration).
 		schema: {
 			type: Object,
 			default: null,
 		},
+
 		// The template applied to this email — the initial field values.
 		initialData: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		saving: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	data() {
 		return {
 			form: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec openspec/specs/integration-email/spec.md
@@ -137,6 +142,7 @@ export default {
 		schemaTitle() {
 			return this.schema?.title || t('openregister', 'object')
 		},
+
 		/**
 		 * Build the editable field descriptors from the template keys, typed
 		 * against the schema's property definitions.
@@ -156,6 +162,7 @@ export default {
 			})
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the working copy whenever the dialog (re)opens for an email.
@@ -171,9 +178,11 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		t,
 		/**
+		 * @param key
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		humanize(key) {
@@ -183,9 +192,12 @@ export default {
 				.replace(/^./, (c) => c.toUpperCase())
 				.trim()
 		},
+
 		/**
 		 * Pick an input control for a property based on its schema type.
 		 *
+		 * @param key
+		 * @param def
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		controlFor(key, def) {
@@ -207,6 +219,7 @@ export default {
 			}
 			return 'text'
 		},
+
 		/**
 		 * Return the edited values merged over the full template so fields
 		 * that were not surfaced still get their templated values.

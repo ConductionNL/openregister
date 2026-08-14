@@ -30,6 +30,7 @@ export default {
 	props: {
 		token: { type: String, required: true },
 	},
+
 	emits: ['close', 'copy'],
 	methods: { t },
 }

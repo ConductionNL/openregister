@@ -32,6 +32,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 		/**
 		 * Set pagination details
+		 *
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
 		 *
@@ -42,6 +43,7 @@ export const useConfigurationStore = defineStore('configuration', {
 		},
 		/**
 		 * Set query filters for configuration list
+		 *
 		 * @param {object} filters - The filter criteria to apply to the configuration list
 		 *
 		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.

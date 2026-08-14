@@ -245,18 +245,18 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcDialog,
 	NcButton,
 	NcCheckboxRadioSwitch,
+	NcDialog,
 	NcLoadingIcon,
 	NcProgressBar,
 } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
 	name: 'FileVectorizationModal',
@@ -276,6 +276,7 @@ export default {
 			type: Boolean,
 			required: true,
 		},
+
 		extractionStats: {
 			type: Object,
 			default: () => ({
@@ -285,6 +286,7 @@ export default {
 				totalChunks: 0,
 			}),
 		},
+
 		vectorStats: {
 			type: Object,
 			default: () => ({

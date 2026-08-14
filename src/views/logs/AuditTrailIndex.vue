@@ -1,7 +1,7 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { auditTrailStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
+import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -15,39 +15,39 @@ import formatBytes from '../../services/formatBytes.js'
 					'View and analyze system audit trails with advanced filtering capabilities',
 				)
 			"
-			:show-title="true"
+			:showTitle="true"
 			:objects="paginatedAuditTrails"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="auditTrailStore.auditTrailLoading"
-			view-mode="table"
-			:available-view-modes="['table']"
-			:show-view-toggle="false"
+			viewMode="table"
+			:availableViewModes="['table']"
+			:showViewToggle="false"
 			:selectable="true"
-			:selected-ids="selectedAuditTrails"
-			:show-add="false"
-			:show-form-dialog="false"
-			:show-view-action="false"
-			:show-edit-action="false"
-			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
-			:show-mass-copy="false"
-			show-mass-delete
-			:name-formatter="auditTrailName"
-			row-key="id"
-			:row-class="getRowClass"
+			:selectedIds="selectedAuditTrails"
+			:showAdd="false"
+			:showFormDialog="false"
+			:showViewAction="false"
+			:showEditAction="false"
+			:showCopyAction="false"
+			:showDeleteAction="false"
+			:showMassImport="false"
+			:showMassExport="false"
+			:showMassCopy="false"
+			showMassDelete
+			:nameFormatter="auditTrailName"
+			rowKey="id"
+			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
 			@refresh="handleRefresh"
-			@page-changed="onPageChanged"
-			@page-size-changed="onPageSizeChanged"
+			@pageChanged="onPageChanged"
+			@pageSizeChanged="onPageSizeChanged"
 			@select="onSelect"
-			@mass-delete="handleMassDelete">
+			@massDelete="handleMassDelete">
 			<!-- Export covers the current filter set rather than the row selection,
 			     so it stays a custom entry instead of the built-in mass export. -->
 			<template #action-items>
-				<NcActionButton close-after-click @click="exportAuditTrails">
+				<NcActionButton closeAfterClick @click="exportAuditTrails">
 					<template #icon>
 						<Download :size="20" />
 					</template>
@@ -62,7 +62,7 @@ import formatBytes from '../../services/formatBytes.js'
 							? row.action.toUpperCase()
 							: t('openregister', 'NO ACTION')
 					"
-					:color-map="actionColorMap"
+					:colorMap="actionColorMap"
 					solid>
 					<template #icon>
 						<Plus v-if="row.action === 'create'" :size="16" />
@@ -76,7 +76,7 @@ import formatBytes from '../../services/formatBytes.js'
 			<template #column-created="{ row }">
 				<NcDateTime
 					:timestamp="new Date(row.created)"
-					:ignore-seconds="false" />
+					:ignoreSeconds="false" />
 			</template>
 
 			<template #column-object="{ row }">
@@ -104,7 +104,7 @@ import formatBytes from '../../services/formatBytes.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="viewDetails(row)">
+					<NcActionButton closeAfterClick @click="viewDetails(row)">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
@@ -112,14 +112,14 @@ import formatBytes from '../../services/formatBytes.js'
 					</NcActionButton>
 					<NcActionButton
 						v-if="hasChanges(row)"
-						close-after-click
+						closeAfterClick
 						@click="viewChanges(row)">
 						<template #icon>
 							<CompareHorizontal :size="20" />
 						</template>
 						{{ t('openregister', 'View Changes') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="copyData(row)">
+					<NcActionButton closeAfterClick @click="copyData(row)">
 						<template #icon>
 							<Check
 								v-if="copyStates[row.id]"
@@ -133,7 +133,7 @@ import formatBytes from '../../services/formatBytes.js'
 								: t('openregister', 'Copy Data')
 						}}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="deleteAuditTrail(row)">
+					<NcActionButton closeAfterClick @click="deleteAuditTrail(row)">
 						<template #icon>
 							<Delete :size="20" />
 						</template>
@@ -161,28 +161,28 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
-	NcAppContent,
-	NcEmptyContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcDateTime,
+	NcEmptyContent,
 } from '@nextcloud/vue'
-import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Check from 'vue-material-design-icons/Check.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Check from 'vue-material-design-icons/Check.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import eventBus from '../../eventBus.js'
 
 export default {
@@ -206,6 +206,7 @@ export default {
 		Check,
 		DotsHorizontal,
 	},
+
 	data() {
 		return {
 			copyStates: {}, // Track copy state for each audit trail
@@ -222,6 +223,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Column definitions for the audit trail table.
@@ -264,6 +266,7 @@ export default {
 				{ key: 'size', label: t('openregister', 'Size'), width: '100px' },
 			]
 		},
+
 		/**
 		 * Pagination state for CnIndexPage. The API paginates server-side, so the
 		 * store values are passed straight through without slicing.
@@ -280,6 +283,7 @@ export default {
 				limit: pagination.limit || 50,
 			}
 		},
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
@@ -295,6 +299,7 @@ export default {
 			}
 		},
 	},
+
 	watch: {
 		paginatedAuditTrails: {
 			/**
@@ -305,9 +310,11 @@ export default {
 					this.updateCounts()
 				})
 			},
+
 			deep: false,
 		},
 	},
+
 	/**
 	 * Lifecycle hook: load audit trails and subscribe to sidebar events on mount.
 	 *
@@ -332,6 +339,7 @@ export default {
 			this.updateCounts()
 		})
 	},
+
 	/**
 	 * Lifecycle hook: unsubscribe from sidebar events before teardown.
 	 *
@@ -343,9 +351,11 @@ export default {
 		eventBus.off('audit-trail-export')
 		eventBus.off('audit-trail-refresh')
 	},
+
 	methods: {
 		/**
 		 * Load audit trails from API
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -358,8 +368,10 @@ export default {
 				showError(t('openregister', 'Error loading audit trails'))
 			}
 		},
+
 		/**
 		 * Handle filter changes from sidebar
+		 *
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 *
@@ -370,8 +382,10 @@ export default {
 			// Refresh with new filters
 			this.loadAuditTrails()
 		},
+
 		/**
 		 * Handle export request from sidebar
+		 *
 		 * @param {object} options - Export options from sidebar
 		 * @return {void}
 		 *
@@ -380,6 +394,7 @@ export default {
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
 		},
+
 		/**
 		 * Reload the audit trail list from the store, driving the refresh spinner.
 		 *
@@ -394,6 +409,7 @@ export default {
 				this.isRefreshing = false
 			}
 		},
+
 		/**
 		 * Compute the CSS row class carrying the side accent. Keyed on the badge
 		 * variant rather than the action name so the accent always matches the
@@ -409,6 +425,7 @@ export default {
 				this.actionColorMap[String(auditTrail.action || '').toLowerCase()]
 			return variant ? `auditTrailRow--${variant}` : ''
 		},
+
 		/**
 		 * Track the selected audit trail ids for mass actions.
 		 *
@@ -419,6 +436,7 @@ export default {
 		onSelect(ids) {
 			this.selectedAuditTrails = ids
 		},
+
 		/**
 		 * Label an audit trail in the mass-delete dialog. Entries have no title
 		 * field, so the id is the only stable identifier to show.
@@ -430,8 +448,10 @@ export default {
 		auditTrailName(auditTrail) {
 			return t('openregister', 'Audit trail #{id}', { id: auditTrail.id })
 		},
+
 		/**
 		 * View detailed information for an audit trail entry
+		 *
 		 * @param {object} auditTrail - Audit trail entry to view
 		 * @return {void}
 		 *
@@ -443,8 +463,10 @@ export default {
 			// Open the details modal
 			navigationStore.setDialog('auditTrailDetails')
 		},
+
 		/**
 		 * View changes information for an audit trail entry
+		 *
 		 * @param {object} auditTrail - Audit trail entry with changes
 		 * @return {void}
 		 *
@@ -455,8 +477,10 @@ export default {
 			auditTrailStore.setAuditTrailItem(auditTrail)
 			navigationStore.setDialog('auditTrailChanges')
 		},
+
 		/**
 		 * Copy audit trail data to clipboard
+		 *
 		 * @param {object} auditTrail - Audit trail entry to copy
 		 * @return {Promise<void>}
 		 *
@@ -507,8 +531,10 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Export audit trails with current filters
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -516,8 +542,10 @@ export default {
 		exportAuditTrails() {
 			this.exportFilteredAuditTrails({ format: 'csv', includeChanges: true })
 		},
+
 		/**
 		 * Export filtered audit trails with specified options
+		 *
 		 * @param {object} options - Export options
 		 * @return {Promise<void>}
 		 *
@@ -581,8 +609,10 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Delete a single audit trail using the new modal
+		 *
 		 * @param {object} auditTrail - Audit trail to delete
 		 * @return {void}
 		 *
@@ -594,8 +624,10 @@ export default {
 			// Open the delete modal
 			navigationStore.setDialog('deleteAuditTrail')
 		},
+
 		/**
 		 * Refresh audit trails list
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -603,8 +635,10 @@ export default {
 		async refreshAuditTrails() {
 			await this.loadAuditTrails()
 		},
+
 		/**
 		 * Update counts for sidebar
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -620,8 +654,10 @@ export default {
 				eventBus.emit('audit-trail-filtered-count', 0)
 			}
 		},
+
 		/**
 		 * Handle page change from pagination component
+		 *
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 *
@@ -639,8 +675,10 @@ export default {
 				console.error('Error loading page:', error)
 			}
 		},
+
 		/**
 		 * Handle page size change from pagination component
+		 *
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
 		 *
@@ -658,8 +696,10 @@ export default {
 				console.error('Error changing page size:', error)
 			}
 		},
+
 		/**
 		 * Check if audit trail has changes
+		 *
 		 * @param {object} auditTrail - The audit trail item
 		 * @return {boolean} Whether the audit trail has changes
 		 *
@@ -683,10 +723,12 @@ export default {
 				return false
 			}
 		},
+
 		/**
 		 * Delete the audit trails confirmed in the mass-delete dialog. The dialog
 		 * lets the user drop individual rows, so the emitted ids win over the
 		 * current selection.
+		 *
 		 * @param {Array} ids - Audit trail ids confirmed for deletion
 		 * @return {Promise<void>}
 		 *

@@ -1,8 +1,8 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
+	objectStore,
 	registerStore,
 	schemaStore,
 } from '../../store/store.js'
@@ -14,7 +14,7 @@ import {
 			v-if="navigationStore.modal === 'viewObject'"
 			:name="getModalTitle()"
 			size="large"
-			:can-close="true"
+			:canClose="true"
 			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Register/Schema Selection (for new objects with multiple options) -->
@@ -42,10 +42,10 @@ import {
 								<NcSelect
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
-									input-label="Selected Register For New Object"
+									inputLabel="Selected Register For New Object"
 									:options="availableRegisters"
 									label="title"
-									track-by="id"
+									trackBy="id"
 									:placeholder="
 										t('openregister', 'Choose a register')
 									"
@@ -61,10 +61,10 @@ import {
 								<NcSelect
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
-									input-label="Selected Schema For New Object"
+									inputLabel="Selected Schema For New Object"
 									:options="availableSchemas"
 									label="title"
-									track-by="id"
+									trackBy="id"
 									:placeholder="
 										t('openregister', 'Choose a schema')
 									"
@@ -87,7 +87,7 @@ import {
 				<!-- Display Object -->
 				<div v-else>
 					<div class="tabContainer">
-						<AppTabs v-model="activeTab" content-class="mt-3" justified>
+						<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 							<AppTab :title="t('openregister', 'Properties')" active>
 								<div class="viewTableContainer">
 									<table class="viewTable">
@@ -243,7 +243,7 @@ import {
 																)
 																=== 'NcCheckboxRadioSwitch'
 															"
-															:model-value="
+															:modelValue="
 																formData[key]
 																!== undefined
 																	? formData[key]
@@ -271,7 +271,7 @@ import {
 																)
 																=== 'NcDateTimePickerNative'
 															"
-															:model-value="
+															:modelValue="
 																stringToDate(
 																	formData[key]
 																		!== undefined
@@ -306,7 +306,7 @@ import {
 														<NcTextField
 															v-else
 															ref="propertyValueInput"
-															:model-value="
+															:modelValue="
 																String(
 																	formData[key]
 																		!== undefined
@@ -561,7 +561,7 @@ import {
 											:linter="jsonParseLinter()"
 											:lang="json()"
 											:extensions="[json()]"
-											:tab-size="2"
+											:tabSize="2"
 											style="height: 400px" />
 										<NcButton
 											class="format-json-button"
@@ -750,7 +750,7 @@ import {
 											<tr class="viewTableRow">
 												<th class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:model-value="
+														:modelValue="
 															allFilesSelected
 														"
 														:indeterminate="
@@ -790,7 +790,7 @@ import {
 													scope="col"
 													class="tableColumnActions">
 													<NcActions
-														:force-name="true"
+														:forceName="true"
 														:disabled="
 															selectedAttachments.length
 															=== 0
@@ -801,7 +801,7 @@ import {
 																? 'Select one or more files to use mass actions'
 																: `Mass actions (${selectedAttachments.length} selected)`
 														"
-														:menu-name="`Mass Actions (${selectedAttachments.length})`">
+														:menuName="`Mass Actions (${selectedAttachments.length})`">
 														<template #icon>
 															<FormatListChecks
 																:size="20" />
@@ -868,7 +868,7 @@ import {
 												">
 												<td class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:model-value="
+														:modelValue="
 															selectedAttachments.includes(
 																attachment.id,
 															)
@@ -942,7 +942,7 @@ import {
 															:taggable="true"
 															:multiple="true"
 															:disabled="labelsLoading"
-															:input-label="
+															:inputLabel="
 																t(
 																	'openregister',
 																	'Labels',
@@ -1071,15 +1071,15 @@ import {
 										objectStore.files?.results?.length
 										> filesPerPage
 									"
-									:current-page="filesCurrentPage"
-									:total-pages="filesTotalPages"
-									:total-items="
+									:currentPage="filesCurrentPage"
+									:totalPages="filesTotalPages"
+									:totalItems="
 										objectStore.files?.results?.length || 0
 									"
-									:current-page-size="filesPerPage"
-									:min-items-to-show="5"
-									@page-changed="onFilesPageChanged"
-									@page-size-changed="onFilesPageSizeChanged" />
+									:currentPageSize="filesPerPage"
+									:minItemsToShow="5"
+									@pageChanged="onFilesPageChanged"
+									@pageSizeChanged="onFilesPageSizeChanged" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject && relationContext"
@@ -1087,7 +1087,7 @@ import {
 								<EmailsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
-									:object-id="relationContext.id" />
+									:objectId="relationContext.id" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject && relationContext"
@@ -1095,7 +1095,7 @@ import {
 								<EventsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
-									:object-id="relationContext.id" />
+									:objectId="relationContext.id" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject && relationContext"
@@ -1103,7 +1103,7 @@ import {
 								<ContactsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
-									:object-id="relationContext.id" />
+									:objectId="relationContext.id" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject && relationContext"
@@ -1111,7 +1111,7 @@ import {
 								<DeckTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
-									:object-id="relationContext.id" />
+									:objectId="relationContext.id" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject && relationContext"
@@ -1119,7 +1119,7 @@ import {
 								<RelationsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
-									:object-id="relationContext.id" />
+									:objectId="relationContext.id" />
 							</AppTab>
 						</AppTabs>
 					</div>
@@ -1173,52 +1173,52 @@ import {
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-	NcActions,
-	NcActionButton,
-	NcNoteCard,
-	NcCounterBubble,
-	NcTextField,
-	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
-	NcDateTimePickerNative,
-	NcEmptyContent,
-	NcSelect,
-} from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
+import { showWarning } from '@nextcloud/dialogs'
+import {
+	NcActionButton,
+	NcActions,
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcCounterBubble,
+	NcDateTimePickerNative,
+	NcDialog,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import CodeMirror from 'vue-codemirror6'
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-import { getTheme } from '../../services/getTheme.js'
-import { updateFileLabels } from '../../services/fileMetadata.js'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
-import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Check from 'vue-material-design-icons/Check.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import Tag from 'vue-material-design-icons/Tag.vue'
-import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
-import PaginationComponent from '../../components/PaginationComponent.vue'
-import EmailsTab from '../../components/object-relations/EmailsTab.vue'
-import EventsTab from '../../components/object-relations/EventsTab.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
+import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Tag from 'vue-material-design-icons/Tag.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
+import EmailsTab from '../../components/object-relations/EmailsTab.vue'
+import EventsTab from '../../components/object-relations/EventsTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
-import { stringToDate, dateToString } from '../../services/dateUtils.js'
-import { showWarning } from '@nextcloud/dialogs'
+import PaginationComponent from '../../components/PaginationComponent.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import { dateToString, stringToDate } from '../../services/dateUtils.js'
+import { updateFileLabels } from '../../services/fileMetadata.js'
+import { getTheme } from '../../services/getTheme.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1262,6 +1262,7 @@ export default {
 		DeckTab,
 		RelationsTab,
 	},
+
 	data() {
 		return {
 			closeModalTimeout: null,
@@ -1293,6 +1294,7 @@ export default {
 				'Contracts',
 				'Files',
 			],
+
 			selectedAttachments: [],
 			fileIdsLoading: [],
 			editingLabelsFileId: null,
@@ -1311,6 +1313,7 @@ export default {
 			pendingNotifications: {}, // Store pending notification info per property
 		}
 	},
+
 	computed: {
 		// Check if we need to show register/schema selection
 		/**
@@ -1409,7 +1412,7 @@ export default {
 			// Add schema properties that don't exist in the object yet
 			const missingSchemaProperties = []
 			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
-				if (!Object.prototype.hasOwnProperty.call(objectData, key)) {
+				if (!Object.hasOwn(objectData, key)) {
 					// Add with appropriate default value based on type
 					let defaultValue
 					switch (schemaProperty.type) {
@@ -1439,18 +1442,21 @@ export default {
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
 		},
+
 		/**
 		 * @spec exclude computed JSON display helper
 		 */
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
+
 		/**
 		 * @spec exclude computed accessor for active register from store
 		 */
 		currentRegister() {
 			return registerStore.registerItem
 		},
+
 		/**
 		 * @spec exclude computed accessor merging inherited schema properties for display
 		 */
@@ -1479,12 +1485,14 @@ export default {
 				properties: { ...inherited, ...(schema.properties || {}) },
 			}
 		},
+
 		/**
 		 * @spec exclude computed aggregate loading flag for file actions
 		 */
 		loading() {
 			return this.fileIdsLoading.length > 0
 		},
+
 		/**
 		 * @spec exclude computed pagination slice of files
 		 */
@@ -1494,6 +1502,7 @@ export default {
 			const end = start + this.filesPerPage
 			return files.slice(start, end)
 		},
+
 		/**
 		 * @spec exclude computed total page count for files pagination
 		 */
@@ -1501,6 +1510,7 @@ export default {
 			const totalFiles = objectStore.files?.results?.length || 0
 			return Math.ceil(totalFiles / this.filesPerPage)
 		},
+
 		/**
 		 * @spec exclude computed select-all state for current files page
 		 */
@@ -1512,12 +1522,14 @@ export default {
 				)
 			)
 		},
+
 		/**
 		 * @spec exclude computed indeterminate-selection state for files
 		 */
 		someFilesSelected() {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
+
 		/**
 		 * @spec exclude computed display helper merging schema + object fields
 		 */
@@ -1561,6 +1573,7 @@ export default {
 
 			return fields
 		},
+
 		/**
 		 * @spec exclude computed display helper building metadata rows
 		 */
@@ -1628,9 +1641,11 @@ export default {
 
 			return metadata
 		},
+
 		isNewObject() {
 			return !objectStore?.objectItem || !objectStore?.objectItem['@self']?.id
 		},
+
 		/**
 		 * Build the (register, schema, id) triple used by the entity-relations
 		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
@@ -1656,6 +1671,7 @@ export default {
 			return { register, schema, id }
 		},
 	},
+
 	watch: {
 		objectStore: {
 			/**
@@ -1667,8 +1683,10 @@ export default {
 					this.initializeData()
 				}
 			},
+
 			deep: true,
 		},
+
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
 			/**
@@ -1709,8 +1727,10 @@ export default {
 					this.$forceUpdate()
 				}
 			},
+
 			immediate: true,
 		},
+
 		// Watch for register changes to re-initialize data
 		currentRegister: {
 			/**
@@ -1723,8 +1743,10 @@ export default {
 					this.initializeData()
 				}
 			},
+
 			immediate: true,
 		},
+
 		jsonData: {
 			/**
 			 * @param newValue
@@ -1736,6 +1758,7 @@ export default {
 				}
 			},
 		},
+
 		formData: {
 			/**
 			 * @param _newValue
@@ -1746,9 +1769,11 @@ export default {
 					this.updateJsonFromForm()
 				}
 			},
+
 			deep: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook initializing modal data
 	 */
@@ -1774,6 +1799,7 @@ export default {
 		// The render effect exists from here on, so $forceUpdate() is safe.
 		this.isMounted = true
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook re-loading data on update
 	 */
@@ -1784,6 +1810,7 @@ export default {
 			this.initializeData()
 		}
 	},
+
 	methods: {
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
@@ -1810,6 +1837,7 @@ export default {
 			}
 			return { type, objectId }
 		},
+
 		/**
 		 * @spec exclude modal step transition handler for register/schema selection
 		 */
@@ -1850,6 +1878,7 @@ export default {
 
 			return `${name} (${schemaName})`
 		},
+
 		/**
 		 * @spec exclude form-state loader resolving register/schema titles for display
 		 */
@@ -1871,6 +1900,7 @@ export default {
 			this.registerTitle = register?.title || 'Not set'
 			this.schemaTitle = schema?.title || 'Not set'
 		},
+
 		/**
 		 * @spec exclude modal close + form-state reset handler
 		 */
@@ -1907,6 +1937,7 @@ export default {
 			navigationStore.setModal(null)
 			navigationStore.setDialog(null)
 		},
+
 		/**
 		 * @param isOpen
 		 * @spec exclude modal open/close UI handler
@@ -1916,8 +1947,10 @@ export default {
 				this.closeModal()
 			}
 		},
+
 		/**
 		 * Open a file in the Nextcloud Files app
+		 *
 		 * @param {object} file - The file object to open
 		 * @spec exclude opens file in Nextcloud Files app (UI navigation)
 		 */
@@ -1927,8 +1960,10 @@ export default {
 			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
 			window.open(filesAppUrl, '_blank')
 		},
+
 		/**
 		 * Format file size for display
+		 *
 		 * @param {number} bytes - The file size in bytes
 		 * @return {string} The formatted file size
 		 * @spec exclude display helper formatting file size
@@ -1941,8 +1976,10 @@ export default {
 			if (i === 0) return bytes + ' ' + sizes[i]
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
 		},
+
 		/**
 		 * Truncate file name to prevent dialog alignment issues
+		 *
 		 * @param {string} fileName - The file name to truncate
 		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
 		 * @spec exclude display helper truncating file name
@@ -1952,6 +1989,7 @@ export default {
 			if (fileName.length <= 25) return fileName
 			return fileName.substring(0, 22) + '...'
 		},
+
 		/**
 		 * @param value
 		 * @spec exclude client-side date validation helper
@@ -1961,6 +1999,7 @@ export default {
 			const date = new Date(value)
 			return date instanceof Date && !isNaN(date)
 		},
+
 		/**
 		 * @param val
 		 * @spec exclude display helper formatting value as JSON
@@ -1985,6 +2024,7 @@ export default {
 				console.error('Failed to copy text:', err)
 			}
 		},
+
 		/**
 		 * @spec exclude form-state initializer seeding formData/jsonData
 		 */
@@ -2124,6 +2164,7 @@ export default {
 				this.isSaving = false
 			}
 		},
+
 		/**
 		 * @spec exclude form/JSON sync helper (JSON editor to form)
 		 */
@@ -2194,6 +2235,7 @@ export default {
 		setFieldValue(key, value) {
 			this.formData[key] = value
 		},
+
 		/**
 		 * @param key
 		 * @param index
@@ -2206,6 +2248,7 @@ export default {
 			}
 			this.formData[key][index] = value
 		},
+
 		/**
 		 * @param v
 		 * @spec exclude display/payload coercion helper for null values
@@ -2213,6 +2256,7 @@ export default {
 		toDisplay(v) {
 			return v === null ? '' : v
 		},
+
 		/**
 		 * @param v
 		 * @spec exclude display/payload coercion helper for empty values
@@ -2231,6 +2275,7 @@ export default {
 			}
 			this.formData[key].push('')
 		},
+
 		/**
 		 * @param key
 		 * @param i
@@ -2241,6 +2286,7 @@ export default {
 				this.formData[key].splice(i, 1)
 			}
 		},
+
 		/**
 		 * @param key
 		 * @param val
@@ -2254,6 +2300,7 @@ export default {
 				console.error('Invalid JSON format:', e)
 			}
 		},
+
 		/**
 		 * @param checked
 		 * @spec exclude file-selection UI toggle (select all)
@@ -2274,6 +2321,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param fileId
 		 * @param checked
@@ -2290,6 +2338,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param page
 		 * @spec exclude files pagination UI handler
@@ -2297,6 +2346,7 @@ export default {
 		onFilesPageChanged(page) {
 			this.filesCurrentPage = page
 		},
+
 		/**
 		 * @param pageSize
 		 * @spec exclude files page-size UI handler
@@ -2305,6 +2355,7 @@ export default {
 			this.filesPerPage = pageSize
 			this.filesCurrentPage = 1
 		},
+
 		/**
 		 * @spec exclude router navigation UI handler to audit trails
 		 */
@@ -2313,6 +2364,7 @@ export default {
 			this.closeModal()
 			this.$router.push('/audit-trails')
 		},
+
 		// Apply a batch action across the selected files. Prefers the
 		// shared-store batchFiles action (one POST to /files/batch); falls
 		// back to N sequential single-file calls when the runtime store
@@ -2337,6 +2389,7 @@ export default {
 				await perFileFallback(type, objectId, fileId)
 			}
 		},
+
 		/**
 		 * @spec exclude bulk file-delete handler delegating to objectStore
 		 */
@@ -2356,6 +2409,7 @@ export default {
 				this.fileIdsLoading = []
 			}
 		},
+
 		/**
 		 * @param file
 		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
@@ -2374,6 +2428,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param file
 		 * @spec exclude form-state handler entering file-label edit mode
@@ -2386,6 +2441,7 @@ export default {
 				? tags
 				: objectStore.getTags || []
 		},
+
 		/**
 		 * @spec exclude form-state handler cancelling file-label edit
 		 */
@@ -2393,6 +2449,7 @@ export default {
 			this.editingLabelsFileId = null
 			this.editingLabels = []
 		},
+
 		// Persist label changes via the dedicated /files/{fileId}/labels
 		// endpoint with optimistic UI: the in-memory attachment.labels
 		// flips to the new value as soon as the user clicks save, and
@@ -2446,6 +2503,7 @@ export default {
 				this.labelsLoading = false
 			}
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -2460,7 +2518,7 @@ export default {
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			const existsInObject = objectStore.objectItem
-				? Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
+				? Object.hasOwn(objectStore.objectItem, key)
 				: false
 
 			if (!schemaProperty) {
@@ -2482,6 +2540,7 @@ export default {
 				return 'property-invalid'
 			}
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -2532,6 +2591,7 @@ export default {
 					return true // Unknown type, assume valid
 			}
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -2575,14 +2635,18 @@ export default {
 
 			return `Property '${key}' has an invalid value`
 		},
+
 		getPropertyWarningMessage(key, _value) {
 			return `Property '${key}' exists in the object but is not defined in the current schema. This might happen when property names are changed in the schema.`
 		},
+
 		getPropertyNewMessage(key) {
 			return `Property '${key}' is defined in the schema but doesn't have a value yet. Click to add a value.`
 		},
+
 		/**
 		 * Convert any value to a string suitable for NcTextField
+		 *
 		 * @param {*} value - The value to convert
 		 * @return {string} The string representation
 		 * @spec exclude display helper coercing value to string
@@ -2607,6 +2671,7 @@ export default {
 			}
 			return String(value)
 		},
+
 		/**
 		 * @param key
 		 * @param event
@@ -2660,6 +2725,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param key
 		 * @spec exclude form-state handler selecting/focusing a property for edit
@@ -2682,6 +2748,7 @@ export default {
 				}
 			})
 		},
+
 		/**
 		 * @param key
 		 * @param newValue
@@ -2758,8 +2825,10 @@ export default {
 				}, 500)
 			}
 		},
+
 		/**
 		 * Remove all existing toast notifications
+		 *
 		 * @spec exclude toast cleanup UI helper
 		 */
 		clearAllToasts() {
@@ -2772,6 +2841,7 @@ export default {
 				}
 			})
 		},
+
 		/**
 		 * @param key
 		 * @param oldValue
@@ -2809,6 +2879,7 @@ export default {
 				}
 			}, 3000)
 		},
+
 		/**
 		 * @param key
 		 * @spec exclude display helper checking string-typed property
@@ -2817,6 +2888,7 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.type === 'string'
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -2845,6 +2917,7 @@ export default {
 
 			return true
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -2868,6 +2941,7 @@ export default {
 
 			return null
 		},
+
 		/**
 		 * @param value
 		 * @param format
@@ -2876,6 +2950,7 @@ export default {
 		stringToDate(value, format) {
 			return stringToDate(value, format)
 		},
+
 		/**
 		 * @param key
 		 * @spec exclude display helper mapping schema type to input type
@@ -2906,6 +2981,7 @@ export default {
 					return 'text'
 			}
 		},
+
 		/**
 		 * @param key
 		 * @spec exclude display helper mapping schema type to input component
@@ -2937,8 +3013,10 @@ export default {
 					return 'NcTextField'
 			}
 		},
+
 		/**
 		 * Get the display name for a property (title if available, otherwise key)
+		 *
 		 * @param {string} key - The property key
 		 * @return {string} The display name
 		 * @spec exclude display helper for property display name
@@ -2947,8 +3025,10 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.title || key
 		},
+
 		/**
 		 * Get the tooltip text for a property
+		 *
 		 * @param {string} key - The property key
 		 * @return {string} The tooltip text
 		 * @spec exclude display helper for property tooltip text
@@ -2968,8 +3048,10 @@ export default {
 			// Fallback to property key info
 			return `Property: ${key}`
 		},
+
 		/**
 		 * Get the minimum value for a property
+		 *
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The minimum value
 		 * @spec exclude display helper exposing schema minimum
@@ -2978,8 +3060,10 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.minimum
 		},
+
 		/**
 		 * Get the maximum value for a property
+		 *
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The maximum value
 		 * @spec exclude display helper exposing schema maximum
@@ -2988,8 +3072,10 @@ export default {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.maximum
 		},
+
 		/**
 		 * Get the step value for a property
+		 *
 		 * @param {string} key - The property key
 		 * @return {string|undefined} The step value
 		 * @spec exclude display helper exposing input step
@@ -3004,6 +3090,7 @@ export default {
 			}
 			return undefined
 		},
+
 		/**
 		 * @param key
 		 * @param value
@@ -3025,7 +3112,7 @@ export default {
 			// If this is a schema property that doesn't exist in the object yet, show placeholder
 			if (
 				objectStore.objectItem
-				&& !Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
+				&& !Object.hasOwn(objectStore.objectItem, key)
 				&& schemaProperty
 			) {
 				return value // This will be the default value we set in objectProperties

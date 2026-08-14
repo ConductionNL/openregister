@@ -8,16 +8,16 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 		<div class="listHeader">
 			<NcTextField
 				v-model="searchStore.search"
-				:show-trailing-button="searchStore.search !== ''"
+				:showTrailingButton="searchStore.search !== ''"
 				:label="t('openregister', 'Search')"
 				class="searchField"
-				trailing-button-icon="close"
-				@trailing-button-click="endpointStore.refreshEndpointList()">
+				trailingButtonIcon="close"
+				@trailingButtonClick="endpointStore.refreshEndpointList()">
 				<Magnify :size="20" />
 			</NcTextField>
 			<NcActions>
 				<NcActionButton
-					close-after-click
+					closeAfterClick
 					@click="endpointStore.refreshEndpointList()">
 					<template #icon>
 						<Refresh :size="20" />
@@ -25,7 +25,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 					{{ t('openregister', 'Refresh') }}
 				</NcActionButton>
 				<NcActionButton
-					close-after-click
+					closeAfterClick
 					@click="
 						() => {
 							endpointStore.setEndpointItem({})
@@ -48,7 +48,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				:key="`${endpoint}${i}`"
 				:name="endpoint.name"
 				:active="endpointStore.endpointItem?.id === endpoint?.id"
-				:force-display-actions="true"
+				:forceDisplayActions="true"
 				@click="endpointStore.setEndpointItem(endpoint)">
 				<template #icon>
 					<Api
@@ -56,7 +56,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 							endpointStore.endpointItem?.id === endpoint.id
 							&& 'selectedEndpointIcon'
 						"
-						disable-menu
+						disableMenu
 						:size="44" />
 				</template>
 				<template #subname>
@@ -66,7 +66,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				</template>
 				<template #actions>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								endpointStore.setEndpointItem(endpoint)
@@ -79,7 +79,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								endpointStore.setEndpointItem(endpoint)
@@ -110,18 +110,18 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 
 <script>
 import {
-	NcListItem,
 	NcActionButton,
-	NcAppContentList,
-	NcTextField,
-	NcLoadingIcon,
 	NcActions,
+	NcAppContentList,
+	NcListItem,
+	NcLoadingIcon,
+	NcTextField,
 } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Api from 'vue-material-design-icons/Api.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
@@ -140,6 +140,7 @@ export default {
 		Pencil,
 		TrashCanOutline,
 	},
+
 	mounted() {
 		endpointStore.refreshEndpointList()
 	},

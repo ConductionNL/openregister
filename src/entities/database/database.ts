@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TDatabase } from './database.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TDatabase } from './database.types'
+
+import { z } from 'zod'
 
 export class Database implements TDatabase {
 	public id: string

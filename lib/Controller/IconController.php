@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
@@ -65,6 +66,9 @@ class IconController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// Icons are fetched many-per-page, so this ceiling is deliberately high —
+	// set it near the data endpoints and a single dense screen trips it.
+	#[AnonRateLimit(limit: 240, period: 60)]
 	public function mdi(string $name): DataDisplayResponse {
 		$svg = MdiIconRenderer::svg(icon: $name);
 		if ($svg === null) {

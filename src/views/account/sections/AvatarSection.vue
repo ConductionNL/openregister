@@ -10,7 +10,7 @@
 			}}
 		</div>
 		<div v-else class="avatar-section">
-			<NcAvatar :user="userId" :size="128" :show-user-status="false" />
+			<NcAvatar :user="userId" :size="128" :showUserStatus="false" />
 			<div class="avatar-section__actions">
 				<NcButton variant="primary" @click="triggerUpload">
 					{{ t('openregister', 'Upload new avatar') }}
@@ -35,8 +35,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAvatar, NcButton } from '@nextcloud/vue'
 
@@ -51,6 +51,7 @@ export default {
 			isError: false,
 		}
 	},
+
 	/**
 	 * Lifecycle hook: load the current user's id and avatar capability for display.
 	 *
@@ -68,6 +69,7 @@ export default {
 			// Default to showing the section.
 		}
 	},
+
 	methods: {
 		t,
 		/**
@@ -81,6 +83,7 @@ export default {
 		triggerUpload() {
 			this.$refs.fileInput.click()
 		},
+
 		/**
 		 * Upload the selected image as the user's avatar via the account API.
 		 *
@@ -108,6 +111,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Remove the user's avatar via the account API.
 		 *

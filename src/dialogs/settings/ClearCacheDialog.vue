@@ -2,7 +2,7 @@
 	<NcDialog
 		:open="open"
 		name="Clear Cache"
-		:can-close="!clearing"
+		:canClose="!clearing"
 		@closing="$emit('closing')">
 		<div class="clear-cache-dialog">
 			<div class="clear-cache-options">
@@ -87,6 +87,7 @@ export default {
 		clearing: { type: Boolean, default: false },
 		cacheType: { type: String, default: 'all' },
 	},
+
 	emits: ['closing', 'confirm', 'update:cacheType'],
 	computed: {
 		/**
@@ -104,6 +105,7 @@ export default {
 			get() {
 				return this.cacheType
 			},
+
 			/**
 			 * Write the selected clear-cache type back to the parent.
 			 *

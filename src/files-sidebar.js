@@ -8,11 +8,11 @@
  * @license EUPL-1.2
  */
 
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, reactive } from 'vue'
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
 import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
+import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
 // Bootstrap the integration registry on the files-sidebar bundle so any
 // tab component that uses useIntegrationRegistry() sees the same populated

@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'uploadSchema'"
 		name="Upload Schema"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Schema successfully uploaded</p>
 		</NcNoteCard>
@@ -18,9 +18,9 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField
+				v-model="schema.url"
 				:disabled="loading"
-				:label="t('openregister', 'Url')"
-				v-model="schema.url" />
+				:label="t('openregister', 'Url')" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
 				<p>{{ t('openregister', 'Schema') }}</p>
@@ -63,20 +63,19 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextField,
 } from '@nextcloud/vue'
-import { getTheme } from '../../services/getTheme.js'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-
+import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import AutoFix from 'vue-material-design-icons/AutoFix.vue'
+import { getTheme } from '../../services/getTheme.js'
 
 export default {
 	name: 'UploadSchema',
@@ -91,12 +90,14 @@ export default {
 		Cancel,
 		Upload,
 	},
+
 	data() {
 		return {
 			schema: {
 				json: '{}',
 				url: '',
 			},
+
 			success: false,
 			loading: false,
 			error: false,
@@ -104,6 +105,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
@@ -120,12 +122,14 @@ export default {
 				url: '',
 			}
 		},
+
 		/**
 		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
 		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
 		 */
@@ -157,6 +161,7 @@ export default {
 					this.loading = false
 				})
 		},
+
 		/**
 		 * @param json
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.

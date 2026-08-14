@@ -12,7 +12,7 @@ import { translate as t } from '@nextcloud/l10n'
 			)
 		"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading permission matrix...')">
+		:loadingMessage="t('openregister', 'Loading permission matrix...')">
 		<div v-if="!isAdminUser" class="access-denied">
 			<p>
 				{{
@@ -124,7 +124,7 @@ import { translate as t } from '@nextcloud/l10n'
 								</td>
 								<td class="action-cell">
 									<NcCheckboxRadioSwitch
-										:model-value="
+										:modelValue="
 											isPublicAccess(register.authorization)
 										"
 										type="switch"
@@ -198,7 +198,7 @@ import { translate as t } from '@nextcloud/l10n'
 									</td>
 									<td class="action-cell">
 										<NcCheckboxRadioSwitch
-											:model-value="
+											:modelValue="
 												isPublicAccess(
 													getEffectiveAuth(
 														schema,
@@ -247,12 +247,12 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcSelect
 						v-model="bulkRole[register.id]"
 						:options="getRoleOptions(register)"
-						:input-label="t('openregister', 'Select role')"
+						:inputLabel="t('openregister', 'Select role')"
 						class="bulk-select" />
 					<NcSelect
 						v-model="bulkGroup[register.id]"
 						:options="getGroupOptions()"
-						:input-label="t('openregister', 'Select group')"
+						:inputLabel="t('openregister', 'Select group')"
 						class="bulk-select" />
 					<NcButton
 						variant="primary"
@@ -267,11 +267,11 @@ import { translate as t } from '@nextcloud/l10n'
 </template>
 
 <script>
+import { NcButton, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { useRegisterStore } from '../../../store/modules/register.js'
 import { useSchemaStore } from '../../../store/modules/schema.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'PermissionMatrix',

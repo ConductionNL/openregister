@@ -162,9 +162,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
@@ -292,6 +292,7 @@ export default {
 					this.fetchExtractionStatus()
 				}
 			},
+
 			immediate: true,
 		},
 	},
@@ -301,6 +302,7 @@ export default {
 
 		/**
 		 * Fetch extraction status from the API.
+		 *
 		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
@@ -338,6 +340,7 @@ export default {
 
 		/**
 		 * Trigger text extraction for this file.
+		 *
 		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
 		 */
 		async triggerExtraction() {

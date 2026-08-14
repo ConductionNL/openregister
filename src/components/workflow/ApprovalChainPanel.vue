@@ -41,9 +41,9 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 
 /**
  * @spec openspec/specs/approval-workflow/spec.md
@@ -54,6 +54,7 @@ export default {
 	props: {
 		schemaId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			chains: [],
@@ -61,9 +62,11 @@ export default {
 			newChain: { name: '', statusField: 'status', steps: [] },
 		}
 	},
+
 	mounted() {
 		this.fetchChains()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/approval-workflow/spec.md
@@ -79,6 +82,7 @@ export default {
 				console.error('Failed to fetch chains:', error)
 			}
 		},
+
 		/**
 		 * @spec exclude API passthrough creating chain + refetch; approval-chain contract owned by approval-workflow capability
 		 */

@@ -12,7 +12,7 @@ import { translate as t } from '@nextcloud/l10n'
 			)
 		"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading multitenancy settings...')">
+		:loadingMessage="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
 			<NcButton
 				variant="error"
@@ -135,7 +135,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<NcSelect
 							v-model="multitenancyOptions.defaultUserTenant"
 							:options="tenantOptions"
-							:input-label="t('openregister', 'Default User Tenant')"
+							:inputLabel="t('openregister', 'Default User Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>
@@ -152,7 +152,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<NcSelect
 							v-model="multitenancyOptions.defaultObjectTenant"
 							:options="tenantOptions"
-							:input-label="t('openregister', 'Default Object Tenant')"
+							:inputLabel="t('openregister', 'Default Object Tenant')"
 							:disabled="loading || saving" />
 					</div>
 				</div>
@@ -162,17 +162,17 @@ import { translate as t } from '@nextcloud/l10n'
 </template>
 
 <script>
-import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import {
 	NcButton,
-	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { mapStores } from 'pinia'
 import Save from 'vue-material-design-icons/ContentSave.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'MultitenancyConfiguration',
@@ -200,6 +200,7 @@ export default {
 			get() {
 				return this.settingsStore.multitenancyOptions
 			},
+
 			/**
 			 * Write multitenancy options to the settings store.
 			 *

@@ -36,8 +36,8 @@
 
 		<CreateTokenModal
 			v-if="showCreateModal"
-			:token-name="newTokenName"
-			:token-expires="newTokenExpires"
+			:tokenName="newTokenName"
+			:tokenExpires="newTokenExpires"
 			@close="showCreateModal = false"
 			@create="createToken"
 			@update:tokenName="newTokenName = $event"
@@ -58,12 +58,12 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
-import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
 import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
+import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
 
 export default {
 	name: 'TokensSection',
@@ -80,9 +80,11 @@ export default {
 			isError: false,
 		}
 	},
+
 	mounted() {
 		this.loadTokens()
 	},
+
 	methods: {
 		t,
 		/**
@@ -105,6 +107,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Create a personal API token and surface the one-time secret.
 		 *
@@ -131,6 +134,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Revoke a personal API token by id.
 		 *
@@ -153,6 +157,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Copy the one-time token to the clipboard.
 		 *
@@ -169,6 +174,7 @@ export default {
 				this.isError = true
 			}
 		},
+
 		/**
 		 * Format a token expiry date for display.
 		 *

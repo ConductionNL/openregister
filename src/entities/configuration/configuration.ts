@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TConfiguration } from './configuration.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TConfiguration } from './configuration.types'
+
+import { z } from 'zod'
 
 /**
  * Entity class representing a Configuration with validation

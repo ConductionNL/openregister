@@ -37,28 +37,32 @@
 </template>
 
 <script>
-import { NcModal } from '@nextcloud/vue'
 import { translate as t } from '@nextcloud/l10n'
+import { NcModal } from '@nextcloud/vue'
 
 export default {
 	name: 'SwitchOrganisationModal',
 	components: {
 		NcModal,
 	},
+
 	props: {
 		show: {
 			type: Boolean,
 			required: true,
 		},
+
 		organisations: {
 			type: Array,
 			required: true,
 		},
+
 		activeOrganisationUuid: {
 			type: String,
 			default: null,
 		},
 	},
+
 	emits: ['close', 'switch'],
 	methods: {
 		t,

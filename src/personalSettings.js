@@ -1,5 +1,5 @@
-import { createApp } from 'vue'
 import { translate, translatePlural } from '@nextcloud/l10n'
+import { createApp } from 'vue'
 import PersonalRoot from './components/userSettings/PersonalRoot.vue'
 
 // Personal-settings bundle. Mounts the per-user browser Web Push opt-in toggle

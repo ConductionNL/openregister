@@ -1,10 +1,10 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
-	sourceStore,
 	navigationStore,
 	registerStore,
 	schemaStore,
+	sourceStore,
 } from '../../store/store.js'
 </script>
 
@@ -13,7 +13,7 @@ import {
 		v-if="navigationStore.modal === 'viewSource'"
 		:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
 		size="large"
-		:can-close="false">
+		:canClose="false">
 		<div class="formContainer viewSourceDialog">
 			<!-- Source Details -->
 			<div class="sourceDetailsGrid">
@@ -79,7 +79,7 @@ import {
 									<h3>{{ register.title }}</h3>
 									<NcActions>
 										<NcActionButton
-											close-after-click
+											closeAfterClick
 											@click="viewRegister(register)">
 											<template #icon>
 												<Eye :size="20" />
@@ -87,7 +87,7 @@ import {
 											View
 										</NcActionButton>
 										<NcActionButton
-											close-after-click
+											closeAfterClick
 											@click="editRegister(register)">
 											<template #icon>
 												<Pencil :size="20" />
@@ -141,13 +141,13 @@ import {
 		</div>
 
 		<template #actions>
-			<NcActionButton close-after-click @click="editSource">
+			<NcActionButton closeAfterClick @click="editSource">
 				<template #icon>
 					<Pencil :size="20" />
 				</template>
 				Edit Source
 			</NcActionButton>
-			<NcActionButton close-after-click @click="deleteSource">
+			<NcActionButton closeAfterClick @click="deleteSource">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -167,33 +167,33 @@ import {
 		ref="editRegisterDialog"
 		:schema="registerSchema"
 		:item="editingRegister"
-		:dialog-title="t('openregister', 'Edit Register')"
+		:dialogTitle="t('openregister', 'Edit Register')"
 		@confirm="onSaveRegister"
 		@close="showEditRegisterDialog = false">
 		<template #form="{ formData, errors, updateField }">
 			<div class="formContainer">
 				<NcTextField
 					:label="t('openregister', 'Title') + ' *'"
-					:model-value="formData.title || ''"
+					:modelValue="formData.title || ''"
 					:error="!!errors.title"
-					:helper-text="errors.title"
+					:helperText="errors.title"
 					@update:modelValue="(v) => updateField('title', v)" />
 				<NcTextField
 					:label="t('openregister', 'Slug') + ' *'"
-					:model-value="formData.slug || ''"
+					:modelValue="formData.slug || ''"
 					:error="!!errors.slug"
-					:helper-text="errors.slug"
+					:helperText="errors.slug"
 					@update:modelValue="(v) => updateField('slug', v)" />
 				<NcTextArea
 					:label="t('openregister', 'Description')"
-					:model-value="formData.description || ''"
+					:modelValue="formData.description || ''"
 					@update:modelValue="(v) => updateField('description', v)" />
 				<NcSelect
-					:input-label="t('openregister', 'Schemas')"
+					:inputLabel="t('openregister', 'Schemas')"
 					:options="schemaSelectOptions"
-					:model-value="getSchemaSelectValue(formData.schemas)"
+					:modelValue="getSchemaSelectValue(formData.schemas)"
 					:multiple="true"
-					:close-on-select="false"
+					:closeOnSelect="false"
 					:loading="schemasLoading"
 					@update:modelValue="(vals) => updateField('schemas', vals)" />
 			</div>
@@ -202,24 +202,23 @@ import {
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-	NcActions,
-	NcActionButton,
-	NcEmptyContent,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
-} from '@nextcloud/vue'
 import { CnFormDialog } from '@conduction/nextcloud-vue'
-
+import {
+	NcActionButton,
+	NcActions,
+	NcButton,
+	NcDialog,
+	NcEmptyContent,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PostOutline from 'vue-material-design-icons/PostOutline.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'ViewSource',
@@ -240,6 +239,7 @@ export default {
 		PostOutline,
 		Eye,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -247,6 +247,7 @@ export default {
 				this.t('openregister', 'Registers'),
 				this.t('openregister', 'Logs'),
 			],
+
 			registersLoading: false,
 			showEditRegisterDialog: false,
 			editingRegister: null,
@@ -254,6 +255,7 @@ export default {
 			schemasLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI display helper — inline schema definition for the edit-register dialog.
@@ -269,6 +271,7 @@ export default {
 						minLength: 1,
 						order: 1,
 					},
+
 					slug: {
 						type: 'string',
 						title: t('openregister', 'Slug'),
@@ -276,20 +279,24 @@ export default {
 						minLength: 1,
 						order: 2,
 					},
+
 					description: {
 						type: 'string',
 						title: t('openregister', 'Description'),
 						order: 3,
 					},
+
 					schemas: {
 						type: 'array',
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
+
 		/**
 		 * @spec exclude UI display helper — filters registers belonging to the current source.
 		 */
@@ -306,9 +313,11 @@ export default {
 			})
 		},
 	},
+
 	mounted() {
 		this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -316,12 +325,14 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+
 		/**
 		 * @spec exclude Modal navigation plumbing — opens the edit-source modal.
 		 */
 		editSource() {
 			navigationStore.setModal('editSource')
 		},
+
 		/**
 		 * @spec exclude Modal navigation plumbing — opens the delete-source dialog.
 		 */
@@ -329,6 +340,7 @@ export default {
 			navigationStore.setModal(false)
 			navigationStore.setDialog('deleteSource')
 		},
+
 		/**
 		 * @param register
 		 * @spec exclude UI navigation handler — selects a register and routes to the registers view.
@@ -338,6 +350,7 @@ export default {
 			navigationStore.setModal(false)
 			this.$router.push('/registers')
 		},
+
 		/**
 		 * @param register
 		 * @spec exclude UI event handler — opens the inline edit-register dialog.
@@ -347,6 +360,7 @@ export default {
 			this.showEditRegisterDialog = true
 			this.loadSchemaOptions()
 		},
+
 		/**
 		 * @spec exclude Modal data-load plumbing — loads schema options for the register dialog.
 		 */
@@ -364,6 +378,7 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+
 		/**
 		 * @param schemas
 		 * @spec exclude UI display helper — resolves schema ids to select-value objects.
@@ -379,6 +394,7 @@ export default {
 				)
 			})
 		},
+
 		/**
 		 * @param formData
 		 * @spec exclude Modal save plumbing — delegates register save to registerStore.saveRegister.
@@ -397,6 +413,7 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+
 		/**
 		 * @spec exclude Modal data-load plumbing — refreshes the register list for the source.
 		 */

@@ -3,12 +3,12 @@
 		name="Text Extraction"
 		description="Configure extraction pipelines for files, objects, and detected entities"
 		:loading="settingsStore.loadingFileSettings"
-		:loading-message="t('openregister', 'Loading text extraction settings...')">
+		:loadingMessage="t('openregister', 'Loading text extraction settings...')">
 		<template #actions>
 			<!-- File Actions Menu -->
 			<NcActions
 				:aria-label="t('openregister', 'File actions menu')"
-				:menu-name="t('openregister', 'Actions')">
+				:menuName="t('openregister', 'Actions')">
 				<template #icon>
 					<DotsVertical :size="20" />
 				</template>
@@ -76,14 +76,14 @@
 			:title="t('openregister', 'Text Extraction')"
 			icon="📄"
 			:collapsible="true"
-			:default-collapsed="true">
+			:defaultCollapsed="true">
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="extraction-scope">Extract Text From</label>
 					<NcSelect
 						v-model="fileSettings.extractionScope"
-						input-id="extraction-scope"
-						:input-label="t('openregister', 'Extraction Scope')"
+						inputId="extraction-scope"
+						:inputLabel="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
@@ -105,8 +105,8 @@
 					<label for="text-extractor">Text Extractor</label>
 					<NcSelect
 						v-model="fileSettings.textExtractor"
-						input-id="text-extractor"
-						:input-label="t('openregister', 'Text Extraction Engine')"
+						inputId="text-extractor"
+						:inputLabel="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
 						@update:modelValue="saveSettings">
@@ -191,8 +191,8 @@
 					<label for="extraction-mode">Extraction Mode</label>
 					<NcSelect
 						v-model="fileSettings.extractionMode"
-						input-id="extraction-mode"
-						:input-label="t('openregister', 'Extraction Mode')"
+						inputId="extraction-mode"
+						:inputLabel="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
 						@update:modelValue="saveSettings">
@@ -317,14 +317,14 @@
 			:title="t('openregister', 'Object Text Extraction')"
 			icon="📦"
 			:collapsible="true"
-			:default-collapsed="true">
+			:defaultCollapsed="true">
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="object-extraction-mode">Extraction Mode</label>
 					<NcSelect
 						v-model="objectSettings.extractionMode"
-						input-id="object-extraction-mode"
-						:input-label="t('openregister', 'Object Extraction Mode')"
+						inputId="object-extraction-mode"
+						:inputLabel="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
 						@update:modelValue="saveObjectSettings">
 						<template #option="{ label, description }">
@@ -350,7 +350,7 @@
 			:title="t('openregister', 'Entity Recognition')"
 			icon="🔍"
 			:collapsible="true"
-			:default-collapsed="true">
+			:defaultCollapsed="true">
 			<div class="settings-group compact">
 				<!-- Enable/Disable Toggle -->
 				<div class="setting-item">
@@ -373,8 +373,8 @@
 					<label for="entity-recognition-method">Detection Method</label>
 					<NcSelect
 						v-model="fileSettings.entityRecognitionMethod"
-						input-id="entity-recognition-method"
-						:input-label="t('openregister', 'Entity Recognition Method')"
+						inputId="entity-recognition-method"
+						:inputLabel="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
@@ -536,7 +536,7 @@
 							<NcTextField
 								id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
-								:placeholder="'http://openregister-presidio-analyzer:3000'"
+								placeholder="http://openregister-presidio-analyzer:3000"
 								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -581,7 +581,7 @@
 
 						<!-- Internal: detected ExApp via AppAPI -->
 						<NcCheckboxRadioSwitch
-							:model-value="fileSettings.openAnonymiserSource"
+							:modelValue="fileSettings.openAnonymiserSource"
 							type="radio"
 							value="internal"
 							name="openanonymiser-source"
@@ -648,7 +648,7 @@
 
 						<!-- External: operator-entered endpoint -->
 						<NcCheckboxRadioSwitch
-							:model-value="fileSettings.openAnonymiserSource"
+							:modelValue="fileSettings.openAnonymiserSource"
 							type="radio"
 							value="external"
 							name="openanonymiser-source"
@@ -721,7 +721,7 @@
 			:title="t('openregister', 'Supported File Types')"
 			icon="📎"
 			:collapsible="true"
-			:default-collapsed="true">
+			:defaultCollapsed="true">
 			<!-- Compatibility info based on selected extractor -->
 			<div
 				v-if="fileSettings.textExtractor.id === 'llphant'"
@@ -848,31 +848,29 @@
 </template>
 
 <script>
-import { mapStores } from 'pinia'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import SettingsCard from '../../../components/shared/SettingsCard.vue'
-
 import {
-	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
-	NcSelect,
-	NcButton,
-	NcTextField,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
+import { mapStores } from 'pinia'
+import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
+import CheckIcon from 'vue-material-design-icons/Check.vue'
+import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
 import FileDocumentIcon from 'vue-material-design-icons/FileDocument.vue'
-import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
-import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import InformationIcon from 'vue-material-design-icons/Information.vue'
 import KeyIcon from 'vue-material-design-icons/Key.vue'
-import CheckIcon from 'vue-material-design-icons/Check.vue'
-import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
-import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
+import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
+import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 /**
  * File configuration settings component for managing file upload and text extraction.
@@ -908,6 +906,7 @@ export default {
 					id: 'objects',
 					label: 'Files Attached to Objects',
 				},
+
 				textExtractor: { id: 'llphant', label: 'LLPhant' },
 				extractionMode: { id: 'background', label: 'Background Job' },
 				includeInSearch: true,
@@ -925,6 +924,7 @@ export default {
 				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
 				openAnonymiserSource: 'internal',
 			},
+
 			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
 			backendState: null,
 			// Last probe error code for the openanonymiser backend (drives the install hint).
@@ -936,6 +936,7 @@ export default {
 			objectSettings: {
 				extractionMode: { id: 'background', label: 'Background Job' },
 			},
+
 			fileTypes: [
 				// Text formats (LLPhant supported)
 				{
@@ -1097,6 +1098,7 @@ export default {
 					dolphinOcr: false,
 				},
 			],
+
 			textExtractors: [
 				{
 					id: 'llphant',
@@ -1113,6 +1115,7 @@ export default {
 						'ByteDance AI - Best for: Complex PDFs, tables, formulas, DOCX, XLSX, PPT',
 				},
 			],
+
 			extractionScopes: [
 				{
 					id: 'none',
@@ -1137,6 +1140,7 @@ export default {
 						'Extract text only from files attached to OpenRegister objects (recommended)',
 				},
 			],
+
 			extractionModes: [
 				{
 					id: 'immediate',
@@ -1163,6 +1167,7 @@ export default {
 						'Only extract when manually triggered via Actions menu',
 				},
 			],
+
 			extractionStats: {
 				totalFiles: 0,
 				untrackedFiles: 0,
@@ -1173,6 +1178,7 @@ export default {
 				totalObjects: 0,
 				totalEntities: 0,
 			},
+
 			discoveringFiles: false,
 			extractingFiles: false,
 			retryingFiles: false,

@@ -10,10 +10,10 @@
 
 import { ref } from 'vue'
 import {
-	fetchLinkedObjects,
-	fetchSenderObjects,
 	createQuickLink,
 	deleteEmailLink,
+	fetchLinkedObjects,
+	fetchSenderObjects,
 } from '../api/emailLinks.js'
 
 /**

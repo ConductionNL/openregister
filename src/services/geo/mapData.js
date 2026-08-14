@@ -3,7 +3,7 @@
  *
  * Keeps map *data shaping* (objects -> markers, bounds, PDOK layer
  * configuration, RD/WGS84 display formatting) separate from map
- * *rendering* (Leaflet), so the data logic is unit-testable without a
+ * rendering* (Leaflet), so the data logic is unit-testable without a
  * DOM or any map library. The thin MapView.vue component consumes these
  * helpers and only owns the Leaflet wiring.
  *

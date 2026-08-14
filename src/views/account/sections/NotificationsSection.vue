@@ -21,9 +21,9 @@
 				}}</label>
 				<NcSelect
 					v-model="prefs.emailDigest"
-					input-label="Prefs Email Digest"
+					inputLabel="Prefs Email Digest"
 					:options="digestOptions"
-					input-id="email-digest"
+					inputId="email-digest"
 					@update:modelValue="save" />
 			</div>
 			<p
@@ -36,8 +36,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 
@@ -54,6 +54,7 @@ export default {
 				systemAnnouncements: true,
 				emailDigest: 'daily',
 			},
+
 			message: '',
 			isError: false,
 			digestOptions: ['none', 'daily', 'weekly'],
@@ -64,10 +65,12 @@ export default {
 					'openregister',
 					'Organisation membership changes',
 				),
+
 				systemAnnouncements: t('openregister', 'System announcements'),
 			},
 		}
 	},
+
 	/**
 	 * @spec exclude settings-section lifecycle fetch of notification preferences on mount
 	 */
@@ -83,6 +86,7 @@ export default {
 			this.loading = false
 		}
 	},
+
 	methods: {
 		t,
 		/**

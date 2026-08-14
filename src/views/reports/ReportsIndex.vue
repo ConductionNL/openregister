@@ -111,10 +111,10 @@ import {
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
+import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import { reportsStore } from '../../store/store.js'
 
 export default {
@@ -141,6 +141,7 @@ export default {
 		dashboards() {
 			return reportsStore.getDashboards ?? []
 		},
+
 		/**
 		 * Whether the reports store is loading, for spinner display.
 		 *

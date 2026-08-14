@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -106,6 +107,10 @@ class ChatHealthController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// A health probe is polled by monitoring on a schedule, so the ceiling is
+	// generous — it exists to stop an unauthenticated caller turning a liveness
+	// endpoint into a load generator, not to police the monitor.
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function health(): JSONResponse {
 		try {
 			$llmConfig = $this->settingsService->getLLMSettingsOnly();

@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -15,7 +15,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="success === null">
 			Do you want to lock
 			<b>{{
@@ -62,8 +62,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				:label="t('openregister', 'Process Name (optional)')"
 				:disabled="loading" />
 			<NcTextField
-				type="number"
 				v-model="duration"
+				type="number"
 				:label="t('openregister', 'Duration in seconds (optional)')"
 				:disabled="loading" />
 		</div>
@@ -74,13 +74,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 
 export default {
 	name: 'LockObject',
@@ -93,6 +92,7 @@ export default {
 		LockOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			process: '',
@@ -103,6 +103,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -116,6 +117,7 @@ export default {
 			this.process = ''
 			this.duration = 3600
 		},
+
 		/**
 		 * @spec exclude Lock-confirm handler delegating to objectStore.lockObject; entity lock lives in the store, this is modal orchestration plumbing.
 		 */

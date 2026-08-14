@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Clear Cache"
-		:can-close="!clearing"
+		:canClose="!clearing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>🗑️ Clear Cache</h3>
@@ -77,10 +77,10 @@
 
 <script>
 import {
-	NcDialog,
 	NcButton,
-	NcLoadingIcon,
 	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
@@ -102,10 +102,12 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		clearing: {
 			type: Boolean,
 			default: false,
 		},
+
 		cacheType: {
 			type: String,
 			default: 'all',
@@ -128,6 +130,7 @@ export default {
 		cacheType(newValue) {
 			this.localCacheType = newValue
 		},
+
 		/**
 		 * @param newValue
 		 * @spec exclude watcher emitting cache-type change

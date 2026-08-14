@@ -8,12 +8,12 @@
 
 import {
 	BASE_LAYERS,
-	defaultBaseLayer,
-	coerceGeometry,
-	representativePoint,
 	buildMarkers,
-	markerBounds,
+	coerceGeometry,
+	defaultBaseLayer,
 	formatWgs84,
+	markerBounds,
+	representativePoint,
 } from './mapData.js'
 
 describe('mapData base layers', () => {

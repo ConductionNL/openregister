@@ -1,6 +1,6 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -14,7 +14,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				{ count: selectedObjects.length },
 			)
 		"
-		:can-close="false"
+		:canClose="false"
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">
@@ -164,10 +164,9 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'MassDeleteObject',
@@ -193,9 +192,11 @@ export default {
 			selectedObjects: [],
 		}
 	},
+
 	mounted() {
 		this.initializeSelection()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -235,6 +236,7 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * @param objectId
 		 * @spec exclude form-state helper to deselect an object from the list
@@ -251,6 +253,7 @@ export default {
 				this.closeDialog()
 			}
 		},
+
 		/**
 		 * @spec exclude modal close UI handler
 		 */
@@ -259,6 +262,7 @@ export default {
 			this.startClosing = true
 			navigationStore.setDialog(false)
 		},
+
 		/**
 		 * @spec exclude router navigation UI handler
 		 */
@@ -268,6 +272,7 @@ export default {
 			// Navigate to the deleted objects section
 			this.$router.push('/deleted')
 		},
+
 		/**
 		 * @spec exclude modal bulk-delete submit handler delegating to objectStore.massDeleteObject
 		 */

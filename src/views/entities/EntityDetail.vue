@@ -60,11 +60,8 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcActions
-							:force-name="true"
-							:inline="1"
-							menu-name="Actions">
-							<NcActionButton close-after-click @click="refreshEntity">
+						<NcActions :forceName="true" :inline="1" menuName="Actions">
+							<NcActionButton closeAfterClick @click="refreshEntity">
 								<template #icon>
 									<Refresh :size="20" />
 								</template>
@@ -257,29 +254,27 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
-	NcActions,
-	NcActionButton,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 
 /**
  * Entity detail view showing entity information and relations
@@ -311,6 +306,7 @@ export default {
 		TextBoxOutline,
 		EyeOutline,
 	},
+
 	data() {
 		return {
 			entity: null,
@@ -320,9 +316,11 @@ export default {
 			error: null,
 		}
 	},
+
 	mounted() {
 		this.loadEntity()
 	},
+
 	methods: {
 		t,
 

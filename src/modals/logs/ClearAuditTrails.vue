@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +8,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'clearAuditTrails'"
 		:name="t('openregister', 'Clear Filtered Audit Trails')"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="success === null">
 			{{
 				t(
@@ -88,7 +88,6 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 
@@ -103,6 +102,7 @@ export default {
 		DeleteOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: null,
@@ -113,6 +113,7 @@ export default {
 			filteredCount: 0,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI state helper — reports whether any audit-trail filter is active.
@@ -128,6 +129,7 @@ export default {
 				)
 			)
 		},
+
 		/**
 		 * @spec exclude UI display helper — returns only the non-empty filters for display.
 		 */
@@ -141,17 +143,20 @@ export default {
 			)
 		},
 	},
+
 	watch: {
-		'navigationStore.dialog'(newVal) {
+		'navigationStore.dialog': function (newVal) {
 			if (newVal === 'clearAuditTrails') {
 				// Update filtered count when dialog opens
 				this.filteredCount = auditTrailStore.auditTrailCount
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog and reset state
+		 *
 		 * @return {void}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
@@ -167,6 +172,7 @@ export default {
 
 		/**
 		 * Clear the filtered audit trails
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
@@ -241,6 +247,7 @@ export default {
 
 		/**
 		 * Format filter key for display
+		 *
 		 * @param {string} key - Filter key
 		 * @return {string} Formatted key
 		 * @spec exclude UI display helper — translates filter keys to human labels.
@@ -261,6 +268,7 @@ export default {
 
 		/**
 		 * Format filter value for display
+		 *
 		 * @param {any} value - Filter value
 		 * @return {string} Formatted value
 		 * @spec exclude UI display helper — formats filter values for display.

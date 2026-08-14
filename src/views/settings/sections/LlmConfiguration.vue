@@ -3,12 +3,12 @@
 		name="LLM Configuration"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
-		:loading-message="t('openregister', 'Loading LLM configuration...')">
+		:loadingMessage="t('openregister', 'Loading LLM configuration...')">
 		<template #actions>
 			<!-- LLM Actions Menu -->
 			<NcActions
 				:aria-label="t('openregister', 'LLM actions menu')"
-				:menu-name="t('openregister', 'Actions')">
+				:menuName="t('openregister', 'Actions')">
 				<template #icon>
 					<DotsVertical :size="20" />
 				</template>
@@ -361,7 +361,7 @@
 		<LLMConfigModal
 			:show="showLLMConfigDialog"
 			@closing="onLLMConfigClosed"
-			@embeddings-cleared="loadAllStats" />
+			@embeddingsCleared="loadAllStats" />
 
 		<!-- File Management Modal -->
 		<FileManagementModal
@@ -382,44 +382,40 @@
 		<!-- File Vectorization Modal -->
 		<FileVectorizationModal
 			:show="showFileVectorizationModal"
-			:extraction-stats="settingsStore.extractionStats"
-			:vector-stats="settingsStore.vectorStats"
+			:extractionStats="settingsStore.extractionStats"
+			:vectorStats="settingsStore.vectorStats"
 			@closing="showFileVectorizationModal = false"
 			@completed="loadAllStats" />
 	</SettingsSection>
 </template>
 
 <script>
-import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
-	NcActions,
 	NcActionButton,
+	NcActions,
 	NcActionSeparator,
 	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import { showSuccess, showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-
-import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
-import Robot from 'vue-material-design-icons/Robot.vue'
-import FileDocument from 'vue-material-design-icons/FileDocument.vue'
+import { mapStores } from 'pinia'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import VectorSquare from 'vue-material-design-icons/VectorSquare.vue'
+import DotsVertical from 'vue-material-design-icons/DotsVertical.vue'
+import FileDocument from 'vue-material-design-icons/FileDocument.vue'
 import FileVectorOutline from 'vue-material-design-icons/FileDocumentCheckOutline.vue'
-
-import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import Robot from 'vue-material-design-icons/Robot.vue'
+import VectorSquare from 'vue-material-design-icons/VectorSquare.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import FileManagementModal from '../../../modals/settings/FileManagementModal.vue'
+import FileVectorizationModal from '../../../modals/settings/FileVectorizationModal.vue'
+import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
-import FileVectorizationModal from '../../../modals/settings/FileVectorizationModal.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 /**
  * LLM configuration settings component for managing AI/LLM integration.
@@ -461,6 +457,7 @@ export default {
 				temperature: 0.7,
 				maxTokens: 2000,
 			},
+
 			saving: false,
 			loadingStats: false,
 			vectorizing: false,
@@ -478,6 +475,7 @@ export default {
 				chatProvider: null,
 				chatModel: null,
 			},
+
 			databaseInfo: {
 				type: 'Unknown',
 				version: 'Unknown',
@@ -488,18 +486,21 @@ export default {
 				hybridSearch: null,
 				lastUpdated: null,
 			},
+
 			refreshingDatabase: false,
 			chatStats: {
 				totalAgents: 0,
 				totalConversations: 0,
 				totalMessages: 0,
 			},
+
 			vectorStats: {
 				totalVectors: 0,
 				objectVectors: 0,
 				fileVectors: 0,
 				storageMB: '0.0',
 			},
+
 			fileStats: {
 				totalFiles: 0,
 				vectorizedFiles: 0,
@@ -507,6 +508,7 @@ export default {
 				pendingFiles: 0,
 				totalChunks: 0,
 			},
+
 			objectStats: {
 				totalObjects: 0,
 				vectorizedObjects: 0,
@@ -521,6 +523,7 @@ export default {
 
 		/**
 		 * Get connection status CSS class
+		 *
 		 * @spec exclude UI plumbing — derived status-styling helper
 		 * @return {string}
 		 */
@@ -555,6 +558,7 @@ export default {
 	methods: {
 		/**
 		 * Load LLM configuration settings
+		 *
 		 * @spec exclude UI plumbing — delegates to the settings store
 		 * @return {Promise<void>}
 		 */
@@ -599,6 +603,7 @@ export default {
 
 		/**
 		 * Get display name for provider.
+		 *
 		 * @param {string} providerId - The ID of the provider.
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} The display name for the provider.
@@ -614,6 +619,7 @@ export default {
 
 		/**
 		 * Load all statistics (chat, vector, etc.)
+		 *
 		 * @spec exclude UI plumbing — fans out to other store-backed loaders
 		 * @return {Promise<void>}
 		 */
@@ -628,6 +634,7 @@ export default {
 
 		/**
 		 * Load chat and agent statistics
+		 *
 		 * @spec exclude UI plumbing — delegates to the settings store
 		 * @return {Promise<void>}
 		 */
@@ -650,6 +657,7 @@ export default {
 
 		/**
 		 * Refresh database information (force re-query)
+		 *
 		 * @spec exclude UI plumbing — delegates to the database refresh API
 		 * @return {Promise<void>}
 		 */
@@ -673,6 +681,7 @@ export default {
 
 		/**
 		 * Format date for display
+		 *
 		 * @param {string} dateString - ISO date string
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
@@ -685,6 +694,7 @@ export default {
 
 		/**
 		 * Load database information
+		 *
 		 * @spec exclude UI plumbing — fetches database info for display
 		 * @return {Promise<void>}
 		 */
@@ -749,6 +759,7 @@ export default {
 
 		/**
 		 * Retry connection - tests LLM connectivity
+		 *
 		 * @spec exclude UI plumbing — reloads stats and updates status display
 		 * @return {Promise<void>}
 		 */
@@ -772,6 +783,7 @@ export default {
 
 		/**
 		 * Handle LLM Config Modal closing - reload stats to show updated backend
+		 *
 		 * @spec exclude UI plumbing — modal-close callback reloads stats
 		 * @return {void}
 		 */
@@ -783,6 +795,7 @@ export default {
 
 		/**
 		 * Save LLM configuration settings
+		 *
 		 * @spec exclude UI plumbing — save action delegates to the settings store
 		 * @return {Promise<void>}
 		 */
@@ -799,6 +812,7 @@ export default {
 
 		/**
 		 * Handle LLM enabled toggle change
+		 *
 		 * @spec exclude UI plumbing — toggle delegates to the settings store
 		 * @return {Promise<void>}
 		 */
@@ -814,6 +828,7 @@ export default {
 
 		/**
 		 * Load vector statistics
+		 *
 		 * @spec exclude UI plumbing — fetches vector stats for display
 		 * @return {Promise<void>}
 		 */
@@ -881,6 +896,7 @@ export default {
 
 		/**
 		 * Format number with thousands separator
+		 *
 		 * @param {number} num - The number to format
 		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string}
@@ -891,6 +907,7 @@ export default {
 
 		/**
 		 * Show object vectorization modal
+		 *
 		 * @spec exclude UI plumbing — modal visibility toggle
 		 * @return {void}
 		 */
@@ -900,6 +917,7 @@ export default {
 
 		/**
 		 * Show dialog to vectorize all files
+		 *
 		 * @spec exclude UI plumbing — modal visibility toggle
 		 * @return {void}
 		 */
@@ -909,6 +927,7 @@ export default {
 
 		/**
 		 * Vectorize all files
+		 *
 		 * @spec exclude UI plumbing — starts a background vectorize job via API
 		 * @return {Promise<void>}
 		 */

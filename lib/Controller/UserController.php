@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -230,6 +231,12 @@ class UserController extends Controller {
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
+	// A framework ceiling ALONGSIDE the app-level limiter, not instead of it.
+	// SecurityService::checkLoginRateLimit() already keys on username + IP with a
+	// progressive delay, which is finer-grained than anything the framework can
+	// do from an attribute. This bounds the volume that reaches that logic at
+	// all; it is not a claim that the login was unprotected.
+	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {
 			// Memory monitoring: Check initial memory usage to prevent OOM.
@@ -389,6 +396,7 @@ class UserController extends Controller {
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function logout(): JSONResponse {
 		$this->userSession->logout();
 

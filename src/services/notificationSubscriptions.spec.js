@@ -6,10 +6,10 @@
  */
 
 import {
+	hasSubscription,
 	listSubscriptions,
 	subscribe,
 	unsubscribe,
-	hasSubscription,
 } from './notificationSubscriptions.js'
 
 describe('notificationSubscriptions API helpers', () => {

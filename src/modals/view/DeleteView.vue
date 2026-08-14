@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Delete View')"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success">
 			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b
@@ -70,11 +70,10 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Close from 'vue-material-design-icons/Close.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import { translate as t } from '@nextcloud/l10n'
 import { viewsStore } from '../../store/store.js'
 
 export default {
@@ -87,12 +86,14 @@ export default {
 		Close,
 		Delete,
 	},
+
 	props: {
 		view: {
 			type: Object,
 			default: null,
 		},
 	},
+
 	data() {
 		return {
 			success: false,
@@ -101,6 +102,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		t,
 		/**
@@ -113,6 +115,7 @@ export default {
 			this.error = null
 			this.$emit('close')
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to viewsStore.deleteView.
 		 */

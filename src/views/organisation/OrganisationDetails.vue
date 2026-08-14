@@ -1,6 +1,6 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -29,11 +29,11 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					>
 				</h2>
 				<div class="headerActionsContainer">
-					<NcActions :primary="true" menu-name="Actions">
+					<NcActions :primary="true" menuName="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="viewOrganisation">
+						<NcActionButton closeAfterClick @click="viewOrganisation">
 							<template #icon>
 								<Eye :size="20" />
 							</template>
@@ -41,14 +41,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 						<NcActionButton
 							v-if="canEdit"
-							close-after-click
+							closeAfterClick
 							@click="editOrganisation">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click @click="copyOrganisation">
+						<NcActionButton closeAfterClick @click="copyOrganisation">
 							<template #icon>
 								<ContentCopy :size="20" />
 							</template>
@@ -56,7 +56,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 						<NcActionButton
 							v-if="organisationStore.organisationItem?.website"
-							close-after-click
+							closeAfterClick
 							@click="goToOrganisation">
 							<template #icon>
 								<OpenInNew :size="20" />
@@ -65,14 +65,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 						<NcActionButton
 							v-if="!isActiveOrganisation"
-							close-after-click
+							closeAfterClick
 							@click="setActiveOrganisation">
 							<template #icon>
 								<CheckCircle :size="20" />
 							</template>
 							Activeren
 						</NcActionButton>
-						<NcActionButton close-after-click @click="openJoinModal">
+						<NcActionButton closeAfterClick @click="openJoinModal">
 							<template #icon>
 								<AccountPlus :size="20" />
 							</template>
@@ -80,7 +80,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 						<NcActionButton
 							v-if="canDelete"
-							close-after-click
+							closeAfterClick
 							@click="navigationStore.setDialog('deleteOrganisation')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
@@ -186,7 +186,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										!== organisationStore.organisationItem.owner
 								">
 								<NcActionButton
-									close-after-click
+									closeAfterClick
 									@click="removeMember(userId)">
 									<template #icon>
 										<AccountMinus :size="16" />
@@ -246,25 +246,25 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import {
-	NcActions,
 	NcActionButton,
+	NcActions,
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcButton,
 } from '@nextcloud/vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import Account from 'vue-material-design-icons/Account.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import Account from 'vue-material-design-icons/Account.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'OrganisationDetails',
@@ -288,6 +288,7 @@ export default {
 		Eye,
 		OpenInNew,
 	},
+
 	data() {
 		return {
 			organisationStats: {
@@ -298,6 +299,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude detail-view active-organisation flag (computed; tenant-lifecycle contract)
@@ -309,6 +311,7 @@ export default {
 					=== organisationStore.organisationItem?.uuid
 			)
 		},
+
 		/**
 		 * @spec exclude detail-view edit-permission gate (computed)
 		 */
@@ -320,6 +323,7 @@ export default {
 					=== this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * @spec exclude detail-view leave-permission gate (computed)
 		 */
@@ -332,6 +336,7 @@ export default {
 					!== this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * @spec exclude detail-view delete-permission gate (computed)
 		 */
@@ -343,6 +348,7 @@ export default {
 					=== this.getCurrentUser()
 			)
 		},
+
 		/**
 		 * @spec exclude detail-view manage-members permission gate (computed)
 		 */
@@ -353,6 +359,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * @spec exclude detail-view lifecycle; loads organisation statistics on mount
 	 */
@@ -360,6 +367,7 @@ export default {
 		// Load organisation statistics (would need API endpoint)
 		await this.loadOrganisationStats()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude detail-view current-user resolution helper from route meta
@@ -368,6 +376,7 @@ export default {
 			// Implementation would depend on how you get current user
 			return this.$route.meta?.user?.uid || 'unknown'
 		},
+
 		/**
 		 * @spec exclude detail-view action; delegates to store to set the active organisation (tenant-lifecycle contract)
 		 */
@@ -385,6 +394,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @spec exclude detail-view action; confirms then delegates to store leave + navigates back (tenant-lifecycle contract)
 		 */
@@ -414,6 +424,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @param userId
 		 * @spec exclude detail-view member-removal stub (confirm + toast; API endpoint not yet implemented)
@@ -441,6 +452,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * @spec exclude detail-view stats placeholder; populates mock organisation statistics for display
 		 */
@@ -454,6 +466,7 @@ export default {
 				storage: Math.floor(Math.random() * 1000000000), // bytes
 			}
 		},
+
 		/**
 		 * @param text
 		 * @spec exclude detail-view clipboard helper with success/error toast
@@ -467,6 +480,7 @@ export default {
 				showError(t('openregister', 'Failed to copy to clipboard'))
 			}
 		},
+
 		/**
 		 * @param dateString
 		 * @spec exclude detail-view date-formatting display helper
@@ -485,6 +499,7 @@ export default {
 				})
 			)
 		},
+
 		/**
 		 * @param bytes
 		 * @spec exclude detail-view byte-size formatting display helper
@@ -498,6 +513,7 @@ export default {
 
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
+
 		// Organisation Action Methods
 		/**
 		 * @spec exclude detail-view action; opens the public publication page in a new tab
@@ -506,6 +522,7 @@ export default {
 			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisationStore.organisationItem.uuid}`
 			window.open(publicationUrl, '_blank')
 		},
+
 		/**
 		 * @spec exclude detail-view action; opens the edit-organisation modal
 		 */
@@ -513,6 +530,7 @@ export default {
 			// organisationStore.organisationItem is already set by the page
 			navigationStore.setModal('editOrganisation')
 		},
+
 		/**
 		 * @spec exclude detail-view action; opens the join-organisation modal with transfer data
 		 */
@@ -524,6 +542,7 @@ export default {
 			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
 		},
+
 		/**
 		 * @spec exclude detail-view action; opens the manage-roles modal
 		 */
@@ -531,6 +550,7 @@ export default {
 			// Open the manage organisation roles modal
 			navigationStore.setModal('manageOrganisationRoles')
 		},
+
 		/**
 		 * @spec exclude detail-view action; opens the organisation website in a new tab
 		 */

@@ -10,7 +10,7 @@
  * @return { 'light' | 'dark' } The current theme, either 'light' or 'dark'.
  * @spec exclude Stateless theme-detection helper reading document body attributes; pure presentation utility with no domain contract.
  */
-export const getTheme = () => {
+export function getTheme() {
 	if (document.body.hasAttribute('data-theme-light')) {
 		return 'light'
 	}

@@ -1,10 +1,10 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	schemaStore,
 	navigationStore,
 	objectStore,
 	registerStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -13,7 +13,7 @@ import {
 		v-if="navigationStore.dialog === 'deleteSchema'"
 		name="Verwijder Schema"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success && canDelete">
 			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen?
 			Deze actie kan niet ongedaan worden gemaakt.
@@ -52,7 +52,6 @@ import {
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -67,6 +66,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -78,6 +78,7 @@ export default {
 			isUpdated: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude UI state helper — enables deletion only when no objects reference the schema.
@@ -86,6 +87,7 @@ export default {
 			return this.objects.length === 0
 		},
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
 	 */
@@ -95,6 +97,7 @@ export default {
 			this.initDialog()
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
@@ -152,6 +155,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close plumbing — closes the dialog and resets state.
 		 */
@@ -165,6 +169,7 @@ export default {
 			this.registerName = ''
 			this.isUpdated = false
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to schemaStore.deleteSchema.
 		 */

@@ -1,15 +1,15 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
-	schemaStore,
+	objectStore,
 	registerStore,
+	schemaStore,
 } from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal label-id="View Object Audit Trail modal" @close="closeDialog">
+	<NcModal labelId="View Object Audit Trail modal" @close="closeDialog">
 		<div class="modal__content">
 			<div class="audit-item">
 				<h3>Audit Trail ID: {{ auditTrail.id }}</h3>
@@ -119,8 +119,7 @@ import {
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import { NcModal, NcButton, NcLoadingIcon } from '@nextcloud/vue'
-
+import { NcButton, NcLoadingIcon, NcModal } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import OpenInApp from 'vue-material-design-icons/OpenInApp.vue'
 
@@ -131,6 +130,7 @@ export default {
 		NcButton,
 		Cancel,
 	},
+
 	data() {
 		return {
 			schemaItem: null,
@@ -140,6 +140,7 @@ export default {
 			auditTrail: {}, // Initialize with an empty object
 		}
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook — hydrates the audit-trail view modal on mount.
 	 */
@@ -149,6 +150,7 @@ export default {
 		this.fetchSchema()
 		this.fetchRegister()
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -157,6 +159,7 @@ export default {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 		},
+
 		/**
 		 * @param value
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -171,6 +174,7 @@ export default {
 			}
 			return value // Return the value as is for other types
 		},
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
@@ -181,6 +185,7 @@ export default {
 				this.schemaLoading = false
 			})
 		},
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
@@ -191,6 +196,7 @@ export default {
 				this.registerLoading = false
 			})
 		},
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
@@ -200,6 +206,7 @@ export default {
 			this.$router.push('/schemas')
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */

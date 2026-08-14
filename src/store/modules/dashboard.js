@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { defineStore } from 'pinia'
+import { watch } from 'vue'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
-import { watch } from 'vue'
 
 export const useDashboardStore = defineStore('dashboard', {
 	state: () => ({
@@ -57,6 +57,7 @@ export const useDashboardStore = defineStore('dashboard', {
 	actions: {
 		/**
 		 * Set the date range for audit trail chart and refresh it
+		 *
 		 * @param {string|null} from - Start date
 		 * @param {string|null} till - End date
 		 * @return {void}
@@ -70,6 +71,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Initialize the dashboard store and set up watchers for register and schema changes
+		 *
 		 * @return {void}
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
@@ -96,6 +98,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch audit trail action chart data
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/audit-trail-actions
 		 */
@@ -131,6 +134,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch objects by register chart data
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-register
 		 */
@@ -164,6 +168,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch objects by schema chart data
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-schema
 		 */
@@ -197,6 +202,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch objects by size chart data
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-size
 		 */
@@ -230,6 +236,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch all chart data in parallel
+		 *
 		 * @return {Promise<void>}
 		 * @spec exclude parallel fan-out wrapper over chart-fetch passthroughs
 		 */
@@ -244,6 +251,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch audit trail statistics
+		 *
 		 * @param {number|null} hours - Number of hours to look back for recent activity (default: 24)
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail
@@ -279,6 +287,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch action distribution data
+		 *
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @return {Promise<void>}
 		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail-distribution
@@ -314,6 +323,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch most active objects
+		 *
 		 * @param {number|null} limit - Number of results to return (default: 10)
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @return {Promise<void>}
@@ -351,6 +361,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch all statistics data in parallel
+		 *
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @param {number|null} limit - Number of results for most active objects (default: 10)
 		 * @return {Promise<void>}
@@ -366,6 +377,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Preload dashboard data
+		 *
 		 * @return {Promise<Array>}
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
@@ -381,6 +393,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Fetch registers for dashboard, filtered by the current register and schema from the stores
+		 *
 		 * @return {Promise<Array>}
 		 * @spec exclude API passthrough to GET /api/dashboard (register list)
 		 */
@@ -412,6 +425,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Calculate sizes for a register and refresh
+		 *
 		 * @param {string} registerId - The ID of the register
 		 * @return {Promise<boolean>}
 		 * @spec exclude API passthrough to POST /api/dashboard/calculate/{registerId}
@@ -434,6 +448,7 @@ export const useDashboardStore = defineStore('dashboard', {
 
 		/**
 		 * Reset dashboard store state
+		 *
 		 * @return {void}
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
@@ -472,6 +487,7 @@ export const useDashboardStore = defineStore('dashboard', {
 /**
  * Sets up watchers for register and schema changes to refresh dashboard data.
  * Call this function once in your app entry point after creating the stores.
+ *
  * @return {void}
  * @spec openspec/specs/frontend-store-client-state/spec.md
  */

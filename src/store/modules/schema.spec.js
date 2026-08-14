@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
-
+import { createPinia, setActivePinia } from 'pinia'
+import { mockSchema, Schema } from '../../entities/index.js'
 import { useSchemaStore } from './schema.js'
-import { Schema, mockSchema } from '../../entities/index.js'
 
 describe('Schema Store', () => {
 	beforeEach(() => {

@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
 	deletedStore,
 	navigationStore,
@@ -35,9 +35,9 @@ import {
 					<NcSelect
 						id="registerSelect"
 						v-bind="registerOptions"
-						:model-value="selectedRegisterValue"
+						:modelValue="selectedRegisterValue"
 						:placeholder="t('openregister', 'All registers')"
-						:input-label="t('openregister', 'Register')"
+						:inputLabel="t('openregister', 'Register')"
 						:clearable="true"
 						@update:modelValue="handleRegisterChange" />
 				</div>
@@ -48,9 +48,9 @@ import {
 					<NcSelect
 						id="schemaSelect"
 						v-bind="schemaOptions"
-						:model-value="selectedSchemaValue"
+						:modelValue="selectedSchemaValue"
 						:placeholder="t('openregister', 'All schemas')"
-						:input-label="t('openregister', 'Schema')"
+						:inputLabel="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
 						@update:modelValue="handleSchemaChange" />
@@ -64,7 +64,7 @@ import {
 						v-model="selectedDeletedBy"
 						:options="userOptions"
 						:placeholder="t('openregister', 'Any user')"
-						:input-label="t('openregister', 'Deleted By')"
+						:inputLabel="t('openregister', 'Deleted By')"
 						:clearable="true"
 						@update:modelValue="applyFilters">
 						<template #option="{ label }">
@@ -190,15 +190,15 @@ import {
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcSelect,
-	NcNoteCard,
-	NcListItem,
 	NcDateTimePickerNative,
+	NcListItem,
 	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
+import ChartLine from 'vue-material-design-icons/ChartLine.vue'
+import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import eventBus from '../../eventBus.js'
 
 export default {
@@ -215,6 +215,7 @@ export default {
 		ChartLine,
 		AccountCircle,
 	},
+
 	data() {
 		return {
 			activeTab: 'filters-tab',
@@ -224,9 +225,11 @@ export default {
 			filteredCount: 0,
 		}
 	},
+
 	computed: {
 		/**
 		 * Build the register dropdown options for the deleted-items filter.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for registers
 		 */
@@ -238,6 +241,7 @@ export default {
 					title: register.title,
 					register,
 				})),
+
 				reduce: (option) => option.register,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -250,8 +254,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Build the schema dropdown options scoped to the selected register.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object} NcSelect options bag for schemas
 		 */
@@ -271,6 +277,7 @@ export default {
 						title: schema.title,
 						schema,
 					})),
+
 				reduce: (option) => option.schema,
 				label: 'title',
 				getOptionLabel: (option) => {
@@ -283,8 +290,10 @@ export default {
 				},
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected register into NcSelect value shape.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null} Selected register option, or null
 		 */
@@ -298,8 +307,10 @@ export default {
 				register,
 			}
 		},
+
 		/**
 		 * Resolve the currently-selected schema into NcSelect value shape.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object|null} Selected schema option, or null
 		 */
@@ -313,8 +324,10 @@ export default {
 				schema,
 			}
 		},
+
 		/**
 		 * Derive the "deleted by" user filter options from the deleted-items list.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array} User filter options
 		 */
@@ -341,6 +354,7 @@ export default {
 			return userOptions
 		},
 	},
+
 	watch: {
 		// Keep component/store in sync with URL query params (single source of truth)
 		'$route.query': {
@@ -351,16 +365,20 @@ export default {
 				if (this.$route.path !== '/deleted') return
 				this.applyQueryParamsFromRoute()
 			},
+
 			deep: true,
 		},
+
 		// Watch for changes in the global stores
-		'registerStore.registerItem'() {
+		'registerStore.registerItem': function () {
 			this.applyFilters()
 		},
-		'schemaStore.schemaItem'() {
+
+		'schemaStore.schemaItem': function () {
 			this.applyFilters()
 		},
 	},
+
 	/**
 	 * @spec exclude Lifecycle plumbing; loads lists/statistics and seeds state from the route, delegating to already-annotated methods.
 	 */
@@ -386,9 +404,11 @@ export default {
 			this.filteredCount = count
 		})
 	},
+
 	beforeUnmount() {
 		eventBus.off('deleted-filtered-count')
 	},
+
 	methods: {
 		/**
 		 * Apply filters and emit to parent components.
@@ -402,8 +422,10 @@ export default {
 		applyFilters() {
 			this.updateRouteQueryFromState()
 		},
+
 		/**
 		 * Load deletion statistics
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Promise<void>}
 		 */
@@ -414,8 +436,10 @@ export default {
 				console.error('Error loading statistics:', error)
 			}
 		},
+
 		/**
 		 * Load top deleters statistics
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Promise<void>}
 		 */
@@ -426,8 +450,10 @@ export default {
 				console.error('Error loading top deleters:', error)
 			}
 		},
+
 		/**
 		 * Handle register change (cascade: set register, clear schema, re-apply filters).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} register - The selected register object
 		 * @return {void}
@@ -437,8 +463,10 @@ export default {
 			schemaStore.setSchemaItem(null) // Clear schema when register changes
 			this.applyFilters()
 		},
+
 		/**
 		 * Handle schema change (set schema, re-apply filters into the route query).
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} schema - The selected schema object
 		 * @return {void}
@@ -447,8 +475,10 @@ export default {
 			schemaStore.setSchemaItem(schema)
 			this.applyFilters()
 		},
+
 		/**
 		 * Build URL query object from current sidebar state
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {object}
 		 */
@@ -474,8 +504,10 @@ export default {
 					: null
 			return query
 		},
+
 		/**
 		 * Compare two shallow query objects (keys and stringified values)
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @param {object} a - First query object to compare
 		 * @param {object} b - Second query object to compare
@@ -491,8 +523,10 @@ export default {
 			}
 			return true
 		},
+
 		/**
 		 * Write current state to the router query (only on /deleted)
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
@@ -505,8 +539,10 @@ export default {
 				query: nextQuery,
 			})
 		},
+
 		/**
 		 * Apply URL query params to component/store state and emit filters
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
@@ -562,8 +598,10 @@ export default {
 			}
 			tryApply()
 		},
+
 		/**
 		 * Build filters from state and emit to parent (legacy compatibility)
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */

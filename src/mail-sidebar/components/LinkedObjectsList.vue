@@ -15,7 +15,7 @@
 				v-for="obj in objects"
 				:key="obj.linkId || obj.objectUuid"
 				:object="obj"
-				:show-unlink="true"
+				:showUnlink="true"
 				@unlink="$emit('unlink', $event)" />
 		</div>
 	</section>
@@ -33,11 +33,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		loading: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	methods: { t },
 }
 </script>

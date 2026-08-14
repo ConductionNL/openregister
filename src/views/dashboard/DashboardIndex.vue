@@ -1,11 +1,11 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
 	dashboardStore,
-	searchTrailStore,
+	objectStore,
 	registerStore,
 	schemaStore,
-	objectStore,
+	searchTrailStore,
 } from '../../store/store.js'
 </script>
 
@@ -16,9 +16,9 @@ import {
 			:widgets="widgetDefs"
 			:layout="dashboardLayout"
 			:loading="isLoading && !hasData"
-			:empty-label="t('openregister', 'No data available')"
-			:show-refresh="false"
-			@layout-change="onLayoutChange">
+			:emptyLabel="t('openregister', 'No data available')"
+			:showRefresh="false"
+			@layoutChange="onLayoutChange">
 			<!-- Header actions -->
 			<template #actions>
 				<NcButton
@@ -111,16 +111,16 @@ import {
 					</div>
 					<div class="kpi-chip">
 						<NcActions
-							:force-menu="true"
+							:forceMenu="true"
 							container="body"
-							:menu-title="t('openregister', 'Change date range')">
+							:menuTitle="t('openregister', 'Change date range')">
 							<template #icon>
 								<span class="kpi-chip-label">{{ rangeText }}</span>
 							</template>
 							<NcActionButton
 								v-for="preset in rangePresets"
 								:key="preset.id"
-								:close-after-click="true"
+								:closeAfterClick="true"
 								@click="pickRange(preset.id)">
 								<template v-if="kpiRange.preset === preset.id" #icon>
 									<CalendarRange :size="16" />
@@ -148,16 +148,16 @@ import {
 					</div>
 					<div class="kpi-chip">
 						<NcActions
-							:force-menu="true"
+							:forceMenu="true"
 							container="body"
-							:menu-title="t('openregister', 'Change date range')">
+							:menuTitle="t('openregister', 'Change date range')">
 							<template #icon>
 								<span class="kpi-chip-label">{{ rangeText }}</span>
 							</template>
 							<NcActionButton
 								v-for="preset in rangePresets"
 								:key="preset.id"
-								:close-after-click="true"
+								:closeAfterClick="true"
 								@click="pickRange(preset.id)">
 								<template v-if="kpiRange.preset === preset.id" #icon>
 									<CalendarRange :size="16" />
@@ -181,7 +181,7 @@ import {
 					:columns="popularTermsColumns"
 					:rows="searchTrailStore.popularTerms"
 					borderless
-					@row-click="onPopularTermClick" />
+					@rowClick="onPopularTermClick" />
 			</template>
 
 			<!-- Objects by Register widget -->
@@ -194,7 +194,7 @@ import {
 					:columns="objectsByColumns(t('openregister', 'Register'))"
 					:rows="registerData"
 					borderless
-					@row-click="onRegisterRowClick" />
+					@rowClick="onRegisterRowClick" />
 			</template>
 
 			<!-- Objects by Schema widget -->
@@ -207,13 +207,13 @@ import {
 					:columns="objectsByColumns(t('openregister', 'Schema'))"
 					:rows="schemaData"
 					borderless
-					@row-click="onSchemaRowClick" />
+					@rowClick="onSchemaRowClick" />
 			</template>
 
 			<!-- Objects Distribution chart widget -->
 			<template #widget-objects-chart>
 				<div v-if="registerData.length > 0" class="chart-widget-content">
-					<apexchart
+					<Apexchart
 						type="pie"
 						height="260"
 						:options="objectsChartOptions"
@@ -228,22 +228,22 @@ import {
 </template>
 
 <script>
+import { CnDashboardPage, CnDataTable } from '@conduction/nextcloud-vue'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcButton,
 	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
 } from '@nextcloud/vue'
-import { CnDashboardPage, CnDataTable } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue3-apexcharts'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import CalendarRange from 'vue-material-design-icons/CalendarRange.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
-import CalendarRange from 'vue-material-design-icons/CalendarRange.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 const DEFAULT_LAYOUT = [
 	// Row 1 — structural totals (point-in-time).
@@ -381,7 +381,7 @@ export default {
 		NcLoadingIcon,
 		CnDashboardPage,
 		CnDataTable,
-		apexchart: VueApexCharts,
+		Apexchart: VueApexCharts,
 		NcActions,
 		NcActionButton,
 		Refresh,
@@ -392,6 +392,7 @@ export default {
 		History,
 		CalendarRange,
 	},
+
 	data() {
 		return {
 			refreshing: false,
@@ -412,10 +413,12 @@ export default {
 			liveRefetchTimer: null,
 		}
 	},
+
 	computed: {
 		isLoading() {
 			return dashboardStore.loading || searchTrailStore.statisticsLoading
 		},
+
 		/**
 		 * @spec exclude Derived client-state — composes the object-store type slug for the dashboard's sidebar scope so the watcher below can re-scope the live subscription. Empty unless BOTH register and schema are selected: the or-collection event dialect needs both slugs, so an unscoped (or register-only) dashboard cannot subscribe.
 		 */
@@ -424,12 +427,14 @@ export default {
 			const schemaId = schemaStore.schemaItem?.id
 			return registerId && schemaId ? `${registerId}-${schemaId}` : ''
 		},
+
 		/**
 		 * @spec exclude Derived client-state — mirrors the object store's liveLastEventAt diagnostic so the Options-API watcher below can react to live events.
 		 */
 		liveLastEventAt() {
 			return objectStore.liveLastEventAt
 		},
+
 		/**
 		 * Whether the dashboard has any data to display.
 		 *
@@ -443,6 +448,7 @@ export default {
 				|| this.totalObjects > 0
 			)
 		},
+
 		/**
 		 * Total number of objects across all registers (from System Totals).
 		 *
@@ -452,6 +458,7 @@ export default {
 		totalObjects() {
 			return dashboardStore.getSystemTotals?.stats?.objects?.total || 0
 		},
+
 		/**
 		 * Total number of registers (excludes the System Totals / Orphaned Items pseudo-rows).
 		 *
@@ -461,6 +468,7 @@ export default {
 		totalRegisters() {
 			return registerStore.registerList?.length || 0
 		},
+
 		/**
 		 * Total number of schemas.
 		 *
@@ -470,6 +478,7 @@ export default {
 		totalSchemas() {
 			return schemaStore.schemaList?.length || 0
 		},
+
 		/**
 		 * Total number of audit-log events across all registers (from System Totals).
 		 *
@@ -479,10 +488,12 @@ export default {
 		totalEvents() {
 			return dashboardStore.getSystemTotals?.stats?.logs?.total || 0
 		},
+
 		/** @return {Array<object>} The date-range presets for the KPI pill. */
 		rangePresets() {
 			return RANGE_PRESETS
 		},
+
 		/** @return {string} Compact label for the active KPI range. */
 		rangeText() {
 			const preset =
@@ -490,6 +501,7 @@ export default {
 				|| RANGE_PRESETS[0]
 			return t('openregister', preset.label)
 		},
+
 		/**
 		 * Total searches over the active range (the search-trail statistics
 		 * are refetched with the range, so the all-time bag already reflects it).
@@ -499,6 +511,7 @@ export default {
 		totalSearches() {
 			return searchTrailStore.statistics.total || 0
 		},
+
 		/**
 		 * Total audit-log events over the active range. "All time" uses the
 		 * System Totals log count; a bounded range sums the audit-trail-action
@@ -521,6 +534,7 @@ export default {
 				0,
 			)
 		},
+
 		/**
 		 * Objects-by-register chart rows mapped from store chart data.
 		 *
@@ -535,6 +549,7 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+
 		/**
 		 * Objects-by-schema chart rows mapped from store chart data.
 		 *
@@ -549,6 +564,7 @@ export default {
 				count: chartData.series[i] || 0,
 			}))
 		},
+
 		/**
 		 * ApexCharts options for the objects-by-register distribution pie.
 		 *
@@ -571,6 +587,7 @@ export default {
 				],
 			}
 		},
+
 		/**
 		 * Columns for the Popular Search Terms table.
 		 *
@@ -593,6 +610,7 @@ export default {
 				{ key: 'effectiveness', label: t('openregister', 'Effectiveness') },
 			]
 		},
+
 		/**
 		 * Widget definitions for the dashboard grid.
 		 *
@@ -652,6 +670,7 @@ export default {
 			]
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-scope the live collection subscription when the user changes the
@@ -662,6 +681,7 @@ export default {
 		liveCollectionType() {
 			this.syncLiveSubscription()
 		},
+
 		/**
 		 * A live event arrived on the object store (the plugin stamps
 		 * liveLastEventAt on every event). While the dashboard holds a
@@ -676,6 +696,7 @@ export default {
 			this.scheduleLiveRefetch()
 		},
 	},
+
 	/**
 	 * Lifecycle hook: preload dashboard and search-trail data on mount.
 	 *
@@ -699,6 +720,7 @@ export default {
 			this.setEmptySearchTrailData()
 		}
 	},
+
 	/**
 	 * Lifecycle hook: release the live collection subscription and cancel any
 	 * pending debounced refetch on unmount.
@@ -709,6 +731,7 @@ export default {
 	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
+
 	methods: {
 		/**
 		 * Subscribe to live updates for the register+schema collection the
@@ -782,6 +805,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Release the current live collection subscription, if any, cancel a
 		 * pending debounced refetch, and invalidate any in-flight subscribe
@@ -801,6 +825,7 @@ export default {
 			this.liveHandle = null
 			this.liveType = ''
 		},
+
 		/**
 		 * Coalesce a burst of live collection events (e.g. a bulk import
 		 * flush) into a single trailing refetch of the object-CRUD-derived
@@ -819,6 +844,7 @@ export default {
 				this.refetchLiveWidgets()
 			}, LIVE_REFETCH_DEBOUNCE_MS)
 		},
+
 		/**
 		 * Refetch the widgets whose data derives from object CRUD: the
 		 * register totals (Objects KPI + sidebar totals), the objects-by-*
@@ -846,6 +872,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Reset search-trail statistics to empty defaults for display.
 		 *
@@ -867,6 +894,7 @@ export default {
 			searchTrailStore.setPopularTerms({ results: [] })
 			searchTrailStore.setActivity({ daily: { activity: [] } })
 		},
+
 		/**
 		 * Load search-trail statistics and popular terms from the store.
 		 *
@@ -885,6 +913,7 @@ export default {
 				this.setEmptySearchTrailData()
 			}
 		},
+
 		/**
 		 * Restore the persisted KPI date range from localStorage (falls back
 		 * to "all time"). Validates the stored preset against the known set.
@@ -909,6 +938,7 @@ export default {
 				// Non-fatal (private window / quota / corrupt value) — keep default.
 			}
 		},
+
 		/**
 		 * Apply a date-range preset to the range-driven KPI cards (Searches,
 		 * Events): resolve its window, persist it, and refetch both metrics.
@@ -933,6 +963,7 @@ export default {
 			// Searches: refetch the range-scoped statistics.
 			this.loadSearchTrailData()
 		},
+
 		/**
 		 * Reload all dashboard and search-trail data.
 		 *
@@ -953,6 +984,7 @@ export default {
 				this.refreshing = false
 			}
 		},
+
 		/**
 		 * Update the stored dashboard grid layout when the user rearranges widgets.
 		 *
@@ -963,6 +995,7 @@ export default {
 		onLayoutChange(newLayout) {
 			this.dashboardLayout = newLayout
 		},
+
 		/**
 		 * Column definitions for an "Objects by X" table (Register/Schema).
 		 *
@@ -981,6 +1014,7 @@ export default {
 				},
 			]
 		},
+
 		/**
 		 * Navigate to the register behind a clicked "Objects by Register" row.
 		 *
@@ -996,6 +1030,7 @@ export default {
 				this.$router.push(`/registers/${match.id}`).catch(() => {})
 			}
 		},
+
 		/**
 		 * Navigate to the schema behind a clicked "Objects by Schema" row.
 		 *
@@ -1011,6 +1046,7 @@ export default {
 				this.$router.push(`/schemas/${match.id}`).catch(() => {})
 			}
 		},
+
 		/**
 		 * Open the search-trails overview when a popular term is clicked.
 		 *

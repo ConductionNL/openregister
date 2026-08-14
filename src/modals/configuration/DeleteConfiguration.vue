@@ -3,7 +3,7 @@
 		v-if="navigationStore.dialog === 'deleteConfiguration'"
 		name="Delete Configuration"
 		size="small"
-		:can-close="false">
+		:canClose="false">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -40,10 +40,8 @@
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 export default {
@@ -57,18 +55,21 @@ export default {
 		Cancel,
 		Delete,
 	},
+
 	/**
 	 * @spec exclude Vue setup() exposing stores to the template; framework plumbing.
 	 */
 	setup() {
 		return { configurationStore, navigationStore }
 	},
+
 	data() {
 		return {
 			loading: false,
 			error: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -78,6 +79,7 @@ export default {
 			this.loading = false
 			this.error = null
 		},
+
 		/**
 		 * @spec exclude Delete-confirm handler delegating to configurationStore.deleteConfiguration; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */

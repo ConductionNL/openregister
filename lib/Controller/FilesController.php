@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -300,6 +301,7 @@ class FilesController extends Controller {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(
 		string $register,
 		string $schema,
@@ -357,6 +359,7 @@ class FilesController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show(
 		string $register,
 		string $schema,
@@ -529,6 +532,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function create(
 		string $register,
 		string $schema,
@@ -618,6 +622,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function save(
 		string $register,
 		string $schema,
@@ -723,6 +728,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function createMultipart(
 		string $register,
 		string $schema,
@@ -1045,6 +1051,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(
 		string $register,
 		string $schema,
@@ -1108,6 +1115,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function delete(
 		string $register,
 		string $schema,
@@ -1169,6 +1177,7 @@ class FilesController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse {
 		// SECURITY (C1): gate anonymous callers on the file being published.
 		// Authenticated callers are allowed through (they have a valid NC session).
@@ -1379,6 +1388,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1448,6 +1458,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1549,6 +1560,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function move(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1650,6 +1662,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1697,6 +1710,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function restoreVersion(
 		string $register,
 		string $schema,
@@ -1770,6 +1784,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1832,6 +1847,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1902,6 +1918,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function batch(string $register, string $schema, string $id): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
@@ -1958,6 +1975,7 @@ class FilesController extends Controller {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse {
 		try {
 			// SetSchema/setRegister throw DoesNotExistException for an unknown
@@ -2035,6 +2053,7 @@ class FilesController extends Controller {
 	 *
 	 * @PublicPage
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$this->objectService->setSchema($schema);
 		$this->objectService->setRegister($register);
