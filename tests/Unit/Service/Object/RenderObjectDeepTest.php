@@ -234,7 +234,7 @@ class RenderObjectDeepTest extends TestCase {
 	 */
 	public function testResolveSchemaReferenceWithPathReference(): void {
 		$ref = '#/components/schemas/Organisatie';
-		$schema = $this->createMockSchema(5, 'organisatie');
+		$schema = $this->createMockSchema(5, 'organisation');
 
 		$this->schemaMapper->method('findAll')
 			->willReturn([$schema]);
@@ -271,8 +271,8 @@ class RenderObjectDeepTest extends TestCase {
 	 * Test resolveSchemaReference with slug resolving to single schema.
 	 */
 	public function testResolveSchemaReferenceWithSlug(): void {
-		$slug = 'organisatie';
-		$schema = $this->createMockSchema(7, 'organisatie');
+		$slug = 'organisation';
+		$schema = $this->createMockSchema(7, 'organisation');
 
 		$this->schemaMapper->method('findAll')
 			->willReturn([$schema]);

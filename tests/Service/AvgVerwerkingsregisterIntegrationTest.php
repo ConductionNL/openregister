@@ -202,7 +202,7 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	public function testResolveReferenceFindsByCodeAndUuid(): void {
 		$code = 'phpunit-resolve-' . uniqid();
-		$activity = $this->makeActivity(naam: 'phpunit-resolve', code: $code);
+		$activity = $this->makeActivity(name: 'phpunit-resolve', code: $code);
 
 		$byCode = $this->vrwMapper->resolveReference(reference: $code);
 		$this->assertNotNull($byCode);
@@ -219,7 +219,7 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	public function testAuditTrailHookHonorsSchemaAnnotation(): void {
 		$activity = $this->makeActivity(
-			naam: 'phpunit-audit-schema',
+			name: 'phpunit-audit-schema',
 			code: 'phpunit-audit-schema-' . uniqid()
 		);
 
@@ -246,7 +246,7 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	public function testAuditTrailHookFallsBackToRegisterAnnotation(): void {
 		$activity = $this->makeActivity(
-			naam: 'phpunit-audit-register',
+			name: 'phpunit-audit-register',
 			code: 'phpunit-audit-register-' . uniqid()
 		);
 
@@ -270,11 +270,11 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	public function testAuditTrailHookPerActionOverrideBeatsDefaults(): void {
 		$schemaActivity = $this->makeActivity(
-			naam: 'phpunit-audit-schema-default',
+			name: 'phpunit-audit-schema-default',
 			code: 'phpunit-audit-schema-default-' . uniqid()
 		);
 		$overrideActivity = $this->makeActivity(
-			naam: 'phpunit-audit-override',
+			name: 'phpunit-audit-override',
 			code: 'phpunit-audit-override-' . uniqid()
 		);
 
@@ -315,9 +315,9 @@ class AvgVerwerkingsregisterIntegrationTest extends TestCase {
 
 	}//end testAuditTrailHookLeavesUnsetWhenNoAnnotation()
 
-	private function makeActivity(string $naam, string $code): Verwerkingsactiviteit {
+	private function makeActivity(string $name, string $code): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($naam . '-' . uniqid());
+		$entity->setNaam($name . '-' . uniqid());
 		$entity->setCode($code);
 		$entity->setDoelbinding('phpunit purpose binding');
 		$entity->setRechtsgrond('publieke_taak');

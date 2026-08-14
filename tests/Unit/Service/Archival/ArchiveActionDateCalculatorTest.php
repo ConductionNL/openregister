@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * ArchiefactiedatumCalculator Unit Tests
+ * ArchiveActionDateCalculator Unit Tests
  *
  * Tests the archive action date calculator with all three afleidingswijzen.
  *
@@ -16,23 +16,23 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Service\Archival\ArchiefactiedatumCalculator;
+use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Test class for ArchiefactiedatumCalculator
+ * Test class for ArchiveActionDateCalculator
  */
-class ArchiefactiedatumCalculatorTest extends TestCase {
+class ArchiveActionDateCalculatorTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
-	private ArchiefactiedatumCalculator $calculator;
+	private ArchiveActionDateCalculator $calculator;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->calculator = new ArchiefactiedatumCalculator($this->logger);
+		$this->calculator = new ArchiveActionDateCalculator($this->logger);
 	}
 
 	/**

@@ -181,8 +181,8 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 		$result = $this->bulkService->translateObject(
 			object: $this->testObject,
-			fromLang: 'nl',
-			toLang: 'en'
+			fromLong: 'nl',
+			toLong: 'en'
 		);
 
 		$this->assertArrayHasKey('title', $result['translated']);
@@ -206,8 +206,8 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 		$result = $this->bulkService->translateObject(
 			object: $this->testObject,
-			fromLang: 'nl',
-			toLang: 'en'
+			fromLong: 'nl',
+			toLong: 'en'
 		);
 
 		$this->assertArrayNotHasKey('title', $result['translated']);
@@ -225,8 +225,8 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 		$result = $this->bulkService->translateObject(
 			object: $this->testObject,
-			fromLang: 'nl',
-			toLang: 'fr'
+			fromLong: 'nl',
+			toLong: 'fr'
 		);
 
 		$this->assertSame('no-source-value', $result['skipped']['title'] ?? null);
@@ -236,8 +236,8 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 	public function testBulkTranslateRejectsSameLanguagePair(): void {
 		$result = $this->bulkService->translateObject(
 			object: $this->testObject,
-			fromLang: 'nl',
-			toLang: 'nl'
+			fromLong: 'nl',
+			toLong: 'nl'
 		);
 		$this->assertSame([], $result['translated']);
 		$this->assertArrayHasKey('_global', $result['skipped']);

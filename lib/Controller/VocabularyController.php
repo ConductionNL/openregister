@@ -125,12 +125,12 @@ class VocabularyController extends Controller {
 			return $this->notFound();
 		}
 
-		$concept = $this->findOneBy(schema: self::SCHEMA_CONCEPT, filters: ['uri' => $uri]);
-		if ($concept === null) {
+		$draft = $this->findOneBy(schema: self::SCHEMA_CONCEPT, filters: ['uri' => $uri]);
+		if ($draft === null) {
 			return $this->notFound();
 		}
 
-		return new JSONResponse($concept->jsonSerialize());
+		return new JSONResponse($draft->jsonSerialize());
 	}//end resolveByUri()
 
 	/**
@@ -160,18 +160,18 @@ class VocabularyController extends Controller {
 			return $this->notFound();
 		}
 
-		$concept = $this->findOneBy(
+		$draft = $this->findOneBy(
 			schema: self::SCHEMA_CONCEPT,
 			filters: [
 				'inScheme' => $schemeUuid,
 				'notation' => $notation,
 			]
 		);
-		if ($concept === null) {
+		if ($draft === null) {
 			return $this->notFound();
 		}
 
-		return new JSONResponse($concept->jsonSerialize());
+		return new JSONResponse($draft->jsonSerialize());
 	}//end resolveByNotation()
 
 	/**

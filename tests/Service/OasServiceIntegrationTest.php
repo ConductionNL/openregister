@@ -770,10 +770,10 @@ class OasServiceIntegrationTest extends TestCase {
 
 		foreach ($result['paths'] as $path => $operations) {
 			if (str_contains($path, '/objects/') && !str_contains($path, '{id}') && isset($operations['get'])) {
-				$getOp = $operations['get'];
-				$this->assertArrayHasKey('parameters', $getOp);
+				$getOn = $operations['get'];
+				$this->assertArrayHasKey('parameters', $getOn);
 
-				$paramNames = array_column($getOp['parameters'], 'name');
+				$paramNames = array_column($getOn['parameters'], 'name');
 				$this->assertContains('_search', $paramNames, 'Collection should have _search parameter');
 				$this->assertContains('_extend', $paramNames, 'Collection should have _extend parameter');
 				return;
@@ -915,10 +915,10 @@ class OasServiceIntegrationTest extends TestCase {
 			if (str_contains($path, '{id}') && isset($operations['get'])
 				&& !str_contains($path, 'audit') && !str_contains($path, 'files') && !str_contains($path, 'lock')
 			) {
-				$getOp = $operations['get'];
-				$this->assertArrayHasKey('responses', $getOp);
-				$this->assertArrayHasKey('200', $getOp['responses']);
-				$this->assertArrayHasKey('404', $getOp['responses']);
+				$getOn = $operations['get'];
+				$this->assertArrayHasKey('responses', $getOn);
+				$this->assertArrayHasKey('200', $getOn['responses']);
+				$this->assertArrayHasKey('404', $getOn['responses']);
 				return;
 			}
 		}
@@ -938,10 +938,10 @@ class OasServiceIntegrationTest extends TestCase {
 			if (str_contains($path, '{id}') && isset($operations['delete'])
 				&& !str_contains($path, 'audit') && !str_contains($path, 'files') && !str_contains($path, 'lock')
 			) {
-				$deleteOp = $operations['delete'];
-				$this->assertArrayHasKey('responses', $deleteOp);
-				$this->assertArrayHasKey('204', $deleteOp['responses']);
-				$this->assertArrayHasKey('404', $deleteOp['responses']);
+				$deleteOn = $operations['delete'];
+				$this->assertArrayHasKey('responses', $deleteOn);
+				$this->assertArrayHasKey('204', $deleteOn['responses']);
+				$this->assertArrayHasKey('404', $deleteOn['responses']);
 				return;
 			}
 		}
@@ -959,9 +959,9 @@ class OasServiceIntegrationTest extends TestCase {
 
 		foreach ($result['paths'] as $path => $operations) {
 			if (str_contains($path, '/objects/') && !str_contains($path, '{id}') && isset($operations['post'])) {
-				$postOp = $operations['post'];
-				$this->assertArrayHasKey('requestBody', $postOp);
-				$this->assertTrue($postOp['requestBody']['required']);
+				$postOn = $operations['post'];
+				$this->assertArrayHasKey('requestBody', $postOn);
+				$this->assertTrue($postOn['requestBody']['required']);
 				return;
 			}
 		}

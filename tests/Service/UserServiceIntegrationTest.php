@@ -504,15 +504,15 @@ class UserServiceIntegrationTest extends TestCase {
 	public function testUpdateUserPropertiesFunctie(): void {
 		$this->assertNotNull($this->testUser, 'Test user should exist');
 
-		$data = ['functie' => 'Developer'];
+		$data = ['role' => 'Developer'];
 
 		$result = $this->service->updateUserProperties($this->testUser, $data);
 
 		$this->assertTrue($result['success']);
 
 		// Verify functie is stored in user config
-		$storedFunctie = $this->config->getUserValue($this->testUserId, 'core', 'functie', '');
-		$this->assertSame('Developer', $storedFunctie);
+		$storedRole = $this->config->getUserValue($this->testUserId, 'core', 'role', '');
+		$this->assertSame('Developer', $storedRole);
 	}
 
 	/**
@@ -561,11 +561,11 @@ class UserServiceIntegrationTest extends TestCase {
 		$this->assertNotNull($this->testUser, 'Test user should exist');
 
 		// Set functie directly in config
-		$this->config->setUserValue($this->testUserId, 'core', 'functie', 'Tester');
+		$this->config->setUserValue($this->testUserId, 'core', 'role', 'Tester');
 
 		$result = $this->service->buildUserDataArray($this->testUser);
 
-		$this->assertArrayHasKey('functie', $result);
+		$this->assertArrayHasKey('role', $result);
 	}
 
 	/**

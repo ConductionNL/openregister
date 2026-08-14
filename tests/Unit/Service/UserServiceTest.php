@@ -706,21 +706,21 @@ class UserServiceTest extends TestCase {
 
 		$result = $this->service->buildUserDataArray($user);
 
-		// 'functie' should be set from 'role' when not separately provided
-		$this->assertSame('Ontwikkelaar', $result['functie']);
+		// 'role' should be set from 'role' when not separately provided
+		$this->assertSame('Ontwikkelaar', $result['role']);
 	}
 
 	public function testBuildUserDataArrayFunctieFallbackFromConfig(): void {
 		$user = $this->createUserMock();
 
 		// No role in AccountManager, but functie in user config
-		$this->setupBuildMocks(configMap: ['functie' => 'Manager']);
+		$this->setupBuildMocks(configMap: ['role' => 'Manager']);
 
 		$result = $this->service->buildUserDataArray($user);
 
-		// 'role' comes from config fallback, and 'functie' mirrors it
+		// 'role' comes from config fallback, and 'role' mirrors it
 		$this->assertSame('Manager', $result['role']);
-		$this->assertSame('Manager', $result['functie']);
+		$this->assertSame('Manager', $result['role']);
 	}
 
 	public function testBuildUserDataArrayCustomNameFieldsFromConfig(): void {
@@ -1303,19 +1303,19 @@ class UserServiceTest extends TestCase {
 		$account = $this->createAccountMock();
 		$this->accountManager->method('getAccount')->willReturn($account);
 
-		$functieCaptured = false;
+		$roleCaptured = false;
 		$this->config->method('getUserValue')->willReturn('');
 		$this->config->method('setUserValue')->willReturnCallback(
-			function ($uid, $app, $key, $value) use (&$functieCaptured) {
-				if ($key === 'functie' && $value === 'Beheerder') {
-					$functieCaptured = true;
+			function ($uid, $app, $key, $value) use (&$roleCaptured) {
+				if ($key === 'role' && $value === 'Beheerder') {
+					$roleCaptured = true;
 				}
 			}
 		);
 
-		$this->service->updateUserProperties($user, ['functie' => 'Beheerder']);
+		$this->service->updateUserProperties($user, ['role' => 'Beheerder']);
 
-		$this->assertTrue($functieCaptured, 'functie should be stored in user config');
+		$this->assertTrue($roleCaptured, 'functie should be stored in user config');
 	}
 
 	public function testUpdateUserPropertiesOrgSwitchInvalidatesCacheAndRefetches(): void {
@@ -1645,7 +1645,7 @@ class UserServiceTest extends TestCase {
 		$this->config->method('getUserValue')->willReturn('');
 
 		$service = $this->freshService();
-		$service->updateUserProperties($user, ['functie' => 'Beheerder']);
+		$service->updateUserProperties($user, ['role' => 'Beheerder']);
 	}
 
 	/**
@@ -1695,7 +1695,7 @@ class UserServiceTest extends TestCase {
 
 		$result = $this->service->buildUserDataArray($user);
 
-		$this->assertNull($result['functie']);
+		$this->assertNull($result['role']);
 	}
 
 	/**

@@ -158,7 +158,7 @@ class TmloServiceTest extends TestCase {
 		$schema->method('getConfiguration')
 			->willReturn([
 				'tmloDefaults' => [
-					'classificatie' => '1.1',
+					'classification' => '1.1',
 					'archiefnominatie' => 'vernietigen',
 					'bewaarTermijn' => 'P7Y',
 				],
@@ -169,7 +169,7 @@ class TmloServiceTest extends TestCase {
 		$result = $this->service->populateDefaults($object, $register, $schema);
 		$tmlo = $result->getTmlo();
 
-		$this->assertEquals('1.1', $tmlo['classificatie']);
+		$this->assertEquals('1.1', $tmlo['classification']);
 		$this->assertEquals('vernietigen', $tmlo['archiefnominatie']);
 		$this->assertEquals('P7Y', $tmlo['bewaarTermijn']);
 		$this->assertEquals('actief', $tmlo['archiefstatus']);
@@ -189,17 +189,17 @@ class TmloServiceTest extends TestCase {
 		$schema->method('getConfiguration')
 			->willReturn([
 				'tmloDefaults' => [
-					'classificatie' => '1.1',
+					'classification' => '1.1',
 				],
 			]);
 
 		$object = new ObjectEntity();
-		$object->setTmlo(['classificatie' => '2.2']);
+		$object->setTmlo(['classification' => '2.2']);
 
 		$result = $this->service->populateDefaults($object, $register, $schema);
 		$tmlo = $result->getTmlo();
 
-		$this->assertEquals('2.2', $tmlo['classificatie']);
+		$this->assertEquals('2.2', $tmlo['classification']);
 	}//end testPopulateDefaultsDoesNotOverrideExplicitValues()
 
 	/**
@@ -350,7 +350,7 @@ class TmloServiceTest extends TestCase {
 		);
 
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('classificatie', $errors[0]);
+		$this->assertStringContainsString('classification', $errors[0]);
 	}//end testValidateTransitionToOvergebrachtRequiresFields()
 
 	/**
@@ -364,7 +364,7 @@ class TmloServiceTest extends TestCase {
 				'archiefstatus' => 'vernietigd',
 				'archiefnominatie' => 'blijvend_bewaren',
 				'archiefactiedatum' => '2025-01-01',
-				'classificatie' => '1.1',
+				'classification' => '1.1',
 				'vernietigingsCategorie' => 'cat1',
 			],
 			'semi_statisch'
@@ -399,7 +399,7 @@ class TmloServiceTest extends TestCase {
 				'archiefstatus' => 'overgebracht',
 				'archiefnominatie' => 'blijvend_bewaren',
 				'archiefactiedatum' => '2025-06-01',
-				'classificatie' => '1.1',
+				'classification' => '1.1',
 			],
 			'semi_statisch'
 		);
@@ -413,7 +413,7 @@ class TmloServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCalculateArchiefactiedatumValid(): void {
-		$result = $this->service->calculateArchiefactiedatum('P7Y');
+		$result = $this->service->calculateArchiveActionDate('P7Y');
 		$this->assertNotNull($result);
 
 		$expected = (new \DateTime())->modify('+7 years')->format('Y-m-d');
@@ -426,7 +426,7 @@ class TmloServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testCalculateArchiefactiedatumInvalid(): void {
-		$result = $this->service->calculateArchiefactiedatum('invalid');
+		$result = $this->service->calculateArchiveActionDate('invalid');
 		$this->assertNull($result);
 	}//end testCalculateArchiefactiedatumInvalid()
 
@@ -440,14 +440,14 @@ class TmloServiceTest extends TestCase {
 		$schema->method('getConfiguration')
 			->willReturn([
 				'tmloDefaults' => [
-					'classificatie' => '1.1',
+					'classification' => '1.1',
 					'bewaarTermijn' => 'P5Y',
 				],
 			]);
 
 		$defaults = $this->service->getSchemaDefaults($schema);
 
-		$this->assertEquals('1.1', $defaults['classificatie']);
+		$this->assertEquals('1.1', $defaults['classification']);
 		$this->assertEquals('P5Y', $defaults['bewaarTermijn']);
 	}//end testGetSchemaDefaults()
 

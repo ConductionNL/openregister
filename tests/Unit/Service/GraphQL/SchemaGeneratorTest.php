@@ -163,8 +163,8 @@ class SchemaGeneratorTest extends TestCase {
 		$graphqlSchema = $this->generator->generate();
 		$queryType = $graphqlSchema->getQueryType();
 
-		$meldingen = $queryType->getField('meldingen');
-		$this->assertStringContainsString('Connection', $meldingen->getType()->name);
+		$reports = $queryType->getField('meldingen');
+		$this->assertStringContainsString('Connection', $reports->getType()->name);
 	}
 
 	public function testGeneratesMutationFields(): void {

@@ -1933,8 +1933,8 @@ class FileService {
 	 * @param Node $node The file node to anonymize.
 	 * @param array $entities Array of detected entities with 'text' and 'key' fields.
 	 * @param string $scope Placeholder-numbering scope: 'document' (default) or 'dossier'.
-	 * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
-	 *                                back to the file's parent folder.
+	 * @param string|null $fileKey Stable folder id of the dossier (per-dossier scope); null falls
+	 *                             back to the file's parent folder.
 	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
 	 *                                     option — null/absent = auto (preserve iff the input is a
 	 *                                     tagged PDF), true = attempt, false = skip but still measure.
@@ -1949,14 +1949,14 @@ class FileService {
 		Node $node,
 		array $entities,
 		string $scope = 'document',
-		?string $dossierKey = null,
+		?string $fileKey = null,
 		?bool $preserveStructure = null,
 	): Node {
 		return $this->documentProcessingHandler->anonymizeDocument(
 			node: $node,
 			entities: $entities,
 			scope: $scope,
-			dossierKey: $dossierKey,
+			fileKey: $fileKey,
 			preserveStructure: $preserveStructure
 		);
 	}//end anonymizeDocument()
@@ -2194,15 +2194,15 @@ class FileService {
 
 		$dotPos = strrpos($desiredName, '.');
 		// No extension or hidden file (".env"); append suffix to whole name.
-		$stem = $desiredName;
+		$vote = $desiredName;
 		$ext = '';
 		if ($dotPos !== false && $dotPos !== 0) {
-			$stem = substr($desiredName, 0, $dotPos);
+			$vote = substr($desiredName, 0, $dotPos);
 			$ext = substr($desiredName, $dotPos);
 		}
 
 		for ($i = 1; $i <= 999; $i++) {
-			$candidate = $stem . ' (' . $i . ')' . $ext;
+			$candidate = $vote . ' (' . $i . ')' . $ext;
 			if ($folder->nodeExists($candidate) === false) {
 				return $candidate;
 			}

@@ -337,9 +337,9 @@ class DocumentProcessingHandler {
 	 * @param string $scope Placeholder-numbering scope: 'document' (default — counter restarts
 	 *                      per run, no persistence) or 'dossier' (counter consistent across all
 	 *                      files in the dossier folder, recomputed deterministically).
-	 * @param string|null $dossierKey Stable folder id identifying the dossier when $scope='dossier'.
-	 *                                When absent (and scope='dossier') the file's parent folder is used.
-	 *                                Ignored for the per-document scope.
+	 * @param string|null $fileKey Stable folder id identifying the dossier when $scope='dossier'.
+	 *                             When absent (and scope='dossier') the file's parent folder is used.
+	 *                             Ignored for the per-document scope.
 	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
 	 *                                     option forwarded to {@see replaceWords()} — null/absent = auto
 	 *                                     (preserve iff the input is a tagged PDF), true = attempt,
@@ -360,7 +360,7 @@ class DocumentProcessingHandler {
 		Node $node,
 		array $entities,
 		string $scope = 'document',
-		?string $dossierKey = null,
+		?string $fileKey = null,
 		?bool $preserveStructure = null,
 	): File {
 		// Reset any report/residuals/placeholder-map/structure-result from a
@@ -412,7 +412,7 @@ class DocumentProcessingHandler {
 		// folder.
 		$translator = PlaceholderIdTranslator::perDocument();
 		if ($scope === 'dossier') {
-			$translator = $this->recomputeDossierTranslator(node: $node, dossierKey: $dossierKey);
+			$translator = $this->recomputeFileTranslator(node: $node, fileKey: $fileKey);
 		}
 
 		// Build replacements array from entities.
@@ -594,7 +594,7 @@ class DocumentProcessingHandler {
 	 * recomputing the `e.id → local_number` map from the dossier's stored
 	 * entity-relation rows (Decision 3 — no table, no migration).
 	 *
-	 * Resolves the dossier folder from $dossierKey (a stable folder id) or,
+	 * Resolves the dossier folder from $fileKey (a stable folder id) or,
 	 * when absent, the file's parent folder (Decision 2 fallback). Enumerates
 	 * the folder's descendant files (recursively), loads their entity rows in
 	 * one query (`findEntityIdsByValueForFiles`), and ranks distinct
@@ -607,12 +607,12 @@ class DocumentProcessingHandler {
 	 * Per ADR-005 nothing here logs the entity value alongside its number.
 	 *
 	 * @param Node $node The file being anonymised.
-	 * @param string|null $dossierKey Stable folder id, or null to use the parent folder.
+	 * @param string|null $fileKey Stable folder id, or null to use the parent folder.
 	 *
 	 * @return PlaceholderIdTranslator Seeded with the dossier map.
 	 */
-	private function recomputeDossierTranslator(Node $node, ?string $dossierKey): PlaceholderIdTranslator {
-		$folder = $this->resolveDossierFolder(node: $node, dossierKey: $dossierKey);
+	private function recomputeFileTranslator(Node $node, ?string $fileKey): PlaceholderIdTranslator {
+		$folder = $this->resolveFileFolder(node: $node, fileKey: $fileKey);
 		if ($folder === null) {
 			return PlaceholderIdTranslator::perDocument();
 		}
@@ -630,7 +630,7 @@ class DocumentProcessingHandler {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'dossier_key' => $dossierKey,
+				'dossier_key' => $fileKey,
 				'folder_id' => $folder->getId(),
 				'file_count' => count($fileIds),
 				'row_count' => count($rows),
@@ -642,20 +642,20 @@ class DocumentProcessingHandler {
 
 	/**
 	 * Resolve the dossier folder for per-dossier numbering: prefer the
-	 * explicit $dossierKey (a stable folder id), else fall back to the file's
+	 * explicit $fileKey (a stable folder id), else fall back to the file's
 	 * parent folder (Decision 2). Returns null when neither resolves to a
 	 * usable folder (caller then degrades to per-document).
 	 *
 	 * @param Node $node The file being anonymised.
-	 * @param string|null $dossierKey Stable folder id, or null for the parent-folder fallback.
+	 * @param string|null $fileKey Stable folder id, or null for the parent-folder fallback.
 	 *
 	 * @return Folder|null The dossier folder, or null when unresolved.
 	 */
-	private function resolveDossierFolder(Node $node, ?string $dossierKey): ?Folder {
+	private function resolveFileFolder(Node $node, ?string $fileKey): ?Folder {
 		// Explicit, authoritative signal: the folder id.
-		if ($dossierKey !== null && trim($dossierKey) !== '' && ctype_digit(trim($dossierKey)) === true) {
+		if ($fileKey !== null && trim($fileKey) !== '' && ctype_digit(trim($fileKey)) === true) {
 			try {
-				$matches = $this->rootFolder->getById((int)trim($dossierKey));
+				$matches = $this->rootFolder->getById((int)trim($fileKey));
 				foreach ($matches as $candidate) {
 					if ($candidate instanceof Folder) {
 						return $candidate;

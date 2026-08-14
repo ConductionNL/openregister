@@ -224,14 +224,14 @@ class DestructionCheckJob extends TimedJob {
 
 					$retention = $object->getRetention() ?? [];
 					$status = $retention['archiefstatus'] ?? null;
-					$actieDate = $retention['archiefactiedatum'] ?? null;
+					$actionDate = $retention['archiefactiedatum'] ?? null;
 					$nominatie = $retention['archiefnominatie'] ?? null;
 
-					if ($actieDate === null || $status !== 'nog_te_archiveren') {
+					if ($actionDate === null || $status !== 'nog_te_archiveren') {
 						continue;
 					}
 
-					if ($actieDate <= $today || $actieDate > $threshold) {
+					if ($actionDate <= $today || $actionDate > $threshold) {
 						continue;
 					}
 
@@ -257,8 +257,8 @@ class DestructionCheckJob extends TimedJob {
 						uuid: $uuid,
 						subject: $subject,
 						title: $object->getTitle() ?? $uuid,
-						actieDate: $actieDate,
-						classificatie: $retention['classificatie'] ?? null,
+						actionDate: $actionDate,
+						classification: $retention['classification'] ?? null,
 						logger: $logger
 					);
 
@@ -289,8 +289,8 @@ class DestructionCheckJob extends TimedJob {
 	 * @param string $uuid Object UUID
 	 * @param string $subject Notification subject
 	 * @param string $title Object title
-	 * @param string $actieDate Archiefactiedatum
-	 * @param string|null $classificatie Selectielijst category
+	 * @param string $actionDate Archiefactiedatum
+	 * @param string|null $classification Selectielijst category
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -302,8 +302,8 @@ class DestructionCheckJob extends TimedJob {
 		string $uuid,
 		string $subject,
 		string $title,
-		string $actieDate,
-		?string $classificatie,
+		string $actionDate,
+		?string $classification,
 		LoggerInterface $logger,
 	): void {
 		try {
@@ -326,8 +326,8 @@ class DestructionCheckJob extends TimedJob {
 						[
 							'subject' => $subject,
 							'title' => $title,
-							'actieDate' => $actieDate,
-							'classificatie' => $classificatie ?? '',
+							'actieDate' => $actionDate,
+							'classification' => $classification ?? '',
 						]
 					);
 				$notificationManager->notify($notification);

@@ -87,9 +87,9 @@ class VocabularyControllerTest extends TestCase {
 	public function testResolveByUriReturnsConceptWhenFound(): void {
 		$this->params = ['uri' => 'https://example.org/vocab/x'];
 
-		$concept = $this->entity('uuid-1', ['uri' => 'https://example.org/vocab/x', 'prefLabel' => ['nl' => 'X']]);
+		$draft = $this->entity('uuid-1', ['uri' => 'https://example.org/vocab/x', 'prefLabel' => ['nl' => 'X']]);
 
-		$this->objectService->method('findAll')->willReturn([$concept]);
+		$this->objectService->method('findAll')->willReturn([$draft]);
 
 		$response = $this->controller->resolveByUri();
 
@@ -135,15 +135,15 @@ class VocabularyControllerTest extends TestCase {
 		$this->params = ['scheme' => 'https://example.org/vocab/scheme', 'notation' => 'c_1'];
 
 		$scheme = $this->entity('scheme-uuid', ['uri' => 'https://example.org/vocab/scheme']);
-		$concept = $this->entity('uuid-1', ['uri' => 'https://example.org/vocab/c1', 'notation' => 'c_1']);
+		$draft = $this->entity('uuid-1', ['uri' => 'https://example.org/vocab/c1', 'notation' => 'c_1']);
 
 		$this->objectService->method('findAll')->willReturnCallback(
-			function (array $config) use ($scheme, $concept) {
+			function (array $config) use ($scheme, $draft) {
 				if ($config['schema'] === VocabularyImportService::SCHEMA_SCHEME) {
 					return [$scheme];
 				}
 
-				return [$concept];
+				return [$draft];
 			}
 		);
 

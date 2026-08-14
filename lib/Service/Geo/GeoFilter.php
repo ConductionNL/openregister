@@ -160,7 +160,7 @@ class GeoFilter {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
 	public static function fromWithinGeometry(array $geometry, ?string $property = null): self {
-		self::assertGeoJsonGeometry(geometry: $geometry, opName: 'within');
+		self::assertGeoJsonGeometry(geometry: $geometry, onName: 'within');
 		return new self(self::TYPE_WITHIN, ['geometry' => $geometry], $property);
 	}//end fromWithinGeometry()
 
@@ -177,7 +177,7 @@ class GeoFilter {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
 	public static function fromIntersectsGeometry(array $geometry, ?string $property = null): self {
-		self::assertGeoJsonGeometry(geometry: $geometry, opName: 'intersects');
+		self::assertGeoJsonGeometry(geometry: $geometry, onName: 'intersects');
 		return new self(self::TYPE_INTERSECTS, ['geometry' => $geometry], $property);
 	}//end fromIntersectsGeometry()
 
@@ -185,7 +185,7 @@ class GeoFilter {
 	 * Validate that a value looks like a GeoJSON geometry.
 	 *
 	 * @param mixed $geometry The candidate.
-	 * @param string $opName Operator name for error context.
+	 * @param string $onName Operator name for error context.
 	 *
 	 * @return void
 	 *
@@ -193,20 +193,20 @@ class GeoFilter {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
-	private static function assertGeoJsonGeometry(mixed $geometry, string $opName): void {
+	private static function assertGeoJsonGeometry(mixed $geometry, string $onName): void {
 		if (is_array($geometry) === false) {
-			throw new InvalidArgumentException("{$opName} geometry MUST be a GeoJSON object");
+			throw new InvalidArgumentException("{$onName} geometry MUST be a GeoJSON object");
 		}
 
 		$type = $geometry['type'] ?? null;
 		if (in_array($type, ['Polygon', 'MultiPolygon'], true) === false) {
 			throw new InvalidArgumentException(
-				"{$opName} geometry type MUST be Polygon or MultiPolygon (got: " . var_export($type, true) . ')'
+				"{$onName} geometry type MUST be Polygon or MultiPolygon (got: " . var_export($type, true) . ')'
 			);
 		}
 
 		if (isset($geometry['coordinates']) === false || is_array($geometry['coordinates']) === false) {
-			throw new InvalidArgumentException("{$opName} geometry MUST have a coordinates array");
+			throw new InvalidArgumentException("{$onName} geometry MUST have a coordinates array");
 		}
 
 	}//end assertGeoJsonGeometry()

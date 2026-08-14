@@ -144,14 +144,14 @@ class TranslationProjectionService {
 
 				if (is_array($value) === true) {
 					// Language-keyed shape: {nl: "...", en: "..."}.
-					foreach ($value as $lang => $langValue) {
-						if (is_string($lang) === false || $lang === '') {
+					foreach ($value as $long => $longValue) {
+						if (is_string($long) === false || $long === '') {
 							continue;
 						}
 
-						$stringValue = $this->valueToString(value: $langValue);
+						$stringValue = $this->valueToString(value: $longValue);
 						if ($stringValue !== null && $stringValue !== '') {
-							$desired[$property][$lang] = $stringValue;
+							$desired[$property][$long] = $stringValue;
 						}
 					}
 				} elseif (is_string($value) === true && $value !== '') {
@@ -162,20 +162,20 @@ class TranslationProjectionService {
 
 			// Upsert every desired slot.
 			$upsertedKeys = [];
-			foreach ($desired as $property => $byLang) {
+			foreach ($desired as $property => $byLong) {
 				$sourceLanguage = $sourceLanguages[$property] ?? $defaultLanguage;
-				foreach ($byLang as $lang => $stringValue) {
+				foreach ($byLong as $long => $stringValue) {
 					$this->translationMapper->upsert(
 						objectUuid: $uuid,
 						property: $property,
-						language: $lang,
+						language: $long,
 						value: $stringValue,
 						status: null,
 						// Preserve existing or default to draft on insert.
 						translator: $translator,
 						sourceLanguage: $sourceLanguage
 					);
-					$upsertedKeys[] = $property . '|' . $lang;
+					$upsertedKeys[] = $property . '|' . $long;
 				}
 			}
 

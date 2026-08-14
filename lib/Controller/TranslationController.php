@@ -266,8 +266,8 @@ class TranslationController extends Controller {
 
 		$result = $this->bulkService->translateObject(
 			object: $object,
-			fromLang: $from,
-			toLang: $to,
+			fromLong: $from,
+			toLong: $to,
 			properties: $properties
 		);
 

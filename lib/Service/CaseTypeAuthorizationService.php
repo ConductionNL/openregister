@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity) ZGW scope and matrix mapping branch per scope verb and per principal kind.
  */
-class ZaaktypeAuthorizationService {
+class CaseTypeAuthorizationService {
 
 	/**
 	 * Canonical ZGW vertrouwelijkheidaanduiding (confidentiality) levels, ordered

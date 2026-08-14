@@ -114,14 +114,14 @@ class FlowProvider extends AbstractIntegrationProvider {
 		$out = [];
 		foreach ($links as $link) {
 			$operationId = (int)$link->getOperationId();
-			$opRow = $this->fetchOperationRow(operationId: $operationId);
+			$onRow = $this->fetchOperationRow(operationId: $operationId);
 
-			$name = (string)($opRow['name'] ?? $link->getOperationName() ?? '');
-			$class = (string)($opRow['class'] ?? $link->getOperationClass() ?? '');
-			$entity = (string)($opRow['entity'] ?? $link->getEntityType() ?? '');
-			$operation = (string)($opRow['operation'] ?? '');
-			$events = $this->decodeJsonField(value: $opRow['events'] ?? null);
-			$checks = $this->decodeJsonField(value: $opRow['checks'] ?? null);
+			$name = (string)($onRow['name'] ?? $link->getOperationName() ?? '');
+			$class = (string)($onRow['class'] ?? $link->getOperationClass() ?? '');
+			$entity = (string)($onRow['entity'] ?? $link->getEntityType() ?? '');
+			$operation = (string)($onRow['operation'] ?? '');
+			$events = $this->decodeJsonField(value: $onRow['events'] ?? null);
+			$checks = $this->decodeJsonField(value: $onRow['checks'] ?? null);
 
 			$out[] = [
 				'id' => (string)$operationId,
@@ -131,10 +131,10 @@ class FlowProvider extends AbstractIntegrationProvider {
 				'operation' => $operation,
 				'events' => $events,
 				'checks' => $checks,
-				'enabled' => $opRow !== null,
+				'enabled' => $onRow !== null,
 				'url' => '/index.php/settings/admin/workflow#' . $operationId,
 				'linkId' => $link->getId(),
-				'data' => $opRow ?? [],
+				'data' => $onRow ?? [],
 			];
 		}//end foreach
 

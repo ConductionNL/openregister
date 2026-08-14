@@ -88,7 +88,7 @@ class ContactMatchingService {
 	 * @var array<string>
 	 */
 	private const ORG_PROPERTY_PATTERNS = [
-		'organisatie',
+		'organisation',
 		'organization',
 		'organisation',
 		'bedrijf',

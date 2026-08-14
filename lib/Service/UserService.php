@@ -253,8 +253,9 @@ class UserService {
 		$result['firstName'] = $result['firstName'] ?? null;
 		$result['lastName'] = $result['lastName'] ?? null;
 		$result['middleName'] = $result['middleName'] ?? null;
-		// 'functie' is the Dutch term for job title/role - map from 'role' property.
-		$result['functie'] = $result['functie'] ?? $additionalInfo['role'] ?? null;
+		// The Dutch alias `functie` used to be exposed alongside Nextcloud's own
+		// `role`; both are `role` now, so the alias assignment is redundant.
+		$result['role'] = $result['role'] ?? $additionalInfo['role'] ?? null;
 
 		// Add organization information in the format expected by the frontend.
 		// Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
@@ -397,7 +398,7 @@ class UserService {
 			'biography',
 			'language',
 			'locale',
-			'functie',
+			'role',
 		];
 
 		foreach ($fieldsToCheck as $field) {
@@ -691,11 +692,21 @@ class UserService {
 			$additionalInfo['organisation'] = $organizationUuid;
 		}
 
-		// Fallback: check for 'functie' in user config if not found via AccountManager's 'role'.
+		// Fallback: check user config if AccountManager's 'role' is empty.
+		//
+		// `functie` here is not a variable name, it is a STORED KEY — the preference
+		// row oc_preferences(appid='core', configkey='functie'). Renaming the read
+		// does not rename what is already in the table, so reading only the new key
+		// makes every job title saved before this release disappear, with no error.
+		// Read the new key first, then fall back to the old one.
 		if (empty($additionalInfo['role']) === true) {
-			$functie = $this->config->getUserValue($userId, 'core', 'functie', '');
-			if (empty($functie) === false) {
-				$additionalInfo['role'] = $functie;
+			$role = $this->config->getUserValue($userId, 'core', 'role', '');
+			if (empty($role) === true) {
+				$role = $this->config->getUserValue($userId, 'core', 'functie', '');
+			}
+
+			if (empty($role) === false) {
+				$additionalInfo['role'] = $role;
 			}
 		}
 
@@ -816,7 +827,6 @@ class UserService {
 				'fediverse' => IAccountManager::PROPERTY_FEDIVERSE,
 				'organisation' => IAccountManager::PROPERTY_ORGANISATION,
 				'role' => IAccountManager::PROPERTY_ROLE,
-				'functie' => IAccountManager::PROPERTY_ROLE,
 				'headline' => IAccountManager::PROPERTY_HEADLINE,
 				'biography' => IAccountManager::PROPERTY_BIOGRAPHY,
 			];
@@ -878,9 +888,9 @@ class UserService {
 			$this->setCustomNameFields(user: $user, nameFields: $nameFields);
 		}
 
-		// Store 'functie' in user config as fallback for the /me endpoint.
-		if (isset($data['functie']) === true) {
-			$this->config->setUserValue($user->getUID(), 'core', 'functie', (string)$data['functie']);
+		// Store 'role' in user config as fallback for the /me endpoint.
+		if (isset($data['role']) === true) {
+			$this->config->setUserValue($user->getUID(), 'core', 'role', (string)$data['role']);
 		}
 	}//end updateProfileProperties()
 

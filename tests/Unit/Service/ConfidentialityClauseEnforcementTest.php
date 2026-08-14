@@ -3,7 +3,7 @@
 /**
  * Confidentiality clause: builder output is enforced by the engine.
  *
- * `ZaaktypeAuthorizationService::buildConfidentialityMatch()` is a BUILDER — it
+ * `CaseTypeAuthorizationService::buildConfidentialityMatch()` is a BUILDER — it
  * emits an `$in` clause that the existing RBAC engine is supposed to enforce.
  * Its own unit test proves the clause has the right SHAPE. Nothing proved the
  * engine actually honours it, and the two live handlers contain no
@@ -37,7 +37,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\OperatorEvaluator;
-use OCA\OpenRegister\Service\ZaaktypeAuthorizationService;
+use OCA\OpenRegister\Service\CaseTypeAuthorizationService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -52,9 +52,9 @@ class ConfidentialityClauseEnforcementTest extends TestCase {
 	/**
 	 * The clause builder.
 	 *
-	 * @var ZaaktypeAuthorizationService
+	 * @var CaseTypeAuthorizationService
 	 */
-	private ZaaktypeAuthorizationService $builder;
+	private CaseTypeAuthorizationService $builder;
 
 	/**
 	 * The evaluator the RBAC match path uses.
@@ -70,7 +70,7 @@ class ConfidentialityClauseEnforcementTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->builder = new ZaaktypeAuthorizationService();
+		$this->builder = new CaseTypeAuthorizationService();
 		$this->evaluator = new OperatorEvaluator($this->createMock(LoggerInterface::class));
 
 	}//end setUp()

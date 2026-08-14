@@ -194,8 +194,8 @@ class VocabularyImportService {
 			$prefLabel = [];
 			foreach ($rowAssoc as $column => $value) {
 				if (str_starts_with($column, 'prefLabel_') === true && trim((string)$value) !== '') {
-					$lang = substr($column, strlen('prefLabel_'));
-					$prefLabel[$lang] = trim((string)$value);
+					$long = substr($column, strlen('prefLabel_'));
+					$prefLabel[$long] = trim((string)$value);
 				}
 			}
 
@@ -447,7 +447,7 @@ class VocabularyImportService {
 		}//end foreach
 
 		foreach ($uuidByUri as $uuid) {
-			$this->applyRelationFieldsToConcept(
+			$this->applyRelationFieldsToDraft(
 				uuid: $uuid,
 				broader: array_values(array_unique($broaderOf[$uuid] ?? [])),
 				narrower: array_values(array_unique($narrowerOf[$uuid] ?? [])),
@@ -496,7 +496,7 @@ class VocabularyImportService {
 	 *
 	 * @return void
 	 */
-	private function applyRelationFieldsToConcept(string $uuid, array $broader, array $narrower, array $related): void {
+	private function applyRelationFieldsToDraft(string $uuid, array $broader, array $narrower, array $related): void {
 		$existing = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_CONCEPT);
 		if ($existing === null) {
 			return;
@@ -763,16 +763,16 @@ class VocabularyImportService {
 		}
 
 		if (isset($value['@value']) === true) {
-			$lang = (string)($value['@language'] ?? 'nl');
-			return [$lang => (string)$value['@value']];
+			$long = (string)($value['@language'] ?? 'nl');
+			return [$long => (string)$value['@value']];
 		}
 
 		$map = [];
 		if (array_is_list($value) === true) {
 			foreach ($value as $item) {
 				if (is_array($item) === true && isset($item['@value']) === true) {
-					$lang = (string)($item['@language'] ?? 'nl');
-					$map[$lang] = (string)$item['@value'];
+					$long = (string)($item['@language'] ?? 'nl');
+					$map[$long] = (string)$item['@value'];
 				} elseif (is_string($item) === true && trim($item) !== '') {
 					$map['nl'] = $item;
 				}
@@ -781,9 +781,9 @@ class VocabularyImportService {
 			return $map;
 		}
 
-		foreach ($value as $lang => $label) {
+		foreach ($value as $long => $label) {
 			if (is_string($label) === true && trim($label) !== '') {
-				$map[(string)$lang] = $label;
+				$map[(string)$long] = $label;
 			}
 		}
 

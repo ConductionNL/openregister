@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for ZaaktypeAuthorizationService — the configuration + ZGW mapping layer
+ * Tests for CaseTypeAuthorizationService — the configuration + ZGW mapping layer
  * for zaaktype-scoped authorization (rbac-zaaktype).
  *
  * Verifies vertrouwelijkheidaanduiding ordinal ordering, clearance comparison,
@@ -17,17 +17,17 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Service\ZaaktypeAuthorizationService;
+use OCA\OpenRegister\Service\CaseTypeAuthorizationService;
 use PHPUnit\Framework\TestCase;
 
 /**
  * VNG-compliance unit coverage for the zaaktype authorization config layer.
  */
-class ZaaktypeAuthorizationServiceTest extends TestCase {
-	private ZaaktypeAuthorizationService $service;
+class CaseTypeAuthorizationServiceTest extends TestCase {
+	private CaseTypeAuthorizationService $service;
 
 	protected function setUp(): void {
-		$this->service = new ZaaktypeAuthorizationService();
+		$this->service = new CaseTypeAuthorizationService();
 	}
 
 	// === Vertrouwelijkheidaanduiding ordinal ordering ===

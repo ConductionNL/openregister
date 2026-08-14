@@ -98,7 +98,7 @@ class ContactMatchingServiceTest extends TestCase {
 					'@self' => ['uuid' => 'abc-123', 'schema' => 1, 'register' => 2],
 					'email' => 'jan@example.nl',
 					'naam' => 'Jan de Vries',
-					'functie' => 'Beleidsmedewerker',
+					'role' => 'Beleidsmedewerker',
 				],
 			]);
 
@@ -263,7 +263,7 @@ class ContactMatchingServiceTest extends TestCase {
 				[
 					'@self' => ['uuid' => 'org-789', 'schema' => 1, 'register' => 1],
 					'schema' => ['title' => 'Organisaties'],
-					'organisatie' => 'Gemeente Tilburg',
+					'organisation' => 'Gemeente Tilburg',
 					'naam' => 'Gemeente Tilburg',
 				],
 			]);
@@ -399,7 +399,7 @@ class ContactMatchingServiceTest extends TestCase {
 				return [
 					[
 						'@self' => ['uuid' => 'org-uuid', 'schema' => 1, 'register' => 1],
-						'organisatie' => 'Gemeente Tilburg',
+						'organisation' => 'Gemeente Tilburg',
 						'naam' => 'Gemeente Tilburg',
 					],
 				];
@@ -455,7 +455,7 @@ class ContactMatchingServiceTest extends TestCase {
 		$object = [
 			'email' => 'jan@example.nl',
 			'naam' => 'Jan de Vries',
-			'functie' => 'Developer',
+			'role' => 'Developer',
 		];
 
 		// Should call remove once for the email property.
@@ -468,7 +468,7 @@ class ContactMatchingServiceTest extends TestCase {
 	public function testInvalidateCacheForObjectIgnoresNonEmailProperties(): void {
 		$object = [
 			'naam' => 'Jan de Vries',
-			'functie' => 'Developer',
+			'role' => 'Developer',
 		];
 
 		// Should not call remove for non-email properties.

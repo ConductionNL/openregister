@@ -163,13 +163,13 @@ class SeedVocabularyRegisterTest extends TestCase {
 		);
 		$this->assertCount(17, $concepts, 'Fresh install must serve all 17 Woo informatiecategorieën');
 
-		foreach ($concepts as $concept) {
+		foreach ($concepts as $draft) {
 			$this->assertStringStartsWith(
 				'https://identifier.overheid.nl/tooi/def/thes/kern/c_',
-				$concept['@id'],
+				$draft['@id'],
 				'Every informatiecategorie must carry a TOOI kern-thesaurus URI'
 			);
-			$this->assertArrayHasKey('nl', $this->firstPrefLabel($concept), 'Every concept needs a Dutch prefLabel');
+			$this->assertArrayHasKey('nl', $this->firstPrefLabel($draft), 'Every concept needs a Dutch prefLabel');
 		}
 	}//end testRunSeedsBothTooiFixturesWithSeventeenInformatiecategorieen()
 

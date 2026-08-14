@@ -237,7 +237,7 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->organisationService->method('getUserOrganisations')->willReturn([$org]);
 		$this->request->method('getParam')->willReturn(null);
 
-		$response = $this->controller->betrokkene();
+		$response = $this->controller->involvedParty();
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testExtractRequiresSubjectIdentifiers()
@@ -263,7 +263,7 @@ class ProcessingLogControllerTest extends TestCase {
 			]
 		);
 
-		$response = $this->controller->betrokkene();
+		$response = $this->controller->involvedParty();
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
 	}//end testExtractRangeTooWideIs422()

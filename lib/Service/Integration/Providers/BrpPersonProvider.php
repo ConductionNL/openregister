@@ -1,7 +1,7 @@
 <?php
 
 /**
- * BrpPersoonProvider — person lookup against the Dutch BRP (basisregistratie
+ * BrpPersonProvider — person lookup against the Dutch BRP (basisregistratie
  * personen) via the RvIG HaalCentraal Personen v2.0 API, exposed through the
  * IntegrationProvider contract.
  *
@@ -76,7 +76,7 @@ use Throwable;
  *   cause vocabulary; each is required for the degrade-don't-throw lookup
  *   surface (AD-23).
  */
-class BrpPersoonProvider extends AbstractIntegrationProvider {
+class BrpPersonProvider extends AbstractIntegrationProvider {
 
 	/**
 	 * OpenConnector source id this provider routes through.
@@ -320,7 +320,7 @@ class BrpPersoonProvider extends AbstractIntegrationProvider {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {
 			// Never include the BSN or the message body — only that a lookup failed.
-			$this->logger->warning('BrpPersoonProvider::lookupByBsn failed (transport).');
+			$this->logger->warning('BrpPersonProvider::lookupByBsn failed (transport).');
 			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
 		}
 

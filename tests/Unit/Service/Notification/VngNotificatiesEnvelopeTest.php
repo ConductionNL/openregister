@@ -74,7 +74,7 @@ class VngNotificatiesEnvelopeTest extends TestCase {
 			schemaSlug: 'zaak',
 			objectUuid: 'abc-123',
 			baseUrl: 'https://or.example.nl',
-			kenmerken: ['zaaktype' => 'https://catalogi.example.nl/zaaktypen/abc', 'status' => 'open']
+			characteristics: ['zaaktype' => 'https://catalogi.example.nl/zaaktypen/abc', 'status' => 'open']
 		);
 
 		$this->assertSame(

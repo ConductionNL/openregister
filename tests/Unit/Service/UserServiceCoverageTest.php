@@ -246,7 +246,7 @@ class UserServiceCoverageTest extends TestCase {
 			['testuser', 'core', 'lastName', '', 'Doe'],
 			['testuser', 'core', 'middleName', '', ''],
 			['testuser', 'core', 'organisation', '', ''],
-			['testuser', 'core', 'functie', '', 'Developer'],
+			['testuser', 'core', 'role', '', 'Developer'],
 		]);
 
 		$result = $this->invokeMethod($this->userService, 'getAdditionalProfileInfo', [$user]);
@@ -272,7 +272,7 @@ class UserServiceCoverageTest extends TestCase {
 			['testuser', 'core', 'lastName', '', ''],
 			['testuser', 'core', 'middleName', '', ''],
 			['testuser', 'core', 'organisation', '', 'org-uuid-123'],
-			['testuser', 'core', 'functie', '', ''],
+			['testuser', 'core', 'role', '', ''],
 		]);
 
 		$result = $this->invokeMethod($this->userService, 'getAdditionalProfileInfo', [$user]);

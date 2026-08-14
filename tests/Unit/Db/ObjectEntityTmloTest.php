@@ -53,7 +53,7 @@ class ObjectEntityTmloTest extends TestCase {
 	public function testSetAndGetTmlo(): void {
 		$entity = new ObjectEntity();
 		$tmloData = [
-			'classificatie' => '1.1',
+			'classification' => '1.1',
 			'archiefnominatie' => 'blijvend_bewaren',
 			'archiefstatus' => 'actief',
 			'bewaarTermijn' => 'P7Y',
@@ -62,7 +62,7 @@ class ObjectEntityTmloTest extends TestCase {
 		$entity->setTmlo($tmloData);
 		$result = $entity->getTmlo();
 
-		$this->assertEquals('1.1', $result['classificatie']);
+		$this->assertEquals('1.1', $result['classification']);
 		$this->assertEquals('blijvend_bewaren', $result['archiefnominatie']);
 		$this->assertEquals('actief', $result['archiefstatus']);
 		$this->assertEquals('P7Y', $result['bewaarTermijn']);
@@ -95,7 +95,7 @@ class ObjectEntityTmloTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setUuid('test-uuid-json');
 		$entity->setTmlo([
-			'classificatie' => '2.1',
+			'classification' => '2.1',
 			'archiefstatus' => 'semi_statisch',
 		]);
 
@@ -103,7 +103,7 @@ class ObjectEntityTmloTest extends TestCase {
 
 		$this->assertArrayHasKey('@self', $json);
 		$this->assertArrayHasKey('tmlo', $json['@self']);
-		$this->assertEquals('2.1', $json['@self']['tmlo']['classificatie']);
+		$this->assertEquals('2.1', $json['@self']['tmlo']['classification']);
 	}//end testTmloInJsonSerialize()
 
 	/**
@@ -116,7 +116,7 @@ class ObjectEntityTmloTest extends TestCase {
 		$entity->hydrate([
 			'tmlo' => [
 				'archiefstatus' => 'actief',
-				'classificatie' => '3.1',
+				'classification' => '3.1',
 				'bewaarTermijn' => 'P10Y',
 				'archiefnominatie' => 'vernietigen',
 			],
@@ -125,7 +125,7 @@ class ObjectEntityTmloTest extends TestCase {
 		$tmlo = $entity->getTmlo();
 
 		$this->assertEquals('actief', $tmlo['archiefstatus']);
-		$this->assertEquals('3.1', $tmlo['classificatie']);
+		$this->assertEquals('3.1', $tmlo['classification']);
 		$this->assertEquals('P10Y', $tmlo['bewaarTermijn']);
 	}//end testHydrateSetsTmlo()
 
@@ -153,7 +153,7 @@ class ObjectEntityTmloTest extends TestCase {
 	public function testFullTmloFieldSet(): void {
 		$entity = new ObjectEntity();
 		$fullTmlo = [
-			'classificatie' => '1.1.2',
+			'classification' => '1.1.2',
 			'archiefnominatie' => 'vernietigen',
 			'archiefactiedatum' => '2032-06-15',
 			'archiefstatus' => 'semi_statisch',

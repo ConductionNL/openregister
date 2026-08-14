@@ -211,7 +211,7 @@ class DestructionService {
 				'schema' => $object->getSchema(),
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $actiedatum,
-				'classificatie' => $retention['classificatie'] ?? null,
+				'classification' => $retention['classification'] ?? null,
 				'alreadySoftDeleted' => ($object->getDeleted() !== null),
 			];
 		}//end foreach
@@ -423,7 +423,7 @@ class DestructionService {
 				$excluded[] = $objectEntry;
 
 				// Extend the object's archiefactiedatum.
-				$this->extendArchiefactiedatum(
+				$this->extendArchiveActionDate(
 					uuid: $uuid,
 					extensionPeriod: $extensionPeriod,
 					reason: $objectEntry['exclusionReason']
@@ -472,10 +472,10 @@ class DestructionService {
 
 		// Extend archiefactiedatum for all objects on the list.
 		foreach ($destructionList['objects'] as $objectEntry) {
-			$this->extendArchiefactiedatum(
+			$this->extendArchiveActionDate(
 				uuid: $objectEntry['uuid'],
 				extensionPeriod: $extensionPeriod,
-				reason: 'Vernietigingslijst afgewezen: ' . $reason
+				reason: 'Destruction list rejected: ' . $reason
 			);
 		}
 
@@ -503,7 +503,7 @@ class DestructionService {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void {
+	private function extendArchiveActionDate(string $uuid, string $extensionPeriod, string $reason): void {
 		try {
 			$object = $this->objectMapper->findByUuid($uuid);
 			$retention = $object->getRetention() ?? [];
@@ -537,7 +537,7 @@ class DestructionService {
 				]
 			);
 		}//end try
-	}//end extendArchiefactiedatum()
+	}//end extendArchiveActionDate()
 
 	/**
 	 * Get the current authenticated user ID.

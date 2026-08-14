@@ -145,7 +145,7 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 	}//end tearDown()
 
 	public function testActivityWithoutBewaartermijnIsSkipped(): void {
-		$activity = $this->makeActivity(naam: 'phpunit-no-retention', bewaartermijn: null);
+		$activity = $this->makeActivity(name: 'phpunit-no-retention', retentionPeriod: null);
 		$object = $this->makeObjectFixture();
 
 		// Audit row 30 days in the past — would normally trigger
@@ -164,7 +164,7 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 	}//end testActivityWithoutBewaartermijnIsSkipped()
 
 	public function testMalformedBewaartermijnIsSkipped(): void {
-		$activity = $this->makeActivity(naam: 'phpunit-bad-iso', bewaartermijn: 'this-is-not-a-duration');
+		$activity = $this->makeActivity(name: 'phpunit-bad-iso', retentionPeriod: 'this-is-not-a-duration');
 		$object = $this->makeObjectFixture();
 		$this->insertSyntheticAuditRow(
 			object: $object,
@@ -188,7 +188,7 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 	}//end testMalformedBewaartermijnIsSkipped()
 
 	public function testDryRunReportsWithoutErasing(): void {
-		$activity = $this->makeActivity(naam: 'phpunit-dryrun-retention', bewaartermijn: 'P1D');
+		$activity = $this->makeActivity(name: 'phpunit-dryrun-retention', retentionPeriod: 'P1D');
 		$object = $this->makeObjectFixture();
 		$this->insertSyntheticAuditRow(
 			object: $object,
@@ -212,7 +212,7 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 	public function testRecentlyAuditedObjectsArePreserved(): void {
 		// 1-day bewaartermijn; audit row is 0 days old (today). Object
 		// MUST NOT be matched.
-		$activity = $this->makeActivity(naam: 'phpunit-fresh', bewaartermijn: 'P1D');
+		$activity = $this->makeActivity(name: 'phpunit-fresh', retentionPeriod: 'P1D');
 		$object = $this->makeObjectFixture();
 		$this->insertSyntheticAuditRow(
 			object: $object,
@@ -233,7 +233,7 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 	}//end testRecentlyAuditedObjectsArePreserved()
 
 	public function testLiveErasePassMarksObjectsDeletedAndTagsAudit(): void {
-		$activity = $this->makeActivity(naam: 'phpunit-erase-retention', bewaartermijn: 'P1D');
+		$activity = $this->makeActivity(name: 'phpunit-erase-retention', retentionPeriod: 'P1D');
 		$object = $this->makeObjectFixture();
 		$auditId = $this->insertSyntheticAuditRow(
 			object: $object,
@@ -269,14 +269,14 @@ class AvgRetentionServiceIntegrationTest extends TestCase {
 		return null;
 	}//end findActivityInSummary()
 
-	private function makeActivity(string $naam, ?string $bewaartermijn): Verwerkingsactiviteit {
+	private function makeActivity(string $name, ?string $retentionPeriod): Verwerkingsactiviteit {
 		$entity = new Verwerkingsactiviteit();
-		$entity->setNaam($naam . '-' . uniqid());
+		$entity->setNaam($name . '-' . uniqid());
 		$entity->setDoelbinding('phpunit retention purpose');
 		$entity->setRechtsgrond('publieke_taak');
 		$entity->setStatus('published');
-		if ($bewaartermijn !== null) {
-			$entity->setBewaartermijn($bewaartermijn);
+		if ($retentionPeriod !== null) {
+			$entity->setBewaartermijn($retentionPeriod);
 		}
 
 		$persisted = $this->vrwMapper->insert($entity);
