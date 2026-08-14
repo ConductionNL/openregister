@@ -5,11 +5,12 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -106,6 +107,8 @@ class FileLockHandler
      * @return array{locked: false} Unlock confirmation.
      *
      * @throws Exception If the current user is not the lock owner and not admin.
+     *
+     * @spec openspec/changes/file-actions/specs/file-actions/spec.md#File-Locking
      */
     public function unlockFile(int $fileId, bool $force=false): array
     {
@@ -157,6 +160,8 @@ class FileLockHandler
      * @param int $fileId The file ID.
      *
      * @return array{lockedBy: string, lockedAt: DateTime, expiresAt: DateTime}|null Lock metadata or null.
+     *
+     * @spec openspec/changes/file-actions/specs/file-actions/spec.md#File-Locking
      */
     public function getLockInfo(int $fileId): ?array
     {
