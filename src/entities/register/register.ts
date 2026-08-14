@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TRegister } from './register.types'
 
 export class Register implements TRegister {
-
 	public id: string
 	public title: string
 	public description: string
@@ -71,5 +70,4 @@ export class Register implements TRegister {
 	public getFullTablePrefix(databasePrefix: string): string {
 		return `${databasePrefix}${this.tablePrefix}`.replace(/_{2,}/g, '_')
 	}
-
 }

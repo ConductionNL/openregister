@@ -28,7 +28,13 @@
  *   the-view-list-is-filtered-and-favorite-sorted                           — UI test
  */
 
-import { test, expect, type APIRequestContext, type Page, type Route } from '@playwright/test'
+import {
+	test,
+	expect,
+	type APIRequestContext,
+	type Page,
+	type Route,
+} from '@playwright/test'
 import * as path from 'path'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
@@ -43,15 +49,21 @@ const PREFIX = `e2eA-${TS}`
 
 /** Delete a view via the API (best-effort cleanup). */
 async function deleteView(request: APIRequestContext, id: number): Promise<void> {
-	await request.delete(`/index.php/apps/openregister/api/views/${id}`).catch(() => {})
+	await request
+		.delete(`/index.php/apps/openregister/api/views/${id}`)
+		.catch(() => {})
 }
 
 /** Navigate to /tables page (SearchIndex + SearchSideBar). */
 async function gotoTablesPage(page: Page): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); the path-form
 	// URL renders the dashboard instead of the tables page.
-	await page.goto('/index.php/apps/openregister/#/tables', { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
+	await page.goto('/index.php/apps/openregister/#/tables', {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	// NcAppSidebar renders as aside.app-sidebar (no complementary ARIA role in NC<34).
 	await page.waitForSelector('.app-sidebar, aside', { timeout: 15_000 })
@@ -67,7 +79,9 @@ async function selectRegisterAndSchema(page: Page): Promise<boolean> {
 
 	// The register multi-select is inside the Search tab.
 	const registerCombo = page.getByRole('combobox', { name: 'Registers' }).first()
-	const hasRegister = await registerCombo.isVisible({ timeout: 5_000 }).catch(() => false)
+	const hasRegister = await registerCombo
+		.isVisible({ timeout: 5_000 })
+		.catch(() => false)
 	if (!hasRegister) return false
 
 	// The combobox is `:disabled="registerLoading"` while the registers list
@@ -83,7 +97,8 @@ async function selectRegisterAndSchema(page: Page): Promise<boolean> {
 	const hasOpt = await opt.isVisible({ timeout: 5_000 }).catch(() => false)
 	if (!hasOpt) {
 		const firstOpt = page.getByRole('option').first()
-		if (!await firstOpt.isVisible({ timeout: 3_000 }).catch(() => false)) return false
+		if (!(await firstOpt.isVisible({ timeout: 3_000 }).catch(() => false)))
+			return false
 		await firstOpt.click()
 	} else {
 		await opt.click()
@@ -92,16 +107,20 @@ async function selectRegisterAndSchema(page: Page): Promise<boolean> {
 
 	// Pick a schema.
 	const schemaCombo = page.getByRole('combobox', { name: 'Schemas' }).first()
-	if (!await schemaCombo.isVisible({ timeout: 5_000 }).catch(() => false)) return false
+	if (!(await schemaCombo.isVisible({ timeout: 5_000 }).catch(() => false)))
+		return false
 
 	await schemaCombo.click()
 	const schemaOpt = page.getByRole('option').first()
-	if (!await schemaOpt.isVisible({ timeout: 5_000 }).catch(() => false)) return false
+	if (!(await schemaOpt.isVisible({ timeout: 5_000 }).catch(() => false)))
+		return false
 	await schemaOpt.click()
 	await page.keyboard.press('Escape')
 
 	// Wait for the Save button to become enabled (canSaveView = true).
-	const saveCta = page.locator('button', { hasText: 'Save current search as view' }).first()
+	const saveCta = page
+		.locator('button', { hasText: 'Save current search as view' })
+		.first()
 	try {
 		await expect(saveCta).toBeEnabled({ timeout: 5_000 })
 	} catch {
@@ -128,26 +147,39 @@ async function saveViewViaUI(page: Page, viewName: string): Promise<number | nul
 	}
 
 	// The "Save current search as view" button.
-	const saveCta = page.locator('button', { hasText: 'Save current search as view' }).first()
-	if (!await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false)) return null
+	const saveCta = page
+		.locator('button', { hasText: 'Save current search as view' })
+		.first()
+	if (!(await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false)))
+		return null
 	await saveCta.click()
 
 	// NcTextField renders as textbox with label "View Name".
 	const viewNameInput = page.getByRole('textbox', { name: 'View Name' }).first()
-	if (!await viewNameInput.isVisible({ timeout: 5_000 }).catch(() => false)) return null
+	if (!(await viewNameInput.isVisible({ timeout: 5_000 }).catch(() => false)))
+		return null
 	await viewNameInput.fill(viewName)
 
 	// Capture the POST response to know the created view's id.
 	let createdView: Record<string, unknown> | null = null
-	const postPromise = page.waitForResponse(
-		(resp) => resp.url().includes('/api/views') && resp.request().method() === 'POST',
-		{ timeout: 10_000 },
-	).then(async (resp) => {
-		try {
-			const body = await resp.json()
-			createdView = body?.view ?? body ?? null
-		} catch { /* ignore */ }
-	}).catch(() => { /* ignore */ })
+	const postPromise = page
+		.waitForResponse(
+			(resp) =>
+				resp.url().includes('/api/views')
+				&& resp.request().method() === 'POST',
+			{ timeout: 10_000 },
+		)
+		.then(async (resp) => {
+			try {
+				const body = await resp.json()
+				createdView = body?.view ?? body ?? null
+			} catch {
+				/* ignore */
+			}
+		})
+		.catch(() => {
+			/* ignore */
+		})
 
 	// Install a one-shot route handler that intercepts the subsequent
 	// GET /api/views (called by fetchViews() right after createView()) and
@@ -177,8 +209,11 @@ async function saveViewViaUI(page: Page, viewName: string): Promise<number | nul
 	await page.route('**/api/views*', routeHandler)
 
 	// Click Save.
-	const saveBtn = page.locator('.saveViewForm').getByRole('button', { name: 'Save' }).first()
-	if (!await saveBtn.isEnabled({ timeout: 5_000 }).catch(() => false)) {
+	const saveBtn = page
+		.locator('.saveViewForm')
+		.getByRole('button', { name: 'Save' })
+		.first()
+	if (!(await saveBtn.isEnabled({ timeout: 5_000 }).catch(() => false))) {
 		await page.unroute('**/api/views*', routeHandler)
 		return null
 	}
@@ -200,7 +235,11 @@ async function openViewsTab(page: Page): Promise<void> {
 	const viewsTab = page.getByRole('tab', { name: 'Views' }).first()
 	if (await viewsTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		await viewsTab.click()
-		await page.waitForSelector('.viewsSection, .noViews, .viewsLoading', { timeout: 5_000 }).catch(() => {})
+		await page
+			.waitForSelector('.viewsSection, .noViews, .viewsLoading', {
+				timeout: 5_000,
+			})
+			.catch(() => {})
 		await page.waitForTimeout(300) // let Vue finish rendering
 	}
 }
@@ -219,40 +258,57 @@ test.describe('saved-search-views — saving-the-current-search-as-a-new-view', 
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#saving-the-current-search-as-a-new-view-persists-only-query-parameters
-	test('clicking "Save current search as view" creates a named view in the Views tab', async ({ page, request }) => {
+	test('clicking "Save current search as view" creates a named view in the Views tab', async ({
+		page,
+		request,
+	}) => {
 		await gotoTablesPage(page)
 
 		const selected = await selectRegisterAndSchema(page)
 		if (!selected) {
-			test.skip(true, 'Could not select register+schema — sidebar may not be accessible')
+			test.skip(
+				true,
+				'Could not select register+schema — sidebar may not be accessible',
+			)
 			return
 		}
 
 		// Ensure the Save CTA is enabled before clicking.
-		const saveCta = page.locator('button', { hasText: 'Save current search as view' }).first()
+		const saveCta = page
+			.locator('button', { hasText: 'Save current search as view' })
+			.first()
 		await expect(saveCta).toBeEnabled({ timeout: 8_000 })
 
 		// Open the save form.
 		await saveCta.click()
 
 		// The form uses NcTextField — locatable by role + label.
-		const viewNameInput = page.getByRole('textbox', { name: 'View Name' }).first()
+		const viewNameInput = page
+			.getByRole('textbox', { name: 'View Name' })
+			.first()
 		await expect(viewNameInput).toBeVisible({ timeout: 10_000 })
 		await viewNameInput.fill(viewName)
 
 		// Capture POST response.
 		const postPromise = page.waitForResponse(
-			(resp) => resp.url().includes('/api/views') && resp.request().method() === 'POST',
+			(resp) =>
+				resp.url().includes('/api/views')
+				&& resp.request().method() === 'POST',
 			{ timeout: 10_000 },
 		)
 
-		const saveBtn = page.locator('.saveViewForm').getByRole('button', { name: 'Save' }).first()
+		const saveBtn = page
+			.locator('.saveViewForm')
+			.getByRole('button', { name: 'Save' })
+			.first()
 		await expect(saveBtn).toBeEnabled({ timeout: 5_000 })
 		await saveBtn.click()
 
 		// After saving, the activeViewActions should replace the save form.
 		await expect(
-			page.locator('.activeViewActions, .saveViewSection .activeViewActions').first(),
+			page
+				.locator('.activeViewActions, .saveViewSection .activeViewActions')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 
 		// Retrieve the id for cleanup and optional config-shape assertion.
@@ -270,14 +326,18 @@ test.describe('saved-search-views — saving-the-current-search-as-a-new-view', 
 					expect(config).not.toHaveProperty('sort')
 					expect(config).not.toHaveProperty('visibleColumns')
 				}
-			} catch { /* ignore parse errors */ }
+			} catch {
+				/* ignore parse errors */
+			}
 		}
 
 		// Confirm id via the GET API (may be empty due to org-filter bug — acceptable).
 		if (!createdViewId) {
-			const listResp = await request.get('/index.php/apps/openregister/api/views?_limit=50', {
-				headers: { Accept: 'application/json' },
-			}).catch(() => null)
+			const listResp = await request
+				.get('/index.php/apps/openregister/api/views?_limit=50', {
+					headers: { Accept: 'application/json' },
+				})
+				.catch(() => null)
 			if (listResp && listResp.ok()) {
 				const body = await listResp.json().catch(() => ({}))
 				const found = (body.results ?? []).find(
@@ -327,7 +387,10 @@ test.describe('saved-search-views — activating-a-view-re-applies-its-configura
 		await expect(viewItem).toBeVisible({ timeout: 10_000 })
 
 		// Click the "Load view" button on that row (or the view name as fallback).
-		const viewRow = page.locator('.viewRow').filter({ hasText: viewName }).first()
+		const viewRow = page
+			.locator('.viewRow')
+			.filter({ hasText: viewName })
+			.first()
 		const loadBtn = viewRow.getByRole('button', { name: /Load view/i }).first()
 		if (await loadBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
 			await loadBtn.click()
@@ -341,9 +404,9 @@ test.describe('saved-search-views — activating-a-view-re-applies-its-configura
 			await searchTab.click()
 		}
 
-		await expect(
-			page.locator('.activeViewActions').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('.activeViewActions').first()).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 })
 
@@ -361,7 +424,9 @@ test.describe('saved-search-views — deleting-the-active-view-clears-the-active
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#deleting-the-active-view-clears-the-active-selection
-	test('clicking Delete on the active view fires a DELETE request and shows a confirmation dialog', async ({ page }) => {
+	test('clicking Delete on the active view fires a DELETE request and shows a confirmation dialog', async ({
+		page,
+	}) => {
 		// NOTE: The OR backend has a bug where ViewMapper::find() applies the
 		// org filter, causing DELETE /api/views/{id} to return 404 for views
 		// created with NULL organisation.  This prevents full verification of the
@@ -386,7 +451,10 @@ test.describe('saved-search-views — deleting-the-active-view-clears-the-active
 
 		// After saving, the activeViewActions is shown on the Search tab.
 		// The Delete button lives inside activeViewActions (in the saveViewSection).
-		const deleteBtn = page.locator('.saveViewSection').getByRole('button', { name: 'Delete' }).first()
+		const deleteBtn = page
+			.locator('.saveViewSection')
+			.getByRole('button', { name: 'Delete' })
+			.first()
 		await expect(deleteBtn).toBeVisible({ timeout: 15_000 })
 
 		// Intercept the DELETE request.
@@ -402,7 +470,9 @@ test.describe('saved-search-views — deleting-the-active-view-clears-the-active
 		await expect(confirmDialog).toBeVisible({ timeout: 5_000 })
 
 		// Click the confirm button in the dialog.
-		const confirmBtn = confirmDialog.getByRole('button', { name: /Delete|Confirm/i }).last()
+		const confirmBtn = confirmDialog
+			.getByRole('button', { name: /Delete|Confirm/i })
+			.last()
 		if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			await confirmBtn.click()
 		}
@@ -431,7 +501,10 @@ test.describe('saved-search-views — toggling-favorite-patches-only-the-favored
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#toggling-favorite-patches-only-the-favoredby-array
-	test('clicking the favorite button for a view sends a PATCH with favoredBy', async ({ page, request }) => {
+	test('clicking the favorite button for a view sends a PATCH with favoredBy', async ({
+		page,
+		request,
+	}) => {
 		await gotoTablesPage(page)
 
 		const selected = await selectRegisterAndSchema(page)
@@ -454,9 +527,16 @@ test.describe('saved-search-views — toggling-favorite-patches-only-the-favored
 		await expect(viewItem).toBeVisible({ timeout: 10_000 })
 
 		// Find the favorite (star) button on the view row.
-		const viewRow = page.locator('.viewRow').filter({ hasText: viewName }).first()
-		const favBtn = viewRow.getByRole('button', { name: /favorite|ster|star/i }).first()
-		const hasFavBtn = await favBtn.isVisible({ timeout: 5_000 }).catch(() => false)
+		const viewRow = page
+			.locator('.viewRow')
+			.filter({ hasText: viewName })
+			.first()
+		const favBtn = viewRow
+			.getByRole('button', { name: /favorite|ster|star/i })
+			.first()
+		const hasFavBtn = await favBtn
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 
 		if (!hasFavBtn) {
 			test.skip(true, 'No favorite button found on view row')
@@ -478,10 +558,11 @@ test.describe('saved-search-views — toggling-favorite-patches-only-the-favored
 		} else {
 			// PATCH not intercepted — check the view via GET API.
 			if (viewId) {
-				const resp = await request.get(
-					`/index.php/apps/openregister/api/views/${viewId}`,
-					{ headers: { Accept: 'application/json' } },
-				).catch(() => null)
+				const resp = await request
+					.get(`/index.php/apps/openregister/api/views/${viewId}`, {
+						headers: { Accept: 'application/json' },
+					})
+					.catch(() => null)
 				if (resp && resp.ok()) {
 					const body = await resp.json().catch(() => ({}))
 					const view = body.view ?? body
@@ -520,7 +601,10 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#the-default-view-is-applied-on-mount
-	test('default view is applied when the sidebar mounts after page reload', async ({ page, request }) => {
+	test('default view is applied when the sidebar mounts after page reload', async ({
+		page,
+		request,
+	}) => {
 		// `selectRegisterAndSchema` waits up to 30s for the register-list
 		// fetch (`_extend=schemas&_extend=@self.stats`) to enable the
 		// combobox on a busy dev/CI env; combined with the `/tables` reload
@@ -533,7 +617,10 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 
 		const selected = await selectRegisterAndSchema(page)
 		if (!selected) {
-			test.skip(true, 'Could not select register+schema — sidebar may not be accessible')
+			test.skip(
+				true,
+				'Could not select register+schema — sidebar may not be accessible',
+			)
 			return
 		}
 
@@ -541,36 +628,50 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 		// We need to tick isDefault=true.  The save form may expose a "Default view"
 		// checkbox — check for it.  If not present, save normally and fall back to
 		// verifying persistence only.
-		const saveCta = page.locator('button', { hasText: 'Save current search as view' }).first()
-		if (!await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false)) {
+		const saveCta = page
+			.locator('button', { hasText: 'Save current search as view' })
+			.first()
+		if (!(await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false))) {
 			test.skip(true, 'Save CTA not enabled')
 			return
 		}
 		await saveCta.click()
 
-		const viewNameInput = page.getByRole('textbox', { name: 'View Name' }).first()
-		if (!await viewNameInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		const viewNameInput = page
+			.getByRole('textbox', { name: 'View Name' })
+			.first()
+		if (
+			!(await viewNameInput.isVisible({ timeout: 5_000 }).catch(() => false))
+		) {
 			test.skip(true, 'View Name input not visible')
 			return
 		}
 		await viewNameInput.fill(viewName)
 
 		// Tick "Set as default" if the checkbox is present in the save form.
-		const defaultCheckbox = page.locator('.saveViewForm').getByRole('checkbox', { name: /default/i }).first()
+		const defaultCheckbox = page
+			.locator('.saveViewForm')
+			.getByRole('checkbox', { name: /default/i })
+			.first()
 		if (await defaultCheckbox.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			if (!await defaultCheckbox.isChecked()) {
+			if (!(await defaultCheckbox.isChecked())) {
 				await defaultCheckbox.click()
 			}
 		}
 
 		// Capture POST response to get the new view id.
 		const postPromise = page.waitForResponse(
-			(resp) => resp.url().includes('/api/views') && resp.request().method() === 'POST',
+			(resp) =>
+				resp.url().includes('/api/views')
+				&& resp.request().method() === 'POST',
 			{ timeout: 10_000 },
 		)
 
-		const saveBtn = page.locator('.saveViewForm').getByRole('button', { name: 'Save' }).first()
-		if (!await saveBtn.isEnabled({ timeout: 5_000 }).catch(() => false)) {
+		const saveBtn = page
+			.locator('.saveViewForm')
+			.getByRole('button', { name: 'Save' })
+			.first()
+		if (!(await saveBtn.isEnabled({ timeout: 5_000 }).catch(() => false))) {
 			test.skip(true, 'Save button not enabled')
 			return
 		}
@@ -582,15 +683,18 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 				const body = await postResp.json()
 				const saved = body?.view ?? body
 				viewId = saved?.id ?? null
-			} catch { /* ignore */ }
+			} catch {
+				/* ignore */
+			}
 		}
 
 		// If POST didn't give us the id, try GET.
 		if (!viewId) {
-			const listResp = await request.get(
-				'/index.php/apps/openregister/api/views?_limit=50',
-				{ headers: { Accept: 'application/json' } },
-			).catch(() => null)
+			const listResp = await request
+				.get('/index.php/apps/openregister/api/views?_limit=50', {
+					headers: { Accept: 'application/json' },
+				})
+				.catch(() => null)
 			if (listResp && listResp.ok()) {
 				const body = await listResp.json().catch(() => ({}))
 				const found = (body.results ?? []).find(
@@ -622,7 +726,9 @@ test.describe('saved-search-views — the-default-view-is-applied-on-mount', () 
 		// The activeViewActions section (or its child showing the active view name)
 		// should be visible — indicating a view was applied on mount.
 		const activeViewSection = page.locator('.activeViewActions').first()
-		const hasActiveView = await activeViewSection.isVisible({ timeout: 10_000 }).catch(() => false)
+		const hasActiveView = await activeViewSection
+			.isVisible({ timeout: 10_000 })
+			.catch(() => false)
 
 		// The GET /api/views round-trip after reload requires the backend to return
 		// the view — which requires organisation to be set correctly (bug #1947 fix).
@@ -649,7 +755,9 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#the-view-list-is-filtered-and-favorite-sorted
-	test('typing in the view search box filters the view list by name', async ({ page }) => {
+	test('typing in the view search box filters the view list by name', async ({
+		page,
+	}) => {
 		// `selectRegisterAndSchema` waits up to 30s for the register-list
 		// fetch to enable the combobox; with the `/tables` reload chain that
 		// exceeds the default 30s test budget on a busy env. Match the 60s
@@ -702,21 +810,28 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 
 		// We need viewA's data to inject into the mocked list alongside viewB.
 		// Capture it by reading the Pinia store via page.evaluate.
-		const viewAData = await page.evaluate(() => {
-			// Access Pinia store from the Vue app.
-			try {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const pinia = (window as any).__pinia
-				if (!pinia) return null
-				const stores = Object.values(pinia.state.value) as Record<string, unknown>[]
-				for (const s of stores) {
-					if (Array.isArray(s.viewsList) && s.viewsList.length > 0) {
-						return s.viewsList[0]
+		const viewAData = await page
+			.evaluate(() => {
+				// Access Pinia store from the Vue app.
+				try {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					const pinia = (window as any).__pinia
+					if (!pinia) return null
+					const stores = Object.values(pinia.state.value) as Record<
+						string,
+						unknown
+					>[]
+					for (const s of stores) {
+						if (Array.isArray(s.viewsList) && s.viewsList.length > 0) {
+							return s.viewsList[0]
+						}
 					}
+				} catch {
+					/* ignore */
 				}
-			} catch { /* ignore */ }
-			return null
-		}).catch(() => null)
+				return null
+			})
+			.catch(() => null)
 
 		// Now delete the active view client-side so the Save button re-appears.
 		// The Delete button in the Search tab's activeViewActions deletes the DB
@@ -739,15 +854,24 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 		let newViewBData: Record<string, unknown> | null = null
 
 		// Capture POST for viewB.
-		const postBPromise = page.waitForResponse(
-			(resp) => resp.url().includes('/api/views') && resp.request().method() === 'POST',
-			{ timeout: 10_000 },
-		).then(async (resp) => {
-			try {
-				const body = await resp.json()
-				newViewBData = body?.view ?? body ?? null
-			} catch { /* ignore */ }
-		}).catch(() => { /* ignore */ })
+		const postBPromise = page
+			.waitForResponse(
+				(resp) =>
+					resp.url().includes('/api/views')
+					&& resp.request().method() === 'POST',
+				{ timeout: 10_000 },
+			)
+			.then(async (resp) => {
+				try {
+					const body = await resp.json()
+					newViewBData = body?.view ?? body ?? null
+				} catch {
+					/* ignore */
+				}
+			})
+			.catch(() => {
+				/* ignore */
+			})
 
 		const routeHandlerB = async (route: Route) => {
 			const method = route.request().method()
@@ -773,24 +897,33 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 		await page.route('**/api/views*', routeHandlerB)
 
 		// Open save form, fill viewB name, click Save.
-		const saveCta = page.locator('button', { hasText: 'Save current search as view' }).first()
-		if (!await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false)) {
+		const saveCta = page
+			.locator('button', { hasText: 'Save current search as view' })
+			.first()
+		if (!(await saveCta.isEnabled({ timeout: 8_000 }).catch(() => false))) {
 			await page.unroute('**/api/views*', routeHandlerB)
 			test.skip(true, 'Save button not enabled for viewB')
 			return
 		}
 		await saveCta.click()
 
-		const viewNameInputB = page.getByRole('textbox', { name: 'View Name' }).first()
-		if (!await viewNameInputB.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		const viewNameInputB = page
+			.getByRole('textbox', { name: 'View Name' })
+			.first()
+		if (
+			!(await viewNameInputB.isVisible({ timeout: 5_000 }).catch(() => false))
+		) {
 			await page.unroute('**/api/views*', routeHandlerB)
 			test.skip(true, 'View Name input not visible for viewB')
 			return
 		}
 		await viewNameInputB.fill(viewB)
 
-		const saveBtnB = page.locator('.saveViewForm').getByRole('button', { name: 'Save' }).first()
-		if (!await saveBtnB.isEnabled({ timeout: 5_000 }).catch(() => false)) {
+		const saveBtnB = page
+			.locator('.saveViewForm')
+			.getByRole('button', { name: 'Save' })
+			.first()
+		if (!(await saveBtnB.isEnabled({ timeout: 5_000 }).catch(() => false))) {
 			await page.unroute('**/api/views*', routeHandlerB)
 			test.skip(true, 'Save button not enabled for viewB')
 			return
@@ -801,7 +934,8 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 		await page.waitForTimeout(800)
 		await page.unroute('**/api/views*', routeHandlerB).catch(() => {})
 
-		idB = (newViewBData as Record<string, unknown> | null)?.id as number ?? null
+		idB =
+			((newViewBData as Record<string, unknown> | null)?.id as number) ?? null
 
 		// Open the Views tab — both views should be in the Pinia store.
 		await openViewsTab(page)
@@ -828,6 +962,8 @@ test.describe('saved-search-views — the-view-list-is-filtered-and-favorite-sor
 		// Type "alpha" — viewB should NOT be visible.
 		await viewSearchInput.fill('alpha')
 		await page.waitForTimeout(300)
-		await expect(page.locator(`text="${viewB}"`)).not.toBeVisible({ timeout: 5_000 })
+		await expect(page.locator(`text="${viewB}"`)).not.toBeVisible({
+			timeout: 5_000,
+		})
 	})
 })

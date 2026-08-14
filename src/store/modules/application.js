@@ -37,7 +37,9 @@ export const useApplicationStore = defineStore('application', {
 			try {
 				this.loading = true
 				this.error = null
-				this.applicationItem = applicationItem ? new Application(applicationItem) : null
+				this.applicationItem = applicationItem
+					? new Application(applicationItem)
+					: null
 			} catch (error) {
 				console.error('Error setting application item:', error)
 				this.error = error.message
@@ -201,16 +203,13 @@ export const useApplicationStore = defineStore('application', {
 			const cleanedData = this.cleanApplicationForSave(applicationItem)
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(cleanedData),
+				const response = await fetch(endpoint, {
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(cleanedData),
+				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -249,7 +248,8 @@ export const useApplicationStore = defineStore('application', {
 
 			// Ensure boolean fields are actually booleans, not empty strings
 			if (cleaned.active !== undefined) {
-				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+				cleaned.active =
+					cleaned.active === '' ? true : Boolean(cleaned.active)
 			}
 
 			return cleaned
@@ -265,21 +265,26 @@ export const useApplicationStore = defineStore('application', {
 		async loadNextcloudGroups() {
 			try {
 				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: {
-						'OCS-APIRequest': 'true',
+				const response = await fetch(
+					'/ocs/v1.php/cloud/groups?format=json',
+					{
+						headers: {
+							'OCS-APIRequest': 'true',
+						},
 					},
-				})
+				)
 
 				if (response.ok) {
 					const data = await response.json()
 					if (data.ocs?.data?.groups) {
 						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(groupId => ({
-							id: groupId,
-							name: groupId,
-							userCount: 0, // Could be fetched separately if needed
-						}))
+						this.nextcloudGroups = data.ocs.data.groups.map(
+							(groupId) => ({
+								id: groupId,
+								name: groupId,
+								userCount: 0, // Could be fetched separately if needed
+							}),
+						)
 					}
 				}
 			} catch (error) {

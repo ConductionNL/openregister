@@ -4,7 +4,14 @@
 			<div class="viewMain">
 				<div class="viewHeader">
 					<h1>{{ t('openregister', 'Master entities') }}</h1>
-					<p>{{ t('openregister', 'Survivorship-enabled objects for a register and schema, with their materialised quality columns.') }}</p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'Survivorship-enabled objects for a register and schema, with their materialised quality columns.',
+							)
+						}}
+					</p>
 				</div>
 
 				<RegisterSchemaSelector />
@@ -23,7 +30,12 @@
 				<NcEmptyContent
 					v-if="!hasSelection"
 					:name="t('openregister', 'Select a register and schema')"
-					:description="t('openregister', 'Choose a survivorship-enabled register and schema above to list its master entities.')">
+					:description="
+						t(
+							'openregister',
+							'Choose a survivorship-enabled register and schema above to list its master entities.',
+						)
+					">
 					<template #icon>
 						<AccountMultipleOutline :size="64" />
 					</template>
@@ -36,7 +48,9 @@
 				<template v-else-if="masterEntities.length === 0">
 					<NcEmptyContent
 						:name="t('openregister', 'No master entities found')"
-						:description="t('openregister', 'This schema has no objects yet.')">
+						:description="
+							t('openregister', 'This schema has no objects yet.')
+						">
 						<template #icon>
 							<AccountMultipleOutline :size="64" />
 						</template>
@@ -61,15 +75,30 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="entity in masterEntities"
+						<tr
+							v-for="entity in masterEntities"
 							:key="entity.id"
 							data-testid="mdm-master-entity-row"
-							:class="{ selectedRow: selectedObject && selectedObject.id === entity.id }">
+							:class="{
+								selectedRow:
+									selectedObject
+									&& selectedObject.id === entity.id,
+							}">
 							<td>{{ entity.id }}</td>
 							<td>{{ entity.qualityScore ?? '—' }}</td>
-							<td><span :class="'badge badge-status-' + entity.qualityStatus">{{ entity.qualityStatus ?? '—' }}</span></td>
 							<td>
-								<NcButton variant="tertiary" data-testid="mdm-view-golden-record" @click="selectEntity(entity)">
+								<span
+									:class="
+										'badge badge-status-' + entity.qualityStatus
+									"
+									>{{ entity.qualityStatus ?? '—' }}</span
+								>
+							</td>
+							<td>
+								<NcButton
+									variant="tertiary"
+									data-testid="mdm-view-golden-record"
+									@click="selectEntity(entity)">
 									{{ t('openregister', 'View golden record') }}
 								</NcButton>
 							</td>
@@ -88,7 +117,13 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton, NcSelect } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcButton,
+	NcSelect,
+} from '@nextcloud/vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
@@ -111,10 +146,19 @@ export default {
 	data() {
 		return {
 			selectedObject: null,
-			sortModel: { id: 'qualityScore-asc', label: t('openregister', 'Quality score (worst first)') },
+			sortModel: {
+				id: 'qualityScore-asc',
+				label: t('openregister', 'Quality score (worst first)'),
+			},
 			sortOptions: [
-				{ id: 'qualityScore-asc', label: t('openregister', 'Quality score (worst first)') },
-				{ id: 'qualityScore-desc', label: t('openregister', 'Quality score (best first)') },
+				{
+					id: 'qualityScore-asc',
+					label: t('openregister', 'Quality score (worst first)'),
+				},
+				{
+					id: 'qualityScore-desc',
+					label: t('openregister', 'Quality score (best first)'),
+				},
 			],
 		}
 	},
@@ -175,8 +219,14 @@ export default {
 		 */
 		async loadData() {
 			if (!qualityStore.hasSelection) return
-			const [sort, order] = (this.sortModel?.id ?? 'qualityScore-asc').split('-')
-			await qualityStore.fetchMasterEntities(qualityStore.selectedRegister, qualityStore.selectedSchema, { _sort: sort, _order: order })
+			const [sort, order] = (this.sortModel?.id ?? 'qualityScore-asc').split(
+				'-',
+			)
+			await qualityStore.fetchMasterEntities(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ _sort: sort, _order: order },
+			)
 		},
 
 		/**
@@ -194,7 +244,11 @@ export default {
 		 */
 		async selectEntity(entity) {
 			this.selectedObject = entity
-			await qualityStore.fetchGoldenRecord(qualityStore.selectedRegister, qualityStore.selectedSchema, entity.id)
+			await qualityStore.fetchGoldenRecord(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				entity.id,
+			)
 		},
 	},
 }

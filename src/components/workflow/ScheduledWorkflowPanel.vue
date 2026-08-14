@@ -4,27 +4,13 @@
 		<table v-if="schedules.length" class="schedule-table">
 			<thead>
 				<tr>
-					<th scope="col">
-						Name
-					</th>
-					<th scope="col">
-						Engine
-					</th>
-					<th scope="col">
-						Workflow
-					</th>
-					<th scope="col">
-						Interval
-					</th>
-					<th scope="col">
-						Enabled
-					</th>
-					<th scope="col">
-						Last Run
-					</th>
-					<th scope="col">
-						Last Status
-					</th>
+					<th scope="col">Name</th>
+					<th scope="col">Engine</th>
+					<th scope="col">Workflow</th>
+					<th scope="col">Interval</th>
+					<th scope="col">Enabled</th>
+					<th scope="col">Last Run</th>
+					<th scope="col">Last Status</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -34,9 +20,13 @@
 					<td>{{ s.workflowId }}</td>
 					<td>{{ formatInterval(s.intervalSec) }}</td>
 					<td>{{ s.enabled ? 'Yes' : 'No' }}</td>
-					<td>{{ s.lastRun ? new Date(s.lastRun).toLocaleString() : '-' }}</td>
 					<td>
-						<span v-if="s.lastStatus" :class="['status-badge', `status-${s.lastStatus}`]">
+						{{ s.lastRun ? new Date(s.lastRun).toLocaleString() : '-' }}
+					</td>
+					<td>
+						<span
+							v-if="s.lastStatus"
+							:class="['status-badge', `status-${s.lastStatus}`]">
 							{{ s.lastStatus }}
 						</span>
 						<span v-else>-</span>
@@ -44,44 +34,44 @@
 				</tr>
 			</tbody>
 		</table>
-		<p v-else>
-			No scheduled workflows configured.
-		</p>
+		<p v-else>No scheduled workflows configured.</p>
 		<NcButton variant="primary" @click="showForm = !showForm">
 			{{ showForm ? 'Cancel' : 'Add Schedule' }}
 		</NcButton>
 		<div v-if="showForm" class="create-form">
 			<div class="form-group">
 				<label for="scheduled-workflow-name">Name</label>
-				<input id="scheduled-workflow-name"
+				<input
+					id="scheduled-workflow-name"
 					v-model="form.name"
 					type="text"
-					class="input-field">
+					class="input-field" />
 			</div>
 			<div class="form-group">
 				<label for="scheduled-workflow-engine">Engine</label>
-				<input id="scheduled-workflow-engine"
+				<input
+					id="scheduled-workflow-engine"
 					v-model="form.engine"
 					type="text"
-					class="input-field">
+					class="input-field" />
 			</div>
 			<div class="form-group">
 				<label for="scheduled-workflow-id">Workflow ID</label>
-				<input id="scheduled-workflow-id"
+				<input
+					id="scheduled-workflow-id"
 					v-model="form.workflowId"
 					type="text"
-					class="input-field">
+					class="input-field" />
 			</div>
 			<div class="form-group">
 				<label for="scheduled-workflow-interval">Interval (seconds)</label>
-				<input id="scheduled-workflow-interval"
+				<input
+					id="scheduled-workflow-interval"
 					v-model.number="form.interval"
 					type="number"
-					class="input-field">
+					class="input-field" />
 			</div>
-			<NcButton variant="primary" @click="createSchedule">
-				Save
-			</NcButton>
+			<NcButton variant="primary" @click="createSchedule"> Save </NcButton>
 		</div>
 	</div>
 </template>
@@ -144,15 +134,35 @@ export default {
 </script>
 
 <style scoped>
-.schedule-table { width: 100%; border-collapse: collapse; }
+.schedule-table {
+	width: 100%;
+	border-collapse: collapse;
+}
 
-.schedule-table th, .schedule-table td { padding: 8px; border-bottom: 1px solid var(--color-border); }
+.schedule-table th,
+.schedule-table td {
+	padding: 8px;
+	border-bottom: 1px solid var(--color-border);
+}
 
-.create-form { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
+.create-form {
+	margin-top: 12px;
+	padding: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
 
-.form-group { margin-bottom: 8px; }
+.form-group {
+	margin-bottom: 8px;
+}
 
-.form-group label { display: block; font-weight: bold; }
+.form-group label {
+	display: block;
+	font-weight: bold;
+}
 
-.input-field { width: 100%; padding: 8px; }
+.input-field {
+	width: 100%;
+	padding: 8px;
+}
 </style>

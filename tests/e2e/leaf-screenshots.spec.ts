@@ -30,7 +30,10 @@ const SCREENSHOT_DIR = path.resolve(
 test.describe('Per-leaf screenshot harness', () => {
 	test.setTimeout(300_000)
 
-	test('captures one PNG per advertised provider tab', async ({ page, baseURL }) => {
+	test('captures one PNG per advertised provider tab', async ({
+		page,
+		baseURL,
+	}) => {
 		fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
 
 		// 1. The chromium project's extraHTTPHeaders sends Basic auth on
@@ -51,28 +54,63 @@ test.describe('Per-leaf screenshot harness', () => {
 
 		// 3. Wait until the in-page registry has flushed all provider
 		//    descriptors and the tab strip rendered.
-		await page.waitForFunction(() => {
-			const list = (window as { OCA?: { OpenRegister?: { integrations?: { list?: () => Array<{ id: string }> } } } }).OCA?.OpenRegister?.integrations?.list?.()
-			return Array.isArray(list) && list.length >= 18
-		}, { timeout: 30_000 })
+		await page.waitForFunction(
+			() => {
+				const list = (
+					window as {
+						OCA?: {
+							OpenRegister?: {
+								integrations?: { list?: () => Array<{ id: string }> }
+							}
+						}
+					}
+				).OCA?.OpenRegister?.integrations?.list?.()
+				return Array.isArray(list) && list.length >= 18
+			},
+			{ timeout: 30_000 },
+		)
 
 		// 4. Collect the rendered tab ids/labels from the registry.
 		const providers = await page.evaluate(() => {
-			const list = (window as { OCA?: { OpenRegister?: { integrations?: { list?: () => Array<{ id: string; label?: string; group?: string }> } } } }).OCA?.OpenRegister?.integrations?.list?.()
-			return Array.isArray(list) ? list.map(p => ({ id: p.id, label: p.label, group: p.group })) : []
+			const list = (
+				window as {
+					OCA?: {
+						OpenRegister?: {
+							integrations?: {
+								list?: () => Array<{
+									id: string
+									label?: string
+									group?: string
+								}>
+							}
+						}
+					}
+				}
+			).OCA?.OpenRegister?.integrations?.list?.()
+			return Array.isArray(list)
+				? list.map((p) => ({ id: p.id, label: p.label, group: p.group }))
+				: []
 		})
 
-		expect(providers.length, 'registry should advertise ≥18 providers').toBeGreaterThanOrEqual(18)
+		expect(
+			providers.length,
+			'registry should advertise ≥18 providers',
+		).toBeGreaterThanOrEqual(18)
 
 		// 5. Take an overview screenshot of the integrations strip first.
-		await page.screenshot({ path: path.join(SCREENSHOT_DIR, '_overview.png'), fullPage: false })
+		await page.screenshot({
+			path: path.join(SCREENSHOT_DIR, '_overview.png'),
+			fullPage: false,
+		})
 
 		// 6. Walk every provider, click its tab, wait for the inner
 		//    CnIntegrationTab to finish loading, then screenshot.
 		for (const provider of providers) {
 			// Bootstrap-vue BTab titles render as <a role="tab">title</a>.
-			const tab = page.locator(`role=tab[name="${provider.label || provider.id}"]`).first()
-			if (await tab.count() === 0) {
+			const tab = page
+				.locator(`role=tab[name="${provider.label || provider.id}"]`)
+				.first()
+			if ((await tab.count()) === 0) {
 				console.warn(`[leaf-screenshots] tab not found for ${provider.id}`)
 				continue
 			}
@@ -86,7 +124,12 @@ test.describe('Per-leaf screenshot harness', () => {
 		}
 
 		// 7. Sanity-check at least one screenshot per leaf landed.
-		const written = fs.readdirSync(SCREENSHOT_DIR).filter(f => f.endsWith('.png'))
-		expect(written.length, 'expected at least one PNG per leaf').toBeGreaterThanOrEqual(providers.length)
+		const written = fs
+			.readdirSync(SCREENSHOT_DIR)
+			.filter((f) => f.endsWith('.png'))
+		expect(
+			written.length,
+			'expected at least one PNG per leaf',
+		).toBeGreaterThanOrEqual(providers.length)
 	})
 })

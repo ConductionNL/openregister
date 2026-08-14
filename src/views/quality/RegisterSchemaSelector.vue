@@ -96,22 +96,37 @@ export default {
 		const routeSchema = this.$route?.query?.schema ?? null
 
 		if (routeRegister) {
-			this.registerModel = this.registerOptions.find((o) => String(o.id) === String(routeRegister)) || null
+			this.registerModel =
+				this.registerOptions.find(
+					(o) => String(o.id) === String(routeRegister),
+				) || null
 			qualityStore.setSelection(routeRegister, routeSchema || null)
 			await qualityStore.fetchSchemasForRegister(routeRegister)
 			if (routeSchema) {
-				this.schemaModel = this.schemaOptions.find((o) => String(o.id) === String(routeSchema)) || null
+				this.schemaModel =
+					this.schemaOptions.find(
+						(o) => String(o.id) === String(routeSchema),
+					) || null
 			}
 			return
 		}
 
 		if (qualityStore.selectedRegister) {
-			this.registerModel = this.registerOptions.find((o) => String(o.id) === String(qualityStore.selectedRegister)) || null
+			this.registerModel =
+				this.registerOptions.find(
+					(o) => String(o.id) === String(qualityStore.selectedRegister),
+				) || null
 			await qualityStore.fetchSchemasForRegister(qualityStore.selectedRegister)
 			if (qualityStore.selectedSchema) {
-				this.schemaModel = this.schemaOptions.find((o) => String(o.id) === String(qualityStore.selectedSchema)) || null
+				this.schemaModel =
+					this.schemaOptions.find(
+						(o) => String(o.id) === String(qualityStore.selectedSchema),
+					) || null
 			}
-			this.syncRoute(qualityStore.selectedRegister, qualityStore.selectedSchema)
+			this.syncRoute(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+			)
 		}
 	},
 
@@ -144,7 +159,10 @@ export default {
 		 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 		 */
 		handleSchemaChange(option) {
-			qualityStore.setSelection(this.registerModel?.id ?? null, option?.id ?? null)
+			qualityStore.setSelection(
+				this.registerModel?.id ?? null,
+				option?.id ?? null,
+			)
 			this.syncRoute(this.registerModel?.id ?? null, option?.id ?? null)
 		},
 

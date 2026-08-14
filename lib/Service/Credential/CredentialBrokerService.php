@@ -95,6 +95,13 @@ use Throwable;
  *   is deliberately decomposed into small single-purpose guard methods so each
  *   security decision is independently auditable; the aggregate weighted method
  *   count is a by-product of that decomposition, not of tangled logic.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           One over, from the streaming twin:
+ *   `streamRequest()`, its transport, and `authoriseCall()` — the guard chain the two
+ *   proxy entry points SHARE. Splitting the streaming path into its own class is the
+ *   move the metric is asking for and it is the wrong one here: the guards would then
+ *   live on one side of a class boundary and one caller on the other, which is exactly
+ *   how a second entry point ends up with its own copy of five checks and one of them
+ *   missing. The count is the size of one security policy, not two responsibilities.
  *
  * @spec openspec/specs/credential-broker/spec.md
  */
@@ -207,7 +214,56 @@ class CredentialBrokerService {
 		?string $body = null,
 		?string $actingUserId = null,
 	): array {
-		$method = strtoupper($method);
+		$call = $this->authoriseCall(
+			credentialId: $credentialId,
+			appId: $appId,
+			method: strtoupper($method),
+			path: $path,
+			headers: $headers,
+			actingUserId: $actingUserId
+		);
+
+		return $this->performCall(
+			method: $call['method'],
+			url: $call['url'],
+			headers: $call['headers'],
+			body: $body,
+			credentialId: $credentialId
+		);
+
+	}//end request()
+
+	/**
+	 * Run every guard, resolve the URL, and inject the secret.
+	 *
+	 * Extracted from `request()` when `streamRequest()` was added, so that the two
+	 * proxy entry points share ONE authorisation chain rather than each carrying a
+	 * copy. The guards below are the whole security posture of the broker; a
+	 * second copy is a second place for one to be dropped, and the likeliest one
+	 * to be dropped is the inject-only refusal — which is what stops the proxy
+	 * being unbounded.
+	 *
+	 * @param string      $credentialId The credential to proxy through.
+	 * @param string      $appId        The calling app.
+	 * @param string      $method       The HTTP method, already upper-cased.
+	 * @param string      $path         The upstream path.
+	 * @param array       $headers      Caller headers; auth among them is discarded.
+	 * @param string|null $actingUserId The acting user, or null for the routed path.
+	 *
+	 * @return array{method: string, url: string, headers: array} The authorised call.
+	 *
+	 * @throws CredentialAccessDeniedException When any guard refuses.
+	 *
+	 * @spec openspec/specs/credential-broker-service/spec.md
+	 */
+	private function authoriseCall(
+		string $credentialId,
+		string $appId,
+		string $method,
+		string $path,
+		array $headers,
+		?string $actingUserId,
+	): array {
 		$matchPath = $this->normalisePath(path: $path);
 
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
@@ -249,14 +305,76 @@ class CredentialBrokerService {
 
 		$requestHeaders = $this->injectAuth(provider: $provider, headers: $headers, secret: (string)$secret);
 
-		return $this->performCall(
-			method: $method,
-			url: $resolvedUrl,
-			headers: $requestHeaders,
+		return [
+			'method' => $method,
+			'url' => $resolvedUrl,
+			'headers' => $requestHeaders,
+		];
+
+	}//end authoriseCall()
+
+	/**
+	 * Proxy a call and hand back the response with its body STILL OPEN.
+	 *
+	 * Same credential, same guards, same injected secret as {@see request()} —
+	 * the difference is only that the body is not read here. A streaming API
+	 * (server-sent events, chunked JSON) answers over seconds or minutes, and
+	 * `request()` returns a string, so the caller waits for the last byte to see
+	 * the first and the whole response is held in memory on the way past.
+	 *
+	 * 🔑 THE GUARDS ARE NOT DUPLICATED — this method calls `request()`'s own
+	 * authorisation chain through `authoriseCall()`, which is the SAME method
+	 * `request()` uses. That matters more than the tidiness: a second proxy entry
+	 * point with its own copy of five checks is a second place for one of them to
+	 * be forgotten, and the one most likely to be forgotten is the inject-only
+	 * refusal, which is what stops this becoming an open proxy.
+	 *
+	 * ⚠️ The caller MUST consume the returned stream — see `BrokeredStream::pump()`,
+	 * which closes it. An unconsumed one holds an upstream connection open for the
+	 * life of the PHP worker.
+	 *
+	 * @param string      $credentialId  The credential to proxy through.
+	 * @param string      $appId         The calling app.
+	 * @param string      $method        The HTTP method.
+	 * @param string      $path          The upstream path, relative to the provider's baseUrl.
+	 * @param array       $headers       Caller headers; any auth among them is discarded.
+	 * @param string|null $body          The request body, when there is one.
+	 * @param string|null $actingUserId  The acting user, or null for the routed path.
+	 *
+	 * @return BrokeredStream The upstream status, headers, and unread body.
+	 *
+	 * @throws CredentialAccessDeniedException When any guard refuses.
+	 * @throws CredentialUpstreamException When the upstream call cannot be made.
+	 *
+	 * @spec openspec/specs/credential-broker-service/spec.md
+	 */
+	public function streamRequest(
+		string $credentialId,
+		string $appId,
+		string $method,
+		string $path,
+		array $headers = [],
+		?string $body = null,
+		?string $actingUserId = null,
+	): BrokeredStream {
+		$call = $this->authoriseCall(
+			credentialId: $credentialId,
+			appId: $appId,
+			method: strtoupper($method),
+			path: $path,
+			headers: $headers,
+			actingUserId: $actingUserId
+		);
+
+		return $this->performStreamingCall(
+			method: $call['method'],
+			url: $call['url'],
+			headers: $call['headers'],
 			body: $body,
 			credentialId: $credentialId
 		);
-	}//end request()
+
+	}//end streamRequest()
 
 	/**
 	 * Resolve the raw secret for an INJECT-ONLY credential, for same-instance app-side injection.
@@ -1153,6 +1271,87 @@ class CredentialBrokerService {
 			'body' => (string)$rawBody,
 		];
 	}//end performCall()
+
+	/**
+	 * Perform the upstream call WITHOUT reading its body.
+	 *
+	 * The twin of `performCall()`, and deliberately a separate method rather than
+	 * a flag on it: the two differ in what they RETURN and in who owns the
+	 * socket afterwards, which is not something a boolean argument should decide.
+	 *
+	 * `'stream' => true` is honoured by Nextcloud's own HTTP client
+	 * (`OC\Http\Client\Client`), whose `Response::getBody()` then answers with a
+	 * detached RESOURCE instead of a string. `performCall()` has always had an
+	 * `is_resource()` branch that ran `stream_get_contents()` over it — the
+	 * plumbing anticipated this; it simply buffered.
+	 *
+	 * ⚠️ NO TIMEOUT IS SET, and that is the point of the method. A model
+	 * generation legitimately runs for minutes with long gaps between frames, and
+	 * the default read timeout would abort it mid-answer — which surfaces to the
+	 * caller as a truncated response rather than as an error, the worst shape a
+	 * failure can take. The bound that matters here is the CALLER hanging up,
+	 * which `BrokeredStream::pump()` propagates by closing the stream.
+	 *
+	 * @param string      $method       The HTTP method.
+	 * @param string      $url          The resolved, host-locked upstream URL.
+	 * @param array       $headers      The request headers, secret already injected.
+	 * @param string|null $body         The request body, when there is one.
+	 * @param string      $credentialId The credential, for the error log only.
+	 *
+	 * @return BrokeredStream The status, headers, and unread body.
+	 *
+	 * @throws CredentialUpstreamException When the call cannot be made.
+	 *
+	 * @spec openspec/specs/credential-broker-service/spec.md
+	 */
+	private function performStreamingCall(
+		string $method,
+		string $url,
+		array $headers,
+		?string $body,
+		string $credentialId,
+	): BrokeredStream {
+		$options = [
+			'headers' => $headers,
+			'http_errors' => false,
+			'stream' => true,
+		];
+		if ($body !== null) {
+			$options['body'] = $body;
+		}
+
+		try {
+			$client = $this->clientService->newClient();
+			$response = $client->request($method, $url, $options);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'[CredentialBrokerService] upstream streaming call failed',
+				['credential' => $credentialId, 'error' => $e->getMessage()]
+			);
+			throw new CredentialUpstreamException(message: 'Upstream request failed');
+		}
+
+		$stream = $response->getBody();
+
+		// A non-resource here means the client buffered after all — a stub, a
+		// test double, or a future client that quietly stops honouring the
+		// option. Wrapping the string in a memory stream keeps the caller's
+		// contract intact rather than fataling on `fread(string)`, and the
+		// response is simply delivered in one chunk instead of many.
+		if (is_resource($stream) === false) {
+			$buffered = fopen('php://memory', 'r+');
+			fwrite($buffered, (string)$stream);
+			rewind($buffered);
+			$stream = $buffered;
+		}
+
+		return new BrokeredStream(
+			status: $response->getStatusCode(),
+			headers: $response->getHeaders(),
+			body: $stream
+		);
+
+	}//end performStreamingCall()
 
 	/**
 	 * Normalise and validate a caller-supplied path (reject `..`, require a single leading `/`).

@@ -13,4 +13,5 @@ export const mockSourceData = (): TSource[] => [
 	},
 ]
 
-export const mockSource = (data: TSource[] = mockSourceData()): TSource[] => data.map(item => new Source(item))
+export const mockSource = (data: TSource[] = mockSourceData()): TSource[] =>
+	data.map((item) => new Source(item))

@@ -9,7 +9,12 @@ import formatBytes from '../../services/formatBytes.js'
 		<CnIndexPage
 			ref="indexPage"
 			:title="t('openregister', 'Audit Trails')"
-			:description="t('openregister', 'View and analyze system audit trails with advanced filtering capabilities')"
+			:description="
+				t(
+					'openregister',
+					'View and analyze system audit trails with advanced filtering capabilities',
+				)
+			"
 			:show-title="true"
 			:objects="paginatedAuditTrails"
 			:columns="tableColumns"
@@ -52,7 +57,11 @@ import formatBytes from '../../services/formatBytes.js'
 
 			<template #column-action="{ row }">
 				<CnStatusBadge
-					:label="row.action ? row.action.toUpperCase() : t('openregister', 'NO ACTION')"
+					:label="
+						row.action
+							? row.action.toUpperCase()
+							: t('openregister', 'NO ACTION')
+					"
 					:color-map="actionColorMap"
 					solid>
 					<template #icon>
@@ -65,7 +74,9 @@ import formatBytes from '../../services/formatBytes.js'
 			</template>
 
 			<template #column-created="{ row }">
-				<NcDateTime :timestamp="new Date(row.created)" :ignore-seconds="false" />
+				<NcDateTime
+					:timestamp="new Date(row.created)"
+					:ignore-seconds="false" />
 			</template>
 
 			<template #column-object="{ row }">
@@ -99,7 +110,10 @@ import formatBytes from '../../services/formatBytes.js'
 						</template>
 						{{ t('openregister', 'View Details') }}
 					</NcActionButton>
-					<NcActionButton v-if="hasChanges(row)" close-after-click @click="viewChanges(row)">
+					<NcActionButton
+						v-if="hasChanges(row)"
+						close-after-click
+						@click="viewChanges(row)">
 						<template #icon>
 							<CompareHorizontal :size="20" />
 						</template>
@@ -107,10 +121,17 @@ import formatBytes from '../../services/formatBytes.js'
 					</NcActionButton>
 					<NcActionButton close-after-click @click="copyData(row)">
 						<template #icon>
-							<Check v-if="copyStates[row.id]" :size="20" class="copySuccessIcon" />
+							<Check
+								v-if="copyStates[row.id]"
+								:size="20"
+								class="copySuccessIcon" />
 							<ContentCopy v-else :size="20" />
 						</template>
-						{{ copyStates[row.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
+						{{
+							copyStates[row.id]
+								? t('openregister', 'Copied!')
+								: t('openregister', 'Copy Data')
+						}}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="deleteAuditTrail(row)">
 						<template #icon>
@@ -124,7 +145,12 @@ import formatBytes from '../../services/formatBytes.js'
 			<template #empty>
 				<NcEmptyContent
 					:name="t('openregister', 'No audit trail entries found')"
-					:description="t('openregister', 'There are no audit trail entries matching your current filters.')">
+					:description="
+						t(
+							'openregister',
+							'There are no audit trail entries matching your current filters.',
+						)
+					">
 					<template #icon>
 						<TextBoxOutline />
 					</template>
@@ -205,12 +231,36 @@ export default {
 		 */
 		tableColumns() {
 			return [
-				{ key: 'action', label: t('openregister', 'Action'), width: '100px' },
-				{ key: 'created', label: t('openregister', 'Timestamp'), width: '180px' },
-				{ key: 'object', label: t('openregister', 'Object ID'), class: 'cn-table-col--constrained' },
-				{ key: 'register', label: t('openregister', 'Register ID'), class: 'cn-table-col--constrained' },
-				{ key: 'userName', label: t('openregister', 'User'), class: 'cn-table-col--constrained' },
-				{ key: 'schema', label: t('openregister', 'Schema ID'), class: 'cn-table-col--constrained' },
+				{
+					key: 'action',
+					label: t('openregister', 'Action'),
+					width: '100px',
+				},
+				{
+					key: 'created',
+					label: t('openregister', 'Timestamp'),
+					width: '180px',
+				},
+				{
+					key: 'object',
+					label: t('openregister', 'Object ID'),
+					class: 'cn-table-col--constrained',
+				},
+				{
+					key: 'register',
+					label: t('openregister', 'Register ID'),
+					class: 'cn-table-col--constrained',
+				},
+				{
+					key: 'userName',
+					label: t('openregister', 'User'),
+					class: 'cn-table-col--constrained',
+				},
+				{
+					key: 'schema',
+					label: t('openregister', 'Schema ID'),
+					class: 'cn-table-col--constrained',
+				},
 				{ key: 'size', label: t('openregister', 'Size'), width: '100px' },
 			]
 		},
@@ -236,7 +286,9 @@ export default {
 		paginatedAuditTrails() {
 			// Ensure we always return a clean array
 			try {
-				return Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList : []
+				return Array.isArray(auditTrailStore.auditTrailList)
+					? auditTrailStore.auditTrailList
+					: []
 			} catch (error) {
 				console.error('Error accessing auditTrailList:', error)
 				return []
@@ -353,7 +405,8 @@ export default {
 		 * @return {string}
 		 */
 		getRowClass(auditTrail) {
-			const variant = this.actionColorMap[String(auditTrail.action || '').toLowerCase()]
+			const variant =
+				this.actionColorMap[String(auditTrail.action || '').toLowerCase()]
 			return variant ? `auditTrailRow--${variant}` : ''
 		},
 		/**
@@ -418,13 +471,14 @@ export default {
 				this.copyStates[auditTrail.id] = true
 
 				// Show success notification with enhanced styling
-				showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
+				showSuccess(
+					t('openregister', 'Audit trail data copied to clipboard'),
+				)
 
 				// Reset copy state after 2 seconds
 				setTimeout(() => {
 					this.copyStates[auditTrail.id] = false
 				}, 2000)
-
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
 				// Fallback for older browsers or when clipboard API is not available
@@ -439,13 +493,14 @@ export default {
 					// Set successful copy state for fallback method too
 					this.copyStates[auditTrail.id] = true
 
-					showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
+					showSuccess(
+						t('openregister', 'Audit trail data copied to clipboard'),
+					)
 
 					// Reset copy state after 2 seconds
 					setTimeout(() => {
 						this.copyStates[auditTrail.id] = false
 					}, 2000)
-
 				} catch (fallbackError) {
 					console.error('Fallback copy failed:', fallbackError)
 					showError(t('openregister', 'Failed to copy data to clipboard'))
@@ -480,20 +535,30 @@ export default {
 				// `filters` silently dropped every active filter, including the
 				// dateFrom/dateTo range the compliance export requires.
 				if (auditTrailStore.auditTrailFilters) {
-					Object.entries(auditTrailStore.auditTrailFilters).forEach(([key, value]) => {
-						if (value !== null && value !== undefined && value !== '') {
-							params.append(key, value)
-						}
-					})
+					Object.entries(auditTrailStore.auditTrailFilters).forEach(
+						([key, value]) => {
+							if (
+								value !== null
+								&& value !== undefined
+								&& value !== ''
+							) {
+								params.append(key, value)
+							}
+						},
+					)
 				}
 
 				// Make the API request
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`)
+				const response = await fetch(
+					`/index.php/apps/openregister/api/audit-trails/export?${params.toString()}`,
+				)
 				const result = await response.json()
 
 				if (result.success && result.data) {
 					// Create and trigger download
-					const blob = new Blob([result.data.content], { type: result.data.contentType })
+					const blob = new Blob([result.data.content], {
+						type: result.data.contentType,
+					})
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
 					a.href = url
@@ -509,7 +574,11 @@ export default {
 				}
 			} catch (error) {
 				console.error('Error exporting audit trails:', error)
-				showError(t('openregister', 'Export failed: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Export failed: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
@@ -542,7 +611,9 @@ export default {
 		 */
 		updateCounts() {
 			try {
-				const count = Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList.length : 0
+				const count = Array.isArray(auditTrailStore.auditTrailList)
+					? auditTrailStore.auditTrailList.length
+					: 0
 				eventBus.emit('audit-trail-filtered-count', count)
 			} catch (error) {
 				console.error('Error updating counts:', error)
@@ -624,14 +695,17 @@ export default {
 		async handleMassDelete(ids) {
 			try {
 				// Make the API request to delete selected audit trails
-				const response = await fetch('/index.php/apps/openregister/api/audit-trails/bulk-delete', {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					'/index.php/apps/openregister/api/audit-trails/bulk-delete',
+					{
+						method: 'DELETE',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
+						body: JSON.stringify({ ids }),
 					},
-					body: JSON.stringify({ ids }),
-				})
+				)
 
 				const result = await response.json()
 
@@ -646,7 +720,10 @@ export default {
 				await this.loadAuditTrails()
 			} catch (error) {
 				console.error('Error deleting audit trails:', error)
-				this.$refs.indexPage.setMassDeleteResult({ success: false, error: error.message })
+				this.$refs.indexPage.setMassDeleteResult({
+					success: false,
+					error: error.message,
+				})
 			}
 		},
 	},
@@ -689,9 +766,15 @@ export default {
 }
 
 @keyframes copySuccess {
-	0% { transform: scale(1); }
-	50% { transform: scale(1.2); }
-	100% { transform: scale(1); }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.2);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

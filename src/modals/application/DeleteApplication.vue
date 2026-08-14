@@ -15,9 +15,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				</template>
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				variant="error"
-				@click="deleteApplication">
+			<NcButton variant="error" @click="deleteApplication">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -45,9 +43,15 @@ export default {
 		 * @spec exclude computed display helper for confirmation message
 		 */
 		deleteMessage() {
-			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
-				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
-			})
+			return t(
+				'openregister',
+				'Are you sure you want to delete the application "{name}"? This action cannot be undone.',
+				{
+					name:
+						applicationStore.applicationItem?.name
+						|| t('openregister', 'this application'),
+				},
+			)
 		},
 	},
 	methods: {
@@ -56,7 +60,9 @@ export default {
 		 */
 		async deleteApplication() {
 			try {
-				await applicationStore.deleteApplication(applicationStore.applicationItem)
+				await applicationStore.deleteApplication(
+					applicationStore.applicationItem,
+				)
 				navigationStore.setDialog(false)
 			} catch (error) {
 				console.error('Error deleting application:', error)

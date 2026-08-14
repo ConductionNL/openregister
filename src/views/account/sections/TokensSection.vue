@@ -10,12 +10,18 @@
 				{{ t('openregister', 'Loading tokens...') }}
 			</div>
 			<ul v-else class="tokens-section__list">
-				<li v-for="token in tokens" :key="token.id" class="tokens-section__item">
+				<li
+					v-for="token in tokens"
+					:key="token.id"
+					class="tokens-section__item">
 					<div class="tokens-section__info">
 						<strong>{{ token.name }}</strong>
-						<span class="tokens-section__preview">{{ token.preview }}</span>
+						<span class="tokens-section__preview">{{
+							token.preview
+						}}</span>
 						<span v-if="token.expires" class="tokens-section__expires">
-							{{ t('openregister', 'Expires') }}: {{ formatDate(token.expires) }}
+							{{ t('openregister', 'Expires') }}:
+							{{ formatDate(token.expires) }}
 						</span>
 					</div>
 					<NcButton variant="error" @click="revokeToken(token.id)">
@@ -43,7 +49,9 @@
 			@close="createdToken = null"
 			@copy="copyToken" />
 
-		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+		<p
+			v-if="message"
+			:class="{ section__error: isError, section__success: !isError }">
 			{{ message }}
 		</p>
 	</div>
@@ -87,7 +95,9 @@ export default {
 		async loadTokens() {
 			this.loading = true
 			try {
-				const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me/tokens'))
+				const { data } = await axios.get(
+					generateUrl('/apps/openregister/api/user/me/tokens'),
+				)
 				this.tokens = data || []
 			} catch (e) {
 				// Handle silently.
@@ -115,7 +125,9 @@ export default {
 				this.newTokenExpires = ''
 				await this.loadTokens()
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to create token')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to create token')
 				this.isError = true
 			}
 		},
@@ -128,12 +140,16 @@ export default {
 		 */
 		async revokeToken(id) {
 			try {
-				await axios.delete(generateUrl(`/apps/openregister/api/user/me/tokens/${id}`))
+				await axios.delete(
+					generateUrl(`/apps/openregister/api/user/me/tokens/${id}`),
+				)
 				this.message = t('openregister', 'Token revoked')
 				this.isError = false
 				await this.loadTokens()
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to revoke token')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to revoke token')
 				this.isError = true
 			}
 		},
@@ -169,25 +185,63 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
 
-.section__loading { color: var(--color-text-maxcontrast); }
+.section__loading {
+	color: var(--color-text-maxcontrast);
+}
 
-.section__field { margin-bottom: 12px; }
+.section__field {
+	margin-bottom: 12px;
+}
 
-.section__field label { display: block; margin-bottom: 4px; font-weight: bold; }
+.section__field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
 
-.section__error { color: var(--color-error); margin-top: 8px; }
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
 
-.section__success { color: var(--color-success); margin-top: 8px; }
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
 
-.tokens-section__list { list-style: none; padding: 0; margin-top: 16px; }
+.tokens-section__list {
+	list-style: none;
+	padding: 0;
+	margin-top: 16px;
+}
 
-.tokens-section__item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--color-border-dark); }
+.tokens-section__item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border-dark);
+}
 
-.tokens-section__info { display: flex; flex-direction: column; gap: 4px; }
+.tokens-section__info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
 
-.tokens-section__preview { font-family: monospace; color: var(--color-text-maxcontrast); }
+.tokens-section__preview {
+	font-family: monospace;
+	color: var(--color-text-maxcontrast);
+}
 
-.tokens-section__expires { font-size: 0.85em; color: var(--color-text-maxcontrast); }
+.tokens-section__expires {
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+}
 </style>

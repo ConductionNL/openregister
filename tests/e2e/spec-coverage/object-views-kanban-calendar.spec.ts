@@ -37,7 +37,10 @@ import {
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 
 const RUN_ID = makeRunId()
 
@@ -49,7 +52,11 @@ const TASK_SCHEMA_PROPERTIES = {
 		description: 'Task status',
 		enum: ['todo', 'doing', 'done'],
 	},
-	dueDate: { type: 'string', title: 'Due date', description: 'Task due date (ISO date)' },
+	dueDate: {
+		type: 'string',
+		title: 'Due date',
+		description: 'Task due date (ISO date)',
+	},
 }
 
 /**
@@ -109,16 +116,23 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 	page.on('response', (r) => {
 		if (r.status() < 500) return
 		const u = r.url()
-		if (!isNoise(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
+		if (!isNoise(u))
+			errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})
 	return errors
 }
 
 /** Navigate to /tables (SearchIndex) via the manifest shell. */
 async function gotoTablesPage(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openregister/tables', { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
-	await page.waitForSelector('#app-content-vue, .app-content, main', { timeout: 20_000 })
+	await page.goto('/index.php/apps/openregister/tables', {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
+	await page.waitForSelector('#app-content-vue, .app-content, main', {
+		timeout: 20_000,
+	})
 	await page.waitForTimeout(800)
 }
 
@@ -142,10 +156,14 @@ interface ActivateResult {
  * awaits `$nextTick()` so the dispatch (`v-if="presentationType === ..."`)
  * has run before the caller asserts on the DOM.
  */
-async function activatePresentationView(page: Page, viewId: number | string): Promise<ActivateResult> {
+async function activatePresentationView(
+	page: Page,
+	viewId: number | string,
+): Promise<ActivateResult> {
 	return page.evaluate(async (id) => {
 		function findVueRoot(): any {
-			const first = document.body.querySelector('*') as (Element & { __vue__?: any }) | null
+			const first = document.body.querySelector('*') as
+				(Element & { __vue__?: any }) | null
 			if (first?.__vue__) return first.__vue__.$root
 			// Fallback: scan every element for one carrying a Vue-2 instance.
 			const all = document.body.querySelectorAll('*')
@@ -168,18 +186,28 @@ async function activatePresentationView(page: Page, viewId: number | string): Pr
 		}
 
 		const root = findVueRoot()
-		if (!root) return { ok: false, error: 'Vue root not found under document.body' }
+		if (!root)
+			return { ok: false, error: 'Vue root not found under document.body' }
 
 		const vm = findSearchIndexVm(root)
-		if (!vm) return { ok: false, error: 'SearchIndex component (presentationType) not found in tree' }
+		if (!vm)
+			return {
+				ok: false,
+				error: 'SearchIndex component (presentationType) not found in tree',
+			}
 
 		const viewsStore = vm.$data?.viewsStore ?? vm.viewsStore
-		if (!viewsStore) return { ok: false, error: 'viewsStore not exposed on SearchIndex vm' }
+		if (!viewsStore)
+			return { ok: false, error: 'viewsStore not exposed on SearchIndex vm' }
 
 		const resp = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
 			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
 		})
-		if (!resp.ok) return { ok: false, error: `GET /api/views/${id} failed: ${resp.status}` }
+		if (!resp.ok)
+			return {
+				ok: false,
+				error: `GET /api/views/${id} failed: ${resp.status}`,
+			}
 		const body = await resp.json()
 		const view = body.view ?? body
 
@@ -214,7 +242,10 @@ test.describe('object-views-kanban-calendar — kanban + calendar presentations 
 			data: {
 				name: `${RUN_ID}-ui-kanban-view`,
 				description: 'UI e2e kanban view',
-				query: { registers: [String(register.id)], schemas: [String(schema.id)] },
+				query: {
+					registers: [String(register.id)],
+					schemas: [String(schema.id)],
+				},
 				presentation: {
 					viewType: 'kanban',
 					kanban: {
@@ -236,7 +267,10 @@ test.describe('object-views-kanban-calendar — kanban + calendar presentations 
 			data: {
 				name: `${RUN_ID}-ui-calendar-view`,
 				description: 'UI e2e calendar view',
-				query: { registers: [String(register.id)], schemas: [String(schema.id)] },
+				query: {
+					registers: [String(register.id)],
+					schemas: [String(schema.id)],
+				},
 				presentation: {
 					viewType: 'calendar',
 					calendar: { dateField: 'dueDate' },
@@ -252,22 +286,31 @@ test.describe('object-views-kanban-calendar — kanban + calendar presentations 
 
 	test.afterAll(async ({ request }) => {
 		for (const id of objectIds) {
-			await request.delete(`${API}/objects/${register.id}/${schema.id}/${id}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${register.id}/${schema.id}/${id}`)
+				.catch(() => {})
 		}
-		if (kanbanViewId) await request.delete(`${API}/views/${kanbanViewId}`).catch(() => {})
-		if (calendarViewId) await request.delete(`${API}/views/${calendarViewId}`).catch(() => {})
+		if (kanbanViewId)
+			await request.delete(`${API}/views/${kanbanViewId}`).catch(() => {})
+		if (calendarViewId)
+			await request.delete(`${API}/views/${calendarViewId}`).catch(() => {})
 		await deleteSchema(request, schema.id)
 		await deleteRegister(request, register.id)
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
 	// @e2e openspec/specs/saved-search-views/spec.md#requirement-presentation-components-are-shared-and-wired-not-owned-by-or-req-view-pres-05
-	test('activating a kanban view renders CnObjectKanban with real columns and cards', async ({ page }) => {
+	test('activating a kanban view renders CnObjectKanban with real columns and cards', async ({
+		page,
+	}) => {
 		test.skip(!kanbanViewId, 'no kanban view seeded')
 		const errors = trackErrors(page)
 
 		await gotoTablesPage(page)
-		const activation = await activatePresentationView(page, kanbanViewId as number)
+		const activation = await activatePresentationView(
+			page,
+			kanbanViewId as number,
+		)
 		expect(activation.ok, activation.error).toBe(true)
 		expect(activation.presentationType).toBe('kanban')
 
@@ -276,41 +319,62 @@ test.describe('object-views-kanban-calendar — kanban + calendar presentations 
 		const columns = page.locator('.cn-object-kanban__column')
 		await expect(columns).toHaveCount(3, { timeout: 20_000 })
 
-		const columnTitles = await page.locator('.cn-object-kanban__column-title').allTextContents()
+		const columnTitles = await page
+			.locator('.cn-object-kanban__column-title')
+			.allTextContents()
 		expect(columnTitles).toEqual(['todo', 'doing', 'done'])
 
-		const columnCounts = await page.locator('.cn-object-kanban__column-count').allTextContents()
+		const columnCounts = await page
+			.locator('.cn-object-kanban__column-count')
+			.allTextContents()
 		// Seeded distribution: 1 todo, 3 doing, 1 done.
 		expect(columnCounts).toEqual(['1', '3', '1'])
 
 		// Cards render seeded titles — not placeholder/empty cards.
-		const cardTitles = await page.locator('.cn-object-kanban__card-title').allTextContents()
+		const cardTitles = await page
+			.locator('.cn-object-kanban__card-title')
+			.allTextContents()
 		for (const task of SEED_TASKS) {
 			expect(cardTitles).toContain(task.title)
 		}
 
-		expect(errors.console, `OR console errors: ${errors.console.join(' | ')}`).toHaveLength(0)
-		expect(errors.http, `OR 5xx responses: ${errors.http.join(' | ')}`).toHaveLength(0)
+		expect(
+			errors.console,
+			`OR console errors: ${errors.console.join(' | ')}`,
+		).toHaveLength(0)
+		expect(
+			errors.http,
+			`OR 5xx responses: ${errors.http.join(' | ')}`,
+		).toHaveLength(0)
 	})
 
 	// @e2e openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	// @e2e openspec/specs/saved-search-views/spec.md#requirement-presentation-components-are-shared-and-wired-not-owned-by-or-req-view-pres-05
-	test('activating a calendar view renders CnObjectCalendar with objects plotted on their dueDate', async ({ page }) => {
+	test('activating a calendar view renders CnObjectCalendar with objects plotted on their dueDate', async ({
+		page,
+	}) => {
 		test.skip(!calendarViewId, 'no calendar view seeded')
 		const errors = trackErrors(page)
 
 		await gotoTablesPage(page)
-		const activation = await activatePresentationView(page, calendarViewId as number)
+		const activation = await activatePresentationView(
+			page,
+			calendarViewId as number,
+		)
 		expect(activation.ok, activation.error).toBe(true)
 		expect(activation.presentationType).toBe('calendar')
 
 		// The month grid renders synchronously; the day-cell events populate
 		// once handleCalendarRangeChange's fetch (triggered by
 		// CnObjectCalendar's own `range-change` on mount) resolves.
-		await expect(page.locator('.cn-object-calendar__month')).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('.cn-object-calendar__month')).toBeVisible({
+			timeout: 15_000,
+		})
 		// Grid length is 35 or 42 cells depending on how the month pads to
 		// whole Sun-Sat weeks — assert a real grid painted, not a fixed count.
-		const cellCount = await page.locator('.cn-object-calendar__month-cell').count()
+		const cellCount = await page
+			.locator('.cn-object-calendar__month-cell')
+			.count()
 		expect(cellCount).toBeGreaterThanOrEqual(28)
 
 		const eventTexts = page.locator('.cn-object-calendar__event')
@@ -320,7 +384,13 @@ test.describe('object-views-kanban-calendar — kanban + calendar presentations 
 			expect(allEventTexts).toContain(task.title)
 		}
 
-		expect(errors.console, `OR console errors: ${errors.console.join(' | ')}`).toHaveLength(0)
-		expect(errors.http, `OR 5xx responses: ${errors.http.join(' | ')}`).toHaveLength(0)
+		expect(
+			errors.console,
+			`OR console errors: ${errors.console.join(' | ')}`,
+		).toHaveLength(0)
+		expect(
+			errors.http,
+			`OR 5xx responses: ${errors.http.join(' | ')}`,
+		).toHaveLength(0)
 	})
 })

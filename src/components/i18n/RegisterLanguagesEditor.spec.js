@@ -7,7 +7,8 @@ import RegisterLanguagesEditor from './RegisterLanguagesEditor.vue'
  * @param ctx
  */
 const callComputed = (key, ctx) => RegisterLanguagesEditor.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) => RegisterLanguagesEditor.methods[key].apply(ctx, args)
+const callMethod = (key, ctx, ...args) =>
+	RegisterLanguagesEditor.methods[key].apply(ctx, args)
 
 const buildCtx = (overrides = {}) => {
 	const emitted = []
@@ -16,7 +17,9 @@ const buildCtx = (overrides = {}) => {
 		disabled: false,
 		draft: '',
 		error: null,
-		$emit(name, payload) { emitted.push([name, payload]) },
+		$emit(name, payload) {
+			emitted.push([name, payload])
+		},
 		_emitted: emitted,
 		...overrides,
 	}
@@ -25,7 +28,9 @@ const buildCtx = (overrides = {}) => {
 describe('RegisterLanguagesEditor', () => {
 	describe('normalizedDraft', () => {
 		it('lowercases and trims whitespace', () => {
-			expect(callComputed('normalizedDraft', { draft: '  EN-GB ' })).toBe('en-gb')
+			expect(callComputed('normalizedDraft', { draft: '  EN-GB ' })).toBe(
+				'en-gb',
+			)
 		})
 
 		it('handles empty/missing input', () => {
@@ -64,11 +69,18 @@ describe('RegisterLanguagesEditor', () => {
 
 	describe('canAdd', () => {
 		it('is false when input is empty', () => {
-			expect(callComputed('canAdd', buildCtx({ draft: '', normalizedDraft: '' }))).toBe(false)
+			expect(
+				callComputed('canAdd', buildCtx({ draft: '', normalizedDraft: '' })),
+			).toBe(false)
 		})
 
 		it('is false when disabled', () => {
-			const ctx = buildCtx({ draft: 'nl', value: [], normalizedDraft: 'nl', disabled: true })
+			const ctx = buildCtx({
+				draft: 'nl',
+				value: [],
+				normalizedDraft: 'nl',
+				disabled: true,
+			})
 			ctx.validateDraft = RegisterLanguagesEditor.methods.validateDraft
 			expect(callComputed('canAdd', ctx)).toBe(false)
 		})
@@ -80,7 +92,11 @@ describe('RegisterLanguagesEditor', () => {
 		})
 
 		it('is false for duplicates', () => {
-			const ctx = buildCtx({ draft: 'NL', value: ['nl'], normalizedDraft: 'nl' })
+			const ctx = buildCtx({
+				draft: 'NL',
+				value: ['nl'],
+				normalizedDraft: 'nl',
+			})
 			ctx.validateDraft = RegisterLanguagesEditor.methods.validateDraft
 			expect(callComputed('canAdd', ctx)).toBe(false)
 		})
@@ -91,11 +107,15 @@ describe('RegisterLanguagesEditor', () => {
 			const ctx = buildCtx(overrides)
 			// Compute normalizedDraft on the fly using the actual computed.
 			Object.defineProperty(ctx, 'normalizedDraft', {
-				get() { return (this.draft || '').trim().toLowerCase() },
+				get() {
+					return (this.draft || '').trim().toLowerCase()
+				},
 			})
 			// Bind sibling methods used by addCurrent.
-			ctx.validateDraft = RegisterLanguagesEditor.methods.validateDraft.bind(ctx)
-			ctx.errorMessageFor = RegisterLanguagesEditor.methods.errorMessageFor.bind(ctx)
+			ctx.validateDraft =
+				RegisterLanguagesEditor.methods.validateDraft.bind(ctx)
+			ctx.errorMessageFor =
+				RegisterLanguagesEditor.methods.errorMessageFor.bind(ctx)
 			return ctx
 		}
 
@@ -179,13 +199,21 @@ describe('RegisterLanguagesEditor', () => {
 	describe('errorMessageFor', () => {
 		it('maps known reasons to readable messages', () => {
 			const ctx = {}
-			expect(callMethod('errorMessageFor', ctx, 'empty')).toMatch(/Enter a BCP 47/)
-			expect(callMethod('errorMessageFor', ctx, 'invalid')).toMatch(/valid BCP 47/)
-			expect(callMethod('errorMessageFor', ctx, 'duplicate')).toMatch(/already in the list/)
+			expect(callMethod('errorMessageFor', ctx, 'empty')).toMatch(
+				/Enter a BCP 47/,
+			)
+			expect(callMethod('errorMessageFor', ctx, 'invalid')).toMatch(
+				/valid BCP 47/,
+			)
+			expect(callMethod('errorMessageFor', ctx, 'duplicate')).toMatch(
+				/already in the list/,
+			)
 		})
 
 		it('falls back for unknown reasons', () => {
-			expect(callMethod('errorMessageFor', {}, 'mystery')).toBe('Invalid input.')
+			expect(callMethod('errorMessageFor', {}, 'mystery')).toBe(
+				'Invalid input.',
+			)
 		})
 	})
 })

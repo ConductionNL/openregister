@@ -61,21 +61,24 @@ export const useViewsStore = defineStore('views', {
 		 * @param {object} state - Store state
 		 * @return {Array} Public views
 		 */
-		getPublicViews: (state) => state.viewsList.filter(view => view.isPublic === true),
+		getPublicViews: (state) =>
+			state.viewsList.filter((view) => view.isPublic === true),
 
 		/**
 		 * Get user's private views
 		 * @param {object} state - Store state
 		 * @return {Array} Private views
 		 */
-		getPrivateViews: (state) => state.viewsList.filter(view => view.isPublic !== true),
+		getPrivateViews: (state) =>
+			state.viewsList.filter((view) => view.isPublic !== true),
 
 		/**
 		 * Get default view if one exists
 		 * @param {object} state - Store state
 		 * @return {object|null} Default view
 		 */
-		getDefaultView: (state) => state.viewsList.find(view => view.isDefault === true) || null,
+		getDefaultView: (state) =>
+			state.viewsList.find((view) => view.isDefault === true) || null,
 
 		/**
 		 * Check if loading
@@ -125,12 +128,15 @@ export const useViewsStore = defineStore('views', {
 			this.error = null
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/views', {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/views',
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -159,12 +165,15 @@ export const useViewsStore = defineStore('views', {
 			this.error = null
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -197,13 +206,16 @@ export const useViewsStore = defineStore('views', {
 			this.error = null
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/views', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/views',
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(viewData),
 					},
-					body: JSON.stringify(viewData),
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -243,13 +255,16 @@ export const useViewsStore = defineStore('views', {
 			const cleanedData = this.cleanViewForSave(viewData)
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(cleanedData),
 					},
-					body: JSON.stringify(cleanedData),
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -261,13 +276,18 @@ export const useViewsStore = defineStore('views', {
 				const updatedView = data.view || data
 
 				// Update in views list
-				const index = this.viewsList.findIndex(v => v.id === id || v.uuid === id)
+				const index = this.viewsList.findIndex(
+					(v) => v.id === id || v.uuid === id,
+				)
 				if (index !== -1) {
 					this.viewsList[index] = updatedView
 				}
 
 				// Update active view if it's the same
-				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
+				if (
+					this.activeView
+					&& (this.activeView.id === id || this.activeView.uuid === id)
+				) {
 					this.activeView = updatedView
 				}
 
@@ -312,22 +332,30 @@ export const useViewsStore = defineStore('views', {
 			this.error = null
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/views/${id}`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/views/${id}`,
+					{
+						method: 'DELETE',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
 				// Remove from views list
-				this.viewsList = this.viewsList.filter(v => v.id !== id && v.uuid !== id)
+				this.viewsList = this.viewsList.filter(
+					(v) => v.id !== id && v.uuid !== id,
+				)
 
 				// Clear active view if it's the same
-				if (this.activeView && (this.activeView.id === id || this.activeView.uuid === id)) {
+				if (
+					this.activeView
+					&& (this.activeView.id === id || this.activeView.uuid === id)
+				) {
 					this.activeView = null
 				}
 			} catch (error) {
@@ -416,7 +444,13 @@ export const useViewsStore = defineStore('views', {
 		 *
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
-		createViewFromSearchState(searchStore, name, description = '', isDefault = false, isPublic = false) {
+		createViewFromSearchState(
+			searchStore,
+			name,
+			description = '',
+			isDefault = false,
+			isPublic = false,
+		) {
 			return {
 				name,
 				description,
@@ -467,7 +501,9 @@ export const useViewsStore = defineStore('views', {
 
 				if (!response.ok) {
 					const body = await response.json().catch(() => null)
-					throw new Error(body?.error || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						body?.error || `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				return await response.json()
@@ -495,7 +531,10 @@ export const useViewsStore = defineStore('views', {
 			this.error = null
 
 			try {
-				const query = new URLSearchParams({ start: rangeStart, end: rangeEnd })
+				const query = new URLSearchParams({
+					start: rangeStart,
+					end: rangeEnd,
+				})
 				const url = `/index.php/apps/openregister/api/views/${id}/calendar?${query.toString()}`
 
 				const response = await fetch(url, {
@@ -507,7 +546,9 @@ export const useViewsStore = defineStore('views', {
 
 				if (!response.ok) {
 					const body = await response.json().catch(() => null)
-					throw new Error(body?.error || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						body?.error || `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				return await response.json()

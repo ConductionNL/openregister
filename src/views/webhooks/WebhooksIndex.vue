@@ -14,11 +14,20 @@
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage webhooks for event-driven integrations') }}
+					{{
+						t(
+							'openregister',
+							'Manage webhooks for event-driven integrations',
+						)
+					}}
 				</p>
 			</div>
 
@@ -26,28 +35,27 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="webhooksList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} webhooks', {
-							showing: webhooksList.length,
-							total: totalWebhooks
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} webhooks',
+								{
+									showing: webhooksList.length,
+									total: totalWebhooks,
+								},
+							)
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton
-						variant="primary"
-						@click="openCreateDialog">
+					<NcButton variant="primary" @click="openCreateDialog">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						{{ t('openregister', 'Create Webhook') }}
 					</NcButton>
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshWebhooks">
+					<NcActions :force-name="true" :inline="1" menu-name="Actions">
+						<NcActionButton close-after-click @click="refreshWebhooks">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -66,7 +74,9 @@
 				<NcEmptyContent
 					v-else-if="!webhooksList.length"
 					:name="t('openregister', 'No webhooks found')"
-					:description="t('openregister', 'No webhooks have been configured yet')">
+					:description="
+						t('openregister', 'No webhooks have been configured yet')
+					">
 					<template #icon>
 						<Webhook :size="64" />
 					</template>
@@ -103,18 +113,33 @@
 							<td class="column-name">
 								<div class="webhook-name-cell">
 									<Webhook :size="20" class="webhook-icon" />
-									<span class="webhook-name">{{ webhook.name }}</span>
+									<span class="webhook-name">{{
+										webhook.name
+									}}</span>
 								</div>
 							</td>
 							<td class="column-url">
-								<span class="webhook-url">{{ truncateUrl(webhook.url) }}</span>
+								<span class="webhook-url">{{
+									truncateUrl(webhook.url)
+								}}</span>
 							</td>
 							<td class="column-method">
-								<span class="badge badge-method">{{ webhook.method }}</span>
+								<span class="badge badge-method">{{
+									webhook.method
+								}}</span>
 							</td>
 							<td class="column-status">
-								<span class="badge" :class="'badge-status-' + (webhook.enabled ? 'enabled' : 'disabled')">
-									{{ webhook.enabled ? t('openregister', 'Enabled') : t('openregister', 'Disabled') }}
+								<span
+									class="badge"
+									:class="
+										'badge-status-'
+										+ (webhook.enabled ? 'enabled' : 'disabled')
+									">
+									{{
+										webhook.enabled
+											? t('openregister', 'Enabled')
+											: t('openregister', 'Disabled')
+									}}
 								</span>
 							</td>
 							<td class="column-last-triggered">
@@ -153,10 +178,16 @@
 										close-after-click
 										@click="toggleWebhook(webhook)">
 										<template #icon>
-											<PauseCircleOutline v-if="webhook.enabled" :size="20" />
+											<PauseCircleOutline
+												v-if="webhook.enabled"
+												:size="20" />
 											<PlayOutline v-else :size="20" />
 										</template>
-										{{ webhook.enabled ? t('openregister', 'Disable') : t('openregister', 'Enable') }}
+										{{
+											webhook.enabled
+												? t('openregister', 'Disable')
+												: t('openregister', 'Enable')
+										}}
 									</NcActionButton>
 									<NcActionButton
 										close-after-click
@@ -174,16 +205,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalWebhooks > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalWebhooks"
@@ -292,14 +323,15 @@ export default {
 
 			if (this.searchQuery) {
 				const query = this.searchQuery.toLowerCase()
-				webhooks = webhooks.filter(w =>
-					w.name.toLowerCase().includes(query)
-					|| w.url.toLowerCase().includes(query),
+				webhooks = webhooks.filter(
+					(w) =>
+						w.name.toLowerCase().includes(query)
+						|| w.url.toLowerCase().includes(query),
 				)
 			}
 
 			if (this.enabledFilter !== null) {
-				webhooks = webhooks.filter(w => w.enabled === this.enabledFilter)
+				webhooks = webhooks.filter((w) => w.enabled === this.enabledFilter)
 			}
 
 			return webhooks
@@ -359,14 +391,16 @@ export default {
 
 			// Get unique properties from all selected events.
 			const propertiesSet = new Set()
-			this.newWebhook.events.forEach(eventClass => {
-				const event = this.availableEvents.find(e => e.class === eventClass)
+			this.newWebhook.events.forEach((eventClass) => {
+				const event = this.availableEvents.find(
+					(e) => e.class === eventClass,
+				)
 				if (event && event.properties) {
-					event.properties.forEach(prop => propertiesSet.add(prop))
+					event.properties.forEach((prop) => propertiesSet.add(prop))
 				}
 			})
 
-			return Array.from(propertiesSet).map(prop => ({
+			return Array.from(propertiesSet).map((prop) => ({
 				value: prop,
 				label: prop,
 			}))
@@ -481,14 +515,20 @@ export default {
 				if (response.data && response.data.success === true) {
 					showSuccess(t('openregister', 'Test webhook sent successfully'))
 				} else {
-					const message = response.data?.message || response.data?.error || t('openregister', 'Test webhook delivery failed')
+					const message =
+						response.data?.message
+						|| response.data?.error
+						|| t('openregister', 'Test webhook delivery failed')
 					showError(message)
 				}
 				// Always refresh webhook list to show updated statistics (last triggered, success rate).
 				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to test webhook:', error)
-				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to test webhook')
+				const errorMessage =
+					error.response?.data?.error
+					|| error.response?.data?.message
+					|| t('openregister', 'Failed to test webhook')
 				showError(errorMessage)
 				// Refresh even on error to show any partial updates.
 				this.loadWebhooks()
@@ -575,7 +615,8 @@ export default {
 			if (!webhook.totalDeliveries || webhook.totalDeliveries === 0) {
 				return '-'
 			}
-			const rate = (webhook.successfulDeliveries / webhook.totalDeliveries) * 100
+			const rate =
+				(webhook.successfulDeliveries / webhook.totalDeliveries) * 100
 			return `${Math.round(rate)}%`
 		},
 
@@ -603,7 +644,6 @@ export default {
 			if (!date) return '-'
 			return new Date(date).toLocaleString()
 		},
-
 	},
 }
 </script>

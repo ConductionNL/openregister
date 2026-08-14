@@ -39,7 +39,10 @@ test.describe('frontend-app-bootstrap — navigation routes load', () => {
 		test(`#${route.hash} renders without error`, async ({ page }) => {
 			const authFile = STORAGE_STATE
 			if (!fs.existsSync(authFile)) {
-				test.skip(true, 'storageState not present — run the full suite first')
+				test.skip(
+					true,
+					'storageState not present — run the full suite first',
+				)
 			}
 			// Use domcontentloaded — the NC SPA keeps background XHR alive so networkidle never fires.
 			await page.goto(`/index.php/apps/openregister/#${route.hash}`, {
@@ -48,13 +51,15 @@ test.describe('frontend-app-bootstrap — navigation routes load', () => {
 
 			// Nextcloud header must be visible.
 			await expect(
-				page.locator('#header, header.header-appcontainer, .header-appcontainer'),
+				page.locator(
+					'#header, header.header-appcontainer, .header-appcontainer',
+				),
 			).toBeVisible({ timeout: 25_000 })
 
 			// App content area must be present.
-			await expect(
-				page.locator('main, .app-content').first(),
-			).toBeVisible({ timeout: 15_000 })
+			await expect(page.locator('main, .app-content').first()).toBeVisible({
+				timeout: 15_000,
+			})
 		})
 	}
 })
@@ -70,17 +75,23 @@ test.describe('built-in-dashboards — dashboard renders', () => {
 			test.skip(true, 'storageState not present')
 		}
 
-		await page.goto('/index.php/apps/openregister/#/', { waitUntil: 'domcontentloaded' })
+		await page.goto('/index.php/apps/openregister/#/', {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// Navigation sidebar must render.
 		await expect(
-			page.locator('.app-navigation, nav[class*="navigation"], [class*="navigation-list"]').first(),
+			page
+				.locator(
+					'.app-navigation, nav[class*="navigation"], [class*="navigation-list"]',
+				)
+				.first(),
 		).toBeVisible({ timeout: 25_000 })
 
 		// Main content area must render.
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 })
 
@@ -99,9 +110,9 @@ test.describe('features-roadmap — roadmap view renders', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })
 
@@ -120,8 +131,8 @@ test.describe('no-code-app-builder — applications view', () => {
 			waitUntil: 'domcontentloaded',
 		})
 
-		await expect(
-			page.locator('main, .app-content').first(),
-		).toBeVisible({ timeout: 20_000 })
+		await expect(page.locator('main, .app-content').first()).toBeVisible({
+			timeout: 20_000,
+		})
 	})
 })

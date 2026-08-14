@@ -39,7 +39,10 @@ test.describe('dsar-escalation-and-dpia — proactive safety journeys', () => {
 
 	test.beforeEach(async () => {
 		if (!fs.existsSync(STORAGE_STATE)) {
-			test.skip(true, 'storageState not present — the app is not reachable/built in this environment')
+			test.skip(
+				true,
+				'storageState not present — the app is not reachable/built in this environment',
+			)
 		}
 	})
 
@@ -50,18 +53,27 @@ test.describe('dsar-escalation-and-dpia — proactive safety journeys', () => {
 	 *
 	 * @e2e openspec/specs/dsar-deadline-escalation/spec.md#untouched-case-crosses-the-reminder-tier
 	 */
-	test('sweep re-materialises the reminder tier for an untouched case', async ({ request }) => {
+	test('sweep re-materialises the reminder tier for an untouched case', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_DSAR_REMINDER_FIXTURE
-		test.skip(!fixture, 'OR_DSAR_REMINDER_FIXTURE (register/schema/uuid of a case in the reminder window) not seeded')
+		test.skip(
+			!fixture,
+			'OR_DSAR_REMINDER_FIXTURE (register/schema/uuid of a case in the reminder window) not seeded',
+		)
 		const [register, schema, id] = String(fixture).split('/')
 
-		const before = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const before = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		expect(before.status()).toBe(200)
 
 		// The temporal sweep runs out of band (occ background-job:execute); this
 		// fixture is created so its dueAt is already inside the reminder window,
 		// so a sweep run must land the tier on `reminder`.
-		const after = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const after = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		const body = await after.json()
 		expect(['reminder', 'escalation', 'breached']).toContain(body.escalationTier)
 	})
@@ -72,12 +84,19 @@ test.describe('dsar-escalation-and-dpia — proactive safety journeys', () => {
 	 *
 	 * @e2e openspec/specs/dsar-deadline-escalation/spec.md#breach-notifies-handler-and-privacy-officer
 	 */
-	test('breach stamps breachedAt and notifies handler + officer', async ({ request }) => {
+	test('breach stamps breachedAt and notifies handler + officer', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_DSAR_BREACH_FIXTURE
-		test.skip(!fixture, 'OR_DSAR_BREACH_FIXTURE (register/schema/uuid of a breached case) not seeded')
+		test.skip(
+			!fixture,
+			'OR_DSAR_BREACH_FIXTURE (register/schema/uuid of a breached case) not seeded',
+		)
 		const [register, schema, id] = String(fixture).split('/')
 
-		const after = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const after = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		const body = await after.json()
 		expect(body.escalationTier).toBe('breached')
 		expect(body.breachedAt).toBeTruthy()
@@ -90,12 +109,19 @@ test.describe('dsar-escalation-and-dpia — proactive safety journeys', () => {
 	 * @e2e openspec/specs/dsar-dpia-detection/spec.md#threshold-crossing-flags-the-group
 	 * @e2e openspec/specs/dsar-dpia-detection/spec.md#officer-notified-on-detection-flag
 	 */
-	test('DPIA detection flags a similar-request group and notifies the officer', async ({ request }) => {
+	test('DPIA detection flags a similar-request group and notifies the officer', async ({
+		request,
+	}) => {
 		const fixture = process.env.OR_DSAR_DPIA_FIXTURE
-		test.skip(!fixture, 'OR_DSAR_DPIA_FIXTURE (register/schema/uuid of a case in a triggering group) not seeded')
+		test.skip(
+			!fixture,
+			'OR_DSAR_DPIA_FIXTURE (register/schema/uuid of a case in a triggering group) not seeded',
+		)
 		const [register, schema, id] = String(fixture).split('/')
 
-		const after = await request.get(`${API_BASE}/objects/${register}/${schema}/${id}`)
+		const after = await request.get(
+			`${API_BASE}/objects/${register}/${schema}/${id}`,
+		)
 		const body = await after.json()
 		expect(body.dpiaRequired).toBe(true)
 	})

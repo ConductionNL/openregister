@@ -35,34 +35,139 @@ const ALL_PROVIDERS: ReadonlyArray<{
 	storageStrategy: 'magic-column' | 'link-table' | 'external' | 'query-time'
 }> = [
 	// Built-ins (always-on)
-	{ id: 'files', group: 'core', requiredApp: null, storageStrategy: 'magic-column' },
+	{
+		id: 'files',
+		group: 'core',
+		requiredApp: null,
+		storageStrategy: 'magic-column',
+	},
 	{ id: 'notes', group: 'core', requiredApp: null, storageStrategy: 'link-table' },
 	{ id: 'tags', group: 'core', requiredApp: null, storageStrategy: 'link-table' },
 	{ id: 'tasks', group: 'core', requiredApp: null, storageStrategy: 'link-table' },
-	{ id: 'audit-trail', group: 'core', requiredApp: null, storageStrategy: 'query-time' },
+	{
+		id: 'audit-trail',
+		group: 'core',
+		requiredApp: null,
+		storageStrategy: 'query-time',
+	},
 	// External (OpenConnector-backed)
-	{ id: 'xwiki', group: 'external', requiredApp: 'openconnector', storageStrategy: 'external' },
-	{ id: 'openproject', group: 'external', requiredApp: 'openconnector', storageStrategy: 'external' },
+	{
+		id: 'xwiki',
+		group: 'external',
+		requiredApp: 'openconnector',
+		storageStrategy: 'external',
+	},
+	{
+		id: 'openproject',
+		group: 'external',
+		requiredApp: 'openconnector',
+		storageStrategy: 'external',
+	},
 	// Backend-shipped leaves
-	{ id: 'calendar', group: 'comms', requiredApp: 'calendar', storageStrategy: 'link-table' },
-	{ id: 'contacts', group: 'comms', requiredApp: 'contacts', storageStrategy: 'link-table' },
-	{ id: 'email', group: 'comms', requiredApp: 'mail', storageStrategy: 'link-table' },
-	{ id: 'deck', group: 'workflow', requiredApp: 'deck', storageStrategy: 'link-table' },
+	{
+		id: 'calendar',
+		group: 'comms',
+		requiredApp: 'calendar',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'contacts',
+		group: 'comms',
+		requiredApp: 'contacts',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'email',
+		group: 'comms',
+		requiredApp: 'mail',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'deck',
+		group: 'workflow',
+		requiredApp: 'deck',
+		storageStrategy: 'link-table',
+	},
 	// Greenfield NC-app stubs
-	{ id: 'talk', group: 'comms', requiredApp: 'spreed', storageStrategy: 'link-table' },
-	{ id: 'bookmarks', group: 'docs', requiredApp: 'bookmarks', storageStrategy: 'link-table' },
-	{ id: 'collectives', group: 'docs', requiredApp: 'collectives', storageStrategy: 'link-table' },
-	{ id: 'maps', group: 'docs', requiredApp: 'maps', storageStrategy: 'link-table' },
-	{ id: 'photos', group: 'docs', requiredApp: 'photos', storageStrategy: 'link-table' },
-	{ id: 'activity', group: 'workflow', requiredApp: 'activity', storageStrategy: 'query-time' },
-	{ id: 'analytics', group: 'workflow', requiredApp: 'analytics', storageStrategy: 'link-table' },
-	{ id: 'cospend', group: 'workflow', requiredApp: 'cospend', storageStrategy: 'link-table' },
-	{ id: 'flow', group: 'workflow', requiredApp: 'workflowengine', storageStrategy: 'link-table' },
-	{ id: 'forms', group: 'workflow', requiredApp: 'forms', storageStrategy: 'link-table' },
-	{ id: 'polls', group: 'workflow', requiredApp: 'polls', storageStrategy: 'link-table' },
-	{ id: 'time-tracker', group: 'workflow', requiredApp: 'timemanager', storageStrategy: 'link-table' },
+	{
+		id: 'talk',
+		group: 'comms',
+		requiredApp: 'spreed',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'bookmarks',
+		group: 'docs',
+		requiredApp: 'bookmarks',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'collectives',
+		group: 'docs',
+		requiredApp: 'collectives',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'maps',
+		group: 'docs',
+		requiredApp: 'maps',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'photos',
+		group: 'docs',
+		requiredApp: 'photos',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'activity',
+		group: 'workflow',
+		requiredApp: 'activity',
+		storageStrategy: 'query-time',
+	},
+	{
+		id: 'analytics',
+		group: 'workflow',
+		requiredApp: 'analytics',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'cospend',
+		group: 'workflow',
+		requiredApp: 'cospend',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'flow',
+		group: 'workflow',
+		requiredApp: 'workflowengine',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'forms',
+		group: 'workflow',
+		requiredApp: 'forms',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'polls',
+		group: 'workflow',
+		requiredApp: 'polls',
+		storageStrategy: 'link-table',
+	},
+	{
+		id: 'time-tracker',
+		group: 'workflow',
+		requiredApp: 'timemanager',
+		storageStrategy: 'link-table',
+	},
 	// NC-core leaf (no required app)
-	{ id: 'shares', group: 'core', requiredApp: null, storageStrategy: 'query-time' },
+	{
+		id: 'shares',
+		group: 'core',
+		requiredApp: null,
+		storageStrategy: 'query-time',
+	},
 ]
 
 /**
@@ -73,9 +178,12 @@ const ALL_PROVIDERS: ReadonlyArray<{
  *         isn't wired (older deploys).
  */
 async function fetchProviders(request: APIRequestContext) {
-	const response = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {
-		headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-	})
+	const response = await request.get(
+		'/ocs/v2.php/cloud/capabilities?format=json',
+		{
+			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+		},
+	)
 	expect(response.status()).toBe(200)
 	const body = await response.json()
 	return body?.ocs?.data?.capabilities?.openregister?.integrations?.providers ?? []
@@ -89,14 +197,19 @@ async function fetchProviders(request: APIRequestContext) {
  *
  * @param request Playwright request context.
  */
-async function pickObjectTriple(request: APIRequestContext): Promise<{ register: string, schema: string, objectId: string }> {
+async function pickObjectTriple(
+	request: APIRequestContext,
+): Promise<{ register: string; schema: string; objectId: string }> {
 	// Try the standard envelope listing endpoint; pull the first
 	// object's metadata. Numeric register=1 / schema=1 are the
 	// default seed values on the dev container, but the test stays
 	// generic.
-	const listing = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1', {
-		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
-	})
+	const listing = await request.get(
+		'/index.php/apps/openregister/api/objects/1/1?_limit=1',
+		{
+			headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+		},
+	)
 	if (listing.ok()) {
 		const body = await listing.json()
 		const first = (body.results ?? [])[0]
@@ -111,13 +224,22 @@ async function pickObjectTriple(request: APIRequestContext): Promise<{ register:
 	}
 	// Fallback — the sub-resource routes don't 5xx on a missing
 	// object; they 4xx, which our test treats as acceptable.
-	return { register: '1', schema: '1', objectId: '00000000-0000-0000-0000-000000000000' }
+	return {
+		register: '1',
+		schema: '1',
+		objectId: '00000000-0000-0000-0000-000000000000',
+	}
 }
 
 test.describe('Integration registry — OCS capabilities', () => {
-	test('reports every registered provider with the documented shape', async ({ request }) => {
+	test('reports every registered provider with the documented shape', async ({
+		request,
+	}) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
 		// Every provider declares the documented metadata.
 		for (const p of providers) {
@@ -126,11 +248,20 @@ test.describe('Integration registry — OCS capabilities', () => {
 				label: expect.any(String),
 				group: expect.any(String),
 				enabled: expect.any(Boolean),
-				storageStrategy: expect.stringMatching(/^(magic-column|link-table|external|query-time)$/),
-				surfaces: expect.arrayContaining(['user-dashboard', 'app-dashboard', 'detail-page', 'single-entity']),
+				storageStrategy: expect.stringMatching(
+					/^(magic-column|link-table|external|query-time)$/,
+				),
+				surfaces: expect.arrayContaining([
+					'user-dashboard',
+					'app-dashboard',
+					'detail-page',
+					'single-entity',
+				]),
 				authStatus: expect.objectContaining({
 					status: expect.stringMatching(/^(ok|degraded|unavailable)$/),
-					authStatus: expect.stringMatching(/^(configured|missing|expired)$/),
+					authStatus: expect.stringMatching(
+						/^(configured|missing|expired)$/,
+					),
 				}),
 			})
 		}
@@ -138,68 +269,106 @@ test.describe('Integration registry — OCS capabilities', () => {
 
 	test('advertises every provider in the documented set', async ({ request }) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
 		const advertised = new Set(providers.map((p: { id: string }) => p.id))
-		const missing = ALL_PROVIDERS.filter(p => !advertised.has(p.id))
+		const missing = ALL_PROVIDERS.filter((p) => !advertised.has(p.id))
 
 		// If at least the 5 built-ins are advertised but the leaves
 		// aren't, that's a partial deploy (openregister umbrella
 		// merged, leaves PR not yet). Skip rather than fail — the
 		// 18 leaf ids only land once openregister#1514 ships.
-		if (missing.length > 0 && missing.every(p => p.group !== 'core')) {
-			test.skip(true, `leaf providers not yet wired on this deploy (missing: ${missing.map(m => m.id).join(', ')})`)
+		if (missing.length > 0 && missing.every((p) => p.group !== 'core')) {
+			test.skip(
+				true,
+				`leaf providers not yet wired on this deploy (missing: ${missing.map((m) => m.id).join(', ')})`,
+			)
 		}
-		expect(advertised.size, `${missing.length} provider(s) missing: ${missing.map(m => m.id).join(', ')}`)
-			.toBeGreaterThanOrEqual(ALL_PROVIDERS.length)
+		expect(
+			advertised.size,
+			`${missing.length} provider(s) missing: ${missing.map((m) => m.id).join(', ')}`,
+		).toBeGreaterThanOrEqual(ALL_PROVIDERS.length)
 	})
 
-	test('every leaf reports the right group + requiredApp + storageStrategy', async ({ request }) => {
+	test('every leaf reports the right group + requiredApp + storageStrategy', async ({
+		request,
+	}) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
-		const byId = Object.fromEntries(providers.map((p: { id: string }) => [p.id, p])) as Record<string, {
-			group: string
-			storageStrategy: string
-		}>
+		const byId = Object.fromEntries(
+			providers.map((p: { id: string }) => [p.id, p]),
+		) as Record<
+			string,
+			{
+				group: string
+				storageStrategy: string
+			}
+		>
 
 		for (const expected of ALL_PROVIDERS) {
 			const p = byId[expected.id]
 			if (!p) continue // covered by the 24-provider-ids test
 			expect(p.group, `${expected.id} group`).toBe(expected.group)
-			expect(p.storageStrategy, `${expected.id} storage`).toBe(expected.storageStrategy)
+			expect(p.storageStrategy, `${expected.id} storage`).toBe(
+				expected.storageStrategy,
+			)
 		}
 	})
 
 	test('built-in providers are always enabled', async ({ request }) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
-		const byId = Object.fromEntries(providers.map((p: { id: string }) => [p.id, p])) as Record<string, { enabled: boolean }>
+		const byId = Object.fromEntries(
+			providers.map((p: { id: string }) => [p.id, p]),
+		) as Record<string, { enabled: boolean }>
 
 		// `shares` is technically a leaf (no required NC app); when
 		// the leaves PR is merged it also reports enabled:true. The
 		// 5 hardcoded built-ins are unconditional.
 		for (const id of ['files', 'notes', 'tags', 'tasks', 'audit-trail']) {
-			expect(byId[id]?.enabled, `built-in "${id}" should always be enabled`).toBe(true)
+			expect(
+				byId[id]?.enabled,
+				`built-in "${id}" should always be enabled`,
+			).toBe(true)
 		}
 		// `shares` is included once the leaves PR lands — soft check.
 		if (byId.shares) {
-			expect(byId.shares.enabled, 'shares leaf should be enabled (no requiredApp)').toBe(true)
+			expect(
+				byId.shares.enabled,
+				'shares leaf should be enabled (no requiredApp)',
+			).toBe(true)
 		}
 	})
 
-	test('NC-app-gated providers reflect the app install state', async ({ request }) => {
+	test('NC-app-gated providers reflect the app install state', async ({
+		request,
+	}) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
-		const byId = Object.fromEntries(providers.map((p: { id: string }) => [p.id, p])) as Record<string, { enabled: boolean }>
+		const byId = Object.fromEntries(
+			providers.map((p: { id: string }) => [p.id, p]),
+		) as Record<string, { enabled: boolean }>
 
 		// We don't know which NC apps are installed on the target,
 		// but `enabled` must be a strict Boolean — never null, never
 		// undefined, never a string. That's the contract the JS-side
 		// `useRegistry` filter depends on.
-		for (const leaf of ALL_PROVIDERS.filter(p => p.requiredApp)) {
+		for (const leaf of ALL_PROVIDERS.filter((p) => p.requiredApp)) {
 			const p = byId[leaf.id]
 			if (!p) continue
 			expect(typeof p.enabled, `${leaf.id} enabled is Boolean`).toBe('boolean')
@@ -209,10 +378,17 @@ test.describe('Integration registry — OCS capabilities', () => {
 
 test.describe('Integration registry — sub-resource', () => {
 	for (const provider of ALL_PROVIDERS) {
-		test(`GET /integrations/${provider.id} stays under 5xx`, async ({ request }) => {
+		test(`GET /integrations/${provider.id} stays under 5xx`, async ({
+			request,
+		}) => {
 			const providers = await fetchProviders(request)
-			test.skip(providers.length === 0, 'integration registry not wired on this deploy')
-			const advertised = providers.find((p: { id: string }) => p.id === provider.id)
+			test.skip(
+				providers.length === 0,
+				'integration registry not wired on this deploy',
+			)
+			const advertised = providers.find(
+				(p: { id: string }) => p.id === provider.id,
+			)
 			test.skip(!advertised, `provider "${provider.id}" not advertised yet`)
 
 			const { register, schema, objectId } = await pickObjectTriple(request)
@@ -241,9 +417,16 @@ test.describe('Integration registry — sub-resource', () => {
 				const body = await response.json()
 				// Standard list envelope OR a bare array OR the
 				// passthrough envelope keys from external sources.
-				const acceptable = body.results || body.items || body.pageSummaries || body.searchResults
+				const acceptable =
+					body.results
+					|| body.items
+					|| body.pageSummaries
+					|| body.searchResults
 				const isArray = Array.isArray(body) || Array.isArray(acceptable)
-				expect(isArray || typeof body === 'object', `${provider.id} response shape`).toBeTruthy()
+				expect(
+					isArray || typeof body === 'object',
+					`${provider.id} response shape`,
+				).toBeTruthy()
 			} else if (response.status() === 503) {
 				// External / unavailable: must carry a structured cause
 				// the UI can render. The OpenConnector router shape is
@@ -268,11 +451,19 @@ test.describe('Integration registry — sub-resource', () => {
 test.describe('Integration registry — surface metadata', () => {
 	test('every provider advertises all 4 surfaces (AD-19)', async ({ request }) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
 		for (const p of providers) {
 			expect(p.surfaces, `${p.id} surfaces`).toEqual(
-				expect.arrayContaining(['user-dashboard', 'app-dashboard', 'detail-page', 'single-entity']),
+				expect.arrayContaining([
+					'user-dashboard',
+					'app-dashboard',
+					'detail-page',
+					'single-entity',
+				]),
 			)
 		}
 	})

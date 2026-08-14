@@ -10,10 +10,15 @@
 		</div>
 
 		<!-- Section Description (optional detailed description box) -->
-		<div v-if="$slots.description || detailedDescription" class="section-description-full">
+		<div
+			v-if="$slots.description || detailedDescription"
+			class="section-description-full">
 			<slot name="description">
 				<!-- eslint-disable-next-line vue/no-v-html -->
-				<p v-if="detailedDescription" class="main-description" v-html="sanitizeHtml(detailedDescription)" />
+				<p
+					v-if="detailedDescription"
+					class="main-description"
+					v-html="sanitizeHtml(detailedDescription)" />
 			</slot>
 		</div>
 
@@ -30,9 +35,7 @@
 
 		<!-- Error State -->
 		<div v-if="error && !loading" class="error-section">
-			<p class="error-message">
-				❌ {{ errorMessage }}
-			</p>
+			<p class="error-message">❌ {{ errorMessage }}</p>
 			<NcButton v-if="onRetry" variant="primary" @click="onRetry">
 				<template #icon>
 					<Refresh :size="20" />

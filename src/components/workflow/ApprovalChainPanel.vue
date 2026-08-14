@@ -10,7 +10,8 @@
 			<p>Steps: {{ chain.steps.length }}</p>
 			<ul>
 				<li v-for="(step, i) in chain.steps" :key="i">
-					Step {{ step.order }}: {{ step.role }} (approve: {{ step.statusOnApprove }}, reject: {{ step.statusOnReject }})
+					Step {{ step.order }}: {{ step.role }} (approve:
+					{{ step.statusOnApprove }}, reject: {{ step.statusOnReject }})
 				</li>
 			</ul>
 		</div>
@@ -20,21 +21,21 @@
 		<div v-if="showCreateForm" class="create-form">
 			<div class="form-group">
 				<label for="approval-chain-name">Name</label>
-				<input id="approval-chain-name"
+				<input
+					id="approval-chain-name"
 					v-model="newChain.name"
 					type="text"
-					class="input-field">
+					class="input-field" />
 			</div>
 			<div class="form-group">
 				<label for="approval-chain-status-field">Status Field</label>
-				<input id="approval-chain-status-field"
+				<input
+					id="approval-chain-status-field"
 					v-model="newChain.statusField"
 					type="text"
-					class="input-field">
+					class="input-field" />
 			</div>
-			<NcButton variant="primary" @click="createChain">
-				Save Chain
-			</NcButton>
+			<NcButton variant="primary" @click="createChain"> Save Chain </NcButton>
 		</div>
 	</div>
 </template>
@@ -71,7 +72,9 @@ export default {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')
 				const response = await axios.get(url)
-				this.chains = (response.data || []).filter(c => !this.schemaId || c.schemaId === this.schemaId)
+				this.chains = (response.data || []).filter(
+					(c) => !this.schemaId || c.schemaId === this.schemaId,
+				)
 			} catch (error) {
 				console.error('Failed to fetch chains:', error)
 			}
@@ -94,13 +97,31 @@ export default {
 </script>
 
 <style scoped>
-.chain-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.chain-card {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	padding: 12px;
+	margin-bottom: 12px;
+}
 
-.form-group { margin-bottom: 8px; }
+.form-group {
+	margin-bottom: 8px;
+}
 
-.form-group label { display: block; font-weight: bold; }
+.form-group label {
+	display: block;
+	font-weight: bold;
+}
 
-.input-field { width: 100%; padding: 8px; }
+.input-field {
+	width: 100%;
+	padding: 8px;
+}
 
-.create-form { margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; }
+.create-form {
+	margin-top: 12px;
+	padding: 12px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+}
 </style>

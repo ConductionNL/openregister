@@ -9,7 +9,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		<CnSchemaFormDialog
 			ref="schemaFormDialog"
 			:item="schemaStore.schemaItem"
-			:dialog-title="schemaStore.schemaItem?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
+			:dialog-title="
+				schemaStore.schemaItem?.id
+					? t('openregister', 'Edit Schema')
+					: t('openregister', 'Add Schema')
+			"
 			:available-schemas="computedAvailableSchemas"
 			:available-registers="computedAvailableRegisters"
 			:inherited-properties="computedInheritedProperties"
@@ -24,17 +28,27 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 			show-delete
 			:cancel-label="t('openregister', 'Cancel')"
 			:close-label="t('openregister', 'Close')"
-			:confirm-label="schemaStore.schemaItem?.id ? t('openregister', 'Save') : t('openregister', 'Create')"
-			:success-text="schemaStore.schemaItem?.id
-				? t('openregister', 'Schema successfully updated')
-				: t('openregister', 'Schema successfully created')"
+			:confirm-label="
+				schemaStore.schemaItem?.id
+					? t('openregister', 'Save')
+					: t('openregister', 'Create')
+			"
+			:success-text="
+				schemaStore.schemaItem?.id
+					? t('openregister', 'Schema successfully updated')
+					: t('openregister', 'Schema successfully created')
+			"
 			:extend-schema-label="t('openregister', 'Extend Schema')"
 			:analyze-properties-label="t('openregister', 'Analyze Properties')"
 			:validate-objects-label="t('openregister', 'Validate Objects')"
 			:delete-objects-label="t('openregister', 'Delete Objects')"
 			:delete-label="t('openregister', 'Delete')"
-			:delete-objects-tooltip="t('openregister', 'Delete all objects in this schema')"
-			:cannot-delete-tooltip="t('openregister', 'Cannot delete: objects are still attached')"
+			:delete-objects-tooltip="
+				t('openregister', 'Delete all objects in this schema')
+			"
+			:cannot-delete-tooltip="
+				t('openregister', 'Cannot delete: objects are still attached')
+			"
 			@confirm="onConfirm"
 			@close="closeModal"
 			@extend-schema="extendSchema"
@@ -51,25 +65,41 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 			describeSchemaChange, so this app and OpenBuild cannot say different things
 			about the same refusal.
 		-->
-		<NcDialog v-if="pendingBreaking"
+		<NcDialog
+			v-if="pendingBreaking"
 			:name="t('openregister', 'Breaking change')"
 			size="normal"
 			class="cn-dialog--nested"
 			@closing="cancelBreaking">
 			<p class="breaking-lead">
-				<strong>{{ t('openregister', 'This change breaks the existing data model:') }}</strong>
+				<strong>{{
+					t('openregister', 'This change breaks the existing data model:')
+				}}</strong>
 			</p>
 			<ul class="breaking-changes">
 				<li v-for="(change, i) in pendingBreaking.changes" :key="`bc-${i}`">
 					{{ describeChange(change) }}
 				</li>
 			</ul>
-			<p>{{ t('openregister', 'Objects already stored under this schema may no longer match it. Save anyway?') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'Objects already stored under this schema may no longer match it. Save anyway?',
+					)
+				}}
+			</p>
 			<template #actions>
-				<NcButton variant="tertiary" :disabled="savingBreaking" @click="cancelBreaking">
+				<NcButton
+					variant="tertiary"
+					:disabled="savingBreaking"
+					@click="cancelBreaking">
 					{{ t('openregister', 'Back to editing') }}
 				</NcButton>
-				<NcButton variant="warning" :disabled="savingBreaking" @click="confirmBreaking">
+				<NcButton
+					variant="warning"
+					:disabled="savingBreaking"
+					@click="confirmBreaking">
 					{{ t('openregister', 'Save anyway') }}
 				</NcButton>
 			</template>
@@ -79,7 +109,11 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 
 <script>
 import { NcDialog, NcButton } from '@nextcloud/vue'
-import { CnSchemaFormDialog, describeSchemaChange, SchemaBreakingChangeError } from '@conduction/nextcloud-vue'
+import {
+	CnSchemaFormDialog,
+	describeSchemaChange,
+	SchemaBreakingChangeError,
+} from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'EditSchema',
@@ -109,12 +143,13 @@ export default {
 			const currentSlug = schemaStore.schemaItem?.slug
 
 			return schemaStore.schemaList
-				.filter(schema =>
-					schema.id !== currentId
-					&& schema.uuid !== currentUuid
-					&& schema.slug !== currentSlug,
+				.filter(
+					(schema) =>
+						schema.id !== currentId
+						&& schema.uuid !== currentUuid
+						&& schema.slug !== currentSlug,
 				)
-				.map(schema => ({
+				.map((schema) => ({
 					id: schema.id || schema.uuid || schema.slug,
 					title: schema.title || schema.name || `Schema ${schema.id}`,
 					label: schema.title || schema.name || `Schema ${schema.id}`,
@@ -128,7 +163,7 @@ export default {
 		 * @spec exclude computed display helper listing registers for select
 		 */
 		computedAvailableRegisters() {
-			return registerStore.registerList.map(register => ({
+			return registerStore.registerList.map((register) => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
@@ -143,8 +178,11 @@ export default {
 			const merged = {}
 			for (const ref of allOf) {
 				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(s =>
-					s.id === schemaId || s.uuid === schemaId || s.slug === schemaId,
+				const parentSchema = schemaStore.schemaList.find(
+					(s) =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| s.slug === schemaId,
 				)
 				if (parentSchema?.properties) {
 					Object.assign(merged, parentSchema.properties)
@@ -183,14 +221,17 @@ export default {
 		async loadUserGroups() {
 			this.loadingGroups = true
 			try {
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: { 'OCS-APIRequest': 'true' },
-				})
+				const response = await fetch(
+					'/ocs/v1.php/cloud/groups?format=json',
+					{
+						headers: { 'OCS-APIRequest': 'true' },
+					},
+				)
 
 				if (response.ok) {
 					const data = await response.json()
 					if (data.ocs?.data?.groups) {
-						this.userGroups = data.ocs.data.groups.map(groupId => ({
+						this.userGroups = data.ocs.data.groups.map((groupId) => ({
 							id: groupId,
 							displayname: groupId,
 						}))
@@ -246,7 +287,9 @@ export default {
 		 */
 		async onConfirm(schemaData, acknowledgeBreaking = false) {
 			try {
-				const { response } = await schemaStore.saveSchema(schemaData, { acknowledgeBreaking })
+				const { response } = await schemaStore.saveSchema(schemaData, {
+					acknowledgeBreaking,
+				})
 				this.pendingBreaking = null
 				this.$refs.schemaFormDialog.setResult({
 					success: response.ok,
@@ -261,12 +304,16 @@ export default {
 				// acknowledged, so an acknowledged save that is still refused falls through
 				// to the error branch instead of re-opening this prompt forever.
 				if (error instanceof SchemaBreakingChangeError) {
-					this.pendingBreaking = { schema: schemaData, changes: error.changes }
+					this.pendingBreaking = {
+						schema: schemaData,
+						changes: error.changes,
+					}
 					return
 				}
 				this.pendingBreaking = null
 				this.$refs.schemaFormDialog.setResult({
-					error: error.message || 'An error occurred while saving the schema',
+					error:
+						error.message || 'An error occurred while saving the schema',
 				})
 			}
 		},

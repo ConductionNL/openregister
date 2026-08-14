@@ -3,8 +3,14 @@
 import TranslationStatusChip from './TranslationStatusChip.vue'
 import { TRANSLATION_STATUSES } from '../../store/modules/translations.js'
 
-jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }))
-jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: jest.fn((p) => p) }))
+jest.mock('@nextcloud/axios', () => ({
+	__esModule: true,
+	default: { get: jest.fn(), post: jest.fn() },
+}))
+jest.mock('@nextcloud/router', () => ({
+	__esModule: true,
+	generateUrl: jest.fn((p) => p),
+}))
 
 /**
  * The repo's installed @vue/test-utils is the Vue 3 build, but the app
@@ -41,12 +47,20 @@ describe('TranslationStatusChip', () => {
 		])('maps %s to label %s', (status, label) => {
 			const ctx = { status }
 			expect(callComputed('meta', ctx).label).toBe(label)
-			expect(callComputed('labelText', { ...ctx, meta: callComputed('meta', ctx) })).toBe(label)
+			expect(
+				callComputed('labelText', {
+					...ctx,
+					meta: callComputed('meta', ctx),
+				}),
+			).toBe(label)
 		})
 
 		it('falls back to status string for unknown statuses', () => {
 			const ctx = { status: 'mystery' }
-			expect(callComputed('meta', ctx)).toEqual({ icon: '?', label: 'mystery' })
+			expect(callComputed('meta', ctx)).toEqual({
+				icon: '?',
+				label: 'mystery',
+			})
 		})
 	})
 
@@ -60,12 +74,16 @@ describe('TranslationStatusChip', () => {
 
 		it('appends the language tag in upper case when provided', () => {
 			const ctx = buildCtx(TRANSLATION_STATUSES.APPROVED, 'nl')
-			expect(callComputed('tooltipText', ctx)).toBe('Translation status: Approved (NL)')
+			expect(callComputed('tooltipText', ctx)).toBe(
+				'Translation status: Approved (NL)',
+			)
 		})
 
 		it('omits the language suffix when language is empty', () => {
 			const ctx = buildCtx(TRANSLATION_STATUSES.DRAFT, '')
-			expect(callComputed('tooltipText', ctx)).toBe('Translation status: Draft')
+			expect(callComputed('tooltipText', ctx)).toBe(
+				'Translation status: Draft',
+			)
 		})
 	})
 })

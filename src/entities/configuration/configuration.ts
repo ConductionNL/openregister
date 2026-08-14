@@ -5,7 +5,6 @@ import { TConfiguration } from './configuration.types'
  * Entity class representing a Configuration with validation
  */
 export class ConfigurationEntity implements TConfiguration {
-
 	id: string
 	title: string
 	description: string | null
@@ -85,5 +84,4 @@ export class ConfigurationEntity implements TConfiguration {
 
 		return schema.safeParse(this)
 	}
-
 }

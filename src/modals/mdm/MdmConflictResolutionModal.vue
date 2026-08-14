@@ -10,7 +10,14 @@
 		@closing="$emit('close')">
 		<div class="conflictResolution">
 			<template v-if="conflicts.length === 0">
-				<NcEmptyContent :name="t('openregister', 'No conflicts to resolve')" :description="t('openregister', 'Every attribute across the linked sources already agrees, or has only one source.')">
+				<NcEmptyContent
+					:name="t('openregister', 'No conflicts to resolve')"
+					:description="
+						t(
+							'openregister',
+							'Every attribute across the linked sources already agrees, or has only one source.',
+						)
+					">
 					<template #icon>
 						<CheckCircleOutline :size="48" />
 					</template>
@@ -19,7 +26,12 @@
 
 			<template v-else>
 				<NcNoteCard type="info">
-					{{ t('openregister', 'Choose the authoritative value for each conflicting attribute, then save.') }}
+					{{
+						t(
+							'openregister',
+							'Choose the authoritative value for each conflicting attribute, then save.',
+						)
+					}}
 				</NcNoteCard>
 
 				<div
@@ -33,7 +45,11 @@
 						v-model="selections[conflict.attribute]"
 						data-testid="mdm-conflict-source-select"
 						:options="conflict.options"
-						:input-label="t('openregister', 'Winning source for {attribute}', { attribute: conflict.attribute })"
+						:input-label="
+							t('openregister', 'Winning source for {attribute}', {
+								attribute: conflict.attribute,
+							})
+						"
 						:clearable="false"
 						label="label"
 						@update:modelValue="handleSelectionChange" />
@@ -63,7 +79,9 @@
 				<NcTextField
 					v-model="rationale"
 					:label="t('openregister', 'Rationale (optional)')"
-					:placeholder="t('openregister', 'Why is this the authoritative value?')" />
+					:placeholder="
+						t('openregister', 'Why is this the authoritative value?')
+					" />
 
 				<NcNoteCard v-if="error" type="error">
 					{{ error }}
@@ -92,7 +110,16 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
 import { qualityStore } from '../../store/store.js'
 
@@ -173,10 +200,22 @@ export default {
 		 */
 		sourceRecords() {
 			if (!this.object || typeof this.object !== 'object') return []
-			if (Array.isArray(this.object.sources)) return this.object.sources.filter((entry) => entry && typeof entry === 'object')
+			if (Array.isArray(this.object.sources))
+				return this.object.sources.filter(
+					(entry) => entry && typeof entry === 'object',
+				)
 
 			for (const value of Object.values(this.object)) {
-				if (Array.isArray(value) && value.length > 0 && value.every((entry) => entry && typeof entry === 'object' && ('sourceSystem' in entry))) {
+				if (
+					Array.isArray(value)
+					&& value.length > 0
+					&& value.every(
+						(entry) =>
+							entry
+							&& typeof entry === 'object'
+							&& 'sourceSystem' in entry,
+					)
+				) {
 					return value
 				}
 			}
@@ -200,18 +239,27 @@ export default {
 				if (!values || typeof values !== 'object') continue
 
 				for (const [attribute, value] of Object.entries(values)) {
-					if (value === null || value === undefined || value === '') continue
+					if (value === null || value === undefined || value === '')
+						continue
 					if (!perAttribute[attribute]) perAttribute[attribute] = new Map()
 					const key = JSON.stringify(value)
 					if (!perAttribute[attribute].has(key)) {
-						perAttribute[attribute].set(key, { id: `${attribute}::${sourceSystem}::${key}`, label: `${this.displayValue(value)} (${sourceSystem})`, value, sourceSystem })
+						perAttribute[attribute].set(key, {
+							id: `${attribute}::${sourceSystem}::${key}`,
+							label: `${this.displayValue(value)} (${sourceSystem})`,
+							value,
+							sourceSystem,
+						})
 					}
 				}
 			}
 
 			return Object.entries(perAttribute)
 				.filter(([, options]) => options.size > 1)
-				.map(([attribute, options]) => ({ attribute, options: Array.from(options.values()) }))
+				.map(([attribute, options]) => ({
+					attribute,
+					options: Array.from(options.values()),
+				}))
 		},
 
 		/**
@@ -223,7 +271,9 @@ export default {
 		canSave() {
 			if (this.saving) return false
 			if (this.conflicts.length === 0) return false
-			return this.conflicts.every((conflict) => Boolean(this.selections[conflict.attribute]))
+			return this.conflicts.every((conflict) =>
+				Boolean(this.selections[conflict.attribute]),
+			)
 		},
 	},
 
@@ -232,8 +282,10 @@ export default {
 			immediate: true,
 			handler(list) {
 				for (const conflict of list) {
-					if (!(conflict.attribute in this.selections)) this.selections[conflict.attribute] = null
-					if (!(conflict.attribute in this.outcomes)) this.outcomes[conflict.attribute] = 'persistent'
+					if (!(conflict.attribute in this.selections))
+						this.selections[conflict.attribute] = null
+					if (!(conflict.attribute in this.outcomes))
+						this.outcomes[conflict.attribute] = 'persistent'
 				}
 			},
 		},
@@ -269,7 +321,12 @@ export default {
 		 * @return {string}
 		 */
 		resolveEntityType() {
-			return this.entityType || this.object?.entityType || this.object?.['@self']?.schema || ''
+			return (
+				this.entityType
+				|| this.object?.entityType
+				|| this.object?.['@self']?.schema
+				|| ''
+			)
 		},
 
 		/**
@@ -304,7 +361,12 @@ export default {
 					const outcome = this.outcomes[conflict.attribute] ?? 'persistent'
 
 					if (outcome === 'one-off') {
-						await qualityStore.setAttributeOverride(this.object.id, conflict.attribute, winner.value, this.rationale || undefined)
+						await qualityStore.setAttributeOverride(
+							this.object.id,
+							conflict.attribute,
+							winner.value,
+							this.rationale || undefined,
+						)
 						continue
 					}
 
@@ -319,17 +381,30 @@ export default {
 				}
 
 				if (wrotePersistentRule) {
-					const register = this.object?.['@self']?.register ?? this.object?.register
-					const schema = this.object?.['@self']?.schema ?? this.object?.schema ?? this.resolveEntityType()
+					const register =
+						this.object?.['@self']?.register ?? this.object?.register
+					const schema =
+						this.object?.['@self']?.schema
+						?? this.object?.schema
+						?? this.resolveEntityType()
 					if (register && schema) {
-						await qualityStore.touchObject(register, schema, this.object.id)
+						await qualityStore.touchObject(
+							register,
+							schema,
+							this.object.id,
+						)
 					}
 				}
 
 				this.$emit('saved')
 				this.$emit('close')
 			} catch (e) {
-				this.error = e.response?.data?.error || t('openregister', 'The conflict resolution could not be saved.')
+				this.error =
+					e.response?.data?.error
+					|| t(
+						'openregister',
+						'The conflict resolution could not be saved.',
+					)
 			} finally {
 				this.saving = false
 			}

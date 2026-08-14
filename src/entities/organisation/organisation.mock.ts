@@ -6,7 +6,8 @@ export const mockOrganisationData = (): TOrganisation[] => [
 		id: 1,
 		uuid: '123e4567-e89b-12d3-a456-426614174000',
 		name: 'Default Organisation',
-		description: 'Default organisation for users without specific organisation membership',
+		description:
+			'Default organisation for users without specific organisation membership',
 		users: ['alice', 'bob', 'charlie'],
 		isDefault: true,
 		owner: 'system',
@@ -37,4 +38,6 @@ export const mockOrganisationData = (): TOrganisation[] => [
 	},
 ]
 
-export const mockOrganisation = (data: TOrganisation[] = mockOrganisationData()): Organisation[] => data.map(item => new Organisation(item))
+export const mockOrganisation = (
+	data: TOrganisation[] = mockOrganisationData(),
+): Organisation[] => data.map((item) => new Organisation(item))

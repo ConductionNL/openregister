@@ -40,11 +40,17 @@ const SCHEMA_ID = '18'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Create a test object and return its @self.id. */
-async function createTestObject(request: APIRequestContext, name: string): Promise<string | null> {
+async function createTestObject(
+	request: APIRequestContext,
+	name: string,
+): Promise<string | null> {
 	const resp = await request.post(
 		`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 		{
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
 			// schema 18 (Character) requires ocName in addition to name.
 			data: { name, ocName: `E2E ${name}`, description: 'E2e test object' },
 		},
@@ -55,18 +61,30 @@ async function createTestObject(request: APIRequestContext, name: string): Promi
 }
 
 /** Delete a test object via the API. */
-async function deleteTestObject(request: APIRequestContext, id: string): Promise<void> {
+async function deleteTestObject(
+	request: APIRequestContext,
+	id: string,
+): Promise<void> {
 	await request
-		.delete(`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`)
+		.delete(
+			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
+		)
 		.catch(() => {})
 }
 
 /** Navigate to the OR app route (hash form) and wait for NC header. */
-async function gotoApp(page: import('@playwright/test').Page, subpath: string): Promise<void> {
+async function gotoApp(
+	page: import('@playwright/test').Page,
+	subpath: string,
+): Promise<void> {
 	// HASH form — the router runs in hash mode (src/main.js); path-form
 	// deep-links render the dashboard instead of the target page.
-	await page.goto(`/index.php/apps/openregister/#${subpath}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
+	await page.goto(`/index.php/apps/openregister/#${subpath}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
 	// Wait for the app content — NC app uses #app-content-vue.
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 }
@@ -100,7 +118,9 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		)
 		if (resp.ok()) {
 			const body = await resp.json()
-			for (const obj of (body.results ?? []) as Array<Record<string, unknown>>) {
+			for (const obj of (body.results ?? []) as Array<
+				Record<string, unknown>
+			>) {
 				const self = obj['@self'] as Record<string, unknown> | undefined
 				const name = self?.name ?? obj.name
 				if (name === copyName) {
@@ -112,7 +132,9 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 	})
 
 	// @e2e openspec/specs/entity-management-modals/spec.md#copy-single-object-names-the-duplicate
-	test('copy-object dialog accepts a custom name and creates the duplicate', async ({ page }) => {
+	test('copy-object dialog accepts a custom name and creates the duplicate', async ({
+		page,
+	}) => {
 		// This test drives the /tables page where CopyObject.vue is accessible.
 		// Give extra time because register/schema select + search auto-triggers an API call.
 		test.setTimeout(60_000)
@@ -128,8 +150,12 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 			`/index.php/apps/openregister/#/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
-		await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
-		await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
+		await page.waitForSelector('#header, header.header-appcontainer', {
+			timeout: 25_000,
+		})
+		await page.waitForSelector('#app-content-vue, .app-content', {
+			timeout: 20_000,
+		})
 
 		// Wait for the table to populate (search fires via route watcher).
 		// The CnDataTable tbody rows appear once the API returns results.
@@ -141,7 +167,10 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		await page.waitForTimeout(1000)
 
 		// Find the row containing our test object.
-		const objRow = page.locator('tr, [role="row"]').filter({ hasText: objName }).first()
+		const objRow = page
+			.locator('tr, [role="row"]')
+			.filter({ hasText: objName })
+			.first()
 		const hasRow = await objRow.isVisible({ timeout: 10_000 }).catch(() => false)
 		if (!hasRow) {
 			// Object not visible yet — may need another second for the search to resolve.
@@ -152,14 +181,20 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		// The NcActions component inside that cell renders the per-row Edit / Copy / Delete.
 		// We need to target the Actions button that is inside the actions cell on the
 		// object's row (not the CnIndexPage toolbar Actions which needs selection first).
-		const actionsCell = page.locator('tr')
+		const actionsCell = page
+			.locator('tr')
 			.filter({ hasText: objName })
 			.locator('.cn-table-col--actions, td:last-child')
 			.first()
 
-		const hasCellBtn = await actionsCell.isVisible({ timeout: 10_000 }).catch(() => false)
+		const hasCellBtn = await actionsCell
+			.isVisible({ timeout: 10_000 })
+			.catch(() => false)
 		if (!hasCellBtn) {
-			test.skip(true, 'Object row or actions cell not visible — object may not appear in results')
+			test.skip(
+				true,
+				'Object row or actions cell not visible — object may not appear in results',
+			)
 			return
 		}
 
@@ -170,11 +205,19 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 
 		// Click "Copy" from the per-row NcActions menu (not the disabled mass-copy toolbar).
 		// The per-row Copy is enabled (no selection needed) — filter out disabled items.
-		const copyItem = page.getByRole('menuitem', { name: 'Copy' }).filter({ hasNot: page.locator('[disabled]') }).first()
-		const hasCopyItem = await copyItem.isVisible({ timeout: 5_000 }).catch(() => false)
+		const copyItem = page
+			.getByRole('menuitem', { name: 'Copy' })
+			.filter({ hasNot: page.locator('[disabled]') })
+			.first()
+		const hasCopyItem = await copyItem
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 		if (!hasCopyItem) {
 			// Fallback: click the first visible non-disabled Copy menuitem.
-			const anyEnabled = page.locator('[role="menuitem"]:not([disabled])').filter({ hasText: 'Copy' }).first()
+			const anyEnabled = page
+				.locator('[role="menuitem"]:not([disabled])')
+				.filter({ hasText: 'Copy' })
+				.first()
 			await expect(anyEnabled).toBeVisible({ timeout: 5_000 })
 			await anyEnabled.click()
 		} else {
@@ -186,7 +229,9 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 		await expect(dialog).toBeVisible({ timeout: 15_000 })
 
 		// Fill in the copy name.
-		const nameInput = dialog.locator('input[type="text"], [role="textbox"]').first()
+		const nameInput = dialog
+			.locator('input[type="text"], [role="textbox"]')
+			.first()
 		await nameInput.fill(copyName)
 
 		// Click the Copy button inside the dialog.
@@ -194,7 +239,9 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 
 		// A success NcNoteCard should appear inside the dialog.
 		await expect(
-			dialog.locator('.notecard, [class*="NcNoteCard"], [class*="note-card"]').first(),
+			dialog
+				.locator('.notecard, [class*="NcNoteCard"], [class*="note-card"]')
+				.first(),
 		).toBeVisible({ timeout: 15_000 })
 	})
 })
@@ -206,19 +253,27 @@ test.describe('entity-management-modals — delete-failure-preserves-dialog-and-
 	test.use({ storageState: STORAGE_STATE })
 
 	// @e2e openspec/specs/entity-management-modals/spec.md#delete-failure-preserves-dialog-and-selection
-	test('mass-delete with empty selection keeps the dialog showing empty state', async ({ page }) => {
+	test('mass-delete with empty selection keeps the dialog showing empty state', async ({
+		page,
+	}) => {
 		// Navigate to the objects view (gotoApp is hash-form).
 		await gotoApp(page, '/objects')
-		await expect(page.locator('#app-content-vue, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(
+			page.locator('#app-content-vue, .app-content').first(),
+		).toBeVisible({ timeout: 20_000 })
 
 		// The MassDeleteObject modal opens when `massDeleteObject` dialog is active.
 		// Without any objects selected, the "Delete selected" toolbar button is either
 		// absent or disabled.  Verify the guard is working: there should be no enabled
 		// bulk-delete action when nothing is checked.
-		const massDeleteBtn = page.locator(
-			'button:has-text("Delete selected"), button:has-text("Mass delete")',
-		).first()
-		const hasMassBtn = await massDeleteBtn.isVisible({ timeout: 3_000 }).catch(() => false)
+		const massDeleteBtn = page
+			.locator(
+				'button:has-text("Delete selected"), button:has-text("Mass delete")',
+			)
+			.first()
+		const hasMassBtn = await massDeleteBtn
+			.isVisible({ timeout: 3_000 })
+			.catch(() => false)
 
 		if (hasMassBtn) {
 			// If it's visible, it should be disabled (no selection).
@@ -248,16 +303,26 @@ test.describe('entity-management-modals — initialize-purge-selection-from-stor
 	})
 
 	// @e2e openspec/specs/entity-management-modals/spec.md#initialize-purge-selection-from-store
-	test('deleted-items page renders and the purge dialog shows checked items', async ({ page }) => {
+	test('deleted-items page renders and the purge dialog shows checked items', async ({
+		page,
+	}) => {
 		await gotoApp(page, '/deleted')
-		await expect(page.locator('#app-content-vue, .app-content').first()).toBeVisible({ timeout: 20_000 })
+		await expect(
+			page.locator('#app-content-vue, .app-content').first(),
+		).toBeVisible({ timeout: 20_000 })
 
 		// Deleted items management heading visible (sidebar or main).
-		await expect(page.getByRole('heading', { name: /Deleted Items Management|Deleted/i }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page
+				.getByRole('heading', { name: /Deleted Items Management|Deleted/i })
+				.first(),
+		).toBeVisible({ timeout: 15_000 })
 
 		// If the soft-deleted object appears in the list, select it.
 		const deletedItem = page.locator(`text="${objName}"`).first()
-		const isVisible = await deletedItem.isVisible({ timeout: 5_000 }).catch(() => false)
+		const isVisible = await deletedItem
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 
 		if (!isVisible) {
 			// Object not visible (may be on another register/schema page). Pass
@@ -266,25 +331,38 @@ test.describe('entity-management-modals — initialize-purge-selection-from-stor
 		}
 
 		// Check the first checkbox in the list.
-		const firstCheckbox = page.locator('[role="checkbox"], input[type="checkbox"]').first()
-		const hasCheckbox = await firstCheckbox.isVisible({ timeout: 5_000 }).catch(() => false)
+		const firstCheckbox = page
+			.locator('[role="checkbox"], input[type="checkbox"]')
+			.first()
+		const hasCheckbox = await firstCheckbox
+			.isVisible({ timeout: 5_000 })
+			.catch(() => false)
 		if (!hasCheckbox) return
 
 		await firstCheckbox.check()
 
 		// Look for a Purge button that becomes enabled after selection.
-		const purgeBtn = page.locator('button:has-text("Purge"), button:has-text("purge")').first()
-		const hasPurge = await purgeBtn.isVisible({ timeout: 3_000 }).catch(() => false)
+		const purgeBtn = page
+			.locator('button:has-text("Purge"), button:has-text("purge")')
+			.first()
+		const hasPurge = await purgeBtn
+			.isVisible({ timeout: 3_000 })
+			.catch(() => false)
 		if (!hasPurge) return
 
 		await purgeBtn.click()
 
 		// PurgeMultiple.vue dialog should open.
-		const purgeDialog = page.getByRole('dialog').filter({ hasText: 'Purge' }).first()
+		const purgeDialog = page
+			.getByRole('dialog')
+			.filter({ hasText: 'Purge' })
+			.first()
 		await expect(purgeDialog).toBeVisible({ timeout: 15_000 })
 
 		// Dialog title should mention "Purge" and show object count.
-		await expect(purgeDialog.getByRole('heading').first()).toBeVisible({ timeout: 5_000 })
+		await expect(purgeDialog.getByRole('heading').first()).toBeVisible({
+			timeout: 5_000,
+		})
 
 		// Cancel the purge.
 		await purgeDialog.getByRole('button', { name: 'Cancel' }).click()

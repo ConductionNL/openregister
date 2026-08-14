@@ -17,7 +17,13 @@ describe('Views Store — kanban/calendar presentation fetches (object-views-kan
 
 	describe('fetchKanbanBoard (REQ-VIEW-KANBAN-02)', () => {
 		it('GETs the kanban endpoint and returns the board as-is', async () => {
-			const board = { viewType: 'kanban', groupByField: 'status', columns: [{ value: 'todo', cards: [], total: 0, limit: 20, offset: 0 }] }
+			const board = {
+				viewType: 'kanban',
+				groupByField: 'status',
+				columns: [
+					{ value: 'todo', cards: [], total: 0, limit: 20, offset: 0 },
+				],
+			}
 			fetch.mockResolvedValueOnce({ ok: true, json: async () => board })
 
 			const result = await store.fetchKanbanBoard('view-1')
@@ -31,7 +37,10 @@ describe('Views Store — kanban/calendar presentation fetches (object-views-kan
 		})
 
 		it('forwards _limit/_offset as query params', async () => {
-			fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ columns: [] }) })
+			fetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ columns: [] }),
+			})
 
 			await store.fetchKanbanBoard('view-1', { _limit: 40, _offset: 20 })
 
@@ -41,19 +50,39 @@ describe('Views Store — kanban/calendar presentation fetches (object-views-kan
 		})
 
 		it('throws with the server-provided error message on a non-OK response', async () => {
-			fetch.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Kanban view is missing kanban.groupByField' }) })
+			fetch.mockResolvedValueOnce({
+				ok: false,
+				status: 400,
+				json: async () => ({
+					error: 'Kanban view is missing kanban.groupByField',
+				}),
+			})
 
-			await expect(store.fetchKanbanBoard('view-1')).rejects.toThrow('Kanban view is missing kanban.groupByField')
+			await expect(store.fetchKanbanBoard('view-1')).rejects.toThrow(
+				'Kanban view is missing kanban.groupByField',
+			)
 			expect(store.error).toBe('Kanban view is missing kanban.groupByField')
 		})
 	})
 
 	describe('fetchCalendarObjects (REQ-VIEW-CAL-04)', () => {
 		it('GETs the calendar endpoint with the visible range and returns the result as-is', async () => {
-			const result = { viewType: 'calendar', dateField: 'dueDate', endDateField: null, rangeStart: '2026-07-01', rangeEnd: '2026-07-31', objects: [], total: 0 }
+			const result = {
+				viewType: 'calendar',
+				dateField: 'dueDate',
+				endDateField: null,
+				rangeStart: '2026-07-01',
+				rangeEnd: '2026-07-31',
+				objects: [],
+				total: 0,
+			}
 			fetch.mockResolvedValueOnce({ ok: true, json: async () => result })
 
-			const data = await store.fetchCalendarObjects('view-2', '2026-07-01', '2026-07-31')
+			const data = await store.fetchCalendarObjects(
+				'view-2',
+				'2026-07-01',
+				'2026-07-31',
+			)
 
 			const [url, options] = fetch.mock.calls[0]
 			expect(url).toContain('/views/view-2/calendar')
@@ -64,9 +93,19 @@ describe('Views Store — kanban/calendar presentation fetches (object-views-kan
 		})
 
 		it('throws with the server-provided error message on a non-OK response', async () => {
-			fetch.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Both start and end (the visible date range) are required' }) })
+			fetch.mockResolvedValueOnce({
+				ok: false,
+				status: 400,
+				json: async () => ({
+					error: 'Both start and end (the visible date range) are required',
+				}),
+			})
 
-			await expect(store.fetchCalendarObjects('view-2', '', '')).rejects.toThrow('Both start and end (the visible date range) are required')
+			await expect(
+				store.fetchCalendarObjects('view-2', '', ''),
+			).rejects.toThrow(
+				'Both start and end (the visible date range) are required',
+			)
 		})
 	})
 })

@@ -59,7 +59,10 @@ const API_HEADERS = {
  * @param request The authenticated API context.
  * @param overrides Fields to set on the flow.
  */
-async function createFlow(request: APIRequestContext, overrides: Record<string, unknown> = {}) {
+async function createFlow(
+	request: APIRequestContext,
+	overrides: Record<string, unknown> = {},
+) {
 	const response = await request.post('/apps/openregister/api/flows', {
 		data: {
 			name: `${RUN_ID} flow`,
@@ -93,7 +96,9 @@ test.describe('flow store', () => {
 	 * The server stamps `owner`; a client-supplied one would let an author mint
 	 * a flow that RUNS as somebody else.
 	 */
-	test('the owner is server-stamped, not taken from the payload', async ({ request }) => {
+	test('the owner is server-stamped, not taken from the payload', async ({
+		request,
+	}) => {
 		const flow = await createFlow(request, { owner: 'somebody-else' })
 
 		expect(flow.owner).not.toBe('somebody-else')
@@ -103,16 +108,22 @@ test.describe('flow store', () => {
 	test('the list is scoped by the owning app', async ({ request }) => {
 		await createFlow(request, { app: 'openconnector', name: `${RUN_ID} oc` })
 
-		const scoped = await request.get('/apps/openregister/api/flows?app=openconnector')
+		const scoped = await request.get(
+			'/apps/openregister/api/flows?app=openconnector',
+		)
 		expect(scoped.status()).toBe(200)
-		const names = (await scoped.json()).results.map((f: { name: string }) => f.name)
+		const names = (await scoped.json()).results.map(
+			(f: { name: string }) => f.name,
+		)
 
 		expect(names).toContain(`${RUN_ID} oc`)
 		expect(names).not.toContain(`${RUN_ID} flow`)
 	})
 
 	test('an unknown flow is a 404, not a 500', async ({ request }) => {
-		const response = await request.get('/apps/openregister/api/flows/does-not-exist')
+		const response = await request.get(
+			'/apps/openregister/api/flows/does-not-exist',
+		)
 		expect(response.status()).toBe(404)
 	})
 })
@@ -126,10 +137,20 @@ test.describe('running a flow', () => {
 	 * skips every step and reports success — which is precisely what the engine
 	 * being replaced did.
 	 */
-	test('a run records one step per node, naming the catalogue node type', async ({ request }) => {
+	test('a run records one step per node, naming the catalogue node type', async ({
+		request,
+	}) => {
 		const flow = await createFlow(request, {
 			nodes: [{ id: 'start' }, { id: 'middle' }],
-			edges: [{ id: 'first', from: 'start', to: 'middle', type: 'openregister.set-fields', config: { fields: { touched: RUN_ID } } }],
+			edges: [
+				{
+					id: 'first',
+					from: 'start',
+					to: 'middle',
+					type: 'openregister.set-fields',
+					config: { fields: { touched: RUN_ID } },
+				},
+			],
 		})
 
 		// The SYNCHRONOUS test-run endpoint, deliberately. `POST /flows/{id}/run`
@@ -146,7 +167,10 @@ test.describe('running a flow', () => {
 		expect(finished.status).toBe('completed')
 
 		const steps = (finished.log ?? []) as Array<Record<string, unknown>>
-		expect(steps.length, 'zero steps in a completed run IS the silent-skip bug').toBeGreaterThan(0)
+		expect(
+			steps.length,
+			'zero steps in a completed run IS the silent-skip bug',
+		).toBeGreaterThan(0)
 
 		// The step must name the CATALOGUE id. A bare id here would mean the
 		// builder and the engine had drifted apart again.
@@ -159,11 +183,15 @@ test.describe('running a flow', () => {
 	 * its step visibly. The engine being replaced logged "skipped" at info and
 	 * reported the run a success.
 	 */
-	test('an unresolvable node fails its step instead of being skipped', async ({ request }) => {
+	test('an unresolvable node fails its step instead of being skipped', async ({
+		request,
+	}) => {
 		const flow = await createFlow(request, {
 			nodes: [{ id: 'start' }, { id: 'middle' }],
 			// A BARE id — exactly what the old builder produced.
-			edges: [{ id: 'first', from: 'start', to: 'middle', type: 'set-fields' }],
+			edges: [
+				{ id: 'first', from: 'start', to: 'middle', type: 'set-fields' },
+			],
 		})
 
 		const run = await request.post('/apps/openregister/api/flow-runs/test', {
@@ -172,7 +200,10 @@ test.describe('running a flow', () => {
 		expect(run.status()).toBe(200)
 		const finished = await run.json()
 
-		expect(finished.status, 'an unresolvable node must not yield a completed run').not.toBe('completed')
+		expect(
+			finished.status,
+			'an unresolvable node must not yield a completed run',
+		).not.toBe('completed')
 
 		const steps = (finished.log ?? []) as Array<Record<string, unknown>>
 		expect(steps.length).toBeGreaterThan(0)
@@ -181,7 +212,10 @@ test.describe('running a flow', () => {
 	})
 
 	test('running an unknown flow is refused', async ({ request }) => {
-		const response = await request.post('/apps/openregister/api/flows/does-not-exist/run', { data: {} })
+		const response = await request.post(
+			'/apps/openregister/api/flows/does-not-exist/run',
+			{ data: {} },
+		)
 		expect(response.status()).toBe(404)
 	})
 })
@@ -198,7 +232,10 @@ test.describe('running a flow', () => {
  * Run them with OR_UI_E2E=1 against an instance provisioned from this checkout.
  */
 test.describe('the Flows page', () => {
-	test.skip(process.env.OR_UI_E2E !== '1', 'set OR_UI_E2E=1 against an instance built from this checkout')
+	test.skip(
+		process.env.OR_UI_E2E !== '1',
+		'set OR_UI_E2E=1 against an instance built from this checkout',
+	)
 
 	// The session is for `page`; the API headers are for the `request` calls
 	// that set the fixtures up, which would otherwise trip the CSRF check.
@@ -209,17 +246,25 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4) — the
 		// readiness signal is the row/name assertion that follows each goto.
-		await page.goto('/apps/openregister/#/flows', { waitUntil: 'domcontentloaded' })
+		await page.goto('/apps/openregister/#/flows', {
+			waitUntil: 'domcontentloaded',
+		})
 
-		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({ timeout: 15000 })
+		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({
+			timeout: 15000,
+		})
 
-		await page.goto(`/apps/openregister/#/flows/${flow.id}`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`/apps/openregister/#/flows/${flow.id}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// Assert the FLOW, not just its frame: `.cn-flow-detail` is the
 		// nc-vue detail shell and renders for any flow, including one that
 		// failed to load. The name is the thing that proves this page is
 		// showing the flow we just created.
-		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({ timeout: 15000 })
+		await expect(page.getByText(`${RUN_ID} visible`)).toBeVisible({
+			timeout: 15000,
+		})
 
 		// The canvas renders its empty state for a flow with no steps, which is
 		// the honest answer rather than a blank page.
@@ -230,8 +275,14 @@ test.describe('the Flows page', () => {
 	 * Enabled and dispatchable are different things, and the page must say so —
 	 * a flow with no owner will not start however enabled it looks.
 	 */
-	test('an enabled flow with no owner is not shown as simply enabled', async ({ page, request }) => {
-		const flow = await createFlow(request, { name: `${RUN_ID} ownerless`, enabled: true })
+	test('an enabled flow with no owner is not shown as simply enabled', async ({
+		page,
+		request,
+	}) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} ownerless`,
+			enabled: true,
+		})
 
 		// The API stamps an owner on create, so this asserts the inverse: a flow
 		// that HAS an owner reads as plainly enabled.
@@ -239,7 +290,9 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4); the row
 		// assertion below is the real wait.
-		await page.goto('/apps/openregister/#/flows', { waitUntil: 'domcontentloaded' })
+		await page.goto('/apps/openregister/#/flows', {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const row = page.locator('tr', { hasText: `${RUN_ID} ownerless` })
 		await expect(row).toBeVisible({ timeout: 15000 })

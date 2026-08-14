@@ -1,5 +1,7 @@
 <template>
-	<section class="or-mail-suggested-objects" aria-labelledby="or-mail-suggested-title">
+	<section
+		class="or-mail-suggested-objects"
+		aria-labelledby="or-mail-suggested-title">
 		<h3 id="or-mail-suggested-title" class="or-mail-section-title">
 			{{ t('openregister', 'Related Cases') }}
 		</h3>

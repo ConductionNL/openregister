@@ -24,25 +24,44 @@ test.describe('production-observability — health and status', () => {
 		expect(body.version).toBeTruthy()
 	})
 
-	test('OCS capabilities endpoint includes openregister capability block', async ({ request }) => {
-		const resp = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {
-			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-		})
+	test('OCS capabilities endpoint includes openregister capability block', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/ocs/v2.php/cloud/capabilities?format=json',
+			{
+				headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
-		expect(body?.ocs?.data?.capabilities?.openregister, 'openregister capabilities block missing').toBeTruthy()
+		expect(
+			body?.ocs?.data?.capabilities?.openregister,
+			'openregister capabilities block missing',
+		).toBeTruthy()
 	})
 
-	test('OCS capabilities openregister block is present and non-empty', async ({ request }) => {
-		const resp = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {
-			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-		})
+	test('OCS capabilities openregister block is present and non-empty', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/ocs/v2.php/cloud/capabilities?format=json',
+			{
+				headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		const orCaps = body?.ocs?.data?.capabilities?.openregister
-		expect(orCaps, 'openregister capabilities block should be present').toBeTruthy()
+		expect(
+			orCaps,
+			'openregister capabilities block should be present',
+		).toBeTruthy()
 		// The block contains at least one capability key (version, urn, integrations, etc.).
-		expect(Object.keys(orCaps ?? {}).length, 'openregister capabilities should have keys').toBeGreaterThan(0)
+		expect(
+			Object.keys(orCaps ?? {}).length,
+			'openregister capabilities should have keys',
+		).toBeGreaterThan(0)
 	})
 })
 
@@ -63,9 +82,12 @@ test.describe('platform-administration-modals — settings API', () => {
 	})
 
 	test('GET /api/settings/object-management does not 5xx', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/settings/object-management', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/settings/object-management',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 	})
 })
@@ -75,9 +97,12 @@ test.describe('platform-administration-modals — settings API', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('nextcloud-api-compat — Nextcloud API compatibility', () => {
 	test('OCS cloud/capabilities returns standard envelope', async ({ request }) => {
-		const resp = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {
-			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/ocs/v2.php/cloud/capabilities?format=json',
+			{
+				headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body?.ocs?.meta?.status).toBe('ok')
@@ -93,7 +118,9 @@ test.describe('nextcloud-api-compat — Nextcloud API compatibility', () => {
 		expect(body?.ocs?.data?.id, 'OCS user id should be set').toBeTruthy()
 	})
 
-	test('OpenRegister app info endpoint responds without 5xx', async ({ request }) => {
+	test('OpenRegister app info endpoint responds without 5xx', async ({
+		request,
+	}) => {
 		const resp = await request.get('/index.php/apps/openregister/api/', {
 			headers: { Accept: 'application/json' },
 		})
@@ -106,10 +133,15 @@ test.describe('nextcloud-api-compat — Nextcloud API compatibility', () => {
 // environment-otap — OTAP environment in settings
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('environment-otap — OTAP environment context', () => {
-	test('OAS document server URL includes the local base path', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas', {
-			headers: { Accept: 'application/json' },
-		})
+	test('OAS document server URL includes the local base path', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		// The servers block should contain the environment-specific URL.
@@ -124,14 +156,19 @@ test.describe('environment-otap — OTAP environment context', () => {
 // mariadb-ci-matrix — database backend adapts to available engine
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('mariadb-ci-matrix — database backend compatibility', () => {
-	test('all CRUD operations work regardless of database engine', async ({ request }) => {
+	test('all CRUD operations work regardless of database engine', async ({
+		request,
+	}) => {
 		// This is evidenced by a full create/read/delete cycle working:
 		const RUN_ID = `e2e-db-${Date.now()}`
 
 		const created = await request.post(
 			'/index.php/apps/openregister/api/objects/8/18',
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-db-test`,
 					ocName: `${RUN_ID} DB Test`,
@@ -140,7 +177,10 @@ test.describe('mariadb-ci-matrix — database backend compatibility', () => {
 				},
 			},
 		)
-		expect(created.status(), 'create should work on any DB engine').toBeLessThanOrEqual(201)
+		expect(
+			created.status(),
+			'create should work on any DB engine',
+		).toBeLessThanOrEqual(201)
 		const createdBody = await created.json()
 		const id = createdBody['@self']?.id ?? createdBody.id
 		expect(id).toBeTruthy()
@@ -154,6 +194,8 @@ test.describe('mariadb-ci-matrix — database backend compatibility', () => {
 		const deleted = await request.delete(
 			`/index.php/apps/openregister/api/objects/8/18/${id}`,
 		)
-		expect([200, 204], 'DELETE should return 200 or 204').toContain(deleted.status())
+		expect([200, 204], 'DELETE should return 200 or 204').toContain(
+			deleted.status(),
+		)
 	})
 })

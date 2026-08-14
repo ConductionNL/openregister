@@ -6,8 +6,10 @@ import TranslationCompletenessBadge from './TranslationCompletenessBadge.vue'
  * @param key
  * @param ctx
  */
-const callComputed = (key, ctx) => TranslationCompletenessBadge.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) => TranslationCompletenessBadge.methods[key].apply(ctx, args)
+const callComputed = (key, ctx) =>
+	TranslationCompletenessBadge.computed[key].call(ctx)
+const callMethod = (key, ctx, ...args) =>
+	TranslationCompletenessBadge.methods[key].apply(ctx, args)
 
 const completeness = {
 	nl: { translated: 4, total: 4, ratio: 1 },
@@ -33,7 +35,10 @@ describe('TranslationCompletenessBadge', () => {
 		})
 
 		it('skips languages from languageOrder that are not in the completeness payload', () => {
-			const ctx = { completeness: { en: { translated: 1, total: 1, ratio: 1 } }, languageOrder: ['nl', 'en'] }
+			const ctx = {
+				completeness: { en: { translated: 1, total: 1, ratio: 1 } },
+				languageOrder: ['nl', 'en'],
+			}
 			expect(callComputed('languages', ctx)).toEqual(['en'])
 		})
 	})
@@ -60,14 +65,22 @@ describe('TranslationCompletenessBadge', () => {
 	describe('completenessClassFor', () => {
 		it('buckets ratios into complete / partial / low', () => {
 			const ctx = { completeness }
-			expect(callMethod('completenessClassFor', ctx, 'nl')).toBe('translation-completeness-badge__pill--complete')
-			expect(callMethod('completenessClassFor', ctx, 'en')).toBe('translation-completeness-badge__pill--partial')
-			expect(callMethod('completenessClassFor', ctx, 'de')).toBe('translation-completeness-badge__pill--low')
+			expect(callMethod('completenessClassFor', ctx, 'nl')).toBe(
+				'translation-completeness-badge__pill--complete',
+			)
+			expect(callMethod('completenessClassFor', ctx, 'en')).toBe(
+				'translation-completeness-badge__pill--partial',
+			)
+			expect(callMethod('completenessClassFor', ctx, 'de')).toBe(
+				'translation-completeness-badge__pill--low',
+			)
 		})
 
 		it('treats missing entries as low', () => {
 			const ctx = { completeness }
-			expect(callMethod('completenessClassFor', ctx, 'fr')).toBe('translation-completeness-badge__pill--low')
+			expect(callMethod('completenessClassFor', ctx, 'fr')).toBe(
+				'translation-completeness-badge__pill--low',
+			)
 		})
 	})
 
@@ -77,8 +90,9 @@ describe('TranslationCompletenessBadge', () => {
 				completeness,
 				languages: ['nl', 'en', 'de'],
 			}
-			expect(callComputed('tooltipText', ctx))
-				.toBe('Translation completeness — NL: 4/4, EN: 2/4, DE: 0/4')
+			expect(callComputed('tooltipText', ctx)).toBe(
+				'Translation completeness — NL: 4/4, EN: 2/4, DE: 0/4',
+			)
 		})
 	})
 })

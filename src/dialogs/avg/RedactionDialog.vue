@@ -6,7 +6,12 @@
 		@closing="$emit('close')">
 		<form class="redactionForm" @submit.prevent="onSubmit">
 			<p class="redactionIntro">
-				{{ t('openregister', 'Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail.') }}
+				{{
+					t(
+						'openregister',
+						'Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail.',
+					)
+				}}
 			</p>
 
 			<NcTextField
@@ -16,7 +21,12 @@
 
 			<NcTextField
 				v-model="form.after"
-				:label="t('openregister', 'Replacement value (leave empty to blank the field)')" />
+				:label="
+					t(
+						'openregister',
+						'Replacement value (leave empty to blank the field)',
+					)
+				" />
 
 			<NcSelect
 				v-model="form.ground"
@@ -32,10 +42,16 @@
 			</NcNoteCard>
 
 			<div class="redactionActions">
-				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton
+					variant="tertiary"
+					:disabled="saving"
+					@click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton variant="primary" type="submit" :disabled="saving || !form.field || !form.ground">
+				<NcButton
+					variant="primary"
+					type="submit"
+					:disabled="saving || !form.field || !form.ground">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>

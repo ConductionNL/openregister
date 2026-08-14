@@ -4,7 +4,8 @@ import { registerStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'publishRegister'"
+	<NcDialog
+		v-if="navigationStore.modal === 'publishRegister'"
 		name="publishRegister"
 		:title="t('openregister', 'Publish Register OAS to GitHub')"
 		size="large"
@@ -43,11 +44,18 @@ import { registerStore, navigationStore } from '../../store/store.js'
 						:label-outside="true"
 						aria-label-combobox="Repository selection" />
 					<p class="formHint">
-						{{ t('openregister', 'Select a repository you have write access to') }}
+						{{
+							t(
+								'openregister',
+								'Select a repository you have write access to',
+							)
+						}}
 					</p>
 				</div>
 
-				<div v-if="selectedRepository" class="formSection formSection--inline">
+				<div
+					v-if="selectedRepository"
+					class="formSection formSection--inline">
 					<h3>{{ t('openregister', 'Branch') }}</h3>
 					<NcLoadingIcon v-if="loadingBranches" :size="32" />
 					<NcSelect
@@ -70,11 +78,18 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
 					v-model="filePath"
-					:placeholder="t('openregister', 'e.g., lib/settings/register.json')"
+					:placeholder="
+						t('openregister', 'e.g., lib/settings/register.json')
+					"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
 				<p class="formHint">
-					{{ t('openregister', 'Path where the register OAS file will be saved in the repository') }}
+					{{
+						t(
+							'openregister',
+							'Path where the register OAS file will be saved in the repository',
+						)
+					}}
 				</p>
 			</div>
 
@@ -95,11 +110,13 @@ import { registerStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<CloudUploadOutline :size="20" />
 					</template>
-					{{ loading ? t('openregister', 'Publishing...') : t('openregister', 'Publish') }}
+					{{
+						loading
+							? t('openregister', 'Publishing...')
+							: t('openregister', 'Publish')
+					}}
 				</NcButton>
-				<NcButton
-					:disabled="loading"
-					@click="closeModal">
+				<NcButton :disabled="loading" @click="closeModal">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 			</div>
@@ -108,7 +125,14 @@ import { registerStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcDialog, NcButton, NcTextField, NcSelect, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcDialog,
+	NcButton,
+	NcTextField,
+	NcSelect,
+	NcNoteCard,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 
@@ -154,13 +178,17 @@ export default {
 		 * @spec exclude UI state helper — enables the publish button when repo/branch/path are set.
 		 */
 		canPublish() {
-			return this.selectedRepository && this.selectedBranch && this.filePath.trim() !== ''
+			return (
+				this.selectedRepository
+				&& this.selectedBranch
+				&& this.filePath.trim() !== ''
+			)
 		},
 		/**
 		 * @spec exclude UI display helper — maps repositories to NcSelect option objects.
 		 */
 		repositoryOptions() {
-			return this.repositories.map(repo => ({
+			return this.repositories.map((repo) => ({
 				value: repo.full_name,
 				label: `${repo.full_name}${repo.private ? ' (Private)' : ''}`,
 				...repo,
@@ -170,7 +198,7 @@ export default {
 		 * @spec exclude UI display helper — maps branches to NcSelect option objects.
 		 */
 		branchOptions() {
-			return this.branches.map(branch => ({
+			return this.branches.map((branch) => ({
 				value: branch.name,
 				label: branch.name,
 				...branch,
@@ -185,7 +213,10 @@ export default {
 		selectedRepository(newValue) {
 			if (newValue) {
 				// Extract value if it's an object, otherwise use the value directly
-				const repoValue = typeof newValue === 'object' ? (newValue.value || newValue.full_name) : newValue
+				const repoValue =
+					typeof newValue === 'object'
+						? newValue.value || newValue.full_name
+						: newValue
 				this.onRepositoryChange(repoValue)
 			} else {
 				// Clear branches when repository is cleared
@@ -228,12 +259,15 @@ export default {
 			this.error = null
 
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/configurations/github/repositories', {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/configurations/github/repositories',
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					const errorData = await response.json()
@@ -261,12 +295,15 @@ export default {
 			this.error = null
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/configurations/github/branches?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/configurations/github/branches?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+						},
 					},
-				})
+				)
 
 				if (!response.ok) {
 					const errorData = await response.json()
@@ -278,7 +315,10 @@ export default {
 
 				// Select default branch if available
 				if (this.branches.length > 0 && !this.selectedBranch) {
-					const defaultBranch = this.branches.find(b => b.name === 'main') || this.branches.find(b => b.name === 'master') || this.branches[0]
+					const defaultBranch =
+						this.branches.find((b) => b.name === 'main')
+						|| this.branches.find((b) => b.name === 'master')
+						|| this.branches[0]
 					if (defaultBranch) {
 						this.selectedBranch = defaultBranch.name
 					}
@@ -301,9 +341,14 @@ export default {
 
 			if (value) {
 				// Handle both string (full_name) and object cases
-				const repoFullName = typeof value === 'string' ? value : value.value || value.full_name
+				const repoFullName =
+					typeof value === 'string'
+						? value
+						: value.value || value.full_name
 
-				const repo = this.repositories.find(r => r.full_name === repoFullName)
+				const repo = this.repositories.find(
+					(r) => r.full_name === repoFullName,
+				)
 				if (repo) {
 					this.loadBranches(repo.owner, repo.name)
 				}
@@ -321,15 +366,17 @@ export default {
 
 			try {
 				// Extract repository value (handle both object and string)
-				const repoValue = typeof this.selectedRepository === 'object'
-					? (this.selectedRepository.value || this.selectedRepository.full_name)
-					: this.selectedRepository
+				const repoValue =
+					typeof this.selectedRepository === 'object'
+						? this.selectedRepository.value
+							|| this.selectedRepository.full_name
+						: this.selectedRepository
 
 				if (!repoValue) {
 					throw new Error('Repository not selected')
 				}
 
-				const repo = this.repositories.find(r => r.full_name === repoValue)
+				const repo = this.repositories.find((r) => r.full_name === repoValue)
 				if (!repo) {
 					throw new Error('Repository not found')
 				}
@@ -337,31 +384,39 @@ export default {
 				const [owner, repoName] = repoValue.split('/')
 
 				// Extract branch value (handle both object and string)
-				const branchValue = typeof this.selectedBranch === 'object'
-					? (this.selectedBranch.value || this.selectedBranch.name)
-					: this.selectedBranch
+				const branchValue =
+					typeof this.selectedBranch === 'object'
+						? this.selectedBranch.value || this.selectedBranch.name
+						: this.selectedBranch
 
 				if (!branchValue) {
 					throw new Error('Branch not selected')
 				}
 
-				const response = await fetch(`/index.php/apps/openregister/api/registers/${this.register.id}/publish/github`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					`/index.php/apps/openregister/api/registers/${this.register.id}/publish/github`,
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							owner,
+							repo: repoName,
+							path: this.filePath.trim(),
+							branch: branchValue,
+							commitMessage:
+								this.commitMessage
+								|| `Update register OAS: ${this.register.title}`,
+						}),
 					},
-					body: JSON.stringify({
-						owner,
-						repo: repoName,
-						path: this.filePath.trim(),
-						branch: branchValue,
-						commitMessage: this.commitMessage || `Update register OAS: ${this.register.title}`,
-					}),
-				})
+				)
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.error || 'Failed to publish register OAS')
+					throw new Error(
+						errorData.error || 'Failed to publish register OAS',
+					)
 				}
 
 				const data = await response.json()

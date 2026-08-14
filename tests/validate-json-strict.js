@@ -55,7 +55,14 @@ function parseStrict(text, label) {
 		throw new SyntaxError(`${label}: ${msg} (at offset ${i})`)
 	}
 	function skipWs() {
-		while (i < n && (text[i] === ' ' || text[i] === '\t' || text[i] === '\n' || text[i] === '\r')) i++
+		while (
+			i < n
+			&& (text[i] === ' '
+				|| text[i] === '\t'
+				|| text[i] === '\n'
+				|| text[i] === '\r')
+		)
+			i++
 	}
 	function readString() {
 		// assumes text[i] === '"'
@@ -66,8 +73,10 @@ function parseStrict(text, label) {
 			if (c === '"') return s
 			if (c === '\\') {
 				const e = text[i++]
-				if (e === 'u') { s += '\\u' + text.slice(i, i + 4); i += 4 }
-				else s += '\\' + e
+				if (e === 'u') {
+					s += '\\u' + text.slice(i, i + 4)
+					i += 4
+				} else s += '\\' + e
 			} else s += c
 		}
 		err('unterminated string')
@@ -77,22 +86,34 @@ function parseStrict(text, label) {
 		const c = text[i]
 		if (c === '{') return readObject(pathStr)
 		if (c === '[') return readArray(pathStr)
-		if (c === '"') { readString(); return }
+		if (c === '"') {
+			readString()
+			return
+		}
 		// number / true / false / null — scan to a delimiter
 		while (i < n && !',}] \t\n\r'.includes(text[i])) i++
 	}
 	function readArray(pathStr) {
 		i++ // [
 		skipWs()
-		if (text[i] === ']') { i++; return }
+		if (text[i] === ']') {
+			i++
+			return
+		}
 		let idx = 0
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			readValue(`${pathStr}/${idx}`)
 			idx++
 			skipWs()
-			if (text[i] === ',') { i++; continue }
-			if (text[i] === ']') { i++; return }
+			if (text[i] === ',') {
+				i++
+				continue
+			}
+			if (text[i] === ']') {
+				i++
+				return
+			}
 			err('expected , or ] in array')
 		}
 	}
@@ -101,7 +122,10 @@ function parseStrict(text, label) {
 		skipWs()
 		const keys = new Set()
 		const objKeys = []
-		if (text[i] === '}') { i++; return }
+		if (text[i] === '}') {
+			i++
+			return
+		}
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			skipWs()
@@ -119,11 +143,19 @@ function parseStrict(text, label) {
 			// Flag nested appendOnly on a schema's x-openregister block:
 			// path looks like /components/schemas/<Name>/x-openregister and key === 'appendOnly'
 			if (key === 'appendOnly' && /\/x-openregister$/.test(pathStr)) {
-				dupErrors.push(`${pathStr}/appendOnly: nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`)
+				dupErrors.push(
+					`${pathStr}/appendOnly: nested inside x-openregister — OpenRegister only reads a TOP-LEVEL appendOnly; move it to the schema root`,
+				)
 			}
 			skipWs()
-			if (text[i] === ',') { i++; continue }
-			if (text[i] === '}') { i++; return }
+			if (text[i] === ',') {
+				i++
+				continue
+			}
+			if (text[i] === '}') {
+				i++
+				return
+			}
 			err('expected , or } in object')
 		}
 	}
@@ -140,7 +172,9 @@ function parseStrict(text, label) {
 function main() {
 	const files = targetFiles()
 	if (files.length === 0) {
-		console.log('[validate-json-strict] no manifest or *_register.json found — nothing to check')
+		console.log(
+			'[validate-json-strict] no manifest or *_register.json found — nothing to check',
+		)
 		process.exit(0)
 	}
 	let failed = false
@@ -150,7 +184,9 @@ function main() {
 		try {
 			text = fs.readFileSync(file, 'utf8')
 		} catch (e) {
-			console.error(`[validate-json-strict] cannot read ${label}: ${e.message}`)
+			console.error(
+				`[validate-json-strict] cannot read ${label}: ${e.message}`,
+			)
 			failed = true
 			continue
 		}
@@ -158,7 +194,9 @@ function main() {
 		try {
 			JSON.parse(text)
 		} catch (e) {
-			console.error(`[validate-json-strict] ${label}: invalid JSON — ${e.message}`)
+			console.error(
+				`[validate-json-strict] ${label}: invalid JSON — ${e.message}`,
+			)
 			failed = true
 			continue
 		}

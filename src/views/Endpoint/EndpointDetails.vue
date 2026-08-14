@@ -16,7 +16,9 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click @click="navigationStore.setModal('editEndpoint')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setModal('editEndpoint')">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
@@ -28,7 +30,9 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 							</template>
 							Test
 						</NcActionButton>
-						<NcActionButton close-after-click @click="navigationStore.setDialog('deleteEndpoint')">
+						<NcActionButton
+							close-after-click
+							@click="navigationStore.setDialog('deleteEndpoint')">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -63,7 +67,12 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						<b>Version:</b>
 						<p>{{ endpointStore.endpointItem.version }}</p>
 					</div>
-					<div v-if="endpointStore.endpointItem.groups && endpointStore.endpointItem.groups.length > 0" class="gridContent gridFullWidth">
+					<div
+						v-if="
+							endpointStore.endpointItem.groups
+							&& endpointStore.endpointItem.groups.length > 0
+						"
+						class="gridContent gridFullWidth">
 						<b>Allowed Groups:</b>
 						<p>{{ endpointStore.endpointItem.groups.join(', ') }}</p>
 					</div>
@@ -96,12 +105,15 @@ export default {
 		 * @spec exclude detail-view action button wiring; delegates to endpointStore.testEndpoint and surfaces a toast (endpoint test contract owned by oas-validation)
 		 */
 		testEndpoint() {
-			endpointStore.testEndpoint(endpointStore.endpointItem)
+			endpointStore
+				.testEndpoint(endpointStore.endpointItem)
 				.then((result) => {
 					if (result.success) {
 						OCP.Toast.success('Endpoint tested successfully')
 					} else {
-						OCP.Toast.error(`Endpoint test failed: ${result.error || result.message}`)
+						OCP.Toast.error(
+							`Endpoint test failed: ${result.error || result.message}`,
+						)
 					}
 				})
 				.catch((error) => {

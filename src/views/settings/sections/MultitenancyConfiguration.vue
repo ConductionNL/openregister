@@ -5,7 +5,12 @@ import { translate as t } from '@nextcloud/l10n'
 <template>
 	<SettingsSection
 		:name="t('openregister', 'Multitenancy')"
-		:description="t('openregister', 'Configure multi-organization support and tenant isolation')"
+		:description="
+			t(
+				'openregister',
+				'Configure multi-organization support and tenant isolation',
+			)
+		"
 		:loading="loading"
 		:loading-message="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
@@ -34,27 +39,46 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Multitenancy enables multiple organizations to use the same Open Register instance while keeping their data completely separate.
-				Each tenant (organization) has isolated access to their own registers, schemas, and objects, ensuring data privacy and security.
+				Multitenancy enables multiple organizations to use the same Open
+				Register instance while keeping their data completely separate. Each
+				tenant (organization) has isolated access to their own registers,
+				schemas, and objects, ensuring data privacy and security.
 			</p>
 			<p class="toggle-status">
 				<strong>Current Status:</strong>
-				<span :class="multitenancyOptions.enabled ? 'status-enabled' : 'status-disabled'">
-					{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
+				<span
+					:class="
+						multitenancyOptions.enabled
+							? 'status-enabled'
+							: 'status-disabled'
+					">
+					{{
+						multitenancyOptions.enabled
+							? 'Multitenancy enabled'
+							: 'Multitenancy disabled'
+					}}
 				</span>
 			</p>
 			<p class="impact-description">
-				<strong>{{ multitenancyOptions.enabled ? 'Disabling' : 'Enabling' }} Multitenancy will:</strong><br>
+				<strong
+					>{{
+						multitenancyOptions.enabled ? 'Disabling' : 'Enabling'
+					}}
+					Multitenancy will:</strong
+				><br />
 				<span v-if="!multitenancyOptions.enabled">
-					• Enable multiple organizations to share the same system instance<br>
-					• Provide complete data isolation between different tenants<br>
-					• Allow centralized management while maintaining security boundaries<br>
-					• Reduce infrastructure costs by sharing resources across organizations
+					• Enable multiple organizations to share the same system
+					instance<br />
+					• Provide complete data isolation between different tenants<br />
+					• Allow centralized management while maintaining security
+					boundaries<br />
+					• Reduce infrastructure costs by sharing resources across
+					organizations
 				</span>
 				<span v-else>
-					• Merge all tenant data into a single shared environment<br>
-					• Remove data isolation between organizations<br>
-					• Simplify the system to single-tenant mode<br>
+					• Merge all tenant data into a single shared environment<br />
+					• Remove data isolation between organizations<br />
+					• Simplify the system to single-tenant mode<br />
 					• May expose sensitive data to unauthorized users
 				</span>
 			</p>
@@ -66,7 +90,11 @@ import { translate as t } from '@nextcloud/l10n'
 				v-model="multitenancyOptions.enabled"
 				:disabled="saving"
 				type="switch">
-				{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
+				{{
+					multitenancyOptions.enabled
+						? 'Multitenancy enabled'
+						: 'Multitenancy disabled'
+				}}
 			</NcCheckboxRadioSwitch>
 		</div>
 
@@ -76,7 +104,11 @@ import { translate as t } from '@nextcloud/l10n'
 				v-model="multitenancyOptions.adminOverride"
 				:disabled="saving"
 				type="switch">
-				{{ multitenancyOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
+				{{
+					multitenancyOptions.adminOverride
+						? 'Admin override enabled'
+						: 'Admin override disabled'
+				}}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
 				Allow administrators to bypass all multi-tenancy restrictions
@@ -95,7 +127,8 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="group-label">
 						<strong>Default User Tenant</strong>
 						<p class="user-type-description">
-							The tenant assigned to users who are not part of any specific organization
+							The tenant assigned to users who are not part of any
+							specific organization
 						</p>
 					</div>
 					<div class="group-select">
@@ -111,7 +144,8 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="group-label">
 						<strong>Default Object Tenant</strong>
 						<p class="user-type-description">
-							The tenant assigned to objects when no specific organization is specified
+							The tenant assigned to objects when no specific
+							organization is specified
 						</p>
 					</div>
 					<div class="group-select">
@@ -131,7 +165,12 @@ import { translate as t } from '@nextcloud/l10n'
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+} from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -232,7 +271,9 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
-			await this.settingsStore.updateMultitenancySettings(this.multitenancyOptions)
+			await this.settingsStore.updateMultitenancySettings(
+				this.multitenancyOptions,
+			)
 		},
 	},
 }

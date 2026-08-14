@@ -4,17 +4,24 @@ import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'massCopyObjects'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'massCopyObjects'"
 		:name="`Copy ${objectStore.selectedObjects.length} Objects`"
 		size="normal"
 		:can-close="false">
 		<div v-if="success === null">
 			<p>
-				{{ t('openregister', 'Create copies of') }} <b>{{ objectStore.selectedObjects.length }} {{ t('openregister', 'selected objects') }}</b>
+				{{ t('openregister', 'Create copies of') }}
+				<b
+					>{{ objectStore.selectedObjects.length }}
+					{{ t('openregister', 'selected objects') }}</b
+				>
 			</p>
 
 			<div class="form-group">
-				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
+				<label for="namingPattern">{{
+					t('openregister', 'Naming pattern for copies:')
+				}}</label>
 				<NcSelect
 					v-model="selectedNamingPattern"
 					input-label="Selected Naming Pattern"
@@ -23,12 +30,16 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					label="label"
 					track-by="value" />
 				<p class="help-text">
-					{{ t('openregister', 'Preview:') }} "{{ getPreviewName(objectStore.selectedObjects[0]) }}"
+					{{ t('openregister', 'Preview:') }} "{{
+						getPreviewName(objectStore.selectedObjects[0])
+					}}"
 				</p>
 			</div>
 
 			<div v-if="selectedNamingPattern?.value === 'custom'" class="form-group">
-				<label for="customPattern">{{ t('openregister', 'Custom pattern:') }}</label>
+				<label for="customPattern">{{
+					t('openregister', 'Custom pattern:')
+				}}</label>
 				<NcTextField
 					id="customPattern"
 					v-model="customPattern"
@@ -165,14 +176,16 @@ export default {
 		getPreviewName(object) {
 			if (!object) return 'Preview Name'
 
-			const originalName = object['@self']?.name
+			const originalName =
+				object['@self']?.name
 				|| object.name
 				|| object['@self']?.title
 				|| `Object ${object['@self']?.id}`
 
-			const pattern = this.selectedNamingPattern?.value === 'custom'
-				? this.customPattern
-				: this.selectedNamingPattern?.pattern || 'Copy of {name}'
+			const pattern =
+				this.selectedNamingPattern?.value === 'custom'
+					? this.customPattern
+					: this.selectedNamingPattern?.pattern || 'Copy of {name}'
 
 			return pattern
 				.replace('{name}', originalName)
@@ -194,9 +207,10 @@ export default {
 			this.successCount = 0
 			this.totalCount = objectStore.selectedObjects.length
 
-			const pattern = this.selectedNamingPattern?.value === 'custom'
-				? this.customPattern
-				: this.selectedNamingPattern?.pattern || 'Copy of {name}'
+			const pattern =
+				this.selectedNamingPattern?.value === 'custom'
+					? this.customPattern
+					: this.selectedNamingPattern?.pattern || 'Copy of {name}'
 
 			try {
 				for (const object of objectStore.selectedObjects) {
@@ -223,14 +237,18 @@ export default {
 						}
 
 						// Generate new name using the pattern
-						const originalName = object['@self']?.name
+						const originalName =
+							object['@self']?.name
 							|| object.name
 							|| object['@self']?.title
 							|| `Object ${object['@self']?.id}`
 
 						const newName = pattern
 							.replace('{name}', originalName)
-							.replace('{id}', object['@self']?.id || object.id || 'ID')
+							.replace(
+								'{id}',
+								object['@self']?.id || object.id || 'ID',
+							)
 
 						// Set the new name
 						if (objectToCopy['@self']) {
@@ -253,7 +271,11 @@ export default {
 							this.successCount++
 						}
 					} catch (error) {
-						console.error('Failed to copy object:', object['@self']?.id, error)
+						console.error(
+							'Failed to copy object:',
+							object['@self']?.id,
+							error,
+						)
 						// Continue with other objects even if one fails
 					}
 				}
@@ -268,7 +290,8 @@ export default {
 				}
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while copying the objects'
+				this.error =
+					error.message || 'An error occurred while copying the objects'
 			} finally {
 				this.loading = false
 			}

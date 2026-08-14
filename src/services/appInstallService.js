@@ -113,7 +113,7 @@
  * - **Error Handling**: A custom `RequestError` class is provided for handling HTTP and JSON errors.
  *   If a request fails (e.g., non-`200` status or JSON parse error), a `RequestError` will be thrown
  *   containing the `response`, `status`, and `data`. The `data` field may contain a message indicating
- *   that password confirmation is required (status 403). Always wrap calls in `try/catch` if you need 
+ *   that password confirmation is required (status 403). Always wrap calls in `try/catch` if you need
  *   to handle errors gracefully.
  *
  * ### Prerequisites
@@ -153,7 +153,6 @@
  */
 
 class AppInstallService {
-
 	/** @type {string} */
 	#token
 
@@ -262,7 +261,9 @@ class AppInstallService {
 		})
 		if (!data || !data.apps) {
 			// In case the response structure doesn't match expectations:
-			throw new Error('[AppInstallService] Unexpected response format from /apps/list')
+			throw new Error(
+				'[AppInstallService] Unexpected response format from /apps/list',
+			)
 		}
 		return data.apps
 	}
@@ -353,7 +354,9 @@ class AppInstallService {
 
 		const appsToInstall = []
 		for (const appId of appIds) {
-			const alreadyInstalled = await this.isAppInstalled(appId).catch(() => false)
+			const alreadyInstalled = await this.isAppInstalled(appId).catch(
+				() => false,
+			)
 			if (!alreadyInstalled) {
 				appsToInstall.push(appId)
 			}
@@ -443,14 +446,12 @@ class AppInstallService {
 			body: JSON.stringify({ appIds }),
 		}).finally(() => this.reloadCacheList())
 	}
-
 }
 
 /**
  * Custom error class for HTTP request failures.
  */
 class RequestError extends Error {
-
 	/**
 	 * @param {string} message - Error message
 	 * @param {Response} response - The fetch Response object
@@ -464,7 +465,6 @@ class RequestError extends Error {
 		this.status = response.status
 		this.data = data
 	}
-
 }
 
 export { RequestError, AppInstallService }

@@ -4,7 +4,16 @@ import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="n('openregister', 'Delete {count} object', 'Delete {count} objects', selectedObjects.length, { count: selectedObjects.length })"
+	<NcDialog
+		:name="
+			n(
+				'openregister',
+				'Delete {count} object',
+				'Delete {count} objects',
+				selectedObjects.length,
+				{ count: selectedObjects.length },
+			)
+		"
 		:can-close="false"
 		size="normal">
 		<!-- Object Selection Review -->
@@ -14,27 +23,74 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			</h3>
 
 			<NcNoteCard type="info">
-				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to delete by clicking the remove button.') }}<br><br>
-				{{ t('openregister', 'Objects will be soft deleted and moved to the') }}
-				<a href="#" class="deleted-link" @click.prevent="navigateToDeleted">{{ t('openregister', 'deleted objects section') }}</a>.
-				{{ t('openregister', 'They will be retained according to their schema\'s configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema\'s settings.') }}
+				{{
+					t(
+						'openregister',
+						"Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.",
+					)
+				}}<br /><br />
+				{{
+					t(
+						'openregister',
+						'Objects will be soft deleted and moved to the',
+					)
+				}}
+				<a
+					href="#"
+					class="deleted-link"
+					@click.prevent="navigateToDeleted"
+					>{{ t('openregister', 'deleted objects section') }}</a
+				>.
+				{{
+					t(
+						'openregister',
+						"They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.",
+					)
+				}}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: selectedObjects.length }) }}</h4>
+				<h4>
+					{{
+						t('openregister', 'Selected Objects ({count})', {
+							count: selectedObjects.length,
+						})
+					}}
+				</h4>
 
 				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div v-for="obj in selectedObjects"
+					<div
+						v-for="obj in selectedObjects"
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
-							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || t('openregister', 'Unnamed Object') }}</strong>
+							<strong>{{
+								obj['@self']?.name
+								|| obj.name
+								|| obj.title
+								|| obj['@self']?.title
+								|| t('openregister', 'Unnamed Object')
+							}}</strong>
 							<p class="object-id">
-								{{ t('openregister', 'ID: {id}', { id: obj.id || obj['@self']?.id }) }}
+								{{
+									t('openregister', 'ID: {id}', {
+										id: obj.id || obj['@self']?.id,
+									})
+								}}
 							</p>
 						</div>
-						<NcButton variant="tertiary"
-							:aria-label="t('openregister', 'Remove {title}', { title: obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id })"
+						<NcButton
+							variant="tertiary"
+							:aria-label="
+								t('openregister', 'Remove {title}', {
+									title:
+										obj['@self']?.name
+										|| obj.name
+										|| obj.title
+										|| obj['@self']?.title
+										|| obj.id,
+								})
+							"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -43,16 +99,32 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
+				<NcEmptyContent
+					v-else
+					:name="t('openregister', 'No objects selected')">
 					<template #description>
-						{{ t('openregister', 'No objects are currently selected for deletion.') }}
+						{{
+							t(
+								'openregister',
+								'No objects are currently selected for deletion.',
+							)
+						}}
 					</template>
 				</NcEmptyContent>
 			</div>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>{{ n('openregister', 'Object successfully deleted', 'Objects successfully deleted', objectStore.selectedObjects.length) }}</p>
+			<p>
+				{{
+					n(
+						'openregister',
+						'Object successfully deleted',
+						'Objects successfully deleted',
+						objectStore.selectedObjects.length,
+					)
+				}}
+			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -63,9 +135,14 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
-			<NcButton v-if="success === null"
+			<NcButton
+				v-if="success === null"
 				:disabled="loading || selectedObjects.length === 0"
 				variant="error"
 				@click="deleteObject()">
@@ -133,22 +210,26 @@ export default {
 			// cannot be resolved still yields `{ id }` so the delete itself works
 			// even when the row is not in the loaded page.
 			const selection = objectStore.selectedObjects || []
-			const pool = Array.isArray(objectStore.searchCollection) ? objectStore.searchCollection : []
+			const pool = Array.isArray(objectStore.searchCollection)
+				? objectStore.searchCollection
+				: []
 			const byId = new Map()
 			for (const row of pool) {
 				const rowId = row?.['@self']?.id ?? row?.id
 				if (rowId) byId.set(String(rowId), row)
 			}
 
-			this.selectedObjects = selection.map((entry) => {
-				if (entry && typeof entry === 'object') {
-					return { ...entry, id: entry['@self']?.id ?? entry.id }
-				}
-				const row = byId.get(String(entry))
-				return row
-					? { ...row, id: row['@self']?.id ?? row.id }
-					: { id: String(entry) }
-			}).filter((obj) => obj.id)
+			this.selectedObjects = selection
+				.map((entry) => {
+					if (entry && typeof entry === 'object') {
+						return { ...entry, id: entry['@self']?.id ?? entry.id }
+					}
+					const row = byId.get(String(entry))
+					return row
+						? { ...row, id: row['@self']?.id ?? row.id }
+						: { id: String(entry) }
+				})
+				.filter((obj) => obj.id)
 
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
@@ -159,11 +240,13 @@ export default {
 		 * @spec exclude form-state helper to deselect an object from the list
 		 */
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			this.selectedObjects = this.selectedObjects.filter(
+				(obj) => obj.id !== objectId,
+			)
 			// Write IDs back, never objects — the table's `selectedIdsForPage`
 			// stringifies whatever is here, and objects would serialise to
 			// "[object Object]" and silently clear the visible selection.
-			objectStore.selectedObjects = this.selectedObjects.map(obj => obj.id)
+			objectStore.selectedObjects = this.selectedObjects.map((obj) => obj.id)
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
@@ -191,7 +274,8 @@ export default {
 		async deleteObject() {
 			this.loading = true
 
-			objectStore.massDeleteObject(this.selectedObjects.map(obj => obj.id))
+			objectStore
+				.massDeleteObject(this.selectedObjects.map((obj) => obj.id))
 				.then((result) => {
 					this.result = result
 					this.success = result.successfulIds.length > 0
@@ -206,7 +290,9 @@ export default {
 						// `refetchSearchCollection()`. Deleting from the search view
 						// therefore left the deleted rows on screen.
 						objectStore.selectedObjects = []
-						if (typeof objectStore.refetchSearchCollection === 'function') {
+						if (
+							typeof objectStore.refetchSearchCollection === 'function'
+						) {
 							objectStore.refetchSearchCollection()
 						}
 						objectStore.refreshObjectList().catch(() => {
@@ -221,10 +307,17 @@ export default {
 						// delete confirmation the user had to dismiss by hand.
 						this.closeDialog()
 					}
-				}).catch((error) => {
+				})
+				.catch((error) => {
 					this.success = false
-					this.error = error.message || t('openregister', 'An error occurred while deleting the object')
-				}).finally(() => {
+					this.error =
+						error.message
+						|| t(
+							'openregister',
+							'An error occurred while deleting the object',
+						)
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},

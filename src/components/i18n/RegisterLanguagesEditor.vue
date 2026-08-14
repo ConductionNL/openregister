@@ -1,34 +1,44 @@
 <template>
 	<div class="register-languages-editor">
-		<label v-if="label" class="register-languages-editor__label">{{ label }}</label>
+		<label v-if="label" class="register-languages-editor__label">{{
+			label
+		}}</label>
 		<p v-if="helperText" class="register-languages-editor__help">
 			{{ helperText }}
 		</p>
 
 		<ul v-if="value && value.length" class="register-languages-editor__list">
-			<li v-for="(lang, idx) in value"
+			<li
+				v-for="(lang, idx) in value"
 				:key="lang"
 				class="register-languages-editor__row">
 				<span class="register-languages-editor__lang">
 					{{ lang.toUpperCase() }}
-					<span v-if="idx === 0" class="register-languages-editor__default">{{ defaultLabel }}</span>
+					<span
+						v-if="idx === 0"
+						class="register-languages-editor__default"
+						>{{ defaultLabel }}</span
+					>
 				</span>
 				<div class="register-languages-editor__row-actions">
-					<button type="button"
+					<button
+						type="button"
 						class="register-languages-editor__btn"
 						:disabled="idx === 0 || disabled"
 						:aria-label="moveUpLabel"
 						@click="move(idx, idx - 1)">
 						▲
 					</button>
-					<button type="button"
+					<button
+						type="button"
 						class="register-languages-editor__btn"
 						:disabled="idx === value.length - 1 || disabled"
 						:aria-label="moveDownLabel"
 						@click="move(idx, idx + 1)">
 						▼
 					</button>
-					<button type="button"
+					<button
+						type="button"
 						class="register-languages-editor__btn register-languages-editor__btn--danger"
 						:disabled="disabled"
 						:aria-label="removeLabel"
@@ -43,15 +53,17 @@
 		</p>
 
 		<form class="register-languages-editor__add" @submit.prevent="addCurrent">
-			<input v-model="draft"
+			<input
+				v-model="draft"
 				type="text"
 				:aria-label="addPlaceholder"
 				:placeholder="addPlaceholder"
 				:disabled="disabled"
 				maxlength="35"
 				class="register-languages-editor__input"
-				@keydown.enter.prevent="addCurrent">
-			<button type="submit"
+				@keydown.enter.prevent="addCurrent" />
+			<button
+				type="submit"
 				class="register-languages-editor__btn"
 				:disabled="!canAdd">
 				{{ addLabel }}
@@ -135,7 +147,11 @@ export default {
 		 * @spec exclude computed add-enabled form-validation flag, UI plumbing
 		 */
 		canAdd() {
-			return !this.disabled && this.normalizedDraft !== '' && this.validateDraft(this.normalizedDraft) === null
+			return (
+				!this.disabled
+				&& this.normalizedDraft !== ''
+				&& this.validateDraft(this.normalizedDraft) === null
+			)
 		},
 		/**
 		 * @spec exclude computed normalized draft input value, UI plumbing
@@ -177,10 +193,14 @@ export default {
 		 */
 		errorMessageFor(reason) {
 			switch (reason) {
-			case 'empty': return 'Enter a BCP 47 language tag.'
-			case 'invalid': return 'Not a valid BCP 47 tag (e.g. nl, en, ar-SA).'
-			case 'duplicate': return 'That language is already in the list.'
-			default: return 'Invalid input.'
+				case 'empty':
+					return 'Enter a BCP 47 language tag.'
+				case 'invalid':
+					return 'Not a valid BCP 47 tag (e.g. nl, en, ar-SA).'
+				case 'duplicate':
+					return 'That language is already in the list.'
+				default:
+					return 'Invalid input.'
 			}
 		},
 		/**
@@ -201,7 +221,8 @@ export default {
 		move(from, to) {
 			if (this.disabled) return
 			const list = [...(this.value || [])]
-			if (to < 0 || to >= list.length || from < 0 || from >= list.length) return
+			if (to < 0 || to >= list.length || from < 0 || from >= list.length)
+				return
 			const [item] = list.splice(from, 1)
 			list.splice(to, 0, item)
 			this.$emit('input', list)

@@ -2,7 +2,12 @@
 	<div class="my-account">
 		<h2>{{ t('openregister', 'My Account') }}</h2>
 		<p class="my-account__description">
-			{{ t('openregister', 'Manage your account settings, security, and personal data.') }}
+			{{
+				t(
+					'openregister',
+					'Manage your account settings, security, and personal data.',
+				)
+			}}
 		</p>
 
 		<PasswordSection />

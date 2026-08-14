@@ -51,7 +51,7 @@ export function on(event, handler) {
 		// pre-existing bug this warning is meant to surface rather than hide.
 		console.warn(
 			`[openregister/eventBus] refusing to subscribe "${event}": handler is `
-			+ `${typeof handler}, not a function. The channel will never fire.`,
+				+ `${typeof handler}, not a function. The channel will never fire.`,
 		)
 		return
 	}

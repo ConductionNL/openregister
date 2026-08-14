@@ -3,7 +3,8 @@
 		<div class="goldenRecordHeader">
 			<h2>{{ t('openregister', 'Golden record') }}</h2>
 			<div class="goldenRecordHeader__actions">
-				<NcButton v-if="object"
+				<NcButton
+					v-if="object"
 					variant="secondary"
 					data-testid="mdm-resolve-conflicts"
 					@click="openConflicts">
@@ -25,13 +26,29 @@
 
 		<template v-else>
 			<div class="goldenRecordMeta">
-				<span><strong>{{ t('openregister', 'Id') }}:</strong> {{ object.id }}</span>
-				<span><strong>{{ t('openregister', 'Quality score') }}:</strong> {{ object.qualityScore ?? '—' }}</span>
-				<span><strong>{{ t('openregister', 'Quality status') }}:</strong> {{ object.qualityStatus ?? '—' }}</span>
+				<span
+					><strong>{{ t('openregister', 'Id') }}:</strong>
+					{{ object.id }}</span
+				>
+				<span
+					><strong>{{ t('openregister', 'Quality score') }}:</strong>
+					{{ object.qualityScore ?? '—' }}</span
+				>
+				<span
+					><strong>{{ t('openregister', 'Quality status') }}:</strong>
+					{{ object.qualityStatus ?? '—' }}</span
+				>
 			</div>
 
 			<template v-if="provenanceEntries.length === 0">
-				<NcEmptyContent :name="t('openregister', 'No golden-record provenance')" :description="t('openregister', 'This object has no materialised attribute-provenance map.')">
+				<NcEmptyContent
+					:name="t('openregister', 'No golden-record provenance')"
+					:description="
+						t(
+							'openregister',
+							'This object has no materialised attribute-provenance map.',
+						)
+					">
 					<template #icon>
 						<AccountBoxOutline :size="48" />
 					</template>
@@ -149,19 +166,32 @@ export default {
 					if (value.override === true) {
 						return {
 							attribute,
-							source: t('openregister', 'Manual override ({actor})', { actor: value.overriddenBy || t('openregister', 'unknown') }),
+							source: t('openregister', 'Manual override ({actor})', {
+								actor:
+									value.overriddenBy
+									|| t('openregister', 'unknown'),
+							}),
 							confidence: value.rationale,
 							timestamp: undefined,
 						}
 					}
 					return {
 						attribute,
-						source: value.source ?? value.winningSource ?? value.sourceSystem ?? '—',
+						source:
+							value.source
+							?? value.winningSource
+							?? value.sourceSystem
+							?? '—',
 						confidence: value.confidence,
 						timestamp: value.timestamp ?? value.at,
 					}
 				}
-				return { attribute, source: value, confidence: undefined, timestamp: undefined }
+				return {
+					attribute,
+					source: value,
+					confidence: undefined,
+					timestamp: undefined,
+				}
 			})
 		},
 	},
@@ -178,7 +208,9 @@ export default {
 		 */
 		async openConflicts() {
 			const id = this.object?.id
-			this.resolvedSources = id ? await qualityStore.fetchMasterSources(id) : []
+			this.resolvedSources = id
+				? await qualityStore.fetchMasterSources(id)
+				: []
 			this.showConflictResolution = true
 		},
 
@@ -190,8 +222,14 @@ export default {
 		 */
 		async handleConflictsResolved() {
 			this.showConflictResolution = false
-			const register = this.object?.['@self']?.register ?? this.object?.register ?? qualityStore.selectedRegister
-			const schema = this.object?.['@self']?.schema ?? this.object?.schema ?? qualityStore.selectedSchema
+			const register =
+				this.object?.['@self']?.register
+				?? this.object?.register
+				?? qualityStore.selectedRegister
+			const schema =
+				this.object?.['@self']?.schema
+				?? this.object?.schema
+				?? qualityStore.selectedSchema
 			const id = this.object?.id
 			if (register && schema && id) {
 				await qualityStore.fetchGoldenRecord(register, schema, id)

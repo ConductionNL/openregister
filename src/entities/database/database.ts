@@ -2,7 +2,6 @@ import { SafeParseReturnType, z } from 'zod'
 import { TDatabase } from './database.types'
 
 export class Database implements TDatabase {
-
 	public id: string
 	public name: string
 	public url: string
@@ -35,5 +34,4 @@ export class Database implements TDatabase {
 		const urlObj = new URL(this.url)
 		return urlObj.protocol.replace(':', '')
 	}
-
 }

@@ -15,15 +15,28 @@
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
 import { test, expect, type Page } from '@playwright/test'
-import { shootSurface, waitForContentReady, dismissSupportDialog, freezePage, SHOT_OPTIONS, dynamicMasks } from './_visual-helpers'
+import {
+	shootSurface,
+	waitForContentReady,
+	dismissSupportDialog,
+	freezePage,
+	SHOT_OPTIONS,
+	dynamicMasks,
+} from './_visual-helpers'
 
 const APP = '/index.php/apps/openregister'
 
 /** Click a combobox and wait for its options to appear; returns false on timeout. */
-async function clickAndWaitForOptions(page: Page, combo: ReturnType<Page['getByRole']>, timeout = 15_000): Promise<boolean> {
+async function clickAndWaitForOptions(
+	page: Page,
+	combo: ReturnType<Page['getByRole']>,
+	timeout = 15_000,
+): Promise<boolean> {
 	await combo.click()
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -57,25 +70,40 @@ test.describe('mdm-frontend — visual baselines', () => {
 
 	// MasterEntitiesIndex (master-entity list).
 	test('MasterEntitiesIndex', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/master-entities`, 'MasterEntitiesIndex.png')
+		await shootSurface(
+			page,
+			`${APP}/#/master-entities`,
+			'MasterEntitiesIndex.png',
+		)
 	})
 
 	// GoldenRecordDetail (opened from MasterEntitiesIndex — not a standalone
 	// route, so this baseline drives the panel open before shooting).
 	test('GoldenRecordDetail', async ({ page }) => {
-		await page.goto(`${APP}/#/master-entities`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/#/master-entities`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await dismissSupportDialog(page)
 		await waitForContentReady(page)
 
 		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		test.skip(
+			!selected,
+			'No register/schema options available — seed data needed',
+		)
 
-		const viewButton = page.getByRole('button', { name: /View golden record/i }).first()
-		const hasRow = await viewButton.isVisible({ timeout: 8_000 }).catch(() => false)
+		const viewButton = page
+			.getByRole('button', { name: /View golden record/i })
+			.first()
+		const hasRow = await viewButton
+			.isVisible({ timeout: 8_000 })
+			.catch(() => false)
 		test.skip(!hasRow, 'No master-entity rows available — seed data needed')
 
 		await viewButton.click()
-		await page.locator('.goldenRecordPanel').waitFor({ state: 'visible', timeout: 10_000 })
+		await page
+			.locator('.goldenRecordPanel')
+			.waitFor({ state: 'visible', timeout: 10_000 })
 		await freezePage(page)
 		await expect(page).toHaveScreenshot('GoldenRecordDetail.png', {
 			...SHOT_OPTIONS,

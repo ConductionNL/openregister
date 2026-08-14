@@ -8,7 +8,11 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			<EndpointsList />
 		</template>
 		<template #default>
-			<NcEmptyContent v-if="!endpointStore.endpointItem || navigationStore.selected != 'endpoints'"
+			<NcEmptyContent
+				v-if="
+					!endpointStore.endpointItem
+					|| navigationStore.selected != 'endpoints'
+				"
 				class="detailContainer"
 				name="No endpoint"
 				description="No endpoint selected yet">
@@ -16,12 +20,23 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<Api />
 				</template>
 				<template #action>
-					<NcButton variant="primary" @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
+					<NcButton
+						variant="primary"
+						@click="
+							() => {
+								endpointStore.setEndpointItem({})
+								navigationStore.setModal('editEndpoint')
+							}
+						">
 						Add endpoint
 					</NcButton>
 				</template>
 			</NcEmptyContent>
-			<EndpointDetails v-if="endpointStore.endpointItem && navigationStore.selected === 'endpoints'" />
+			<EndpointDetails
+				v-if="
+					endpointStore.endpointItem
+					&& navigationStore.selected === 'endpoints'
+				" />
 		</template>
 	</NcAppContent>
 </template>

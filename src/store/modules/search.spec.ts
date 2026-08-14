@@ -11,9 +11,7 @@ describe('Search Store', () => {
 	it('clears the object search results', () => {
 		const store = useSearchStore()
 
-		store.searchObjectsResult = [
-			{ id: 1, title: 'Lorem ipsum dolor sit amet' },
-		]
+		store.searchObjectsResult = [{ id: 1, title: 'Lorem ipsum dolor sit amet' }]
 
 		store.clearObjectSearchResults()
 

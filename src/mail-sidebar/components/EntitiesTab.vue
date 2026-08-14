@@ -122,7 +122,9 @@ export default {
 
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/mail/api/messages/{id}/body', { id: this.messageId })
+				const url = generateUrl('/apps/mail/api/messages/{id}/body', {
+					id: this.messageId,
+				})
 				const response = await axios.get(url, { timeout: 10000 })
 				const envelope = response.data?.data || response.data || {}
 				this.entities = this.extractEntities(envelope)
@@ -164,14 +166,17 @@ export default {
 			// Body — plain text (strip HTML when needed).
 			let body = envelope.body || ''
 			if (envelope.hasHtmlBody) {
-				body = new DOMParser().parseFromString(body, 'text/html').body.textContent || ''
+				body =
+					new DOMParser().parseFromString(body, 'text/html').body
+						.textContent || ''
 			}
 			for (const m of body.match(EMAIL_RE) || []) add('EMAIL', m)
-			for (const m of body.match(IBAN_RE) || []) add('IBAN', m.replace(/\s+/g, ''))
+			for (const m of body.match(IBAN_RE) || [])
+				add('IBAN', m.replace(/\s+/g, ''))
 			for (const m of body.match(URL_RE) || []) add('URL', m)
 			for (const m of body.match(PHONE_RE) || []) {
 				// Require at least 9 digits to weed out times / short numbers.
-				if ((m.replace(/\D/g, '').length) >= 9) add('PHONE', m.trim())
+				if (m.replace(/\D/g, '').length >= 9) add('PHONE', m.trim())
 			}
 
 			return out

@@ -21,7 +21,12 @@
 
 			<template v-else-if="preview">
 				<NcNoteCard type="info">
-					{{ t('openregister', 'This is a preview only — no object or merge operation is written until you confirm.') }}
+					{{
+						t(
+							'openregister',
+							'This is a preview only — no object or merge operation is written until you confirm.',
+						)
+					}}
 				</NcNoteCard>
 
 				<h3>{{ t('openregister', 'Post-merge golden record') }}</h3>
@@ -40,7 +45,10 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(value, key) in preview.postMergeGoldenRecord" :key="key" data-testid="mdm-merge-preview-row">
+						<tr
+							v-for="(value, key) in preview.postMergeGoldenRecord"
+							:key="key"
+							data-testid="mdm-merge-preview-row">
 							<td>{{ key }}</td>
 							<td>{{ displayValue(value) }}</td>
 							<td>{{ provenanceFor(key) }}</td>
@@ -49,7 +57,13 @@
 				</table>
 
 				<NcNoteCard v-if="preview.reversalDeadline" type="info">
-					{{ t('openregister', 'This merge can be reversed until {date}.', { date: preview.reversalDeadline }) }}
+					{{
+						t(
+							'openregister',
+							'This merge can be reversed until {date}.',
+							{ date: preview.reversalDeadline },
+						)
+					}}
 				</NcNoteCard>
 
 				<div class="mergeWizard__reason">
@@ -89,7 +103,13 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcDialog,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import { qualityStore } from '../../store/store.js'
 
 /**
@@ -142,9 +162,18 @@ export default {
 			preview: null,
 			reasonModel: null,
 			reasonOptions: [
-				{ id: 'duplicate-confirmed', label: t('openregister', 'Confirmed duplicate') },
-				{ id: 'data-stewardship-review', label: t('openregister', 'Data stewardship review') },
-				{ id: 'manual-bulk', label: t('openregister', 'Manual bulk cleanup') },
+				{
+					id: 'duplicate-confirmed',
+					label: t('openregister', 'Confirmed duplicate'),
+				},
+				{
+					id: 'data-stewardship-review',
+					label: t('openregister', 'Data stewardship review'),
+				},
+				{
+					id: 'manual-bulk',
+					label: t('openregister', 'Manual bulk cleanup'),
+				},
 				{ id: 'migration', label: t('openregister', 'Migration cleanup') },
 			],
 		}
@@ -159,7 +188,9 @@ export default {
 		 * @return {boolean}
 		 */
 		canConfirm() {
-			return Boolean(this.preview) && Boolean(this.reasonModel) && !this.executing
+			return (
+				Boolean(this.preview) && Boolean(this.reasonModel) && !this.executing
+			)
 		},
 	},
 
@@ -185,7 +216,9 @@ export default {
 			try {
 				this.preview = await qualityStore.previewMerge(this.from, this.into)
 			} catch (e) {
-				this.error = e.response?.data?.error || t('openregister', 'The merge preview could not be generated.')
+				this.error =
+					e.response?.data?.error
+					|| t('openregister', 'The merge preview could not be generated.')
 			} finally {
 				this.loading = false
 			}
@@ -213,7 +246,8 @@ export default {
 		 * @return {string}
 		 */
 		displayValue(value) {
-			if (value === null || value === undefined) return t('openregister', 'N/A')
+			if (value === null || value === undefined)
+				return t('openregister', 'N/A')
 			if (typeof value === 'object') return JSON.stringify(value)
 			return String(value)
 		},
@@ -231,11 +265,17 @@ export default {
 			this.executing = true
 			this.error = ''
 			try {
-				const result = await qualityStore.executeMerge(this.from, this.into, this.reasonModel?.id)
+				const result = await qualityStore.executeMerge(
+					this.from,
+					this.into,
+					this.reasonModel?.id,
+				)
 				this.$emit('merged', result)
 				this.$emit('close')
 			} catch (e) {
-				this.error = e.response?.data?.error || t('openregister', 'The merge could not be completed.')
+				this.error =
+					e.response?.data?.error
+					|| t('openregister', 'The merge could not be completed.')
 			} finally {
 				this.executing = false
 			}

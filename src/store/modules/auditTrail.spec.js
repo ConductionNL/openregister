@@ -119,8 +119,8 @@ describe('AuditTrail Store', () => {
 				{ action: 'update' },
 			])
 			const distribution = await store.getActionDistribution()
-			const create = distribution.find(d => d.action === 'create')
-			const update = distribution.find(d => d.action === 'update')
+			const create = distribution.find((d) => d.action === 'create')
+			const update = distribution.find((d) => d.action === 'update')
 			expect(create.count).toBe(2)
 			expect(update.count).toBe(1)
 		})

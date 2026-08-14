@@ -43,78 +43,118 @@
 										<td class="stats-table-label">
 											Objects without owner
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.objectsWithoutOwner > 0 }">
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings
+														.objectsWithoutOwner > 0,
+											}">
 											{{ stats.warnings.objectsWithoutOwner }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Objects without organisation
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.objectsWithoutOrganisation > 0 }">
-											{{ stats.warnings.objectsWithoutOrganisation }}
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings
+														.objectsWithoutOrganisation
+													> 0,
+											}">
+											{{
+												stats.warnings
+													.objectsWithoutOrganisation
+											}}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Audit trails without expiry
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.auditTrailsWithoutExpiry > 0 }">
-											{{ stats.warnings.auditTrailsWithoutExpiry }}
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings
+														.auditTrailsWithoutExpiry
+													> 0,
+											}">
+											{{
+												stats.warnings
+													.auditTrailsWithoutExpiry
+											}}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Search trails without expiry
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.searchTrailsWithoutExpiry > 0 }">
-											{{ stats.warnings.searchTrailsWithoutExpiry }}
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings
+														.searchTrailsWithoutExpiry
+													> 0,
+											}">
+											{{
+												stats.warnings
+													.searchTrailsWithoutExpiry
+											}}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Expired audit trails
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.expiredAuditTrails > 0 }">
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings.expiredAuditTrails
+													> 0,
+											}">
 											{{ stats.warnings.expiredAuditTrails }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Expired search trails
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.expiredSearchTrails > 0 }">
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings
+														.expiredSearchTrails > 0,
+											}">
 											{{ stats.warnings.expiredSearchTrails }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
 											Expired objects
 										</td>
-										<td class="stats-table-value" :class="{ 'danger': stats.warnings.expiredObjects > 0 }">
+										<td
+											class="stats-table-value"
+											:class="{
+												danger:
+													stats.warnings.expiredObjects
+													> 0,
+											}">
 											{{ stats.warnings.expiredObjects }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 								</tbody>
 							</table>
@@ -141,9 +181,7 @@
 								</thead>
 								<tbody>
 									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Objects
-										</td>
+										<td class="stats-table-label">Objects</td>
 										<td class="stats-table-value">
 											{{ stats.totals.totalObjects }}
 										</td>
@@ -160,13 +198,22 @@
 										</td>
 										<td class="stats-table-value">
 											<NcButton
-												v-if="stats.totals.totalBlobObjects > 0"
+												v-if="
+													stats.totals.totalBlobObjects > 0
+												"
 												variant="error"
 												size="small"
-												:disabled="loading || saving || rebasing || clearingBlobObjects"
+												:disabled="
+													loading
+													|| saving
+													|| rebasing
+													|| clearingBlobObjects
+												"
 												@click="showClearBlobObjectsDialog">
 												<template #icon>
-													<NcLoadingIcon v-if="clearingBlobObjects" :size="16" />
+													<NcLoadingIcon
+														v-if="clearingBlobObjects"
+														:size="16" />
 													<Delete v-else :size="16" />
 												</template>
 												Clear All
@@ -182,7 +229,11 @@
 											{{ stats.totals.totalMagicObjects }}
 										</td>
 										<td class="stats-table-value">
-											{{ formatBytes(stats.totals.totalMagicSize) }}
+											{{
+												formatBytes(
+													stats.totals.totalMagicSize,
+												)
+											}}
 										</td>
 									</tr>
 									<tr class="stats-table-row">
@@ -192,9 +243,7 @@
 										<td class="stats-table-value">
 											{{ stats.totals.totalConfigurations }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
@@ -205,13 +254,22 @@
 										</td>
 										<td class="stats-table-value">
 											<NcButton
-												v-if="stats.totals.totalAuditTrails > 0"
+												v-if="
+													stats.totals.totalAuditTrails > 0
+												"
 												variant="error"
 												size="small"
-												:disabled="loading || saving || rebasing || clearingAuditTrails"
+												:disabled="
+													loading
+													|| saving
+													|| rebasing
+													|| clearingAuditTrails
+												"
 												@click="showClearAuditTrailsDialog">
 												<template #icon>
-													<NcLoadingIcon v-if="clearingAuditTrails" :size="16" />
+													<NcLoadingIcon
+														v-if="clearingAuditTrails"
+														:size="16" />
 													<Delete v-else :size="16" />
 												</template>
 												Clear All
@@ -228,13 +286,23 @@
 										</td>
 										<td class="stats-table-value">
 											<NcButton
-												v-if="stats.totals.totalSearchTrails > 0"
+												v-if="
+													stats.totals.totalSearchTrails
+													> 0
+												"
 												variant="error"
 												size="small"
-												:disabled="loading || saving || rebasing || clearingSearchTrails"
+												:disabled="
+													loading
+													|| saving
+													|| rebasing
+													|| clearingSearchTrails
+												"
 												@click="showClearSearchTrailsDialog">
 												<template #icon>
-													<NcLoadingIcon v-if="clearingSearchTrails" :size="16" />
+													<NcLoadingIcon
+														v-if="clearingSearchTrails"
+														:size="16" />
 													<Delete v-else :size="16" />
 												</template>
 												Clear All
@@ -249,9 +317,7 @@
 										<td class="stats-table-value">
 											{{ stats.totals.totalWebhookLogs }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
@@ -260,9 +326,7 @@
 										<td class="stats-table-value">
 											{{ stats.totals.deletedObjects }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
@@ -271,42 +335,28 @@
 										<td class="stats-table-value">
 											{{ stats.totals.totalOrganisations }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Registers
-										</td>
+										<td class="stats-table-label">Registers</td>
 										<td class="stats-table-value">
 											{{ stats.totals.totalRegisters }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Schemas
-										</td>
+										<td class="stats-table-label">Schemas</td>
 										<td class="stats-table-value">
 											{{ stats.totals.totalSchemas }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Sources
-										</td>
+										<td class="stats-table-label">Sources</td>
 										<td class="stats-table-value">
 											{{ stats.totals.totalSources }}
 										</td>
-										<td class="stats-table-value">
-											-
-										</td>
+										<td class="stats-table-value">-</td>
 									</tr>
 								</tbody>
 							</table>
@@ -319,8 +369,10 @@
 					<div class="rebase-warning">
 						<h4>🔧 Data Maintenance Required</h4>
 						<p class="rebase-description">
-							Your system has objects or logs that require attention. You can fix these issues by running a rebase operation
-							which will recalculate deletion times and assign default owners/organizations to unassigned objects.
+							Your system has objects or logs that require attention.
+							You can fix these issues by running a rebase operation
+							which will recalculate deletion times and assign default
+							owners/organizations to unassigned objects.
 						</p>
 						<div class="rebase-actions">
 							<NcButton
@@ -331,7 +383,11 @@
 									<NcLoadingIcon v-if="rebasing" :size="20" />
 									<Refresh v-else :size="20" />
 								</template>
-								{{ rebasing ? 'Rebasing...' : 'Rebase All Objects and Logs' }}
+								{{
+									rebasing
+										? 'Rebasing...'
+										: 'Rebase All Objects and Logs'
+								}}
 							</NcButton>
 						</div>
 					</div>
@@ -342,19 +398,29 @@
 					<div class="mass-validate-info">
 						<h4>🔄 Mass Validate Objects</h4>
 						<p class="mass-validate-description">
-							Re-save all objects in the system to trigger business logic validation and processing.
-							This ensures all objects are properly processed according to current rules and schemas.
+							Re-save all objects in the system to trigger business
+							logic validation and processing. This ensures all objects
+							are properly processed according to current rules and
+							schemas.
 						</p>
 						<div class="mass-validate-actions">
 							<NcButton
 								variant="primary"
-								:disabled="loading || saving || rebasing || massValidating"
+								:disabled="
+									loading || saving || rebasing || massValidating
+								"
 								@click="openMassValidateModal">
 								<template #icon>
-									<NcLoadingIcon v-if="massValidating" :size="20" />
+									<NcLoadingIcon
+										v-if="massValidating"
+										:size="20" />
 									<CheckCircle v-else :size="20" />
 								</template>
-								{{ massValidating ? 'Validating...' : 'Mass Validate Objects' }}
+								{{
+									massValidating
+										? 'Validating...'
+										: 'Mass Validate Objects'
+								}}
 							</NcButton>
 						</div>
 					</div>
@@ -747,7 +813,8 @@ export default {
 
 			try {
 				// Get the total objects from the store stats
-				const totalObjects = this.settingsStore.stats?.totals?.totalObjects || 0
+				const totalObjects =
+					this.settingsStore.stats?.totals?.totalObjects || 0
 				this.objectStats.totalObjects = totalObjects
 			} catch (error) {
 				console.error('Failed to load object stats:', error)
@@ -767,7 +834,10 @@ export default {
 		async loadMemoryPrediction(maxObjects = 0) {
 			this.memoryPredictionLoading = true
 			try {
-				const prediction = await this.settingsStore.loadMassValidateMemoryPrediction(maxObjects)
+				const prediction =
+					await this.settingsStore.loadMassValidateMemoryPrediction(
+						maxObjects,
+					)
 				this.memoryPrediction = prediction
 			} catch (error) {
 				console.warn('Failed to load memory prediction:', error)

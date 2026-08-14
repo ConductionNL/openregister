@@ -23,9 +23,12 @@ const RUN_ID = `e2e-${Date.now()}`
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('rapportage-bi-export — reports API', () => {
 	test('GET /api/reports lists reports (no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/reports?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/reports?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -39,21 +42,32 @@ test.describe('rapportage-bi-export — reports API', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('avg-verwerkingsregister — AVG processing register API', () => {
 	test('GET /api/avg lists avg entries (no 5xx)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/avg?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/avg?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 	})
 
-	test('AVG register is accessible as a standard register', async ({ request }) => {
+	test('AVG register is accessible as a standard register', async ({
+		request,
+	}) => {
 		// The AVG verwerkingsregister is backed by a standard OR register.
 		// Verify the general register list works for compliance registers.
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=10', {
-			headers: { Accept: 'application/json' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=10',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
-		expect(Array.isArray(body.results), 'registers list should be an array').toBe(true)
+		expect(
+			Array.isArray(body.results),
+			'registers list should be an array',
+		).toBe(true)
 	})
 })
 
@@ -65,7 +79,10 @@ test.describe('realtime-updates — SSE / event stream endpoint', () => {
 		// SSE subscriptions in OR go through the GraphQL subscription endpoint.
 		// Just verify the endpoint is reachable and doesn't 5xx.
 		const resp = await request.post('/index.php/apps/openregister/api/graphql', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
 			data: {
 				query: `
 					subscription {
@@ -85,7 +102,9 @@ test.describe('realtime-updates — SSE / event stream endpoint', () => {
 // aggregations-backend-native — aggregation queries
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('aggregations-backend-native — aggregation API', () => {
-	test('listing endpoint with _facets parameter does not 5xx', async ({ request }) => {
+	test('listing endpoint with _facets parameter does not 5xx', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			'/index.php/apps/openregister/api/objects/8/18?_limit=5&_facets[]=type',
 			{ headers: { Accept: 'application/json' } },
@@ -102,7 +121,9 @@ test.describe('aggregations-backend-native — aggregation API', () => {
 // schema-driven-read-coercion — type coercion in object responses
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('schema-driven-read-coercion — type coercion in responses', () => {
-	test('integer schema properties return numeric values (not strings)', async ({ request }) => {
+	test('integer schema properties return numeric values (not strings)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			'/index.php/apps/openregister/api/objects/8/18?_limit=3',
 			{ headers: { Accept: 'application/json' } },
@@ -126,7 +147,9 @@ test.describe('schema-driven-read-coercion — type coercion in responses', () =
 // datetime-input-handling — datetime fields in objects
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('datetime-input-handling — datetime fields', () => {
-	test('created and updated timestamps in @self are ISO8601 strings', async ({ request }) => {
+	test('created and updated timestamps in @self are ISO8601 strings', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			'/index.php/apps/openregister/api/objects/8/18?_limit=3',
 			{ headers: { Accept: 'application/json' } },
@@ -148,12 +171,17 @@ test.describe('datetime-input-handling — datetime fields', () => {
 		}
 	})
 
-	test('creating object with ISO datetime in a string field works', async ({ request }) => {
+	test('creating object with ISO datetime in a string field works', async ({
+		request,
+	}) => {
 		const now = new Date().toISOString()
 		const resp = await request.post(
 			'/index.php/apps/openregister/api/objects/8/18',
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-datetime-test`,
 					ocName: `${RUN_ID} DateTime Test`,
@@ -166,7 +194,9 @@ test.describe('datetime-input-handling — datetime fields', () => {
 		const createdBody = await resp.json()
 		const id = createdBody['@self']?.id ?? createdBody.id
 		if (id) {
-			await request.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`).catch(() => {})
+			await request
+				.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`)
+				.catch(() => {})
 		}
 	})
 })
@@ -175,7 +205,9 @@ test.describe('datetime-input-handling — datetime fields', () => {
 // vector-embeddings — vector search endpoint surface
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('vector-embeddings — vector search API surface', () => {
-	test('listing with _search does not 5xx (vector search falls back to SQL)', async ({ request }) => {
+	test('listing with _search does not 5xx (vector search falls back to SQL)', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			'/index.php/apps/openregister/api/objects/8/18?_search=elf&_limit=3',
 			{ headers: { Accept: 'application/json' } },

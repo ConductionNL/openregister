@@ -1,9 +1,7 @@
 <template>
 	<div class="execution-detail">
 		<h4>Execution Detail</h4>
-		<NcButton variant="tertiary" @click="$emit('close')">
-			Close
-		</NcButton>
+		<NcButton variant="tertiary" @click="$emit('close')"> Close </NcButton>
 		<dl class="detail-list">
 			<dt>Hook ID</dt>
 			<dd>{{ execution.hookId }}</dd>
@@ -19,7 +17,9 @@
 			<dd>{{ execution.mode }}</dd>
 			<dt>Status</dt>
 			<dd>
-				<span :class="['status-badge', `status-${execution.status}`]">{{ execution.status }}</span>
+				<span :class="['status-badge', `status-${execution.status}`]">{{
+					execution.status
+				}}</span>
 			</dd>
 			<dt>Duration</dt>
 			<dd>{{ execution.durationMs }}ms</dd>
@@ -55,11 +55,24 @@ export default {
 </script>
 
 <style scoped>
-.detail-list { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
+.detail-list {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 4px 16px;
+}
 
-.detail-list dt { font-weight: bold; }
+.detail-list dt {
+	font-weight: bold;
+}
 
-.section { margin-top: 12px; }
+.section {
+	margin-top: 12px;
+}
 
-.section pre { background: var(--color-background-dark); padding: 8px; border-radius: 4px; overflow: auto; }
+.section pre {
+	background: var(--color-background-dark);
+	padding: 8px;
+	border-radius: 4px;
+	overflow: auto;
+}
 </style>

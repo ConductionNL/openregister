@@ -4,8 +4,18 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
-import { CnIndexPage, CnObjectKanban, CnObjectCalendar } from '@conduction/nextcloud-vue'
-import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } from '../../store/store.js'
+import {
+	CnIndexPage,
+	CnObjectKanban,
+	CnObjectCalendar,
+} from '@conduction/nextcloud-vue'
+import {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+	viewsStore,
+} from '../../store/store.js'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -84,11 +94,15 @@ export default {
 		 */
 		pageTitle() {
 			if (!this.hasSelectedRegisters) return 'No register selected'
-			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.register)
-			const regTitle = reg ? (reg.label || reg.title) : 'Register'
+			const reg = registerStore.registerList.find(
+				(r) => r.id === objectStore.searchParams.register,
+			)
+			const regTitle = reg ? reg.label || reg.title : 'Register'
 			if (!this.hasSelectedSchemas) return `${regTitle} / No schema selected`
-			const schema = schemaStore.schemaList.find((s) => s.id === objectStore.searchParams.schema)
-			const schemaTitle = schema ? (schema.label || schema.title) : 'Schema'
+			const schema = schemaStore.schemaList.find(
+				(s) => s.id === objectStore.searchParams.schema,
+			)
+			const schemaTitle = schema ? schema.label || schema.title : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
 		/**
@@ -108,7 +122,10 @@ export default {
 		 * @return {string}
 		 */
 		computedObjectType() {
-			return objectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
+			return objectStore.createObjectTypeSlug(
+				objectStore.searchRegister,
+				objectStore.searchSchema,
+			)
 		},
 		/**
 		 * Search schema with inherited (allOf) properties merged in, for columns.
@@ -125,8 +142,11 @@ export default {
 			const inheritedProperties = {}
 			for (const ref of allOf) {
 				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(s =>
-					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				const parentSchema = schemaStore.schemaList.find(
+					(s) =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| String(s.id) === String(schemaId),
 				)
 				if (parentSchema?.properties) {
 					Object.assign(inheritedProperties, parentSchema.properties)
@@ -136,9 +156,10 @@ export default {
 			const rawProperties = { ...inheritedProperties, ...schema.properties }
 			const properties = {}
 			for (const [key, prop] of Object.entries(rawProperties)) {
-				properties[key] = prop.order !== undefined
-					? { ...prop, order: Number(prop.order) }
-					: prop
+				properties[key] =
+					prop.order !== undefined
+						? { ...prop, order: Number(prop.order) }
+						: prop
 			}
 			return { ...schema, properties }
 		},
@@ -161,7 +182,9 @@ export default {
 		 * @return {string|number|null}
 		 */
 		activeViewId() {
-			return this.activeView ? (this.activeView.id || this.activeView.uuid) : null
+			return this.activeView
+				? this.activeView.id || this.activeView.uuid
+				: null
 		},
 		/**
 		 * The active view's presentation type. A view with no `presentation`
@@ -202,7 +225,8 @@ export default {
 		 * @return {Array<object>}
 		 */
 		normalizedKanbanColumns() {
-			if (!this.kanbanBoard || !Array.isArray(this.kanbanBoard.columns)) return []
+			if (!this.kanbanBoard || !Array.isArray(this.kanbanBoard.columns))
+				return []
 			return this.kanbanBoard.columns.map((column) => ({
 				...column,
 				cards: normalizeObjects(column.cards),
@@ -364,7 +388,9 @@ export default {
 		 * @return {void}
 		 */
 		handleMassDelete(ids) {
-			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
+			const rows = this.normalizedObjects.filter((r) =>
+				ids.includes(String(r.id)),
+			)
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massDeleteObject')
 		},
@@ -377,7 +403,9 @@ export default {
 		 */
 		handleMassCopy(payload) {
 			const ids = payload?.ids || []
-			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
+			const rows = this.normalizedObjects.filter((r) =>
+				ids.includes(String(r.id)),
+			)
 			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
 			navigationStore.setDialog('massCopyObjects')
 		},
@@ -392,7 +420,10 @@ export default {
 			if (!this.activeViewId) return
 			this.kanbanLoading = true
 			try {
-				this.kanbanBoard = await viewsStore.fetchKanbanBoard(this.activeViewId, params)
+				this.kanbanBoard = await viewsStore.fetchKanbanBoard(
+					this.activeViewId,
+					params,
+				)
 			} catch (e) {
 				console.error('[SearchIndex] Error fetching kanban board:', e)
 			} finally {
@@ -415,14 +446,20 @@ export default {
 			if (!this.activeViewId) return
 			this.loadingColumns = [...this.loadingColumns, value]
 			try {
-				const currentLimit = this.kanbanBoard?.columns?.find((c) => c.value === value)?.limit || 20
+				const currentLimit =
+					this.kanbanBoard?.columns?.find((c) => c.value === value)?.limit
+					|| 20
 				const nextLimit = Math.max(offset, currentLimit) + currentLimit
-				const board = await viewsStore.fetchKanbanBoard(this.activeViewId, { _limit: nextLimit })
+				const board = await viewsStore.fetchKanbanBoard(this.activeViewId, {
+					_limit: nextLimit,
+				})
 				const updatedColumn = board?.columns?.find((c) => c.value === value)
 				if (updatedColumn && this.kanbanBoard) {
 					this.kanbanBoard = {
 						...this.kanbanBoard,
-						columns: this.kanbanBoard.columns.map((c) => (c.value === value ? updatedColumn : c)),
+						columns: this.kanbanBoard.columns.map((c) =>
+							c.value === value ? updatedColumn : c,
+						),
 					}
 				}
 			} catch (e) {
@@ -458,7 +495,9 @@ export default {
 				kanbanRef?.resolveMove(object.id)
 				return
 			}
-			const reason = objectStore.errors?.[type]?.message || t('openregister', 'The move was rejected by the server.')
+			const reason =
+				objectStore.errors?.[type]?.message
+				|| t('openregister', 'The move was rejected by the server.')
 			kanbanRef?.rejectMove(object.id, reason)
 		},
 		/**
@@ -489,7 +528,11 @@ export default {
 			if (!this.activeViewId) return
 			this.calendarLoading = true
 			try {
-				const result = await viewsStore.fetchCalendarObjects(this.activeViewId, rangeStart, rangeEnd)
+				const result = await viewsStore.fetchCalendarObjects(
+					this.activeViewId,
+					rangeStart,
+					rangeEnd,
+				)
 				this.calendarObjects = result?.objects || []
 			} catch (e) {
 				console.error('[SearchIndex] Error fetching calendar range:', e)
@@ -514,7 +557,9 @@ export default {
 		<CnIndexPage
 			v-if="presentationType === 'table'"
 			ref="indexPage"
-			:class="{ 'add-button-disabled': !hasSelectedRegisters || !hasSelectedSchemas }"
+			:class="{
+				'add-button-disabled': !hasSelectedRegisters || !hasSelectedSchemas,
+			}"
 			:title="pageTitle"
 			:schema="normalizedSchema"
 			:register="objectStore.searchRegister"
@@ -524,7 +569,12 @@ export default {
 			:loading="objectStore.searchLoading"
 			:pagination="objectStore.searchPagination"
 			row-key="id"
-			:include-columns="objectStore.searchVisibleColumns && objectStore.searchVisibleColumns.length ? objectStore.searchVisibleColumns : null"
+			:include-columns="
+				objectStore.searchVisibleColumns
+				&& objectStore.searchVisibleColumns.length
+					? objectStore.searchVisibleColumns
+					: null
+			"
 			:selectable="hasSelectedRegisters && hasSelectedSchemas"
 			:selected-ids="selectedIdsForPage"
 			:sort-key="objectStore.searchParams.sortKey"

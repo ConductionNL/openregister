@@ -22,17 +22,26 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 const runId = `e2e-exec-${Date.now()}`
 
 /** Find a register by slug. */
-async function registerBySlug(request: APIRequestContext, slug: string): Promise<any> {
+async function registerBySlug(
+	request: APIRequestContext,
+	slug: string,
+): Promise<any> {
 	const resp = await request.get(`${API}/registers?limit=1000`)
 	expect(resp.ok(), 'list registers').toBeTruthy()
 	const body = await resp.json()
 	const rows: any[] = body.results ?? body ?? []
 	const match = rows.find((r) => (r.slug ?? r['@self']?.slug) === slug)
-	expect(match, `register slug=${slug} exists (shipped by ImportFlowRegister)`).toBeTruthy()
+	expect(
+		match,
+		`register slug=${slug} exists (shipped by ImportFlowRegister)`,
+	).toBeTruthy()
 	return match
 }
 
@@ -44,8 +53,14 @@ async function registerBySlug(request: APIRequestContext, slug: string): Promise
  * global match lands on some other app's schema and every write 400s against
  * properties this flow never had. The register scopes it to the one we mean.
  */
-async function schemaInRegister(request: APIRequestContext, register: any, slug: string): Promise<number> {
-	const ids: number[] = (register.schemas ?? []).map((s: any) => (typeof s === 'object' ? (s.id ?? s) : s))
+async function schemaInRegister(
+	request: APIRequestContext,
+	register: any,
+	slug: string,
+): Promise<number> {
+	const ids: number[] = (register.schemas ?? []).map((s: any) =>
+		typeof s === 'object' ? (s.id ?? s) : s,
+	)
 	expect(ids.length, 'the register lists its schemas').toBeGreaterThan(0)
 
 	for (const id of ids) {
@@ -63,7 +78,10 @@ async function schemaInRegister(request: APIRequestContext, register: any, slug:
 }
 
 /** The runs recorded for one flow, newest first. */
-async function runsFor(request: APIRequestContext, flowUuid: string): Promise<any[]> {
+async function runsFor(
+	request: APIRequestContext,
+	flowUuid: string,
+): Promise<any[]> {
 	const resp = await request.get(`${API}/flow-runs?limit=100`)
 	expect(resp.ok(), 'list flow runs').toBeTruthy()
 	const body = await resp.json()
@@ -88,7 +106,10 @@ test.describe('Flow execution mode and token', () => {
 		// itself would make authoring a flow fire the flow being authored.
 		const schResp = await request.post(`${API}/schemas`, {
 			headers: JSON_HEADERS,
-			data: { title: `ExecMode Subject ${runId}`, properties: { name: { type: 'string' } } },
+			data: {
+				title: `ExecMode Subject ${runId}`,
+				properties: { name: { type: 'string' } },
+			},
 		})
 		expect(schResp.status(), 'create subject schema').toBeLessThan(300)
 		subjSch = (await schResp.json()).id
@@ -103,17 +124,25 @@ test.describe('Flow execution mode and token', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const u of subjects) {
-			await request.delete(`${API}/objects/${subjReg}/${subjSch}/${u}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${subjReg}/${subjSch}/${u}`)
+				.catch(() => {})
 		}
 		for (const u of flows) {
-			await request.delete(`${API}/objects/${flowReg}/${flowSch}/${u}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${flowReg}/${flowSch}/${u}`)
+				.catch(() => {})
 		}
 		await request.delete(`${API}/registers/${subjReg}`).catch(() => {})
 		await request.delete(`${API}/schemas/${subjSch}`).catch(() => {})
 	})
 
 	/** Author a flow wired to object.created on the throwaway schema. */
-	async function createTriggeredFlow(request: APIRequestContext, name: string, executionMode?: string): Promise<string> {
+	async function createTriggeredFlow(
+		request: APIRequestContext,
+		name: string,
+		executionMode?: string,
+	): Promise<string> {
 		const data: Record<string, unknown> = {
 			name: `${name} ${runId}`,
 			enabled: true,
@@ -121,13 +150,24 @@ test.describe('Flow execution mode and token', () => {
 			triggerRegister: String(subjReg),
 			triggerSchema: String(subjSch),
 			nodes: [{ id: 'start' }, { id: 'end' }],
-			edges: [{ id: 'e1', from: 'start', to: 'end', type: 'openregister.set-fields', config: { set: { touched: true } } }],
+			edges: [
+				{
+					id: 'e1',
+					from: 'start',
+					to: 'end',
+					type: 'openregister.set-fields',
+					config: { set: { touched: true } },
+				},
+			],
 		}
 		if (executionMode !== undefined) {
 			data.executionMode = executionMode
 		}
 
-		const resp = await request.post(`${API}/objects/${flowReg}/${flowSch}`, { headers: JSON_HEADERS, data })
+		const resp = await request.post(`${API}/objects/${flowReg}/${flowSch}`, {
+			headers: JSON_HEADERS,
+			data,
+		})
 		expect(resp.status(), 'create flow').toBeLessThanOrEqual(201)
 		const uuid = (await resp.json())?.['@self']?.id
 		expect(uuid, 'flow uuid').toBeTruthy()
@@ -136,7 +176,10 @@ test.describe('Flow execution mode and token', () => {
 	}
 
 	/** Create an object in the throwaway schema — this is what fires the trigger. */
-	async function fireTrigger(request: APIRequestContext, name: string): Promise<void> {
+	async function fireTrigger(
+		request: APIRequestContext,
+		name: string,
+	): Promise<void> {
 		const resp = await request.post(`${API}/objects/${subjReg}/${subjSch}`, {
 			headers: JSON_HEADERS,
 			data: { name },
@@ -148,7 +191,9 @@ test.describe('Flow execution mode and token', () => {
 		}
 	}
 
-	test('a sync flow has already run when the triggering request returns', async ({ request }) => {
+	test('a sync flow has already run when the triggering request returns', async ({
+		request,
+	}) => {
 		const flow = await createTriggeredFlow(request, 'Sync flow', 'sync')
 
 		await fireTrigger(request, 'fires-sync')
@@ -162,7 +207,9 @@ test.describe('Flow execution mode and token', () => {
 		).toContain(runs[0].status)
 	})
 
-	test('an async flow is still queued when the triggering request returns', async ({ request }) => {
+	test('an async flow is still queued when the triggering request returns', async ({
+		request,
+	}) => {
 		const flow = await createTriggeredFlow(request, 'Async flow', 'async')
 
 		await fireTrigger(request, 'fires-async')
@@ -172,7 +219,9 @@ test.describe('Flow execution mode and token', () => {
 		expect(runs[0].status, 'an async run waits for the worker').toBe('queued')
 	})
 
-	test('a flow that declares no mode keeps the queued default', async ({ request }) => {
+	test('a flow that declares no mode keeps the queued default', async ({
+		request,
+	}) => {
 		const flow = await createTriggeredFlow(request, 'Default flow')
 
 		await fireTrigger(request, 'fires-default')
@@ -182,7 +231,9 @@ test.describe('Flow execution mode and token', () => {
 		expect(runs[0].status, 'no mode means async').toBe('queued')
 	})
 
-	test('a run persists a flow token through the real database', async ({ request }) => {
+	test('a run persists a flow token through the real database', async ({
+		request,
+	}) => {
 		// The test endpoint drives execute() -> engine -> persistResult(), which is
 		// exactly the path that rehydrates and re-serialises the token.
 		const resp = await request.post(`${API}/objects/${flowReg}/${flowSch}`, {
@@ -191,7 +242,15 @@ test.describe('Flow execution mode and token', () => {
 				name: `Token flow ${runId}`,
 				enabled: false,
 				nodes: [{ id: 'a' }, { id: 'b' }],
-				edges: [{ id: 'e1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { ok: true } } }],
+				edges: [
+					{
+						id: 'e1',
+						from: 'a',
+						to: 'b',
+						type: 'openregister.set-fields',
+						config: { set: { ok: true } },
+					},
+				],
 			},
 		})
 		expect(resp.status()).toBeLessThanOrEqual(201)

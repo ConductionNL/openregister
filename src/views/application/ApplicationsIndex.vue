@@ -29,7 +29,12 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			row-key="id"
 			:empty-text="emptyContentName"
 			:refreshing="isRefreshing"
-			@add="applicationStore.setApplicationItem(null); navigationStore.setModal('editApplication')"
+			@add="
+				() => {
+					applicationStore.setApplicationItem(null)
+					navigationStore.setModal('editApplication')
+				}
+			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -47,13 +52,29 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="applicationStore.setApplicationItem(object); navigationStore.setModal('editApplication')">
+							<NcActionButton
+								close-after-click
+								@click="
+									() => {
+										applicationStore.setApplicationItem(object)
+										navigationStore.setModal('editApplication')
+									}
+								">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
 								{{ t('openregister', 'Edit') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="applicationStore.setApplicationItem(object); navigationStore.setDialog('deleteApplication')">
+							<NcActionButton
+								close-after-click
+								@click="
+									() => {
+										applicationStore.setApplicationItem(object)
+										navigationStore.setDialog(
+											'deleteApplication',
+										)
+									}
+								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -71,18 +92,37 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 								<strong>{{ t('openregister', 'Version') }}:</strong>
 								<span>{{ object.version }}</span>
 							</div>
-							<div v-if="object.active !== undefined" class="applicationInfoItem">
+							<div
+								v-if="object.active !== undefined"
+								class="applicationInfoItem">
 								<strong>{{ t('openregister', 'Status') }}:</strong>
-								<span :class="object.active ? 'status-active' : 'status-inactive'">
-									{{ object.active ? t('openregister', 'Active') : t('openregister', 'Inactive') }}
+								<span
+									:class="
+										object.active
+											? 'status-active'
+											: 'status-inactive'
+									">
+									{{
+										object.active
+											? t('openregister', 'Active')
+											: t('openregister', 'Inactive')
+									}}
 								</span>
 							</div>
-							<div v-if="object.configurations" class="applicationInfoItem">
-								<strong>{{ t('openregister', 'Configurations') }}:</strong>
+							<div
+								v-if="object.configurations"
+								class="applicationInfoItem">
+								<strong
+									>{{
+										t('openregister', 'Configurations')
+									}}:</strong
+								>
 								<span>{{ object.configurations.length }}</span>
 							</div>
 							<div v-if="object.registers" class="applicationInfoItem">
-								<strong>{{ t('openregister', 'Registers') }}:</strong>
+								<strong
+									>{{ t('openregister', 'Registers') }}:</strong
+								>
 								<span>{{ object.registers.length }}</span>
 							</div>
 							<div v-if="object.schemas" class="applicationInfoItem">
@@ -98,7 +138,11 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<template #column-name="{ row }">
 				<div class="titleContent">
 					<strong>{{ row.name }}</strong>
-					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+					<span
+						v-if="row.description"
+						class="textDescription textEllipsis"
+						>{{ row.description }}</span
+					>
 				</div>
 			</template>
 
@@ -110,7 +154,11 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<!-- Custom column: active status -->
 			<template #column-active="{ row }">
 				<span :class="row.active ? 'status-active' : 'status-inactive'">
-					{{ row.active ? t('openregister', 'Active') : t('openregister', 'Inactive') }}
+					{{
+						row.active
+							? t('openregister', 'Active')
+							: t('openregister', 'Inactive')
+					}}
 				</span>
 			</template>
 
@@ -131,7 +179,21 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{ row.created ? new Date(row.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.created
+						? new Date(row.created).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.created).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -140,13 +202,27 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="applicationStore.setApplicationItem(row); navigationStore.setModal('editApplication')">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								applicationStore.setApplicationItem(row)
+								navigationStore.setModal('editApplication')
+							}
+						">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="applicationStore.setApplicationItem(row); navigationStore.setDialog('deleteApplication')">
+					<NcActionButton
+						close-after-click
+						@click="
+							() => {
+								applicationStore.setApplicationItem(row)
+								navigationStore.setDialog('deleteApplication')
+							}
+						">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -196,10 +272,17 @@ export default {
 				{ key: 'name', label: t('openregister', 'Name'), sortable: true },
 				{ key: 'version', label: t('openregister', 'Version') },
 				{ key: 'active', label: t('openregister', 'Status') },
-				{ key: 'configurations', label: t('openregister', 'Configurations') },
+				{
+					key: 'configurations',
+					label: t('openregister', 'Configurations'),
+				},
 				{ key: 'registers', label: t('openregister', 'Registers') },
 				{ key: 'schemas', label: t('openregister', 'Schemas') },
-				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
+				{
+					key: 'created',
+					label: t('openregister', 'Created'),
+					sortable: true,
+				},
 			]
 		},
 		/**

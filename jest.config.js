@@ -3,7 +3,8 @@ module.exports = {
 		'^.+\\.vue$': '@vue/vue3-jest',
 		'^.+\\.[cm]?js$': 'babel-jest',
 		'^.+\\.ts$': 'ts-jest',
-		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$': 'jest-transform-stub',
+		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$':
+			'jest-transform-stub',
 	},
 	moduleFileExtensions: ['js', 'json', 'vue', 'ts'],
 	testEnvironment: 'jest-environment-jsdom',
@@ -27,17 +28,21 @@ module.exports = {
 		//   @nextcloud/dialogs  — exports map only, no main/module
 		//   @nextcloud/axios    — `module` only, no `main`
 		'^@nextcloud/vue$': '<rootDir>/node_modules/@nextcloud/vue/dist/index.mjs',
-		'^@nextcloud/dialogs$': '<rootDir>/node_modules/@nextcloud/dialogs/dist/index.mjs',
-		'^@nextcloud/axios$': '<rootDir>/node_modules/@nextcloud/axios/dist/index.js',
+		'^@nextcloud/dialogs$':
+			'<rootDir>/node_modules/@nextcloud/dialogs/dist/index.mjs',
+		'^@nextcloud/axios$':
+			'<rootDir>/node_modules/@nextcloud/axios/dist/index.js',
 		// @nextcloud/browser-storage ships pure ESM with `"type": "module"`.
 		// Babel-jest can't transparently transform it from a CJS dependency
 		// chain, so stub it for the unit-test environment.
-		'^@nextcloud/browser-storage$': '<rootDir>/tests/__mocks__/nextcloud-browser-storage.js',
+		'^@nextcloud/browser-storage$':
+			'<rootDir>/tests/__mocks__/nextcloud-browser-storage.js',
 		// Stub the entire @conduction/nextcloud-vue package — its real
 		// require chain pulls in @nextcloud/vue (~MB of CSS+CJS+ESM)
 		// that jest cannot transform. The store unit tests only need
 		// the factory exports (createObjectStore, *Plugin).
-		'^@conduction/nextcloud-vue$': '<rootDir>/tests/__mocks__/conduction-nextcloud-vue.js',
+		'^@conduction/nextcloud-vue$':
+			'<rootDir>/tests/__mocks__/conduction-nextcloud-vue.js',
 		// Stub CSS / asset imports inside node_modules. Default
 		// `transformIgnorePatterns` excludes node_modules from the
 		// `jest-transform-stub` rule, so a require('....css') from
@@ -69,9 +74,6 @@ module.exports = {
 		'<rootDir>/\\.claude/worktrees/',
 		'<rootDir>/\\.migration/',
 	],
-	coveragePathIgnorePatterns: [
-		'index.js',
-		'index.ts',
-	],
+	coveragePathIgnorePatterns: ['index.js', 'index.ts'],
 	coverageDirectory: '<rootDir>/coverage-frontend/',
 }

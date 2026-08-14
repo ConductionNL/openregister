@@ -7,27 +7,13 @@
 		<table v-else class="hook-table">
 			<thead>
 				<tr>
-					<th scope="col">
-						Event
-					</th>
-					<th scope="col">
-						Engine
-					</th>
-					<th scope="col">
-						Workflow
-					</th>
-					<th scope="col">
-						Mode
-					</th>
-					<th scope="col">
-						Order
-					</th>
-					<th scope="col">
-						Enabled
-					</th>
-					<th scope="col">
-						Actions
-					</th>
+					<th scope="col">Event</th>
+					<th scope="col">Engine</th>
+					<th scope="col">Workflow</th>
+					<th scope="col">Mode</th>
+					<th scope="col">Order</th>
+					<th scope="col">Enabled</th>
+					<th scope="col">Actions</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -52,9 +38,7 @@
 				</tr>
 			</tbody>
 		</table>
-		<NcButton v-if="hooks.length > 0" @click="$emit('add')">
-			Add Hook
-		</NcButton>
+		<NcButton v-if="hooks.length > 0" @click="$emit('add')"> Add Hook </NcButton>
 	</div>
 </template>
 
@@ -80,7 +64,8 @@ export default {
 	border-collapse: collapse;
 }
 
-.hook-table th, .hook-table td {
+.hook-table th,
+.hook-table td {
 	padding: 8px;
 	text-align: left;
 	border-bottom: 1px solid var(--color-border);

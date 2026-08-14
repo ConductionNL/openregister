@@ -17,47 +17,87 @@
 	<div class="flow-settings">
 		<h3>{{ t('openregister', 'Flows') }}</h3>
 		<p class="flow-settings__intro">
-			{{ t('openregister', 'Defaults for every flow on this instance. A flow can override each of these for itself; a flow that overrides none of them follows the values set here, including later changes.') }}
+			{{
+				t(
+					'openregister',
+					'Defaults for every flow on this instance. A flow can override each of these for itself; a flow that overrides none of them follows the values set here, including later changes.',
+				)
+			}}
 		</p>
 
-		<NcTextField v-model="form.retentionDays"
+		<NcTextField
+			v-model="form.retentionDays"
 			type="number"
 			:label="t('openregister', 'Keep run history for (days)')"
-			:helper-text="t('openregister', 'Runs and their per-step history are deleted once they exceed this age. A flow may keep less than this, or more.')" />
+			:helper-text="
+				t(
+					'openregister',
+					'Runs and their per-step history are deleted once they exceed this age. A flow may keep less than this, or more.',
+				)
+			" />
 
 		<NcCheckboxRadioSwitch v-model="form.auditEnabled" type="switch">
 			{{ t('openregister', 'Write an audit-trail entry for every step') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
-			{{ t('openregister', 'Off by default: one entry per step per run is a lot of writes, and the run history already records what each step did. Turn this on where a compliance record of every step is required.') }}
+			{{
+				t(
+					'openregister',
+					'Off by default: one entry per step per run is a lot of writes, and the run history already records what each step did. Turn this on where a compliance record of every step is required.',
+				)
+			}}
 		</p>
 
 		<NcCheckboxRadioSwitch v-model="form.oversightEnabled" type="switch">
 			{{ t('openregister', 'Run oversight checks before each step') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
-			{{ t('openregister', 'On by default. Oversight checks — contributed by apps — can stop a running flow. Turning this off applies to every flow that has not chosen for itself.') }}
+			{{
+				t(
+					'openregister',
+					'On by default. Oversight checks — contributed by apps — can stop a running flow. Turning this off applies to every flow that has not chosen for itself.',
+				)
+			}}
 		</p>
 
 		<NcNoteCard v-if="form.killSwitch" type="warning">
-			{{ t('openregister', 'The kill switch is on. No flow step will run on this instance until it is turned off.') }}
+			{{
+				t(
+					'openregister',
+					'The kill switch is on. No flow step will run on this instance until it is turned off.',
+				)
+			}}
 		</NcNoteCard>
 
 		<NcCheckboxRadioSwitch v-model="form.killSwitch" type="switch">
 			{{ t('openregister', 'Kill switch — stop all flow execution now') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
-			{{ t('openregister', 'Stops every flow mid-run, at its next step. Use this when flows are misbehaving and disabling them one at a time is too slow.') }}
+			{{
+				t(
+					'openregister',
+					'Stops every flow mid-run, at its next step. Use this when flows are misbehaving and disabling them one at a time is too slow.',
+				)
+			}}
 		</p>
 
 		<NcButton type="primary" :disabled="saving" @click="save">
-			{{ saving ? t('openregister', 'Saving…') : t('openregister', 'Save flow settings') }}
+			{{
+				saving
+					? t('openregister', 'Saving…')
+					: t('openregister', 'Save flow settings')
+			}}
 		</NcButton>
 	</div>
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch, NcNoteCard, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcNoteCard,
+	NcTextField,
+} from '@nextcloud/vue'
 import { useSettingsStore } from '../../../store/settings.js'
 
 export default {

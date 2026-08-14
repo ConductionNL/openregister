@@ -64,4 +64,5 @@ export const mockObjectData = (): TObject[] => [
 	},
 ]
 
-export const mockObject = (data: TObject[] = mockObjectData()): TObject[] => data.map(item => new ObjectEntity(item))
+export const mockObject = (data: TObject[] = mockObjectData()): TObject[] =>
+	data.map((item) => new ObjectEntity(item))

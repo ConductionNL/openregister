@@ -98,13 +98,16 @@ async function testActiveFacets() {
 		if (objectFields.length > 0) {
 			const firstField = objectFields[0]
 			const fieldConfig = objectStore.availableObjectFieldFacets[firstField]
-			await objectStore.updateActiveFacet(firstField, fieldConfig.facet_types[0], true)
+			await objectStore.updateActiveFacet(
+				firstField,
+				fieldConfig.facet_types[0],
+				true,
+			)
 			console.info(`Enabled ${firstField} facet`)
 		}
 
 		console.info('Current active facets:', objectStore.activeFacets)
 		console.info('Current facet results:', objectStore.currentFacets)
-
 	} catch (error) {
 		console.error('Active facet test failed:', error)
 	}
@@ -174,7 +177,6 @@ async function testCompleteWorkflow() {
 		await testCustomFacets()
 
 		console.info('Complete workflow test finished successfully!')
-
 	} catch (error) {
 		console.error('Complete workflow test failed:', error)
 	}
@@ -186,8 +188,14 @@ function checkStoreState() {
 	console.info('Loading:', objectStore.facetsLoading)
 	console.info('Has facets:', objectStore.hasFacets)
 	console.info('Has facetable fields:', objectStore.hasFacetableFields)
-	console.info('Available metadata facets:', Object.keys(objectStore.availableMetadataFacets))
-	console.info('Available object field facets:', Object.keys(objectStore.availableObjectFieldFacets))
+	console.info(
+		'Available metadata facets:',
+		Object.keys(objectStore.availableMetadataFacets),
+	)
+	console.info(
+		'Available object field facets:',
+		Object.keys(objectStore.availableObjectFieldFacets),
+	)
 	console.info('Current facets:', Object.keys(objectStore.currentFacets))
 	console.info('Active facets:', objectStore.activeFacets)
 	console.info('================================')
@@ -201,7 +209,8 @@ async function testExactUserURL() {
 	console.info('=== Testing Exact User URL ===')
 
 	// This is the exact URL the user reported as not working
-	const testUrl = '/index.php/apps/openregister/api/objects/4/22?_limit=20&_page=1&_facetable=true&_facets[@self][register][type]=terms&_facets[@self][schema][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month'
+	const testUrl =
+		'/index.php/apps/openregister/api/objects/4/22?_limit=20&_page=1&_facetable=true&_facets[@self][register][type]=terms&_facets[@self][schema][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month'
 
 	try {
 		console.info('Fetching:', testUrl)
@@ -225,14 +234,23 @@ async function testExactUserURL() {
 		if (data.facets) {
 			console.info('Facet keys:', Object.keys(data.facets))
 			if (data.facets['@self']) {
-				console.info('Metadata facet keys:', Object.keys(data.facets['@self']))
+				console.info(
+					'Metadata facet keys:',
+					Object.keys(data.facets['@self']),
+				)
 			}
 		}
 
 		if (data.facetable) {
 			console.info('Facetable fields available:')
-			console.info('- @self fields:', Object.keys(data.facetable['@self'] || {}))
-			console.info('- object fields:', Object.keys(data.facetable.object_fields || {}))
+			console.info(
+				'- @self fields:',
+				Object.keys(data.facetable['@self'] || {}),
+			)
+			console.info(
+				'- object fields:',
+				Object.keys(data.facetable.object_fields || {}),
+			)
 		}
 
 		// Check if we got the expected facet structure
@@ -240,7 +258,7 @@ async function testExactUserURL() {
 		let foundFacets = 0
 
 		if (data.facets && data.facets['@self']) {
-			expectedFacets.forEach(facet => {
+			expectedFacets.forEach((facet) => {
 				if (data.facets['@self'][facet]) {
 					foundFacets++
 					console.info(`✓ Found ${facet} facet`)
@@ -253,11 +271,12 @@ async function testExactUserURL() {
 		if (foundFacets === expectedFacets.length) {
 			console.info('🎉 SUCCESS: All expected facets found!')
 		} else {
-			console.info(`⚠️ PARTIAL: Found ${foundFacets}/${expectedFacets.length} expected facets`)
+			console.info(
+				`⚠️ PARTIAL: Found ${foundFacets}/${expectedFacets.length} expected facets`,
+			)
 		}
 
 		return data
-
 	} catch (error) {
 		console.error('Test failed:', error.message)
 		console.error('Stack:', error.stack)

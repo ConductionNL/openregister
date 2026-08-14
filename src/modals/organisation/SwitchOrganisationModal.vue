@@ -1,11 +1,13 @@
 <template>
-	<NcModal v-if="show"
+	<NcModal
+		v-if="show"
 		:name="t('openregister', 'Switch Active Organisation')"
 		@close="$emit('close')">
 		<div class="organisationSwitcher">
 			<h3>{{ t('openregister', 'Select Active Organisation') }}</h3>
 			<div class="organisationList">
-				<div v-for="org in organisations"
+				<div
+					v-for="org in organisations"
 					:key="org.uuid"
 					class="organisationOption"
 					:class="{ active: isActive(org) }"
@@ -16,10 +18,18 @@
 					@keydown.space.prevent="$emit('switch', org)">
 					<div class="organisationOptionContent">
 						<span class="organisationOptionName">{{ org.name }}</span>
-						<span v-if="org.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-						<span v-if="isActive(org)" class="activeBadge">{{ t('openregister', 'Current') }}</span>
+						<span v-if="org.isDefault" class="defaultBadge">{{
+							t('openregister', 'Default')
+						}}</span>
+						<span v-if="isActive(org)" class="activeBadge">{{
+							t('openregister', 'Current')
+						}}</span>
 					</div>
-					<span v-if="org.description" class="organisationOptionDescription">{{ org.description }}</span>
+					<span
+						v-if="org.description"
+						class="organisationOptionDescription"
+						>{{ org.description }}</span
+					>
 				</div>
 			</div>
 		</div>
@@ -57,8 +67,10 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		isActive(org) {
-			return this.activeOrganisationUuid != null
+			return (
+				this.activeOrganisationUuid != null
 				&& this.activeOrganisationUuid === org.uuid
+			)
 		},
 	},
 }

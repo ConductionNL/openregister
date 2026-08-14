@@ -26,17 +26,22 @@ const SW_SOURCE = fs.readFileSync(
  */
 function loadServiceWorker(overrides = {}) {
 	const listeners = {}
-	const fakeSelf = Object.assign({
-		addEventListener: (type, handler) => { listeners[type] = handler },
-		skipWaiting: jest.fn(),
-		location: { origin: 'https://example-host.test' },
-		registration: { showNotification: jest.fn(() => Promise.resolve()) },
-		clients: {
-			claim: jest.fn(() => Promise.resolve()),
-			matchAll: jest.fn(() => Promise.resolve([])),
-			openWindow: jest.fn(() => Promise.resolve()),
+	const fakeSelf = Object.assign(
+		{
+			addEventListener: (type, handler) => {
+				listeners[type] = handler
+			},
+			skipWaiting: jest.fn(),
+			location: { origin: 'https://example-host.test' },
+			registration: { showNotification: jest.fn(() => Promise.resolve()) },
+			clients: {
+				claim: jest.fn(() => Promise.resolve()),
+				matchAll: jest.fn(() => Promise.resolve([])),
+				openWindow: jest.fn(() => Promise.resolve()),
+			},
 		},
-	}, overrides)
+		overrides,
+	)
 
 	const context = vm.createContext({ self: fakeSelf, URL })
 	vm.runInContext(SW_SOURCE, context)
@@ -68,15 +73,17 @@ describe('openregister-push-sw', () => {
 	describe('push handler', () => {
 		it('renders a notification from the JSON payload', () => {
 			const { self, listeners } = loadServiceWorker()
-			listeners.push(pushEvent({
-				title: 'New lead',
-				body: 'Acme Corp',
-				icon: '/icon.png',
-				badge: '/badge.png',
-				tag: 'lead-1',
-				actions: [{ action: 'a0', title: 'Open client' }],
-				data: { url: '/apps/pipelinq/#/clients/1' },
-			}))
+			listeners.push(
+				pushEvent({
+					title: 'New lead',
+					body: 'Acme Corp',
+					icon: '/icon.png',
+					badge: '/badge.png',
+					tag: 'lead-1',
+					actions: [{ action: 'a0', title: 'Open client' }],
+					data: { url: '/apps/pipelinq/#/clients/1' },
+				}),
+			)
 
 			expect(self.registration.showNotification).toHaveBeenCalledTimes(1)
 			const [title, options] = self.registration.showNotification.mock.calls[0]
@@ -89,14 +96,16 @@ describe('openregister-push-sw', () => {
 
 		it('caps actions at two (Web Notification API desktop limit)', () => {
 			const { self, listeners } = loadServiceWorker()
-			listeners.push(pushEvent({
-				title: 'x',
-				actions: [
-					{ action: 'a0', title: '0' },
-					{ action: 'a1', title: '1' },
-					{ action: 'a2', title: '2' },
-				],
-			}))
+			listeners.push(
+				pushEvent({
+					title: 'x',
+					actions: [
+						{ action: 'a0', title: '0' },
+						{ action: 'a1', title: '1' },
+						{ action: 'a2', title: '2' },
+					],
+				}),
+			)
 			const [, options] = self.registration.showNotification.mock.calls[0]
 			expect(options.actions).toHaveLength(2)
 		})
@@ -120,13 +129,20 @@ describe('openregister-push-sw', () => {
 			})
 			const close = jest.fn()
 			await listeners.notificationclick({
-				notification: { close, data: { url: 'https://example-host.test/apps/pipelinq/#/clients/1' } },
+				notification: {
+					close,
+					data: {
+						url: 'https://example-host.test/apps/pipelinq/#/clients/1',
+					},
+				},
 				action: '',
 				waitUntil: (p) => p,
 			})
 
 			expect(close).toHaveBeenCalled()
-			expect(openWindow).toHaveBeenCalledWith('https://example-host.test/apps/pipelinq/#/clients/1')
+			expect(openWindow).toHaveBeenCalledWith(
+				'https://example-host.test/apps/pipelinq/#/clients/1',
+			)
 		})
 
 		it('routes a clicked action button to its own deeplink', async () => {
@@ -142,20 +158,28 @@ describe('openregister-push-sw', () => {
 					close: jest.fn(),
 					data: {
 						url: 'https://example-host.test/top',
-						actions: { a0: 'https://example-host.test/apps/pipelinq/#/clients/9' },
+						actions: {
+							a0: 'https://example-host.test/apps/pipelinq/#/clients/9',
+						},
 					},
 				},
 				action: 'a0',
 				waitUntil: (p) => p,
 			})
 
-			expect(openWindow).toHaveBeenCalledWith('https://example-host.test/apps/pipelinq/#/clients/9')
+			expect(openWindow).toHaveBeenCalledWith(
+				'https://example-host.test/apps/pipelinq/#/clients/9',
+			)
 		})
 
 		it('focuses and navigates an already-open same-origin tab', async () => {
 			const focus = jest.fn(() => 'focused')
 			const navigate = jest.fn()
-			const client = { url: 'https://example-host.test/apps/files', focus, navigate }
+			const client = {
+				url: 'https://example-host.test/apps/files',
+				focus,
+				navigate,
+			}
 			const openWindow = jest.fn()
 			const { listeners } = loadServiceWorker({
 				clients: {
@@ -164,12 +188,19 @@ describe('openregister-push-sw', () => {
 				},
 			})
 			await listeners.notificationclick({
-				notification: { close: jest.fn(), data: { url: 'https://example-host.test/apps/pipelinq/#/clients/1' } },
+				notification: {
+					close: jest.fn(),
+					data: {
+						url: 'https://example-host.test/apps/pipelinq/#/clients/1',
+					},
+				},
 				action: '',
 				waitUntil: (p) => p,
 			})
 
-			expect(navigate).toHaveBeenCalledWith('https://example-host.test/apps/pipelinq/#/clients/1')
+			expect(navigate).toHaveBeenCalledWith(
+				'https://example-host.test/apps/pipelinq/#/clients/1',
+			)
 			expect(focus).toHaveBeenCalled()
 			expect(openWindow).not.toHaveBeenCalled()
 		})

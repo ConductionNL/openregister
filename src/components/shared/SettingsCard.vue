@@ -9,12 +9,12 @@
 				v-if="collapsible && !isCollapsed"
 				:size="20"
 				class="chevron-icon"
-				:class="{ 'rotate': !isCollapsed }" />
+				:class="{ rotate: !isCollapsed }" />
 			<ChevronUp
 				v-if="collapsible && isCollapsed"
 				:size="20"
 				class="chevron-icon"
-				:class="{ 'rotate': isCollapsed }" />
+				:class="{ rotate: isCollapsed }" />
 		</h4>
 
 		<transition v-if="collapsible" name="slide-fade">

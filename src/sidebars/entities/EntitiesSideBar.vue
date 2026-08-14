@@ -120,16 +120,18 @@
 
 			<!-- Clear Filters -->
 			<div v-if="hasActiveFilters" class="filterSection">
-				<NcButton
-					variant="secondary"
-					wide
-					@click="clearFilters">
+				<NcButton variant="secondary" wide @click="clearFilters">
 					{{ t('openregister', 'Clear filters') }}
 				</NcButton>
 			</div>
 
 			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down entities by type or category.') }}
+				{{
+					t(
+						'openregister',
+						'Use filters to narrow down entities by type or category.',
+					)
+				}}
 			</NcNoteCard>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
@@ -198,7 +200,11 @@ export default {
 		 * @return {boolean}
 		 */
 		hasActiveFilters() {
-			return this.selectedType !== null || this.selectedCategory !== null || this.localSearch !== ''
+			return (
+				this.selectedType !== null
+				|| this.selectedCategory !== null
+				|| this.localSearch !== ''
+			)
 		},
 	},
 	methods: {

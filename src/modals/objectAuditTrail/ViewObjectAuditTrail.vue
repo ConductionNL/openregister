@@ -1,21 +1,32 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import {
+	objectStore,
+	navigationStore,
+	schemaStore,
+	registerStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal label-id="View Object Audit Trail modal"
-		@close="closeDialog">
+	<NcModal label-id="View Object Audit Trail modal" @close="closeDialog">
 		<div class="modal__content">
 			<div class="audit-item">
 				<h3>Audit Trail ID: {{ auditTrail.id }}</h3>
 
 				<div class="audit-item-details">
 					<p><strong>Action:</strong> {{ auditTrail.action }}</p>
-					<p><strong>User:</strong> {{ auditTrail.userName }} ({{ auditTrail.user }})</p>
+					<p>
+						<strong>User:</strong> {{ auditTrail.userName }} ({{
+							auditTrail.user
+						}})
+					</p>
 					<p><strong>Session:</strong> {{ auditTrail.session }}</p>
 					<p><strong>IP Address:</strong> {{ auditTrail.ipAddress }}</p>
-					<p><strong>Created:</strong> {{ new Date(auditTrail.created).toLocaleString() }}</p>
+					<p>
+						<strong>Created:</strong>
+						{{ new Date(auditTrail.created).toLocaleString() }}
+					</p>
 				</div>
 
 				<div v-if="auditTrail.changed" class="audit-trail-changes">
@@ -24,20 +35,18 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 						<table class="audit-trail-table">
 							<thead>
 								<tr>
-									<th scope="col">
-										Field
-									</th>
-									<th scope="col">
-										Old Value
-									</th>
-									<th scope="col">
-										New Value
-									</th>
+									<th scope="col">Field</th>
+									<th scope="col">Old Value</th>
+									<th scope="col">New Value</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="(change, key) in auditTrail.changed" :key="key">
-									<td><strong>{{ key }}</strong></td>
+								<tr
+									v-for="(change, key) in auditTrail.changed"
+									:key="key">
+									<td>
+										<strong>{{ key }}</strong>
+									</td>
 									<td>{{ formatValue(change.old) }}</td>
 									<td>{{ formatValue(change.new) }}</td>
 								</tr>
@@ -50,9 +59,19 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 					<h4>Linked Items:</h4>
 					<div class="audit-trail-linked-items-container">
 						<div>
-							<p><b>{{ t('openregister', 'Schema:') }}</b> {{ schemaLoading ? t('openregister', 'Loading...') : schemaItem?.title }}</p>
-							<NcButton variant="tertiary"
-								:aria-label="t('openregister', 'Go to linked Schema')"
+							<p>
+								<b>{{ t('openregister', 'Schema:') }}</b>
+								{{
+									schemaLoading
+										? t('openregister', 'Loading...')
+										: schemaItem?.title
+								}}
+							</p>
+							<NcButton
+								variant="tertiary"
+								:aria-label="
+									t('openregister', 'Go to linked Schema')
+								"
 								@click="goToSchema">
 								<template #icon>
 									<NcLoadingIcon v-if="schemaLoading" />
@@ -62,9 +81,19 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 						</div>
 
 						<div>
-							<p><b>{{ t('openregister', 'Register:') }}</b> {{ registerLoading ? t('openregister', 'Loading...') : registerItem?.title }}</p>
-							<NcButton variant="tertiary"
-								:aria-label="t('openregister', 'Go to linked Register')"
+							<p>
+								<b>{{ t('openregister', 'Register:') }}</b>
+								{{
+									registerLoading
+										? t('openregister', 'Loading...')
+										: registerItem?.title
+								}}
+							</p>
+							<NcButton
+								variant="tertiary"
+								:aria-label="
+									t('openregister', 'Go to linked Register')
+								"
 								@click="goToRegister">
 								<template #icon>
 									<NcLoadingIcon v-if="registerLoading" />
@@ -90,11 +119,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import {
-	NcModal,
-	NcButton,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcModal, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import OpenInApp from 'vue-material-design-icons/OpenInApp.vue'
@@ -151,22 +176,20 @@ export default {
 		 */
 		fetchSchema() {
 			this.schemaLoading = true
-			schemaStore.getSchema(this.auditTrail.schema)
-				.then((schema) => {
-					this.schemaItem = schema
-					this.schemaLoading = false
-				})
+			schemaStore.getSchema(this.auditTrail.schema).then((schema) => {
+				this.schemaItem = schema
+				this.schemaLoading = false
+			})
 		},
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		fetchRegister() {
 			this.registerLoading = true
-			registerStore.getRegister(this.auditTrail.register)
-				.then((register) => {
-					this.registerItem = register
-					this.registerLoading = false
-				})
+			registerStore.getRegister(this.auditTrail.register).then((register) => {
+				this.registerItem = register
+				this.registerLoading = false
+			})
 		},
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining

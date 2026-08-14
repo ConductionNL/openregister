@@ -25,16 +25,27 @@
 								:disabled="loading"
 								:label="t('openregister', 'View Name') + ' *'"
 								v-model="viewData.name"
-								:placeholder="t('openregister', 'Enter view name...')"
+								:placeholder="
+									t('openregister', 'Enter view name...')
+								"
 								:error="!viewData.name.trim() && nameTouched"
-								:helper-text="!viewData.name.trim() && nameTouched ? t('openregister', 'View name is required') : ''"
+								:helper-text="
+									!viewData.name.trim() && nameTouched
+										? t('openregister', 'View name is required')
+										: ''
+								"
 								@blur="nameTouched = true" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
 								v-model="viewData.description"
-								:placeholder="t('openregister', 'Enter description (optional)...')" />
+								:placeholder="
+									t(
+										'openregister',
+										'Enter description (optional)...',
+									)
+								" />
 
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
@@ -43,7 +54,12 @@
 								{{ t('openregister', 'Public View') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
-								{{ t('openregister', 'Public views can be accessed by anyone in the system') }}
+								{{
+									t(
+										'openregister',
+										'Public views can be accessed by anyone in the system',
+									)
+								}}
 							</p>
 						</div>
 					</AppTab>
@@ -55,7 +71,9 @@
 						</template>
 						<div class="form-editor">
 							<div class="groups-select-container">
-								<label class="groups-label">{{ t('openregister', 'Share with Groups') }}</label>
+								<label class="groups-label">{{
+									t('openregister', 'Share with Groups')
+								}}</label>
 								<NcSelect
 									v-model="selectedGroups"
 									input-label="Selected Groups"
@@ -67,25 +85,43 @@
 									:label-outside="true"
 									:filterable="false"
 									:close-on-select="false"
-									:placeholder="t('openregister', 'Type to search groups...')"
+									:placeholder="
+										t('openregister', 'Type to search groups...')
+									"
 									@search-change="searchGroups">
 									<template #option="{ name }">
 										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
+											<span class="group-name">{{
+												name
+											}}</span>
 										</div>
 									</template>
 									<template #no-options>
-										<span v-if="loadingGroups">{{ t('openregister', 'Loading groups...') }}</span>
-										<span v-else>{{ t('openregister', 'Type to search for groups') }}</span>
+										<span v-if="loadingGroups">{{
+											t('openregister', 'Loading groups...')
+										}}</span>
+										<span v-else>{{
+											t(
+												'openregister',
+												'Type to search for groups',
+											)
+										}}</span>
 									</template>
 								</NcSelect>
 								<p class="field-hint">
-									{{ t('openregister', 'Members of selected groups can access this view') }}
+									{{
+										t(
+											'openregister',
+											'Members of selected groups can access this view',
+										)
+									}}
 								</p>
 							</div>
 
 							<div class="groups-select-container">
-								<label class="groups-label">{{ t('openregister', 'Share with Users') }}</label>
+								<label class="groups-label">{{
+									t('openregister', 'Share with Users')
+								}}</label>
 								<NcSelect
 									v-model="selectedUsers"
 									input-label="Selected Users"
@@ -97,7 +133,9 @@
 									:label-outside="true"
 									:filterable="false"
 									:close-on-select="false"
-									:placeholder="t('openregister', 'Type to search users...')"
+									:placeholder="
+										t('openregister', 'Type to search users...')
+									"
 									@search-change="searchUsers">
 									<template #option="{ name }">
 										<div class="user-option">
@@ -105,12 +143,24 @@
 										</div>
 									</template>
 									<template #no-options>
-										<span v-if="loadingUsers">{{ t('openregister', 'Loading users...') }}</span>
-										<span v-else>{{ t('openregister', 'Type to search for users') }}</span>
+										<span v-if="loadingUsers">{{
+											t('openregister', 'Loading users...')
+										}}</span>
+										<span v-else>{{
+											t(
+												'openregister',
+												'Type to search for users',
+											)
+										}}</span>
 									</template>
 								</NcSelect>
 								<p class="field-hint">
-									{{ t('openregister', 'Selected users can access this view') }}
+									{{
+										t(
+											'openregister',
+											'Selected users can access this view',
+										)
+									}}
 								</p>
 							</div>
 						</div>
@@ -120,9 +170,7 @@
 
 			<!-- Actions -->
 			<div class="modal-actions">
-				<NcButton
-					variant="secondary"
-					@click="handleClose()">
+				<NcButton variant="secondary" @click="handleClose()">
 					<template #icon>
 						<Close :size="20" />
 					</template>
@@ -135,7 +183,11 @@
 					<template #icon>
 						<ContentSave :size="20" />
 					</template>
-					{{ loading ? t('openregister', 'Saving...') : t('openregister', 'Save') }}
+					{{
+						loading
+							? t('openregister', 'Saving...')
+							: t('openregister', 'Save')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -143,7 +195,14 @@
 </template>
 
 <script>
-import { NcDialog, NcTextField, NcButton, NcCheckboxRadioSwitch, NcSelect, NcNoteCard } from '@nextcloud/vue'
+import {
+	NcDialog,
+	NcTextField,
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcNoteCard,
+} from '@nextcloud/vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
@@ -218,8 +277,14 @@ export default {
 
 					// Initialize selected groups and users from the view
 					// Convert string IDs to objects for NcSelect
-					this.selectedGroups = (newView.sharedGroups || []).map(id => ({ id, name: id }))
-					this.selectedUsers = (newView.sharedUsers || []).map(id => ({ id, name: id }))
+					this.selectedGroups = (newView.sharedGroups || []).map((id) => ({
+						id,
+						name: id,
+					}))
+					this.selectedUsers = (newView.sharedUsers || []).map((id) => ({
+						id,
+						name: id,
+					}))
 
 					// Populate available options with currently selected items
 					this.availableGroups = [...this.selectedGroups]
@@ -259,26 +324,35 @@ export default {
 				this.loadingGroups = true
 				try {
 					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`, {
-						headers: {
-							'OCS-APIRequest': 'true',
+					const response = await fetch(
+						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
+						{
+							headers: {
+								'OCS-APIRequest': 'true',
+							},
 						},
-					})
+					)
 
 					if (response.ok) {
 						const data = await response.json()
 						if (data.ocs?.data?.groups) {
 							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(groupId => ({
-								id: groupId,
-								name: groupId,
-							}))
+							const searchResults = data.ocs.data.groups.map(
+								(groupId) => ({
+									id: groupId,
+									name: groupId,
+								}),
+							)
 
 							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(g => g.id)
+							const selectedGroupIds = this.selectedGroups.map(
+								(g) => g.id,
+							)
 							const mergedGroups = [
 								...this.selectedGroups,
-								...searchResults.filter(g => !selectedGroupIds.includes(g.id)),
+								...searchResults.filter(
+									(g) => !selectedGroupIds.includes(g.id),
+								),
 							]
 
 							this.availableGroups = mergedGroups
@@ -318,26 +392,35 @@ export default {
 				this.loadingUsers = true
 				try {
 					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`, {
-						headers: {
-							'OCS-APIRequest': 'true',
+					const response = await fetch(
+						`/ocs/v1.php/cloud/users?format=json&search=${encodeURIComponent(searchQuery)}`,
+						{
+							headers: {
+								'OCS-APIRequest': 'true',
+							},
 						},
-					})
+					)
 
 					if (response.ok) {
 						const data = await response.json()
 						if (data.ocs?.data?.users) {
 							// Transform user IDs into objects
-							const searchResults = data.ocs.data.users.map(userId => ({
-								id: userId,
-								name: userId,
-							}))
+							const searchResults = data.ocs.data.users.map(
+								(userId) => ({
+									id: userId,
+									name: userId,
+								}),
+							)
 
 							// Merge with already selected users to ensure they remain visible
-							const selectedUserIds = this.selectedUsers.map(u => u.id)
+							const selectedUserIds = this.selectedUsers.map(
+								(u) => u.id,
+							)
 							const mergedUsers = [
 								...this.selectedUsers,
-								...searchResults.filter(u => !selectedUserIds.includes(u.id)),
+								...searchResults.filter(
+									(u) => !selectedUserIds.includes(u.id),
+								),
 							]
 
 							this.availableUsers = mergedUsers
@@ -371,11 +454,14 @@ export default {
 					isPublic: this.viewData.isPublic,
 					isDefault: this.viewData.isDefault,
 					query: this.viewData.query,
-					sharedGroups: this.selectedGroups.map(g => g.id),
-					sharedUsers: this.selectedUsers.map(u => u.id),
+					sharedGroups: this.selectedGroups.map((g) => g.id),
+					sharedUsers: this.selectedUsers.map((u) => u.id),
 				}
 
-				await viewsStore.updateView(this.view.id || this.view.uuid, updateData)
+				await viewsStore.updateView(
+					this.view.id || this.view.uuid,
+					updateData,
+				)
 
 				this.success = true
 
@@ -388,7 +474,10 @@ export default {
 				}, 1500)
 			} catch (error) {
 				console.error('Error updating view:', error)
-				this.error = error.response?.data?.error || error.message || this.t('openregister', 'Failed to update view')
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| this.t('openregister', 'Failed to update view')
 			} finally {
 				this.loading = false
 			}

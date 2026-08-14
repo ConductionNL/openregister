@@ -26,7 +26,8 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked events')"
 			:description="errorMessage">
 			<template #icon>
@@ -35,18 +36,30 @@ SPDX-License-Identifier: EUPL-1.2
 		</NcEmptyContent>
 
 		<!-- Calendar app missing (HTTP 501 graceful degradation) -->
-		<NcEmptyContent v-else-if="calendarUnavailable"
+		<NcEmptyContent
+			v-else-if="calendarUnavailable"
 			:name="t('openregister', 'Calendar integration is not available')"
-			:description="t('openregister', 'The Nextcloud Calendar app is not installed or enabled on this server.')">
+			:description="
+				t(
+					'openregister',
+					'The Nextcloud Calendar app is not installed or enabled on this server.',
+				)
+			">
 			<template #icon>
 				<CalendarRemove :size="44" />
 			</template>
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="events.length === 0"
+		<NcEmptyContent
+			v-else-if="events.length === 0"
 			:name="t('openregister', 'No events linked to this object')"
-			:description="t('openregister', 'Create a new event or link an existing one from any of your calendars.')">
+			:description="
+				t(
+					'openregister',
+					'Create a new event or link an existing one from any of your calendars.',
+				)
+			">
 			<template #icon>
 				<CalendarOutline :size="44" />
 			</template>
@@ -54,27 +67,34 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Linked events list -->
 		<ul v-else class="events-tab__list">
-			<li v-for="event in events"
-				:key="event.id"
-				class="events-tab__item">
+			<li v-for="event in events" :key="event.id" class="events-tab__item">
 				<div class="events-tab__icon">
 					<CalendarOutline :size="20" />
 				</div>
 				<div class="events-tab__content">
 					<div class="events-tab__summary">
-						{{ event.summary || event.title || t('openregister', '(no title)') }}
+						{{
+							event.summary
+							|| event.title
+							|| t('openregister', '(no title)')
+						}}
 					</div>
 					<div class="events-tab__meta">
-						<span v-if="event.calendarDisplayName || event.calendarName" class="events-tab__calendar">
+						<span
+							v-if="event.calendarDisplayName || event.calendarName"
+							class="events-tab__calendar">
 							{{ event.calendarDisplayName || event.calendarName }}
 						</span>
-						<span v-if="event.startsAt" class="events-tab__separator">&middot;</span>
+						<span v-if="event.startsAt" class="events-tab__separator"
+							>&middot;</span
+						>
 						<span v-if="event.startsAt" class="events-tab__date">
 							{{ formatDate(event.startsAt) }}
 						</span>
 					</div>
 				</div>
-				<NcButton variant="tertiary"
+				<NcButton
+					variant="tertiary"
 					:aria-label="t('openregister', 'Unlink event')"
 					@click="unlinkEvent(event)">
 					<template #icon>
@@ -215,7 +235,12 @@ export default {
 		 */
 		async unlinkEvent(event) {
 			try {
-				await this.store.unlink(this.register, this.schema, this.objectId, event.id)
+				await this.store.unlink(
+					this.register,
+					this.schema,
+					this.objectId,
+					event.id,
+				)
 				this.$emit('events-changed', this.events.length)
 			} catch (err) {
 				this.error = true

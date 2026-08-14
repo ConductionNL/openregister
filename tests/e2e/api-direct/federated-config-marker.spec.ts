@@ -16,7 +16,10 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 const runId = `e2e-fedmarker-${Date.now()}`
 
 test.describe('Federated config — schema marker (generic type)', () => {
@@ -56,13 +59,18 @@ test.describe('Federated config — schema marker (generic type)', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const u of objects) {
-			await request.delete(`${API}/objects/${regId}/${schId}/${u}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${regId}/${schId}/${u}`)
+				.catch(() => {})
 		}
 		await request.delete(`${API}/registers/${regId}`).catch(() => {})
 		await request.delete(`${API}/schemas/${schId}`).catch(() => {})
 	})
 
-	async function makeObject(request: APIRequestContext, name: string): Promise<string> {
+	async function makeObject(
+		request: APIRequestContext,
+		name: string,
+	): Promise<string> {
 		const resp = await request.post(`${API}/objects/${regId}/${schId}`, {
 			headers: JSON_HEADERS,
 			data: { name, steps: ['intake', 'besluit'] },
@@ -72,16 +80,23 @@ test.describe('Federated config — schema marker (generic type)', () => {
 		return uuid
 	}
 
-	test('the marked schema is auto-surfaced as a shareable type', async ({ request }) => {
+	test('the marked schema is auto-surfaced as a shareable type', async ({
+		request,
+	}) => {
 		const resp = await request.get(`${API}/federated-config/types`)
 		expect(resp.status()).toBe(200)
 		const types = (await resp.json()).types ?? []
 		const mine = types.find((t: any) => t.id === typeId)
-		expect(mine, `a marked schema becomes type ${typeId} with no per-app code`).toBeTruthy()
+		expect(
+			mine,
+			`a marked schema becomes type ${typeId} with no per-app code`,
+		).toBeTruthy()
 		expect(mine.topic).toBe(`${regSlug}-${schSlug}`)
 	})
 
-	test('its objects bundle portably and install as fresh objects', async ({ request }) => {
+	test('its objects bundle portably and install as fresh objects', async ({
+		request,
+	}) => {
 		await makeObject(request, `${runId} bezwaar`)
 
 		// Bundle — instance fields stripped, only portable data.
@@ -96,7 +111,10 @@ test.describe('Federated config — schema marker (generic type)', () => {
 		expect(bundle.objects.length).toBe(1)
 		expect(bundle.objects[0].name).toBe(`${runId} bezwaar`)
 		expect(bundle.objects[0].steps).toEqual(['intake', 'besluit'])
-		expect(bundle.objects[0].uuid, 'no instance uuid in the bundle').toBeUndefined()
+		expect(
+			bundle.objects[0].uuid,
+			'no instance uuid in the bundle',
+		).toBeUndefined()
 		expect(bundle.objects[0].owner, 'no owner in the bundle').toBeUndefined()
 
 		// Install — a fresh object with a new uuid, same portable data.
@@ -110,7 +128,9 @@ test.describe('Federated config — schema marker (generic type)', () => {
 		objects.push(installed[0])
 
 		// The register now holds both the source and the freshly installed copy.
-		const listResp = await request.get(`${API}/objects/${regId}/${schId}?_limit=100`)
+		const listResp = await request.get(
+			`${API}/objects/${regId}/${schId}?_limit=100`,
+		)
 		const rows = (await listResp.json()).results ?? []
 		const names = rows.map((o: any) => o.name)
 		expect(rows.length).toBe(2)

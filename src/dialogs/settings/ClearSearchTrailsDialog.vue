@@ -1,21 +1,23 @@
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		name="Confirm Clear Search Trails"
 		@closing="$emit('closing')">
 		<div class="clear-dialog-content">
 			<h3>⚠️ Confirm Clear All Search Trails</h3>
 			<p>
-				This operation will permanently delete all search trail logs from the database.
-				This action cannot be undone.
+				This operation will permanently delete all search trail logs from the
+				database. This action cannot be undone.
 			</p>
-			<p><strong>Current search trails: {{ totalSearchTrails }}</strong></p>
+			<p>
+				<strong>Current search trails: {{ totalSearchTrails }}</strong>
+			</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 
 			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')">
-					Cancel
-				</NcButton>
-				<NcButton variant="error"
+				<NcButton @click="$emit('closing')"> Cancel </NcButton>
+				<NcButton
+					variant="error"
 					:disabled="clearing"
 					@click="$emit('confirm')">
 					<template #icon>

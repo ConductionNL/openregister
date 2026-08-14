@@ -32,8 +32,17 @@
 							{{ t('openregister', 'Status') }}
 						</th>
 						<td class="logValue">
-							<span :class="logItem.success ? 'status-success' : 'status-failed'">
-								{{ logItem.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
+							<span
+								:class="
+									logItem.success
+										? 'status-success'
+										: 'status-failed'
+								">
+								{{
+									logItem.success
+										? t('openregister', 'Success')
+										: t('openregister', 'Failed')
+								}}
 							</span>
 						</td>
 					</tr>
@@ -42,7 +51,9 @@
 							{{ t('openregister', 'Status Code') }}
 						</th>
 						<td class="logValue">
-							<span v-if="logItem.statusCode">{{ logItem.statusCode }}</span>
+							<span v-if="logItem.statusCode">{{
+								logItem.statusCode
+							}}</span>
 							<span v-else class="text-muted">-</span>
 						</td>
 					</tr>
@@ -117,7 +128,11 @@
 					<Refresh v-if="!retrying" :size="20" />
 					<NcLoadingIcon v-else :size="20" />
 				</template>
-				{{ retrying ? t('openregister', 'Retrying...') : t('openregister', 'Retry') }}
+				{{
+					retrying
+						? t('openregister', 'Retrying...')
+						: t('openregister', 'Retry')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -129,11 +144,7 @@ import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import { navigationStore } from '../../store/store.js'
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 /**
@@ -193,9 +204,10 @@ export default {
 				this.logItem = { ...transferData.log }
 				// Map payload to requestBody if requestBody is not available.
 				if (!this.logItem.requestBody && this.logItem.payload) {
-					this.logItem.requestBody = typeof this.logItem.payload === 'string'
-						? this.logItem.payload
-						: JSON.stringify(this.logItem.payload)
+					this.logItem.requestBody =
+						typeof this.logItem.payload === 'string'
+							? this.logItem.payload
+							: JSON.stringify(this.logItem.payload)
 				}
 			}
 		},
@@ -210,7 +222,9 @@ export default {
 			try {
 				const { generateUrl } = await import('@nextcloud/router')
 				const axios = (await import('@nextcloud/axios')).default
-				const response = await axios.get(generateUrl('/apps/openregister/api/webhooks'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/webhooks'),
+				)
 				if (response.data && Array.isArray(response.data)) {
 					this.webhooksList = response.data
 				}
@@ -227,7 +241,7 @@ export default {
 		 * @spec exclude Resolves a webhook id to its display name; UI presentation helper.
 		 */
 		getWebhookName(webhookId) {
-			const webhook = this.webhooksList.find(w => w.id === webhookId)
+			const webhook = this.webhooksList.find((w) => w.id === webhookId)
 			return webhook ? webhook.name : `#${webhookId}`
 		},
 
@@ -297,21 +311,31 @@ export default {
 			this.retrying = true
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/webhooks/logs/${this.logItem.id}/retry`),
+					generateUrl(
+						`/apps/openregister/api/webhooks/logs/${this.logItem.id}/retry`,
+					),
 				)
 
 				if (response.data && response.data.success === true) {
-					showSuccess(t('openregister', 'Webhook retry delivered successfully'))
+					showSuccess(
+						t('openregister', 'Webhook retry delivered successfully'),
+					)
 					// Close modal and refresh parent view.
 					this.closeModal()
 					// Trigger a custom event to refresh logs list.
 					window.dispatchEvent(new CustomEvent('webhook-log-retried'))
 				} else {
-					const message = response.data?.message || response.data?.error || t('openregister', 'Webhook retry delivery failed')
+					const message =
+						response.data?.message
+						|| response.data?.error
+						|| t('openregister', 'Webhook retry delivery failed')
 					showError(message)
 				}
 			} catch (error) {
-				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to retry webhook')
+				const errorMessage =
+					error.response?.data?.error
+					|| error.response?.data?.message
+					|| t('openregister', 'Failed to retry webhook')
 				showError(errorMessage)
 			} finally {
 				this.retrying = false
@@ -440,7 +464,8 @@ export default {
 }
 
 .codeBlock code {
-	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+	font-family:
+		'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
 	font-size: 12px;
 	line-height: 1.5;
 	color: var(--color-main-text);
