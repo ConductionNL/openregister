@@ -67,7 +67,7 @@ class TmloExportTest extends TestCase {
 		$object->setUuid('test-uuid-123');
 		$object->setName('Test Object');
 		$object->setTmlo([
-			'classificatie' => '1.1',
+			'classification' => '1.1',
 			'archiefnominatie' => 'blijvend_bewaren',
 			'archiefactiedatum' => '2030-01-01',
 			'archiefstatus' => 'semi_statisch',
@@ -131,7 +131,7 @@ class TmloExportTest extends TestCase {
 		$object1->setName('Object 1');
 		$object1->setTmlo([
 			'archiefstatus' => 'actief',
-			'classificatie' => '1.1',
+			'classification' => '1.1',
 		]);
 
 		$object2 = new ObjectEntity();
@@ -139,7 +139,7 @@ class TmloExportTest extends TestCase {
 		$object2->setName('Object 2');
 		$object2->setTmlo([
 			'archiefstatus' => 'semi_statisch',
-			'classificatie' => '2.1',
+			'classification' => '2.1',
 		]);
 
 		$xml = $this->service->generateBatchMdtoXml([$object1, $object2]);
@@ -193,7 +193,7 @@ class TmloExportTest extends TestCase {
 		$object->setUuid('uuid-special');
 		$object->setName('Test & <Object>');
 		$object->setTmlo([
-			'classificatie' => '1.1 & 2.2',
+			'classification' => '1.1 & 2.2',
 			'archiefstatus' => 'actief',
 		]);
 

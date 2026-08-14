@@ -322,13 +322,13 @@ class SaveObjectTest extends TestCase {
 	public function testScanForRelationsFindsUuids(): void {
 		$data = [
 			'name' => 'Test',
-			'organisatie' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4',
+			'organisation' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4',
 		];
 
 		$result = $this->handler->scanForRelations($data);
 
-		$this->assertArrayHasKey('organisatie', $result);
-		$this->assertSame('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', $result['organisatie']);
+		$this->assertArrayHasKey('organisation', $result);
+		$this->assertSame('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', $result['organisation']);
 	}
 
 	public function testScanForRelationsFindsUrls(): void {
@@ -448,7 +448,7 @@ class SaveObjectTest extends TestCase {
 	public function testScanForRelationsWithSchemaPropertyTypes(): void {
 		$schemaObject = new \stdClass();
 		$schemaObject->properties = [
-			'organisatie' => [
+			'organisation' => [
 				'type' => 'object',
 				'format' => '',
 			],
@@ -456,13 +456,13 @@ class SaveObjectTest extends TestCase {
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
 		$data = [
-			'organisatie' => 'some-string-value',
+			'organisation' => 'some-string-value',
 		];
 
 		$result = $this->handler->scanForRelations($data, '', $schema);
 
 		// Object type with string value should be treated as relation.
-		$this->assertArrayHasKey('organisatie', $result);
+		$this->assertArrayHasKey('organisation', $result);
 	}
 
 	public function testScanForRelationsWithTextUuidFormatProperty(): void {

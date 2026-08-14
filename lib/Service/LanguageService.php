@@ -265,9 +265,9 @@ class LanguageService {
 			}
 
 			// Try base language (e.g., "en" from "en-US").
-			$baseLang = strtolower(explode('-', $accepted)[0]);
-			if (in_array($baseLang, $registerLanguages, true) === true) {
-				return $baseLang;
+			$baseLong = strtolower(explode('-', $accepted)[0]);
+			if (in_array($baseLong, $registerLanguages, true) === true) {
+				return $baseLong;
 			}
 		}
 

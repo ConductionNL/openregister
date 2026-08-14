@@ -356,18 +356,18 @@ class SaveObjects {
 
 		// PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
 		if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
-			$opLabel = 'Starting single-schema bulk save operation';
-			$opType = 'single-schema';
+			$onLabel = 'Starting single-schema bulk save operation';
+			$onType = 'single-schema';
 			if ($isMixedSchema === true) {
-				$opLabel = 'Starting mixed-schema bulk save operation';
-				$opType = 'mixed-schema';
+				$onLabel = 'Starting mixed-schema bulk save operation';
+				$onType = 'mixed-schema';
 			}
 
 			$this->logger->debug(
-				$opLabel,
+				$onLabel,
 				[
 					'totalObjects' => count($objects),
-					'operation' => $opType,
+					'operation' => $onType,
 				]
 			);
 		}//end if

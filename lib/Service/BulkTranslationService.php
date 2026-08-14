@@ -69,7 +69,7 @@ class BulkTranslationService {
 	 * Returns a per-property patch:
 	 *   `[propertyName => translatedValue]`
 	 * The caller merges this into the object's `{lang: value}` JSONB
-	 * map for `$toLang` and persists via the standard save path —
+	 * map for `$toLong` and persists via the standard save path —
 	 * which triggers the projection listener to populate the sidecar.
 	 *
 	 * Note: this method also writes directly to the sidecar so the
@@ -78,8 +78,8 @@ class BulkTranslationService {
 	 * write should invoke the provider directly.
 	 *
 	 * @param ObjectEntity $object The object to translate.
-	 * @param string $fromLang Source language code.
-	 * @param string $toLang Target language code.
+	 * @param string $fromLong Source language code.
+	 * @param string $toLong Target language code.
 	 * @param string[]|null $properties Optional whitelist of property
 	 *                                  names to translate; null = all.
 	 *
@@ -93,14 +93,14 @@ class BulkTranslationService {
 	 */
 	public function translateObject(
 		ObjectEntity $object,
-		string $fromLang,
-		string $toLang,
+		string $fromLong,
+		string $toLong,
 		?array $properties = null,
 	): array {
 		$translated = [];
 		$skipped = [];
 
-		if ($fromLang === $toLang) {
+		if ($fromLong === $toLong) {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
 
@@ -126,9 +126,9 @@ class BulkTranslationService {
 
 			// Source value lookup.
 			$sourceValue = null;
-			if (is_array($existing) === true && isset($existing[$fromLang]) === true) {
-				$sourceValue = $existing[$fromLang];
-			} elseif (is_string($existing) === true && $fromLang === 'nl') {
+			if (is_array($existing) === true && isset($existing[$fromLong]) === true) {
+				$sourceValue = $existing[$fromLong];
+			} elseif (is_string($existing) === true && $fromLong === 'nl') {
 				// Legacy single-language fallback — treat plain string as NL.
 				$sourceValue = $existing;
 			}
@@ -142,16 +142,16 @@ class BulkTranslationService {
 			// the slot is already filled (any non-empty value, regardless
 			// of status — promotion is the operator's job).
 			if (is_array($existing) === true
-				&& isset($existing[$toLang]) === true
-				&& is_string($existing[$toLang]) === true
-				&& $existing[$toLang] !== ''
+				&& isset($existing[$toLong]) === true
+				&& is_string($existing[$toLong]) === true
+				&& $existing[$toLong] !== ''
 			) {
 				$skipped[$property] = 'target-slot-already-filled';
 				continue;
 			}
 
 			try {
-				$translatedValue = $this->provider->translate($sourceValue, $fromLang, $toLang);
+				$translatedValue = $this->provider->translate($sourceValue, $fromLong, $toLong);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					sprintf(
@@ -159,7 +159,7 @@ class BulkTranslationService {
 						$this->provider->getIdentifier(),
 						$object->getUuid(),
 						$property,
-						$toLang,
+						$toLong,
 						$e->getMessage()
 					)
 				);
@@ -181,7 +181,7 @@ class BulkTranslationService {
 				$this->translationMapper->upsert(
 					objectUuid: (string)$object->getUuid(),
 					property: $property,
-					language: $toLang,
+					language: $toLong,
 					value: $translatedValue,
 					status: Translation::STATUS_MACHINE_TRANSLATED,
 					translator: $translator
@@ -192,7 +192,7 @@ class BulkTranslationService {
 						'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
 						$object->getUuid(),
 						$property,
-						$toLang,
+						$toLong,
 						$e->getMessage()
 					)
 				);

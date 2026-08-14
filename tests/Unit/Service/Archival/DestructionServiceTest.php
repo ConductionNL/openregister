@@ -87,7 +87,7 @@ class DestructionServiceTest extends TestCase {
 				'schema' => 5,
 				'register' => 1,
 				'archiefactiedatum' => '2025-01-01',
-				'classificatie' => 'B1',
+				'classification' => 'B1',
 			],
 			[
 				'uuid' => 'uuid-2',
@@ -95,7 +95,7 @@ class DestructionServiceTest extends TestCase {
 				'schema' => 5,
 				'register' => 1,
 				'archiefactiedatum' => '2025-06-01',
-				'classificatie' => 'B2',
+				'classification' => 'B2',
 			],
 		];
 

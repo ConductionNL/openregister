@@ -81,17 +81,17 @@ class TranslationCsvCodec {
 			// Translatable property with language-keyed value:
 			// emit `field_lang` columns per language present.
 			if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
-				foreach ($value as $lang => $langValue) {
-					if (is_string($lang) === false || $lang === '') {
+				foreach ($value as $long => $longValue) {
+					if (is_string($long) === false || $long === '') {
 						continue;
 					}
 
-					$langScalar = null;
-					if (is_scalar($langValue) === true) {
-						$langScalar = $langValue;
+					$longScalar = null;
+					if (is_scalar($longValue) === true) {
+						$longScalar = $longValue;
 					}
 
-					$row[$key . '_' . $lang] = $langScalar;
+					$row[$key . '_' . $long] = $longScalar;
 				}
 
 				continue;
@@ -146,8 +146,8 @@ class TranslationCsvCodec {
 			foreach ($translatableProps as $prop) {
 				$prefix = $prop . '_';
 				if (str_starts_with($column, $prefix) === true) {
-					$lang = substr($column, strlen($prefix));
-					if ($lang === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1) {
+					$long = substr($column, strlen($prefix));
+					if ($long === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $long) !== 1) {
 						continue;
 					}
 
@@ -162,7 +162,7 @@ class TranslationCsvCodec {
 						$out[$prop] = [];
 					}
 
-					$out[$prop][$lang] = $value;
+					$out[$prop][$long] = $value;
 					$matched = true;
 					break;
 				}//end if

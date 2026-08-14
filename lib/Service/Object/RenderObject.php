@@ -2439,9 +2439,9 @@ class RenderObject {
 				continue;
 			}
 
-			foreach ($data as $key => $datum) {
+			foreach ($data as $key => $date) {
 				$tmpExtends = $extends;
-				$data[$key] = $this->handleExtendDot(data: $datum, _extend: $tmpExtends, depth: $depth);
+				$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $depth);
 			}
 
 			$objectData->set($root, $data);

@@ -46,25 +46,25 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getCode()
  * @method void setCode(?string $code)
  * @method string|null getNaam()
- * @method void setNaam(?string $naam)
+ * @method void setNaam(?string $name)
  * @method string|null getBeschrijving()
- * @method void setBeschrijving(?string $beschrijving)
+ * @method void setBeschrijving(?string $description)
  * @method string|null getDoelbinding()
  * @method void setDoelbinding(?string $doelbinding)
  * @method string|null getRechtsgrond()
  * @method void setRechtsgrond(?string $rechtsgrond)
  * @method array|null getCategorieenBetrokkenen()
- * @method void setCategorieenBetrokkenen(?array $categorieenBetrokkenen)
+ * @method void setCategorieenBetrokkenen(?array $categoriesInvolvedParties)
  * @method array|null getCategorieenPersoonsgegevens()
  * @method void setCategorieenPersoonsgegevens(?array $categorieenPersoonsgegevens)
  * @method string|null getBewaartermijn()
- * @method void setBewaartermijn(?string $bewaartermijn)
+ * @method void setBewaartermijn(?string $retentionPeriod)
  * @method array|null getOntvangers()
  * @method void setOntvangers(?array $ontvangers)
  * @method array|null getDoorgifteBuitenEu()
  * @method void setDoorgifteBuitenEu(?array $doorgifteBuitenEu)
  * @method string|null getTechnischeMaatregelen()
- * @method void setTechnischeMaatregelen(?string $technischeMaatregelen)
+ * @method void setTechnischeMaatregelen(?string $technicalMeasures)
  * @method string|null getOrganisatorischeMaatregelen()
  * @method void setOrganisatorischeMaatregelen(?string $organisatorischeMaatregelen)
  * @method array|null getVerwerkingsverantwoordelijke()
@@ -125,14 +125,14 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null
 	 */
-	protected ?string $naam = null;
+	protected ?string $name = null;
 
 	/**
 	 * Free-form description of the processing activity.
 	 *
 	 * @var string|null
 	 */
-	protected ?string $beschrijving = null;
+	protected ?string $description = null;
 
 	/**
 	 * Purpose-limitation statement (Art 5(1)(b)).
@@ -153,7 +153,7 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var array<int, mixed>|null
 	 */
-	protected ?array $categorieenBetrokkenen = null;
+	protected ?array $categoriesInvolvedParties = null;
 
 	/**
 	 * Categories of personal data (Art 30 §1(c)).
@@ -167,7 +167,7 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null
 	 */
-	protected ?string $bewaartermijn = null;
+	protected ?string $retentionPeriod = null;
 
 	/**
 	 * Recipients (Art 30 §1(d)).
@@ -188,7 +188,7 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 *
 	 * @var string|null
 	 */
-	protected ?string $technischeMaatregelen = null;
+	protected ?string $technicalMeasures = null;
 
 	/**
 	 * Organisational security measures (Art 30 §1(g), Art 32).
@@ -305,16 +305,16 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 			'id' => $this->id,
 			'uuid' => $this->uuid,
 			'code' => $this->code,
-			'naam' => $this->naam,
-			'beschrijving' => $this->beschrijving,
+			'naam' => $this->name,
+			'beschrijving' => $this->description,
 			'doelbinding' => $this->doelbinding,
 			'rechtsgrond' => $this->rechtsgrond,
-			'categorieenBetrokkenen' => $this->categorieenBetrokkenen,
+			'categorieenBetrokkenen' => $this->categoriesInvolvedParties,
 			'categorieenPersoonsgegevens' => $this->categorieenPersoonsgegevens,
-			'bewaartermijn' => $this->bewaartermijn,
+			'bewaartermijn' => $this->retentionPeriod,
 			'ontvangers' => $this->ontvangers,
 			'doorgifteBuitenEu' => $this->doorgifteBuitenEu,
-			'technischeMaatregelen' => $this->technischeMaatregelen,
+			'technischeMaatregelen' => $this->technicalMeasures,
 			'organisatorischeMaatregelen' => $this->organisatorischeMaatregelen,
 			'verwerkingsverantwoordelijke' => $this->verwerkingsverantwoordelijke,
 			'contactgegevensFg' => $this->contactgegevensFg,

@@ -55,7 +55,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 			retention: [
 				'archiefnominatie' => 'bewaren',
 				'bewaartermijn' => 'P20Y',
-				'classificatie' => 'A1',
+				'classification' => 'A1',
 			],
 			objectData: ['title' => 'Test Document']
 		);
@@ -80,7 +80,7 @@ class MdtoXmlGeneratorTest extends TestCase {
 			retention: [
 				'archiefnominatie' => 'bewaren',
 				'bewaartermijn' => 'P10Y',
-				'classificatie' => 'B1',
+				'classification' => 'B1',
 			]
 		);
 

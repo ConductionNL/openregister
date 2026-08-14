@@ -100,7 +100,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function stageUser(): void {
+	private function internshipUser(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
@@ -150,7 +150,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 	 * @covers ::hasPermission
 	 */
 	public function testUnresolvableAuthorizationDeniesEveryAction(): void {
-		$this->stageUser();
+		$this->internshipUser();
 		$this->breakRegisterLookup();
 		$schema = $this->schemaWithoutOwnAuth();
 
@@ -173,7 +173,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 	 * @covers ::hasPermission
 	 */
 	public function testUnresolvableAuthorizationIsLogged(): void {
-		$this->stageUser();
+		$this->internshipUser();
 		$this->breakRegisterLookup();
 
 		$logged = [];
@@ -209,7 +209,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 	 * @covers ::hasPermission
 	 */
 	public function testResolutionFailureIsNotCachedAsAnAnswer(): void {
-		$this->stageUser();
+		$this->internshipUser();
 
 		$register = new \OCA\OpenRegister\Db\Register();
 		$register->setId(7);

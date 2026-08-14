@@ -171,7 +171,7 @@ class DestructionExecutionJob extends QueuedJob {
 							'archival.destroyed',
 							[
 								'destructionListUuid' => $listUuid,
-								'classificatie' => $objRef['classificatie'] ?? null,
+								'classification' => $objRef['classification'] ?? null,
 								'approvedBy' => array_column(
 									$listData['approvals'] ?? [],
 									'userId'

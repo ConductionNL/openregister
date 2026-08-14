@@ -86,9 +86,9 @@ class ArchiefactiedatumCalculator {
 	 */
 	public function calculate(array $archiveConfig, array $objectData, ?DateTime $closureDate = null): ?DateTime {
 		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? null;
-		$bewaartermijn = $archiveConfig['bewaartermijn'] ?? null;
+		$retentionPeriod = $archiveConfig['bewaartermijn'] ?? null;
 
-		if ($afleidingswijze === null || $bewaartermijn === null) {
+		if ($afleidingswijze === null || $retentionPeriod === null) {
 			$this->logger->debug(
 				message: '[ArchiefactiedatumCalculator] Missing afleidingswijze or bewaartermijn in archive config',
 				context: [
@@ -101,10 +101,10 @@ class ArchiefactiedatumCalculator {
 		}
 
 		try {
-			$duration = new DateInterval($bewaartermijn);
+			$duration = new DateInterval($retentionPeriod);
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[ArchiefactiedatumCalculator] Invalid bewaartermijn format: ' . $bewaartermijn,
+				message: '[ArchiefactiedatumCalculator] Invalid bewaartermijn format: ' . $retentionPeriod,
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -133,8 +133,8 @@ class ArchiefactiedatumCalculator {
 			return null;
 		}
 
-		$archiefactiedatum = clone $brondatum;
-		$archiefactiedatum->add($duration);
+		$archiveActionDate = clone $brondatum;
+		$archiveActionDate->add($duration);
 
 		$this->logger->info(
 			message: '[ArchiefactiedatumCalculator] Calculated archiefactiedatum',
@@ -143,12 +143,12 @@ class ArchiefactiedatumCalculator {
 				'line' => __LINE__,
 				'afleidingswijze' => $afleidingswijze,
 				'brondatum' => $brondatum->format('Y-m-d'),
-				'bewaartermijn' => $bewaartermijn,
-				'archiefactiedatum' => $archiefactiedatum->format('Y-m-d'),
+				'bewaartermijn' => $retentionPeriod,
+				'archiefactiedatum' => $archiveActionDate->format('Y-m-d'),
 			]
 		);
 
-		return $archiefactiedatum;
+		return $archiveActionDate;
 	}//end calculate()
 
 	/**

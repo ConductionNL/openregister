@@ -211,7 +211,7 @@ class DestructionService {
 				'schema' => $object->getSchema(),
 				'register' => $object->getRegister(),
 				'archiefactiedatum' => $actiedatum,
-				'classificatie' => $retention['classificatie'] ?? null,
+				'classification' => $retention['classification'] ?? null,
 				'alreadySoftDeleted' => ($object->getDeleted() !== null),
 			];
 		}//end foreach

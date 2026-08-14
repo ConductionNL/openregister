@@ -904,44 +904,44 @@ class OasService {
 
 		// Collection endpoints (tags are inside individual operations).
 		$getCollection = $this->createGetCollectionOperation(schema: $schema);
-		$postOp = $this->createPostOperation(schema: $schema);
+		$postOn = $this->createPostOperation(schema: $schema);
 
 		// Apply operationId prefix for uniqueness across registers.
 		if ($operationIdPrefix !== '') {
 			$getCollection['operationId'] = $operationIdPrefix . $getCollection['operationId'];
-			$postOp['operationId'] = $operationIdPrefix . $postOp['operationId'];
+			$postOn['operationId'] = $operationIdPrefix . $postOn['operationId'];
 		}
 
 		// Append RBAC group info to descriptions and add 403 responses.
 		$this->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $postOp, groups: $rbac['createGroups'] ?? []);
+		$this->applyRbacToOperation(operation: $postOn, groups: $rbac['createGroups'] ?? []);
 
 		$this->oas['paths'][$basePath] = [
 			'get' => $getCollection,
-			'post' => $postOp,
+			'post' => $postOn,
 		];
 
 		// Individual resource endpoints (tags are inside individual operations).
-		$getOp = $this->createGetOperation(schema: $schema);
-		$putOp = $this->createPutOperation(schema: $schema);
-		$deleteOp = $this->createDeleteOperation(schema: $schema);
+		$getOn = $this->createGetOperation(schema: $schema);
+		$putOn = $this->createPutOperation(schema: $schema);
+		$deleteOn = $this->createDeleteOperation(schema: $schema);
 
 		// Apply operationId prefix for uniqueness across registers.
 		if ($operationIdPrefix !== '') {
-			$getOp['operationId'] = $operationIdPrefix . $getOp['operationId'];
-			$putOp['operationId'] = $operationIdPrefix . $putOp['operationId'];
-			$deleteOp['operationId'] = $operationIdPrefix . $deleteOp['operationId'];
+			$getOn['operationId'] = $operationIdPrefix . $getOn['operationId'];
+			$putOn['operationId'] = $operationIdPrefix . $putOn['operationId'];
+			$deleteOn['operationId'] = $operationIdPrefix . $deleteOn['operationId'];
 		}
 
 		// Append RBAC group info to descriptions and add 403 responses.
-		$this->applyRbacToOperation(operation: $getOp, groups: $rbac['readGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $putOp, groups: $rbac['updateGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $deleteOp, groups: $rbac['deleteGroups'] ?? []);
+		$this->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
+		$this->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
+		$this->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
 
 		$this->oas['paths'][$basePath . '/{id}'] = [
-			'get' => $getOp,
-			'put' => $putOp,
-			'delete' => $deleteOp,
+			'get' => $getOn,
+			'put' => $putOn,
+			'delete' => $deleteOn,
 		];
 	}//end addCrudPaths()
 

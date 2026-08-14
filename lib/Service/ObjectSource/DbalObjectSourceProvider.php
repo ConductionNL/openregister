@@ -614,11 +614,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function applyOperatorCriterion(QueryBuilder $qb, string $quoted, array $criterion): void {
-		foreach ($criterion as $op => $opValue) {
+		foreach ($criterion as $op => $onValue) {
 			if ((string)$op === 'in' || (string)$op === 'notIn') {
 				$list = [];
-				if (is_array($opValue) === true) {
-					$list = array_values($opValue);
+				if (is_array($onValue) === true) {
+					$list = array_values($onValue);
 				}
 
 				if ($list === []) {
@@ -646,7 +646,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 				continue;
 			}//end if
 
-			$sqlOp = match ((string)$op) {
+			$sqlOn = match ((string)$op) {
 				'gt' => '>',
 				'gte' => '>=',
 				'lt' => '<',
@@ -655,11 +655,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 				default => null,
 			};
 
-			if ($sqlOp === null) {
+			if ($sqlOn === null) {
 				continue;
 			}
 
-			$qb->andWhere($quoted . ' ' . $sqlOp . ' ' . $qb->createNamedParameter($opValue));
+			$qb->andWhere($quoted . ' ' . $sqlOn . ' ' . $qb->createNamedParameter($onValue));
 		}//end foreach
 	}//end applyOperatorCriterion()
 

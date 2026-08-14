@@ -110,7 +110,7 @@ class VocabularyImportService {
 		}
 
 		$schemeNode = null;
-		$conceptNodes = [];
+		$draftNodes = [];
 		foreach ($graph as $node) {
 			if (is_array($node) === false) {
 				continue;
@@ -120,7 +120,7 @@ class VocabularyImportService {
 			if ($type === 'ConceptScheme' && $schemeNode === null) {
 				$schemeNode = $node;
 			} elseif ($type === 'Concept') {
-				$conceptNodes[] = $node;
+				$draftNodes[] = $node;
 			}
 		}
 
@@ -128,7 +128,7 @@ class VocabularyImportService {
 			throw new InvalidArgumentException('JSON-LD document has no skos:ConceptScheme node with an "@id".');
 		}
 
-		return $this->importParsedGraph(schemeNode: $schemeNode, conceptNodes: $conceptNodes);
+		return $this->importParsedGraph(schemeNode: $schemeNode, draftNodes: $draftNodes);
 	}//end importJsonLd()
 
 	/**
@@ -179,7 +179,7 @@ class VocabularyImportService {
 			'dct:source' => ($schemeMeta['source'] ?? $schemeUri),
 		];
 
-		$conceptNodes = [];
+		$draftNodes = [];
 		while (($row = fgetcsv(stream: $handle, length: null, separator: ',', enclosure: '"', escape: '')) !== false) {
 			if (count($row) === 1 && trim((string)$row[0]) === '') {
 				continue;
@@ -194,8 +194,8 @@ class VocabularyImportService {
 			$prefLabel = [];
 			foreach ($rowAssoc as $column => $value) {
 				if (str_starts_with($column, 'prefLabel_') === true && trim((string)$value) !== '') {
-					$lang = substr($column, strlen('prefLabel_'));
-					$prefLabel[$lang] = trim((string)$value);
+					$long = substr($column, strlen('prefLabel_'));
+					$prefLabel[$long] = trim((string)$value);
 				}
 			}
 
@@ -206,7 +206,7 @@ class VocabularyImportService {
 				}
 			}
 
-			$conceptNodes[] = [
+			$draftNodes[] = [
 				'@id' => $uri,
 				'skos:notation' => ($rowAssoc['notation'] ?? null),
 				'skos:definition' => ($rowAssoc['definition'] ?? null),
@@ -217,18 +217,18 @@ class VocabularyImportService {
 
 		fclose($handle);
 
-		return $this->importParsedGraph(schemeNode: $schemeNode, conceptNodes: $conceptNodes);
+		return $this->importParsedGraph(schemeNode: $schemeNode, draftNodes: $draftNodes);
 	}//end importCsvValueList()
 
 	/**
 	 * Shared upsert pipeline for an already-parsed (scheme node, concept nodes) pair.
 	 *
 	 * @param array<string,mixed> $schemeNode The parsed scheme node.
-	 * @param array<int,array<string,mixed>> $conceptNodes The parsed concept nodes.
+	 * @param array<int,array<string,mixed>> $draftNodes The parsed concept nodes.
 	 *
 	 * @return array{scheme: string, created: int, updated: int, unchanged: int, deprecated: int}
 	 */
-	private function importParsedGraph(array $schemeNode, array $conceptNodes): array {
+	private function importParsedGraph(array $schemeNode, array $draftNodes): array {
 		$schemeUuid = $this->upsertScheme(node: $schemeNode);
 		$schemeUri = (string)$schemeNode['@id'];
 
@@ -238,13 +238,13 @@ class VocabularyImportService {
 		$seenUris = [];
 		$uuidByUri = [];
 
-		foreach ($conceptNodes as $node) {
+		foreach ($draftNodes as $node) {
 			$uri = (string)($node['@id'] ?? '');
 			if ($uri === '') {
 				continue;
 			}
 
-			$result = $this->upsertConcept(node: $node, schemeUuid: $schemeUuid);
+			$result = $this->upsertDraft(node: $node, schemeUuid: $schemeUuid);
 			$seenUris[] = $uri;
 			$uuidByUri[$uri] = $result['uuid'];
 			match ($result['status']) {
@@ -254,7 +254,7 @@ class VocabularyImportService {
 			};
 		}
 
-		$this->applyRelations(conceptNodes: $conceptNodes, uuidByUri: $uuidByUri);
+		$this->applyRelations(draftNodes: $draftNodes, uuidByUri: $uuidByUri);
 		$deprecated = $this->deprecateMissing(schemeUuid: $schemeUuid, seenUris: $seenUris);
 
 		$this->logger->info(
@@ -349,10 +349,10 @@ class VocabularyImportService {
 	 *
 	 * @throws InvalidArgumentException When the concept has no Dutch prefLabel.
 	 */
-	private function upsertConcept(array $node, string $schemeUuid): array {
+	private function upsertDraft(array $node, string $schemeUuid): array {
 		$uri = (string)$node['@id'];
 
-		$prefLabel = $this->extractLangMap(value: $this->findPredicate(node: $node, localName: 'prefLabel'));
+		$prefLabel = $this->extractLongMap(value: $this->findPredicate(node: $node, localName: 'prefLabel'));
 		if (isset($prefLabel['nl']) === false || trim($prefLabel['nl']) === '') {
 			throw new InvalidArgumentException(
 				sprintf('Concept "%s" has no Dutch (nl) prefLabel; refusing to import an invalid concept.', $uri)
@@ -366,7 +366,7 @@ class VocabularyImportService {
 			'deprecated' => false,
 		];
 
-		$altLabel = $this->extractLangMap(value: $this->findPredicate(node: $node, localName: 'altLabel'));
+		$altLabel = $this->extractLongMap(value: $this->findPredicate(node: $node, localName: 'altLabel'));
 		if (empty($altLabel) === false) {
 			$data['altLabel'] = $altLabel;
 		}
@@ -415,12 +415,12 @@ class VocabularyImportService {
 	 * concept absent from the re-imported source keeps its last-known edges
 	 * (it is deprecated, not edited) per design.md D3.
 	 *
-	 * @param array<int,array<string,mixed>> $conceptNodes The parsed concept nodes.
+	 * @param array<int,array<string,mixed>> $draftNodes The parsed concept nodes.
 	 * @param array<string,string> $uuidByUri uri => uuid map for this import.
 	 *
 	 * @return void
 	 */
-	private function applyRelations(array $conceptNodes, array $uuidByUri): void {
+	private function applyRelations(array $draftNodes, array $uuidByUri): void {
 		$broaderOf = [];
 		$narrowerOf = [];
 		$relatedOf = [];
@@ -433,7 +433,7 @@ class VocabularyImportService {
 			$relatedOf[$uuid] = ($relatedOf[$uuid] ?? []);
 		}
 
-		foreach ($conceptNodes as $node) {
+		foreach ($draftNodes as $node) {
 			$uri = (string)($node['@id'] ?? '');
 			$uuid = ($uuidByUri[$uri] ?? null);
 			if ($uuid === null) {
@@ -447,7 +447,7 @@ class VocabularyImportService {
 		}//end foreach
 
 		foreach ($uuidByUri as $uuid) {
-			$this->applyRelationFieldsToConcept(
+			$this->applyRelationFieldsToDraft(
 				uuid: $uuid,
 				broader: array_values(array_unique($broaderOf[$uuid] ?? [])),
 				narrower: array_values(array_unique($narrowerOf[$uuid] ?? [])),
@@ -496,7 +496,7 @@ class VocabularyImportService {
 	 *
 	 * @return void
 	 */
-	private function applyRelationFieldsToConcept(string $uuid, array $broader, array $narrower, array $related): void {
+	private function applyRelationFieldsToDraft(string $uuid, array $broader, array $narrower, array $related): void {
 		$existing = $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_CONCEPT);
 		if ($existing === null) {
 			return;
@@ -744,7 +744,7 @@ class VocabularyImportService {
 	 *
 	 * @return array<string,string> BCP-47 tag => label.
 	 */
-	private function extractLangMap(mixed $value): array {
+	private function extractLongMap(mixed $value): array {
 		if ($value === null) {
 			return [];
 		}
@@ -763,16 +763,16 @@ class VocabularyImportService {
 		}
 
 		if (isset($value['@value']) === true) {
-			$lang = (string)($value['@language'] ?? 'nl');
-			return [$lang => (string)$value['@value']];
+			$long = (string)($value['@language'] ?? 'nl');
+			return [$long => (string)$value['@value']];
 		}
 
 		$map = [];
 		if (array_is_list($value) === true) {
 			foreach ($value as $item) {
 				if (is_array($item) === true && isset($item['@value']) === true) {
-					$lang = (string)($item['@language'] ?? 'nl');
-					$map[$lang] = (string)$item['@value'];
+					$long = (string)($item['@language'] ?? 'nl');
+					$map[$long] = (string)$item['@value'];
 				} elseif (is_string($item) === true && trim($item) !== '') {
 					$map['nl'] = $item;
 				}
@@ -781,9 +781,9 @@ class VocabularyImportService {
 			return $map;
 		}
 
-		foreach ($value as $lang => $label) {
+		foreach ($value as $long => $label) {
 			if (is_string($label) === true && trim($label) !== '') {
-				$map[(string)$lang] = $label;
+				$map[(string)$long] = $label;
 			}
 		}
 

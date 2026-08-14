@@ -189,7 +189,7 @@ class PdfOdtFallbackOrchestrator {
 		try {
 			$odt = $this->converter->pdfToOdt(pdfBytes: $pdfBytes);
 		} catch (Throwable $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'pdf_to_odt', previous: $e);
+			throw $this->wrapAfterFallback(cause: $cause, internship: 'pdf_to_odt', previous: $e);
 		}
 
 		// Re-run the SAPP-side replacer against the round-tripped PDF. The
@@ -201,7 +201,7 @@ class PdfOdtFallbackOrchestrator {
 		try {
 			$pdf = $this->converter->odtToPdf(odtBytes: $odt);
 		} catch (Throwable $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'odt_to_pdf', previous: $e);
+			throw $this->wrapAfterFallback(cause: $cause, internship: 'odt_to_pdf', previous: $e);
 		}
 
 		try {
@@ -211,7 +211,7 @@ class PdfOdtFallbackOrchestrator {
 				strict: true
 			);
 		} catch (PdfAnonymisationException $e) {
-			throw $this->wrapAfterFallback(cause: $cause, stage: 'rerun_replace', previous: $e);
+			throw $this->wrapAfterFallback(cause: $cause, internship: 'rerun_replace', previous: $e);
 		}
 
 		$this->logger->info(
@@ -226,7 +226,7 @@ class PdfOdtFallbackOrchestrator {
 	 * Wrap a Path-B-side failure with the after-fallback reason code.
 	 *
 	 * @param PdfAnonymisationException $cause The original Path A exception (preserved as previous).
-	 * @param string $stage Which Path B step failed (`pdf_to_odt`, `odt_to_pdf`, `rerun_replace`).
+	 * @param string $internship Which Path B step failed (`pdf_to_odt`, `odt_to_pdf`, `rerun_replace`).
 	 * @param Throwable $previous The Path-B-side exception.
 	 *
 	 * @return PdfAnonymisationException A new exception carrying
@@ -234,18 +234,18 @@ class PdfOdtFallbackOrchestrator {
 	 */
 	private function wrapAfterFallback(
 		PdfAnonymisationException $cause,
-		string $stage,
+		string $internship,
 		Throwable $previous,
 	): PdfAnonymisationException {
 		$diagnostic = [
-			'pathB_stage' => $stage,
+			'pathB_stage' => $internship,
 			'pathA_reason' => $cause->getReason(),
 			'pathB_previous' => $previous::class,
 		];
 
 		return new PdfAnonymisationException(
 			reason: PdfAnonymisationException::REASON_VALIDATION_FAILED_AFTER_FALLBACK,
-			message: sprintf('Path B fallback failed at stage %s', $stage),
+			message: sprintf('Path B fallback failed at stage %s', $internship),
 			diagnostic: $diagnostic,
 			previous: $previous
 		);

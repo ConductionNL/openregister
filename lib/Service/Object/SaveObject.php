@@ -914,7 +914,7 @@ class SaveObject {
 			}
 
 			try {
-				// Get the base property name (e.g., "organisatie" from "organisatie.0").
+				// Get the base property name (e.g., "organisation" from "organisatie.0").
 				$baseProperty = explode('.', $propertyPath)[0];
 
 				// Look up the target schema from the property configuration.
@@ -934,7 +934,7 @@ class SaveObject {
 					$ref = $propertyConfig['items']['$ref'];
 				}
 
-				// Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisatie").
+				// Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisation").
 				$targetSchemaSlug = '';
 				if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
 					$targetSchemaSlug = $matches[1];

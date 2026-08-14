@@ -765,7 +765,7 @@ class SettingsController extends Controller {
 
 			// Set register and schema context.
 			$objectService->setRegister('voorzieningen');
-			$objectService->setSchema('organisatie');
+			$objectService->setSchema('organisation');
 
 			$results = [];
 

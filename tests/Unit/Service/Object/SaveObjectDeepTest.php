@@ -273,7 +273,7 @@ class SaveObjectDeepTest extends TestCase {
 
 	public function testResolveSchemaReferencePathBySlug(): void {
 		$ref = '#/components/schemas/Organisatie';
-		$schema = $this->createMockSchema(5, 'organisatie');
+		$schema = $this->createMockSchema(5, 'organisation');
 
 		$this->schemaMapper->method('findAll')
 			->willReturn([$schema]);
@@ -777,8 +777,8 @@ class SaveObjectDeepTest extends TestCase {
 
 	public function testHydrateObjectMetadataDepublishedDate(): void {
 		// objectDepublishedField is deprecated — should not throw.
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['eindDatum' => '2025-12-31']);
-		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'eindDatum']);
+		$entity = $this->createObjectEntity(1, 'uuid-1', ['endDate' => '2025-12-31']);
+		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn('2025-12-31');

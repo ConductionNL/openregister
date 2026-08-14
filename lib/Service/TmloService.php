@@ -102,7 +102,7 @@ class TmloService {
 	 * @var string[]
 	 */
 	public const TMLO_FIELDS = [
-		'classificatie',
+		'classification',
 		'archiefnominatie',
 		'archiefactiedatum',
 		'archiefstatus',
@@ -354,7 +354,7 @@ class TmloService {
 
 		// Validate required fields for transfer (overgebracht).
 		if ($newStatus === self::ARCHIEFSTATUS_OVERGEBRACHT) {
-			$requiredFields = ['archiefactiedatum', 'classificatie', 'archiefnominatie'];
+			$requiredFields = ['archiefactiedatum', 'classification', 'archiefnominatie'];
 			foreach ($requiredFields as $field) {
 				if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
 					$errors[] = "Field '{$field}' is required for transition to 'overgebracht'";
@@ -368,7 +368,7 @@ class TmloService {
 
 		// Validate required fields for destruction (vernietigd).
 		if ($newStatus === self::ARCHIEFSTATUS_VERNIETIGD) {
-			$requiredFields = ['archiefactiedatum', 'classificatie', 'archiefnominatie', 'vernietigingsCategorie'];
+			$requiredFields = ['archiefactiedatum', 'classification', 'archiefnominatie', 'vernietigingsCategorie'];
 			foreach ($requiredFields as $field) {
 				if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
 					$errors[] = "Field '{$field}' is required for transition to 'vernietigd'";
@@ -456,31 +456,31 @@ class TmloService {
 
 		// Identificatie.
 		$idElement = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatie');
-		$idKenmerk = $dom->createElementNS(
+		$idReference = $dom->createElementNS(
 			self::MDTO_NAMESPACE,
 			'mdto:identificatieKenmerk',
 			$this->xmlEscape(value: $object->getUuid() ?? '')
 		);
-		$idBron = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatieBron', 'OpenRegister');
-		$idElement->appendChild($idKenmerk);
-		$idElement->appendChild($idBron);
+		$idSource = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatieBron', 'OpenRegister');
+		$idElement->appendChild($idReference);
+		$idElement->appendChild($idSource);
 		$root->appendChild($idElement);
 
 		// Naam.
-		$naam = $dom->createElementNS(
+		$name = $dom->createElementNS(
 			self::MDTO_NAMESPACE,
 			'mdto:naam',
 			$this->xmlEscape(value: $object->getName() ?? $object->getUuid() ?? '')
 		);
-		$root->appendChild($naam);
+		$root->appendChild($name);
 
 		// TMLO fields.
-		if (($tmlo['classificatie'] ?? null) !== null) {
+		if (($tmlo['classification'] ?? null) !== null) {
 			$classEl = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:classificatie');
 			$classCode = $dom->createElementNS(
 				self::MDTO_NAMESPACE,
 				'mdto:classificatieCode',
-				$this->xmlEscape(value: $tmlo['classificatie'])
+				$this->xmlEscape(value: $tmlo['classification'])
 			);
 			$classEl->appendChild($classCode);
 			$root->appendChild($classEl);
@@ -491,7 +491,7 @@ class TmloService {
 				$dom->createElementNS(
 					self::MDTO_NAMESPACE,
 					'mdto:waardering',
-					$this->mapArchiefnominatie(nominatie: $tmlo['archiefnominatie'])
+					$this->mapArchiveNomination(nominatie: $tmlo['archiefnominatie'])
 				)
 			);
 		}
@@ -546,7 +546,7 @@ class TmloService {
 	 *
 	 * @return string The MDTO waardering value
 	 */
-	private function mapArchiefnominatie(string $nominatie): string {
+	private function mapArchiveNomination(string $nominatie): string {
 		$mapping = [
 			self::ARCHIEFNOMINATIE_BLIJVEND_BEWAREN => 'bewaren',
 			self::ARCHIEFNOMINATIE_VERNIETIGEN => 'vernietigen',

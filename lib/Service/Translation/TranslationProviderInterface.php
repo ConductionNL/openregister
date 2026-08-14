@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Translation;
 
 interface TranslationProviderInterface {
 	/**
-	 * Translate `$text` from `$fromLang` to `$toLang`.
+	 * Translate `$text` from `$fromLong` to `$toLong`.
 	 *
 	 * Both arguments are BCP 47 language codes (e.g. "nl", "en", "fr-CA").
 	 * Returns the translated string, or null when the provider can't
@@ -39,14 +39,14 @@ interface TranslationProviderInterface {
 	 * bulk service skips the slot rather than persisting null.
 	 *
 	 * @param string $text The source text to translate.
-	 * @param string $fromLang BCP 47 source language code.
-	 * @param string $toLang BCP 47 target language code.
+	 * @param string $fromLong BCP 47 source language code.
+	 * @param string $toLong BCP 47 target language code.
 	 *
 	 * @return string|null The translated text, or null on miss/error.
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function translate(string $text, string $fromLang, string $toLang): ?string;
+	public function translate(string $text, string $fromLong, string $toLong): ?string;
 
 	/**
 	 * Identifier used for status attribution and logging.

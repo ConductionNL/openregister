@@ -1500,8 +1500,8 @@ class OasServiceTest extends TestCase {
 		$oas = $this->service->createOas('1');
 
 		// Single register: no prefix
-		$getOp = $oas['paths']['/objects/reg/item']['get'];
-		$this->assertSame('getAllItem', $getOp['operationId']);
+		$getOn = $oas['paths']['/objects/reg/item']['get'];
+		$this->assertSame('getAllItem', $getOn['operationId']);
 	}
 
 	public function testCreateOasOperationIdWithPrefixForMultipleRegisters(): void {
@@ -1535,8 +1535,8 @@ class OasServiceTest extends TestCase {
 		$oas = $this->service->createOas('1');
 
 		// Operations should be tagged with schema title
-		$getOp = $oas['paths']['/objects/reg/item']['get'];
-		$this->assertContains('Item', $getOp['tags']);
+		$getOn = $oas['paths']['/objects/reg/item']['get'];
+		$this->assertContains('Item', $getOn['tags']);
 	}
 
 	public function testCreateOasGetCollectionHasPaginatedResponse(): void {
@@ -1569,8 +1569,8 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$getOp = $oas['paths']['/objects/reg/item/{id}']['get'];
-		$this->assertArrayHasKey('404', $getOp['responses']);
+		$getOn = $oas['paths']['/objects/reg/item/{id}']['get'];
+		$this->assertArrayHasKey('404', $getOn['responses']);
 	}
 
 	public function testCreateOasPostHas201Response(): void {
@@ -1584,9 +1584,9 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$postOp = $oas['paths']['/objects/reg/item']['post'];
-		$this->assertArrayHasKey('201', $postOp['responses']);
-		$this->assertArrayHasKey('requestBody', $postOp);
+		$postOn = $oas['paths']['/objects/reg/item']['post'];
+		$this->assertArrayHasKey('201', $postOn['responses']);
+		$this->assertArrayHasKey('requestBody', $postOn);
 	}
 
 	public function testCreateOasPutHasRequestBody(): void {
@@ -1600,9 +1600,9 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$putOp = $oas['paths']['/objects/reg/item/{id}']['put'];
-		$this->assertArrayHasKey('requestBody', $putOp);
-		$this->assertTrue($putOp['requestBody']['required']);
+		$putOn = $oas['paths']['/objects/reg/item/{id}']['put'];
+		$this->assertArrayHasKey('requestBody', $putOn);
+		$this->assertTrue($putOn['requestBody']['required']);
 	}
 
 	public function testCreateOasDeleteHas204And404Response(): void {
@@ -1616,9 +1616,9 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$deleteOp = $oas['paths']['/objects/reg/item/{id}']['delete'];
-		$this->assertArrayHasKey('204', $deleteOp['responses']);
-		$this->assertArrayHasKey('404', $deleteOp['responses']);
+		$deleteOn = $oas['paths']['/objects/reg/item/{id}']['delete'];
+		$this->assertArrayHasKey('204', $deleteOn['responses']);
+		$this->assertArrayHasKey('404', $deleteOn['responses']);
 	}
 
 	public function testCreateOasGetSingleHasIdPathParam(): void {
@@ -1632,8 +1632,8 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$getOp = $oas['paths']['/objects/reg/item/{id}']['get'];
-		$idParam = $getOp['parameters'][0];
+		$getOn = $oas['paths']['/objects/reg/item/{id}']['get'];
+		$idParam = $getOn['parameters'][0];
 		$this->assertSame('id', $idParam['name']);
 		$this->assertSame('path', $idParam['in']);
 		$this->assertTrue($idParam['required']);
@@ -1663,9 +1663,9 @@ class OasServiceTest extends TestCase {
 		$oas = $this->service->createOas('1');
 
 		// All paths should have 403 responses due to RBAC
-		$getOp = $oas['paths']['/objects/reg/protected']['get'];
-		$this->assertArrayHasKey('403', $getOp['responses']);
-		$this->assertStringContainsString('Required scopes', $getOp['description']);
+		$getOn = $oas['paths']['/objects/reg/protected']['get'];
+		$this->assertArrayHasKey('403', $getOn['responses']);
+		$this->assertStringContainsString('Required scopes', $getOn['description']);
 
 		// OAuth2 scopes should include all groups
 		$scopes = $oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'];
@@ -1774,11 +1774,11 @@ class OasServiceTest extends TestCase {
 		$oas = $this->service->createOas('1');
 
 		$bedrijfSchema = $oas['components']['schemas']['Bedrijf'];
-		$vestigingProp = $bedrijfSchema['properties']['vestiging'];
+		$establishmentProp = $bedrijfSchema['properties']['vestiging'];
 
 		// Bare ref should be normalized to #/components/schemas/Vestiging
-		if (isset($vestigingProp['$ref'])) {
-			$this->assertStringStartsWith('#/components/schemas/', $vestigingProp['$ref']);
+		if (isset($establishmentProp['$ref'])) {
+			$this->assertStringStartsWith('#/components/schemas/', $establishmentProp['$ref']);
 		}
 	}
 
@@ -2083,18 +2083,18 @@ class OasServiceTest extends TestCase {
 		$oas = $this->service->createOas('1');
 
 		// GET single should reference the schema
-		$getOp = $oas['paths']['/objects/reg/widget/{id}']['get'];
-		$ref = $getOp['responses']['200']['content']['application/json']['schema']['$ref'];
+		$getOn = $oas['paths']['/objects/reg/widget/{id}']['get'];
+		$ref = $getOn['responses']['200']['content']['application/json']['schema']['$ref'];
 		$this->assertSame('#/components/schemas/Widget', $ref);
 
 		// PUT should reference schema in request body and response
-		$putOp = $oas['paths']['/objects/reg/widget/{id}']['put'];
-		$putReqRef = $putOp['requestBody']['content']['application/json']['schema']['$ref'];
+		$putOn = $oas['paths']['/objects/reg/widget/{id}']['put'];
+		$putReqRef = $putOn['requestBody']['content']['application/json']['schema']['$ref'];
 		$this->assertSame('#/components/schemas/Widget', $putReqRef);
 
 		// POST should reference schema
-		$postOp = $oas['paths']['/objects/reg/widget']['post'];
-		$postReqRef = $postOp['requestBody']['content']['application/json']['schema']['$ref'];
+		$postOn = $oas['paths']['/objects/reg/widget']['post'];
+		$postReqRef = $postOn['requestBody']['content']['application/json']['schema']['$ref'];
 		$this->assertSame('#/components/schemas/Widget', $postReqRef);
 	}
 
@@ -2109,8 +2109,8 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$deleteOp = $oas['paths']['/objects/reg/item/{id}']['delete'];
-		$this->assertArrayNotHasKey('requestBody', $deleteOp);
+		$deleteOn = $oas['paths']['/objects/reg/item/{id}']['delete'];
+		$this->assertArrayNotHasKey('requestBody', $deleteOn);
 	}
 
 	public function testCreateOasSchemaNotAddedToPathsIfNotInRegister(): void {
@@ -2157,8 +2157,8 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->service->createOas('1');
 
-		$postOp = $oas['paths']['/objects/reg/item']['post'];
-		$this->assertArrayHasKey('400', $postOp['responses']);
+		$postOn = $oas['paths']['/objects/reg/item']['post'];
+		$this->assertArrayHasKey('400', $postOn['responses']);
 	}
 
 	// ========================================================================
@@ -2429,8 +2429,8 @@ class OasServiceTest extends TestCase {
 
 		$oas = $this->getPrivateProperty('oas');
 
-		$getOp = $oas['paths']['/objects/my-reg/widget']['get'];
-		$this->assertStringStartsWith('MyPrefix', $getOp['operationId']);
+		$getOn = $oas['paths']['/objects/my-reg/widget']['get'];
+		$this->assertStringStartsWith('MyPrefix', $getOn['operationId']);
 	}
 
 	public function testAddCrudPathsFallsBackToSlugifiedTitle(): void {

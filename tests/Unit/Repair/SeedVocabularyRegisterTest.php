@@ -163,13 +163,13 @@ class SeedVocabularyRegisterTest extends TestCase {
 		);
 		$this->assertCount(17, $concepts, 'Fresh install must serve all 17 Woo informatiecategorieën');
 
-		foreach ($concepts as $concept) {
+		foreach ($concepts as $draft) {
 			$this->assertStringStartsWith(
 				'https://identifier.overheid.nl/tooi/def/thes/kern/c_',
-				$concept['@id'],
+				$draft['@id'],
 				'Every informatiecategorie must carry a TOOI kern-thesaurus URI'
 			);
-			$this->assertArrayHasKey('nl', $this->firstPrefLabel($concept), 'Every concept needs a Dutch prefLabel');
+			$this->assertArrayHasKey('nl', $this->firstPrefLabel($draft), 'Every concept needs a Dutch prefLabel');
 		}
 	}//end testRunSeedsBothTooiFixturesWithSeventeenInformatiecategorieen()
 
@@ -216,12 +216,12 @@ class SeedVocabularyRegisterTest extends TestCase {
 	}//end testRegisterImportFailureDoesNotAbortFixtureSeeding()
 
 	/**
-	 * @param array<string, mixed> $conceptNode A parsed skos:Concept node.
+	 * @param array<string, mixed> $draftNode A parsed skos:Concept node.
 	 *
 	 * @return array<string, string>
 	 */
-	private function firstPrefLabel(array $conceptNode): array {
-		$raw = ($conceptNode['skos:prefLabel'] ?? []);
+	private function firstPrefLabel(array $draftNode): array {
+		$raw = ($draftNode['skos:prefLabel'] ?? []);
 		$map = [];
 		foreach ($raw as $literal) {
 			$map[($literal['@language'] ?? 'nl')] = $literal['@value'];

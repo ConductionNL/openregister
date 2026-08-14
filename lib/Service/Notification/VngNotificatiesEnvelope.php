@@ -79,7 +79,7 @@ class VngNotificatiesEnvelope {
 	 * @param string $objectUuid Parent object UUID.
 	 * @param string $baseUrl External base URL (no trailing slash).
 	 * @param ?DateTimeInterface $timestamp Event timestamp; null = now.
-	 * @param array $kenmerken Extra discriminators (zaaktype, status, etc.).
+	 * @param array $characteristics Extra discriminators (zaaktype, status, etc.).
 	 *
 	 * @return array{kanaal: string, hoofdObject: string, resource: string,
 	 *               resourceUrl: string, actie: string,
@@ -96,9 +96,9 @@ class VngNotificatiesEnvelope {
 		string $objectUuid,
 		string $baseUrl,
 		?DateTimeInterface $timestamp = null,
-		array $kenmerken = [],
+		array $characteristics = [],
 	): array {
-		$vngActie = $this->mapAction(action: $action);
+		$vngAction = $this->mapAction(action: $action);
 		$base = rtrim($baseUrl, '/');
 		$when = ($timestamp ?? new DateTimeImmutable('now', new DateTimeZone('UTC')));
 
@@ -107,9 +107,9 @@ class VngNotificatiesEnvelope {
 			'hoofdObject' => $base . '/api/v1/' . $registerSlug . '/' . $objectUuid,
 			'resource' => $schemaSlug,
 			'resourceUrl' => $base . '/api/v1/' . $schemaSlug . '/' . $objectUuid,
-			'actie' => $vngActie,
+			'actie' => $vngAction,
 			'aanmaakdatum' => $when->format(DateTimeInterface::ATOM),
-			'kenmerken' => $kenmerken,
+			'kenmerken' => $characteristics,
 		];
 
 	}//end buildEnvelope()

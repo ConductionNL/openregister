@@ -146,18 +146,18 @@ class AvgRetentionService {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array {
-		$bewaartermijn = (string)($activity->getBewaartermijn() ?? '');
-		if ($bewaartermijn === '') {
+		$retentionPeriod = (string)($activity->getBewaartermijn() ?? '');
+		if ($retentionPeriod === '') {
 			return null;
 		}
 
-		$cutoff = $this->computeCutoff(now: $now, duration: $bewaartermijn);
+		$cutoff = $this->computeCutoff(now: $now, duration: $retentionPeriod);
 		if ($cutoff === null) {
 			$this->logger->warning(
 				message: '[AVG retention] Unparseable bewaartermijn — skipping activity',
 				context: [
 					'activity' => $activity->getUuid(),
-					'bewaartermijn' => $bewaartermijn,
+					'bewaartermijn' => $retentionPeriod,
 				]
 			);
 			return null;
@@ -179,7 +179,7 @@ class AvgRetentionService {
 		return [
 			'uuid' => $activity->getUuid(),
 			'naam' => $activity->getNaam(),
-			'bewaartermijn' => $bewaartermijn,
+			'bewaartermijn' => $retentionPeriod,
 			'cutoff' => $cutoff->format('c'),
 			'matchedObjects' => count($candidates),
 			'erased' => $erased,
