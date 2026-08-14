@@ -18,7 +18,7 @@
 - [x] Add invalid character validation for file names
 - [x] Add `FilesController::rename()` endpoint with `@NoAdminRequired` and `@NoCSRFRequired`
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/rename`
-- [ ] Generate audit trail entry on successful rename
+- [x] Generate audit trail entry on successful rename
 - [x] Dispatch `nl.openregister.object.file.renamed` event
 - [x] Write unit test for rename with valid name
 - [x] Write unit test for rename with duplicate name (409)
@@ -34,7 +34,7 @@
 - [x] Implement `FileService::moveFile()` -- copy then delete source, with atomicity check
 - [x] Add `FilesController::move()` endpoint
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/move`
-- [ ] Generate dual audit trail entries (on source and target objects)
+- [x] Generate dual audit trail entries (on source and target objects)
 - [x] Dispatch `nl.openregister.object.file.copied` and `nl.openregister.object.file.moved` events
 - [ ] Write unit test for copy within same register
 - [ ] Write unit test for copy across registers
@@ -50,7 +50,7 @@
 - [x] Add `FilesController::listVersions()` endpoint
 - [x] Add `FilesController::restoreVersion()` endpoint
 - [x] Register routes: `GET .../files/{fileId}/versions` and `POST .../files/{fileId}/versions/{versionId}/restore`
-- [ ] Generate audit trail entry on version restore
+- [x] Generate audit trail entry on version restore
 - [x] Dispatch `nl.openregister.object.file.version_restored` event
 - [x] Write unit test for version listing
 - [ ] Write unit test for version restore
@@ -62,11 +62,11 @@
 - [x] Implement `FileLockHandler::unlockFile()` with owner/admin check
 - [x] Implement `FileLockHandler::isLocked()` with TTL expiry check
 - [x] Implement `FileLockHandler::forceUnlock()` for admin users
-- [ ] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations
+- [x] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations
 - [x] Add `FilesController::lock()` and `FilesController::unlock()` endpoints
 - [x] Register routes: `POST .../files/{fileId}/lock` and `POST .../files/{fileId}/unlock`
 - [ ] Include lock metadata in file formatting output (formatFile)
-- [ ] Generate audit trail entries for lock, unlock, and force-unlock
+- [x] Generate audit trail entries for lock, unlock, and force-unlock
 - [x] Dispatch `nl.openregister.object.file.locked` and `nl.openregister.object.file.unlocked` events
 - [x] Write unit test for lock acquisition
 - [x] Write unit test for lock conflict (423)
@@ -119,12 +119,12 @@
 ## Phase 9: Download Audit Logging
 
 - [x] Implement `FileAuditHandler::logDownload()` creating audit trail entries
-- [ ] Integrate download logging into `FilesController::show()` endpoint
+- [x] Integrate download logging into `FilesController::show()` endpoint
 - [ ] Integrate download logging into `FilesController::downloadById()` endpoint
 - [x] Log anonymous downloads with IP and user-agent
 - [ ] Implement download count caching in FileMapper (increment on download)
 - [ ] Include `downloadCount` in file metadata responses
-- [ ] Log bulk download (ZIP archive) as single audit entry
+- [x] Log bulk download (ZIP archive) as single audit entry
 - [x] Write unit test for download logging
 - [x] Write unit test for anonymous download logging
 - [x] Write unit test for download count

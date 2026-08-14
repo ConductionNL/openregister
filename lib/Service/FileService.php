@@ -1154,6 +1154,11 @@ class FileService
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
+        // Check lock.
+        if (is_int($filePath) === true) {
+            $this->fileLockHandler->assertCanModify($filePath);
+        }
+
         return $this->updateFileHandler->updateFile(
             filePath: $filePath,
             content: $content,
@@ -1199,6 +1204,13 @@ class FileService
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
+        // Check lock.
+        if (is_int($file) === true) {
+            $this->fileLockHandler->assertCanModify($file);
+        } else if ($file instanceof Node === true) {
+            $this->fileLockHandler->assertCanModify($file->getId());
+        }
+
         return $this->deleteFileHandler->deleteFile(
             file: $file,
             object: $object
@@ -1547,10 +1559,10 @@ class FileService
      * @throws NotFoundException If the object folder is not found
      * @throws NotPermittedException If file access is not permitted
      *
-     * @return (int|string)[]
+     * @return (int|string|array)[]
      *
-     * @psalm-return   array{path: string, filename: string, size: int, mimeType: 'application/zip'}
-     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+     * @psalm-return   array{path: string, filename: string, size: int, mimeType: 'application/zip', files: array<int, array{fileId: int, fileName: string}>}
+     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string, files: array<int, array{fileId: int, fileName: string}>}
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
@@ -1846,12 +1858,20 @@ class FileService
             // Name is available.
         }
 
+        $oldName = $file->getName();
+
         // Perform the rename via move in same folder.
         $file->move($parent->getPath()."/".$newName);
 
         $this->logger->info(
             message: "[FileService] Renamed file {$fileId} to {$newName}",
             context: ["file" => __FILE__, "line" => __LINE__]
+        );
+
+        $this->fileAuditHandler->logFileAction(
+            object: $object,
+            action: "file.renamed",
+            data: ["fileId" => $fileId, "oldName" => $oldName, "newName" => $newName]
         );
 
         return $file;
@@ -1869,6 +1889,37 @@ class FileService
      * @throws Exception If the copy fails.
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
+    {
+        $newFile = $this->copyFileContent(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
+
+        $this->fileAuditHandler->logFileAction(
+            object: $sourceObject,
+            action: "file.copied_from",
+            data: ["fileId" => $fileId, "fileName" => $newFile->getName(), "targetObjectUuid" => $targetObject->getUuid(), "targetFileId" => $newFile->getId()]
+        );
+        $this->fileAuditHandler->logFileAction(
+            object: $targetObject,
+            action: "file.copied_to",
+            data: ["fileId" => $newFile->getId(), "fileName" => $newFile->getName(), "sourceObjectUuid" => $sourceObject->getUuid(), "sourceFileId" => $fileId]
+        );
+
+        return $newFile;
+    }//end copyFile()
+
+    /**
+     * Copy a file's content into another object's folder, without audit logging.
+     *
+     * Shared by copyFile() and moveFile() so each can log its own distinct action.
+     *
+     * @param ObjectEntity $sourceObject The source object entity.
+     * @param int          $fileId       The source file ID.
+     * @param ObjectEntity $targetObject The target object entity.
+     *
+     * @return File The new file copy.
+     *
+     * @throws Exception If the copy fails.
+     */
+    private function copyFileContent(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
         $sourceFile = $this->readFileHandler->getFile(object: $sourceObject, file: $fileId);
         if ($sourceFile === null) {
@@ -1891,7 +1942,7 @@ class FileService
         );
 
         return $newFile;
-    }//end copyFile()
+    }//end copyFileContent()
 
     /**
      * Move a file to another object (copy + delete source).
@@ -1910,7 +1961,7 @@ class FileService
         $this->fileLockHandler->assertCanModify($fileId);
 
         // Copy first.
-        $newFile = $this->copyFile(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
+        $newFile = $this->copyFileContent(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
 
         // Delete source.
         $this->deleteFile(file: $fileId, object: $sourceObject);
@@ -1918,6 +1969,17 @@ class FileService
         $this->logger->info(
             message: "[FileService] Moved file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
             context: ["file" => __FILE__, "line" => __LINE__]
+        );
+
+        $this->fileAuditHandler->logFileAction(
+            object: $sourceObject,
+            action: "file.moved_from",
+            data: ["fileId" => $fileId, "fileName" => $newFile->getName(), "targetObjectUuid" => $targetObject->getUuid(), "targetFileId" => $newFile->getId()]
+        );
+        $this->fileAuditHandler->logFileAction(
+            object: $targetObject,
+            action: "file.moved_to",
+            data: ["fileId" => $newFile->getId(), "fileName" => $newFile->getName(), "sourceObjectUuid" => $sourceObject->getUuid(), "sourceFileId" => $fileId]
         );
 
         return $newFile;

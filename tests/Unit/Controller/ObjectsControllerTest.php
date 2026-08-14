@@ -6039,7 +6039,13 @@ class ObjectsControllerTest extends TestCase
             'path' => $tempZip,
             'filename' => 'test-files.zip',
             'mimeType' => 'application/zip',
+            'files' => [['fileId' => 1, 'fileName' => 'a.pdf']],
         ]);
+        $auditHandler = $this->createMock(\OCA\OpenRegister\Service\File\FileAuditHandler::class);
+        $auditHandler->expects($this->once())
+            ->method('logBulkDownload')
+            ->with($objectEntity, [1], ['a.pdf']);
+        $fileService->method('getAuditHandler')->willReturn($auditHandler);
 
         $this->container->method('get')->willReturn($fileService);
         $this->request->method('getParam')->willReturn(null);
@@ -6095,7 +6101,11 @@ class ObjectsControllerTest extends TestCase
             'path' => $tempZip,
             'filename' => 'custom-name.zip',
             'mimeType' => 'application/zip',
+            'files' => [],
         ]);
+        $fileService->method('getAuditHandler')->willReturn(
+            $this->createMock(\OCA\OpenRegister\Service\File\FileAuditHandler::class)
+        );
 
         $this->container->method('get')->willReturn($fileService);
         $this->request->method('getParam')->willReturn('custom-name');

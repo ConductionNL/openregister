@@ -7,6 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -44,6 +45,7 @@ class FilesControllerTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->rootFolder = $this->createMock(IRootFolder::class);
         $this->userManager = $this->createMock(IUserManager::class);
+        $this->fileService->method('getAuditHandler')->willReturn($this->createMock(FileAuditHandler::class));
 
         $this->controller = new FilesController(
             'openregister',
@@ -169,6 +171,12 @@ class FilesControllerTest extends TestCase
         $file->method('getSize')->willReturn(42);
 
         $this->fileService->method('getFile')->willReturn($file);
+
+        $auditHandler = $this->createMock(FileAuditHandler::class);
+        $auditHandler->expects($this->once())
+            ->method('logDownload')
+            ->with($object, 1, 'test.txt', 42, 'text/plain');
+        $this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
         $result = $this->controller->show('reg1', 'schema1', 'obj1', 1);
 

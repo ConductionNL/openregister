@@ -20,15 +20,17 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
- * Handles file download audit logging.
+ * Handles audit logging for file actions.
  *
- * Creates audit trail entries for all file downloads (authenticated and anonymous),
- * tracks download counts, and logs bulk downloads.
+ * Creates audit trail entries for file downloads (authenticated and anonymous),
+ * bulk downloads, and other file actions (rename, copy, move, lock, unlock,
+ * version restore) via the shared AuditTrailMapper.
  *
  * @category Service
  * @package  OCA\OpenRegister
@@ -58,20 +60,20 @@ class FileAuditHandler
     /**
      * Log a file download event.
      *
-     * @param int    $fileId     The file ID that was downloaded.
-     * @param string $fileName   The file name.
-     * @param int    $fileSize   The file size in bytes.
-     * @param string $mimeType   The file MIME type.
-     * @param string $objectUuid The UUID of the parent object.
+     * @param ObjectEntity $object   The parent object entity.
+     * @param int          $fileId   The file ID that was downloaded.
+     * @param string       $fileName The file name.
+     * @param int          $fileSize The file size in bytes.
+     * @param string       $mimeType The file MIME type.
      *
      * @return void
      */
     public function logDownload(
+        ObjectEntity $object,
         int $fileId,
         string $fileName,
         int $fileSize,
-        string $mimeType,
-        string $objectUuid
+        string $mimeType
     ): void {
         try {
             $userId = $this->getCurrentUserId();
@@ -88,10 +90,7 @@ class FileAuditHandler
                 $data['userAgent']     = $this->request->getHeader('User-Agent');
             }
 
-            $this->logger->info(
-                message: "[FileAuditHandler] Download logged for file {$fileId} by {$userId}",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            $this->persistEntry(object: $object, action: 'file.downloaded', data: $data);
         } catch (Exception $e) {
             // Audit logging should never break the download flow.
             $this->logger->warning(
@@ -104,28 +103,56 @@ class FileAuditHandler
     /**
      * Log a bulk download event (ZIP archive).
      *
-     * @param array  $fileIds    Array of file IDs included in the archive.
-     * @param array  $fileNames  Array of file names included in the archive.
-     * @param string $objectUuid The UUID of the parent object.
+     * @param ObjectEntity $object    The parent object entity.
+     * @param array        $fileIds   Array of file IDs included in the archive.
+     * @param array        $fileNames Array of file names included in the archive.
      *
      * @return void
      */
-    public function logBulkDownload(array $fileIds, array $fileNames, string $objectUuid): void
+    public function logBulkDownload(ObjectEntity $object, array $fileIds, array $fileNames): void
+    {
+        $this->persistEntry(
+            object: $object,
+            action: 'file.bulk_downloaded',
+            data: ['fileIds' => $fileIds, 'fileNames' => $fileNames]
+        );
+    }//end logBulkDownload()
+
+    /**
+     * Log a generic file action event (rename, copy, move, lock, unlock, version restore, ...).
+     *
+     * @param ObjectEntity $object The object the action relates to.
+     * @param string       $action The audit action identifier (e.g. "file.renamed").
+     * @param array        $data   Additional context data for the entry.
+     *
+     * @return void
+     */
+    public function logFileAction(ObjectEntity $object, string $action, array $data=[]): void
+    {
+        $this->persistEntry(object: $object, action: $action, data: $data);
+    }//end logFileAction()
+
+    /**
+     * Persist an audit trail entry, never letting audit failures break the calling flow.
+     *
+     * @param ObjectEntity $object The object the entry relates to.
+     * @param string       $action The audit action identifier.
+     * @param array        $data   Additional context data for the entry.
+     *
+     * @return void
+     */
+    private function persistEntry(ObjectEntity $object, string $action, array $data): void
     {
         try {
-            $userId = $this->getCurrentUserId();
-
-            $this->logger->info(
-                message: '[FileAuditHandler] Bulk download logged for '.count($fileIds)." files by {$userId}",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            $this->auditTrailMapper->createAuditTrailEntry(object: $object, action: $action, context: $data);
         } catch (Exception $e) {
+            // Audit logging should never break the calling file operation.
             $this->logger->warning(
-                message: '[FileAuditHandler] Failed to log bulk download: '.$e->getMessage(),
+                message: "[FileAuditHandler] Failed to log {$action}: ".$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-        }//end try
-    }//end logBulkDownload()
+        }
+    }//end persistEntry()
 
     /**
      * Get the current user ID.

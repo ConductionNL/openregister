@@ -489,13 +489,13 @@ class FilePublishingHandler
      * @param ObjectEntity|string $object  The object entity or ID.
      * @param string|null         $zipName Optional custom name for the ZIP file.
      *
-     * @return (int|string)[]
+     * @return (int|string|array)[]
      *
      * @throws Exception If ZIP creation fails.
      *
-     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string, files: array<int, array{fileId: int, fileName: string}>}
      *
-     * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
+     * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip', files: array<int, array{fileId: int, fileName: string}>}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
@@ -555,6 +555,7 @@ class FilePublishingHandler
 
         $addedFiles   = 0;
         $skippedFiles = 0;
+        $includedFiles = [];
 
         // Add each file to the ZIP archive.
         foreach ($files as $file) {
@@ -588,6 +589,7 @@ class FilePublishingHandler
                 }
 
                 $addedFiles++;
+                $includedFiles[] = ['fileId' => $file->getId(), 'fileName' => $fileName];
                 $this->logger->debug(
                     message: "[FilePublishingHandler] Added file to ZIP: ".$fileName,
                     context: ['file' => __FILE__, 'line' => __LINE__]
@@ -629,6 +631,7 @@ class FilePublishingHandler
             'filename' => $zipName,
             'size'     => $fileSize,
             'mimeType' => 'application/zip',
+            'files'    => $includedFiles,
         ];
     }//end createObjectFilesZip()
 

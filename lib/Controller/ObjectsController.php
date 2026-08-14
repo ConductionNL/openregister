@@ -3028,6 +3028,13 @@ class ObjectsController extends Controller
                 unlink($zipInfo['path']);
             }
 
+            $includedFiles = $zipInfo['files'] ?? [];
+            $fileService->getAuditHandler()->logBulkDownload(
+                object: $object,
+                fileIds: array_column($includedFiles, 'fileId'),
+                fileNames: array_column($includedFiles, 'fileName')
+            );
+
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
                 $zipContent,

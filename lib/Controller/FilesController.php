@@ -219,6 +219,14 @@ class FilesController extends Controller
                 );
             }
 
+            $this->fileService->getAuditHandler()->logDownload(
+                object: $object,
+                fileId: $fileId,
+                fileName: $file->getName(),
+                fileSize: $file->getSize(),
+                mimeType: $file->getMimeType()
+            );
+
             // Stream the file inline so browsers display images/logos directly.
             $response = new StreamResponse($file->fopen('r'));
             $response->addHeader('Content-Type', $file->getMimeType());
@@ -809,7 +817,8 @@ class FilesController extends Controller
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end update()
 
@@ -855,9 +864,10 @@ class FilesController extends Controller
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
+            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
-                statusCode: 400
+                statusCode: $statusCode
             );
         }
     }//end delete()
@@ -1362,6 +1372,12 @@ class FilesController extends Controller
 
             $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
 
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                action: "file.version_restored",
+                data: ["versionId" => $versionId, "fileId" => $fileId]
+            );
+
             $this->eventDispatcher->dispatchTyped(
                 new FileVersionRestoredEvent(
                     objectUuid: $object->getUuid(),
@@ -1403,6 +1419,12 @@ class FilesController extends Controller
             }
 
             $result = $this->fileService->getLockHandler()->lockFile($fileId);
+
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                action: "file.locked",
+                data: array_merge(["fileId" => $fileId], $result)
+            );
 
             $this->eventDispatcher->dispatchTyped(
                 new FileLockedEvent(
@@ -1448,6 +1470,12 @@ class FilesController extends Controller
             $force = $this->parseBool(value: $data["force"] ?? false);
 
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
+
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                action: $force === true ? "file.force_unlocked" : "file.unlocked",
+                data: ["fileId" => $fileId, "force" => $force]
+            );
 
             $this->eventDispatcher->dispatchTyped(
                 new FileUnlockedEvent(

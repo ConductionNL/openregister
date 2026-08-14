@@ -7,6 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
@@ -141,6 +142,10 @@ class FilesControllerFileActionsTest extends TestCase
         ]);
         $this->fileService->method('getLockHandler')->willReturn($lockHandler);
 
+        $auditHandler = $this->createMock(FileAuditHandler::class);
+        $auditHandler->expects($this->once())->method('logFileAction');
+        $this->fileService->method('getAuditHandler')->willReturn($auditHandler);
+
         $response = $this->controller->lock('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(200, $response->getStatus());
@@ -261,6 +266,58 @@ class FilesControllerFileActionsTest extends TestCase
         $response = $this->controller->unlock('reg', 'sch', 'abc-123', 42);
 
         $this->assertEquals(403, $response->getStatus());
+    }
+
+    /**
+     * Test unlock logs a force_unlocked audit entry when force is used.
+     */
+    public function testUnlockForceLogsAuditEntry(): void
+    {
+        $object = $this->createObjectMock();
+        $this->setupObjectServiceMocks($object);
+
+        $lockHandler = $this->createMock(FileLockHandler::class);
+        $lockHandler->method('unlockFile')->willReturn(['locked' => false]);
+        $this->fileService->method('getLockHandler')->willReturn($lockHandler);
+
+        $auditHandler = $this->createMock(FileAuditHandler::class);
+        $auditHandler->expects($this->once())
+            ->method('logFileAction')
+            ->with($object, 'file.force_unlocked', $this->anything());
+        $this->fileService->method('getAuditHandler')->willReturn($auditHandler);
+
+        $this->request->method('getParams')->willReturn(['force' => true]);
+
+        $response = $this->controller->unlock('reg', 'sch', 'abc-123', 42);
+
+        $this->assertEquals(200, $response->getStatus());
+    }
+
+    /**
+     * Test version restore logs an audit entry.
+     */
+    public function testRestoreVersionLogsAuditEntry(): void
+    {
+        $object = $this->createObjectMock();
+        $this->setupObjectServiceMocks($object);
+
+        $file = $this->createMock(File::class);
+        $this->fileService->method('getFile')->willReturn($file);
+        $this->fileService->method('formatFile')->willReturn(['id' => 42]);
+
+        $versioningHandler = $this->createMock(FileVersioningHandler::class);
+        $versioningHandler->expects($this->once())->method('restoreVersion');
+        $this->fileService->method('getVersioningHandler')->willReturn($versioningHandler);
+
+        $auditHandler = $this->createMock(FileAuditHandler::class);
+        $auditHandler->expects($this->once())
+            ->method('logFileAction')
+            ->with($object, 'file.version_restored', ['versionId' => 'v-1710892800', 'fileId' => 42]);
+        $this->fileService->method('getAuditHandler')->willReturn($auditHandler);
+
+        $response = $this->controller->restoreVersion('reg', 'sch', 'abc-123', 42, 'v-1710892800');
+
+        $this->assertEquals(200, $response->getStatus());
     }
 
     /**
