@@ -45,8 +45,21 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
+ * ⚠️ `@uses` IS NOT DECORATION HERE. `phpunit.xml` sets
+ * `beStrictAboutCoverageMetadata="true"`, so on the coverage-enabled leg a test
+ * that touches a class named in neither `@covers` nor `@uses` is marked RISKY
+ * and the leg fails — with the message "executed code that is not listed as code
+ * to be covered or used", which names the class but not the annotation it wants.
+ *
+ * `makeService()` builds a real `ObjectEntity` (its magic accessors cannot be
+ * stubbed), so it must be declared. Without it these tests pass on every leg
+ * that runs without coverage and fail only on the one that runs with it — which
+ * is exactly how five of them reached CI green locally and red there.
+ *
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @covers \OCA\OpenRegister\Service\Credential\BrokeredStream
+ *
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialBrokerStreamTest extends TestCase {
 

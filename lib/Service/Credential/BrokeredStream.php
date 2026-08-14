@@ -63,6 +63,23 @@ final class BrokeredStream {
 	private const CHUNK_BYTES = 8192;
 
 	/**
+	 * The still-open upstream body, or null once `pump()` has taken it.
+	 *
+	 * 🔑 NULLABLE ON PURPOSE, and not merely to satisfy a type-checker.
+	 * `pump()` hands the handle to a local and leaves null behind BEFORE it reads
+	 * a byte, so the object never holds a resource it has closed. That is what
+	 * makes a second `pump()` a no-op instead of a read against a dead handle.
+	 *
+	 * Declared here rather than promoted in the constructor because a promoted
+	 * property takes the parameter's type, and the parameter is a resource — it
+	 * is never null on the way IN. The two are genuinely different types, which
+	 * is what PHPStan pointed out.
+	 *
+	 * @var resource|null
+	 */
+	private $body;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param int                   $status  The upstream status code.
@@ -72,8 +89,9 @@ final class BrokeredStream {
 	public function __construct(
 		private readonly int $status,
 		private readonly array $headers,
-		private mixed $body,
+		$body,
 	) {
+		$this->body = $body;
 
 	}//end __construct()
 
