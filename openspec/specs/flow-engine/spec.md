@@ -45,6 +45,30 @@ Where several edges converge on a node, the lowering MUST give that node ONE sha
 - **THEN** the node MUST NOT fire
 - **AND** it MUST fire once a token has arrived on both
 
+### Requirement: SUSPENDING is a run-level act, so an EMPTY firing MUST NOT suspend @e2e exclude engine-internal suspend rule — covered by WaitNodeTest
+
+`FlowSuspension` stops the WHOLE run and stores its marking; it is not scoped to the branch that threw it. A transition MAY fire with no items — a routing node sent every item down another branch, or that branch had no work this pass — and a node that waits MUST return those items unchanged rather than suspend.
+
+This matters wherever branches are PRIORITIES rather than alternatives. Such a flow evaluates a preferred branch first and falls through when it is empty, so an empty branch reaching a wait is the normal case, not an error. Suspending on it stops the branch that DID carry an item, and when the run resumes the marking has moved on: every remaining transition fires empty and the item is gone, while the log records only `completed` steps with zero items in and zero out.
+
+Nothing is deferred by returning early. With no items there is nothing to delay, and a later pass that DOES carry items reaches the node and suspends then.
+
+#### Scenario: An empty branch does not pause the run
+- **GIVEN** a flow whose routing node sends its only item to a collect branch, leaving a dispatch branch that also contains a wait
+- **WHEN** the wait on the empty dispatch branch fires with no items
+- **THEN** the run MUST NOT suspend
+- **AND** the collect branch MUST advance in the same pass
+
+#### Scenario: A wait carrying work still suspends
+- **GIVEN** the same wait node and configuration
+- **WHEN** it fires with one or more items on its first pass
+- **THEN** it MUST suspend the run with the resolved `resumeAt`
+
+#### Scenario: A resumed wait passes its items through
+- **GIVEN** a run woken by the worker because `resumeAt` has passed
+- **WHEN** the wait node runs a second time with `resuming` set
+- **THEN** it MUST return its items unchanged rather than suspend again
+
 ### Requirement: A path MUST end deliberately, and a dead end MUST be reported @e2e exclude engine-internal connectivity check — covered by FlowDeadEndTest
 
 A node with no outgoing edge is a dead end unless it ends the path deliberately. It ends deliberately if EITHER its type is registered as an end (the type implements `IFlowEndNode`, resolved through `FlowNodeRegistry::isEnd()`) OR the node itself declares `exit: true`. The two MUST be OR-ed, never AND-ed, so a migrated flow whose sink carries an ordinary action type is not refused, and a contributed end type needs no OpenRegister change.
