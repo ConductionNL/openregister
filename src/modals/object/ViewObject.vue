@@ -524,7 +524,17 @@ import {
 																v-else
 																:size="16" />
 														</template>
-														{{ isCopied ? t('openregister', 'Copied') : t('openregister', 'Copy') }}
+														{{
+															isCopied
+																? t(
+																		'openregister',
+																		'Copied',
+																	)
+																: t(
+																		'openregister',
+																		'Copy',
+																	)
+														}}
 													</NcButton>
 												</td>
 											</tr>
@@ -1153,7 +1163,15 @@ import {
 						<NcLoadingIcon v-if="isSaving" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					{{ isSaving ? (isNewObject ? t('openregister', 'Creating...') : t('openregister', 'Saving...')) : (isNewObject ? t('openregister', 'Create') : t('openregister', 'Save')) }}
+					{{
+						isSaving
+							? isNewObject
+								? t('openregister', 'Creating...')
+								: t('openregister', 'Saving...')
+							: isNewObject
+								? t('openregister', 'Create')
+								: t('openregister', 'Save')
+					}}
 				</NcButton>
 			</template>
 		</NcDialog>

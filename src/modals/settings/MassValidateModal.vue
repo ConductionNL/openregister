@@ -25,8 +25,14 @@
 					configuration.
 				</p>
 				<div class="loading-details">
-					<p><strong>{{ t('openregister', 'Mode:') }}</strong> {{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
-					<p><strong>Max Objects:</strong> {{ config.maxObjects === 0 ? 'All' : config.maxObjects }}</p>
+					<p>
+						<strong>{{ t('openregister', 'Mode:') }}</strong>
+						{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}
+					</p>
+					<p>
+						<strong>Max Objects:</strong>
+						{{ config.maxObjects === 0 ? 'All' : config.maxObjects }}
+					</p>
 					<p><strong>Batch Size:</strong> {{ config.batchSize }}</p>
 					<p>
 						<strong>Error Handling:</strong>
@@ -210,8 +216,12 @@
 					<h5>Configuration Used</h5>
 					<div class="config-grid">
 						<div class="config-item">
-							<span class="config-label">{{ t('openregister', 'Mode:') }}</span>
-							<span class="config-value">{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</span>
+							<span class="config-label">{{
+								t('openregister', 'Mode:')
+							}}</span>
+							<span class="config-value">{{
+								config.mode === 'serial' ? 'Serial' : 'Parallel'
+							}}</span>
 						</div>
 						<div class="config-item">
 							<span class="config-label">Max Objects:</span>

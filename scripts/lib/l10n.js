@@ -39,10 +39,14 @@ function loadJsTranslations(file) {
 	vm.createContext(sandbox)
 	vm.runInContext(code, sandbox, { filename: file })
 	if (!captured || typeof captured !== 'object') {
-		throw new Error(`OC.L10N.register was not called with a translations object in ${file}`)
+		throw new Error(
+			`OC.L10N.register was not called with a translations object in ${file}`,
+		)
 	}
 	if (!app) {
-		throw new Error(`OC.L10N.register was not called with an app name in ${file}`)
+		throw new Error(
+			`OC.L10N.register was not called with an app name in ${file}`,
+		)
 	}
 	return {
 		app,
@@ -148,7 +152,7 @@ function translationCallRe(app) {
  */
 function readStringLiteral(text, start) {
 	const quote = text[start]
-	if (quote !== '\'' && quote !== '"') return null
+	if (quote !== "'" && quote !== '"') return null
 	let i = start + 1
 	let value = ''
 	while (i < text.length) {
@@ -230,13 +234,23 @@ function extractTranslationCalls(text, app) {
 		let ok = true
 		for (let a = 0; a < wanted; a++) {
 			const lit = readStringLiteral(text, pos)
-			if (!lit) { ok = false; break }
+			if (!lit) {
+				ok = false
+				break
+			}
 			keys.push(lit.value)
 			let j = lit.end + 1
-			while (j < text.length && (text[j] === ' ' || text[j] === '\t' || text[j] === '\n')) j++
+			while (
+				j < text.length
+				&& (text[j] === ' ' || text[j] === '\t' || text[j] === '\n')
+			)
+				j++
 			const next = text[j]
 			const isLast = a === wanted - 1
-			if (next !== ',' && !(isLast && next === ')')) { ok = false; break }
+			if (next !== ',' && !(isLast && next === ')')) {
+				ok = false
+				break
+			}
 			if (next !== ',') break
 			pos = j + 1
 			while (pos < text.length && /\s/.test(text[pos])) pos++
@@ -299,7 +313,8 @@ function collectUsedKeys(srcDir, app) {
 	for (const file of walk(srcDir, SRC_EXTS)) {
 		const { calls } = extractTranslationCalls(fs.readFileSync(file, 'utf8'), app)
 		for (const c of calls) {
-			if (c.fn === 'n' && c.keys.length === 2) used.add(pluralIdentifier(c.keys[0], c.keys[1]))
+			if (c.fn === 'n' && c.keys.length === 2)
+				used.add(pluralIdentifier(c.keys[0], c.keys[1]))
 			for (const k of c.keys) used.add(k)
 		}
 	}
@@ -313,7 +328,8 @@ function makeLineResolver(text) {
 		if (text.charCodeAt(i) === 10) lineStarts.push(i + 1)
 	}
 	return (pos) => {
-		let lo = 0; let hi = lineStarts.length - 1
+		let lo = 0
+		let hi = lineStarts.length - 1
 		while (lo < hi) {
 			const mid = (lo + hi + 1) >> 1
 			if (lineStarts[mid] <= pos) lo = mid
@@ -352,7 +368,8 @@ function escapeRegex(s) {
  */
 function listJsLocaleFiles(l10nDir) {
 	if (!fs.existsSync(l10nDir)) return []
-	return fs.readdirSync(l10nDir)
+	return fs
+		.readdirSync(l10nDir)
 		.filter((f) => f.endsWith('.js'))
 		.sort()
 		.map((f) => path.join(l10nDir, f))
@@ -382,11 +399,23 @@ function localeNameOf(file) {
  */
 const DYNAMIC_KEYS = [
 	// PermissionMatrix actions
-	'read', 'create', 'update', 'delete', 'manage',
+	'read',
+	'create',
+	'update',
+	'delete',
+	'manage',
 	// ApprovalStepList step.status
-	'pending', 'approved', 'rejected', 'skipped', 'cancelled',
+	'pending',
+	'approved',
+	'rejected',
+	'skipped',
+	'cancelled',
 	// DashboardIndex date presets
-	'All time', 'Last 7 days', 'Last 30 days', 'Last 3 months', 'Last 12 months',
+	'All time',
+	'Last 7 days',
+	'Last 30 days',
+	'Last 3 months',
+	'Last 12 months',
 ]
 
 /**
@@ -409,7 +438,11 @@ function collectDynamicKeys(repoRoot) {
 	const manifestPath = path.join(repoRoot, 'src/manifest.json')
 	if (!fs.existsSync(manifestPath)) return out
 	let manifest
-	try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) } catch { return out }
+	try {
+		manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+	} catch {
+		return out
+	}
 	;(function collectMenu(items) {
 		if (!Array.isArray(items)) return
 		for (const item of items) {
