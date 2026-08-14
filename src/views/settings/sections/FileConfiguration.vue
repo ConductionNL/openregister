@@ -137,12 +137,7 @@
 							<NcTextField
 								id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
-								:placeholder="
-									t(
-										'openregister',
-										'https://api.your-dolphin-instance.com',
-									)
-								"
+								placeholder="https://api.your-dolphin-instance.com"
 								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />

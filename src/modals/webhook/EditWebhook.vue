@@ -33,9 +33,7 @@
 
 						<NcTextField
 							:label="t('openregister', 'URL') + ' *'"
-							:placeholder="
-								t('openregister', 'https://example.com/webhook')
-							"
+							placeholder="https://example.com/webhook"
 							:model-value="webhookItem?.url || ''"
 							type="url"
 							:error="!webhookItem?.url?.trim?.()"
@@ -618,7 +616,7 @@ export default {
 		 * @spec exclude UI display helper — placeholder text for the filters field.
 		 */
 		filtersPlaceholder() {
-			return this.t('openregister', 'objectType: object\naction: created')
+			return 'objectType: object\naction: created'
 		},
 		/**
 		 * @spec exclude UI display helper — serializes filters object to editable text.

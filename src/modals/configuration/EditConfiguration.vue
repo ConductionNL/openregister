@@ -100,7 +100,7 @@ import {
 
 						<NcTextField
 							:label="t('openregister', 'App ID')"
-							:placeholder="t('openregister', 'myapp')"
+							placeholder="myapp"
 							:model-value="
 								configurationStore.configurationItem?.app || ''
 							"
