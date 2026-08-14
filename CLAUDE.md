@@ -32,7 +32,7 @@ There is **no scanner for the backend set**. Auditing `en.json` would mean walki
 `lib/` for PHP `$l->t()` calls, not `src/`. Until that exists it is maintained by hand.
 
 Re-measure before trusting any number below — `npm run check:l10n` prints it all.
-**As of 2026-08-14**: `en.js` holds 2051 keys, `src/` uses all of them, 0 unused, 100 unwrapped literals outstanding. 20 locales at full parity (2051 keys each), 16 in progress.
+**As of 2026-08-14**: `en.js` holds 2051 keys, `src/` uses all of them, 0 unused, 100 unwrapped literals outstanding. 21 locales at full parity (2051 keys each), 15 in progress.
 
 ## Commands
 
@@ -53,11 +53,11 @@ extractor, so they always agree on what "used" means.
 
 ## Hard rules
 
-**Every finished locale is key-for-key identical to `en.js`, always.** All 20
+**Every finished locale is key-for-key identical to `en.js`, always.** All 21
 carry the same key set, so their files have the same line count. This is
 enforced, not aspirational: `npm run test:l10n:parity` fails the build when a
 locale in the finished set is missing a key, and it runs in CI as its own leg.
-Add an English string and you translate it or you unwrap it — you do not leave 20
+Add an English string and you translate it or you unwrap it — you do not leave 21
 locales one key short, and you do not drop a locale from the finished set to get
 a green build.
 
@@ -146,8 +146,8 @@ reverted alone.
 - `find:unwrapped` is deliberately high-recall (~1500 candidates). Expect false
   positives and audit by hand; do not "fix" it by tightening the heuristic until
   real strings are missed.
-- `test:l10n:parity` **passes, and must keep passing.** It gates the 20 finished
-  locales at key-for-key parity and reports the 16 in-progress ones as a backlog
+- `test:l10n:parity` **passes, and must keep passing.** It gates the 21 finished
+  locales at key-for-key parity and reports the 15 in-progress ones as a backlog
   (~998 keys each) without failing. Empty values and wrong plural arity fail for
   *every* locale, finished or not, because those render blank at runtime. The
   finished set lives in `FINISHED_DEFAULT` in the script and is overridable with
@@ -165,4 +165,4 @@ Read **`docs/l10n-ui-translation.md`** first. It covers the parts that are not
 mechanical: measuring a language's formality register against Nextcloud core
 instead of assuming it, why harvested translations from core and sibling apps
 must be checked against the call site, and the per-locale conventions already
-established for the 20 finished languages.
+established for the 21 finished languages.

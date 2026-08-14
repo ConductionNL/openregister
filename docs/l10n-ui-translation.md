@@ -43,17 +43,28 @@ by counting formal vs informal markers across core (`server/core`, `lib`,
 `apps/files`, `apps/settings`, `apps/dav`, …) for that locale.
 
 Measured results: informal for `nl`, `de`, `sv`, `da`, `nb`, `pl`, `fi`, `hu`,
-`et`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`.
-Russian was the least ambiguous of any: 328 formal pronouns and 164 formal
-imperatives against **zero** of either informal marker in 3905 strings.
+`et`; formal for `fr`, `cs`, `ru`, `uk`, `tr`, `el`, `sr`, `bg`, `ca`, `hr`, `lt`.
+Russian and Lithuanian were the least ambiguous of any: `ru` 328 formal pronouns
+and 164 formal imperatives, `lt` 689 formal markers, each against **zero**
+informal markers.
 
-**Some languages split by string ROLE, not globally.** `ca`, `et` and `hr` all use
-a bare 2sg imperative for buttons (`Desa`, `Salvesta`, `Spremi`) regardless of how
-prose addresses the user, so a single verdict for the locale would be meaningless.
-Measure the *prose* and treat button labels separately. In all three the bare
-imperative is also a homograph — of the Catalan/Croatian 3sg present indicative
-(`uredi` = "edit!" / "he edits") or of Estonian nouns and names (`Lisa`, `Ava`) —
-so it must be excluded from the detector rather than counted as informal.
+**Button labels follow their own convention, and there are three patterns.**
+Measure the *prose* register, then establish the button style separately from
+core's own short labels — a single verdict for the locale is usually meaningless:
+
+| Pattern | Locales | Buttons |
+| --- | --- | --- |
+| same register throughout | `tr`, `ru` | formal imperative |
+| bare 2sg imperative, whatever the prose | `ca`, `et`, `hr` | `Desa`, `Salvesta`, `Spremi` |
+| **infinitive — register-neutral** | `cs`, `lt` | `Zobrazit`/`Smazat`, `Įrašyti`/`Ištrinti`/`Atsisakyti` |
+
+Infinitive buttons must **not** be "corrected" to imperatives. Bare 2sg
+imperatives must be **excluded from the detector**, because they are also
+homographs — of the Catalan/Croatian 3sg present indicative (`uredi` = "edit!" /
+"he edits") or of Estonian nouns and names (`Lisa`, `Ava`) — so counting them
+would flag every button in the app. Lithuanian is the reason the table exists: its
+informal count is a clean 0 precisely *because* core never produces a 2sg
+imperative at all.
 
 Three consecutive locales came out three different ways (`tr` formal 841:0, `ca`
 formal 491:32, `et` **informal** 415:3). Carrying an answer over from the previous
@@ -81,8 +92,11 @@ register-neutral button labels and must not be "corrected" to imperatives.
 | `hr` | `si` = 2sg of *biti* **and** the reflexive dative clitic, which occurs in formal sentences (`možete si odabrati`) | leave bare `si` unmatched; use `nisi`/`jesi` |
 | `et` | `teist` = elative of `teie` (*of you*) **and** partitive of `teine` (*another*) — `Proovi teist otsingut` is *informal* 2sg | exclude `teist` entirely. Half of core's apparent formal signal was this one word: removing it took the count 6 → 3 |
 | `tr` | 2sg possessive is spelled identically to the plural genitive (`dosyaların` = *your files* / *of the files*), and 3sg-possessive+accusative collides too (`hesabını`) | all 35 first-pass "informal" hits in core were this. Only `şifre`/`parola` are safe anchors |
+| `lt` | **`gali`, `turi`, `nori` are 2sg *and* 3sg/3pl** — Lithuanian third person makes no number distinction, so these mean *you can/have/want* and *he/they can/have/want* alike. They are the three commonest modals in UI prose (`Registras gali turėti kelias schemas`) | exclude all three. Use only 2sg forms whose 3sg differs: `žinai` (3sg `žino`), `matai`, `gauni`, `esi` |
 
-**Never use suffix patterns for these languages.** Croatian is the clearest case:
+**Never use suffix patterns for these languages.** Lithuanian `-ai` ends the
+nominative plural of every masculine noun (`objektai`, `failai`) *and* a large class
+of adverbs (`gerai`, `automatiškai`). Croatian is the clearest case:
 `-te` looks like the 2pl ending but is the accusative plural of every masculine
 noun (`dokumente`, `objekte`, `atribute`), and `-š` looks like the 2sg ending but
 ends `naš` (*our*) and **`vaš` (*your*-FORMAL)** — so a `-š` rule scores the formal
@@ -153,6 +167,11 @@ locale's expression**. Equal counts do not mean equal boundaries:
 - `hr` — `nplurals=3`, same expression as `ru`; the three forms are Croatian
   nominative singular / genitive singular / genitive plural
   (`1 objekt` / `3 objekta` / `7 objekata`)
+- `lt` — `nplurals=3`, and **the boundaries are not Croatian's**: form 1 covers
+  **2–9** (not 2–4) and 10–20 falls to form 2. Nominative singular / nominative
+  plural / genitive plural (`1 objektas` / `5 objektai` / `10 objektų`). A Croatian
+  array pasted here is wrong for every count 5–9 — the two locales share
+  `nplurals=3` and disagree on where the forms switch
 
 All are 3-form and mutually incompatible. `npm run test:l10n:parity` catches
 wrong *length*; nothing can catch a Polish array pasted into Czech. Verify the
@@ -180,6 +199,7 @@ from rather than reinventing it:
 | slash, where the stem changes | `fr`, `ca` (`schema`), `et` (`register`) | `journal/journaux`, `esquema/esquemes` |
 | bare noun — no plural suffix after a numeral | `hu`, `tr` | `fájl`, `dosya` |
 | the form correct for the most counts | `hr` | see below |
+| genitive plural, the conventional invariant counter | `lt` | `failų`, `objektų`, `registrų` |
 
 Catalan learned this the hard way: masculine nouns in `-a` pluralise in `-es`, so
 `schema{plural}` rendered **`esquemas`** until the runtime harness caught it.
@@ -226,14 +246,27 @@ Per-language decisions that later work should stay consistent with, and which ar
   `lozinka` for *password* (core prefers `zaporka` 195:62, but the file already
   shipped `Lozinka` and it is valid Croatian, so it was not churned).
 
+- **`lt`** — buttons are **infinitives** (see the register section). `audito
+  žurnalas` for *audit trail* (24:3 in the file's own values), `rodinys` for the
+  *view* noun but `Peržiūrėti` for the *View* button, `esybė` for *entity* — chosen
+  so it does not collide with `duomenų subjektas` (*data subject*) — `užtemdymas`
+  for *redaction*, because the obvious `redagavimas` is the same word this app uses
+  for **Edit** (`Redaguoti`). `žiniatinklio kabliukas` for *webhook*: all 40
+  existing webhook keys translate it, so do not keep the English. `Ataskaitos` for
+  *Reports*, distinct from `Pranešimai` (*Notifications*). `minkštai pašalinti` for
+  *soft-deleted*. `Delete` → `Pašalinti` but `Remove` → `Šalinti`: the file splits
+  those two senses deliberately. Bare `Name` → `Vardas`, but name-in-compound →
+  `pavadinimas` (`Failo pavadinimas`). GDPR is **`BDAR`**, not `GDPR`.
+
 **Check the existing values before coining a term.** For `hr` the audit-trail,
 view, embeddings and `Tip`/`Filtri` conventions were all already present in the
 1053 keys the file arrived with; deriving them from core instead would have split
-the locale's own terminology.
+the locale's own terminology. `lt` was the same, and stronger: `webhook` looked
+like an obvious keep-the-English case until the file showed 40 keys translating it.
 
-Twenty locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`, `nb`,
-`pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`. Remaining
-high-confidence order: `lt`, `lv`, `ro`, `sk`, `sl`, `bg`, `sr`. The nine
+Twenty-one locales are complete: `nl`, `de`, `fr`, `es`, `it`, `pt`, `sv`, `da`,
+`nb`, `pl`, `cs`, `ru`, `uk`, `el`, `fi`, `hu`, `tr`, `ca`, `et`, `hr`, `lt`.
+Remaining high-confidence order: `lv`, `ro`, `sk`, `sl`, `bg`, `sr`. The nine
 low-resource locales (`ga`, `mt`, `rm`, `is`, `lb`, `sq`, `mk`, `be`, `bs`) are
 deliberately last — **ask before starting them.**
 
