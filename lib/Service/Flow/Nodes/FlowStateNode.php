@@ -540,7 +540,13 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys {
 	 *
 	 * @return bool True when the holder may be displaced.
 	 *
-	 * @spec openspec/specs/flow-state/spec.md
+	 * @spec exclude The slot/lease contract has no canonical spec.
+	 *  openspec/specs/flow-state/spec.md does not exist and never has; the tag
+	 *  pointed at a file rather than at a requirement. flow-engine's spec is
+	 *  the nearest home and it covers resume and suspend-on-signal, NOT slot
+	 *  leases, so citing it here would be a reference that reads as coverage
+	 *  and is not. Excluded with the gap named until the flow-state slot
+	 *  contract is written down.
 	 */
 	private function leaseExpired(mixed $entry, int $leaseSeconds): bool {
 		if ($leaseSeconds <= 0 || is_array($entry) === false) {
