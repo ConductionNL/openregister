@@ -29,7 +29,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const { walk } = require('./lib/l10n.js')
+const { walk } = require('./l10n/lib.js')
 
 const ROOT = path.resolve(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'src')

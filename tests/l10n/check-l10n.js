@@ -31,7 +31,7 @@
  * An n() call has TWO source strings but only ONE catalogue key, and that key is
  * NEITHER of them: it is the identifier `_<singular>_::_<plural>_`, which is the
  * only thing @nextcloud/l10n's translatePlural looks up (see pluralIdentifier in
- * scripts/lib/l10n.js). Its value is an array of the locale's nplurals forms, so
+ * scripts/l10n/lib.js). Its value is an array of the locale's nplurals forms, so
  * --write emits `[singular, plural]` rather than a bare string — a string value on
  * a plural key renders blank at runtime.
  *
@@ -40,7 +40,7 @@
  * falls back to English for every other count — so it passed the gate while every
  * "3 objects" in all 36 locales rendered English.
  *
- * Extraction is delegated to scripts/lib/l10n.js, which reads real string
+ * Extraction is delegated to scripts/l10n/lib.js, which reads real string
  * literals — decoding \u/\x escapes and rejecting concatenations and template
  * interpolations — instead of pattern-matching.
  * The same lib backs scripts/check-l10n.js, clean-l10n.js and l10n-ai.js, so
@@ -84,7 +84,7 @@ const {
 	makeLineResolver,
 	SRC_EXTS,
 	pluralIdentifier,
-} = require('../../scripts/lib/l10n.js')
+} = require('../../scripts/l10n/lib.js')
 
 const ROOT = process.cwd()
 const WRITE = process.argv.includes('--write')

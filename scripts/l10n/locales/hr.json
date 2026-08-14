@@ -1,0 +1,30 @@
+{
+ "register": "formal",
+ "cognates": {
+  "Avatar": "Croatian has adopted 'avatar' unchanged for a profile picture; core hr uses it too, so translating it would invent a term users do not know.",
+  "CSV": "File-format initialism, identical in Croatian; every other finished locale keeps it as-is.",
+  "Deck": "Proper name of the Nextcloud Deck app; product names are not translated.",
+  "DSAR": "Initialism for Data Subject Access Request. Croatian GDPR practice has coined no equivalent acronym, and the expanded key 'Data-subject access request' is translated in full alongside it.",
+  "Excel (.xlsx)": "Product name plus a file extension; both are invariant in Croatian.",
+  "Format": "Croatian uses 'format' unchanged for a data/display format; core hr has no competing term.",
+  "ID": "Initialism written identically in Croatian; the lowercase variant key 'Id' is normalised TO this form rather than left alone.",
+  "ID:": "Same initialism with a colon. Croatian, unlike French, puts no space before a colon, so the punctuation is genuinely unchanged.",
+  "ID: {id}": "Same initialism plus the placeholder; nothing in this string differs in Croatian.",
+  "Interval": "Croatian 'interval' is the standard term and is spelled identically.",
+  "Minimum": "Croatian 'minimum' is the standard term and is spelled identically; the derived 'Minimum length/value' keys are translated as 'Minimalna …'.",
+  "OpenDocument (.ods)": "Product name plus a file extension; both are invariant in Croatian.",
+  "PDF": "File-format initialism, identical in Croatian; every other finished locale keeps it as-is.",
+  "RBAC": "Initialism for role-based access control, used untranslated in Croatian IT writing; the expanded prose keys around it are translated in full.",
+  "Slug": "Croatian technical writing keeps the English 'slug' for a URL-friendly identifier; no Croatian equivalent is in use, and the descriptive key 'Optional URL-friendly identifier' is translated in full beside it.",
+  "Status": "Croatian 'status' is the standard term and is spelled identically; core hr confirms it.",
+  "URL": "Initialism written identically in Croatian; the lowercase-variant key 'Url' is normalised TO this form, and 'Database URL' etc. are translated as 'URL baze podataka'.",
+  "UUID:": "Initialism with a colon. Croatian, unlike French, puts no space before a colon, so the punctuation is genuinely unchanged.",
+  "Webhook": "Croatian keeps 'webhook' and declines it ('webhookovi', 'webhookove'); the nominative singular is therefore identical to the English key."
+ },
+ "corrections": {
+  "Categories of data subjects (one per line)": "batch 1 wrote the paraphrase \"osoba čiji se podaci obrađuju\"; \"ispitanik\" is the term used by the official Croatian text of the GDPR",
+  "create": "written as the imperative \"stvori\" before PermissionMatrix.vue showed this renders as a COLUMN HEADER in actions:[read,create,update,delete,manage], so it is a permission name — verbal noun \"stvaranje\"",
+  "delete": "same as \"create\": imperative \"izbriši\" corrected to \"brisanje\"",
+  "manage": "same as \"create\": imperative \"upravljaj\" corrected to \"upravljanje\""
+ }
+}

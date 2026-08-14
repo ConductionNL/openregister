@@ -1,0 +1,21 @@
+{
+ "register": "formal",
+ "cognates": {
+  "Avatar": "Turkish uses \"Avatar\"; Nextcloud core tr.json renders it that way too.",
+  "CSV": "Format acronym, invariant in Turkish.",
+  "Deck": "Nextcloud app name. Kept untranslated in all 16 finished locales.",
+  "DSAR": "Acronym; kept untranslated in all 16 finished locales.",
+  "Excel (.xlsx)": "Product name plus file extension.",
+  "Id": "Kept as \"Id\" in all 16 finished locales; following that.",
+  "Minimum": "Turkish spelling of minimum is \"minimum\". Note the app renders Maximum as \"Maksimum\" — that one DOES change; this one has no such change.",
+  "OpenDocument (.ods)": "Product name plus file extension.",
+  "PDF": "Format acronym, invariant in Turkish.",
+  "RBAC": "Access-control acronym, used untranslated in Turkish technical writing.",
+  "Slug": "Kept in Turkish CMS/technical UI; kept in 8 of 10 sampled locales.",
+  "URL": "Invariant in Turkish; \"URL\" is the standard form.",
+  "UUID:": "Acronym plus colon. Turkish, unlike French, puts no space before a colon — fr carries \"UUID :\", which is why this key stays wrapped rather than being deleted.",
+  "Webhook": "Kept as \"Webhook\" in Turkish; the app already renders the plural as \"Webhook'lar\".",
+  "{property} - {other}": "Two placeholders and an ASCII hyphen, which Turkish keeps. Stays wrapped because ru localises the hyphen to an em dash."
+ },
+ "corrections": {}
+}

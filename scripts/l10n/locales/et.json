@@ -1,0 +1,27 @@
+{
+ "register": "informal",
+ "cognates": {
+  "Audit": "'Audit' is the Estonian noun, spelled identically; it is standard in Estonian administrative and financial usage.",
+  "CSV": "Format acronym, invariant in Estonian.",
+  "Deck": "Nextcloud app name; kept untranslated in all 18 finished locales.",
+  "DSAR": "Acronym (data subject access request); kept untranslated in all 18 finished locales, so following that.",
+  "Excel (.xlsx)": "Product name plus file extension.",
+  "ID": "Identifier acronym, invariant in Estonian.",
+  "Id": "Kept as 'Id' in all 18 finished locales; following that rather than diverging on casing alone.",
+  "ID:": "Identifier acronym plus a colon. Estonian, unlike French, puts no space before a colon.",
+  "ID: {id}": "Identifier acronym, colon and a placeholder — nothing translatable remains.",
+  "Min ms": "'Min' abbreviates 'miinimum' in Estonian exactly as it abbreviates 'minimum' in English, and 'ms' is the SI symbol; both are invariant.",
+  "Host *": "'Host' is the established Estonian loanword for a network host; Nextcloud core et_EE renders 'Host' too.",
+  "Ollama URL": "Product name plus an invariant acronym; Estonian would add no article or genitive here, so the label is unchanged.",
+  "PDF": "Format acronym, invariant in Estonian.",
+  "OpenDocument (.ods)": "Product name plus file extension.",
+  "Port": "'Port' is the established Estonian loanword for a network port; Nextcloud core et_EE renders 'Port' too.",
+  "RBAC": "Access-control acronym, used untranslated in Estonian technical writing.",
+  "Register": "'Register' is the Estonian noun, spelled identically; the app's existing et glossary already uses it (plural 'Registrid').",
+  "Register:": "The Estonian noun 'Register' plus a colon; Estonian, unlike French, puts no space before a colon.",
+  "URL": "Invariant in Estonian; 'URL' is the standard form.",
+  "UUID:": "Identifier acronym plus a colon. Estonian puts no space before a colon, unlike fr which carries 'UUID :'.",
+  "{property} - {other}": "Two placeholders and an ASCII hyphen, which Estonian keeps. Stays wrapped in the source because ru localises the hyphen to an em dash."
+ },
+ "corrections": {}
+}

@@ -36,7 +36,7 @@ const {
 	collectUsedKeys,
 	listJsLocaleFiles,
 	collectDynamicKeys,
-} = require('./lib/l10n.js')
+} = require('./l10n/lib.js')
 
 const ROOT = path.resolve(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'src')
@@ -67,7 +67,7 @@ function main() {
 	const usedKeys = collectUsedKeys(SRC_DIR, app)
 	// Keys reached through a variable cannot be found by scanning. They are live,
 	// and deleting them silently un-translates real UI, so they are never
-	// candidates for removal. See DYNAMIC_KEYS in lib/l10n.js.
+	// candidates for removal. See DYNAMIC_KEYS in l10n/lib.js.
 	const dynamicKeys = collectDynamicKeys(ROOT)
 	const unused = [...existingKeys]
 		.filter((k) => !usedKeys.has(k) && !dynamicKeys.has(k))

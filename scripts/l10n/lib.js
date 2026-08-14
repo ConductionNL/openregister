@@ -1,20 +1,41 @@
 /* eslint-disable jsdoc/require-param */
 /**
- * Shared l10n helpers used by scripts/check-l10n.js, scripts/clean-l10n.js,
- * scripts/l10n-ai.js and tests/l10n/check-l10n.js.
+ * The l10n catalogue library — the single shared module for frontend translation
+ * tooling. Used by scripts/check-l10n.js, scripts/clean-l10n.js,
+ * scripts/l10n-ai.js, scripts/find-unwrapped.js, tests/l10n/check-l10n.js,
+ * tests/l10n/check-l10n-parity.js and everything else in scripts/l10n/.
  *
  * Operates on l10n/*.js (frontend translation files). Backend .json files are
  * a separate concern and are not handled here.
  *
- * This is the ORIGIN copy. openconnector carries a VENDORED copy of this file —
- * the two apps ship separate npm packages, so there is no import path between
- * them. Keep the two in sync when either changes; the only intended divergence
- * is DYNAMIC_KEYS below, which is app-specific data.
+ * This file was `scripts/lib/l10n.js` until 2026-08-14. It moved into the l10n
+ * folder because a second helper module had appeared at `scripts/l10n/lib.js`, and
+ * two near-mirror names one directory apart is exactly the sort of pair you grab
+ * the wrong one of. The two are now merged: there is ONE l10n folder, and one
+ * library in it. `scripts/lib/` no longer exists.
+ *
+ * This is the ORIGIN copy. openconnector carries a VENDORED copy — the two apps
+ * ship separate npm packages, so there is no import path between them. Keep the
+ * two in sync when either changes; the only intended divergence is DYNAMIC_KEYS
+ * below, which is app-specific data. **openconnector still has it at the old
+ * `scripts/lib/l10n.js` path**; move it when you next sync.
+ *
+ * Two layers live here, deliberately in one file rather than two near-identically
+ * named ones:
+ *
+ *   1. THE CATALOGUE — parsing, serializing and key extraction. Locale-agnostic,
+ *      and what the audit and CI gates are built on.
+ *   2. A LOCALE PASS — the helpers a single-language translation pass needs:
+ *      identical-value detection, placeholder sets, per-locale config and
+ *      detectors. These resolve paths under scripts/l10n/ and degrade to empty
+ *      results when a locale has not been started, so callers can treat
+ *      "not started" and "in progress" uniformly.
  */
 
 const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
+const { execFileSync } = require('child_process')
 
 /**
  * Load a single l10n/*.js file and return its app name, translations object,
@@ -458,6 +479,150 @@ function collectDynamicKeys(repoRoot) {
 	return out
 }
 
+/* ------------------------------------------------------------------------- *
+ * Layer 2: a single-locale translation pass.
+ *
+ * Everything below serves the per-locale workflow in scripts/l10n/ and the
+ * parity gate. Kept in this file rather than a second `lib.js` next door — see
+ * the header.
+ * ------------------------------------------------------------------------- */
+
+/** Absolute path to the app root, derived from this file's location. */
+const APP_ROOT = path.resolve(__dirname, '..', '..')
+/** Per-locale config: measured register, justified cognates, audited corrections. */
+const LOCALES_DIR = path.join(__dirname, 'locales')
+/** Per-locale register detectors. */
+const DETECTORS_DIR = path.join(__dirname, 'detectors')
+
+/**
+ * Is this value indistinguishable from its own key?
+ *
+ * This is the single most important predicate in the whole workflow, because an
+ * ABSENT key falls back to the English source and stays visibly untranslated to
+ * every tool, whereas a value equal to its key renders the same characters while
+ * being indistinguishable from finished work — so nobody ever revisits it.
+ *
+ * For a plural key the comparison is per form against the two source strings
+ * encoded in the `_singular_::_plural_` identifier, so a locale that translated
+ * only one of the forms is NOT counted as identical.
+ *
+ * @param {string} key Catalogue key.
+ * @param {string|string[]} value Its value in some locale.
+ * @return {boolean} True when the value carries no translation at all.
+ */
+function isIdentical(key, value) {
+	if (typeof value === 'string') return value === key
+	const m = /^_([\s\S]*)_::_([\s\S]*)_$/.exec(key)
+	if (!m) return false
+	return value.every((x, i) => x === (i === 0 ? m[1] : m[2]))
+}
+
+/**
+ * Every placeholder token a translated value must carry over from the English
+ * source. Checked in BOTH directions: a dropped `{count}` renders a sentence with
+ * a hole in it, and an invented one renders a literal brace to the user.
+ *
+ * @param {string} s A source string or translated value.
+ * @return {Set<string>} The placeholder tokens it contains.
+ */
+function placeholders(s) {
+	const out = new Set()
+	for (const m of String(s).matchAll(/\{[a-zA-Z_][\w.]*\}|%[nsd]|%\d+\$[sd]/g)) out.add(m[0])
+	return out
+}
+
+/**
+ * nplurals from a locale file's OWN plural-forms header.
+ *
+ * Anchored on `^` or `;` so it cannot match the `nplurals` inside the word
+ * itself when the expression is scanned, and never inferred from the language:
+ * an array shorter than the form index the runtime asks for renders BLANK, and
+ * that is the one l10n defect invisible to a human reading the file.
+ *
+ * @param {string} pluralForm The header string passed to OC.L10N.register.
+ * @return {number} Declared form count, defaulting to 2.
+ */
+function npluralsOf(pluralForm) {
+	const m = /(?:^|;)\s*nplurals\s*=\s*(\d+)/.exec(pluralForm || '')
+	return m ? Number(m[1]) : 2
+}
+
+/**
+ * The `{plural}` keys, which are a SOURCE defect rather than a translation
+ * problem: the call sites interpolate a literal "s" or "", i.e. hardcoded English
+ * morphology, so no language whose plural is not a suffixed -s can render them
+ * correctly. Croatian and Lithuanian cannot render them correctly at ALL, having
+ * three numeral cases each.
+ *
+ * Dropping `{plural}` is therefore the ONE permitted placeholder loss. Every
+ * other drift stays refused. See docs/l10n-ui-translation.md for what each
+ * language family does instead.
+ */
+const PLURAL_HACK_KEYS = new Set([
+	'file{plural}', 'log{plural}', 'object{plural}', 'register{plural}', 'schema{plural}',
+])
+
+/** Locale codes that have a committed config, i.e. a started or finished pass. */
+function configuredLocales() {
+	if (!fs.existsSync(LOCALES_DIR)) return []
+	return fs.readdirSync(LOCALES_DIR)
+		.filter((f) => f.endsWith('.json'))
+		.map((f) => f.replace(/\.json$/, ''))
+		.sort()
+}
+
+/**
+ * Per-locale configuration. Returns empty structures for a locale that has none
+ * yet, so callers can treat "not started" and "in progress" uniformly.
+ *
+ * @param {string} loc Locale code.
+ * @return {{register: string|null, cognates: object, corrections: object}} Config.
+ */
+function loadLocaleConfig(loc) {
+	const f = path.join(LOCALES_DIR, `${loc}.json`)
+	if (!fs.existsSync(f)) return { register: null, cognates: {}, corrections: {} }
+	const raw = JSON.parse(fs.readFileSync(f, 'utf8'))
+	return {
+		register: raw.register || null,
+		cognates: raw.cognates || {},
+		corrections: raw.corrections || {},
+	}
+}
+
+/**
+ * The register detector for a locale, or null if none has been built yet.
+ *
+ * @param {string} loc Locale code.
+ * @return {object|null} Module exporting score/runControls/CONTROLS.
+ */
+function loadDetector(loc) {
+	const f = path.join(DETECTORS_DIR, `${loc}.js`)
+	return fs.existsSync(f) ? require(f) : null
+}
+
+/**
+ * The locale bundle as of HEAD, for "did this pass lose or silently alter an
+ * existing translation?". Read through git rather than a copied file, so it
+ * cannot drift out of date the way a stashed `<loc>-HEAD.js` does.
+ *
+ * @param {string} loc Locale code.
+ * @return {object|null} Translations at HEAD, or null if the file is new.
+ */
+function bundleAtHead(loc) {
+	let text
+	try {
+		text = execFileSync('git', ['show', `HEAD:l10n/${loc}.js`],
+			{ cwd: APP_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+	} catch {
+		return null
+	}
+	let captured = null
+	const sandbox = { OC: { L10N: { register: (app, tr) => { captured = tr } } } }
+	vm.createContext(sandbox)
+	vm.runInContext(text, sandbox, { filename: `HEAD:l10n/${loc}.js` })
+	return captured
+}
+
 module.exports = {
 	loadJsTranslations,
 	serializeJs,
@@ -472,4 +637,16 @@ module.exports = {
 	localeNameOf,
 	DYNAMIC_KEYS,
 	collectDynamicKeys,
+	// layer 2: a single-locale pass
+	APP_ROOT,
+	LOCALES_DIR,
+	DETECTORS_DIR,
+	isIdentical,
+	placeholders,
+	npluralsOf,
+	PLURAL_HACK_KEYS,
+	configuredLocales,
+	loadLocaleConfig,
+	loadDetector,
+	bundleAtHead,
 }

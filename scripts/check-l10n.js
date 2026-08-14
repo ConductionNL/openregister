@@ -27,7 +27,7 @@ const {
 	makeLineResolver,
 	collectDynamicKeys,
 	pluralIdentifier,
-} = require('./lib/l10n.js')
+} = require('./l10n/lib.js')
 
 const ROOT = path.resolve(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'src')
@@ -47,7 +47,7 @@ function rel(p) {
 
 /**
  * Extract t('<app>', '...') and n('<app>', '...', '...', n) calls, plus the
- * $t/$n template variants, via the shared extractor in lib/l10n.js so this
+ * $t/$n template variants, via the shared extractor in l10n/lib.js so this
  * script, clean-l10n.js and l10n-ai.js always agree on what "used" means.
  *
  * An n() call contributes ONE key: the identifier its two source strings combine

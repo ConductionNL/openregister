@@ -82,6 +82,25 @@ const EUROPEAN = [
 	'ca', 'lb', 'rm',
 ].join(',')
 
+// Per-locale config from scripts/l10n/locales/<loc>.json: the measured register,
+// the JUSTIFIED cognates, and audited corrections. Required so this gate can tell
+// a deliberate cognate apart from placeholder-shaped filler — without it, "19
+// English-identical" is a number nobody can act on. Still dependency-free pure
+// Node; it is a sibling file in this repo, not an npm package.
+const { loadLocaleConfig, configuredLocales } = require('../../scripts/l10n/lib.js')
+
+// Locales whose identical values are held to a recorded justification. This is
+// OPT-IN per locale, keyed on the existence of scripts/l10n/locales/<loc>.json,
+// because sixteen locales were finished before the cognate rule existed and carry
+// ~400 identical values nobody has reviewed. Failing CI on those would say
+// "regression" about history, and some of them are legitimate — `nl` genuinely
+// renders `Bewaartermijn` and `AVG / Verwerkingsregister` unchanged, because those
+// are Dutch words in a Dutch bundle.
+//
+// The gap is REPORTED below rather than hidden. Add a locales/<loc>.json as each
+// old locale gets reviewed, and it becomes enforced from that moment.
+const COGNATES_ENFORCED = new Set(configuredLocales())
+
 function readJson(p) {
 	return JSON.parse(fs.readFileSync(p, 'utf8'))
 }
@@ -251,14 +270,34 @@ for (const set of sets) {
 			}
 		}
 
+		// Which identical values are JUSTIFIED. A genuine cognate ("CSV", "PDF",
+		// "RBAC", "Schema" in Lithuanian, "Flows" in nl/de/da) is real finished work
+		// and must keep parity, so it is written out — but only against a recorded
+		// reason in scripts/l10n/locales/<loc>.json. Anything identical WITHOUT one is
+		// indistinguishable from filler, which is the state this whole gate exists to
+		// prevent, so for a finished locale it is fatal.
+		//
+		// The .json (backend) set has no per-locale config, so it is exempt.
+		const enforced = set.kind === 'frontend (.js)' && COGNATES_ENFORCED.has(loc)
+		const cognates = enforced ? loadLocaleConfig(loc).cognates : {}
+		const unjustified = enforced
+			? identical.filter((k) => !Object.prototype.hasOwnProperty.call(cognates, k))
+			: []
+		// A reason recorded for a key that is no longer identical is a stale
+		// permission slip: it would silently license the next value written there.
+		const staleCognates = enforced ? Object.keys(cognates).filter((k) => !identical.includes(k)) : []
+
 		const finished = FINISHED.has(loc)
 		// Empty values and wrong plural arity are RUNTIME faults — the string renders
 		// blank — so they fail for every locale regardless of completion status.
-		// A missing key only fails for a locale declared finished; elsewhere it is
-		// simply work not yet done.
+		// A missing key, an unjustified identical value and a stale cognate record
+		// only fail for a locale declared finished; elsewhere they are simply work not
+		// yet done.
 		const fatal = empty.length > 0
 			|| badArity.length > 0
 			|| (finished && missing.length > 0)
+			|| (finished && unjustified.length > 0)
+			|| (finished && staleCognates.length > 0)
 			|| (strictIdentical && identical.length > 0)
 		const entry = {
 			set: set.kind,
@@ -268,12 +307,14 @@ for (const set of sets) {
 			missing,
 			empty,
 			identical,
+			unjustified,
+			staleCognates,
 			badArity,
 			total: enKeys.length,
 		}
 		if (fatal) {
 			failures.push(entry)
-		} else if (missing.length) {
+		} else if (missing.length || unjustified.length) {
 			backlog.push(entry)
 		}
 	}
@@ -291,13 +332,26 @@ const finishedList = [...FINISHED].sort()
 console.log(`l10n-parity: ${finishedList.length} locale(s) declared finished and held at `
 	+ `key-for-key parity: ${finishedList.join(' ')}`)
 
+// Say plainly which locales have their identical values under justification, and
+// which do not. Silence here would let the unreviewed ~400 pass as verified.
+const enforcedList = finishedList.filter((l) => COGNATES_ENFORCED.has(l))
+const unreviewed = finishedList.filter((l) => !COGNATES_ENFORCED.has(l))
+console.log(`l10n-parity: ${enforcedList.length} of those also hold every English-identical value to a `
+	+ `recorded justification: ${enforcedList.join(' ') || '(none)'}`)
+if (unreviewed.length) {
+	console.log(`l10n-parity: ${unreviewed.length} finished locale(s) predate the cognate rule and are NOT yet `
+		+ `held to it: ${unreviewed.join(' ')}`)
+	console.log('             Their identical values are unreviewed — add scripts/l10n/locales/<loc>.json '
+		+ 'as each is checked.')
+}
+
 // Always print the backlog, on pass as well as fail. A gate that goes quiet about
 // the 19 unfinished locales would read as "everything is translated".
 if (backlog.length) {
 	console.log(`\nl10n-parity: ${backlog.length} locale(s) still in progress (not gated):`)
 	for (const b of backlog.sort((x, y) => x.missing.length - y.missing.length)) {
-		console.log(`  · ${b.set} ${b.loc}: ${b.missing.length} of ${b.total} key(s) to go`
-			+ `${b.identical.length ? `, ${b.identical.length} English-identical` : ''}`)
+		console.log(`  · ${b.set} ${b.loc}: ${b.missing.length + b.unjustified.length} of ${b.total} key(s) to go`
+			+ `${b.unjustified.length ? ` (${b.missing.length} absent + ${b.unjustified.length} English-identical)` : ''}`)
 	}
 }
 
@@ -315,7 +369,8 @@ for (const f of failures) {
 		console.error(`  • ${f.set} ${f.loc}: cannot parse (${f.detail})`)
 	} else {
 		console.error(`  • ${f.set} ${f.loc}${f.finished ? ' (declared FINISHED)' : ''}: ${f.missing.length} missing key(s), `
-			+ `${f.empty.length} empty value(s), ${f.identical.length} English-identical, `
+			+ `${f.empty.length} empty value(s), ${f.identical.length} English-identical `
+			+ `(${f.unjustified.length} of them unjustified), `
 			+ `${f.badArity.length} bad plural arity — of ${f.total}`)
 		for (const k of f.missing.slice(0, 8)) {
 			console.error(`      missing:   ${JSON.stringify(k)}`)
@@ -326,11 +381,14 @@ for (const f of failures) {
 		for (const k of f.empty.slice(0, 4)) {
 			console.error(`      empty:     ${JSON.stringify(k)}`)
 		}
-		for (const k of f.identical.slice(0, 6)) {
-			console.error(`      identical: ${JSON.stringify(k)}`)
+		for (const k of f.unjustified.slice(0, 6)) {
+			console.error(`      identical, no recorded reason: ${JSON.stringify(k)}`)
 		}
-		if (f.identical.length > 6) {
-			console.error(`      … +${f.identical.length - 6} more identical to English`)
+		if (f.unjustified.length > 6) {
+			console.error(`      … +${f.unjustified.length - 6} more identical without a reason`)
+		}
+		for (const k of f.staleCognates.slice(0, 6)) {
+			console.error(`      stale cognate record (value is no longer identical): ${JSON.stringify(k)}`)
 		}
 		for (const b of f.badArity.slice(0, 6)) {
 			console.error(`      arity:     ${JSON.stringify(b.key)} has ${b.got} form(s), `
