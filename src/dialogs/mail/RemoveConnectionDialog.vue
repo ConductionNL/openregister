@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'Remove connection')"
-		:can-close="!removing"
+		:canClose="!removing"
 		class="or-remove-connection-dialog"
 		@closing="$emit('cancel')">
 		<p>
@@ -49,10 +49,9 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 
 export default {
 	name: 'RemoveConnectionDialog',
@@ -64,20 +63,24 @@ export default {
 		LinkVariantOff,
 		AlertOutline,
 	},
+
 	props: {
 		show: {
 			type: Boolean,
 			required: true,
 		},
+
 		name: {
 			type: String,
 			default: '',
 		},
+
 		removing: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	methods: {
 		t,
 	},

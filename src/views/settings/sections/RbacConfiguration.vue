@@ -3,7 +3,7 @@
 		name="Role Based Access Control (RBAC)"
 		description="Configure access permissions and user groups"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading RBAC settings...')">
+		:loadingMessage="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
 			<NcButton
 				variant="error"
@@ -121,7 +121,7 @@
 							<NcSelect
 								v-model="rbacOptions.anonymousGroup"
 								:options="groupOptions"
-								:input-label="t('openregister', 'Anonymous Group')"
+								:inputLabel="t('openregister', 'Anonymous Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -138,7 +138,7 @@
 							<NcSelect
 								v-model="rbacOptions.defaultNewUserGroup"
 								:options="groupOptions"
-								:input-label="t('openregister', 'New User Group')"
+								:inputLabel="t('openregister', 'New User Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -155,7 +155,7 @@
 							<NcSelect
 								v-model="rbacOptions.defaultObjectOwner"
 								:options="userOptions"
-								:input-label="t('openregister', 'Default Owner')"
+								:inputLabel="t('openregister', 'Default Owner')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -166,21 +166,21 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 /**
  * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
  */
 import { mapStores } from 'pinia'
-import { translate as t } from '@nextcloud/l10n'
-import { useSettingsStore } from '../../../store/settings.js'
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import {
-	NcButton,
-	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
-	NcSelect,
-} from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { useSettingsStore } from '../../../store/settings.js'
 
 export default {
 	name: 'RbacConfiguration',
@@ -205,6 +205,7 @@ export default {
 			get() {
 				return this.settingsStore.rbacOptions
 			},
+
 			/**
 			 * @param value
 			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration

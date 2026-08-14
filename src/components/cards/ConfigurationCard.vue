@@ -74,13 +74,13 @@
 					</span>
 				</template>
 			</h2>
-			<NcActions :primary="true" menu-name="Actions">
+			<NcActions :primary="true" menuName="Actions">
 				<template #icon>
 					<DotsHorizontal :size="20" />
 				</template>
 				<!-- Actions for imported configurations -->
 				<template v-if="isImported">
-					<NcActionButton close-after-click @click="handleView">
+					<NcActionButton closeAfterClick @click="handleView">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
@@ -88,7 +88,7 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="hasUpdateAvailable"
-						close-after-click
+						closeAfterClick
 						@click="handlePreviewUpdate">
 						<template #icon>
 							<EyeOutline :size="20" />
@@ -97,20 +97,20 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="isRemoteConfiguration"
-						close-after-click
+						closeAfterClick
 						@click="handleCheckVersion">
 						<template #icon>
 							<Sync :size="20" />
 						</template>
 						Check Version
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleEdit">
+					<NcActionButton closeAfterClick @click="handleEdit">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleExport">
+					<NcActionButton closeAfterClick @click="handleExport">
 						<template #icon>
 							<Download :size="20" />
 						</template>
@@ -118,7 +118,7 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="isLocalConfiguration && !isPublished"
-						close-after-click
+						closeAfterClick
 						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
@@ -127,14 +127,14 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="isPublished"
-						close-after-click
+						closeAfterClick
 						@click="handlePublish">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						Update Published
 					</NcActionButton>
-					<NcActionButton close-after-click @click="handleDelete">
+					<NcActionButton closeAfterClick @click="handleDelete">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -144,7 +144,7 @@
 				<!-- Actions for discovered/external configurations -->
 				<template v-else>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="$emit('import', configuration)">
 						<template #icon>
 							<CloudUpload :size="20" />
@@ -153,7 +153,7 @@
 					</NcActionButton>
 					<NcActionButton
 						v-if="viewSourceUrl"
-						close-after-click
+						closeAfterClick
 						@click="openInNewTab(viewSourceUrl)">
 						<template #icon>
 							<OpenInNew :size="20" />
@@ -247,30 +247,29 @@
 </template>
 
 <script>
-import { NcActions, NcActionButton } from '@nextcloud/vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
+import { NcActionButton, NcActions } from '@nextcloud/vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
+import Cloud from 'vue-material-design-icons/Cloud.vue'
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Update from 'vue-material-design-icons/Update.vue'
-import Sync from 'vue-material-design-icons/Sync.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Cloud from 'vue-material-design-icons/Cloud.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import Star from 'vue-material-design-icons/Star.vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Sync from 'vue-material-design-icons/Sync.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
@@ -318,6 +317,7 @@ export default {
 		Magnify,
 		Tag,
 	},
+
 	props: {
 		/**
 		 * Configuration object
@@ -328,6 +328,7 @@ export default {
 			required: true,
 		},
 	},
+
 	emits: [
 		'view',
 		'edit',
@@ -337,6 +338,7 @@ export default {
 		'check-version',
 		'preview-update',
 	],
+
 	data() {
 		return {
 			// Track if this discovered config is already imported (fetched from backend)
@@ -344,6 +346,7 @@ export default {
 			checkingImportStatus: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
@@ -353,6 +356,7 @@ export default {
 		isDiscovered() {
 			return !!this.configuration.config?.app
 		},
+
 		/**
 		 * Get the app ID from configuration
 		 *
@@ -362,6 +366,7 @@ export default {
 		appId() {
 			return this.configuration.app || this.configuration.config?.app || null
 		},
+
 		/**
 		 * Check if this discovered configuration is already imported
 		 * Uses backend-fetched data, not frontend store (which may be paginated)
@@ -374,6 +379,7 @@ export default {
 			// Check if we've fetched and found an imported config ID
 			return this.importedConfigId !== null
 		},
+
 		/**
 		 * Get the existing local configuration if it's already imported
 		 *
@@ -409,6 +415,7 @@ export default {
 				syncEnabled: true,
 			}
 		},
+
 		/**
 		 * Get the configuration to display
 		 * If discovered and already imported, merge with local config
@@ -431,6 +438,7 @@ export default {
 					isLocal:
 						this.existingConfiguration.isLocal
 						?? this.configuration.isLocal,
+
 					sourceType:
 						this.existingConfiguration.sourceType
 						?? this.configuration.sourceType,
@@ -445,6 +453,7 @@ export default {
 				sourceType: config.sourceType,
 			}
 		},
+
 		/**
 		 * Check if this is an imported configuration
 		 *
@@ -459,6 +468,7 @@ export default {
 			// Otherwise, it's imported if it has an ID (local database entity)
 			return !!this.configuration.id
 		},
+
 		/**
 		 * Get description from either format
 		 *
@@ -469,6 +479,7 @@ export default {
 			const config = this.displayConfiguration
 			return config.description || config.config?.description || ''
 		},
+
 		/**
 		 * Check if configuration is local
 		 *
@@ -492,6 +503,7 @@ export default {
 			const sourceType = displayConfig.sourceType ?? originalConfig.sourceType
 			return sourceType === 'local' || sourceType === 'manual'
 		},
+
 		/**
 		 * Check if configuration is external (not local)
 		 *
@@ -500,6 +512,7 @@ export default {
 		isExternal() {
 			return !this.isImported || !this.isLocalConfiguration
 		},
+
 		/**
 		 * Check if configuration is remote
 		 *
@@ -514,6 +527,7 @@ export default {
 
 			return result
 		},
+
 		/**
 		 * Check if update is available
 		 *
@@ -528,6 +542,7 @@ export default {
 			}
 			return config.remoteVersion !== currentVersion
 		},
+
 		/**
 		 * Check if configuration is published (local and has GitHub repo info)
 		 *
@@ -543,6 +558,7 @@ export default {
 					|| (config.sourceType === 'github' && config.githubRepo))
 			)
 		},
+
 		/**
 		 * Get view source URL
 		 *
@@ -553,6 +569,7 @@ export default {
 			const config = this.displayConfiguration
 			return config.url || config.sourceUrl || null
 		},
+
 		/**
 		 * Check if configuration has any metadata to display in footer
 		 *
@@ -571,6 +588,7 @@ export default {
 				|| config.remoteVersion
 			)
 		},
+
 		/**
 		 * Get repository full name (owner/repo)
 		 *
@@ -602,6 +620,7 @@ export default {
 
 			return null
 		},
+
 		/**
 		 * Get repository URL
 		 *
@@ -624,6 +643,7 @@ export default {
 			// Default to GitHub
 			return `https://github.com/${this.repositoryFullName}`
 		},
+
 		/**
 		 * Organization URL, validated to be a safe http(s) link to prevent
 		 * javascript:/data: URL injection via imported configuration data.
@@ -639,14 +659,16 @@ export default {
 			return null
 		},
 	},
+
 	watch: {
-		'configuration.config.app'() {
+		'configuration.config.app': function () {
 			// Re-check if app ID changes
 			if (this.isDiscovered && this.appId) {
 				this.checkIfImported()
 			}
 		},
 	},
+
 	/**
 	 * @spec exclude lifecycle hook delegating to checkIfImported (REQ-002), UI plumbing
 	 */
@@ -656,6 +678,7 @@ export default {
 			this.checkIfImported()
 		}
 	},
+
 	methods: {
 		/**
 		 * Check if this discovered configuration is already imported in the backend
@@ -714,6 +737,7 @@ export default {
 				this.checkingImportStatus = false
 			}
 		},
+
 		/**
 		 * Get source type label
 		 *
@@ -730,6 +754,7 @@ export default {
 			}
 			return labels[sourceType] || 'Unknown'
 		},
+
 		/**
 		 * Get sync status text
 		 *
@@ -762,6 +787,7 @@ export default {
 				return 'Never synced'
 			}
 		},
+
 		/**
 		 * Open URL in new tab
 		 *
@@ -771,8 +797,10 @@ export default {
 		openInNewTab(url) {
 			window.open(url, '_blank')
 		},
+
 		/**
 		 * Handle view action
+		 *
 		 * @spec exclude emit/store-dispatch UI handler opening view modal
 		 */
 		handleView() {
@@ -785,8 +813,10 @@ export default {
 				this.$emit('view', config)
 			}
 		},
+
 		/**
 		 * Handle edit action
+		 *
 		 * @spec exclude emit/store-dispatch UI handler opening edit modal
 		 */
 		handleEdit() {
@@ -798,8 +828,10 @@ export default {
 				this.$emit('edit', config)
 			}
 		},
+
 		/**
 		 * Handle export action
+		 *
 		 * @spec exclude emit/store-dispatch UI handler opening export modal
 		 */
 		handleExport() {
@@ -811,8 +843,10 @@ export default {
 				this.$emit('export', config)
 			}
 		},
+
 		/**
 		 * Handle publish action
+		 *
 		 * @spec exclude store-dispatch UI handler opening publish modal
 		 */
 		handlePublish() {
@@ -820,8 +854,10 @@ export default {
 			configurationStore.setConfigurationItem(config)
 			navigationStore.setModal('publishConfiguration')
 		},
+
 		/**
 		 * Handle delete action
+		 *
 		 * @spec exclude emit/store-dispatch UI handler opening delete dialog
 		 */
 		handleDelete() {
@@ -833,16 +869,20 @@ export default {
 				this.$emit('delete', config)
 			}
 		},
+
 		/**
 		 * Handle check version action
+		 *
 		 * @spec exclude emit UI handler dispatching check-version event
 		 */
 		handleCheckVersion() {
 			const config = this.existingConfiguration || this.displayConfiguration
 			this.$emit('check-version', config)
 		},
+
 		/**
 		 * Handle preview update action
+		 *
 		 * @spec exclude emit/store-dispatch UI handler opening preview modal
 		 */
 		handlePreviewUpdate() {

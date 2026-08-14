@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TAuditTrail } from './auditTrail.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TAuditTrail } from './auditTrail.types'
+
+import { z } from 'zod'
 
 export class AuditTrail implements TAuditTrail {
 	public id: number

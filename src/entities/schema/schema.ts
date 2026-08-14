@@ -1,5 +1,7 @@
-import { SafeParseReturnType, z } from 'zod'
-import { TSchema } from './schema.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TSchema } from './schema.types'
+
+import { z } from 'zod'
 
 export class Schema implements TSchema {
 	public id: string

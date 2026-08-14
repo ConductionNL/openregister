@@ -17,7 +17,7 @@
 			<dd>{{ execution.mode }}</dd>
 			<dt>Status</dt>
 			<dd>
-				<span :class="['status-badge', `status-${execution.status}`]">{{
+				<span class="status-badge" :class="[`status-${execution.status}`]">{{
 					execution.status
 				}}</span>
 			</dd>
@@ -50,6 +50,7 @@ export default {
 	props: {
 		execution: { type: Object, required: true },
 	},
+
 	emits: ['close'],
 }
 </script>

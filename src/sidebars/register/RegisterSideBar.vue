@@ -1,9 +1,9 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
-	registerStore,
 	dashboardStore,
 	navigationStore,
+	registerStore,
 	schemaStore,
 } from '../../store/store.js'
 </script>
@@ -62,7 +62,7 @@ import {
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="register.stats?.objects?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'object{plural}', {
 								plural:
 									register.stats?.objects?.total !== 1 ? 's' : '',
@@ -71,24 +71,24 @@ import {
 						:icon="PackageVariantClosed"
 						variant="primary"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="objectsBreakdown" />
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="register.stats?.logs?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'log{plural}', {
 								plural: register.stats?.logs?.total !== 1 ? 's' : '',
 							})
 						"
 						:icon="TextBoxOutline"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="sizeBreakdown(register.stats?.logs?.size)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="register.stats?.files?.total || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'file{plural}', {
 								plural:
 									register.stats?.files?.total !== 1 ? 's' : '',
@@ -96,19 +96,19 @@ import {
 						"
 						:icon="FileDocumentOutline"
 						horizontal
-						show-zero-count
+						showZeroCount
 						:breakdown="sizeBreakdown(register.stats?.files?.size)" />
 					<CnStatsBlock
 						:title="t('openregister', 'Schemas')"
 						:count="register.schemas?.length || 0"
-						:count-label="
+						:countLabel="
 							t('openregister', 'schema{plural}', {
 								plural: register.schemas?.length !== 1 ? 's' : '',
 							})
 						"
 						:icon="FileCodeOutline"
 						horizontal
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -140,12 +140,12 @@ import {
 						:title="schema.title"
 						:icon="FileCodeOutline">
 						<template #actions>
-							<NcActions :primary="true" menu-name="Schema Actions">
+							<NcActions :primary="true" menuName="Schema Actions">
 								<template #icon>
 									<DotsHorizontal :size="20" />
 								</template>
 								<NcActionButton
-									close-after-click
+									closeAfterClick
 									@click="editSchema(schema)">
 									<template #icon>
 										<Pencil :size="20" />
@@ -158,11 +158,11 @@ import {
 							<CnStatsBlock
 								:title="t('openregister', 'Total Objects')"
 								:count="schema.stats?.objects?.total || 0"
-								show-zero-count />
+								showZeroCount />
 							<CnStatsBlock
 								:title="t('openregister', 'Total Size')"
 								:count="0"
-								show-zero-count
+								showZeroCount
 								:breakdown="
 									sizeBreakdown(schema.stats?.objects?.size)
 								" />
@@ -178,39 +178,39 @@ import {
 		ref="formDialog"
 		:schema="registerSchema"
 		:item="register"
-		:dialog-title="t('openregister', 'Edit Register')"
+		:dialogTitle="t('openregister', 'Edit Register')"
 		@confirm="onSaveRegister"
 		@close="showEditDialog = false">
 		<template #form="{ formData, errors, updateField }">
 			<div class="formContainer">
 				<NcTextField
 					:label="t('openregister', 'Title') + ' *'"
-					:model-value="formData.title || ''"
+					:modelValue="formData.title || ''"
 					:error="!!errors.title"
-					:helper-text="errors.title"
+					:helperText="errors.title"
 					@update:modelValue="(v) => updateField('title', v)" />
 				<NcTextField
 					:label="t('openregister', 'Slug') + ' *'"
-					:model-value="formData.slug || ''"
+					:modelValue="formData.slug || ''"
 					:error="!!errors.slug"
-					:helper-text="errors.slug"
+					:helperText="errors.slug"
 					@update:modelValue="(v) => updateField('slug', v)" />
 				<NcTextArea
 					:label="t('openregister', 'Description')"
-					:model-value="formData.description || ''"
+					:modelValue="formData.description || ''"
 					@update:modelValue="(v) => updateField('description', v)" />
 				<NcSelect
-					:input-label="t('openregister', 'Schemas')"
+					:inputLabel="t('openregister', 'Schemas')"
 					:options="schemaSelectOptions"
-					:model-value="getSchemaSelectValue(formData.schemas)"
+					:modelValue="getSchemaSelectValue(formData.schemas)"
 					:multiple="true"
-					:close-on-select="false"
+					:closeOnSelect="false"
 					:loading="schemasLoading"
 					@update:modelValue="(vals) => updateField('schemas', vals)" />
 				<RegisterLanguagesEditor
 					:value="formData.languages || []"
 					:label="t('openregister', 'Languages')"
-					:helper-text="
+					:helperText="
 						t(
 							'openregister',
 							'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.',
@@ -224,35 +224,35 @@ import {
 
 <script>
 import {
+	CnFormDialog,
+	CnItemCard,
+	CnKpiGrid,
+	CnStatsBlock,
+} from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
+import {
+	NcActionButton,
+	NcActions,
 	NcAppSidebar,
 	NcAppSidebarTab,
 	NcButton,
 	NcEmptyContent,
-	NcActions,
-	NcActionButton,
-	NcTextField,
-	NcTextArea,
 	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import {
-	CnStatsBlock,
-	CnKpiGrid,
-	CnItemCard,
-	CnFormDialog,
-} from '@conduction/nextcloud-vue'
-import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import ChartBar from 'vue-material-design-icons/ChartBar.vue'
-import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Calculator from 'vue-material-design-icons/Calculator.vue'
-import Download from 'vue-material-design-icons/Download.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
+import Calculator from 'vue-material-design-icons/Calculator.vue'
+import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
 import formatBytes from '../../services/formatBytes.js'
 
 export default {
@@ -280,6 +280,7 @@ export default {
 		ApiIcon,
 		DotsHorizontal,
 	},
+
 	data() {
 		return {
 			// Icon components for CnStatsBlock
@@ -291,9 +292,11 @@ export default {
 			schemasLoading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Resolve the active register (with stats) from the dashboard store.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @return {object|undefined} The active register record
 		 */
@@ -311,6 +314,7 @@ export default {
 				(r) => String(r.id) === String(registerId),
 			)
 		},
+
 		activeTab: {
 			/**
 			 * @spec exclude Tab-switch state accessor; proxies the active tab to/from the register store, no domain behavior.
@@ -318,6 +322,7 @@ export default {
 			get() {
 				return registerStore.getActiveTab
 			},
+
 			/**
 			 * @param value
 			 * @spec exclude Tab-switch state mutator; proxies the active tab to the register store, no domain behavior.
@@ -326,6 +331,7 @@ export default {
 				registerStore.setActiveTab(value)
 			},
 		},
+
 		/**
 		 * @spec exclude Presentation-only formatter; builds the object stats breakdown (size/invalid/deleted/locked) for display.
 		 * @return {object} Breakdown descriptor for the objects stats block
@@ -340,8 +346,10 @@ export default {
 			}
 			return breakdown
 		},
+
 		/**
 		 * Build the schema definition used by the inline register-edit form dialog.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @return {object} JSON-schema-like definition for the edit form
 		 */
@@ -356,6 +364,7 @@ export default {
 						minLength: 1,
 						order: 1,
 					},
+
 					slug: {
 						type: 'string',
 						title: t('openregister', 'Slug'),
@@ -363,29 +372,35 @@ export default {
 						minLength: 1,
 						order: 2,
 					},
+
 					description: {
 						type: 'string',
 						title: t('openregister', 'Description'),
 						order: 3,
 					},
+
 					schemas: {
 						type: 'array',
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
+
 					languages: {
 						type: 'array',
 						title: t('openregister', 'Languages'),
 						order: 5,
 					},
 				},
+
 				required: ['title', 'slug'],
 			}
 		},
 	},
+
 	watch: {
 		/**
 		 * Load schema options when the register-edit dialog opens.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @param {boolean} val - Whether the edit dialog is open
 		 * @return {void}
@@ -396,6 +411,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
@@ -409,6 +425,7 @@ export default {
 
 		/**
 		 * Load the schema list and build select options for the register-edit form.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @return {Promise<void>}
 		 */
@@ -429,6 +446,7 @@ export default {
 
 		/**
 		 * Resolve persisted schema references into select-option shape for the edit form.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @param {Array} schemas - Schema ids or objects
 		 * @return {Array} Select options
@@ -447,6 +465,7 @@ export default {
 
 		/**
 		 * Submit the register-edit form through the register store and refresh dashboard stats.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @param {object} formData - Edited register fields
 		 * @return {Promise<void>}
@@ -468,6 +487,7 @@ export default {
 
 		/**
 		 * Trigger a server-side size recalculation for the register and refresh stats.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Promise<void>}
 		 */
@@ -485,6 +505,7 @@ export default {
 
 		/**
 		 * Fetch the register's generated OpenAPI spec and download it as a JSON file.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
 		 * @return {Promise<void>}
 		 */
@@ -513,6 +534,7 @@ export default {
 
 		/**
 		 * Open the register's generated OpenAPI spec in an interactive ReDoc viewer.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-10
 		 * @return {void}
 		 */
@@ -529,6 +551,7 @@ export default {
 
 		/**
 		 * Stage a schema for editing and open the schema-edit modal.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
 		 * @param {object} schema - The schema to edit
 		 * @return {void}

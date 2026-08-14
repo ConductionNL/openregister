@@ -182,14 +182,14 @@
 </template>
 
 <script>
+import { CnChartWidget } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import {
 	NcAppContent,
+	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcButton,
 } from '@nextcloud/vue'
-import { CnChartWidget } from '@conduction/nextcloud-vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'

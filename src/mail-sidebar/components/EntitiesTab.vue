@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 /**
  * Entities tab — surfaces the entities found *in this email*: the people and
  * addresses on the envelope (from / to / cc) plus email addresses, phone
@@ -42,7 +43,6 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 // Grounded extraction patterns — kept conservative to avoid false positives.
@@ -58,12 +58,14 @@ export default {
 		accountId: { type: Number, default: null },
 		messageId: { type: Number, default: null },
 	},
+
 	data() {
 		return {
 			entities: [],
 			loading: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -80,6 +82,7 @@ export default {
 			return groups
 		},
 	},
+
 	watch: {
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -88,9 +91,11 @@ export default {
 			this.loadEntities()
 		},
 	},
+
 	created() {
 		this.loadEntities()
 	},
+
 	methods: {
 		t,
 		/**
@@ -108,6 +113,7 @@ export default {
 			}
 			return labels[type] || type
 		},
+
 		/**
 		 * Extract the entities present in the current email — envelope people
 		 * and addresses plus body-level emails / phones / IBANs / links.
@@ -135,9 +141,11 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Build the deduplicated entity list from one message envelope.
 		 *
+		 * @param envelope
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		extractEntities(envelope) {

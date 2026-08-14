@@ -46,7 +46,7 @@
 		<template v-else>
 			<NcCheckboxRadioSwitch
 				type="switch"
-				:model-value="enabled"
+				:modelValue="enabled"
 				:disabled="busy"
 				data-testid="browser-notifications-toggle"
 				@update:modelValue="onToggle">
@@ -79,6 +79,7 @@ export default {
 		NcNoteCard,
 		NcSettingsSection,
 	},
+
 	data() {
 		return {
 			/** Whether the browser supports web push. */
@@ -93,6 +94,7 @@ export default {
 			error: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Human-readable label for the current permission state.
@@ -117,9 +119,11 @@ export default {
 			}
 		},
 	},
+
 	mounted() {
 		this.refreshState()
 	},
+
 	methods: {
 		/**
 		 * Resolve the WebPush client exposed by the always-loaded script.
@@ -135,6 +139,7 @@ export default {
 				|| null
 			)
 		},
+
 		/**
 		 * Read support + permission state from the WebPush client. Never prompts.
 		 *
@@ -160,6 +165,7 @@ export default {
 			// authoritative enable/disable result comes from the toggle handlers.
 			this.enabled = this.permission === 'granted'
 		},
+
 		/**
 		 * Handle a toggle gesture: subscribe on enable, unsubscribe on disable.
 		 *

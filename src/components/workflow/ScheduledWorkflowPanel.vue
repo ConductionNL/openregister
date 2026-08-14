@@ -26,7 +26,8 @@
 					<td>
 						<span
 							v-if="s.lastStatus"
-							:class="['status-badge', `status-${s.lastStatus}`]">
+							class="status-badge"
+							:class="[`status-${s.lastStatus}`]">
 							{{ s.lastStatus }}
 						</span>
 						<span v-else>-</span>
@@ -77,9 +78,9 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'ScheduledWorkflowPanel',
@@ -91,9 +92,11 @@ export default {
 			form: { name: '', engine: 'n8n', workflowId: '', interval: 86400 },
 		}
 	},
+
 	mounted() {
 		this.fetchSchedules()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude API passthrough loading schedules; scheduled-workflow contract owned by workflow-operations capability
@@ -107,6 +110,7 @@ export default {
 				console.error('Failed to fetch schedules:', error)
 			}
 		},
+
 		/**
 		 * @spec exclude API passthrough creating schedule + refetch; scheduled-workflow contract owned by workflow-operations capability
 		 */
@@ -120,6 +124,7 @@ export default {
 				console.error('Failed to create schedule:', error)
 			}
 		},
+
 		/**
 		 * @param seconds
 		 * @spec exclude computed interval-format display helper, UI plumbing

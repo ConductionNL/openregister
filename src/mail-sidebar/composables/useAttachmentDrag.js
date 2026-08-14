@@ -14,7 +14,7 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 
-import { onMounted, onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 export const ATTACHMENT_MIME = 'application/x-nc-mail-attachment'
 const ATTACHMENT_SELECTOR = '.attachment'

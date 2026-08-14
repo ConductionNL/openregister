@@ -12,7 +12,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				: t('openregister', 'Add Endpoint')
 		"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="navigationStore.setModal(false)">
 		<div class="formContainer">
 			<div class="form">
@@ -33,13 +33,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					maxlength="255" />
 				<NcSelect
 					v-model="endpointStore.endpointItem.method"
-					input-label="Endpoint Store Endpoint Item Method"
+					inputLabel="Endpoint Store Endpoint Item Method"
 					:options="methodOptions"
 					:label="t('openregister', 'Method*')"
 					:placeholder="t('openregister', 'Select HTTP method')" />
 				<NcSelect
 					v-model="endpointStore.endpointItem.targetType"
-					input-label="Endpoint Store Endpoint Item Target Type"
+					inputLabel="Endpoint Store Endpoint Item Target Type"
 					:options="targetTypeOptions"
 					:label="t('openregister', 'Target Type*')"
 					:placeholder="t('openregister', 'Select target type')" />
@@ -92,14 +92,14 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 
 <script>
 import {
-	NcDialog,
-	NcTextField,
-	NcTextArea,
 	NcButton,
+	NcDialog,
 	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 
 export default {
 	name: 'EditEndpoint',
@@ -112,6 +112,7 @@ export default {
 		ContentSaveOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			methodOptions: [
@@ -123,10 +124,12 @@ export default {
 				'OPTIONS',
 				'HEAD',
 			],
+
 			targetTypeOptions: ['view', 'agent', 'webhook', 'register', 'schema'],
 			endpointPlaceholder: '/api/example/{{id}}',
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md

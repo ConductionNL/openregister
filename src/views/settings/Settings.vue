@@ -1,11 +1,11 @@
 <template>
 	<CnAdminSettingsShell
-		app-id="openregister"
-		app-name="Open Register"
-		doc-url="https://docs.openregister.nl"
-		:app-version="settingsStore.versionInfo.appVersion || 'Unknown'"
-		:is-up-to-date="true"
-		:show-reimport="false">
+		appId="openregister"
+		appName="Open Register"
+		docUrl="https://docs.openregister.nl"
+		:appVersion="settingsStore.versionInfo.appVersion || 'Unknown'"
+		:isUpToDate="true"
+		:showReimport="false">
 		<!-- Clear App Store Cache action in the version card header -->
 		<template #actions>
 			<NcButton
@@ -53,7 +53,7 @@
 		<LogIntegrity />
 
 		<!-- Push Notifications Status Section -->
-		<PushNotificationsConfiguration :push-status="pushStatus" />
+		<PushNotificationsConfiguration :pushStatus="pushStatus" />
 
 		<!-- n8n Workflow Configuration Section -->
 		<N8nConfiguration />
@@ -73,27 +73,26 @@
 </template>
 
 <script>
-import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../store/settings.js'
-
-import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { mapStores } from 'pinia'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import StatisticsOverview from './sections/StatisticsOverview.vue'
-import CacheManagement from './sections/CacheManagement.vue'
-import RbacConfiguration from './sections/RbacConfiguration.vue'
-import PermissionMatrix from './sections/PermissionMatrix.vue'
-import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
-import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
-import FlowConfiguration from './sections/FlowConfiguration.vue'
-import RetentionConfiguration from './sections/RetentionConfiguration.vue'
-import LogIntegrity from './sections/LogIntegrity.vue'
-import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
-import N8nConfiguration from './sections/N8nConfiguration.vue'
-import LlmConfiguration from './sections/LlmConfiguration.vue'
-import FileConfiguration from './sections/FileConfiguration.vue'
-import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
+import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
+import CacheManagement from './sections/CacheManagement.vue'
+import FileConfiguration from './sections/FileConfiguration.vue'
+import FlowConfiguration from './sections/FlowConfiguration.vue'
+import LlmConfiguration from './sections/LlmConfiguration.vue'
+import LogIntegrity from './sections/LogIntegrity.vue'
+import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import N8nConfiguration from './sections/N8nConfiguration.vue'
+import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
+import PermissionMatrix from './sections/PermissionMatrix.vue'
+import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
+import RbacConfiguration from './sections/RbacConfiguration.vue'
+import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import StatisticsOverview from './sections/StatisticsOverview.vue'
+import { useSettingsStore } from '../../store/settings.js'
 
 /**
  * Main settings component that orchestrates all settings sections using Pinia store.
@@ -142,6 +141,7 @@ export default {
 	/**
 	 * Component created lifecycle hook
 	 * Initializes the settings store and loads all data
+	 *
 	 * @spec exclude UI plumbing — view-creation data fetch for display only
 	 * @return {Promise<void>}
 	 */

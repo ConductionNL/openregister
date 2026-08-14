@@ -1,6 +1,6 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,7 +11,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				: t('openregister', 'Create Organisation')
 		"
 		size="large"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -28,7 +28,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<div v-if="createAnother || !success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+				<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
@@ -73,18 +73,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								}}</label>
 								<NcSelect
 									v-model="selectedGroups"
-									input-label="Selected Groups"
+									inputLabel="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
-									track-by="id"
+									trackBy="id"
 									:multiple="true"
-									:label-outside="true"
+									:labelOutside="true"
 									:filterable="false"
 									:placeholder="
 										t('openregister', 'Search groups...')
 									"
-									@search-change="searchGroups"
+									@searchChange="searchGroups"
 									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
@@ -147,7 +147,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:label="t('openregister', 'Storage Quota (MB)')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:model-value="storageQuotaMB"
+								:modelValue="storageQuotaMB"
 								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
@@ -157,7 +157,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:model-value="bandwidthQuotaMB"
+								:modelValue="bandwidthQuotaMB"
 								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
@@ -170,7 +170,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:model-value="organisationItem.quota?.requests || 0"
+								:modelValue="organisationItem.quota?.requests || 0"
 								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
@@ -178,7 +178,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:label="t('openregister', 'User Quota')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:model-value="organisationItem.quota?.users || 0"
+								:modelValue="organisationItem.quota?.users || 0"
 								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
@@ -186,7 +186,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:label="t('openregister', 'Group Quota')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:model-value="organisationItem.quota?.groups || 0"
+								:modelValue="organisationItem.quota?.groups || 0"
 								@update:modelValue="updateGroupQuota" />
 						</div>
 					</AppTab>
@@ -304,16 +304,16 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</div>
 
 							<div v-else class="rbac-container">
-								<AppTabs content-class="mt-3" pills>
+								<AppTabs contentClass="mt-3" pills>
 									<!-- Registers -->
 									<AppTab :title="t('openregister', 'Registers')">
 										<RbacTable
-											entity-type="register"
+											entityType="register"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -322,12 +322,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<!-- Schemas -->
 									<AppTab :title="t('openregister', 'Schemas')">
 										<RbacTable
-											entity-type="schema"
+											entityType="schema"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -336,12 +336,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<!-- Objects -->
 									<AppTab :title="t('openregister', 'Objects')">
 										<RbacTable
-											entity-type="object"
+											entityType="object"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -350,12 +350,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<!-- Views -->
 									<AppTab :title="t('openregister', 'Views')">
 										<RbacTable
-											entity-type="view"
+											entityType="view"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -364,12 +364,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<!-- Agents -->
 									<AppTab :title="t('openregister', 'Agents')">
 										<RbacTable
-											entity-type="agent"
+											entityType="agent"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -379,12 +379,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<AppTab
 										:title="t('openregister', 'Configurations')">
 										<RbacTable
-											entity-type="configuration"
+											entityType="configuration"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -394,12 +394,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									<AppTab
 										:title="t('openregister', 'Applications')">
 										<RbacTable
-											entity-type="application"
+											entityType="application"
 											:authorization="
 												organisationItem.authorization || {}
 											"
-											:available-groups="availableGroups"
-											:organisation-groups="
+											:availableGroups="availableGroups"
+											:organisationGroups="
 												organisationItem.groups || []
 											"
 											@update="updateEntityPermission" />
@@ -469,12 +469,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																v-model="
 																	selectedSpecialRights.object_publish
 																"
-																input-label="Selected Special Rights Object Publish"
+																inputLabel="Selected Special Rights Object Publish"
 																:options="
 																	filteredAvailableGroups
 																"
 																label="name"
-																track-by="id"
+																trackBy="id"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -510,12 +510,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																v-model="
 																	selectedSpecialRights.agent_use
 																"
-																input-label="Selected Special Rights Agent Use"
+																inputLabel="Selected Special Rights Agent Use"
 																:options="
 																	filteredAvailableGroups
 																"
 																label="name"
-																track-by="id"
+																trackBy="id"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -551,12 +551,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																v-model="
 																	selectedSpecialRights.dashboard_view
 																"
-																input-label="Selected Special Rights Dashboard View"
+																inputLabel="Selected Special Rights Dashboard View"
 																:options="
 																	filteredAvailableGroups
 																"
 																label="name"
-																track-by="id"
+																trackBy="id"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -592,12 +592,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																v-model="
 																	selectedSpecialRights.llm_use
 																"
-																input-label="Selected Special Rights Llm Use"
+																inputLabel="Selected Special Rights Llm Use"
 																:options="
 																	filteredAvailableGroups
 																"
 																label="name"
-																track-by="id"
+																trackBy="id"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -666,7 +666,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		</template>
 		<RemoveUserDialog
 			:show="showRemoveUserDialog"
-			:user-id="userToRemove"
+			:userId="userToRemove"
 			:removing="removingUser !== null"
 			@cancel="cancelRemoveUser"
 			@confirm="confirmRemoveUser" />
@@ -674,33 +674,31 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-import { showSuccess, showError } from '@nextcloud/dialogs'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
-import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import Database from 'vue-material-design-icons/Database.vue'
 import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
+import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import Database from 'vue-material-design-icons/Database.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-
-import RemoveUserDialog from './RemoveUserDialog.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import RemoveUserDialog from './RemoveUserDialog.vue'
 
 export default {
 	name: 'EditOrganisation',
@@ -729,6 +727,7 @@ export default {
 		AccountMultiple,
 		Shield,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -744,8 +743,10 @@ export default {
 					users: 0,
 					groups: 0,
 				},
+
 				groups: [],
 			},
+
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -756,6 +757,7 @@ export default {
 				dashboard_view: [],
 				llm_use: [],
 			},
+
 			organisationUsers: [],
 			loadingUsers: false,
 			removingUser: null,
@@ -769,6 +771,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed byte-to-MB conversion of the storage quota for display; UI presentation helper.
@@ -777,6 +780,7 @@ export default {
 			if (!this.organisationItem.quota?.storage) return 0
 			return Math.round(this.organisationItem.quota.storage / (1024 * 1024))
 		},
+
 		/**
 		 * @spec exclude Computed byte-to-MB conversion of the bandwidth quota for display; UI presentation helper.
 		 */
@@ -784,6 +788,7 @@ export default {
 			if (!this.organisationItem.quota?.bandwidth) return 0
 			return Math.round(this.organisationItem.quota.bandwidth / (1024 * 1024))
 		},
+
 		/**
 		 * Filter available groups to only show those assigned to the organisation
 		 *
@@ -805,6 +810,7 @@ export default {
 			)
 		},
 	},
+
 	watch: {
 		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
 		'organisationStore.organisationItem': {
@@ -820,9 +826,11 @@ export default {
 					// Users are already included in the organisation object, no need to fetch separately
 				}
 			},
+
 			deep: true,
 		},
 	},
+
 	/**
 	 * @spec exclude Vue mounted() hook loading cached groups and initializing the form; modal init plumbing.
 	 */
@@ -835,6 +843,7 @@ export default {
 		// Initialize special rights from authorization
 		this.initializeSpecialRights()
 	},
+
 	methods: {
 		/**
 		 * Load available Nextcloud groups from store (or fetch if not cached)

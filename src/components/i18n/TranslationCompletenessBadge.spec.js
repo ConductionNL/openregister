@@ -6,10 +6,12 @@ import TranslationCompletenessBadge from './TranslationCompletenessBadge.vue'
  * @param key
  * @param ctx
  */
-const callComputed = (key, ctx) =>
-	TranslationCompletenessBadge.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) =>
-	TranslationCompletenessBadge.methods[key].apply(ctx, args)
+function callComputed(key, ctx) {
+	return TranslationCompletenessBadge.computed[key].call(ctx)
+}
+function callMethod(key, ctx, ...args) {
+	return TranslationCompletenessBadge.methods[key].apply(ctx, args)
+}
 
 const completeness = {
 	nl: { translated: 4, total: 4, ratio: 1 },

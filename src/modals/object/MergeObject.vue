@@ -1,15 +1,15 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
+	objectStore,
 	registerStore,
 	schemaStore,
 } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" :can-close="false">
+	<NcDialog name="Merge Objects" size="large" :canClose="false">
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
@@ -165,10 +165,10 @@ import {
 								<template v-else>
 									<NcSelect
 										v-model="propertySelections[property]"
-										input-label="Property Selections[Property]"
+										inputLabel="Property Selections[Property]"
 										:options="getMergeOptions(property)"
 										label="label"
-										track-by="value"
+										trackBy="value"
 										:placeholder="'Choose value for ' + property"
 										@update:modelValue="
 											onPropertySelectionChange(
@@ -638,23 +638,22 @@ import {
 <script>
 import {
 	NcButton,
-	NcDialog,
-	NcTextField,
 	NcCheckboxRadioSwitch,
+	NcDialog,
 	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 // Icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Merge from 'vue-material-design-icons/Merge.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 
 export default {
 	name: 'MergeObject',
@@ -698,6 +697,7 @@ export default {
 			sourceIncomingReferences: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Computed passthrough exposing objectStore.objectItem as the merge source; UI state helper.
@@ -705,6 +705,7 @@ export default {
 		sourceObject() {
 			return objectStore.objectItem
 		},
+
 		/**
 		 * @spec exclude Computed union of source+target property keys for the merge UI; UI presentation helper.
 		 */
@@ -722,6 +723,7 @@ export default {
 
 			return [...new Set([...sourceProps, ...targetProps])]
 		},
+
 		/**
 		 * @spec exclude Computed enablement guard for the merge button; UI validation helper.
 		 */
@@ -729,9 +731,11 @@ export default {
 			return Object.keys(this.mergedData).length > 0
 		},
 	},
+
 	mounted() {
 		this.initializeMerge()
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Wizard bootstrap loading source data and candidate targets on open; modal init plumbing.
@@ -744,6 +748,7 @@ export default {
 			this.loadSourceData()
 			this.searchObjects()
 		},
+
 		/**
 		 * @spec exclude Fetches candidate merge-target objects (excluding the source); UI search plumbing.
 		 */
@@ -770,6 +775,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
@@ -777,6 +783,7 @@ export default {
 		selectTargetObject(obj) {
 			this.selectedTargetObject = obj
 		},
+
 		/**
 		 * @spec exclude Wizard forward-navigation guard advancing to the merge step; UI step plumbing.
 		 */
@@ -786,6 +793,7 @@ export default {
 				this.initializeMergeData()
 			}
 		},
+
 		/**
 		 * @spec exclude Wizard back-navigation to the target-selection step; UI step plumbing.
 		 */
@@ -794,6 +802,7 @@ export default {
 				this.step = 1
 			}
 		},
+
 		/**
 		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
 		 */
@@ -843,6 +852,7 @@ export default {
 				}
 			})
 		},
+
 		/**
 		 * @param property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
@@ -898,6 +908,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * @param value
 		 * @param maxLength
@@ -922,6 +933,7 @@ export default {
 
 			return displayText
 		},
+
 		/**
 		 * @param text
 		 * @param maxLength
@@ -932,6 +944,7 @@ export default {
 			if (text.length <= maxLength) return text
 			return text.substring(0, maxLength) + '...'
 		},
+
 		/**
 		 * @spec exclude Merge-confirm handler delegating to objectStore.mergeObjects; entity merge lives in the store, this is modal orchestration plumbing.
 		 */
@@ -993,6 +1006,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Navigates to the merged object's view modal; UI navigation plumbing.
 		 */
@@ -1003,24 +1017,28 @@ export default {
 				navigationStore.setModal('viewObject')
 			}
 		},
+
 		/**
 		 * @spec exclude Toggles the files-list disclosure; UI presentation plumbing.
 		 */
 		toggleFileList() {
 			this.showFileList = !this.showFileList
 		},
+
 		/**
 		 * @spec exclude Toggles the relations-list disclosure; UI presentation plumbing.
 		 */
 		toggleRelationList() {
 			this.showRelationList = !this.showRelationList
 		},
+
 		/**
 		 * @spec exclude Toggles the references-list disclosure; UI presentation plumbing.
 		 */
 		toggleReferenceList() {
 			this.showReferenceList = !this.showReferenceList
 		},
+
 		/**
 		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
@@ -1033,6 +1051,7 @@ export default {
 				Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i]
 			)
 		},
+
 		/**
 		 * @param filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
@@ -1058,6 +1077,7 @@ export default {
 			}
 			return types[ext] || ext?.toUpperCase() || 'Unknown'
 		},
+
 		/**
 		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
 		 */
@@ -1126,6 +1146,7 @@ export default {
 				this.sourceIncomingReferences = []
 			}
 		},
+
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
 		 */

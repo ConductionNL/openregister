@@ -43,6 +43,7 @@ export default {
 		clearing: { type: Boolean, default: false },
 		totalSearchTrails: { type: Number, default: 0 },
 	},
+
 	emits: ['closing', 'confirm'],
 }
 </script>

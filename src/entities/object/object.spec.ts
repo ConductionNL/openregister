@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { TObject } from './object.types'
+
 import { ObjectEntity } from './object'
 import { mockObjectData } from './object.mock'
-import { TObject } from './object.types'
 
 describe('Object Entity', () => {
 	it('should create an Object entity with full data', () => {

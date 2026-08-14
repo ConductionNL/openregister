@@ -7,7 +7,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 	<NcDialog
 		v-if="navigationStore.dialog === 'deleteEndpoint'"
 		name="Delete Endpoint"
-		:can-close="true"
+		:canClose="true"
 		@update:open="navigationStore.setDialog(false)">
 		<div class="modal">
 			<p>
@@ -35,7 +35,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcDialog, NcButton } from '@nextcloud/vue'
+import { NcButton, NcDialog } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -47,6 +47,7 @@ export default {
 		Cancel,
 		TrashCanOutline,
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md

@@ -160,12 +160,12 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * Push Notifications Configuration Component

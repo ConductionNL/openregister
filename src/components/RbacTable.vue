@@ -19,7 +19,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('public', 'create')"
+							:modelValue="hasPermission('public', 'create')"
 							:aria-labelledby="`${uid}-row-public ${uid}-col-create`"
 							@update:modelValue="
 								updatePermission('public', 'create', $event)
@@ -27,7 +27,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('public', 'read')"
+							:modelValue="hasPermission('public', 'read')"
 							:aria-labelledby="`${uid}-row-public ${uid}-col-read`"
 							@update:modelValue="
 								updatePermission('public', 'read', $event)
@@ -35,7 +35,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('public', 'update')"
+							:modelValue="hasPermission('public', 'update')"
 							:aria-labelledby="`${uid}-row-public ${uid}-col-update`"
 							@update:modelValue="
 								updatePermission('public', 'update', $event)
@@ -43,7 +43,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('public', 'delete')"
+							:modelValue="hasPermission('public', 'delete')"
 							:aria-labelledby="`${uid}-row-public ${uid}-col-delete`"
 							@update:modelValue="
 								updatePermission('public', 'delete', $event)
@@ -59,7 +59,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('authenticated', 'create')"
+							:modelValue="hasPermission('authenticated', 'create')"
 							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-create`"
 							@update:modelValue="
 								updatePermission('authenticated', 'create', $event)
@@ -67,7 +67,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('authenticated', 'read')"
+							:modelValue="hasPermission('authenticated', 'read')"
 							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-read`"
 							@update:modelValue="
 								updatePermission('authenticated', 'read', $event)
@@ -75,7 +75,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('authenticated', 'update')"
+							:modelValue="hasPermission('authenticated', 'update')"
 							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-update`"
 							@update:modelValue="
 								updatePermission('authenticated', 'update', $event)
@@ -83,7 +83,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission('authenticated', 'delete')"
+							:modelValue="hasPermission('authenticated', 'delete')"
 							:aria-labelledby="`${uid}-row-authenticated ${uid}-col-delete`"
 							@update:modelValue="
 								updatePermission('authenticated', 'delete', $event)
@@ -98,7 +98,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission(group.id, 'create')"
+							:modelValue="hasPermission(group.id, 'create')"
 							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-create`"
 							@update:modelValue="
 								updatePermission(group.id, 'create', $event)
@@ -106,7 +106,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission(group.id, 'read')"
+							:modelValue="hasPermission(group.id, 'read')"
 							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-read`"
 							@update:modelValue="
 								updatePermission(group.id, 'read', $event)
@@ -114,7 +114,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission(group.id, 'update')"
+							:modelValue="hasPermission(group.id, 'update')"
 							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-update`"
 							@update:modelValue="
 								updatePermission(group.id, 'update', $event)
@@ -122,7 +122,7 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="hasPermission(group.id, 'delete')"
+							:modelValue="hasPermission(group.id, 'delete')"
 							:aria-labelledby="`${uid}-row-${group.id} ${uid}-col-delete`"
 							@update:modelValue="
 								updatePermission(group.id, 'delete', $event)
@@ -138,25 +138,25 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="true"
+							:modelValue="true"
 							:disabled="true"
 							:aria-labelledby="`${uid}-row-admin ${uid}-col-create`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="true"
+							:modelValue="true"
 							:disabled="true"
 							:aria-labelledby="`${uid}-row-admin ${uid}-col-read`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="true"
+							:modelValue="true"
 							:disabled="true"
 							:aria-labelledby="`${uid}-row-admin ${uid}-col-update`" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:model-value="true"
+							:modelValue="true"
 							:disabled="true"
 							:aria-labelledby="`${uid}-row-admin ${uid}-col-delete`" />
 					</td>
@@ -197,6 +197,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcNoteCard,
 	},
+
 	props: {
 		/**
 		 * The entity type (register, schema, object, view, agent)
@@ -205,6 +206,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * The authorization object from the organisation
 		 */
@@ -212,6 +214,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * Available Nextcloud groups
 		 */
@@ -219,6 +222,7 @@ export default {
 			type: Array,
 			required: true,
 		},
+
 		/**
 		 * Groups assigned to the organisation (used to filter display)
 		 */
@@ -227,11 +231,13 @@ export default {
 			default: () => [],
 		},
 	},
+
 	data() {
 		return {
 			uid: `rbac-${++rbacTableUid}`,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get sorted groups (only showing groups assigned to the organisation)
@@ -308,6 +314,7 @@ export default {
 			return this.hasAnyPermissions
 		},
 	},
+
 	methods: {
 		/**
 		 * Check if a group has a specific permission

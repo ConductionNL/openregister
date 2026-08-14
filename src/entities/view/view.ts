@@ -8,8 +8,10 @@
  * @version  1.0.0
  */
 
-import { SafeParseReturnType, z } from 'zod'
-import { TView } from './view.types'
+import type { SafeParseReturnType } from 'zod'
+import type { TView } from './view.types'
+
+import { z } from 'zod'
 
 export class View implements TView {
 	public id?: number

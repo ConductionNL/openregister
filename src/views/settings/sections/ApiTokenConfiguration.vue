@@ -13,7 +13,7 @@ import { translate as t } from '@nextcloud/l10n'
 			)
 		"
 		:loading="loading"
-		:loading-message="t('openregister', 'Loading API tokens...')">
+		:loadingMessage="t('openregister', 'Loading API tokens...')">
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -41,7 +41,7 @@ import { translate as t } from '@nextcloud/l10n'
 			:title="t('openregister', 'Required Token Scopes')"
 			icon="📋"
 			:collapsible="true"
-			:default-collapsed="true">
+			:defaultCollapsed="true">
 			<div class="scopes-info">
 				<div class="scope-item">
 					<div class="scope-header">
@@ -348,27 +348,27 @@ import { translate as t } from '@nextcloud/l10n'
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
-	NcPasswordField,
-	NcTextField,
 	NcButton,
 	NcLoadingIcon,
+	NcPasswordField,
+	NcTextField,
 } from '@nextcloud/vue'
-import Github from 'vue-material-design-icons/Github.vue'
-import Gitlab from 'vue-material-design-icons/Gitlab.vue'
-import Web from 'vue-material-design-icons/Web.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import Github from 'vue-material-design-icons/Github.vue'
+import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import Web from 'vue-material-design-icons/Web.vue'
+import SettingsCard from '../../../components/shared/SettingsCard.vue'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * API Token Configuration Component

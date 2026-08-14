@@ -18,9 +18,9 @@
  * @license EUPL-1.2
  */
 
-import { createApp, h } from 'vue'
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { createApp, h } from 'vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
 // Install + populate the integration registry on this entry bundle's

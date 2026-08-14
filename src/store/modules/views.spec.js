@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { useViewsStore } from './views.js'
 
 // Mock fetch globally

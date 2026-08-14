@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -44,8 +44,8 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions :force-name="true" :inline="1" menu-name="Actions">
-						<NcActionButton close-after-click @click="refreshFiles">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshFiles">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -187,7 +187,7 @@
 								<NcActions>
 									<NcActionButton
 										v-if="file.extractionStatus === 'failed'"
-										close-after-click
+										closeAfterClick
 										@click="retryExtraction(file.id)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -196,7 +196,7 @@
 									</NcActionButton>
 									<NcActionButton
 										v-if="file.extractionError"
-										close-after-click
+										closeAfterClick
 										@click="showError(file)">
 										<template #icon>
 											<AlertCircleOutline :size="20" />
@@ -236,7 +236,7 @@
 			<FilesSidebar
 				v-model:search="searchQuery"
 				v-model:status="statusFilter"
-				v-model:risk-level="riskLevelFilter"
+				v-model:riskLevel="riskLevelFilter"
 				@update:search="handleSearchUpdate"
 				@update:status="handleStatusUpdate"
 				@update:riskLevel="handleRiskLevelUpdate" />
@@ -245,25 +245,22 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 
 /**
@@ -284,6 +281,7 @@ export default {
 		FilterVariant,
 		FilesSidebar,
 	},
+
 	data() {
 		return {
 			filesList: [],
@@ -299,6 +297,7 @@ export default {
 			sortOrder: 'DESC',
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
@@ -320,9 +319,11 @@ export default {
 			return Math.ceil(this.totalFiles / this.limit)
 		},
 	},
+
 	mounted() {
 		this.loadFiles()
 	},
+
 	methods: {
 		t,
 

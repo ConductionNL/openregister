@@ -46,14 +46,17 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		icon: {
 			type: String,
 			default: '',
 		},
+
 		collapsible: {
 			type: Boolean,
 			default: false,
 		},
+
 		defaultCollapsed: {
 			type: Boolean,
 			default: false,

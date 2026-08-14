@@ -1,7 +1,7 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { searchTrailStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import formatBytes from '../../services/formatBytes.js'
+import { navigationStore, searchTrailStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -55,12 +55,12 @@ import formatBytes from '../../services/formatBytes.js'
 				</div>
 				<div class="viewActions">
 					<NcActions
-						:force-name="true"
+						:forceName="true"
 						:inline="selectedSearchTrails.length > 0 ? 3 : 2"
-						menu-name="Actions">
+						menuName="Actions">
 						<NcActionButton
 							v-if="selectedSearchTrails.length > 0"
-							close-after-click
+							closeAfterClick
 							@click="bulkDeleteSearchTrails">
 							<template #icon>
 								<Delete :size="20" />
@@ -71,17 +71,13 @@ import formatBytes from '../../services/formatBytes.js'
 								})
 							}}
 						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="cleanupSearchTrails">
+						<NcActionButton closeAfterClick @click="cleanupSearchTrails">
 							<template #icon>
 								<Broom :size="20" />
 							</template>
 							{{ t('openregister', 'Cleanup Old Trails') }}
 						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="refreshSearchTrails">
+						<NcActionButton closeAfterClick @click="refreshSearchTrails">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -117,7 +113,7 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr>
 							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:model-value="allSelected"
+									:modelValue="allSelected"
 									:indeterminate="someSelected"
 									:aria-label="t('openregister', 'Select All')"
 									@update:modelValue="toggleSelectAll" />
@@ -159,7 +155,7 @@ import formatBytes from '../../services/formatBytes.js'
 							}">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:model-value="
+									:modelValue="
 										selectedSearchTrails.includes(searchTrail.id)
 									"
 									:aria-labelledby="`search-trail-row-term-${searchTrail.id}`"
@@ -187,7 +183,7 @@ import formatBytes from '../../services/formatBytes.js'
 							<td class="timestampColumn">
 								<NcDateTime
 									:timestamp="new Date(searchTrail.created)"
-									:ignore-seconds="false" />
+									:ignoreSeconds="false" />
 							</td>
 							<td class="tableColumnConstrained">
 								{{
@@ -223,7 +219,7 @@ import formatBytes from '../../services/formatBytes.js'
 							<td class="tableColumnActions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewDetails(searchTrail)">
 										<template #icon>
 											<Eye :size="20" />
@@ -232,7 +228,7 @@ import formatBytes from '../../services/formatBytes.js'
 									</NcActionButton>
 									<NcActionButton
 										v-if="hasParameters(searchTrail)"
-										close-after-click
+										closeAfterClick
 										@click="viewParameters(searchTrail)">
 										<template #icon>
 											<Cog :size="20" />
@@ -241,7 +237,7 @@ import formatBytes from '../../services/formatBytes.js'
 									</NcActionButton>
 									<NcActionButton
 										v-if="searchTrail.searchTerm"
-										close-after-click
+										closeAfterClick
 										@click="rerunSearch(searchTrail)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -249,7 +245,7 @@ import formatBytes from '../../services/formatBytes.js'
 										{{ t('openregister', 'Rerun Search') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										class="deleteAction"
 										@click="deleteSearchTrail(searchTrail)">
 										<template #icon>
@@ -266,15 +262,13 @@ import formatBytes from '../../services/formatBytes.js'
 
 			<!-- Pagination -->
 			<PaginationComponent
-				:current-page="searchTrailStore.searchTrailPagination.page || 1"
-				:total-pages="searchTrailStore.searchTrailPagination.pages || 1"
-				:total-items="searchTrailStore.searchTrailPagination.total || 0"
-				:current-page-size="
-					searchTrailStore.searchTrailPagination.limit || 50
-				"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:currentPage="searchTrailStore.searchTrailPagination.page || 1"
+				:totalPages="searchTrailStore.searchTrailPagination.pages || 1"
+				:totalItems="searchTrailStore.searchTrailPagination.total || 0"
+				:currentPageSize="searchTrailStore.searchTrailPagination.limit || 50"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
@@ -285,21 +279,20 @@ import formatBytes from '../../services/formatBytes.js'
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
+	NcCheckboxRadioSwitch,
+	NcDateTime,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
-	NcDateTime,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import Broom from 'vue-material-design-icons/Broom.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
-
+import Delete from 'vue-material-design-icons/Delete.vue'
+import Eye from 'vue-material-design-icons/Eye.vue'
+import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import eventBus from '../../eventBus.js'
 
@@ -321,12 +314,14 @@ export default {
 		Cog,
 		PaginationComponent,
 	},
+
 	data() {
 		return {
 			itemsPerPage: 50,
 			selectedSearchTrails: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude list-view active-filter detection helper (computed)
@@ -339,6 +334,7 @@ export default {
 					&& searchTrailStore.searchTrailFilters[key] !== '',
 			)
 		},
+
 		/**
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
@@ -353,6 +349,7 @@ export default {
 				return []
 			}
 		},
+
 		/**
 		 * @spec exclude list-view select-all checkbox state (computed)
 		 */
@@ -364,6 +361,7 @@ export default {
 				)
 			)
 		},
+
 		/**
 		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
 		 */
@@ -371,6 +369,7 @@ export default {
 			return this.selectedSearchTrails.length > 0 && !this.allSelected
 		},
 	},
+
 	watch: {
 		paginatedSearchTrails: {
 			/**
@@ -381,9 +380,11 @@ export default {
 					this.updateCounts()
 				})
 			},
+
 			deep: false,
 		},
 	},
+
 	/**
 	 * @spec exclude list-view lifecycle; loads trails and registers sidebar listeners on mount
 	 */
@@ -404,6 +405,7 @@ export default {
 			this.updateCounts()
 		})
 	},
+
 	/**
 	 * @spec exclude list-view lifecycle; tears down sidebar listeners on destroy
 	 */
@@ -411,9 +413,11 @@ export default {
 		eventBus.off('search-trail-filters-changed')
 		eventBus.off('search-trail-refresh')
 	},
+
 	methods: {
 		/**
 		 * Load search trails from API
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -429,8 +433,10 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Handle filter changes from sidebar
+		 *
 		 * @spec exclude list-view filter-change handler; sets store filters and reloads (zoeken-filteren contract)
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
@@ -440,8 +446,10 @@ export default {
 			// Refresh with new filters
 			this.loadSearchTrails()
 		},
+
 		/**
 		 * View detailed information for a search trail entry
+		 *
 		 * @param {object} searchTrail - Search trail entry to view
 		 * @return {void}
 		 *
@@ -485,8 +493,10 @@ export default {
 				true,
 			)
 		},
+
 		/**
 		 * View parameters information for a search trail entry
+		 *
 		 * @param {object} searchTrail - Search trail entry with parameters
 		 * @return {void}
 		 *
@@ -497,8 +507,10 @@ export default {
 			searchTrailStore.setSearchTrailItem(searchTrail)
 			navigationStore.setDialog('searchTrailParameters')
 		},
+
 		/**
 		 * Rerun a search based on the search trail parameters
+		 *
 		 * @spec exclude list-view row-action; router-navigates to the search page with the trail's params (zoeken-filteren contract)
 		 * @param {object} searchTrail - Search trail entry to rerun
 		 * @return {void}
@@ -539,8 +551,10 @@ export default {
 				{ type: 'info' },
 			)
 		},
+
 		/**
 		 * Delete a single search trail using the new modal
+		 *
 		 * @spec exclude list-view row-action dialog-open plumbing
 		 * @param {object} searchTrail - Search trail to delete
 		 * @return {void}
@@ -551,8 +565,10 @@ export default {
 			// Open the delete modal
 			navigationStore.setDialog('deleteSearchTrail')
 		},
+
 		/**
 		 * Clean up old search trails
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -596,8 +612,10 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Refresh search trails list
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
@@ -605,8 +623,10 @@ export default {
 		async refreshSearchTrails() {
 			await this.loadSearchTrails()
 		},
+
 		/**
 		 * Update counts for sidebar
+		 *
 		 * @spec exclude list-view count-emit plumbing for the sidebar
 		 * @return {void}
 		 */
@@ -621,8 +641,10 @@ export default {
 				eventBus.emit('search-trail-filtered-count', 0)
 			}
 		},
+
 		/**
 		 * Handle page change from pagination component
+		 *
 		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
@@ -639,8 +661,10 @@ export default {
 				console.error('Error loading page:', error)
 			}
 		},
+
 		/**
 		 * Handle page size change from pagination component
+		 *
 		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
@@ -657,8 +681,10 @@ export default {
 				console.error('Error changing page size:', error)
 			}
 		},
+
 		/**
 		 * Check if search trail has parameters
+		 *
 		 * @spec exclude list-view parameter-presence display helper
 		 * @param {object} searchTrail - The search trail item
 		 * @return {boolean} Whether the search trail has parameters
@@ -682,8 +708,10 @@ export default {
 				return false
 			}
 		},
+
 		/**
 		 * Format execution time for display
+		 *
 		 * @spec exclude list-view execution-time formatting display helper
 		 * @param {number} executionTime - Execution time in milliseconds
 		 * @return {string} Formatted execution time
@@ -697,6 +725,7 @@ export default {
 
 			return `${(executionTime / 1000).toFixed(2)}s`
 		},
+
 		formatBytes,
 		/**
 		 * @param checked
@@ -711,6 +740,7 @@ export default {
 				this.selectedSearchTrails = []
 			}
 		},
+
 		/**
 		 * @param id
 		 * @param checked
@@ -725,8 +755,10 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Delete selected search trails using bulk operation
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails

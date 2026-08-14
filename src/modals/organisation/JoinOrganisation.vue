@@ -1,13 +1,13 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { organisationStore, navigationStore } from '../../store/store.js'
+import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog
 		:name="t('openregister', 'Add User to Organisation')"
 		size="normal"
-		:can-close="true"
+		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -33,17 +33,17 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					}}</label>
 					<NcSelect
 						v-model="selectedOrganisation"
-						input-id="organisation-select"
-						:input-label="t('openregister', 'Organisation')"
+						inputId="organisation-select"
+						:inputLabel="t('openregister', 'Organisation')"
 						:disabled="loading"
 						:loading="searchLoading"
 						:options="organisationOptions"
 						:filterable="true"
-						:filter-by="filterOrganisation"
+						:filterBy="filterOrganisation"
 						:placeholder="
 							t('openregister', 'Type to search for organisations')
 						"
-						label-outside
+						labelOutside
 						@search="handleOrganisationSearch">
 						<template #option="{ name, description, users, isDefault }">
 							<div class="organisation-option">
@@ -78,14 +78,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<label for="user-select">{{ t('openregister', 'User') }}</label>
 					<NcSelect
 						v-model="selectedUser"
-						input-id="user-select"
-						:input-label="t('openregister', 'User')"
+						inputId="user-select"
+						:inputLabel="t('openregister', 'User')"
 						:disabled="loading"
 						:loading="loadingUsers"
 						:options="userOptions"
 						:filterable="true"
 						:placeholder="t('openregister', 'Type to search for users')"
-						label-outside
+						labelOutside
 						@search="handleUserSearch">
 						<template #option="{ id, displayName }">
 							<div class="user-option">
@@ -152,11 +152,10 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 import {
 	NcButton,
 	NcDialog,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
 } from '@nextcloud/vue'
-
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 
@@ -172,6 +171,7 @@ export default {
 		AccountPlus,
 		Cancel,
 	},
+
 	data() {
 		return {
 			selectedOrganisation: null,
@@ -190,6 +190,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	/**
 	 * @spec exclude Vue lifecycle hook loading initial modal data
 	 */
@@ -211,6 +212,7 @@ export default {
 			navigationStore.clearTransferData()
 		}
 	},
+
 	methods: {
 		/**
 		 * Get the current user information from Nextcloud
@@ -228,8 +230,10 @@ export default {
 			}
 			return null
 		},
+
 		/**
 		 * Set default user to current user
+		 *
 		 * @spec exclude form-state default-user initializer
 		 */
 		setDefaultUser() {
@@ -244,8 +248,10 @@ export default {
 				this.userOptions = [userOption]
 			}
 		},
+
 		/**
 		 * Load initial list of organisations (first 20)
+		 *
 		 * @spec exclude form-state loader for organisation options
 		 */
 		async loadInitialOrganisations() {
@@ -275,8 +281,10 @@ export default {
 				this.searchLoading = false
 			}
 		},
+
 		/**
 		 * Load a preselected organisation
+		 *
 		 * @param {string} uuid - The UUID of the organisation to load
 		 * @spec exclude form-state loader for preselected organisation
 		 */
@@ -321,8 +329,10 @@ export default {
 				console.error('Error loading preselected organisation:', error)
 			}
 		},
+
 		/**
 		 * Handle organisation search with pagination
+		 *
 		 * @param {string} query - The query to search for
 		 * @spec exclude debounced search UI handler delegating to organisationStore
 		 */
@@ -374,8 +384,10 @@ export default {
 				}
 			}, 500)
 		},
+
 		/**
 		 * Load initial list of users (first 20)
+		 *
 		 * @spec exclude form-state loader for user options via OCS API
 		 */
 		async loadInitialUsers() {
@@ -430,8 +442,10 @@ export default {
 				this.loadingUsers = false
 			}
 		},
+
 		/**
 		 * Handle user search with pagination
+		 *
 		 * @param {string} query - The query to search for
 		 * @spec exclude debounced user-search UI handler via OCS API
 		 */
@@ -500,8 +514,10 @@ export default {
 				}
 			}, 500)
 		},
+
 		/**
 		 * Filter organisation for local filtering
+		 *
 		 * @param {object} option - The organisation option to filter
 		 * @param {string} label - The label of the organisation option
 		 * @param {string} search - The search query
@@ -513,8 +529,10 @@ export default {
 				|| option.description?.toLowerCase().includes(search.toLowerCase())
 			)
 		},
+
 		/**
 		 * Join the selected organisation
+		 *
 		 * @spec exclude modal submit handler delegating to organisationStore.joinOrganisation
 		 */
 		async joinSelectedOrganisation() {
@@ -557,8 +575,10 @@ export default {
 				this.joining = false
 			}
 		},
+
 		/**
 		 * Close the modal
+		 *
 		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
@@ -574,8 +594,10 @@ export default {
 			clearTimeout(this.searchTimeout)
 			clearTimeout(this.userSearchTimeout)
 		},
+
 		/**
 		 * Handle dialog close event
+		 *
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose() {

@@ -1,5 +1,5 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
 	configurationStore,
 	navigationStore,
@@ -14,7 +14,7 @@ import {
 		name="importConfiguration"
 		:title="t('openregister', 'Import Configuration')"
 		size="large"
-		:can-close="!loading"
+		:canClose="!loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>
@@ -25,7 +25,7 @@ import {
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<AppTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Discover Tab -->
 				<AppTab active>
 					<template #title>
@@ -141,7 +141,7 @@ import {
 								:key="index"
 								:configuration="result"
 								@import="importDiscoveredConfiguration(result)"
-								@check-version="handleCheckVersion" />
+								@checkVersion="handleCheckVersion" />
 						</div>
 
 						<NcEmptyContent
@@ -170,7 +170,7 @@ import {
 						<NcSelect
 							v-model="repoSource"
 							:options="['GitHub', 'GitLab']"
-							input-label="Source Platform" />
+							inputLabel="Source Platform" />
 
 						<NcTextField
 							v-if="repoSource === 'GitHub'"
@@ -206,7 +206,7 @@ import {
 							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
-							input-label="Branch"
+							inputLabel="Branch"
 							@update:modelValue="fetchConfigurationFiles" />
 
 						<div v-if="configFiles.length > 0" class="filesGrid">
@@ -333,7 +333,7 @@ import {
 		<div v-if="!success" class="syncSettings">
 			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
 			<NcCheckboxRadioSwitch
-				:model-value="syncEnabled"
+				:modelValue="syncEnabled"
 				type="switch"
 				@update:modelValue="syncEnabled = $event">
 				{{ t('openregister', 'Enable automatic synchronization') }}
@@ -380,35 +380,31 @@ import {
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
+	NcCheckboxRadioSwitch,
 	NcDialog,
+	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
-	NcTextField,
 	NcSelect,
-	NcEmptyContent,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import AppTabs from '../../components/tabs/AppTabs.vue'
-import AppTab from '../../components/tabs/AppTab.vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Import from 'vue-material-design-icons/Import.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import FileUpload from 'vue-material-design-icons/FileUpload.vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
-import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
+import Import from 'vue-material-design-icons/Import.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import FileUpload from 'vue-material-design-icons/FileUpload.vue'
-import Check from 'vue-material-design-icons/Check.vue'
-
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
-
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
 
 export default {
 	name: 'ImportConfiguration',
@@ -435,6 +431,7 @@ export default {
 		FileUpload,
 		Check,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -490,6 +487,7 @@ export default {
 				+ '/index.php/settings/admin/openregister#api-tokens'
 			)
 		},
+
 		/**
 		 * @spec exclude Computed form-enablement guard for the fetch-branches button; UI validation helper.
 		 */
@@ -499,6 +497,7 @@ export default {
 			}
 			return this.repoNamespace && this.repoName
 		},
+
 		/**
 		 * @spec exclude Computed per-tab form-enablement guard for the import button; UI validation helper.
 		 */
@@ -523,6 +522,7 @@ export default {
 	async mounted() {
 		await this.checkTokenAvailability()
 	},
+
 	methods: {
 		/**
 		 * Check if API tokens are configured
@@ -593,6 +593,7 @@ export default {
 			navigationStore.setModal(false)
 			this.resetForm()
 		},
+
 		/**
 		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
 		 */
@@ -620,6 +621,7 @@ export default {
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
+
 		/**
 		 * @spec exclude Discover-tab search handler delegating to configurationStore.discoverConfigurations; UI search plumbing.
 		 */
@@ -645,6 +647,7 @@ export default {
 				this.searchLoading = false
 			}
 		},
+
 		/**
 		 * @param result
 		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
@@ -704,6 +707,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Fetches repo branches via configurationStore.getBranches to populate the branch select; UI form-loading plumbing.
 		 */
@@ -744,6 +748,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Fetches config files for the selected branch via configurationStore.getConfigurationFiles; UI form-loading plumbing.
 		 */
@@ -779,6 +784,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @spec exclude Main import-button handler dispatching per-tab to configurationStore import actions and refreshing lists; UI orchestration plumbing.
 		 */
@@ -816,7 +822,6 @@ export default {
 					// Tab 2: URL
 					// Validate URL
 					try {
-						// eslint-disable-next-line no-new
 						const validUrl = new URL(this.importUrl) // URL validation successful
 						// Use validUrl.href to avoid no-new and no-void rule violations
 						if (!validUrl.href) {
@@ -855,6 +860,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param event
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
@@ -865,6 +871,7 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+
 		/**
 		 * @param event
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
@@ -876,6 +883,7 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+
 		/**
 		 * @param file
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
@@ -897,6 +905,7 @@ export default {
 
 			this.selectedUploadFile = file
 		},
+
 		/**
 		 * @spec exclude Clears the selected upload file and resets the file input; UI file-picker plumbing.
 		 */
@@ -907,6 +916,7 @@ export default {
 				this.$refs.fileInput.value = ''
 			}
 		},
+
 		/**
 		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
@@ -916,6 +926,7 @@ export default {
 			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
 			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 		},
+
 		/**
 		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
 		 */
@@ -941,6 +952,7 @@ export default {
 
 			return response.data
 		},
+
 		/**
 		 * @param configuration
 		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.

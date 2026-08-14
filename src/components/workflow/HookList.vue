@@ -54,6 +54,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['add', 'edit', 'delete', 'test'],
 }
 </script>

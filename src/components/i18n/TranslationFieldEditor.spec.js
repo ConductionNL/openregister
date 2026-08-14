@@ -17,8 +17,9 @@ jest.mock('@nextcloud/router', () => ({
  * @param ctx
  */
 const callComputed = (key, ctx) => TranslationFieldEditor.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) =>
-	TranslationFieldEditor.methods[key].apply(ctx, args)
+function callMethod(key, ctx, ...args) {
+	return TranslationFieldEditor.methods[key].apply(ctx, args)
+}
 
 describe('TranslationFieldEditor', () => {
 	describe('orderedLanguages', () => {

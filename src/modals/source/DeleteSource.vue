@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { sourceStore, navigationStore } from '../../store/store.js'
+import { navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'deleteSource'"
 		name="Delete Source"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success">
 			Do you want to permanently delete
 			<b>{{ sourceStore.sourceItem?.title }}</b
@@ -46,7 +46,6 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -61,6 +60,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -69,6 +69,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -80,6 +81,7 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
 		/**
 		 * @spec exclude Delete-confirm handler delegating to sourceStore.deleteSource; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */

@@ -17,7 +17,7 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Enable toggle -->
 		<div class="fieldRow">
 			<NcCheckboxRadioSwitch
-				:model-value="localConfig.enabled"
+				:modelValue="localConfig.enabled"
 				type="switch"
 				@update:modelValue="localConfig.enabled = $event">
 				{{ t('openregister', 'Enable calendar provider') }}
@@ -36,7 +36,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:placeholder="
 						schema?.title || t('openregister', 'Calendar name')
 					"
-					:label-outside="true" />
+					:labelOutside="true" />
 			</div>
 
 			<!-- Color picker -->
@@ -47,7 +47,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<template #icon>
 							<CircleIcon
 								:size="20"
-								:fill-color="localConfig.color || '#0082C9'" />
+								:fillColor="localConfig.color || '#0082C9'" />
 						</template>
 						{{ localConfig.color || '#0082C9' }}
 					</NcButton>
@@ -62,7 +62,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
-					input-label="Local Config Dtstart"
+					inputLabel="Local Config Dtstart"
 					:options="datePropertyOptions"
 					:placeholder="t('openregister', 'Select a date property')" />
 			</div>
@@ -75,7 +75,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-dtend"
 					v-model="localConfig.dtend"
-					input-label="Local Config Dtend"
+					inputLabel="Local Config Dtend"
 					:options="datePropertyOptions"
 					:placeholder="t('openregister', 'Optional end date property')" />
 			</div>
@@ -123,7 +123,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-location"
 					v-model="localConfig.locationField"
-					input-label="Local Config Location Field"
+					inputLabel="Local Config Location Field"
 					:options="stringPropertyOptions"
 					:placeholder="t('openregister', 'Optional location property')" />
 			</div>
@@ -131,7 +131,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<!-- All day toggle -->
 			<div class="fieldRow">
 				<NcCheckboxRadioSwitch
-					:model-value="localConfig.allDay"
+					:modelValue="localConfig.allDay"
 					:indeterminate="
 						localConfig.allDay === null
 						|| localConfig.allDay === undefined
@@ -192,12 +192,14 @@ export default {
 		CircleIcon,
 		ContentSave,
 	},
+
 	props: {
 		schema: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	data() {
 		return {
 			saving: false,
@@ -214,9 +216,11 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Property names available for placeholders
+		 *
 		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
@@ -226,8 +230,10 @@ export default {
 			}
 			return Object.keys(this.schema.properties)
 		},
+
 		/**
 		 * Date/datetime properties for dtstart/dtend selectors
+		 *
 		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
@@ -247,8 +253,10 @@ export default {
 				})
 				.map(([key]) => key)
 		},
+
 		/**
 		 * String properties for location selector
+		 *
 		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
@@ -260,8 +268,10 @@ export default {
 				.filter(([, def]) => def?.type === 'string')
 				.map(([key]) => key)
 		},
+
 		/**
 		 * Validation: dtstart and titleTemplate required when enabled
+		 *
 		 * @spec exclude UI plumbing — derived form-validity flag for display
 		 * @return {boolean}
 		 */
@@ -272,6 +282,7 @@ export default {
 			return !!this.localConfig.dtstart && !!this.localConfig.titleTemplate
 		},
 	},
+
 	watch: {
 		schema: {
 			/**
@@ -286,12 +297,15 @@ export default {
 					this.loadConfig(newSchema)
 				}
 			},
+
 			immediate: true,
 		},
 	},
+
 	methods: {
 		/**
 		 * Load calendar provider config from schema configuration
+		 *
 		 * @param {object} schema The schema object
 		 * @spec openspec/specs/calendar-integration/spec.md
 		 */
@@ -309,8 +323,10 @@ export default {
 				allDay: config.allDay ?? null,
 			}
 		},
+
 		/**
 		 * Save the calendar provider configuration via schema update
+		 *
 		 * @spec exclude UI plumbing — save action delegates to the schema store
 		 * @return {Promise<void>}
 		 */

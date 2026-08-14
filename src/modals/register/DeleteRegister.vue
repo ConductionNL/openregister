@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { registerStore, navigationStore } from '../../store/store.js'
+import { navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +8,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'deleteRegister'"
 		name="Register verwijderen"
 		size="normal"
-		:can-close="false">
+		:canClose="false">
 		<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
 			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief
 			verwijderen? Deze actie kan niet ongedaan worden gemaakt.
@@ -60,7 +60,6 @@ import { registerStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
@@ -75,6 +74,7 @@ export default {
 		TrashCanOutline,
 		Cancel,
 	},
+
 	data() {
 		return {
 			success: false,
@@ -83,6 +83,7 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
 		/**
 		 * @spec exclude Modal close plumbing — closes the delete-register dialog and resets state.
@@ -94,6 +95,7 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to registerStore.deleteRegister.
 		 */

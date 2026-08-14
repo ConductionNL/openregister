@@ -20,35 +20,35 @@
 			<h4>{{ t('openregister', 'Extraction Status') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:model-value="selectedStatus === null"
+					:modelValue="selectedStatus === null"
 					type="radio"
 					value="all"
 					@update:modelValue="updateStatus(null)">
 					{{ t('openregister', 'All Files') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedStatus === 'pending'"
+					:modelValue="selectedStatus === 'pending'"
 					type="radio"
 					value="pending"
 					@update:modelValue="updateStatus('pending')">
 					{{ t('openregister', 'Pending') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedStatus === 'processing'"
+					:modelValue="selectedStatus === 'processing'"
 					type="radio"
 					value="processing"
 					@update:modelValue="updateStatus('processing')">
 					{{ t('openregister', 'Processing') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedStatus === 'completed'"
+					:modelValue="selectedStatus === 'completed'"
 					type="radio"
 					value="completed"
 					@update:modelValue="updateStatus('completed')">
 					{{ t('openregister', 'Completed') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedStatus === 'failed'"
+					:modelValue="selectedStatus === 'failed'"
 					type="radio"
 					value="failed"
 					@update:modelValue="updateStatus('failed')">
@@ -62,42 +62,42 @@
 			<h4>{{ t('openregister', 'Risk Level') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === null"
+					:modelValue="selectedRiskLevel === null"
 					type="radio"
 					value="all"
 					@update:modelValue="updateRiskLevel(null)">
 					{{ t('openregister', 'All Levels') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === 'none'"
+					:modelValue="selectedRiskLevel === 'none'"
 					type="radio"
 					value="none"
 					@update:modelValue="updateRiskLevel('none')">
 					{{ t('openregister', 'None') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === 'low'"
+					:modelValue="selectedRiskLevel === 'low'"
 					type="radio"
 					value="low"
 					@update:modelValue="updateRiskLevel('low')">
 					{{ t('openregister', 'Low') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === 'medium'"
+					:modelValue="selectedRiskLevel === 'medium'"
 					type="radio"
 					value="medium"
 					@update:modelValue="updateRiskLevel('medium')">
 					{{ t('openregister', 'Medium') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === 'high'"
+					:modelValue="selectedRiskLevel === 'high'"
 					type="radio"
 					value="high"
 					@update:modelValue="updateRiskLevel('high')">
 					{{ t('openregister', 'High') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:model-value="selectedRiskLevel === 'very_high'"
+					:modelValue="selectedRiskLevel === 'very_high'"
 					type="radio"
 					value="very_high"
 					@update:modelValue="updateRiskLevel('very_high')">
@@ -116,9 +116,9 @@
 </template>
 
 <script>
-import { NcTextField, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { t } from '@nextcloud/l10n'
+import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 
 export default {
 	name: 'FilesSidebar',
@@ -138,6 +138,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * @spec exclude two-way-bound extraction-status filter prop, UI plumbing
 		 */
@@ -145,6 +146,7 @@ export default {
 			type: String,
 			default: null,
 		},
+
 		/**
 		 * @spec exclude two-way-bound risk-level filter prop, UI plumbing
 		 */
@@ -186,6 +188,7 @@ export default {
 		search(newVal) {
 			this.localSearch = newVal
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude computed filter-state binding
@@ -193,6 +196,7 @@ export default {
 		status(newVal) {
 			this.selectedStatus = newVal
 		},
+
 		/**
 		 * @param newVal
 		 * @spec exclude computed filter-state binding

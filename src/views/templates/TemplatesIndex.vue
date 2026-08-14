@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -43,8 +43,8 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions :force-name="true" :inline="1" menu-name="Actions">
-						<NcActionButton close-after-click @click="refreshTemplates">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshTemplates">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -113,7 +113,7 @@
 							<td class="column-actions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewTemplate(template)">
 										<template #icon>
 											<EyeOutline :size="20" />
@@ -152,20 +152,18 @@
 
 <script>
 import { t } from '@nextcloud/l10n'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 /**
  * Main view for managing templates
@@ -184,6 +182,7 @@ export default {
 		FilterVariant,
 		EyeOutline,
 	},
+
 	data() {
 		return {
 			templatesList: [],
@@ -194,6 +193,7 @@ export default {
 			sidebarOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
@@ -215,9 +215,11 @@ export default {
 			return Math.ceil(this.totalTemplates / this.limit)
 		},
 	},
+
 	mounted() {
 		this.loadTemplates()
 	},
+
 	methods: {
 		t,
 

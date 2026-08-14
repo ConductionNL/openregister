@@ -205,14 +205,14 @@
 </template>
 
 <script>
-import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
 import ShieldAlert from 'vue-material-design-icons/ShieldAlert.vue'
 import ShieldCheck from 'vue-material-design-icons/ShieldCheck.vue'
 import ShieldSearch from 'vue-material-design-icons/ShieldSearch.vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
 /**
  * Log Integrity section.

@@ -46,8 +46,8 @@
 						:options="webhookOptions"
 						:placeholder="t('openregister', 'Filter by webhook')"
 						:clearable="true"
-						:label-outside="true"
-						:input-label="t('openregister', 'Filter by webhook')"
+						:labelOutside="true"
+						:inputLabel="t('openregister', 'Filter by webhook')"
 						@update:modelValue="handleWebhookFilterChange">
 						<template #option="{ option }">
 							{{ option.label }}
@@ -156,7 +156,7 @@
 							<td class="column-actions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewLogDetails(log)">
 										<template #icon>
 											<Eye :size="20" />
@@ -194,25 +194,23 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * Webhook Logs Index View
@@ -232,6 +230,7 @@ export default {
 		FileDocumentOutline,
 		Eye,
 	},
+
 	data() {
 		return {
 			logsList: [],
@@ -243,6 +242,7 @@ export default {
 			selectedWebhookId: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Get current page number
@@ -282,6 +282,7 @@ export default {
 			)
 		},
 	},
+
 	/**
 	 * Lifecycle hook: load webhooks and logs and subscribe to retry events.
 	 *
@@ -300,6 +301,7 @@ export default {
 		// Listen for retry events to refresh logs.
 		window.addEventListener('webhook-log-retried', this.loadLogs)
 	},
+
 	/**
 	 * Lifecycle hook: remove the retry event listener before teardown.
 	 *
@@ -310,6 +312,7 @@ export default {
 		// Clean up event listener.
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},
+
 	methods: {
 		/**
 		 * Load webhooks list

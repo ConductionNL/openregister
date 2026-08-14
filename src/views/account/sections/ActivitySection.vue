@@ -4,7 +4,7 @@
 		<div class="activity-section__filters">
 			<NcSelect
 				v-model="typeFilter"
-				input-label="Type Filter"
+				inputLabel="Type Filter"
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
 				@update:modelValue="loadActivity" />
@@ -34,8 +34,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcSelect } from '@nextcloud/vue'
 
@@ -53,14 +53,17 @@ export default {
 			typeOptions: ['create', 'update', 'delete'],
 		}
 	},
+
 	computed: {
 		hasMore() {
 			return this.activities.length < this.total
 		},
 	},
+
 	mounted() {
 		this.loadActivity()
 	},
+
 	methods: {
 		t,
 		/**
@@ -74,6 +77,7 @@ export default {
 			this.activities = []
 			await this.fetchActivity()
 		},
+
 		/**
 		 * @spec exclude list-view pagination plumbing; advances offset and re-fetches the activity feed
 		 */
@@ -81,6 +85,7 @@ export default {
 			this.offset += this.limit
 			await this.fetchActivity()
 		},
+
 		/**
 		 * @spec exclude list-view store fetch plumbing for the user activity feed (activity contract owned by activity-provider)
 		 */
@@ -101,6 +106,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * @param timestamp
 		 * @spec exclude detail-view timestamp formatting helper for display only

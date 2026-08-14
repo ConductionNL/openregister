@@ -1,8 +1,8 @@
 <template>
 	<NcDialog
 		v-if="show"
-		:name="'Remove User'"
-		:can-close="!removing"
+		name="Remove User"
+		:canClose="!removing"
 		class="remove-user-dialog"
 		@closing="$emit('cancel')">
 		<p>
@@ -30,9 +30,8 @@
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
 
 export default {
 	name: 'RemoveUserDialog',
@@ -43,15 +42,18 @@ export default {
 		Cancel,
 		AccountMinus,
 	},
+
 	props: {
 		show: {
 			type: Boolean,
 			required: true,
 		},
+
 		userId: {
 			type: String,
 			default: '',
 		},
+
 		removing: {
 			type: Boolean,
 			default: false,

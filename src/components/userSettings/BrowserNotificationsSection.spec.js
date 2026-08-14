@@ -18,10 +18,12 @@ jest.mock('@nextcloud/vue', () => ({
  * @param {Array} args Positional arguments.
  * @return {*} The invocation result.
  */
-const callMethod = (key, ctx, ...args) =>
-	BrowserNotificationsSection.methods[key].apply(ctx, args)
-const callComputed = (key, ctx) =>
-	BrowserNotificationsSection.computed[key].call(ctx)
+function callMethod(key, ctx, ...args) {
+	return BrowserNotificationsSection.methods[key].apply(ctx, args)
+}
+function callComputed(key, ctx) {
+	return BrowserNotificationsSection.computed[key].call(ctx)
+}
 
 const t = (app, s) => s
 

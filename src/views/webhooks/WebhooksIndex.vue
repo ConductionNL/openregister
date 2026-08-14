@@ -1,5 +1,5 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
 			<div class="viewHeader">
@@ -54,8 +54,8 @@
 						</template>
 						{{ t('openregister', 'Create Webhook') }}
 					</NcButton>
-					<NcActions :force-name="true" :inline="1" menu-name="Actions">
-						<NcActionButton close-after-click @click="refreshWebhooks">
+					<NcActions :forceName="true" :inline="1" menuName="Actions">
+						<NcActionButton closeAfterClick @click="refreshWebhooks">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -151,7 +151,7 @@
 							<td class="column-actions">
 								<NcActions>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="editWebhook(webhook)">
 										<template #icon>
 											<Pencil :size="20" />
@@ -159,7 +159,7 @@
 										{{ t('openregister', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="testWebhook(webhook.id)">
 										<template #icon>
 											<PlayOutline :size="20" />
@@ -167,7 +167,7 @@
 										{{ t('openregister', 'Test') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="viewLogs(webhook.id)">
 										<template #icon>
 											<FileDocumentOutline :size="20" />
@@ -175,7 +175,7 @@
 										{{ t('openregister', 'View Logs') }}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="toggleWebhook(webhook)">
 										<template #icon>
 											<PauseCircleOutline
@@ -190,7 +190,7 @@
 										}}
 									</NcActionButton>
 									<NcActionButton
-										close-after-click
+										closeAfterClick
 										@click="deleteWebhook(webhook.id)">
 										<template #icon>
 											<DeleteOutline :size="20" />
@@ -237,35 +237,32 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { navigationStore, webhookStore } from '../../store/store.js'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
-import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
-
-import Webhook from 'vue-material-design-icons/Webhook.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import Webhook from 'vue-material-design-icons/Webhook.vue'
+import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import { navigationStore, webhookStore } from '../../store/store.js'
 
 /**
  * Main view for managing webhooks
@@ -290,6 +287,7 @@ export default {
 		FileDocumentOutline,
 		WebhooksSidebar,
 	},
+
 	data() {
 		return {
 			limit: 50,
@@ -299,6 +297,7 @@ export default {
 			enabledFilter: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the webhook list is being fetched.
@@ -406,9 +405,11 @@ export default {
 			}))
 		},
 	},
+
 	mounted() {
 		this.loadWebhooks()
 	},
+
 	methods: {
 		t,
 

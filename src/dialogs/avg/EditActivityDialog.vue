@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="dialogTitle"
 		size="large"
-		:can-close="!saving"
+		:canClose="!saving"
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
@@ -33,8 +33,8 @@
 			<NcSelect
 				v-model="form.rechtsgrond"
 				:options="rechtsgrondOptions"
-				:label-outside="false"
-				:input-label="t('openregister', 'Legal basis *')"
+				:labelOutside="false"
+				:inputLabel="t('openregister', 'Legal basis *')"
 				:reduce="(o) => o.value"
 				required />
 
@@ -50,8 +50,8 @@
 			<NcSelect
 				v-model="form.status"
 				:options="statusOptions"
-				:label-outside="false"
-				input-label="Status"
+				:labelOutside="false"
+				inputLabel="Status"
 				:reduce="(o) => o.value" />
 
 			<label class="avgField">
@@ -119,19 +119,18 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	NcDialog,
-	NcTextField,
 	NcButton,
-	NcSelect,
+	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcSelect,
+	NcTextField,
 } from '@nextcloud/vue'
-
-import { avgStore } from '../../store/store.js'
 import {
 	RECHTSGROND_VOCABULARY,
 	STATUS_VOCABULARY,
 } from '../../store/modules/avg.js'
+import { avgStore } from '../../store/store.js'
 
 export default {
 	name: 'EditActivityDialog',
@@ -171,6 +170,7 @@ export default {
 				? t('openregister', 'Edit processing activity')
 				: t('openregister', 'New processing activity')
 		},
+
 		/**
 		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
 		 */
@@ -180,12 +180,14 @@ export default {
 				label: v.replace(/_/g, ' '),
 			}))
 		},
+
 		/**
 		 * @spec exclude Presentation glue: maps the status vocabulary to select options; no standalone behavioural contract.
 		 */
 		statusOptions() {
 			return STATUS_VOCABULARY.map((v) => ({ value: v, label: v }))
 		},
+
 		categorieenBetrokkenenText: {
 			/**
 			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
@@ -195,6 +197,7 @@ export default {
 					? this.form.categorieenBetrokkenen.join('\n')
 					: ''
 			},
+
 			/**
 			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
@@ -206,6 +209,7 @@ export default {
 					.filter((s) => s !== '')
 			},
 		},
+
 		categorieenPersoonsgegevensText: {
 			/**
 			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
@@ -215,6 +219,7 @@ export default {
 					? this.form.categorieenPersoonsgegevens.join('\n')
 					: ''
 			},
+
 			/**
 			 * @param value
 			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
@@ -247,6 +252,7 @@ export default {
 				categorieenBetrokkenen: activity?.categorieenBetrokkenen ?? [],
 				categorieenPersoonsgegevens:
 					activity?.categorieenPersoonsgegevens ?? [],
+
 				technischeMaatregelen: activity?.technischeMaatregelen ?? '',
 				organisatorischeMaatregelen:
 					activity?.organisatorischeMaatregelen ?? '',

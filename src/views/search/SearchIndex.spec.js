@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * SearchIndex — object-list view dispatch unit tests (object-views-kanban-calendar #4.1).
  *

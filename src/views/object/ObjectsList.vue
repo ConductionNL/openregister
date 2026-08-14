@@ -1,8 +1,8 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	objectStore,
 	navigationStore,
+	objectStore,
 	registerStore,
 	schemaStore,
 } from '../../store/store.js'
@@ -14,16 +14,16 @@ import {
 			<div class="searchListHeader">
 				<NcTextField
 					v-model="search"
-					:show-trailing-button="search !== ''"
+					:showTrailingButton="search !== ''"
 					:label="t('openregister', 'Search')"
 					class="searchField"
-					trailing-button-icon="close"
-					@trailing-button-click="search = ''">
+					trailingButtonIcon="close"
+					@trailingButtonClick="search = ''">
 					<Magnify :size="20" />
 				</NcTextField>
 				<NcActions>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							objectStore.refreshObjectList({
 								search: search,
@@ -36,7 +36,7 @@ import {
 						Refresh
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								objectStore.setObjectItem(null)
@@ -48,7 +48,7 @@ import {
 						</template>
 						Upload
 					</NcActionButton>
-					<NcActionButton close-after-click @click="addObject">
+					<NcActionButton closeAfterClick @click="addObject">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
@@ -70,17 +70,17 @@ import {
 				>
 				<CnPagination
 					class="listPagination"
-					:current-page="currentPage"
-					:total-pages="
+					:currentPage="currentPage"
+					:totalPages="
 						objectStore.getPagination(objectStore.currentType).pages
 					"
-					:total-items="
+					:totalItems="
 						objectStore.getPagination(objectStore.currentType).total
 					"
-					:current-page-size="limit"
-					:min-items-to-show="10"
-					@page-changed="currentPage = $event"
-					@page-size-changed="onPageSizeChanged" />
+					:currentPageSize="limit"
+					:minItemsToShow="10"
+					@pageChanged="currentPage = $event"
+					@pageSizeChanged="onPageSizeChanged" />
 			</div>
 		</div>
 		<ul
@@ -96,7 +96,7 @@ import {
 				:key="`${object}${i}`"
 				:name="object.id?.toString()"
 				:active="objectStore.objectItem?.id === object?.id"
-				:force-display-actions="true"
+				:forceDisplayActions="true"
 				@click="objectStore.setObjectItem(object)">
 				<template #icon>
 					<CubeOutline
@@ -104,7 +104,7 @@ import {
 							objectStore.objectItem?.id === object.id
 							&& 'selectedObjectIcon'
 						"
-						disable-menu
+						disableMenu
 						:size="44" />
 				</template>
 				<template #subname>
@@ -112,7 +112,7 @@ import {
 				</template>
 				<template #actions>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								objectStore.setObjectItem(object)
@@ -126,7 +126,7 @@ import {
 					</NcActionButton>
 					<NcActionButton
 						v-if="!object.locked"
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								objectStore.setObjectItem(object)
@@ -140,7 +140,7 @@ import {
 					</NcActionButton>
 					<NcActionButton
 						v-if="object.locked"
-						close-after-click
+						closeAfterClick
 						@click="objectStore.unlockObject(objectStore.objectItem.id)">
 						<template #icon>
 							<LockOpenOutline />
@@ -148,7 +148,7 @@ import {
 						Unlock
 					</NcActionButton>
 					<NcActionButton
-						close-after-click
+						closeAfterClick
 						@click="
 							() => {
 								objectStore.setObjectItem(object)
@@ -178,24 +178,24 @@ import {
 </template>
 
 <script>
+import { CnPagination } from '@conduction/nextcloud-vue'
 import {
-	NcListItem,
 	NcActionButton,
-	NcAppContentList,
-	NcTextField,
-	NcLoadingIcon,
 	NcActions,
+	NcAppContentList,
+	NcListItem,
+	NcLoadingIcon,
+	NcTextField,
 } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
+import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
-import LockOutline from 'vue-material-design-icons/LockOutline.vue'
-import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
-import { CnPagination } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'ObjectsList',
@@ -216,6 +216,7 @@ export default {
 		LockOutline,
 		LockOpenOutline,
 	},
+
 	data() {
 		return {
 			limit: 200,
@@ -235,6 +236,7 @@ export default {
 			liveEpoch: 0,
 		}
 	},
+
 	computed: {
 		/**
 		 * @spec exclude Derived client-state — mirrors the store's currentType so the watcher below can re-scope the live subscription.
@@ -243,6 +245,7 @@ export default {
 			return objectStore.currentType
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-scope the live collection subscription when the user switches
@@ -253,6 +256,7 @@ export default {
 		liveCollectionType() {
 			this.syncLiveSubscription()
 		},
+
 		/**
 		 * @param {number} newVal The new page number
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
@@ -269,6 +273,7 @@ export default {
 					this.loading = false
 				})
 		},
+
 		/**
 		 * @param {string} newVal The new search term
 		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
@@ -289,6 +294,7 @@ export default {
 			}, 700)
 		},
 	},
+
 	/**
 	 * @spec exclude list-view lifecycle; conditionally loads the object list on mount when register+schema are scoped (object-lifecycle contract)
 	 */
@@ -317,6 +323,7 @@ export default {
 				this.loading = false
 			})
 	},
+
 	/**
 	 * Lifecycle hook: release the live collection subscription on unmount.
 	 *
@@ -326,6 +333,7 @@ export default {
 	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
+
 	methods: {
 		/**
 		 * Subscribe to live updates for the currently scoped register+schema
@@ -394,6 +402,7 @@ export default {
 				)
 			}
 		},
+
 		/**
 		 * Release the current live collection subscription, if any, and
 		 * invalidate any in-flight subscribe (its resolution unsubscribes
@@ -411,6 +420,7 @@ export default {
 			this.liveHandle = null
 			this.liveType = ''
 		},
+
 		/**
 		 * Apply a new page size from the paginator.
 		 *
@@ -441,6 +451,7 @@ export default {
 					this.loading = false
 				})
 		},
+
 		/**
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
 		 */

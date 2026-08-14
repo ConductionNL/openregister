@@ -16,7 +16,7 @@
 				}}</label>
 				<NcTextField
 					id="deactivation-reason"
-					:model-value="reason"
+					:modelValue="reason"
 					:label="t('openregister', 'Reason')"
 					@update:modelValue="$emit('update:reason', $event)" />
 			</div>
@@ -27,7 +27,7 @@
 				</label>
 				<NcTextField
 					id="confirm-username"
-					:model-value="confirmUsername"
+					:modelValue="confirmUsername"
 					:label="t('openregister', 'Username')"
 					@update:modelValue="$emit('update:confirmUsername', $event)" />
 			</div>
@@ -53,6 +53,7 @@ export default {
 		reason: { type: String, default: '' },
 		confirmUsername: { type: String, default: '' },
 	},
+
 	emits: ['close', 'confirm', 'update:reason', 'update:confirmUsername'],
 	methods: { t },
 }

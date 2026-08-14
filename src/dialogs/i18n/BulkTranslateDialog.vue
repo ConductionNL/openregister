@@ -3,22 +3,22 @@
 		:open="open"
 		name="Bulk translate"
 		size="normal"
-		:can-close="!loading"
+		:canClose="!loading"
 		@closing="$emit('close')">
 		<form class="bulkTranslateForm" @submit.prevent="onSubmit">
 			<NcSelect
 				v-model="source"
 				:options="languages"
-				:label-outside="false"
-				input-label="From language"
+				:labelOutside="false"
+				inputLabel="From language"
 				aria-label-combobox="From language"
 				:disabled="loading" />
 
 			<NcSelect
 				v-model="target"
 				:options="languages"
-				:label-outside="false"
-				input-label="To language"
+				:labelOutside="false"
+				inputLabel="To language"
 				aria-label-combobox="To language"
 				:selectable="isSelectableTarget"
 				:disabled="loading" />
@@ -76,7 +76,6 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import { useTranslationsStore } from '../../store/modules/translations.js'
 
 /**
@@ -104,10 +103,12 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		uuid: {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * Languages to choose from. Typically the register's
 		 * configured `languages` list, plus any extra variants present
@@ -151,6 +152,7 @@ export default {
 			get() {
 				return this.from === '' ? null : this.from
 			},
+
 			/**
 			 * @param {string|null} value The language NcSelect emitted.
 			 * @return {void}
@@ -160,6 +162,7 @@ export default {
 				this.from = value ?? ''
 			},
 		},
+
 		/**
 		 * The target-language counterpart of `source`.
 		 *
@@ -175,6 +178,7 @@ export default {
 			get() {
 				return this.to === '' ? null : this.to
 			},
+
 			/**
 			 * @param {string|null} value The language NcSelect emitted.
 			 * @return {void}
@@ -184,6 +188,7 @@ export default {
 				this.to = value ?? ''
 			},
 		},
+
 		/**
 		 * @spec exclude computed submit-enabled form-validation flag, UI plumbing
 		 */
@@ -195,6 +200,7 @@ export default {
 				&& this.from !== this.to
 			)
 		},
+
 		/**
 		 * Whether a source language is chosen and the target repeats it.
 		 *
@@ -205,12 +211,14 @@ export default {
 		sameLanguage() {
 			return this.from !== '' && this.from === this.to
 		},
+
 		hasTranslated() {
 			return (
 				this.result?.translated
 				&& Object.keys(this.result.translated).length > 0
 			)
 		},
+
 		hasSkipped() {
 			return (
 				this.result?.skipped && Object.keys(this.result.skipped).length > 0
@@ -256,6 +264,7 @@ export default {
 		isSelectableTarget(language) {
 			return language !== this.from
 		},
+
 		/**
 		 * @spec exclude store passthrough invoking bulk-translate; bulk-translate contract owned by register-i18n capability
 		 */
