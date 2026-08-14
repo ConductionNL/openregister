@@ -363,4 +363,121 @@ final class FlowStateNodeTest extends TestCase {
 		$this->node->validateConfig(config: ['operation' => 'claim', 'slots' => 'slots']);
 
 	}//end testClaimWithoutCapacityIsRejected()
+	// ── The lease (openregister#2468) ────────────────────────────────────
+
+	/**
+	 * A holder whose lease has run out is displaced, so the pool recovers.
+	 *
+	 * `claim` and `release` are separate steps, and a run can end between them —
+	 * a node with `onError: stop`, a refusal, a crashed worker. Without a lease
+	 * that slot is lost rather than borrowed: nothing reaps it, and once the pool
+	 * is full of dead holders every claim reports "at capacity", which is a
+	 * NORMAL outcome. The flow keeps reporting `completed` while the queue stops
+	 * moving.
+	 *
+	 * @return void
+	 */
+	public function testAnExpiredHolderIsDisplacedSoThePoolRecovers(): void {
+		$stale = (new \DateTime('-2 hours'))->format(\DateTimeInterface::ATOM);
+		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'dead-run', 'since' => $stale]]]);
+
+		$out = $this->node->execute(
+			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
+			config: [
+				'operation' => 'claim',
+				'slots' => 'slots',
+				'capacity' => 1,
+				'holder' => 'holder',
+				'leaseSeconds' => 60,
+			],
+			context: $this->ctx($state)
+		);
+
+		$this->assertTrue($out[0]['json']['claimed'], 'the only slot was held by a run that ended two hours ago');
+		$this->assertSame('live-run', $state->get(key: 'slots')['1']['holder']);
+
+	}//end testAnExpiredHolderIsDisplacedSoThePoolRecovers()
+
+	/**
+	 * A holder INSIDE its lease is never displaced.
+	 *
+	 * 🔑 This is the arm that makes the one above safe rather than merely
+	 * convenient. Displacing a live holder hands one slot to two runs and
+	 * destroys the mutual exclusion the pool exists for — a lease that expires
+	 * too eagerly is worse than no lease at all, because the failure is silent
+	 * concurrency rather than a stalled queue.
+	 *
+	 * @return void
+	 */
+	public function testALiveHolderIsNeverDisplaced(): void {
+		$fresh = (new \DateTime('-5 seconds'))->format(\DateTimeInterface::ATOM);
+		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'busy-run', 'since' => $fresh]]]);
+
+		$out = $this->node->execute(
+			items: [['json' => ['holder' => 'other-run'], 'binary' => [], 'pairedItem' => null]],
+			config: [
+				'operation' => 'claim',
+				'slots' => 'slots',
+				'capacity' => 1,
+				'holder' => 'holder',
+				'leaseSeconds' => 3600,
+			],
+			context: $this->ctx($state)
+		);
+
+		$this->assertFalse($out[0]['json']['claimed'], 'a run five seconds into an hour-long lease was displaced');
+		$this->assertSame('busy-run', $state->get(key: 'slots')['1']['holder']);
+
+	}//end testALiveHolderIsNeverDisplaced()
+
+	/**
+	 * With no lease configured, a holder is kept forever — today's behaviour.
+	 *
+	 * The lease is opt-in because a caller may genuinely want a slot held until
+	 * it is released. This arm is what proves the addition changes nothing for
+	 * every flow that does not ask for it.
+	 *
+	 * @return void
+	 */
+	public function testWithoutALeaseAHolderIsKeptHowLongAgoItWasTaken(): void {
+		$ancient = (new \DateTime('-30 days'))->format(\DateTimeInterface::ATOM);
+		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'dead-run', 'since' => $ancient]]]);
+
+		$out = $this->node->execute(
+			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
+			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 1, 'holder' => 'holder'],
+			context: $this->ctx($state)
+		);
+
+		$this->assertFalse($out[0]['json']['claimed'], 'an unleased pool must behave exactly as it did before');
+
+	}//end testWithoutALeaseAHolderIsKeptHowLongAgoItWasTaken()
+
+	/**
+	 * An unparseable or absent `since` keeps the slot HELD.
+	 *
+	 * Fails in the safe direction: an expired holder read as live only delays a
+	 * recovery, while a live holder read as expired duplicates work.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableTimestampKeepsTheSlotHeld(): void {
+		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'odd-run', 'since' => 'not-a-date']]]);
+
+		$out = $this->node->execute(
+			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
+			config: [
+				'operation' => 'claim',
+				'slots' => 'slots',
+				'capacity' => 1,
+				'holder' => 'holder',
+				'leaseSeconds' => 1,
+			],
+			context: $this->ctx($state)
+		);
+
+		$this->assertFalse($out[0]['json']['claimed'], 'a timestamp that will not parse must not free the slot');
+
+	}//end testAnUnreadableTimestampKeepsTheSlotHeld()
+
 }//end class
