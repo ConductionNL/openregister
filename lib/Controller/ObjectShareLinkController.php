@@ -52,7 +52,10 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
@@ -62,6 +65,14 @@ use Throwable;
  * Resolves an object share token to the one object it addresses.
  */
 class ObjectShareLinkController extends Controller {
+
+	/**
+	 * Brute-force throttler action for rejected object share tokens.
+	 *
+	 * @var string
+	 */
+	private const THROTTLE_ACTION = 'openregister_object_share_link';
+
 
 	/**
 	 * Share types this endpoint will honour.
@@ -91,6 +102,7 @@ class ObjectShareLinkController extends Controller {
 		IRequest $request,
 		private readonly IManager $shareManager,
 		private readonly ObjectService $objectService,
+		private readonly IThrottler $throttler,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -105,12 +117,29 @@ class ObjectShareLinkController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function show(string $token): JSONResponse {
 		$share = $this->resolveLiveShare(token: $token);
 		if ($share === null) {
 			// One shape for every refusal — invalid, revoked, expired, wrong
 			// type, wrong password. Distinguishing them would turn this into an
 			// oracle for which tokens exist.
+			//
+			// That uniformity is necessary and not sufficient: it hides WHICH
+			// failure happened, but says nothing about how fast a caller may
+			// keep trying. The counter below is the other half.
+			try {
+				$this->throttler->registerAttempt(
+					action: self::THROTTLE_ACTION,
+					ip: $this->request->getRemoteAddress()
+				);
+			} catch (\Throwable $throttlerFailure) {
+				$this->logger->warning(
+					'ObjectShareLinkController: registerAttempt failed: ' . $throttlerFailure->getMessage()
+				);
+			}
+
 			return $this->refused();
 		}
 

@@ -49,12 +49,24 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
+use Psr\Log\LoggerInterface;
 
 /**
  * Public case-token resolve controller.
  */
 class CaseTokenController extends Controller {
+
+	/**
+	 * Brute-force throttler action for rejected case tokens.
+	 *
+	 * @var string
+	 */
+	private const THROTTLE_ACTION = 'openregister_case_token';
+
 	/**
 	 * Constructor.
 	 *
@@ -68,6 +80,8 @@ class CaseTokenController extends Controller {
 		string $appName,
 		IRequest $request,
 		private CaseTokenService $tokenService,
+		private IThrottler $throttler,
+		private LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -90,9 +104,25 @@ class CaseTokenController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function resolve(string $token): JSONResponse {
 		$resolved = $this->tokenService->resolve($token);
 		if ($resolved === null) {
+			// The uniform 404 below is the right answer and stays. But a
+			// uniform response is not a throttle: it hides WHICH failure
+			// occurred, it does nothing about how FAST they can be attempted.
+			try {
+				$this->throttler->registerAttempt(
+					action: self::THROTTLE_ACTION,
+					ip: $this->request->getRemoteAddress()
+				);
+			} catch (\Throwable $throttlerFailure) {
+				$this->logger->warning(
+					'CaseTokenController: registerAttempt failed: ' . $throttlerFailure->getMessage()
+				);
+			}
+
 			// Uniform 404 — never distinguish "unknown" from
 			// "revoked / expired / forbidden". No enumeration oracle.
 			return new JSONResponse(

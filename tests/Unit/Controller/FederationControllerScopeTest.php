@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
+use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -86,6 +87,7 @@ class FederationControllerScopeTest extends TestCase {
 			$this->shareMapper,
 			$this->objectService,
 			$this->createMock(FederationShareService::class),
+			$this->createMock(IThrottler::class),
 			$this->createMock(LoggerInterface::class)
 		);
 
