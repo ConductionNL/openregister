@@ -2711,6 +2711,8 @@ class ObjectsController extends Controller
      *
      * @psalm-suppress NoValue
      *
+     * @throws DoesNotExistException If the register or schema cannot be found.
+     *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-22
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
@@ -2981,6 +2983,8 @@ class ObjectsController extends Controller
      *
      * @throws ContainerExceptionInterface If there's an issue with dependency injection.
      * @throws NotFoundExceptionInterface If the FileService dependency is not found.
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-9-download-audit-logging
      *
      * @NoAdminRequired
      * @NoCSRFRequired

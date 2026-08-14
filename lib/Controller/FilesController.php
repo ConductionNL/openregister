@@ -187,6 +187,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-9-download-audit-logging
      */
     public function show(
         string $register,
@@ -524,6 +526,8 @@ class FilesController extends Controller
      * @param string $id       Object ID
      *
      * @return ObjectEntity|null Object entity or null if not found
+     *
+     * @throws DoesNotExistException If the register, schema, or object cannot be found.
      */
     private function validateAndGetObject(string $register, string $schema, string $id): ?ObjectEntity
     {
@@ -784,6 +788,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-5-file-locking
      */
     public function update(
         string $register,
@@ -1347,6 +1353,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-4-file-versioning
      */
     public function restoreVersion(
         string $register,
@@ -1405,6 +1413,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-5-file-locking
      */
     public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1453,6 +1463,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-5-file-locking
      */
     public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {

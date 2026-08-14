@@ -8,6 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
@@ -35,6 +36,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
@@ -67,6 +69,8 @@ class FileAuditHandler
      * @param string       $mimeType The file MIME type.
      *
      * @return void
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-9-download-audit-logging
      */
     public function logDownload(
         ObjectEntity $object,
@@ -108,6 +112,8 @@ class FileAuditHandler
      * @param array        $fileNames Array of file names included in the archive.
      *
      * @return void
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-9-download-audit-logging
      */
     public function logBulkDownload(ObjectEntity $object, array $fileIds, array $fileNames): void
     {
@@ -126,6 +132,8 @@ class FileAuditHandler
      * @param array        $data   Additional context data for the entry.
      *
      * @return void
+     *
+     * @spec openspec/changes/file-actions/tasks.md
      */
     public function logFileAction(ObjectEntity $object, string $action, array $data=[]): void
     {

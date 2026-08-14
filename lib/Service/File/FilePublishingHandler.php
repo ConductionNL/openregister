@@ -8,6 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
@@ -38,6 +39,7 @@ use ZipArchive;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
@@ -500,6 +502,8 @@ class FilePublishingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) ZIP archive creation with file processing requires extensive code
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-9-download-audit-logging
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {

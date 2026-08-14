@@ -1151,6 +1151,8 @@ class FileService
      *
      * @phpstan-param array<int, string> $tags
      * @psalm-param   array<int, string> $tags
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-5-file-locking
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
@@ -1201,6 +1203,8 @@ class FileService
      * @return bool True if successful, false if the file didn't exist.
      *
      * @throws Exception If deleting the file is not permitted or file operations fail.
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-5-file-locking
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
@@ -1826,6 +1830,8 @@ class FileService
      * @return File The renamed file.
      *
      * @throws Exception If the rename fails.
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-2-file-rename
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -1887,6 +1893,8 @@ class FileService
      * @return File The new file copy.
      *
      * @throws Exception If the copy fails.
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-3-file-copy-and-move
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -1954,6 +1962,8 @@ class FileService
      * @return File The moved file.
      *
      * @throws Exception If the move fails.
+     *
+     * @spec openspec/changes/file-actions/tasks.md#phase-3-file-copy-and-move
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
