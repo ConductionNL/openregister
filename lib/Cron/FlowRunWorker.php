@@ -81,6 +81,19 @@ class FlowRunWorker extends TimedJob {
 	private const DEFAULT_STALE_MINUTES = 15;
 
 	/**
+	 * How long a run may wait for an external signal before it counts as abandoned.
+	 *
+	 * DAYS, not minutes, and deliberately so: the runs this reaps are waiting on
+	 * a person, and a fortnight is the point past which "still deciding" and
+	 * "nobody is coming" stop being distinguishable. Set it too short and the
+	 * reaper fails live approvals; the failure mode of setting it too long is
+	 * only that a dead run lingers, so the generous side is the safe one.
+	 *
+	 * @var int
+	 */
+	private const DEFAULT_SIGNAL_WAIT_DAYS = 14;
+
+	/**
 	 * The instance-wide runtime ceiling this reaper must not undercut.
 	 *
 	 * Kept in step with FlowRunService::DEFAULT_MAX_RUNTIME_MINUTES: the reaper
@@ -177,6 +190,7 @@ class FlowRunWorker extends TimedJob {
 
 		$this->reapStale(now: $now);
 		$this->expireStaleQueued(now: $now);
+		$this->expireAbandonedSignals(now: $now);
 
 		foreach ($this->mapper->findQueued(limit: self::BATCH) as $run) {
 			$this->advance(run: $run);
@@ -271,6 +285,69 @@ class FlowRunWorker extends TimedJob {
 		}//end foreach
 
 	}//end reapStale()
+
+	/**
+	 * Fail runs suspended on a signal that never arrived.
+	 *
+	 * The same deadlock as {@see self::expireStaleQueued()} describes, reached
+	 * from the other direction. `hasActiveRun()` counts `suspended`, and
+	 * `findDue()` deliberately never returns a run whose `resume_at` is null —
+	 * correctly, because waking it on a clock would run it before its answer
+	 * arrived. The two together mean a signal that is never delivered leaves a
+	 * run nothing will ever touch, holding its flow's schedule shut behind it.
+	 *
+	 * An approval nobody actions is not exotic; it is the normal end of a
+	 * request that stopped mattering. So the default window is generous — days,
+	 * not minutes — and this is FAILED rather than resumed, because resuming
+	 * would run the awaiting node as though it had been answered when the fact
+	 * on the ground is that nobody answered.
+	 *
+	 * @param DateTime $now The current time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	private function expireAbandonedSignals(DateTime $now): void {
+		$days = (int)$this->appConfig->getValueString(
+			'openregister',
+			'flow_signal_wait_days',
+			(string)self::DEFAULT_SIGNAL_WAIT_DAYS
+		);
+
+		if ($days <= 0) {
+			// An operator whose approvals legitimately take months can switch
+			// the expiry off rather than have it fail live requests.
+			return;
+		}
+
+		$cutoff = (clone $now)->modify('-' . $days . ' days');
+
+		foreach ($this->mapper->findAbandonedSignals(before: $cutoff, limit: self::BATCH) as $run) {
+			$run->setStatus(FlowRun::STATUS_FAILED);
+			$run->setError(
+				sprintf(
+					'Abandoned: this run suspended waiting for an external signal '
+					. '(an approval, a webhook, a child run) and none arrived within %d days. '
+					. 'Retry it to run it again from the start.',
+					$days
+				)
+			);
+			$run->setUpdated($now);
+			$this->mapper->update($run);
+
+			$this->logger->warning(
+				message: '[FlowRunWorker] Failed a run whose signal never arrived',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'run' => $run->getUuid(),
+					'flow' => $run->getFlowId(),
+				]
+			);
+		}//end foreach
+
+	}//end expireAbandonedSignals()
 
 	/**
 	 * Abandon queued runs that waited so long that running them is wrong.

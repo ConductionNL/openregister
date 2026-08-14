@@ -63,6 +63,17 @@ class FlowRunService {
 	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
 
 	/**
+	 * The context key an arriving signal's payload lands at.
+	 *
+	 * Read by whichever node suspended waiting for it, and cleared once that
+	 * walk finishes — a signal answers one question, and leaving it behind would
+	 * let a later suspension read an answer meant for an earlier one.
+	 *
+	 * @var string
+	 */
+	public const SIGNAL_CONTEXT_KEY = 'signal';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowRunMapper $mapper Persists runs.
@@ -487,6 +498,55 @@ class FlowRunService {
 	}//end retry()
 
 	/**
+	 * Deliver the external signal a suspended run is waiting for.
+	 *
+	 * The missing half of {@see FlowSuspension}. That exception has always
+	 * documented `resumeAt: null` as "waits for an external signal (a child run,
+	 * a webhook)", and the engine has always suspended correctly on it — but
+	 * nothing could ever wake such a run, because no query reads it and no
+	 * endpoint existed to say the signal had arrived. The documented case was
+	 * unreachable, and any run that used it stranded its flow.
+	 *
+	 * The run is PARKED, not advanced inline: a signal arrives on an HTTP
+	 * request, and that request has to return. Setting `resume_at` to now makes
+	 * the run due, so the next worker pass picks it up through the ordinary
+	 * `findDue()` path rather than through a second execution route that would
+	 * have to re-implement guards, fairness and error handling. The cost is
+	 * latency — up to one worker pass, and the stock system cron is every five
+	 * minutes — which is the right trade for an approval and the wrong one for a
+	 * tight machine-to-machine handshake. Worth knowing before using it for the
+	 * latter.
+	 *
+	 * The payload lands at `$context['signal']` and is consumed by the next
+	 * walk ({@see self::persistResult()}), so a node reads the answer to ITS
+	 * question rather than one left behind by an earlier suspension.
+	 *
+	 * @param FlowRun $run The suspended run to wake.
+	 * @param array $payload What the signaller wants the run to know.
+	 *
+	 * @return FlowRun|null The updated run, or null when it was not suspended.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	public function signal(FlowRun $run, array $payload = []): ?FlowRun {
+		if ($run->getStatus() !== FlowRun::STATUS_SUSPENDED) {
+			// A queued or running run has not asked for anything yet, and a
+			// terminal one is past asking. Signalling either would either be
+			// lost or would resurrect a finished run.
+			return null;
+		}
+
+		$context = ($run->getContext() ?? []);
+		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
+
+		$run->setContext($context);
+		$run->setResumeAt(new DateTime());
+		$run->setUpdated(new DateTime());
+
+		return $this->mapper->update($run);
+	}//end signal()
+
+	/**
 	 * Execute (or continue) a run to its next stopping point.
 	 *
 	 * Called by the queue worker, never by a trigger. Returns the run in
@@ -537,6 +597,14 @@ class FlowRunService {
 		// carries a value across a suspension — the run that resumes days later
 		// gets back exactly what it held when it stopped.
 		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
+
+		// Where each node had got to when the run stopped. Rehydrated for the
+		// same reason as the token and by the same route, but answering a
+		// different question: the token is what the run CARRIES, this is how far
+		// each node GOT. A node that suspends mid-work needs the second — without
+		// it the only thing a resumed node learns is that the run resumed, which
+		// leaves it no choice but to start over.
+		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
 
 		// The run's liveness signal and its deadline. Handed to the dispatcher,
 		// which checkpoints between steps, AND put in the node context, because
@@ -751,6 +819,21 @@ class FlowRunService {
 		// something that no longer beats.
 		unset($context[FlowRunGuard::CONTEXT_KEY]);
 
+		// The per-node view the dispatcher scopes for whichever node ran last.
+		// A view, not data: it is rebuilt on every dispatch, and persisting it
+		// would write one arbitrary node's slot into the run under a key every
+		// other node also reads from.
+		unset($context[FlowNodeResumeState::CONTEXT_KEY]);
+
+		$context = $this->serialiseResumeState(context: $context, status: $status);
+
+		// A signal is consumed by the walk it woke. Kept, it would still be
+		// sitting there the NEXT time this run suspends on a signal, and that
+		// node would resume immediately on an answer to somebody else's
+		// question — a flow with two approval steps would auto-approve the
+		// second one the moment the first was granted.
+		unset($context[self::SIGNAL_CONTEXT_KEY]);
+
 		$run->setStatus($status);
 		$run->setItems((array)($result['items'] ?? []));
 		$run->setContext($context);
@@ -774,6 +857,39 @@ class FlowRunService {
 
 		return $persisted;
 	}//end persistResult()
+
+	/**
+	 * Reduce the resume state to its storable form.
+	 *
+	 * Dropped entirely on a terminal status. A finished run has nowhere to
+	 * continue from, so keeping the slots would only put a cursor in front of
+	 * anyone reading the run to find out what happened — and the dispatcher has
+	 * already cleared every node that returned, so anything still held belongs
+	 * to a node the run never came back to.
+	 *
+	 * @param array $context The context being persisted.
+	 * @param string $status The status the walk ended on.
+	 *
+	 * @return array The context, with the state serialised or removed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
+	 */
+	private function serialiseResumeState(array $context, string $status): array {
+		$state = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if ($state instanceof FlowResumeState === false) {
+			return $context;
+		}
+
+		if ($status !== FlowRun::STATUS_SUSPENDED || $state->isEmpty() === true) {
+			unset($context[FlowResumeState::CONTEXT_KEY]);
+
+			return $context;
+		}
+
+		$context[FlowResumeState::CONTEXT_KEY] = $state->jsonSerialize();
+
+		return $context;
+	}//end serialiseResumeState()
 
 	/**
 	 * Copy a finished run's outcome onto its flow.

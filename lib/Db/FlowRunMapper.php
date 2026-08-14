@@ -558,6 +558,53 @@ class FlowRunMapper extends QBMapper {
 	}//end findStale()
 
 	/**
+	 * Runs suspended on a SIGNAL that never came.
+	 *
+	 * The counterpart to {@see self::findStale()}, for the other status that can
+	 * strand a run. `findDue()` deliberately skips suspended runs with no
+	 * `resume_at`, because waking those on a clock would run them before the
+	 * thing they are waiting for arrives. The consequence, until this existed,
+	 * was that nothing looked at them at ALL: no query read them, so a signal
+	 * that was never delivered — an approval nobody actioned, a webhook that
+	 * fired at a dead endpoint, a child run that failed before it could report —
+	 * left its run suspended forever.
+	 *
+	 * Forever is not the worst of it. `hasActiveRun()` counts `suspended`, so
+	 * one such run also stops its flow from EVER being scheduled again. A
+	 * missed signal silently retires the flow.
+	 *
+	 * These are FAILED rather than resumed, for the same reason
+	 * {@see \OCA\OpenRegister\Cron\FlowRunWorker::reapStale()} fails rather than
+	 * requeues: the run is mid-graph and resuming it would run the awaiting node
+	 * as though its answer had arrived, when what actually happened is that
+	 * nobody answered. Failing says that, and leaves retry to a person.
+	 *
+	 * @param DateTime $before Runs not touched since this moment have waited too long.
+	 * @param integer $limit Maximum runs to claim in one pass.
+	 *
+	 * @return array<int, FlowRun> The abandoned runs.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	public function findAbandonedSignals(DateTime $before, int $limit = 25): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
+			->andWhere($qb->expr()->isNull('resume_at'))
+			->andWhere(
+				$qb->expr()->lt(
+					'updated',
+					$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+				)
+			)
+			->orderBy('updated', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findAbandonedSignals()
+
+	/**
 	 * Runs waiting to start, shared FAIRLY between the flows that are waiting.
 	 *
 	 * A single global FIFO — which is what this was — makes queue position a
