@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Service\McpDiscoveryService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -86,6 +87,7 @@ class McpController extends Controller {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
 	 * @spec openspec/specs/mcp-discovery/spec.md
 	 */
+	#[AnonRateLimit(limit: 60, period: 60)]
 	public function discover(): JSONResponse {
 		try {
 			$catalog = $this->mcpDiscoveryService->getCatalog();

@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IAppConfig;
@@ -179,6 +180,7 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
@@ -310,6 +312,7 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
 			$extend = $this->request->getParam(key: '_extend', default: []);
@@ -1580,6 +1583,7 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 *   (Requirement: Resolution is null-safe across installed schemas)
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByImplements(): JSONResponse {
 		$uri = (string)($this->request->getParam('uri', ''));
 		if ($uri === '' || $this->semanticTypeResolver === null) {

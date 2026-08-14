@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -260,6 +261,7 @@ class RegistersController extends Controller {
 	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
@@ -476,6 +478,7 @@ class RegistersController extends Controller {
 	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-2
 	 */
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
 			$extend = $this->request->getParam(key: '_extend', default: []);
