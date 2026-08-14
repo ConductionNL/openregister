@@ -45,8 +45,19 @@ jobs:
       - name: No unresolved conflict markers
         run: |
           set -euo pipefail
+          # SCOPED TO CODE, and to paths we author. A marker is only a defect
+          # where it would break something: prose that DOCUMENTS a conflict is
+          # legitimate, and so are agent-eval artifacts that capture one as
+          # sample output. openbuild failed this gate on
+          # `.claude/skills/create-pr/evals/.../summary.md` — a correct file.
+          #
+          # That matters more than the miss it allows. A gate that fails on
+          # correct files gets switched off, and takes the checks that were
+          # working with it; a marker in a markdown file breaks nothing.
           if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- \
-               ':!vendor' ':!node_modules' ':!*.lock' ':!tests/fixtures' > /tmp/markers.txt; then
+               '*.php' '*.js' '*.mjs' '*.ts' '*.vue' '*.json' '*.yml' '*.yaml' '*.css' '*.scss' \
+               ':!vendor' ':!node_modules' ':!*.lock' ':!tests/fixtures' ':!.claude' \
+               ':!**/evals/**' ':!**/fixtures/**' > /tmp/markers.txt; then
             echo "::error::Unresolved merge conflict markers are committed. This branch does not build."
             cat /tmp/markers.txt
             exit 1
@@ -70,14 +81,23 @@ jobs:
           done < <(git ls-files '*.php' | grep -v '^vendor/' | grep -v '^tests/fixtures/')
           exit "$fail"
 
-      # JSON that will not parse breaks register fragments and composer/npm
-      # metadata, and is the other thing a bad merge leaves behind.
+      # JSON that will not parse breaks register fragments and app metadata,
+      # and is the other thing a bad merge leaves behind.
+      #
+      # SCOPED, because the first version was not and failed immediately on
+      # honest files: editor and tooling configs (tsconfig, eslint, devcontainer)
+      # are JSONC — comments and trailing commas — which is valid for their
+      # consumers and invalid for a strict parser. A gate that fails on correct
+      # files is worse than no gate: it gets switched off, and takes the checks
+      # that were working with it. Only the JSON the app itself loads is checked.
       - name: JSON parses
         run: |
           set -euo pipefail
           fail=0
           while IFS= read -r f; do
+            [ -f "$f" ] || continue
             python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" \
               || { echo "::error file=$f::invalid JSON"; fail=1; }
-          done < <(git ls-files '*.json' | grep -v '^vendor/' | grep -v '^node_modules/')
+          done < <(git ls-files 'composer.json' 'package.json' 'appinfo/*.json' 'lib/**/*.json' \
+                     | grep -v '^vendor/' | grep -v '^node_modules/')
           exit "$fail"
