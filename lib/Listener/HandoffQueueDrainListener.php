@@ -51,60 +51,58 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Scenario: No provider installed, queue mode)
  */
-class HandoffQueueDrainListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param HandoffService  $handoffService The handoff engine (drain surface).
-     * @param LoggerInterface $logger         Structured logging.
-     */
-    public function __construct(
-        private readonly HandoffService $handoffService,
-        private readonly LoggerInterface $logger,
-    ) {
+class HandoffQueueDrainListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param HandoffService $handoffService The handoff engine (drain surface).
+	 * @param LoggerInterface $logger Structured logging.
+	 */
+	public function __construct(
+		private readonly HandoffService $handoffService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Handle a schema-save or app-enable event by sweeping the parked queue.
-     *
-     * Every parked entry whose kind now resolves (the drain re-checks through
-     * `SemanticTypeResolver`, which covers `allOf`-ancestor inheritance) is
-     * executed as its original requester; unresolvable kinds stay parked.
-     * Never lets a drain failure break the triggering save/enable.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Scenario: No provider installed, queue mode)
-     */
-    public function handle(Event $event): void
-    {
-        $isDrainTrigger = ($event instanceof SchemaCreatedEvent
-            || $event instanceof SchemaUpdatedEvent
-            || $event instanceof AppEnableEvent);
-        if ($isDrainTrigger === false) {
-            return;
-        }
+	/**
+	 * Handle a schema-save or app-enable event by sweeping the parked queue.
+	 *
+	 * Every parked entry whose kind now resolves (the drain re-checks through
+	 * `SemanticTypeResolver`, which covers `allOf`-ancestor inheritance) is
+	 * executed as its original requester; unresolvable kinds stay parked.
+	 * Never lets a drain failure break the triggering save/enable.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Scenario: No provider installed, queue mode)
+	 */
+	public function handle(Event $event): void {
+		$isDrainTrigger = ($event instanceof SchemaCreatedEvent
+			|| $event instanceof SchemaUpdatedEvent
+			|| $event instanceof AppEnableEvent);
+		if ($isDrainTrigger === false) {
+			return;
+		}
 
-        try {
-            $summary = $this->handoffService->drainParked();
-            if ($summary['drained'] > 0 || $summary['failed'] > 0) {
-                $this->logger->info(
-                    message: '[HandoffQueueDrainListener] Drained parked handoffs after '.get_class($event),
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
-                );
-            }
-        } catch (\Throwable $e) {
-            // The triggering save/enable must never fail because of a drain error.
-            $this->logger->warning(
-                message: '[HandoffQueueDrainListener] Drain sweep failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'event' => get_class($event)]
-            );
-        }
+		try {
+			$summary = $this->handoffService->drainParked();
+			if ($summary['drained'] > 0 || $summary['failed'] > 0) {
+				$this->logger->info(
+					message: '[HandoffQueueDrainListener] Drained parked handoffs after ' . get_class($event),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
+				);
+			}
+		} catch (\Throwable $e) {
+			// The triggering save/enable must never fail because of a drain error.
+			$this->logger->warning(
+				message: '[HandoffQueueDrainListener] Drain sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => get_class($event)]
+			);
+		}
 
-    }//end handle()
+	}//end handle()
 }//end class

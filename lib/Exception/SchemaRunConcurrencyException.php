@@ -30,7 +30,6 @@ use RuntimeException;
 /**
  * Signals a concurrent-run conflict on a schema.
  */
-class SchemaRunConcurrencyException extends RuntimeException
-{
+class SchemaRunConcurrencyException extends RuntimeException {
 
 }//end class

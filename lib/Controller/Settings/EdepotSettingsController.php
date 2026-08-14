@@ -47,200 +47,195 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class EdepotSettingsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                 $appName         The app name.
-     * @param IRequest               $request         The request.
-     * @param IAppConfig             $appConfig       The app configuration.
-     * @param EdepotTransferService  $transferService The transfer service.
-     * @param SftpTransport          $sftpTransport   SFTP transport.
-     * @param RestApiTransport       $restTransport   REST API transport.
-     * @param OpenConnectorTransport $ocTransport     OpenConnector transport.
-     * @param LoggerInterface        $logger          Logger.
-     */
-    public function __construct(
-        $appName,
-        IRequest $request,
-        private readonly IAppConfig $appConfig,
-        private readonly EdepotTransferService $transferService,
-        private readonly SftpTransport $sftpTransport,
-        private readonly RestApiTransport $restTransport,
-        private readonly OpenConnectorTransport $ocTransport,
-        private readonly LoggerInterface $logger,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class EdepotSettingsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The app name.
+	 * @param IRequest $request The request.
+	 * @param IAppConfig $appConfig The app configuration.
+	 * @param EdepotTransferService $transferService The transfer service.
+	 * @param SftpTransport $sftpTransport SFTP transport.
+	 * @param RestApiTransport $restTransport REST API transport.
+	 * @param OpenConnectorTransport $ocTransport OpenConnector transport.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		$appName,
+		IRequest $request,
+		private readonly IAppConfig $appConfig,
+		private readonly EdepotTransferService $transferService,
+		private readonly SftpTransport $sftpTransport,
+		private readonly RestApiTransport $restTransport,
+		private readonly OpenConnectorTransport $ocTransport,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Get e-Depot settings.
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse The current e-Depot configuration.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
-     */
-    public function getEdepotSettings(): JSONResponse
-    {
-        try {
-            $config = $this->transferService->getTransportConfig();
+	/**
+	 * Get e-Depot settings.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The current e-Depot configuration.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+	 */
+	public function getEdepotSettings(): JSONResponse {
+		try {
+			$config = $this->transferService->getTransportConfig();
 
-            // Mask sensitive values.
-            if (empty($config['apiKey']) === false) {
-                $config['apiKey'] = '***';
-            }
+			// Mask sensitive values.
+			if (empty($config['apiKey']) === false) {
+				$config['apiKey'] = '***';
+			}
 
-            if (empty($config['bearerToken']) === false) {
-                $config['bearerToken'] = '***';
-            }
+			if (empty($config['bearerToken']) === false) {
+				$config['bearerToken'] = '***';
+			}
 
-            if (empty($config['password']) === false) {
-                $config['password'] = '***';
-            }
+			if (empty($config['password']) === false) {
+				$config['password'] = '***';
+			}
 
-            $config['availableProfiles'] = $this->transferService->getAvailableProfiles();
+			$config['availableProfiles'] = $this->transferService->getAvailableProfiles();
 
-            return new JSONResponse(data: $config);
-        } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end getEdepotSettings()
+			return new JSONResponse(data: $config);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}//end try
+	}//end getEdepotSettings()
 
-    /**
-     * Update e-Depot settings.
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse The update result.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
-     */
-    public function updateEdepotSettings(): JSONResponse
-    {
-        try {
-            $params = $this->request->getParams();
+	/**
+	 * Update e-Depot settings.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The update result.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+	 */
+	public function updateEdepotSettings(): JSONResponse {
+		try {
+			$params = $this->request->getParams();
 
-            // Validate SIP profile.
-            $sipProfile = ($params['sipProfile'] ?? 'default');
-            if ($this->transferService->isValidProfile($sipProfile) === false) {
-                $available = implode(', ', array_keys($this->transferService->getAvailableProfiles()));
-                return new JSONResponse(
-                    data: ['error' => "Invalid SIP profile '{$sipProfile}'. Available: {$available}"],
-                    statusCode: 400
-                );
-            }
+			// Validate SIP profile.
+			$sipProfile = ($params['sipProfile'] ?? 'default');
+			if ($this->transferService->isValidProfile($sipProfile) === false) {
+				$available = implode(', ', array_keys($this->transferService->getAvailableProfiles()));
+				return new JSONResponse(
+					data: ['error' => "Invalid SIP profile '{$sipProfile}'. Available: {$available}"],
+					statusCode: 400
+				);
+			}
 
-            // Store configuration values.
-            $configMap = [
-                'endpointUrl'        => 'edepot_endpoint_url',
-                'authenticationType' => 'edepot_auth_type',
-                'apiKey'             => 'edepot_api_key',
-                'bearerToken'        => 'edepot_bearer_token',
-                'targetArchive'      => 'edepot_target_archive',
-                'sipProfile'         => 'edepot_sip_profile',
-                'transport'          => 'edepot_transport',
-                'host'               => 'edepot_sftp_host',
-                'port'               => 'edepot_sftp_port',
-                'username'           => 'edepot_sftp_username',
-                'password'           => 'edepot_sftp_password',
-                'keyPath'            => 'edepot_sftp_key_path',
-                'remotePath'         => 'edepot_sftp_remote_path',
-                'sourceId'           => 'edepot_openconnector_source_id',
-                'baseUrl'            => 'edepot_openconnector_base_url',
-            ];
+			// Store configuration values.
+			$configMap = [
+				'endpointUrl' => 'edepot_endpoint_url',
+				'authenticationType' => 'edepot_auth_type',
+				'apiKey' => 'edepot_api_key',
+				'bearerToken' => 'edepot_bearer_token',
+				'targetArchive' => 'edepot_target_archive',
+				'sipProfile' => 'edepot_sip_profile',
+				'transport' => 'edepot_transport',
+				'host' => 'edepot_sftp_host',
+				'port' => 'edepot_sftp_port',
+				'username' => 'edepot_sftp_username',
+				'password' => 'edepot_sftp_password',
+				'keyPath' => 'edepot_sftp_key_path',
+				'remotePath' => 'edepot_sftp_remote_path',
+				'sourceId' => 'edepot_openconnector_source_id',
+				'baseUrl' => 'edepot_openconnector_base_url',
+			];
 
-            foreach ($configMap as $paramKey => $configKey) {
-                if (isset($params[$paramKey]) === true) {
-                    $value = (string) $params[$paramKey];
-                    // Skip masked values (don't overwrite secrets with '***').
-                    if ($value === '***') {
-                        continue;
-                    }
+			foreach ($configMap as $paramKey => $configKey) {
+				if (isset($params[$paramKey]) === true) {
+					$value = (string)$params[$paramKey];
+					// Skip masked values (don't overwrite secrets with '***').
+					if ($value === '***') {
+						continue;
+					}
 
-                    $this->appConfig->setValueString('openregister', $configKey, $value);
-                }
-            }
+					$this->appConfig->setValueString('openregister', $configKey, $value);
+				}
+			}
 
-            // Test connection if requested.
-            $testResult = null;
-            if (isset($params['testConnection']) === true && $params['testConnection'] === true) {
-                $transport  = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
-                $config     = $this->transferService->getTransportConfig();
-                $testResult = $transport->testConnection($config);
-            }
+			// Test connection if requested.
+			$testResult = null;
+			if (isset($params['testConnection']) === true && $params['testConnection'] === true) {
+				$transport = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
+				$config = $this->transferService->getTransportConfig();
+				$testResult = $transport->testConnection($config);
+			}
 
-            $response = ['success' => true];
-            if ($testResult !== null) {
-                $response['connectionTest'] = $testResult;
-            }
+			$response = ['success' => true];
+			if ($testResult !== null) {
+				$response['connectionTest'] = $testResult;
+			}
 
-            return new JSONResponse(data: $response);
-        } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end updateEdepotSettings()
+			return new JSONResponse(data: $response);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}//end try
+	}//end updateEdepotSettings()
 
-    /**
-     * Test e-Depot connection.
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse The connection test result.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
-     */
-    public function testEdepotConnection(): JSONResponse
-    {
-        try {
-            $config    = $this->transferService->getTransportConfig();
-            $transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
-            $result    = $transport->testConnection($config);
+	/**
+	 * Test e-Depot connection.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The connection test result.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
+	 */
+	public function testEdepotConnection(): JSONResponse {
+		try {
+			$config = $this->transferService->getTransportConfig();
+			$transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
+			$result = $transport->testConnection($config);
 
-            $message = 'Connection failed';
-            if ($result === true) {
-                $message = 'Connection successful';
-            }
+			$message = 'Connection failed';
+			if ($result === true) {
+				$message = 'Connection successful';
+			}
 
-            return new JSONResponse(
-                    data: [
-                        'success'   => $result,
-                        'transport' => $transport->getName(),
-                        'message'   => $message,
-                    ]
-                    );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => $e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end testEdepotConnection()
+			return new JSONResponse(
+				data: [
+					'success' => $result,
+					'transport' => $transport->getName(),
+					'message' => $message,
+				]
+			);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => $e->getMessage(),
+				],
+				statusCode: 500
+			);
+		}//end try
+	}//end testEdepotConnection()
 
-    /**
-     * Resolve transport implementation by type name.
-     *
-     * @param string $type The transport type.
-     *
-     * @return TransportInterface The transport.
-     *
-     * @spec openspec/specs/edepot-transfer/spec.md
-     */
-    private function resolveTransport(string $type): TransportInterface
-    {
-        switch ($type) {
-            case 'sftp':
-                return $this->sftpTransport;
-            case 'openconnector':
-                return $this->ocTransport;
-            case 'rest_api':
-            default:
-                return $this->restTransport;
-        }
-    }//end resolveTransport()
+	/**
+	 * Resolve transport implementation by type name.
+	 *
+	 * @param string $type The transport type.
+	 *
+	 * @return TransportInterface The transport.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	private function resolveTransport(string $type): TransportInterface {
+		switch ($type) {
+			case 'sftp':
+				return $this->sftpTransport;
+			case 'openconnector':
+				return $this->ocTransport;
+			case 'rest_api':
+			default:
+				return $this->restTransport;
+		}
+	}//end resolveTransport()
 }//end class

@@ -54,156 +54,144 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\FederatedShareMapper
  */
-class FederatedShareMapperTenancyTest extends TestCase
-{
+class FederatedShareMapperTenancyTest extends TestCase {
 
-    /**
-     * The mapper under test, instrumented to record organisation-filter calls.
-     *
-     * @var FederatedShareMapper
-     */
-    private FederatedShareMapper $mapper;
+	/**
+	 * The mapper under test, instrumented to record organisation-filter calls.
+	 *
+	 * @var FederatedShareMapper
+	 */
+	private FederatedShareMapper $mapper;
 
-    /**
-     * Build the mapper over a query builder that records nothing but its own
-     * fluency, plus an override that records whether the organisation filter ran.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Build the mapper over a query builder that records nothing but its own
+	 * fluency, plus an override that records whether the organisation filter ran.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $expr = $this->createMock(IExpressionBuilder::class);
-        $expr->method('eq')->willReturn('eq');
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('eq');
 
-        $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('expr')->willReturn($expr);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('where')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('setMaxResults')->willReturnSelf();
-        $qb->method('setFirstResult')->willReturnSelf();
-        $qb->method('createNamedParameter')->willReturn(':p');
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('setFirstResult')->willReturnSelf();
+		$qb->method('createNamedParameter')->willReturn(':p');
 
-        $db = $this->createMock(IDBConnection::class);
-        $db->method('getQueryBuilder')->willReturn($qb);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturn($qb);
 
-        $this->mapper = new class(
-            $db,
-            $this->createMock(OrganisationMapper::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(IGroupManager::class),
-            $this->createMock(IAppConfig::class)
-        ) extends FederatedShareMapper {
+		$this->mapper = new class($db, $this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IAppConfig::class)) extends FederatedShareMapper {
 
-            /**
-             * Names of the methods that reached the organisation filter.
-             *
-             * @var string[]
-             */
-            public array $filtered = [];
+			/**
+			 * Names of the methods that reached the organisation filter.
+			 *
+			 * @var string[]
+			 */
+			public array $filtered = [];
 
-            /**
-             * Record the call instead of building SQL, and stop the query there.
-             *
-             * @param IQueryBuilder $qb                  The query under construction.
-             * @param string        $columnName          The organisation column.
-             * @param bool          $allowNullOrg        Whether NULL-org rows are admitted.
-             * @param string        $tableAlias          The table alias.
-             * @param bool          $multiTenancyEnabled Whether tenancy is on.
-             *
-             * @return void
-             */
-            protected function applyOrganisationFilter(
-                IQueryBuilder $qb,
-                string $columnName='organisation',
-                bool $allowNullOrg=false,
-                string $tableAlias='',
-                bool $multiTenancyEnabled=true
-            ): void {
-                $this->filtered[] = ($allowNullOrg === true ? 'allow-null' : 'strict');
-                throw new \RuntimeException('organisation-filter-reached');
-            }
-        };
+			/**
+			 * Record the call instead of building SQL, and stop the query there.
+			 *
+			 * @param IQueryBuilder $qb The query under construction.
+			 * @param string $columnName The organisation column.
+			 * @param bool $allowNullOrg Whether NULL-org rows are admitted.
+			 * @param string $tableAlias The table alias.
+			 * @param bool $multiTenancyEnabled Whether tenancy is on.
+			 *
+			 * @return void
+			 */
+			protected function applyOrganisationFilter(
+				IQueryBuilder $qb,
+				string $columnName = 'organisation',
+				bool $allowNullOrg = false,
+				string $tableAlias = '',
+				bool $multiTenancyEnabled = true,
+			): void {
+				$this->filtered[] = ($allowNullOrg === true ? 'allow-null' : 'strict');
+				throw new \RuntimeException('organisation-filter-reached');
+			}
+		};
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * `shares()` lists through `findAll()`. Every session-scoped listing is
-     * organisation-filtered before it can reach the database.
-     *
-     * @return void
-     */
-    public function testFindAllAppliesTheOrganisationFilter(): void
-    {
-        $this->expectExceptionMessage('organisation-filter-reached');
+	/**
+	 * `shares()` lists through `findAll()`. Every session-scoped listing is
+	 * organisation-filtered before it can reach the database.
+	 *
+	 * @return void
+	 */
+	public function testFindAllAppliesTheOrganisationFilter(): void {
+		$this->expectExceptionMessage('organisation-filter-reached');
 
-        try {
-            $this->mapper->findAll();
-        } finally {
-            $this->assertSame(['strict'], $this->mapper->filtered);
-        }
+		try {
+			$this->mapper->findAll();
+		} finally {
+			$this->assertSame(['strict'], $this->mapper->filtered);
+		}
 
-    }//end testFindAllAppliesTheOrganisationFilter()
+	}//end testFindAllAppliesTheOrganisationFilter()
 
-    /**
-     * `revokeShare()` writes through `updateFromArray()` → `find()`. The filter
-     * runs on the READ that precedes the write, which is what turns another
-     * organisation's share id into a 404 instead of a revocation.
-     *
-     * @return void
-     */
-    public function testFindAppliesTheOrganisationFilter(): void
-    {
-        $this->expectExceptionMessage('organisation-filter-reached');
+	/**
+	 * `revokeShare()` writes through `updateFromArray()` → `find()`. The filter
+	 * runs on the READ that precedes the write, which is what turns another
+	 * organisation's share id into a 404 instead of a revocation.
+	 *
+	 * @return void
+	 */
+	public function testFindAppliesTheOrganisationFilter(): void {
+		$this->expectExceptionMessage('organisation-filter-reached');
 
-        try {
-            $this->mapper->find(id: 42);
-        } finally {
-            $this->assertSame(['strict'], $this->mapper->filtered);
-        }
+		try {
+			$this->mapper->find(id: 42);
+		} finally {
+			$this->assertSame(['strict'], $this->mapper->filtered);
+		}
 
-    }//end testFindAppliesTheOrganisationFilter()
+	}//end testFindAppliesTheOrganisationFilter()
 
-    /**
-     * The write path reaches the guarded read rather than updating by id
-     * directly. Without this, `find()` could stay filtered while a later
-     * refactor gave `updateFromArray()` its own unfiltered lookup.
-     *
-     * @return void
-     */
-    public function testUpdateFromArrayReachesTheGuardedRead(): void
-    {
-        $this->expectExceptionMessage('organisation-filter-reached');
+	/**
+	 * The write path reaches the guarded read rather than updating by id
+	 * directly. Without this, `find()` could stay filtered while a later
+	 * refactor gave `updateFromArray()` its own unfiltered lookup.
+	 *
+	 * @return void
+	 */
+	public function testUpdateFromArrayReachesTheGuardedRead(): void {
+		$this->expectExceptionMessage('organisation-filter-reached');
 
-        try {
-            $this->mapper->updateFromArray(id: 42, data: ['status' => 'revoked']);
-        } finally {
-            $this->assertSame(['strict'], $this->mapper->filtered);
-        }
+		try {
+			$this->mapper->updateFromArray(id: 42, data: ['status' => 'revoked']);
+		} finally {
+			$this->assertSame(['strict'], $this->mapper->filtered);
+		}
 
-    }//end testUpdateFromArrayReachesTheGuardedRead()
+	}//end testUpdateFromArrayReachesTheGuardedRead()
 
-    /**
-     * The deliberate exception: a remote instance presenting a share token has
-     * no local session, so this lookup must NOT be organisation-filtered. Pinned
-     * so the asymmetry stays a decision rather than an oversight.
-     *
-     * @return void
-     */
-    public function testFindByTokenIsDeliberatelyNotOrganisationFiltered(): void
-    {
-        // findEntity() on the mocked builder yields no row; the point is that
-        // the organisation filter was never reached on the way there.
-        try {
-            $this->mapper->findByToken(shareToken: 'a-token');
-        } catch (\Throwable $e) {
-            $this->assertStringNotContainsString('organisation-filter-reached', $e->getMessage());
-        }
+	/**
+	 * The deliberate exception: a remote instance presenting a share token has
+	 * no local session, so this lookup must NOT be organisation-filtered. Pinned
+	 * so the asymmetry stays a decision rather than an oversight.
+	 *
+	 * @return void
+	 */
+	public function testFindByTokenIsDeliberatelyNotOrganisationFiltered(): void {
+		// findEntity() on the mocked builder yields no row; the point is that
+		// the organisation filter was never reached on the way there.
+		try {
+			$this->mapper->findByToken(shareToken: 'a-token');
+		} catch (\Throwable $e) {
+			$this->assertStringNotContainsString('organisation-filter-reached', $e->getMessage());
+		}
 
-        $this->assertSame([], $this->mapper->filtered);
+		$this->assertSame([], $this->mapper->filtered);
 
-    }//end testFindByTokenIsDeliberatelyNotOrganisationFiltered()
+	}//end testFindByTokenIsDeliberatelyNotOrganisationFiltered()
 }//end class

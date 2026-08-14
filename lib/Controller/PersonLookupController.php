@@ -54,66 +54,64 @@ use OCP\IRequest;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  */
-class PersonLookupController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string             $appName     App id.
-     * @param IRequest           $request     HTTP request.
-     * @param BrpPersoonProvider $brpProvider BRP person lookup leaf.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly BrpPersoonProvider $brpProvider,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class PersonLookupController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App id.
+	 * @param IRequest $request HTTP request.
+	 * @param BrpPersoonProvider $brpProvider BRP person lookup leaf.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly BrpPersoonProvider $brpProvider,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Look up a single person by Burgerservicenummer (BSN).
-     *
-     * Query param: `bsn` (9-digit Burgerservicenummer, required). The BSN is
-     * forwarded to the provider (and, downstream, the HaalCentraal request
-     * body) — it is never logged. This endpoint does NOT validate the elfproef
-     * checksum; the consuming app does that before/after this call.
-     *
-     * @return JSONResponse `{ results, total, meta }` on success (results is
-     *                      the raw HaalCentraal person object list — 0 or 1
-     *                      entries; `meta` is the Wet-BRP audit metadata
-     *                      `{ correlationId, durationMs, status }` the
-     *                      consuming app persists into its `brpLookupVerzoek`
-     *                      record), or a 503 with `details.cause` when the
-     *                      `brp-haalcentraal` source is unconfigured / BRP is
-     *                      down (AD-23).
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @no-admin-idor-exempt External-gateway proxy: forwards a BSN to the admin-configured external BRP (HaalCentraal) provider;
-     *   takes no OpenRegister object id and never keys an OR object.
-     *
-     * @spec openspec/specs/integration-person-lookup/spec.md
-     */
-    public function brpPerson(): JSONResponse
-    {
-        $bsn = trim((string) $this->request->getParam('bsn', ''));
-        if ($bsn === '') {
-            return new JSONResponse(['error' => 'bsn is required'], 400);
-        }
+	/**
+	 * Look up a single person by Burgerservicenummer (BSN).
+	 *
+	 * Query param: `bsn` (9-digit Burgerservicenummer, required). The BSN is
+	 * forwarded to the provider (and, downstream, the HaalCentraal request
+	 * body) — it is never logged. This endpoint does NOT validate the elfproef
+	 * checksum; the consuming app does that before/after this call.
+	 *
+	 * @return JSONResponse `{ results, total, meta }` on success (results is
+	 *                      the raw HaalCentraal person object list — 0 or 1
+	 *                      entries; `meta` is the Wet-BRP audit metadata
+	 *                      `{ correlationId, durationMs, status }` the
+	 *                      consuming app persists into its `brpLookupVerzoek`
+	 *                      record), or a 503 with `details.cause` when the
+	 *                      `brp-haalcentraal` source is unconfigured / BRP is
+	 *                      down (AD-23).
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt External-gateway proxy: forwards a BSN to the admin-configured external BRP (HaalCentraal) provider;
+	 *   takes no OpenRegister object id and never keys an OR object.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md
+	 */
+	public function brpPerson(): JSONResponse {
+		$bsn = trim((string)$this->request->getParam('bsn', ''));
+		if ($bsn === '') {
+			return new JSONResponse(['error' => 'bsn is required'], 400);
+		}
 
-        $result = $this->brpProvider->lookupByBsn($bsn);
+		$result = $this->brpProvider->lookupByBsn($bsn);
 
-        if (($result['unavailable'] ?? false) === true) {
-            return new JSONResponse(
-                [
-                    'error'   => 'brp-haalcentraal source is not available',
-                    'details' => ['cause' => $result['cause']],
-                ],
-                503
-            );
-        }
+		if (($result['unavailable'] ?? false) === true) {
+			return new JSONResponse(
+				[
+					'error' => 'brp-haalcentraal source is not available',
+					'details' => ['cause' => $result['cause']],
+				],
+				503
+			);
+		}
 
-        return new JSONResponse($result);
-    }//end brpPerson()
+		return new JSONResponse($result);
+	}//end brpPerson()
 }//end class

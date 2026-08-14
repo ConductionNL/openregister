@@ -40,167 +40,158 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Controller\DuplicateController
  */
-class DuplicateControllerTest extends TestCase
-{
+class DuplicateControllerTest extends TestCase {
 
-    private DuplicateDetectionService&MockObject $duplicates;
+	private DuplicateDetectionService&MockObject $duplicates;
 
-    /**
-     * @var IRequest&MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest&MockObject
+	 */
+	private $request;
 
-    private DuplicateController $controller;
+	private DuplicateController $controller;
 
-    protected function setUp(): void
-    {
-        $this->request    = $this->createMock(IRequest::class);
-        $this->duplicates = $this->createMock(DuplicateDetectionService::class);
-        $this->controller = new DuplicateController(
-            'openregister',
-            $this->request,
-            $this->duplicates
-        );
-    }//end setUp()
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->duplicates = $this->createMock(DuplicateDetectionService::class);
+		$this->controller = new DuplicateController(
+			'openregister',
+			$this->request,
+			$this->duplicates
+		);
+	}//end setUp()
 
-    /**
-     * ADR-029 / ADR-005: index() must declare @NoAdminRequired +
-     *
-     * @NoCSRFRequired via docblock and must NOT be @PublicPage.
-     *
-     * @return void
-     */
-    public function testIndexCarriesAuthAnnotations(): void
-    {
-        $reflection = new ReflectionClass(DuplicateController::class);
-        $doc        = $reflection->getMethod('index')->getDocComment();
+	/**
+	 * ADR-029 / ADR-005: index() must declare @NoAdminRequired +
+	 *
+	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 *
+	 * @return void
+	 */
+	public function testIndexCarriesAuthAnnotations(): void {
+		$reflection = new ReflectionClass(DuplicateController::class);
+		$doc = $reflection->getMethod('index')->getDocComment();
 
-        $this->assertNotFalse($doc);
-        $this->assertStringContainsString('@NoAdminRequired', $doc);
-        $this->assertStringContainsString('@NoCSRFRequired', $doc);
-        $this->assertStringNotContainsString('@PublicPage', $doc);
-    }//end testIndexCarriesAuthAnnotations()
+		$this->assertNotFalse($doc);
+		$this->assertStringContainsString('@NoAdminRequired', $doc);
+		$this->assertStringContainsString('@NoCSRFRequired', $doc);
+		$this->assertStringNotContainsString('@PublicPage', $doc);
+	}//end testIndexCarriesAuthAnnotations()
 
-    public function testIndexDelegatesToFindDuplicatesDescendingByScore(): void
-    {
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['threshold', null, null],
-                ['limit', 20, 20],
-                ['offset', 0, 0],
-            ]
-        );
+	public function testIndexDelegatesToFindDuplicatesDescendingByScore(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['threshold', null, null],
+				['limit', 20, 20],
+				['offset', 0, 0],
+			]
+		);
 
-        $pairs = [
-            [
-                'objectA'   => '00000000-0000-0000-0000-000000000001',
-                'objectB'   => '00000000-0000-0000-0000-000000000002',
-                'score'     => 0.95,
-                'matchedOn' => ['email'],
-            ],
-        ];
+		$pairs = [
+			[
+				'objectA' => '00000000-0000-0000-0000-000000000001',
+				'objectB' => '00000000-0000-0000-0000-000000000002',
+				'score' => 0.95,
+				'matchedOn' => ['email'],
+			],
+		];
 
-        $this->duplicates->expects($this->once())
-            ->method('findDuplicates')
-            ->with('reg', 'sch', null, null)
-            ->willReturn($pairs);
+		$this->duplicates->expects($this->once())
+			->method('findDuplicates')
+			->with('reg', 'sch', null, null)
+			->willReturn($pairs);
 
-        $response = $this->controller->index('reg', 'sch');
+		$response = $this->controller->index('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $body = $response->getData();
-        $this->assertSame(1, $body['total']);
-        $this->assertSame($pairs, $body['items']);
-    }//end testIndexDelegatesToFindDuplicatesDescendingByScore()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$body = $response->getData();
+		$this->assertSame(1, $body['total']);
+		$this->assertSame($pairs, $body['items']);
+	}//end testIndexDelegatesToFindDuplicatesDescendingByScore()
 
-    public function testIndexPassesThresholdThrough(): void
-    {
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['threshold', null, '0.9'],
-                ['limit', 20, 20],
-                ['offset', 0, 0],
-            ]
-        );
+	public function testIndexPassesThresholdThrough(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['threshold', null, '0.9'],
+				['limit', 20, 20],
+				['offset', 0, 0],
+			]
+		);
 
-        $this->duplicates->expects($this->once())
-            ->method('findDuplicates')
-            ->with('reg', 'sch', null, 0.9)
-            ->willReturn([]);
+		$this->duplicates->expects($this->once())
+			->method('findDuplicates')
+			->with('reg', 'sch', null, 0.9)
+			->willReturn([]);
 
-        $response = $this->controller->index('reg', 'sch');
+		$response = $this->controller->index('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-    }//end testIndexPassesThresholdThrough()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testIndexPassesThresholdThrough()
 
-    public function testIndexPaginatesCandidatePairs(): void
-    {
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['threshold', null, null],
-                ['limit', 20, '1'],
-                ['offset', 0, '1'],
-            ]
-        );
+	public function testIndexPaginatesCandidatePairs(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['threshold', null, null],
+				['limit', 20, '1'],
+				['offset', 0, '1'],
+			]
+		);
 
-        $pairs = [
-            ['objectA' => 'a', 'objectB' => 'b', 'score' => 0.99, 'matchedOn' => ['name']],
-            ['objectA' => 'c', 'objectB' => 'd', 'score' => 0.9, 'matchedOn' => ['name']],
-            ['objectA' => 'e', 'objectB' => 'f', 'score' => 0.86, 'matchedOn' => ['name']],
-        ];
+		$pairs = [
+			['objectA' => 'a', 'objectB' => 'b', 'score' => 0.99, 'matchedOn' => ['name']],
+			['objectA' => 'c', 'objectB' => 'd', 'score' => 0.9, 'matchedOn' => ['name']],
+			['objectA' => 'e', 'objectB' => 'f', 'score' => 0.86, 'matchedOn' => ['name']],
+		];
 
-        $this->duplicates->method('findDuplicates')->willReturn($pairs);
+		$this->duplicates->method('findDuplicates')->willReturn($pairs);
 
-        $response = $this->controller->index('reg', 'sch');
-        $body     = $response->getData();
+		$response = $this->controller->index('reg', 'sch');
+		$body = $response->getData();
 
-        $this->assertSame(3, $body['total']);
-        $this->assertCount(1, $body['items']);
-        $this->assertSame($pairs[1], $body['items'][0]);
-    }//end testIndexPaginatesCandidatePairs()
+		$this->assertSame(3, $body['total']);
+		$this->assertCount(1, $body['items']);
+		$this->assertSame($pairs[1], $body['items'][0]);
+	}//end testIndexPaginatesCandidatePairs()
 
-    public function testIndexMapsNotAuthorizedToForbidden(): void
-    {
-        $this->request->method('getParam')->willReturnArgument(1);
-        $this->duplicates->method('findDuplicates')->willThrowException(
-            new NotAuthorizedException(message: 'denied')
-        );
+	public function testIndexMapsNotAuthorizedToForbidden(): void {
+		$this->request->method('getParam')->willReturnArgument(1);
+		$this->duplicates->method('findDuplicates')->willThrowException(
+			new NotAuthorizedException(message: 'denied')
+		);
 
-        $response = $this->controller->index('reg', 'sch');
+		$response = $this->controller->index('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-    }//end testIndexMapsNotAuthorizedToForbidden()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testIndexMapsNotAuthorizedToForbidden()
 
-    public function testIndexMapsRuntimeExceptionToNotFound(): void
-    {
-        $this->request->method('getParam')->willReturnArgument(1);
-        $this->duplicates->method('findDuplicates')->willThrowException(new RuntimeException('missing'));
+	public function testIndexMapsRuntimeExceptionToNotFound(): void {
+		$this->request->method('getParam')->willReturnArgument(1);
+		$this->duplicates->method('findDuplicates')->willThrowException(new RuntimeException('missing'));
 
-        $response = $this->controller->index('reg', 'sch');
+		$response = $this->controller->index('reg', 'sch');
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }//end testIndexMapsRuntimeExceptionToNotFound()
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testIndexMapsRuntimeExceptionToNotFound()
 
-    /**
-     * Side-effect-free contract: the controller has no injected write/merge
-     * collaborator at all — DuplicateDetectionService is read-only and the
-     * controller only ever calls findDuplicates(). Reflection guards against
-     * a future accidental write-service injection.
-     *
-     * @return void
-     */
-    public function testControllerHasNoWriteCollaborator(): void
-    {
-        $reflection  = new ReflectionClass(DuplicateController::class);
-        $constructor = $reflection->getConstructor();
+	/**
+	 * Side-effect-free contract: the controller has no injected write/merge
+	 * collaborator at all — DuplicateDetectionService is read-only and the
+	 * controller only ever calls findDuplicates(). Reflection guards against
+	 * a future accidental write-service injection.
+	 *
+	 * @return void
+	 */
+	public function testControllerHasNoWriteCollaborator(): void {
+		$reflection = new ReflectionClass(DuplicateController::class);
+		$constructor = $reflection->getConstructor();
 
-        $this->assertNotNull($constructor);
+		$this->assertNotNull($constructor);
 
-        foreach ($constructor->getParameters() as $parameter) {
-            $type = $parameter->getType();
-            $name = ($type !== null) ? $type->getName() : '';
-            $this->assertStringNotContainsStringIgnoringCase('merge', $name);
-            $this->assertStringNotContainsStringIgnoringCase('survivorship', $name);
-        }
-    }//end testControllerHasNoWriteCollaborator()
+		foreach ($constructor->getParameters() as $parameter) {
+			$type = $parameter->getType();
+			$name = ($type !== null) ? $type->getName() : '';
+			$this->assertStringNotContainsStringIgnoringCase('merge', $name);
+			$this->assertStringNotContainsStringIgnoringCase('survivorship', $name);
+		}
+	}//end testControllerHasNoWriteCollaborator()
 }//end class

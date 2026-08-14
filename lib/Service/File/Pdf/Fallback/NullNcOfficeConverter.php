@@ -49,55 +49,51 @@ use RuntimeException;
  *
  * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
-final class NullNcOfficeConverter implements NcOfficeConverterInterface
-{
-    /**
-     * NC Office bridge is never available in the null implementation.
-     *
-     * @return bool Always false.
-     */
-    public function isAvailable(): bool
-    {
-        return false;
-    }//end isAvailable()
+final class NullNcOfficeConverter implements NcOfficeConverterInterface {
+	/**
+	 * NC Office bridge is never available in the null implementation.
+	 *
+	 * @return bool Always false.
+	 */
+	public function isAvailable(): bool {
+		return false;
+	}//end isAvailable()
 
-    /**
-     * Always throws — the null implementation has no NC Office bridge.
-     *
-     * @param string $pdfBytes Input bytes (unused).
-     *
-     * @return string Never returns.
-     *
-     * @throws RuntimeException Always — the null implementation is unavailable.
-     *
-     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
-     */
-    public function pdfToOdt(string $pdfBytes): string
-    {
-        throw new RuntimeException(
-            'NC Office bridge is not available (NullNcOfficeConverter is the default). '
-            .'Enable Path B by injecting a concrete NcOfficeConverterInterface implementation '
-            .'and setting pdf-anonymisation.path-b-enabled = true.'
-        );
-    }//end pdfToOdt()
+	/**
+	 * Always throws — the null implementation has no NC Office bridge.
+	 *
+	 * @param string $pdfBytes Input bytes (unused).
+	 *
+	 * @return string Never returns.
+	 *
+	 * @throws RuntimeException Always — the null implementation is unavailable.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
+	 */
+	public function pdfToOdt(string $pdfBytes): string {
+		throw new RuntimeException(
+			'NC Office bridge is not available (NullNcOfficeConverter is the default). '
+			. 'Enable Path B by injecting a concrete NcOfficeConverterInterface implementation '
+			. 'and setting pdf-anonymisation.path-b-enabled = true.'
+		);
+	}//end pdfToOdt()
 
-    /**
-     * Always throws — the null implementation has no NC Office bridge.
-     *
-     * @param string $odtBytes Input bytes (unused).
-     *
-     * @return string Never returns.
-     *
-     * @throws RuntimeException Always — the null implementation is unavailable.
-     *
-     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
-     */
-    public function odtToPdf(string $odtBytes): string
-    {
-        throw new RuntimeException(
-            'NC Office bridge is not available (NullNcOfficeConverter is the default). '
-            .'Enable Path B by injecting a concrete NcOfficeConverterInterface implementation '
-            .'and setting pdf-anonymisation.path-b-enabled = true.'
-        );
-    }//end odtToPdf()
+	/**
+	 * Always throws — the null implementation has no NC Office bridge.
+	 *
+	 * @param string $odtBytes Input bytes (unused).
+	 *
+	 * @return string Never returns.
+	 *
+	 * @throws RuntimeException Always — the null implementation is unavailable.
+	 *
+	 * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
+	 */
+	public function odtToPdf(string $odtBytes): string {
+		throw new RuntimeException(
+			'NC Office bridge is not available (NullNcOfficeConverter is the default). '
+			. 'Enable Path B by injecting a concrete NcOfficeConverterInterface implementation '
+			. 'and setting pdf-anonymisation.path-b-enabled = true.'
+		);
+	}//end odtToPdf()
 }//end class

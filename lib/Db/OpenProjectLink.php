@@ -69,151 +69,148 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class OpenProjectLink extends Entity implements JsonSerializable
-{
+class OpenProjectLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The OpenProject work-package id.
-     *
-     * @var integer|null
-     */
-    protected ?int $workPackageId = null;
+	/**
+	 * The OpenProject work-package id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $workPackageId = null;
 
-    /**
-     * The work-package subject (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $subject = null;
+	/**
+	 * The work-package subject (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $subject = null;
 
-    /**
-     * The work-package type label (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $type = null;
+	/**
+	 * The work-package type label (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $type = null;
 
-    /**
-     * The work-package status label (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $status = null;
+	/**
+	 * The work-package status label (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
-    /**
-     * The work-package priority label (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $priority = null;
+	/**
+	 * The work-package priority label (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $priority = null;
 
-    /**
-     * The work-package assignee label (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $assignee = null;
+	/**
+	 * The work-package assignee label (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $assignee = null;
 
-    /**
-     * The work-package project label (cached).
-     *
-     * @var string|null
-     */
-    protected ?string $project = null;
+	/**
+	 * The work-package project label (cached).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $project = null;
 
-    /**
-     * The cached deep link to the work package.
-     *
-     * @var string|null
-     */
-    protected ?string $url = null;
+	/**
+	 * The cached deep link to the work package.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $url = null;
 
-    /**
-     * When the cached metadata was last refreshed.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $cachedAt = null;
+	/**
+	 * When the cached metadata was last refreshed.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $cachedAt = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'workPackageId', type: 'integer');
-        $this->addType(fieldName: 'subject', type: 'string');
-        $this->addType(fieldName: 'type', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'priority', type: 'string');
-        $this->addType(fieldName: 'assignee', type: 'string');
-        $this->addType(fieldName: 'project', type: 'string');
-        $this->addType(fieldName: 'url', type: 'string');
-        $this->addType(fieldName: 'cachedAt', type: 'datetime');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'workPackageId', type: 'integer');
+		$this->addType(fieldName: 'subject', type: 'string');
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'priority', type: 'string');
+		$this->addType(fieldName: 'assignee', type: 'string');
+		$this->addType(fieldName: 'project', type: 'string');
+		$this->addType(fieldName: 'url', type: 'string');
+		$this->addType(fieldName: 'cachedAt', type: 'datetime');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'            => $this->id,
-            'objectUuid'    => $this->objectUuid,
-            'registerId'    => $this->registerId,
-            'schemaId'      => $this->schemaId,
-            'workPackageId' => $this->workPackageId,
-            'subject'       => $this->subject,
-            'type'          => $this->type,
-            'status'        => $this->status,
-            'priority'      => $this->priority,
-            'assignee'      => $this->assignee,
-            'project'       => $this->project,
-            'url'           => $this->url,
-            'cachedAt'      => $this->cachedAt?->format(DateTime::ATOM),
-            'linkedBy'      => $this->linkedBy,
-            'linkedAt'      => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'workPackageId' => $this->workPackageId,
+			'subject' => $this->subject,
+			'type' => $this->type,
+			'status' => $this->status,
+			'priority' => $this->priority,
+			'assignee' => $this->assignee,
+			'project' => $this->project,
+			'url' => $this->url,
+			'cachedAt' => $this->cachedAt?->format(DateTime::ATOM),
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

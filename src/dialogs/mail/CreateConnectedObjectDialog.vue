@@ -7,7 +7,13 @@
 		class="or-create-connected-dialog"
 		@closing="$emit('cancel')">
 		<p class="or-create-connected-dialog__intro">
-			{{ t('openregister', 'Review the details below. The new {name} will be connected to this email.', { name: schemaTitle }) }}
+			{{
+				t(
+					'openregister',
+					'Review the details below. The new {name} will be connected to this email.',
+					{ name: schemaTitle },
+				)
+			}}
 		</p>
 
 		<div class="or-create-connected-dialog__form">
@@ -15,7 +21,9 @@
 				v-for="field in fields"
 				:key="field.key"
 				class="or-create-connected-dialog__field">
-				<label :for="`occ-${field.key}`" class="or-create-connected-dialog__label">
+				<label
+					:for="`occ-${field.key}`"
+					class="or-create-connected-dialog__label">
 					{{ field.label }}
 				</label>
 
@@ -24,7 +32,9 @@
 					:id="`occ-${field.key}`"
 					v-model="form[field.key]"
 					class="or-create-connected-dialog__input">
-					<option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+					<option v-for="opt in field.options" :key="opt" :value="opt">
+						{{ opt }}
+					</option>
 				</select>
 
 				<textarea
@@ -38,14 +48,14 @@
 					v-else-if="field.control === 'checkbox'"
 					:id="`occ-${field.key}`"
 					v-model="form[field.key]"
-					type="checkbox">
+					type="checkbox" />
 
 				<input
 					v-else
 					:id="`occ-${field.key}`"
 					v-model="form[field.key]"
 					:type="field.control"
-					class="or-create-connected-dialog__input">
+					class="or-create-connected-dialog__input" />
 			</div>
 		</div>
 

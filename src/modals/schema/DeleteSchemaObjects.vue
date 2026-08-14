@@ -5,28 +5,38 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteSchemaObjects'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
 		:can-close="false">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
-				Are you sure you want to delete <strong>all objects</strong> in the schema
-				<strong>{{ schemaStore.schemaItem?.title }}</strong>?
+				Are you sure you want to delete <strong>all objects</strong> in the
+				schema <strong>{{ schemaStore.schemaItem?.title }}</strong
+				>?
 			</p>
 
 			<!-- Dynamic Warning/Danger Messages -->
 			<div v-if="objectCount > 0" class="deletion-warning-section">
 				<!-- Soft Delete Warning (when checkbox is unchecked) -->
-				<NcNoteCard v-if="!hardDelete.includes('hardDelete')" type="warning" class="deletion-warning">
+				<NcNoteCard
+					v-if="!hardDelete.includes('hardDelete')"
+					type="warning"
+					class="deletion-warning">
 					<template #icon>
 						<AlertCircle :size="20" />
 					</template>
 					<template #title>
 						{{ t('openregister', 'Soft Delete Mode') }}
 					</template>
-					{{ t('openregister', 'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.') }}
+					{{
+						t(
+							'openregister',
+							'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.',
+						)
+					}}
 				</NcNoteCard>
 
 				<!-- Hard Delete Danger (when checkbox is checked) -->
@@ -37,7 +47,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<template #title>
 						{{ t('openregister', 'Permanent Delete Mode') }}
 					</template>
-					{{ t('openregister', '⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!', { total: objectCount }) }}
+					{{
+						t(
+							'openregister',
+							'⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!',
+							{ total: objectCount },
+						)
+					}}
 				</NcNoteCard>
 			</div>
 
@@ -49,15 +65,28 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					:title="t('openregister', 'Objects to be deleted')" />
 
 				<!-- Hard Delete Option -->
-				<div v-if="objectStats && objectStats.deleted > 0" class="hard-delete-option">
+				<div
+					v-if="objectStats && objectStats.deleted > 0"
+					class="hard-delete-option">
 					<NcCheckboxRadioSwitch
 						v-model="hardDelete"
 						:name="'hardDelete'"
-						:label="t('openregister', 'Permanently delete already soft-deleted objects')"
+						:label="
+							t(
+								'openregister',
+								'Permanently delete already soft-deleted objects',
+							)
+						"
 						type="checkbox"
 						:value="'hardDelete'" />
 					<p class="hard-delete-description">
-						{{ t('openregister', 'This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.', { count: objectStats.deleted }) }}
+						{{
+							t(
+								'openregister',
+								'This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.',
+								{ count: objectStats.deleted },
+							)
+						}}
 					</p>
 				</div>
 			</div>
@@ -74,7 +103,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
-			<p>Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...</p>
+			<p>
+				Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...
+			</p>
 			<p class="loading-subtitle">
 				This may take a moment for large datasets.
 			</p>
@@ -84,7 +115,10 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-if="success" class="success-container">
 			<NcNoteCard type="success">
 				<h3>Deletion Completed Successfully</h3>
-				<p><strong>Objects deleted:</strong> {{ deletionResult?.deleted_count || 0 }}</p>
+				<p>
+					<strong>Objects deleted:</strong>
+					{{ deletionResult?.deleted_count || 0 }}
+				</p>
 				<p><strong>Schema:</strong> {{ schemaStore.schemaItem?.title }}</p>
 			</NcNoteCard>
 		</div>
@@ -102,7 +136,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!success && !loading && !error && objectCount > 0"
+			<NcButton
+				v-if="!success && !loading && !error && objectCount > 0"
 				:disabled="loading"
 				variant="error"
 				@click="confirmDeletion()">
@@ -174,7 +209,10 @@ export default {
 			 * @spec exclude watcher loading object count when dialog opens
 			 */
 			handler(newDialog) {
-				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
+				if (
+					newDialog === 'deleteSchemaObjects'
+					&& schemaStore.schemaItem?.id
+				) {
 					this.loadObjectCount()
 				}
 			},
@@ -195,7 +233,9 @@ export default {
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					const stats = await schemaStore.getSchemaStats(
+						schemaStore.schemaItem.id,
+					)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
 				}
@@ -216,8 +256,10 @@ export default {
 			try {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find(reg =>
-					reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id),
+				const register = registerStore.registerList.find((reg) =>
+					reg.schemas.some(
+						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
+					),
 				)
 
 				if (!register) {
@@ -253,7 +295,6 @@ export default {
 
 				// Refresh schema stats after successful deletion
 				await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-
 			} catch (err) {
 				this.error = err.message || 'An error occurred during deletion'
 				console.error('Deletion error:', err)

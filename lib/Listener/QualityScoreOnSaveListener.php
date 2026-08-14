@@ -49,172 +49,167 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-2
  */
-class QualityScoreOnSaveListener implements IEventListener
-{
-    /**
-     * Default field the score is written to when the annotation omits `field`.
-     *
-     * @var string
-     */
-    private const DEFAULT_FIELD = 'qualityScore';
+class QualityScoreOnSaveListener implements IEventListener {
+	/**
+	 * Default field the score is written to when the annotation omits `field`.
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_FIELD = 'qualityScore';
 
-    /**
-     * Wire collaborators used to look up and score the schema's quality rules.
-     *
-     * @param SchemaMapper    $schemaMapper Schema lookup mapper.
-     * @param QualityScorer   $scorer       Pure data-quality scorer.
-     * @param LoggerInterface $logger       PSR logger for warnings.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-     */
-    public function __construct(
-        private readonly SchemaMapper $schemaMapper,
-        private readonly QualityScorer $scorer,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+	/**
+	 * Wire collaborators used to look up and score the schema's quality rules.
+	 *
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param QualityScorer $scorer Pure data-quality scorer.
+	 * @param LoggerInterface $logger PSR logger for warnings.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	public function __construct(
+		private readonly SchemaMapper $schemaMapper,
+		private readonly QualityScorer $scorer,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Run quality scoring before the object is persisted.
-     *
-     * @param Event $event Inbound dispatcher event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof ObjectCreatingEvent) {
-            $this->process(object: $event->getObject());
-            return;
-        }
+	/**
+	 * Run quality scoring before the object is persisted.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatingEvent) {
+			$this->process(object: $event->getObject());
+			return;
+		}
 
-        if ($event instanceof ObjectUpdatingEvent) {
-            $this->process(object: $event->getNewObject());
-            return;
-        }
-    }//end handle()
+		if ($event instanceof ObjectUpdatingEvent) {
+			$this->process(object: $event->getNewObject());
+			return;
+		}
+	}//end handle()
 
-    /**
-     * Compute and patch the quality score onto the object data.
-     *
-     * @param ObjectEntity $object Object being created or updated.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method runs the linear score-on-save
-     *   pipeline (load schema, read annotation, score, patch score, optionally patch status);
-     *   the guards short-circuit absent annotations and the steps share one payload, so
-     *   extracting them would only scatter a strictly-sequential flow across helpers.
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — sequential save-time guards.
-     */
-    private function process(ObjectEntity $object): void
-    {
-        $schema = $this->loadSchema(object: $object);
-        if ($schema === null) {
-            return;
-        }
+	/**
+	 * Compute and patch the quality score onto the object data.
+	 *
+	 * @param ObjectEntity $object Object being created or updated.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method runs the linear score-on-save
+	 *   pipeline (load schema, read annotation, score, patch score, optionally patch status);
+	 *   the guards short-circuit absent annotations and the steps share one payload, so
+	 *   extracting them would only scatter a strictly-sequential flow across helpers.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — sequential save-time guards.
+	 */
+	private function process(ObjectEntity $object): void {
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return;
+		}
 
-        $quality = $this->getQuality(schema: $schema);
-        if ($quality === null) {
-            return;
-        }
+		$quality = $this->getQuality(schema: $schema);
+		if ($quality === null) {
+			return;
+		}
 
-        $rules = ($quality['rules'] ?? null);
-        if (is_array($rules) === false || count($rules) === 0) {
-            return;
-        }
+		$rules = ($quality['rules'] ?? null);
+		if (is_array($rules) === false || count($rules) === 0) {
+			return;
+		}
 
-        $data    = ($object->getObject() ?? []);
-        $changed = false;
+		$data = ($object->getObject() ?? []);
+		$changed = false;
 
-        try {
-            $score = $this->scorer->score(object: $data, rules: $rules, now: new DateTimeImmutable());
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                sprintf(
-                    'Quality scoring failed on %s: %s',
-                    (string) $object->getUuid(),
-                    $e->getMessage()
-                )
-            );
-            return;
-        }
+		try {
+			$score = $this->scorer->score(object: $data, rules: $rules, now: new DateTimeImmutable());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'Quality scoring failed on %s: %s',
+					(string)$object->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
 
-        $field = (string) ($quality['field'] ?? self::DEFAULT_FIELD);
-        if ($field === '') {
-            $field = self::DEFAULT_FIELD;
-        }
+		$field = (string)($quality['field'] ?? self::DEFAULT_FIELD);
+		if ($field === '') {
+			$field = self::DEFAULT_FIELD;
+		}
 
-        if (($data[$field] ?? null) !== $score) {
-            $data[$field] = $score;
-            $changed      = true;
-        }
+		if (($data[$field] ?? null) !== $score) {
+			$data[$field] = $score;
+			$changed = true;
+		}
 
-        $statusField = (string) ($quality['statusField'] ?? '');
-        if ($statusField !== '') {
-            $thresholds = ($quality['thresholds'] ?? []);
-            if (is_array($thresholds) === false) {
-                $thresholds = [];
-            }
+		$statusField = (string)($quality['statusField'] ?? '');
+		if ($statusField !== '') {
+			$thresholds = ($quality['thresholds'] ?? []);
+			if (is_array($thresholds) === false) {
+				$thresholds = [];
+			}
 
-            $status = $this->scorer->status(score: $score, thresholds: $thresholds);
-            if (($data[$statusField] ?? null) !== $status) {
-                $data[$statusField] = $status;
-                $changed            = true;
-            }
-        }
+			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
+			if (($data[$statusField] ?? null) !== $status) {
+				$data[$statusField] = $status;
+				$changed = true;
+			}
+		}
 
-        if ($changed === true) {
-            $object->setObject($data);
-        }
-    }//end process()
+		if ($changed === true) {
+			$object->setObject($data);
+		}
+	}//end process()
 
-    /**
-     * Look up the schema referenced by an object instance.
-     *
-     * @param ObjectEntity $object Object whose schema reference to resolve.
-     *
-     * @return Schema|null Resolved schema, or null on lookup failure.
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-     */
-    private function loadSchema(ObjectEntity $object): ?Schema
-    {
-        $ref = $object->getSchema();
-        if ($ref === null || $ref === '') {
-            return null;
-        }
+	/**
+	 * Look up the schema referenced by an object instance.
+	 *
+	 * @param ObjectEntity $object Object whose schema reference to resolve.
+	 *
+	 * @return Schema|null Resolved schema, or null on lookup failure.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function loadSchema(ObjectEntity $object): ?Schema {
+		$ref = $object->getSchema();
+		if ($ref === null || $ref === '') {
+			return null;
+		}
 
-        try {
-            return $this->schemaMapper->find($ref, _multitenancy: false);
-        } catch (Throwable $e) {
-            return null;
-        }
-    }//end loadSchema()
+		try {
+			return $this->schemaMapper->find($ref, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end loadSchema()
 
-    /**
-     * Read the `x-openregister-quality` configuration block.
-     *
-     * @param Schema $schema Schema to inspect.
-     *
-     * @return array<string, mixed>|null Quality config, or null when absent.
-     *
-     * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-     */
-    private function getQuality(Schema $schema): ?array
-    {
-        $config = ($schema->getConfiguration() ?? []);
-        $value  = ($config['x-openregister-quality'] ?? null);
-        if (is_array($value) === true && count($value) > 0) {
-            return $value;
-        }
+	/**
+	 * Read the `x-openregister-quality` configuration block.
+	 *
+	 * @param Schema $schema Schema to inspect.
+	 *
+	 * @return array<string, mixed>|null Quality config, or null when absent.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function getQuality(Schema $schema): ?array {
+		$config = ($schema->getConfiguration() ?? []);
+		$value = ($config['x-openregister-quality'] ?? null);
+		if (is_array($value) === true && count($value) > 0) {
+			return $value;
+		}
 
-        return null;
-    }//end getQuality()
+		return null;
+	}//end getQuality()
 }//end class

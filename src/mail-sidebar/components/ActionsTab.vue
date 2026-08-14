@@ -4,7 +4,12 @@
 			{{ t('openregister', 'Loading…') }}
 		</div>
 		<div v-else-if="schemas.length === 0" class="or-tab-empty">
-			{{ t('openregister', 'There is nothing set up to connect this email to yet.') }}
+			{{
+				t(
+					'openregister',
+					'There is nothing set up to connect this email to yet.',
+				)
+			}}
 		</div>
 		<div v-else>
 			<div
@@ -13,13 +18,21 @@
 				class="or-action-block"
 				:class="{ 'or-action-block--busy': isBusy(schema) }">
 				<label class="or-action-label">
-					{{ t('openregister', 'Connect to {name}', { name: schema.title }) }}
+					{{
+						t('openregister', 'Connect to {name}', {
+							name: schema.title,
+						})
+					}}
 				</label>
 				<div v-if="isBusy(schema)" class="or-action-connecting">
 					<NcLoadingIcon :size="20" />
-					<span>{{ creating[schema.id]
-						? t('openregister', 'Creating {name}…', { name: schema.title })
-						: t('openregister', 'Connecting…') }}</span>
+					<span>{{
+						creating[schema.id]
+							? t('openregister', 'Creating {name}…', {
+									name: schema.title,
+								})
+							: t('openregister', 'Connecting…')
+					}}</span>
 				</div>
 				<template v-else>
 					<div class="or-action-search">
@@ -27,11 +40,23 @@
 							v-model="searchTerms[schema.id]"
 							type="text"
 							class="or-action-input"
-							:aria-label="t('openregister', 'Search {name}...', { name: schema.title })"
-							:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
+							:aria-label="
+								t('openregister', 'Search {name}...', {
+									name: schema.title,
+								})
+							"
+							:placeholder="
+								t('openregister', 'Search {name}...', {
+									name: schema.title,
+								})
+							"
 							@input="debounceSearch(schema)"
-							@focus="showResults(schema)">
-						<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0"
+							@focus="showResults(schema)" />
+						<ul
+							v-if="
+								visibleResults[schema.id]
+								&& (searchResults[schema.id] || []).length > 0
+							"
 							class="or-action-results"
 							role="listbox"
 							:aria-label="t('openregister', 'Search Results')">
@@ -45,7 +70,9 @@
 								@click="linkObject(schema, obj)"
 								@keydown.enter="linkObject(schema, obj)"
 								@keydown.space.prevent="linkObject(schema, obj)">
-								<span class="or-action-result-name">{{ objectName(obj) }}</span>
+								<span class="or-action-result-name">{{
+									objectName(obj)
+								}}</span>
 							</li>
 						</ul>
 						<div v-if="searching[schema.id]" class="or-action-searching">
@@ -57,7 +84,11 @@
 						type="button"
 						class="or-action-create"
 						@click="openCreate(schema)">
-						{{ t('openregister', 'New {name} from this email', { name: schema.title }) }}
+						{{
+							t('openregister', 'New {name} from this email', {
+								name: schema.title,
+							})
+						}}
 					</button>
 				</template>
 			</div>
@@ -131,12 +162,14 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectName(obj) {
-			return obj['@self']?.name
+			return (
+				obj['@self']?.name
 				|| obj._name
 				|| obj.title
 				|| obj.name
 				|| obj.naam
 				|| obj.id
+			)
 		},
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -149,14 +182,16 @@ export default {
 				// first page would miss mail-linked schemas) and registers.
 				const [allSchemas, regResponse] = await Promise.all([
 					this.fetchAllSchemas(),
-					axios.get(generateUrl('/apps/openregister/api/registers'), { params: { _limit: 500 } }),
+					axios.get(generateUrl('/apps/openregister/api/registers'), {
+						params: { _limit: 500 },
+					}),
 				])
 
 				const registers = regResponse.data?.results || regResponse.data || []
 
 				// Cache register lookups
 				for (const reg of registers) {
-					for (const schemaId of (reg.schemas || [])) {
+					for (const schemaId of reg.schemas || []) {
 						this.registerCache[schemaId] = reg
 					}
 				}
@@ -186,10 +221,13 @@ export default {
 			if (!register) return
 
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
-					register: register.id,
-					schema: schema.id,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/objects/{register}/{schema}',
+					{
+						register: register.id,
+						schema: schema.id,
+					},
+				)
 				const response = await axios.get(url, {
 					params: { _limit: 20 },
 					timeout: 10000,
@@ -197,7 +235,11 @@ export default {
 				const results = response.data?.results || response.data || []
 				this.searchResults[schema.id] = results
 			} catch (err) {
-				console.error('[ActionsTab] Initial load failed for', schema.title, err)
+				console.error(
+					'[ActionsTab] Initial load failed for',
+					schema.title,
+					err,
+				)
 			}
 		},
 		/**
@@ -237,10 +279,13 @@ export default {
 			this.searching[schema.id] = true
 			this.visibleResults[schema.id] = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
-					register: register.id,
-					schema: schema.id,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/objects/{register}/{schema}',
+					{
+						register: register.id,
+						schema: schema.id,
+					},
+				)
 				const response = await axios.get(url, {
 					params: { _search: term, _limit: 20 },
 					timeout: 10000,
@@ -262,10 +307,13 @@ export default {
 			const limit = 500
 			const all = []
 			for (let page = 1; page <= 10; page++) {
-				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'), {
-					params: { _limit: limit, _page: page },
-					timeout: 15000,
-				})
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/schemas'),
+					{
+						params: { _limit: limit, _page: page },
+						timeout: 15000,
+					},
+				)
 				const results = response.data?.results || response.data || []
 				all.push(...results)
 				if (results.length < limit) break
@@ -290,7 +338,9 @@ export default {
 			if (this.envelopeCache[this.messageId]) {
 				return this.envelopeCache[this.messageId]
 			}
-			const url = generateUrl('/apps/mail/api/messages/{id}/body', { id: this.messageId })
+			const url = generateUrl('/apps/mail/api/messages/{id}/body', {
+				id: this.messageId,
+			})
 			const response = await axios.get(url, { timeout: 10000 })
 			const envelope = response.data?.data || response.data
 			this.envelopeCache[this.messageId] = envelope
@@ -304,12 +354,16 @@ export default {
 		 */
 		buildPlaceholders(envelope) {
 			const from = (envelope.from || [])[0] || {}
-			const sentAt = envelope.dateInt ? new Date(envelope.dateInt * 1000) : new Date()
-			const due = new Date(sentAt.getTime() + (30 * 24 * 60 * 60 * 1000))
+			const sentAt = envelope.dateInt
+				? new Date(envelope.dateInt * 1000)
+				: new Date()
+			const due = new Date(sentAt.getTime() + 30 * 24 * 60 * 60 * 1000)
 			const isoDate = (d) => d.toISOString().slice(0, 10)
 			let preview = envelope.body || ''
 			if (envelope.hasHtmlBody) {
-				preview = new DOMParser().parseFromString(preview, 'text/html').body.textContent || ''
+				preview =
+					new DOMParser().parseFromString(preview, 'text/html').body
+						.textContent || ''
 			}
 			preview = preview.trim().slice(0, 600)
 			return {
@@ -336,9 +390,9 @@ export default {
 			const data = {}
 			for (const [field, value] of Object.entries(template)) {
 				if (typeof value === 'string') {
-					data[field] = value.replace(/\{\{(\w+)\}\}/g, (match, key) => (
-						key in placeholders ? placeholders[key] : match
-					))
+					data[field] = value.replace(/\{\{(\w+)\}\}/g, (match, key) =>
+						key in placeholders ? placeholders[key] : match,
+					)
 				} else {
 					data[field] = value
 				}
@@ -353,7 +407,8 @@ export default {
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async openCreate(schema) {
-			if (!this.accountId || !this.messageId || this.creating[schema.id]) return
+			if (!this.accountId || !this.messageId || this.creating[schema.id])
+				return
 			if (!this.registerCache[schema.id]) return
 
 			this.creating[schema.id] = true
@@ -395,16 +450,23 @@ export default {
 
 			this.createSaving = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
-					register: register.id,
-					schema: schema.id,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/objects/{register}/{schema}',
+					{
+						register: register.id,
+						schema: schema.id,
+					},
+				)
 				const response = await axios.post(url, data, { timeout: 15000 })
 				await this.linkObject(schema, response.data)
 				this.createDialog = { show: false, schema: null, data: {} }
 			} catch (err) {
 				const detail = err.response?.data?.error || err.response?.data || ''
-				showError(t('openregister', 'Failed to create {name} from email', { name: schema.title }))
+				showError(
+					t('openregister', 'Failed to create {name} from email', {
+						name: schema.title,
+					}),
+				)
 				console.error('[ActionsTab] Create from email failed:', detail, err)
 			} finally {
 				this.createSaving = false
@@ -422,11 +484,18 @@ export default {
 			const mailRef = `${this.accountId}/${this.messageId}`
 			this.linking[schema.id] = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
-					uuid: objectUuid,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/objects/{uuid}/_linked/mail',
+					{
+						uuid: objectUuid,
+					},
+				)
 				await axios.post(url, { id: mailRef })
-				showSuccess(t('openregister', 'Connected to {name}', { name: this.objectName(obj) }))
+				showSuccess(
+					t('openregister', 'Connected to {name}', {
+						name: this.objectName(obj),
+					}),
+				)
 
 				// Clear search and hide results
 				this.searchTerms[schema.id] = ''

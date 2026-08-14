@@ -49,12 +49,11 @@ namespace OCA\OpenRegister\Mcp;
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp
  */
-interface IMcpScannableServices
-{
-    /**
-     * The app's own service classes eligible for `#[McpTool]` reflection.
-     *
-     * @return list<class-string> Fully-qualified service class names owned by this app.
-     */
-    public function getScannableServiceClasses(): array;
+interface IMcpScannableServices {
+	/**
+	 * The app's own service classes eligible for `#[McpTool]` reflection.
+	 *
+	 * @return list<class-string> Fully-qualified service class names owned by this app.
+	 */
+	public function getScannableServiceClasses(): array;
 }//end interface

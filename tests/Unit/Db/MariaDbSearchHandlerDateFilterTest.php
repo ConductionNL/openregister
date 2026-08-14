@@ -33,56 +33,49 @@ use ReflectionMethod;
 /**
  * @group DB
  */
-class MariaDbSearchHandlerDateFilterTest extends TestCase
-{
+class MariaDbSearchHandlerDateFilterTest extends TestCase {
 
-    private MariaDbSearchHandler $handler;
+	private MariaDbSearchHandler $handler;
 
-    protected function setUp(): void
-    {
-        $logger        = $this->createMock(LoggerInterface::class);
-        $normalizer    = new DateTimeNormalizer($logger);
-        $this->handler = new MariaDbSearchHandler($normalizer);
-    }//end setUp()
+	protected function setUp(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$normalizer = new DateTimeNormalizer($logger);
+		$this->handler = new MariaDbSearchHandler($normalizer);
+	}//end setUp()
 
-    private function invokeNormalize(string $field, mixed $value): mixed
-    {
-        $method = new ReflectionMethod(MariaDbSearchHandler::class, 'normalizeDateValue');
-        $method->setAccessible(true);
-        return $method->invoke($this->handler, $field, $value);
-    }//end invokeNormalize()
+	private function invokeNormalize(string $field, mixed $value): mixed {
+		$method = new ReflectionMethod(MariaDbSearchHandler::class, 'normalizeDateValue');
+		$method->setAccessible(true);
+		return $method->invoke($this->handler, $field, $value);
+	}//end invokeNormalize()
 
-    public function testEmptyStringDateFilterNormalisesToNull(): void
-    {
-        $this->assertNull(
-            $this->invokeNormalize('created', ''),
-            'an empty-string filter on a date field must normalise to null (no concrete datetime predicate)'
-        );
-    }//end testEmptyStringDateFilterNormalisesToNull()
+	public function testEmptyStringDateFilterNormalisesToNull(): void {
+		$this->assertNull(
+			$this->invokeNormalize('created', ''),
+			'an empty-string filter on a date field must normalise to null (no concrete datetime predicate)'
+		);
+	}//end testEmptyStringDateFilterNormalisesToNull()
 
-    public function testWhitespaceDateFilterNormalisesToNull(): void
-    {
-        $this->assertNull(
-            $this->invokeNormalize('updated', '   '),
-            'a whitespace-only filter on a date field must normalise to null'
-        );
-    }//end testWhitespaceDateFilterNormalisesToNull()
+	public function testWhitespaceDateFilterNormalisesToNull(): void {
+		$this->assertNull(
+			$this->invokeNormalize('updated', '   '),
+			'a whitespace-only filter on a date field must normalise to null'
+		);
+	}//end testWhitespaceDateFilterNormalisesToNull()
 
-    public function testValidDateFilterNormalisesToDatabaseFormat(): void
-    {
-        $result = $this->invokeNormalize('created', '2026-04-20T14:00:00+00:00');
-        $this->assertIsString($result, 'a valid date filter must produce a database-format string');
-        $this->assertSame('2026-04-20 14:00:00', $result);
-    }//end testValidDateFilterNormalisesToDatabaseFormat()
+	public function testValidDateFilterNormalisesToDatabaseFormat(): void {
+		$result = $this->invokeNormalize('created', '2026-04-20T14:00:00+00:00');
+		$this->assertIsString($result, 'a valid date filter must produce a database-format string');
+		$this->assertSame('2026-04-20 14:00:00', $result);
+	}//end testValidDateFilterNormalisesToDatabaseFormat()
 
-    public function testNonDateFieldPassesThroughUnchanged(): void
-    {
-        // A filter on a non-date field is returned verbatim — the normaliser
-        // must not touch text/term filters.
-        $this->assertSame(
-            'someTextValue',
-            $this->invokeNormalize('name', 'someTextValue'),
-            'a non-date field filter must pass through unchanged'
-        );
-    }//end testNonDateFieldPassesThroughUnchanged()
+	public function testNonDateFieldPassesThroughUnchanged(): void {
+		// A filter on a non-date field is returned verbatim — the normaliser
+		// must not touch text/term filters.
+		$this->assertSame(
+			'someTextValue',
+			$this->invokeNormalize('name', 'someTextValue'),
+			'a non-date field filter must pass through unchanged'
+		);
+	}//end testNonDateFieldPassesThroughUnchanged()
 }//end class

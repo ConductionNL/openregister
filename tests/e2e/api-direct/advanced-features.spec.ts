@@ -45,7 +45,9 @@ test.describe('urn-resource-addressing — objects carry URI in @self', () => {
 		}
 	})
 
-	test('GET /api/objects/:register/:schema/:id returns the object by URI id', async ({ request }) => {
+	test('GET /api/objects/:register/:schema/:id returns the object by URI id', async ({
+		request,
+	}) => {
 		// List to find an id.
 		const list = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_limit=1`,
@@ -78,7 +80,10 @@ test.describe('object-interactions — lock, unlock, publish', () => {
 		const resp = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-interactions-test`,
 					ocName: `${RUN_ID} Interactions Test`,
@@ -122,9 +127,11 @@ test.describe('object-interactions — lock, unlock, publish', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!testObjectId) return
-		await request.delete(
-			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
-		).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${testObjectId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -144,7 +151,9 @@ test.describe('referential-integrity — objects with relations', () => {
 		}
 	})
 
-	test('object @self.relations field is present and is an object', async ({ request }) => {
+	test('object @self.relations field is present and is an object', async ({
+		request,
+	}) => {
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_limit=3`,
 			{ headers: { Accept: 'application/json' } },
@@ -167,10 +176,15 @@ test.describe('referential-integrity — objects with relations', () => {
 test.describe('webhook-payload-mapping — webhooks REST lifecycle', () => {
 	let webhookId: number | null = null
 
-	test('GET /api/webhooks lists webhooks (empty or populated)', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/webhooks?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/webhooks lists webhooks (empty or populated)', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/webhooks?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBeLessThan(500)
 		if (resp.ok()) {
 			const body = await resp.json()
@@ -179,15 +193,21 @@ test.describe('webhook-payload-mapping — webhooks REST lifecycle', () => {
 	})
 
 	test('POST /api/webhooks creates a webhook', async ({ request }) => {
-		const resp = await request.post('/index.php/apps/openregister/api/webhooks', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: {
-				name: `${RUN_ID}-webhook`,
-				url: 'https://example.com/webhook-test',
-				events: ['object.created', 'object.updated'],
-				enabled: false,
+		const resp = await request.post(
+			'/index.php/apps/openregister/api/webhooks',
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: {
+					name: `${RUN_ID}-webhook`,
+					url: 'https://example.com/webhook-test',
+					events: ['object.created', 'object.updated'],
+					enabled: false,
+				},
 			},
-		})
+		)
 		expect(resp.status(), 'POST /api/webhooks').toBeLessThan(500)
 		if (resp.ok() || resp.status() === 201) {
 			const body = await resp.json()
@@ -207,7 +227,9 @@ test.describe('webhook-payload-mapping — webhooks REST lifecycle', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!webhookId) return
-		await request.delete(`/index.php/apps/openregister/api/webhooks/${webhookId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/webhooks/${webhookId}`)
+			.catch(() => {})
 	})
 })
 
@@ -217,11 +239,16 @@ test.describe('webhook-payload-mapping — webhooks REST lifecycle', () => {
 test.describe('retention-management — retention policy API', () => {
 	test('object @self.expires field is accepted on create', async ({ request }) => {
 		// Create an object with an expiry date.
-		const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+		const expiryDate = new Date(
+			Date.now() + 30 * 24 * 60 * 60 * 1000,
+		).toISOString()
 		const resp = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-retention-test`,
 					ocName: `${RUN_ID} Retention Test`,
@@ -237,9 +264,11 @@ test.describe('retention-management — retention policy API', () => {
 			const id = body['@self']?.id ?? body.id
 			// Clean up.
 			if (id) {
-				await request.delete(
-					`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
-				).catch(() => {})
+				await request
+					.delete(
+						`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
+					)
+					.catch(() => {})
 			}
 		}
 	})
@@ -249,7 +278,9 @@ test.describe('retention-management — retention policy API', () => {
 // event-driven-architecture — event system surface
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('event-driven-architecture — event surface', () => {
-	test('creating an object triggers observable state changes (event-driven create)', async ({ request }) => {
+	test('creating an object triggers observable state changes (event-driven create)', async ({
+		request,
+	}) => {
 		// Verify that object creation is reflected in listing after create.
 		const preList = await request.get(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}?_limit=100`,
@@ -261,7 +292,10 @@ test.describe('event-driven-architecture — event surface', () => {
 		const created = await request.post(
 			`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					name: `${RUN_ID}-event-test`,
 					ocName: `${RUN_ID} Event Test`,
@@ -280,13 +314,17 @@ test.describe('event-driven-architecture — event surface', () => {
 			{ headers: { Accept: 'application/json' } },
 		)
 		const postBody = await postList.json()
-		expect(postBody.total, 'total should increase after create').toBeGreaterThan(preTotal)
+		expect(postBody.total, 'total should increase after create').toBeGreaterThan(
+			preTotal,
+		)
 
 		// Clean up.
 		if (id) {
-			await request.delete(
-				`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
-			).catch(() => {})
+			await request
+				.delete(
+					`/index.php/apps/openregister/api/objects/${REGISTER_ID}/${SCHEMA_ID}/${id}`,
+				)
+				.catch(() => {})
 		}
 	})
 })

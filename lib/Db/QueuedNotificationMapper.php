@@ -50,138 +50,132 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  */
-class QueuedNotificationMapper extends QBMapper
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $db Database connection.
-     */
-    public function __construct(IDBConnection $db)
-    {
-        parent::__construct(
-            db: $db,
-            tableName: 'openregister_notification_queue',
-            entityClass: QueuedNotification::class
-        );
+class QueuedNotificationMapper extends QBMapper {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(
+			db: $db,
+			tableName: 'openregister_notification_queue',
+			entityClass: QueuedNotification::class
+		);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Every currently-queued row, oldest first.
-     *
-     * The flush job re-evaluates each row's holding condition live rather
-     * than filtering "due" rows in SQL — see class docblock.
-     *
-     * @return array<int, QueuedNotification>
-     */
-    public function findAll(): array
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('*')
-                ->from($this->getTableName())
-                ->orderBy('created_at', 'ASC');
+	/**
+	 * Every currently-queued row, oldest first.
+	 *
+	 * The flush job re-evaluates each row's holding condition live rather
+	 * than filtering "due" rows in SQL — see class docblock.
+	 *
+	 * @return array<int, QueuedNotification>
+	 */
+	public function findAll(): array {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from($this->getTableName())
+				->orderBy('created_at', 'ASC');
 
-            return $this->findEntities(query: $qb);
-        } catch (\Throwable $e) {
-            // A read failure must not break the flush job's tick — treat
-            // it as "nothing queued this pass" and let the next tick retry.
-            return [];
-        }
+			return $this->findEntities(query: $qb);
+		} catch (\Throwable $e) {
+			// A read failure must not break the flush job's tick — treat
+			// it as "nothing queued this pass" and let the next tick retry.
+			return [];
+		}
 
-    }//end findAll()
+	}//end findAll()
 
-    /**
-     * All queued rows for one `(ruleKey, recipient)` pair — the grouping
-     * key the flush job uses to merge sibling events into one digest.
-     *
-     * @param string $ruleKey   Notification annotation key.
-     * @param string $recipient Recipient user UID.
-     *
-     * @return array<int, QueuedNotification>
-     */
-    public function findByRecipientAndRule(string $ruleKey, string $recipient): array
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('*')
-                ->from($this->getTableName())
-                ->where(
-                    $qb->expr()->eq(
-                        'rule_key',
-                        $qb->createNamedParameter($ruleKey)
-                    )
-                )
-                ->andWhere(
-                    $qb->expr()->eq(
-                        'recipient',
-                        $qb->createNamedParameter($recipient)
-                    )
-                )
-                ->orderBy('created_at', 'ASC');
+	/**
+	 * All queued rows for one `(ruleKey, recipient)` pair — the grouping
+	 * key the flush job uses to merge sibling events into one digest.
+	 *
+	 * @param string $ruleKey Notification annotation key.
+	 * @param string $recipient Recipient user UID.
+	 *
+	 * @return array<int, QueuedNotification>
+	 */
+	public function findByRecipientAndRule(string $ruleKey, string $recipient): array {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from($this->getTableName())
+				->where(
+					$qb->expr()->eq(
+						'rule_key',
+						$qb->createNamedParameter($ruleKey)
+					)
+				)
+				->andWhere(
+					$qb->expr()->eq(
+						'recipient',
+						$qb->createNamedParameter($recipient)
+					)
+				)
+				->orderBy('created_at', 'ASC');
 
-            return $this->findEntities(query: $qb);
-        } catch (\Throwable $e) {
-            return [];
-        }//end try
+			return $this->findEntities(query: $qb);
+		} catch (\Throwable $e) {
+			return [];
+		}//end try
 
-    }//end findByRecipientAndRule()
+	}//end findByRecipientAndRule()
 
-    /**
-     * Look up a single row by id (used by tests / operator tooling).
-     *
-     * @param int $id Row id.
-     *
-     * @return QueuedNotification|null
-     */
-    public function findById(int $id): ?QueuedNotification
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('*')
-                ->from($this->getTableName())
-                ->where(
-                    $qb->expr()->eq(
-                        'id',
-                        $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
-                    )
-                )
-                ->setMaxResults(1);
+	/**
+	 * Look up a single row by id (used by tests / operator tooling).
+	 *
+	 * @param int $id Row id.
+	 *
+	 * @return QueuedNotification|null
+	 */
+	public function findById(int $id): ?QueuedNotification {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from($this->getTableName())
+				->where(
+					$qb->expr()->eq(
+						'id',
+						$qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
+					)
+				)
+				->setMaxResults(1);
 
-            return $this->findEntity(query: $qb);
-        } catch (DoesNotExistException $e) {
-            return null;
-        } catch (\Throwable $e) {
-            return null;
-        }
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-    }//end findById()
+	}//end findById()
 
-    /**
-     * Delete a queued row by id (called once its contents have been
-     * flushed into a delivered notification).
-     *
-     * @param int $id Row id.
-     *
-     * @return void
-     */
-    public function deleteById(int $id): void
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->delete($this->getTableName())
-                ->where(
-                    $qb->expr()->eq(
-                        'id',
-                        $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
-                    )
-                );
-            $qb->executeStatement();
-        } catch (\Throwable $e) {
-            // Best-effort: worst case a stale row survives until the next
-            // sweep re-attempts the delete after a redundant re-flush.
-        }
+	/**
+	 * Delete a queued row by id (called once its contents have been
+	 * flushed into a delivered notification).
+	 *
+	 * @param int $id Row id.
+	 *
+	 * @return void
+	 */
+	public function deleteById(int $id): void {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete($this->getTableName())
+				->where(
+					$qb->expr()->eq(
+						'id',
+						$qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
+					)
+				);
+			$qb->executeStatement();
+		} catch (\Throwable $e) {
+			// Best-effort: worst case a stale row survives until the next
+			// sweep re-attempts the delete after a redundant re-flush.
+		}
 
-    }//end deleteById()
+	}//end deleteById()
 }//end class

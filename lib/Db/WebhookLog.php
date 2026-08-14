@@ -65,186 +65,181 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class WebhookLog extends Entity implements JsonSerializable
-{
+class WebhookLog extends Entity implements JsonSerializable {
 
-    /**
-     * Webhook (ID of the webhook this log belongs to)
-     *
-     * @var integer
-     */
-    protected int $webhook = 0;
+	/**
+	 * Webhook (ID of the webhook this log belongs to)
+	 *
+	 * @var integer
+	 */
+	protected int $webhook = 0;
 
-    /**
-     * Event class name
-     *
-     * @var string
-     */
-    protected string $eventClass = '';
+	/**
+	 * Event class name
+	 *
+	 * @var string
+	 */
+	protected string $eventClass = '';
 
-    /**
-     * Payload data (JSON)
-     *
-     * @var string|null
-     */
-    protected ?string $payload = null;
+	/**
+	 * Payload data (JSON)
+	 *
+	 * @var string|null
+	 */
+	protected ?string $payload = null;
 
-    /**
-     * Target URL
-     *
-     * @var string
-     */
-    protected string $url = '';
+	/**
+	 * Target URL
+	 *
+	 * @var string
+	 */
+	protected string $url = '';
 
-    /**
-     * HTTP method
-     *
-     * @var string
-     */
-    protected string $method = 'POST';
+	/**
+	 * HTTP method
+	 *
+	 * @var string
+	 */
+	protected string $method = 'POST';
 
-    /**
-     * Success status
-     *
-     * @var boolean
-     */
-    protected bool $success = false;
+	/**
+	 * Success status
+	 *
+	 * @var boolean
+	 */
+	protected bool $success = false;
 
-    /**
-     * HTTP status code
-     *
-     * @var integer|null
-     */
-    protected ?int $statusCode = null;
+	/**
+	 * HTTP status code
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $statusCode = null;
 
-    /**
-     * Request body (stored only on failure)
-     *
-     * @var string|null
-     */
-    protected ?string $requestBody = null;
+	/**
+	 * Request body (stored only on failure)
+	 *
+	 * @var string|null
+	 */
+	protected ?string $requestBody = null;
 
-    /**
-     * Response body
-     *
-     * @var string|null
-     */
-    protected ?string $responseBody = null;
+	/**
+	 * Response body
+	 *
+	 * @var string|null
+	 */
+	protected ?string $responseBody = null;
 
-    /**
-     * Error message
-     *
-     * @var string|null
-     */
-    protected ?string $errorMessage = null;
+	/**
+	 * Error message
+	 *
+	 * @var string|null
+	 */
+	protected ?string $errorMessage = null;
 
-    /**
-     * Attempt number
-     *
-     * @var integer
-     */
-    protected int $attempt = 1;
+	/**
+	 * Attempt number
+	 *
+	 * @var integer
+	 */
+	protected int $attempt = 1;
 
-    /**
-     * Next retry timestamp
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $nextRetryAt = null;
+	/**
+	 * Next retry timestamp
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $nextRetryAt = null;
 
-    /**
-     * Created timestamp
-     *
-     * @var DateTime
-     */
-    protected DateTime $created;
+	/**
+	 * Created timestamp
+	 *
+	 * @var DateTime
+	 */
+	protected DateTime $created;
 
-    /**
-     * Constructor
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'webhook', type: 'integer');
-        $this->addType(fieldName: 'eventClass', type: 'string');
-        $this->addType(fieldName: 'payload', type: 'string');
-        $this->addType(fieldName: 'url', type: 'string');
-        $this->addType(fieldName: 'method', type: 'string');
-        $this->addType(fieldName: 'success', type: 'boolean');
-        $this->addType(fieldName: 'statusCode', type: 'integer');
-        $this->addType(fieldName: 'requestBody', type: 'string');
-        $this->addType(fieldName: 'responseBody', type: 'string');
-        $this->addType(fieldName: 'errorMessage', type: 'string');
-        $this->addType(fieldName: 'attempt', type: 'integer');
-        $this->addType(fieldName: 'nextRetryAt', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
+	/**
+	 * Constructor
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'webhook', type: 'integer');
+		$this->addType(fieldName: 'eventClass', type: 'string');
+		$this->addType(fieldName: 'payload', type: 'string');
+		$this->addType(fieldName: 'url', type: 'string');
+		$this->addType(fieldName: 'method', type: 'string');
+		$this->addType(fieldName: 'success', type: 'boolean');
+		$this->addType(fieldName: 'statusCode', type: 'integer');
+		$this->addType(fieldName: 'requestBody', type: 'string');
+		$this->addType(fieldName: 'responseBody', type: 'string');
+		$this->addType(fieldName: 'errorMessage', type: 'string');
+		$this->addType(fieldName: 'attempt', type: 'integer');
+		$this->addType(fieldName: 'nextRetryAt', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
 
-        // Initialize created timestamp.
-        $this->created = new DateTime();
-    }//end __construct()
+		// Initialize created timestamp.
+		$this->created = new DateTime();
+	}//end __construct()
 
-    /**
-     * Get payload as array
-     *
-     * @return array
-     */
-    public function getPayloadArray(): array
-    {
-        if ($this->payload === null) {
-            return [];
-        }
+	/**
+	 * Get payload as array
+	 *
+	 * @return array
+	 */
+	public function getPayloadArray(): array {
+		if ($this->payload === null) {
+			return [];
+		}
 
-        return json_decode($this->payload, true) ?? [];
-    }//end getPayloadArray()
+		return json_decode($this->payload, true) ?? [];
+	}//end getPayloadArray()
 
-    /**
-     * Set payload from array
-     *
-     * @param array|null $payload Payload array
-     *
-     * @return void
-     */
-    public function setPayloadArray(?array $payload): void
-    {
-        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-        if ($payload === null) {
-            $this->setPayload(null);
-            return;
-        }
+	/**
+	 * Set payload from array
+	 *
+	 * @param array|null $payload Payload array
+	 *
+	 * @return void
+	 */
+	public function setPayloadArray(?array $payload): void {
+		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+		if ($payload === null) {
+			$this->setPayload(null);
+			return;
+		}
 
-        $this->setPayload(json_encode($payload));
-        // phpcs:enable CustomSniffs.Functions.NamedParameters
-    }//end setPayloadArray()
+		$this->setPayload(json_encode($payload));
+		// phpcs:enable CustomSniffs.Functions.NamedParameters
+	}//end setPayloadArray()
 
-    /**
-     * JSON serialize the entity
-     *
-     * @return (array|bool|int|null|string)[]
-     *
-     * @psalm-return array{id: int, webhook: int, eventClass: string,
-     *     payload: array, url: string, method: string, success: bool,
-     *     statusCode: int|null, requestBody: null|string,
-     *     responseBody: null|string, errorMessage: null|string, attempt: int,
-     *     nextRetryAt: null|string, created: string}
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'           => $this->id,
-            'webhook'      => $this->webhook,
-            'eventClass'   => $this->eventClass,
-            'payload'      => $this->getPayloadArray(),
-            'url'          => $this->url,
-            'method'       => $this->method,
-            'success'      => $this->success,
-            'statusCode'   => $this->statusCode,
-            'requestBody'  => $this->requestBody,
-            'responseBody' => $this->responseBody,
-            'errorMessage' => $this->errorMessage,
-            'attempt'      => $this->attempt,
-            'nextRetryAt'  => $this->nextRetryAt?->format('c'),
-            'created'      => $this->created->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialize the entity
+	 *
+	 * @return (array|bool|int|null|string)[]
+	 *
+	 * @psalm-return array{id: int, webhook: int, eventClass: string,
+	 *     payload: array, url: string, method: string, success: bool,
+	 *     statusCode: int|null, requestBody: null|string,
+	 *     responseBody: null|string, errorMessage: null|string, attempt: int,
+	 *     nextRetryAt: null|string, created: string}
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'webhook' => $this->webhook,
+			'eventClass' => $this->eventClass,
+			'payload' => $this->getPayloadArray(),
+			'url' => $this->url,
+			'method' => $this->method,
+			'success' => $this->success,
+			'statusCode' => $this->statusCode,
+			'requestBody' => $this->requestBody,
+			'responseBody' => $this->responseBody,
+			'errorMessage' => $this->errorMessage,
+			'attempt' => $this->attempt,
+			'nextRetryAt' => $this->nextRetryAt?->format('c'),
+			'created' => $this->created->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

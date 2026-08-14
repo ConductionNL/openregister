@@ -31,85 +31,79 @@ namespace OCA\OpenRegister\Service\Gdpr\Export;
 /**
  * Result of signing (or stub-signing) an export bundle.
  */
-final class SignedBundle
-{
-    /**
-     * Constructor.
-     *
-     * @param string $bytes          The bundle bytes (the PDF disclosure document).
-     * @param string $contentHash    SHA-256 content hash of the bytes (`sha256:...`).
-     * @param bool   $signed         Whether a real PAdES-LTV signature is attached.
-     * @param string $signatureState Human/machine-readable signature state marker.
-     * @param string $mimeType       MIME type of the bytes.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function __construct(
-        private readonly string $bytes,
-        private readonly string $contentHash,
-        private readonly bool $signed,
-        private readonly string $signatureState,
-        private readonly string $mimeType='application/pdf'
-    ) {
-    }//end __construct()
+final class SignedBundle {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $bytes The bundle bytes (the PDF disclosure document).
+	 * @param string $contentHash SHA-256 content hash of the bytes (`sha256:...`).
+	 * @param bool $signed Whether a real PAdES-LTV signature is attached.
+	 * @param string $signatureState Human/machine-readable signature state marker.
+	 * @param string $mimeType MIME type of the bytes.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function __construct(
+		private readonly string $bytes,
+		private readonly string $contentHash,
+		private readonly bool $signed,
+		private readonly string $signatureState,
+		private readonly string $mimeType = 'application/pdf',
+	) {
+	}//end __construct()
 
-    /**
-     * The bundle bytes.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function getBytes(): string
-    {
-        return $this->bytes;
-    }//end getBytes()
+	/**
+	 * The bundle bytes.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function getBytes(): string {
+		return $this->bytes;
+	}//end getBytes()
 
-    /**
-     * The SHA-256 content hash of the bytes.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function getContentHash(): string
-    {
-        return $this->contentHash;
-    }//end getContentHash()
+	/**
+	 * The SHA-256 content hash of the bytes.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function getContentHash(): string {
+		return $this->contentHash;
+	}//end getContentHash()
 
-    /**
-     * Whether a real PAdES-LTV signature is attached.
-     *
-     * @return bool
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function isSigned(): bool
-    {
-        return $this->signed;
-    }//end isSigned()
+	/**
+	 * Whether a real PAdES-LTV signature is attached.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function isSigned(): bool {
+		return $this->signed;
+	}//end isSigned()
 
-    /**
-     * The signature-state marker.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function getSignatureState(): string
-    {
-        return $this->signatureState;
-    }//end getSignatureState()
+	/**
+	 * The signature-state marker.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function getSignatureState(): string {
+		return $this->signatureState;
+	}//end getSignatureState()
 
-    /**
-     * The MIME type of the bytes.
-     *
-     * @return string
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function getMimeType(): string
-    {
-        return $this->mimeType;
-    }//end getMimeType()
+	/**
+	 * The MIME type of the bytes.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function getMimeType(): string {
+		return $this->mimeType;
+	}//end getMimeType()
 }//end class

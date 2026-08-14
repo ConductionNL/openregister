@@ -6,7 +6,8 @@ import axios from '@nextcloud/axios'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'exportConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'exportConfiguration'"
 		name="export-configuration-dialog"
 		:title="t('openregister', 'Export Configuration')"
 		size="small"
@@ -16,9 +17,7 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p v-if="configTitle">
-				Export configuration "{{ configTitle }}"?
-			</p>
+			<p v-if="configTitle">Export configuration "{{ configTitle }}"?</p>
 
 			<NcCheckboxRadioSwitch
 				:model-value="includeObjects"
@@ -130,7 +129,9 @@ export default {
 
 			try {
 				// Generate the export URL with query parameters
-				const url = generateUrl(`/apps/openregister/api/configurations/${item.id}/export`)
+				const url = generateUrl(
+					`/apps/openregister/api/configurations/${item.id}/export`,
+				)
 				const params = { includeObjects: this.includeObjects }
 
 				// Make the API call
@@ -161,7 +162,10 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export configuration'
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| 'Failed to export configuration'
 			} finally {
 				this.loading = false
 			}

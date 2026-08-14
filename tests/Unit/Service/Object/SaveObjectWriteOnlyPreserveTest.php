@@ -31,9 +31,9 @@ use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
 
 /**
@@ -50,198 +50,188 @@ use Twig\Loader\ArrayLoader;
  * A correct implementation placed one line later is a silent no-op that these assertions
  * catch and the isolated tests would not.
  */
-class SaveObjectWriteOnlyPreserveTest extends TestCase
-{
-    private SaveObject $handler;
-    private SchemaMapper $schemaMapper;
+class SaveObjectWriteOnlyPreserveTest extends TestCase {
+	private SaveObject $handler;
+	private SchemaMapper $schemaMapper;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-        // A REAL PropertyRbacHandler: the point of this test is the collaboration.
-        $propertyRbacHandler = new PropertyRbacHandler(
-            $this->createMock(IUserSession::class),
-            $this->createMock(IGroupManager::class),
-            $this->createMock(ConditionMatcher::class),
-            $this->createMock(LoggerInterface::class)
-        );
+		// A REAL PropertyRbacHandler: the point of this test is the collaboration.
+		$propertyRbacHandler = new PropertyRbacHandler(
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(ConditionMatcher::class),
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $this->handler = new SaveObject(
-            $this->createMock(MagicMapper::class),
-            $this->createMock(MagicMapper::class),
-            $this->createMock(MetadataHydrationHandler::class),
-            $this->createMock(FilePropertyHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-            $this->createMock(IUserSession::class),
-            $this->createMock(AuditTrailMapper::class),
-            $this->schemaMapper,
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(IURLGenerator::class),
-            $this->createMock(OrganisationService::class),
-            $this->createMock(CacheHandler::class),
-            $this->createMock(SettingsService::class),
-            $propertyRbacHandler,
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-            $this->createMock(LoggerInterface::class),
-            $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-            new ArrayLoader()
-        );
-    }
+		$this->handler = new SaveObject(
+			$this->createMock(MagicMapper::class),
+			$this->createMock(MagicMapper::class),
+			$this->createMock(MetadataHydrationHandler::class),
+			$this->createMock(FilePropertyHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->schemaMapper,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(IURLGenerator::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(CacheHandler::class),
+			$this->createMock(SettingsService::class),
+			$propertyRbacHandler,
+			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+			new ArrayLoader()
+		);
+	}
 
-    /**
-     * A Source-shaped schema: a top-level secret and a nested one under an untyped
-     * `configuration` object that also holds ordinary operator-editable settings.
-     */
-    private function sourceSchema(): Schema
-    {
-        $schema = new Schema();
+	/**
+	 * A Source-shaped schema: a top-level secret and a nested one under an untyped
+	 * `configuration` object that also holds ordinary operator-editable settings.
+	 */
+	private function sourceSchema(): Schema {
+		$schema = new Schema();
 
-        $ref    = new ReflectionClass($schema);
-        $idProp = $ref->getProperty('id');
-        $idProp->setAccessible(true);
-        $idProp->setValue($schema, 213);
+		$ref = new ReflectionClass($schema);
+		$idProp = $ref->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($schema, 213);
 
-        $schema->setSlug('source');
-        $schema->setProperties(
-            [
-                'name'          => ['type' => 'string'],
-                'apiToken'      => ['type' => 'string', 'writeOnly' => true],
-                'configuration' => ['type' => 'object'],
-            ]
-        );
-        $schema->setConfiguration(
-            [
-                Schema::WRITEONLY_PATHS_ANNOTATION => [
-                    'configuration.authentication.client_secret',
-                ],
-            ]
-        );
+		$schema->setSlug('source');
+		$schema->setProperties(
+			[
+				'name' => ['type' => 'string'],
+				'apiToken' => ['type' => 'string', 'writeOnly' => true],
+				'configuration' => ['type' => 'object'],
+			]
+		);
+		$schema->setConfiguration(
+			[
+				Schema::WRITEONLY_PATHS_ANNOTATION => [
+					'configuration.authentication.client_secret',
+				],
+			]
+		);
 
-        $this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('find')->willReturn($schema);
 
-        return $schema;
-    }
+		return $schema;
+	}
 
-    private function storedEntity(Schema $schema, array $object): ObjectEntity
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-        $entity->setSchema($schema->getId());
-        $entity->setRegister(65);
-        $entity->setObject($object);
+	private function storedEntity(Schema $schema, array $object): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+		$entity->setSchema($schema->getId());
+		$entity->setRegister(65);
+		$entity->setObject($object);
 
-        return $entity;
-    }
+		return $entity;
+	}
 
-    private function prepareUpdate(Schema $schema, ObjectEntity $existing, array $data): array
-    {
-        $method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
-        $method->setAccessible(true);
+	private function prepareUpdate(Schema $schema, ObjectEntity $existing, array $data): array {
+		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
+		$method->setAccessible(true);
 
-        /** @var ObjectEntity $prepared */
-        $prepared = $method->invokeArgs(
-            $this->handler,
-            [$existing, $schema, $data, [], null, null]
-        );
+		/** @var ObjectEntity $prepared */
+		$prepared = $method->invokeArgs(
+			$this->handler,
+			[$existing, $schema, $data, [], null, null]
+		);
 
-        return $prepared->getObject();
-    }
+		return $prepared->getObject();
+	}
 
-    /**
-     * The load-bearing case, driven through the real update path.
-     *
-     * Remove the restoreWriteOnlyValues() call from prepareObjectForUpdate and this
-     * assertion fails with apiToken nulled — that is the mutation test for the fix.
-     */
-    public function testOmittedTopLevelSecretSurvivesThePreparedUpdate(): void
-    {
-        $schema   = $this->sourceSchema();
-        $existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
+	/**
+	 * The load-bearing case, driven through the real update path.
+	 *
+	 * Remove the restoreWriteOnlyValues() call from prepareObjectForUpdate and this
+	 * assertion fails with apiToken nulled — that is the mutation test for the fix.
+	 */
+	public function testOmittedTopLevelSecretSurvivesThePreparedUpdate(): void {
+		$schema = $this->sourceSchema();
+		$existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
 
-        $result = $this->prepareUpdate($schema, $existing, ['name' => 'prod-renamed']);
+		$result = $this->prepareUpdate($schema, $existing, ['name' => 'prod-renamed']);
 
-        $this->assertSame('s3cr3t', $result['apiToken'], 'The PUT null-fill must not destroy an omitted secret.');
-        $this->assertSame('prod-renamed', $result['name']);
-    }
+		$this->assertSame('s3cr3t', $result['apiToken'], 'The PUT null-fill must not destroy an omitted secret.');
+		$this->assertSame('prod-renamed', $result['name']);
+	}
 
-    public function testOmittedNestedSecretSurvivesThePreparedUpdate(): void
-    {
-        $schema   = $this->sourceSchema();
-        $existing = $this->storedEntity(
-            $schema,
-            [
-                'name'          => 'src',
-                'configuration' => [
-                    'endpoint'       => 'https://old.example.gov',
-                    'authentication' => ['username' => 'svc', 'client_secret' => 's3cr3t'],
-                ],
-            ]
-        );
+	public function testOmittedNestedSecretSurvivesThePreparedUpdate(): void {
+		$schema = $this->sourceSchema();
+		$existing = $this->storedEntity(
+			$schema,
+			[
+				'name' => 'src',
+				'configuration' => [
+					'endpoint' => 'https://old.example.gov',
+					'authentication' => ['username' => 'svc', 'client_secret' => 's3cr3t'],
+				],
+			]
+		);
 
-        $result = $this->prepareUpdate(
-            $schema,
-            $existing,
-            [
-                'name'          => 'src',
-                'configuration' => [
-                    'endpoint'       => 'https://new.example.gov',
-                    'authentication' => ['username' => 'svc'],
-                ],
-            ]
-        );
+		$result = $this->prepareUpdate(
+			$schema,
+			$existing,
+			[
+				'name' => 'src',
+				'configuration' => [
+					'endpoint' => 'https://new.example.gov',
+					'authentication' => ['username' => 'svc'],
+				],
+			]
+		);
 
-        $this->assertSame('s3cr3t', $result['configuration']['authentication']['client_secret']);
-        $this->assertSame(
-            'https://new.example.gov',
-            $result['configuration']['endpoint'],
-            'A sibling edit under configuration must survive the preserve.'
-        );
-    }
+		$this->assertSame('s3cr3t', $result['configuration']['authentication']['client_secret']);
+		$this->assertSame(
+			'https://new.example.gov',
+			$result['configuration']['endpoint'],
+			'A sibling edit under configuration must survive the preserve.'
+		);
+	}
 
-    public function testNewSecretStillOverwritesThroughThePreparedUpdate(): void
-    {
-        $schema   = $this->sourceSchema();
-        $existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 'old-secret']);
+	public function testNewSecretStillOverwritesThroughThePreparedUpdate(): void {
+		$schema = $this->sourceSchema();
+		$existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 'old-secret']);
 
-        $result = $this->prepareUpdate($schema, $existing, ['name' => 'prod', 'apiToken' => 'rotated']);
+		$result = $this->prepareUpdate($schema, $existing, ['name' => 'prod', 'apiToken' => 'rotated']);
 
-        $this->assertSame('rotated', $result['apiToken'], 'Secrets must remain settable through the save path.');
-    }
+		$this->assertSame('rotated', $result['apiToken'], 'Secrets must remain settable through the save path.');
+	}
 
-    /**
-     * Pins the ordering against fillMissingSchemaPropertiesWithNull specifically: an
-     * explicit null must reach the mapper as null, exactly as before this fix.
-     */
-    public function testExplicitNullStillClearsThroughThePreparedUpdate(): void
-    {
-        $schema   = $this->sourceSchema();
-        $existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
+	/**
+	 * Pins the ordering against fillMissingSchemaPropertiesWithNull specifically: an
+	 * explicit null must reach the mapper as null, exactly as before this fix.
+	 */
+	public function testExplicitNullStillClearsThroughThePreparedUpdate(): void {
+		$schema = $this->sourceSchema();
+		$existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
 
-        $result = $this->prepareUpdate($schema, $existing, ['name' => 'prod', 'apiToken' => null]);
+		$result = $this->prepareUpdate($schema, $existing, ['name' => 'prod', 'apiToken' => null]);
 
-        $this->assertArrayHasKey('apiToken', $result);
-        $this->assertNull($result['apiToken'], 'An explicit null must still clear the secret.');
-    }
+		$this->assertArrayHasKey('apiToken', $result);
+		$this->assertNull($result['apiToken'], 'An explicit null must still clear the secret.');
+	}
 
-    /**
-     * A non-write-only property omitted from the payload must still be nulled — the
-     * preserve rule must not accidentally turn PUT into PATCH for ordinary fields.
-     */
-    public function testOrdinaryOmittedPropertyIsStillNulledByPutSemantics(): void
-    {
-        $schema   = $this->sourceSchema();
-        $existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
+	/**
+	 * A non-write-only property omitted from the payload must still be nulled — the
+	 * preserve rule must not accidentally turn PUT into PATCH for ordinary fields.
+	 */
+	public function testOrdinaryOmittedPropertyIsStillNulledByPutSemantics(): void {
+		$schema = $this->sourceSchema();
+		$existing = $this->storedEntity($schema, ['name' => 'prod', 'apiToken' => 's3cr3t']);
 
-        $result = $this->prepareUpdate($schema, $existing, ['apiToken' => 'kept']);
+		$result = $this->prepareUpdate($schema, $existing, ['apiToken' => 'kept']);
 
-        $this->assertArrayHasKey('name', $result);
-        $this->assertNull($result['name'], 'PUT semantics must still null an omitted ordinary property.');
-    }
+		$this->assertArrayHasKey('name', $result);
+		$this->assertNull($result['name'], 'PUT semantics must still null an omitted ordinary property.');
+	}
 }

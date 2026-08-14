@@ -56,190 +56,180 @@ use Throwable;
  *
  * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent|NodeDeletedEvent|UserCreatedEvent|UserDeletedEvent|ShareCreatedEvent|ShareDeletedEvent|TagAssignedEvent|TagUnassignedEvent>
  */
-class NativeFlowTriggerListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowTriggerService $triggers    Queues the runs.
-     * @param IUserSession       $userSession The acting user, for attribution.
-     */
-    public function __construct(
-        private readonly FlowTriggerService $triggers,
-        private readonly IUserSession $userSession
-    ) {
+class NativeFlowTriggerListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param IUserSession $userSession The acting user, for attribution.
+	 */
+	public function __construct(
+		private readonly FlowTriggerService $triggers,
+		private readonly IUserSession $userSession,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Translate a native event into a trigger, with its details as the payload.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-native-triggers/specs/flow-native-triggers/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        [$eventId, $payload] = $this->describe(event: $event);
-        if ($eventId === null) {
-            return;
-        }
+	/**
+	 * Translate a native event into a trigger, with its details as the payload.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-native-triggers/specs/flow-native-triggers/spec.md
+	 */
+	public function handle(Event $event): void {
+		[$eventId, $payload] = $this->describe(event: $event);
+		if ($eventId === null) {
+			return;
+		}
 
-        $user = null;
-        if ($this->userSession->getUser() !== null) {
-            $user = $this->userSession->getUser()->getUID();
-        }
+		$user = null;
+		if ($this->userSession->getUser() !== null) {
+			$user = $this->userSession->getUser()->getUID();
+		}
 
-        $this->triggers->fire(
-            event: $eventId,
-            subject: [],
-            user: $user,
-            context: ['payload' => $payload]
-        );
+		$this->triggers->fire(
+			event: $eventId,
+			subject: [],
+			user: $user,
+			context: ['payload' => $payload]
+		);
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * The trigger id and payload for a native event, or `[null, []]` when the
-     * event is not one this listener fires.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return array{0: string|null, 1: array} The trigger id and its payload.
-     */
-    private function describe(Event $event): array
-    {
-        if ($event instanceof NodeCreatedEvent) {
-            return ['file.created', $this->filePayload(node: $event->getNode())];
-        }
+	/**
+	 * The trigger id and payload for a native event, or `[null, []]` when the
+	 * event is not one this listener fires.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: string|null, 1: array} The trigger id and its payload.
+	 */
+	private function describe(Event $event): array {
+		if ($event instanceof NodeCreatedEvent) {
+			return ['file.created', $this->filePayload(node: $event->getNode())];
+		}
 
-        if ($event instanceof NodeWrittenEvent) {
-            return ['file.updated', $this->filePayload(node: $event->getNode())];
-        }
+		if ($event instanceof NodeWrittenEvent) {
+			return ['file.updated', $this->filePayload(node: $event->getNode())];
+		}
 
-        if ($event instanceof NodeDeletedEvent) {
-            return ['file.deleted', $this->filePayload(node: $event->getNode())];
-        }
+		if ($event instanceof NodeDeletedEvent) {
+			return ['file.deleted', $this->filePayload(node: $event->getNode())];
+		}
 
-        if ($event instanceof UserCreatedEvent) {
-            return ['user.created', ['uid' => $event->getUid()]];
-        }
+		if ($event instanceof UserCreatedEvent) {
+			return ['user.created', ['uid' => $event->getUid()]];
+		}
 
-        if ($event instanceof UserDeletedEvent) {
-            return ['user.deleted', ['uid' => $event->getUser()->getUID()]];
-        }
+		if ($event instanceof UserDeletedEvent) {
+			return ['user.deleted', ['uid' => $event->getUser()->getUID()]];
+		}
 
-        if ($event instanceof ShareCreatedEvent) {
-            return ['share.created', $this->sharePayload(share: $event->getShare())];
-        }
+		if ($event instanceof ShareCreatedEvent) {
+			return ['share.created', $this->sharePayload(share: $event->getShare())];
+		}
 
-        if ($event instanceof ShareDeletedEvent) {
-            return ['share.deleted', $this->sharePayload(share: $event->getShare())];
-        }
+		if ($event instanceof ShareDeletedEvent) {
+			return ['share.deleted', $this->sharePayload(share: $event->getShare())];
+		}
 
-        if ($event instanceof TagAssignedEvent) {
-            return ['tag.assigned', $this->tagPayload(event: $event)];
-        }
+		if ($event instanceof TagAssignedEvent) {
+			return ['tag.assigned', $this->tagPayload(event: $event)];
+		}
 
-        if ($event instanceof TagUnassignedEvent) {
-            return ['tag.unassigned', $this->tagPayload(event: $event)];
-        }
+		if ($event instanceof TagUnassignedEvent) {
+			return ['tag.unassigned', $this->tagPayload(event: $event)];
+		}
 
-        return [null, []];
+		return [null, []];
+	}//end describe()
 
-    }//end describe()
+	/**
+	 * The payload describing a share event.
+	 *
+	 * @param IShare $share The share the event is about.
+	 *
+	 * @return array<string, mixed> The share payload.
+	 */
+	private function sharePayload(IShare $share): array {
+		$payload = [];
+		foreach ([
+			'shareId' => static fn (): string => (string)$share->getId(),
+			'nodeId' => static fn (): int => $share->getNodeId(),
+			'shareType' => static fn (): int => (int)$share->getShareType(),
+			'sharedWith' => static fn (): string => (string)$share->getSharedWith(),
+			'path' => static fn (): string => $share->getNode()->getPath(),
+		] as $key => $read
+		) {
+			try {
+				$payload[$key] = $read();
+			} catch (Throwable $e) {
+				continue;
+			}
+		}
 
-    /**
-     * The payload describing a share event.
-     *
-     * @param IShare $share The share the event is about.
-     *
-     * @return array<string, mixed> The share payload.
-     */
-    private function sharePayload(IShare $share): array
-    {
-        $payload = [];
-        foreach ([
-            'shareId'    => static fn (): string => (string) $share->getId(),
-            'nodeId'     => static fn (): int => $share->getNodeId(),
-            'shareType'  => static fn (): int => (int) $share->getShareType(),
-            'sharedWith' => static fn (): string => (string) $share->getSharedWith(),
-            'path'       => static fn (): string => $share->getNode()->getPath(),
-        ] as $key => $read
-        ) {
-            try {
-                $payload[$key] = $read();
-            } catch (Throwable $e) {
-                continue;
-            }
-        }
+		return $payload;
+	}//end sharePayload()
 
-        return $payload;
+	/**
+	 * The payload describing a tag assign/unassign event.
+	 *
+	 * @param TagAssignedEvent|TagUnassignedEvent $event The tag event.
+	 *
+	 * @return array<string, mixed> The tag payload.
+	 */
+	private function tagPayload(TagAssignedEvent|TagUnassignedEvent $event): array {
+		$payload = [];
+		foreach ([
+			'objectType' => static fn (): string => $event->getObjectType(),
+			'objectIds' => static fn (): array => $event->getObjectIds(),
+			'tags' => static fn (): array => array_map(
+				static fn ($tag): array => ['id' => $tag->getId(), 'name' => $tag->getName()],
+				$event->getTags()
+			),
+		] as $key => $read
+		) {
+			try {
+				$payload[$key] = $read();
+			} catch (Throwable $e) {
+				continue;
+			}
+		}
 
-    }//end sharePayload()
+		return $payload;
+	}//end tagPayload()
 
-    /**
-     * The payload describing a tag assign/unassign event.
-     *
-     * @param TagAssignedEvent|TagUnassignedEvent $event The tag event.
-     *
-     * @return array<string, mixed> The tag payload.
-     */
-    private function tagPayload(TagAssignedEvent | TagUnassignedEvent $event): array
-    {
-        $payload = [];
-        foreach ([
-            'objectType' => static fn (): string => $event->getObjectType(),
-            'objectIds'  => static fn (): array => $event->getObjectIds(),
-            'tags'       => static fn (): array => array_map(
-                    static fn ($tag): array => ['id' => $tag->getId(), 'name' => $tag->getName()],
-                    $event->getTags()
-                ),
-        ] as $key => $read
-        ) {
-            try {
-                $payload[$key] = $read();
-            } catch (Throwable $e) {
-                continue;
-            }
-        }
+	/**
+	 * The payload describing a file event.
+	 *
+	 * Each field is read defensively: a node in mid-delete can throw on some
+	 * accessors, and losing the whole trigger over one unreadable field would be
+	 * worse than a payload with a gap.
+	 *
+	 * @param Node $node The file or folder the event is about.
+	 *
+	 * @return array<string, mixed> The file payload.
+	 */
+	private function filePayload(Node $node): array {
+		$payload = [];
+		foreach ([
+			'fileId' => static fn (): int => $node->getId(),
+			'path' => static fn (): string => $node->getPath(),
+			'name' => static fn (): string => $node->getName(),
+			'mimetype' => static fn (): string => $node->getMimetype(),
+		] as $key => $read
+		) {
+			try {
+				$payload[$key] = $read();
+			} catch (Throwable $e) {
+				// Field unavailable for this node; leave it out.
+				continue;
+			}
+		}
 
-        return $payload;
-
-    }//end tagPayload()
-
-    /**
-     * The payload describing a file event.
-     *
-     * Each field is read defensively: a node in mid-delete can throw on some
-     * accessors, and losing the whole trigger over one unreadable field would be
-     * worse than a payload with a gap.
-     *
-     * @param Node $node The file or folder the event is about.
-     *
-     * @return array<string, mixed> The file payload.
-     */
-    private function filePayload(Node $node): array
-    {
-        $payload = [];
-        foreach ([
-            'fileId'   => static fn (): int => $node->getId(),
-            'path'     => static fn (): string => $node->getPath(),
-            'name'     => static fn (): string => $node->getName(),
-            'mimetype' => static fn (): string => $node->getMimetype(),
-        ] as $key => $read
-        ) {
-            try {
-                $payload[$key] = $read();
-            } catch (Throwable $e) {
-                // Field unavailable for this node; leave it out.
-                continue;
-            }
-        }
-
-        return $payload;
-
-    }//end filePayload()
+		return $payload;
+	}//end filePayload()
 }//end class

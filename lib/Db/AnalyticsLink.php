@@ -62,124 +62,121 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class AnalyticsLink extends Entity implements JsonSerializable
-{
+class AnalyticsLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The NC Analytics report id (primary key in `analytics_report`).
-     *
-     * @var integer|null
-     */
-    protected ?int $reportId = null;
+	/**
+	 * The NC Analytics report id (primary key in `analytics_report`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reportId = null;
 
-    /**
-     * The report display name (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $reportTitle = null;
+	/**
+	 * The report display name (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $reportTitle = null;
 
-    /**
-     * The report type / datasource type (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $reportType = null;
+	/**
+	 * The report type / datasource type (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $reportType = null;
 
-    /**
-     * The report subheader (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $subheader = null;
+	/**
+	 * The report subheader (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $subheader = null;
 
-    /**
-     * The cached report created timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $createdAt = null;
+	/**
+	 * The cached report created timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $createdAt = null;
 
-    /**
-     * The cached report modified timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $modifiedAt = null;
+	/**
+	 * The cached report modified timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $modifiedAt = null;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'reportId', type: 'integer');
-        $this->addType(fieldName: 'reportTitle', type: 'string');
-        $this->addType(fieldName: 'reportType', type: 'string');
-        $this->addType(fieldName: 'subheader', type: 'string');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-        $this->addType(fieldName: 'modifiedAt', type: 'datetime');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'reportId', type: 'integer');
+		$this->addType(fieldName: 'reportTitle', type: 'string');
+		$this->addType(fieldName: 'reportType', type: 'string');
+		$this->addType(fieldName: 'subheader', type: 'string');
+		$this->addType(fieldName: 'createdAt', type: 'datetime');
+		$this->addType(fieldName: 'modifiedAt', type: 'datetime');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'          => $this->id,
-            'objectUuid'  => $this->objectUuid,
-            'registerId'  => $this->registerId,
-            'schemaId'    => $this->schemaId,
-            'reportId'    => $this->reportId,
-            'reportTitle' => $this->reportTitle,
-            'reportType'  => $this->reportType,
-            'subheader'   => $this->subheader,
-            'createdAt'   => $this->createdAt?->format(DateTime::ATOM),
-            'modifiedAt'  => $this->modifiedAt?->format(DateTime::ATOM),
-            'linkedBy'    => $this->linkedBy,
-            'linkedAt'    => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'reportId' => $this->reportId,
+			'reportTitle' => $this->reportTitle,
+			'reportType' => $this->reportType,
+			'subheader' => $this->subheader,
+			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
+			'modifiedAt' => $this->modifiedAt?->format(DateTime::ATOM),
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

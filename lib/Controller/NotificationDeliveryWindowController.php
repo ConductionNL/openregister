@@ -46,101 +46,97 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 
-class NotificationDeliveryWindowController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                            $appName       App name.
-     * @param IRequest                          $request       Request.
-     * @param NotificationDeliveryWindowService $windowService Override-only window store + evaluator.
-     * @param IUserSession                      $userSession   Current-user session.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly NotificationDeliveryWindowService $windowService,
-        private readonly IUserSession $userSession
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class NotificationDeliveryWindowController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param NotificationDeliveryWindowService $windowService Override-only window store + evaluator.
+	 * @param IUserSession $userSession Current-user session.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly NotificationDeliveryWindowService $windowService,
+		private readonly IUserSession $userSession,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Return the current user's stored delivery-window preference, or
-     * `{enabled: false}` when none is configured.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md
-     */
-    public function index(): JSONResponse
-    {
-        $userId = $this->resolveUserId();
-        if ($userId === null) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+	/**
+	 * Return the current user's stored delivery-window preference, or
+	 * `{enabled: false}` when none is configured.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function index(): JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
 
-        $window = $this->windowService->getForUser(userId: $userId);
-        if ($window === null) {
-            return new JSONResponse(data: ['enabled' => false]);
-        }
+		$window = $this->windowService->getForUser(userId: $userId);
+		if ($window === null) {
+			return new JSONResponse(data: ['enabled' => false]);
+		}
 
-        return new JSONResponse(data: $window);
-    }//end index()
+		return new JSONResponse(data: $window);
+	}//end index()
 
-    /**
-     * Store (or, with `enabled: false`, clear) the current user's
-     * delivery-window preference.
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/specs/notificatie-engine/spec.md
-     */
-    public function update(): JSONResponse
-    {
-        $userId = $this->resolveUserId();
-        if ($userId === null) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+	/**
+	 * Store (or, with `enabled: false`, clear) the current user's
+	 * delivery-window preference.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function update(): JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
 
-        $params  = $this->request->getParams();
-        $enabled = ($params['enabled'] ?? true);
+		$params = $this->request->getParams();
+		$enabled = ($params['enabled'] ?? true);
 
-        if ($enabled === false) {
-            $this->windowService->setForUser(userId: $userId, window: null);
-            return new JSONResponse(data: ['enabled' => false]);
-        }
+		if ($enabled === false) {
+			$this->windowService->setForUser(userId: $userId, window: null);
+			return new JSONResponse(data: ['enabled' => false]);
+		}
 
-        try {
-            $this->windowService->setForUser(userId: $userId, window: $params);
-        } catch (\InvalidArgumentException $e) {
-            return new JSONResponse(
-                data: ['error' => $e->getMessage(), 'code' => 'notification-delivery-window-invalid'],
-                statusCode: 422
-            );
-        }
+		try {
+			$this->windowService->setForUser(userId: $userId, window: $params);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'code' => 'notification-delivery-window-invalid'],
+				statusCode: 422
+			);
+		}
 
-        return new JSONResponse(data: ($this->windowService->getForUser(userId: $userId) ?? ['enabled' => false]));
-    }//end update()
+		return new JSONResponse(data: ($this->windowService->getForUser(userId: $userId) ?? ['enabled' => false]));
+	}//end update()
 
-    /**
-     * Resolve the current user's UID, or null when anonymous.
-     *
-     * @return string|null
-     */
-    private function resolveUserId(): ?string
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return null;
-        }
+	/**
+	 * Resolve the current user's UID, or null when anonymous.
+	 *
+	 * @return string|null
+	 */
+	private function resolveUserId(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
 
-        return $user->getUID();
-    }//end resolveUserId()
+		return $user->getUID();
+	}//end resolveUserId()
 }//end class

@@ -54,200 +54,189 @@ use Psr\Log\LoggerInterface;
 /**
  * Shared schema-update gate + changelog recorder.
  */
-class SchemaVersioningService
-{
-    /**
-     * Constructor.
-     *
-     * @param SchemaDiffService     $diffService     Pure diff/classification.
-     * @param SchemaChangelogMapper $changelogMapper Changelog persistence.
-     * @param SchemaRunMapper       $runMapper       Run persistence (for invalid counts).
-     * @param SchemaRunEntryMapper  $runEntryMapper  Per-object run entries.
-     * @param IUserSession          $userSession     Current user resolution.
-     * @param LoggerInterface       $logger          Logger.
-     */
-    public function __construct(
-        private readonly SchemaDiffService $diffService,
-        private readonly SchemaChangelogMapper $changelogMapper,
-        private readonly SchemaRunMapper $runMapper,
-        private readonly SchemaRunEntryMapper $runEntryMapper,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
-    ) {
+class SchemaVersioningService {
+	/**
+	 * Constructor.
+	 *
+	 * @param SchemaDiffService $diffService Pure diff/classification.
+	 * @param SchemaChangelogMapper $changelogMapper Changelog persistence.
+	 * @param SchemaRunMapper $runMapper Run persistence (for invalid counts).
+	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
+	 * @param IUserSession $userSession Current user resolution.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		private readonly SchemaDiffService $diffService,
+		private readonly SchemaChangelogMapper $changelogMapper,
+		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunEntryMapper $runEntryMapper,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Diff the incoming definition against the stored schema.
-     *
-     * @param Schema                $existing      The stored schema.
-     * @param array<string, mixed>  $newDefinition The incoming definition (properties/required).
-     * @param array<string, string> $renames       Optional declared renames.
-     *
-     * @return SchemaChangeSet The classified change set.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function classify(Schema $existing, array $newDefinition, array $renames=[]): SchemaChangeSet
-    {
-        $old = [
-            'properties' => ($existing->getProperties() ?? []),
-            'required'   => ($existing->getRequired() ?? []),
-        ];
+	/**
+	 * Diff the incoming definition against the stored schema.
+	 *
+	 * @param Schema $existing The stored schema.
+	 * @param array<string, mixed> $newDefinition The incoming definition (properties/required).
+	 * @param array<string, string> $renames Optional declared renames.
+	 *
+	 * @return SchemaChangeSet The classified change set.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function classify(Schema $existing, array $newDefinition, array $renames = []): SchemaChangeSet {
+		$old = [
+			'properties' => ($existing->getProperties() ?? []),
+			'required' => ($existing->getRequired() ?? []),
+		];
 
-        return $this->diffService->diff($old, $newDefinition, $renames);
+		return $this->diffService->diff($old, $newDefinition, $renames);
+	}//end classify()
 
-    }//end classify()
+	/**
+	 * Enforce the breaking-change acknowledgement gate.
+	 *
+	 * @param SchemaChangeSet $changeSet The classified change set.
+	 * @param bool $acknowledged Whether acknowledgeBreaking was set.
+	 * @param int $schemaId The schema id (for invalid-count lookup).
+	 *
+	 * @return void
+	 *
+	 * @throws BreakingSchemaChangeException When breaking and unacknowledged.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void {
+		if ($changeSet->isBreaking() === false) {
+			return;
+		}
 
-    /**
-     * Enforce the breaking-change acknowledgement gate.
-     *
-     * @param SchemaChangeSet $changeSet    The classified change set.
-     * @param bool            $acknowledged Whether acknowledgeBreaking was set.
-     * @param int             $schemaId     The schema id (for invalid-count lookup).
-     *
-     * @return void
-     *
-     * @throws BreakingSchemaChangeException When breaking and unacknowledged.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void
-    {
-        if ($changeSet->isBreaking() === false) {
-            return;
-        }
+		if ($acknowledged === true) {
+			return;
+		}
 
-        if ($acknowledged === true) {
-            return;
-        }
+		throw new BreakingSchemaChangeException(
+			changes: $changeSet->getChanges(),
+			invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
+		);
 
-        throw new BreakingSchemaChangeException(
-            changes: $changeSet->getChanges(),
-            invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
-        );
+	}//end enforceGate()
 
-    }//end enforceGate()
+	/**
+	 * Compute the next version for a schema given a change set.
+	 *
+	 * @param Schema $existing The stored schema.
+	 * @param SchemaChangeSet $changeSet The classified change set.
+	 *
+	 * @return string The next version.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function nextVersion(Schema $existing, SchemaChangeSet $changeSet): string {
+		return $this->diffService->nextVersion($existing->getVersion(), $changeSet);
+	}//end nextVersion()
 
-    /**
-     * Compute the next version for a schema given a change set.
-     *
-     * @param Schema          $existing  The stored schema.
-     * @param SchemaChangeSet $changeSet The classified change set.
-     *
-     * @return string The next version.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function nextVersion(Schema $existing, SchemaChangeSet $changeSet): string
-    {
-        return $this->diffService->nextVersion($existing->getVersion(), $changeSet);
+	/**
+	 * Record a changelog entry for an applied schema update.
+	 *
+	 * No entry is written for a metadata-only (no structural change) update.
+	 *
+	 * @param int $schemaId The schema id.
+	 * @param string|null $version The resulting version.
+	 * @param SchemaChangeSet $changeSet The classified change set.
+	 * @param bool $acknowledged Whether the change was acknowledged.
+	 *
+	 * @return SchemaChangelog|null The recorded entry, or null for a no-op.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged): ?SchemaChangelog {
+		if ($changeSet->hasChanges() === false) {
+			return null;
+		}
 
-    }//end nextVersion()
+		$actor = $this->currentActor();
 
-    /**
-     * Record a changelog entry for an applied schema update.
-     *
-     * No entry is written for a metadata-only (no structural change) update.
-     *
-     * @param int             $schemaId     The schema id.
-     * @param string|null     $version      The resulting version.
-     * @param SchemaChangeSet $changeSet    The classified change set.
-     * @param bool            $acknowledged Whether the change was acknowledged.
-     *
-     * @return SchemaChangelog|null The recorded entry, or null for a no-op.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged): ?SchemaChangelog
-    {
-        if ($changeSet->hasChanges() === false) {
-            return null;
-        }
+		$data = [
+			'schemaId' => $schemaId,
+			'version' => $version,
+			'classification' => $changeSet->getClassification(),
+			'changes' => $changeSet->getChanges(),
+			'actor' => $actor,
+		];
 
-        $actor = $this->currentActor();
+		if ($changeSet->isBreaking() === true && $acknowledged === true) {
+			$data['acknowledgedBy'] = $actor;
+			$data['acknowledgedAt'] = new DateTime();
+		}
 
-        $data = [
-            'schemaId'       => $schemaId,
-            'version'        => $version,
-            'classification' => $changeSet->getClassification(),
-            'changes'        => $changeSet->getChanges(),
-            'actor'          => $actor,
-        ];
+		try {
+			return $this->changelogMapper->createFromArray($data);
+		} catch (\Throwable $e) {
+			// Changelog persistence must never break the update itself.
+			$this->logger->warning(
+				'[SchemaVersioningService] Failed to record changelog',
+				['schema_id' => $schemaId, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
 
-        if ($changeSet->isBreaking() === true && $acknowledged === true) {
-            $data['acknowledgedBy'] = $actor;
-            $data['acknowledgedAt'] = new DateTime();
-        }
+	}//end recordChangelog()
 
-        try {
-            return $this->changelogMapper->createFromArray($data);
-        } catch (\Throwable $e) {
-            // Changelog persistence must never break the update itself.
-            $this->logger->warning(
-                '[SchemaVersioningService] Failed to record changelog',
-                ['schema_id' => $schemaId, 'error' => $e->getMessage()]
-            );
-            return null;
-        }
+	/**
+	 * The invalid-object count from the most recent completed revalidation,
+	 * or null when none exists.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return int|null The invalid count, or null.
+	 */
+	private function latestInvalidCount(int $schemaId): ?int {
+		try {
+			$runs = $this->runMapper->findBySchema($schemaId, 25);
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-    }//end recordChangelog()
+		foreach ($runs as $run) {
+			if ($run->getType() !== SchemaRun::TYPE_REVALIDATION) {
+				continue;
+			}
 
-    /**
-     * The invalid-object count from the most recent completed revalidation,
-     * or null when none exists.
-     *
-     * @param int $schemaId The schema id.
-     *
-     * @return int|null The invalid count, or null.
-     */
-    private function latestInvalidCount(int $schemaId): ?int
-    {
-        try {
-            $runs = $this->runMapper->findBySchema($schemaId, 25);
-        } catch (\Throwable $e) {
-            return null;
-        }
+			if ($run->getState() !== SchemaRun::STATE_COMPLETED) {
+				continue;
+			}
 
-        foreach ($runs as $run) {
-            if ($run->getType() !== SchemaRun::TYPE_REVALIDATION) {
-                continue;
-            }
+			$report = ($run->getReport() ?? []);
+			if (array_key_exists('invalid', $report) === true) {
+				return (int)$report['invalid'];
+			}
 
-            if ($run->getState() !== SchemaRun::STATE_COMPLETED) {
-                continue;
-            }
+			// Fallback: count invalid entries in the side table.
+			try {
+				return count($this->runEntryMapper->findByRun($run->getId(), SchemaRunEntry::OUTCOME_INVALID));
+			} catch (\Throwable $e) {
+				return null;
+			}
+		}//end foreach
 
-            $report = ($run->getReport() ?? []);
-            if (array_key_exists('invalid', $report) === true) {
-                return (int) $report['invalid'];
-            }
+		return null;
+	}//end latestInvalidCount()
 
-            // Fallback: count invalid entries in the side table.
-            try {
-                return count($this->runEntryMapper->findByRun($run->getId(), SchemaRunEntry::OUTCOME_INVALID));
-            } catch (\Throwable $e) {
-                return null;
-            }
-        }//end foreach
+	/**
+	 * The current acting user id, or 'system'.
+	 *
+	 * @return string The actor id.
+	 */
+	private function currentActor(): string {
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			return $user->getUID();
+		}
 
-        return null;
-
-    }//end latestInvalidCount()
-
-    /**
-     * The current acting user id, or 'system'.
-     *
-     * @return string The actor id.
-     */
-    private function currentActor(): string
-    {
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            return $user->getUID();
-        }
-
-        return 'system';
-
-    }//end currentActor()
+		return 'system';
+	}//end currentActor()
 }//end class

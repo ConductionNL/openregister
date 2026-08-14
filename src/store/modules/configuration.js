@@ -17,7 +17,9 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Client state mutator — wraps the active configuration in an entity. No backend contract.
 		 */
 		setConfigurationItem(configurationItem) {
-			this.configurationItem = configurationItem ? new ConfigurationEntity(configurationItem) : null
+			this.configurationItem = configurationItem
+				? new ConfigurationEntity(configurationItem)
+				: null
 		},
 		/**
 		 * @param configurationList
@@ -138,16 +140,13 @@ export const useConfigurationStore = defineStore('configuration', {
 			const cleanedData = this.cleanConfigurationForSave(configurationItem)
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(cleanedData),
+				const response = await fetch(endpoint, {
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(cleanedData),
+				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -202,16 +201,13 @@ export const useConfigurationStore = defineStore('configuration', {
 			const method = isNewConfiguration ? 'POST' : 'PUT'
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method,
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify(configuration),
+				const response = await fetch(endpoint, {
+					method,
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				)
+					body: JSON.stringify(configuration),
+				})
 
 				if (!response.ok) {
 					throw new Error(`HTTP error! status: ${response.status}`)
@@ -250,13 +246,10 @@ export const useConfigurationStore = defineStore('configuration', {
 			formData.append('includeObjects', includeObjects ? '1' : '0')
 
 			try {
-				const response = await fetch(
-					endpoint,
-					{
-						method: 'POST',
-						body: formData,
-					},
-				)
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					body: formData,
+				})
 
 				const responseData = await response.json()
 
@@ -286,7 +279,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Thin API passthrough — GET /api/configurations/discover; observable contract owned by data-import-export.
 		 */
 		async discoverConfigurations(source, search = '') {
-			const endpoint = '/index.php/apps/openregister/api/configurations/discover'
+			const endpoint =
+				'/index.php/apps/openregister/api/configurations/discover'
 			const params = new URLSearchParams()
 			params.append('source', source)
 			if (search) params.append('_search', search)
@@ -300,8 +294,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				const data = await response.json()
 
 				if (!response.ok) {
-				// If backend returns an error message, use it
-					const errorMessage = data.error || `HTTP error! status: ${response.status}`
+					// If backend returns an error message, use it
+					const errorMessage =
+						data.error || `HTTP error! status: ${response.status}`
 					throw new Error(errorMessage)
 				}
 
@@ -367,7 +362,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/github; observable contract owned by data-import-export.
 		 */
 		async importFromGitHub(params) {
-			const endpoint = '/index.php/apps/openregister/api/configurations/import/github'
+			const endpoint =
+				'/index.php/apps/openregister/api/configurations/import/github'
 
 			try {
 				const response = await fetch(endpoint, {
@@ -380,7 +376,9 @@ export const useConfigurationStore = defineStore('configuration', {
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						errorData.error || `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				const data = await response.json()
@@ -396,7 +394,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/gitlab; observable contract owned by data-import-export.
 		 */
 		async importFromGitLab(params) {
-			const endpoint = '/index.php/apps/openregister/api/configurations/import/gitlab'
+			const endpoint =
+				'/index.php/apps/openregister/api/configurations/import/gitlab'
 
 			try {
 				const response = await fetch(endpoint, {
@@ -409,7 +408,9 @@ export const useConfigurationStore = defineStore('configuration', {
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						errorData.error || `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				const data = await response.json()
@@ -425,7 +426,8 @@ export const useConfigurationStore = defineStore('configuration', {
 		 * @spec exclude Thin API passthrough — POST /api/configurations/import/url; observable contract owned by data-import-export.
 		 */
 		async importFromUrl(params) {
-			const endpoint = '/index.php/apps/openregister/api/configurations/import/url'
+			const endpoint =
+				'/index.php/apps/openregister/api/configurations/import/url'
 
 			try {
 				const response = await fetch(endpoint, {
@@ -438,7 +440,9 @@ export const useConfigurationStore = defineStore('configuration', {
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						errorData.error || `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				const data = await response.json()

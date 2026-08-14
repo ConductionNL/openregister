@@ -31,28 +31,24 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for QueryTimeContract.
  */
-class QueryTimeContractTest extends TestCase
-{
+class QueryTimeContractTest extends TestCase {
 
-    public function testRenderTimeoutMatchesContract(): void
-    {
-        $this->assertSame(2.0, QueryTimeContract::RENDER_TIMEOUT_SECONDS);
-    }//end testRenderTimeoutMatchesContract()
+	public function testRenderTimeoutMatchesContract(): void {
+		$this->assertSame(2.0, QueryTimeContract::RENDER_TIMEOUT_SECONDS);
+	}//end testRenderTimeoutMatchesContract()
 
-    public function testHttpStatusForNotImplementedIs501(): void
-    {
-        $this->assertSame(501, QueryTimeContract::HTTP_NOT_IMPLEMENTED);
-    }//end testHttpStatusForNotImplementedIs501()
+	public function testHttpStatusForNotImplementedIs501(): void {
+		$this->assertSame(501, QueryTimeContract::HTTP_NOT_IMPLEMENTED);
+	}//end testHttpStatusForNotImplementedIs501()
 
-    public function testBuildHttpBodyEnvelopesIntegrationId(): void
-    {
-        $exception = new NotImplementedException('Provider activity does not support create()');
-        $body      = QueryTimeContract::buildHttpBody($exception, 'activity');
+	public function testBuildHttpBodyEnvelopesIntegrationId(): void {
+		$exception = new NotImplementedException('Provider activity does not support create()');
+		$body = QueryTimeContract::buildHttpBody($exception, 'activity');
 
-        $this->assertSame('Provider activity does not support create()', $body['message']);
-        $this->assertSame(501, $body['code']);
-        $this->assertSame('activity', $body['details']['integration']);
-        $this->assertSame('query-time-storage-no-mutation', $body['details']['reason']);
-    }//end testBuildHttpBodyEnvelopesIntegrationId()
+		$this->assertSame('Provider activity does not support create()', $body['message']);
+		$this->assertSame(501, $body['code']);
+		$this->assertSame('activity', $body['details']['integration']);
+		$this->assertSame('query-time-storage-no-mutation', $body['details']['reason']);
+	}//end testBuildHttpBodyEnvelopesIntegrationId()
 
 }//end class

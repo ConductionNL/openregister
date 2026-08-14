@@ -55,235 +55,213 @@ use PHPUnit\Framework\TestCase;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class PollsProviderTest extends TestCase
-{
+class PollsProviderTest extends TestCase {
 
-    private function buildL10n(): IL10N
-    {
-        $mock = $this->createMock(IL10N::class);
-        $mock->method('t')->willReturnArgument(0);
-        return $mock;
-    }//end buildL10n()
+	private function buildL10n(): IL10N {
+		$mock = $this->createMock(IL10N::class);
+		$mock->method('t')->willReturnArgument(0);
+		return $mock;
+	}//end buildL10n()
 
+	private function buildAppManager(bool $installed): IAppManager {
+		$mock = $this->createMock(IAppManager::class);
+		$mock->method('isInstalled')->willReturn($installed);
+		return $mock;
+	}//end buildAppManager()
 
-    private function buildAppManager(bool $installed): IAppManager
-    {
-        $mock = $this->createMock(IAppManager::class);
-        $mock->method('isInstalled')->willReturn($installed);
-        return $mock;
-    }//end buildAppManager()
+	private function buildUserSession(?string $uid): IUserSession {
+		$session = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$session->method('getUser')->willReturn(null);
+			return $session;
+		}
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session->method('getUser')->willReturn($user);
+		return $session;
+	}//end buildUserSession()
 
+	/**
+	 * Build a query-builder mock that returns the supplied rows.
+	 *
+	 * @param array $rows Rows for `fetchAll()` / `fetch()` (first row).
+	 * @param mixed $singleValue Value for `fetchOne()`.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function buildQb(array $rows, $singleValue = 0): IQueryBuilder {
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('eq');
 
-    private function buildUserSession(?string $uid): IUserSession
-    {
-        $session = $this->createMock(IUserSession::class);
-        if ($uid === null) {
-            $session->method('getUser')->willReturn(null);
-            return $session;
-        }
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        $session->method('getUser')->willReturn($user);
-        return $session;
-    }//end buildUserSession()
+		$literal = $this->createMock(IQueryFunction::class);
+		$func = $this->createMock(IFunctionBuilder::class);
+		$func->method('count')->willReturn($literal);
 
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('selectDistinct')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('orderBy')->willReturnSelf();
+		$qb->method('createNamedParameter')->willReturn(':p');
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('func')->willReturn($func);
 
-    /**
-     * Build a query-builder mock that returns the supplied rows.
-     *
-     * @param array $rows        Rows for `fetchAll()` / `fetch()` (first row).
-     * @param mixed $singleValue Value for `fetchOne()`.
-     *
-     * @return IQueryBuilder
-     */
-    private function buildQb(array $rows, $singleValue = 0): IQueryBuilder
-    {
-        $expr = $this->createMock(IExpressionBuilder::class);
-        $expr->method('eq')->willReturn('eq');
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchAll')->willReturn($rows);
+		$result->method('fetch')->willReturn($rows === [] ? false : $rows[0]);
+		$result->method('fetchOne')->willReturn($singleValue);
+		$qb->method('executeQuery')->willReturn($result);
+		return $qb;
+	}//end buildQb()
 
-        $literal = $this->createMock(IQueryFunction::class);
-        $func    = $this->createMock(IFunctionBuilder::class);
-        $func->method('count')->willReturn($literal);
+	private function buildMapper(array $links): PollLinkMapper {
+		$mapper = $this->getMockBuilder(PollLinkMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['findByObjectUuid'])
+			->getMock();
+		$mapper->method('findByObjectUuid')->willReturn($links);
+		return $mapper;
+	}//end buildMapper()
 
-        $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('selectDistinct')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('where')->willReturnSelf();
-        $qb->method('andWhere')->willReturnSelf();
-        $qb->method('orderBy')->willReturnSelf();
-        $qb->method('createNamedParameter')->willReturn(':p');
-        $qb->method('expr')->willReturn($expr);
-        $qb->method('func')->willReturn($func);
+	public function testMetadata(): void {
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([]),
+			db: $this->createMock(IDBConnection::class),
+			appManager: $this->buildAppManager(true),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
 
-        $result = $this->createMock(IResult::class);
-        $result->method('fetchAll')->willReturn($rows);
-        $result->method('fetch')->willReturn($rows === [] ? false : $rows[0]);
-        $result->method('fetchOne')->willReturn($singleValue);
-        $qb->method('executeQuery')->willReturn($result);
-        return $qb;
-    }//end buildQb()
+		self::assertSame('polls', $provider->getId());
+		self::assertSame('Polls', $provider->getLabel());
+		self::assertSame('Poll', $provider->getIcon());
+		self::assertSame('workflow', $provider->getGroup());
+		self::assertSame('polls', $provider->getRequiredApp());
+		self::assertSame('link-table', $provider->getStorageStrategy());
+	}//end testMetadata()
 
+	public function testIsEnabledFalseWhenPollsMissing(): void {
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([]),
+			db: $this->createMock(IDBConnection::class),
+			appManager: $this->buildAppManager(false),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
+		self::assertFalse($provider->isEnabled());
+		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+	}//end testIsEnabledFalseWhenPollsMissing()
 
-    private function buildMapper(array $links): PollLinkMapper
-    {
-        $mapper = $this->getMockBuilder(PollLinkMapper::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['findByObjectUuid'])
-            ->getMock();
-        $mapper->method('findByObjectUuid')->willReturn($links);
-        return $mapper;
-    }//end buildMapper()
+	public function testListEmptyWhenNoLinks(): void {
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([]),
+			db: $this->createMock(IDBConnection::class),
+			appManager: $this->buildAppManager(true),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
 
+		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+	}//end testListEmptyWhenNoLinks()
 
-    public function testMetadata(): void
-    {
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([]),
-            db: $this->createMock(IDBConnection::class),
-            appManager: $this->buildAppManager(true),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
+	public function testListHappyPath(): void {
+		$uuid = 'abc-123';
+		$now = time();
+		$futureExpire = $now + 86400;
 
-        self::assertSame('polls', $provider->getId());
-        self::assertSame('Polls', $provider->getLabel());
-        self::assertSame('Poll', $provider->getIcon());
-        self::assertSame('workflow', $provider->getGroup());
-        self::assertSame('polls', $provider->getRequiredApp());
-        self::assertSame('link-table', $provider->getStorageStrategy());
-    }//end testMetadata()
+		$link = new PollLink();
+		$link->setPollId(42);
+		$link->setPollTitle('Lunch');
+		$link->setPollType('datePoll');
+		$link->setObjectUuid($uuid);
 
+		$pollRows = [
+			[
+				'id' => 42,
+				'title' => 'Lunch',
+				'description' => 'Pick a day',
+				'type' => 'datePoll',
+				'expire' => $futureExpire,
+			],
+		];
+		$optionRows = [
+			['id' => 100, 'poll_option_text' => 'Mon', 'poll_option_hash' => 'h-mon'],
+			['id' => 101, 'poll_option_text' => 'Tue', 'poll_option_hash' => 'h-tue'],
+		];
+		$voteRowsForVoters = [
+			['user_id' => 'alice'],
+			['user_id' => 'bob'],
+			['user_id' => 'carol'],
+		];
 
-    public function testIsEnabledFalseWhenPollsMissing(): void
-    {
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([]),
-            db: $this->createMock(IDBConnection::class),
-            appManager: $this->buildAppManager(false),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
-        self::assertFalse($provider->isEnabled());
-        self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
-    }//end testIsEnabledFalseWhenPollsMissing()
+		$qbPoll = $this->buildQb($pollRows);
+		$qbOptions = $this->buildQb($optionRows);
+		$qbVotesMon = $this->buildQb([], 3);
+		$qbVotesTue = $this->buildQb([], 1);
+		$qbVoters = $this->buildQb($voteRowsForVoters);
 
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnOnConsecutiveCalls(
+			$qbPoll,
+			$qbOptions,
+			$qbVotesMon,
+			$qbVotesTue,
+			$qbVoters
+		);
 
-    public function testListEmptyWhenNoLinks(): void
-    {
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([]),
-            db: $this->createMock(IDBConnection::class),
-            appManager: $this->buildAppManager(true),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([$link]),
+			db: $db,
+			appManager: $this->buildAppManager(true),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
 
-        self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
-    }//end testListEmptyWhenNoLinks()
+		$rows = $provider->list(register: 'r', schema: 's', objectId: $uuid);
+		self::assertCount(1, $rows);
 
+		$row = $rows[0];
+		self::assertSame('42', $row['id']);
+		self::assertSame(42, $row['pollId']);
+		self::assertSame('Lunch', $row['title']);
+		self::assertSame('datePoll', $row['type']);
+		self::assertSame('/index.php/apps/polls/vote/42', $row['url']);
+		self::assertSame($futureExpire, $row['deadline']);
+		self::assertFalse($row['closed']);
+		self::assertSame(3, $row['voterCount']);
+		self::assertCount(2, $row['options']);
+		self::assertSame('Mon', $row['options'][0]['text']);
+		self::assertSame(3, $row['options'][0]['votes']);
+		self::assertSame('Tue', $row['options'][1]['text']);
+		self::assertSame(1, $row['options'][1]['votes']);
+	}//end testListHappyPath()
 
-    public function testListHappyPath(): void
-    {
-        $uuid         = 'abc-123';
-        $now          = time();
-        $futureExpire = $now + 86400;
+	public function testHealthOk(): void {
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([]),
+			db: $this->createMock(IDBConnection::class),
+			appManager: $this->buildAppManager(true),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
+		$h = $provider->health();
+		self::assertSame('ok', $h['status']);
+		self::assertSame('configured', $h['authStatus']);
+		self::assertNull($h['message']);
+	}//end testHealthOk()
 
-        $link = new PollLink();
-        $link->setPollId(42);
-        $link->setPollTitle('Lunch');
-        $link->setPollType('datePoll');
-        $link->setObjectUuid($uuid);
-
-        $pollRows = [
-            [
-                'id'          => 42,
-                'title'       => 'Lunch',
-                'description' => 'Pick a day',
-                'type'        => 'datePoll',
-                'expire'      => $futureExpire,
-            ],
-        ];
-        $optionRows = [
-            ['id' => 100, 'poll_option_text' => 'Mon', 'poll_option_hash' => 'h-mon'],
-            ['id' => 101, 'poll_option_text' => 'Tue', 'poll_option_hash' => 'h-tue'],
-        ];
-        $voteRowsForVoters = [
-            ['user_id' => 'alice'],
-            ['user_id' => 'bob'],
-            ['user_id' => 'carol'],
-        ];
-
-        $qbPoll     = $this->buildQb($pollRows);
-        $qbOptions  = $this->buildQb($optionRows);
-        $qbVotesMon = $this->buildQb([], 3);
-        $qbVotesTue = $this->buildQb([], 1);
-        $qbVoters   = $this->buildQb($voteRowsForVoters);
-
-        $db = $this->createMock(IDBConnection::class);
-        $db->method('getQueryBuilder')->willReturnOnConsecutiveCalls(
-            $qbPoll,
-            $qbOptions,
-            $qbVotesMon,
-            $qbVotesTue,
-            $qbVoters
-        );
-
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([$link]),
-            db: $db,
-            appManager: $this->buildAppManager(true),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
-
-        $rows = $provider->list(register: 'r', schema: 's', objectId: $uuid);
-        self::assertCount(1, $rows);
-
-        $row = $rows[0];
-        self::assertSame('42', $row['id']);
-        self::assertSame(42, $row['pollId']);
-        self::assertSame('Lunch', $row['title']);
-        self::assertSame('datePoll', $row['type']);
-        self::assertSame('/index.php/apps/polls/vote/42', $row['url']);
-        self::assertSame($futureExpire, $row['deadline']);
-        self::assertFalse($row['closed']);
-        self::assertSame(3, $row['voterCount']);
-        self::assertCount(2, $row['options']);
-        self::assertSame('Mon', $row['options'][0]['text']);
-        self::assertSame(3, $row['options'][0]['votes']);
-        self::assertSame('Tue', $row['options'][1]['text']);
-        self::assertSame(1, $row['options'][1]['votes']);
-    }//end testListHappyPath()
-
-
-    public function testHealthOk(): void
-    {
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([]),
-            db: $this->createMock(IDBConnection::class),
-            appManager: $this->buildAppManager(true),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
-        $h = $provider->health();
-        self::assertSame('ok', $h['status']);
-        self::assertSame('configured', $h['authStatus']);
-        self::assertNull($h['message']);
-    }//end testHealthOk()
-
-
-    public function testHealthUnavailable(): void
-    {
-        $provider = new PollsProvider(
-            pollLinkMapper: $this->buildMapper([]),
-            db: $this->createMock(IDBConnection::class),
-            appManager: $this->buildAppManager(false),
-            userSession: $this->buildUserSession('admin'),
-            l10n: $this->buildL10n()
-        );
-        $h = $provider->health();
-        self::assertSame('unavailable', $h['status']);
-        self::assertNotNull($h['message']);
-    }//end testHealthUnavailable()
+	public function testHealthUnavailable(): void {
+		$provider = new PollsProvider(
+			pollLinkMapper: $this->buildMapper([]),
+			db: $this->createMock(IDBConnection::class),
+			appManager: $this->buildAppManager(false),
+			userSession: $this->buildUserSession('admin'),
+			l10n: $this->buildL10n()
+		);
+		$h = $provider->health();
+		self::assertSame('unavailable', $h['status']);
+		self::assertNotNull($h['message']);
+	}//end testHealthUnavailable()
 }//end class

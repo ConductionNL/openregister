@@ -48,146 +48,132 @@ use JsonSerializable;
 /**
  * A mutable bag of run-level values, shared by reference across a run's steps.
  */
-final class FlowToken implements JsonSerializable
-{
+final class FlowToken implements JsonSerializable {
 
-    /**
-     * The context key the token is reachable at.
-     *
-     * @var string
-     */
-    public const CONTEXT_KEY = 'token';
+	/**
+	 * The context key the token is reachable at.
+	 *
+	 * @var string
+	 */
+	public const CONTEXT_KEY = 'token';
 
-    /**
-     * The values held by this token.
-     *
-     * @var array<string, mixed>
-     */
-    private array $values = [];
+	/**
+	 * The values held by this token.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $values = [];
 
-    /**
-     * Build a token over a set of values.
-     *
-     * @param array<string, mixed> $values The initial values.
-     */
-    public function __construct(array $values=[])
-    {
-        $this->values = $values;
+	/**
+	 * Build a token over a set of values.
+	 *
+	 * @param array<string, mixed> $values The initial values.
+	 */
+	public function __construct(array $values = []) {
+		$this->values = $values;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Read a value.
-     *
-     * @param string $key     The value's key.
-     * @param mixed  $default Returned when the key is not held.
-     *
-     * @return mixed The held value, or the default.
-     */
-    public function get(string $key, mixed $default=null): mixed
-    {
-        return ($this->values[$key] ?? $default);
+	/**
+	 * Read a value.
+	 *
+	 * @param string $key The value's key.
+	 * @param mixed $default Returned when the key is not held.
+	 *
+	 * @return mixed The held value, or the default.
+	 */
+	public function get(string $key, mixed $default = null): mixed {
+		return ($this->values[$key] ?? $default);
+	}//end get()
 
-    }//end get()
+	/**
+	 * Write a value.
+	 *
+	 * @param string $key The value's key.
+	 * @param mixed $value The value to hold.
+	 *
+	 * @return void
+	 */
+	public function set(string $key, mixed $value): void {
+		$this->values[$key] = $value;
 
-    /**
-     * Write a value.
-     *
-     * @param string $key   The value's key.
-     * @param mixed  $value The value to hold.
-     *
-     * @return void
-     */
-    public function set(string $key, mixed $value): void
-    {
-        $this->values[$key] = $value;
+	}//end set()
 
-    }//end set()
+	/**
+	 * Whether a key is held.
+	 *
+	 * @param string $key The value's key.
+	 *
+	 * @return boolean Whether the key is held.
+	 */
+	public function has(string $key): bool {
+		return array_key_exists($key, $this->values);
+	}//end has()
 
-    /**
-     * Whether a key is held.
-     *
-     * @param string $key The value's key.
-     *
-     * @return boolean Whether the key is held.
-     */
-    public function has(string $key): bool
-    {
-        return array_key_exists($key, $this->values);
+	/**
+	 * Every value held.
+	 *
+	 * @return array<string, mixed> The values.
+	 */
+	public function all(): array {
+		return $this->values;
+	}//end all()
 
-    }//end has()
+	/**
+	 * Merge another set of values in, the incoming values winning on conflict.
+	 *
+	 * This is what a waited-on sub-flow's return uses: the child ran later and
+	 * is the more specific writer, so where both hold a key the child's value
+	 * is the one that survives.
+	 *
+	 * @param array<string, mixed> $values The values to merge in.
+	 *
+	 * @return void
+	 */
+	public function merge(array $values): void {
+		$this->values = array_merge($this->values, $values);
 
-    /**
-     * Every value held.
-     *
-     * @return array<string, mixed> The values.
-     */
-    public function all(): array
-    {
-        return $this->values;
+	}//end merge()
 
-    }//end all()
+	/**
+	 * Build a token from whatever a stored context happens to hold.
+	 *
+	 * Deliberately total: a run persisted before tokens existed holds nothing, a
+	 * corrupted column holds a scalar, and a run being handed straight back holds
+	 * an object already. None of those is a reason to fail a run, so each
+	 * resolves to a usable token.
+	 *
+	 * @param mixed $stored The stored value, of any shape.
+	 *
+	 * @return self The token.
+	 */
+	public static function fromArray(mixed $stored): self {
+		if ($stored instanceof self === true) {
+			return $stored;
+		}
 
-    /**
-     * Merge another set of values in, the incoming values winning on conflict.
-     *
-     * This is what a waited-on sub-flow's return uses: the child ran later and
-     * is the more specific writer, so where both hold a key the child's value
-     * is the one that survives.
-     *
-     * @param array<string, mixed> $values The values to merge in.
-     *
-     * @return void
-     */
-    public function merge(array $values): void
-    {
-        $this->values = array_merge($this->values, $values);
+		if (is_array($stored) === false) {
+			return new self();
+		}
 
-    }//end merge()
+		// A JSON round trip turns a list into an array with integer keys, which
+		// is not a value bag; only string-keyed entries are meaningful here.
+		$values = [];
+		foreach ($stored as $key => $value) {
+			if (is_string($key) === true) {
+				$values[$key] = $value;
+			}
+		}
 
-    /**
-     * Build a token from whatever a stored context happens to hold.
-     *
-     * Deliberately total: a run persisted before tokens existed holds nothing, a
-     * corrupted column holds a scalar, and a run being handed straight back holds
-     * an object already. None of those is a reason to fail a run, so each
-     * resolves to a usable token.
-     *
-     * @param mixed $stored The stored value, of any shape.
-     *
-     * @return self The token.
-     */
-    public static function fromArray(mixed $stored): self
-    {
-        if ($stored instanceof self === true) {
-            return $stored;
-        }
+		return new self($values);
+	}//end fromArray()
 
-        if (is_array($stored) === false) {
-            return new self();
-        }
-
-        // A JSON round trip turns a list into an array with integer keys, which
-        // is not a value bag; only string-keyed entries are meaningful here.
-        $values = [];
-        foreach ($stored as $key => $value) {
-            if (is_string($key) === true) {
-                $values[$key] = $value;
-            }
-        }
-
-        return new self($values);
-
-    }//end fromArray()
-
-    /**
-     * The storable form.
-     *
-     * @return array<string, mixed> The values.
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->values;
-
-    }//end jsonSerialize()
+	/**
+	 * The storable form.
+	 *
+	 * @return array<string, mixed> The values.
+	 */
+	public function jsonSerialize(): array {
+		return $this->values;
+	}//end jsonSerialize()
 }//end class

@@ -38,35 +38,33 @@ use JsonSerializable;
 /**
  * Structured representation of a parsed EML message.
  */
-final class EmlStructure implements JsonSerializable
-{
-    /**
-     * Constructor.
-     *
-     * @param array<string, mixed>      $headers     Decoded headers.
-     * @param EmlBody                   $body        Body value object.
-     * @param array<int, EmlAttachment> $attachments Attachments in multipart order.
-     */
-    public function __construct(
-        public readonly array $headers,
-        public readonly EmlBody $body,
-        public readonly array $attachments,
-    ) {
-    }//end __construct()
+final class EmlStructure implements JsonSerializable {
+	/**
+	 * Constructor.
+	 *
+	 * @param array<string, mixed> $headers Decoded headers.
+	 * @param EmlBody $body Body value object.
+	 * @param array<int, EmlAttachment> $attachments Attachments in multipart order.
+	 */
+	public function __construct(
+		public readonly array $headers,
+		public readonly EmlBody $body,
+		public readonly array $attachments,
+	) {
+	}//end __construct()
 
-    /**
-     * JSON serialisation.
-     *
-     * @return array{headers: array, body: EmlBody, attachments: array<int, EmlAttachment>}
-     *
-     * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'headers'     => $this->headers,
-            'body'        => $this->body,
-            'attachments' => $this->attachments,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array{headers: array, body: EmlBody, attachments: array<int, EmlAttachment>}
+	 *
+	 * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'headers' => $this->headers,
+			'body' => $this->body,
+			'attachments' => $this->attachments,
+		];
+	}//end jsonSerialize()
 }//end class

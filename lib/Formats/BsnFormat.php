@@ -24,59 +24,57 @@ namespace OCA\OpenRegister\Formats;
 
 use Opis\JsonSchema\Format;
 
-class BsnFormat implements Format
-{
-    /**
-     * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
-     *
-     * @param mixed $data The data to validate against the BSN format.
-     *
-     * @inheritDoc
-     *
-     * @return bool True if data is a valid BSN, false otherwise.
-     *
-     * @spec openspec/specs/data-import-export/spec.md
-     */
-    public function validate(mixed $data): bool
-    {
-        // Reject over-length input before padding: str_pad only left-pads and
-        // never truncates, so a >9-digit value would otherwise be checksummed
-        // on a miscalculated weighting (ADR-008 Rule 4).
-        if (strlen((string) $data) > 9) {
-            return false;
-        }
+class BsnFormat implements Format {
+	/**
+	 * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
+	 *
+	 * @param mixed $data The data to validate against the BSN format.
+	 *
+	 * @inheritDoc
+	 *
+	 * @return bool True if data is a valid BSN, false otherwise.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function validate(mixed $data): bool {
+		// Reject over-length input before padding: str_pad only left-pads and
+		// never truncates, so a >9-digit value would otherwise be checksummed
+		// on a miscalculated weighting (ADR-008 Rule 4).
+		if (strlen((string)$data) > 9) {
+			return false;
+		}
 
-        $data = str_pad(
-            string: $data,
-            length:9,
-            pad_string: "0",
-            pad_type: STR_PAD_LEFT,
-        );
+		$data = str_pad(
+			string: $data,
+			length:9,
+			pad_string: '0',
+			pad_type: STR_PAD_LEFT,
+		);
 
-        if (ctype_digit($data) === false) {
-            return false;
-        }
+		if (ctype_digit($data) === false) {
+			return false;
+		}
 
-        // Reject the all-zero sentinel: it passes the modulo-11 checksum
-        // (0 % 11 === 0) but is not a real BSN, and empty/null input pads to it
-        // (ADR-008 Rule 4).
-        if ($data === '000000000') {
-            return false;
-        }
+		// Reject the all-zero sentinel: it passes the modulo-11 checksum
+		// (0 % 11 === 0) but is not a real BSN, and empty/null input pads to it
+		// (ADR-008 Rule 4).
+		if ($data === '000000000') {
+			return false;
+		}
 
-        $control          = 0;
-        $reversedIterator = 9;
-        foreach (str_split($data) as $character) {
-            // Calculate the multiplier based on position.
-            $multiplier = -1;
-            if ($reversedIterator > 1) {
-                $multiplier = $reversedIterator;
-            }
+		$control = 0;
+		$reversedIterator = 9;
+		foreach (str_split($data) as $character) {
+			// Calculate the multiplier based on position.
+			$multiplier = -1;
+			if ($reversedIterator > 1) {
+				$multiplier = $reversedIterator;
+			}
 
-            $control += ((int) $character * $multiplier);
-            $reversedIterator--;
-        }
+			$control += ((int)$character * $multiplier);
+			$reversedIterator--;
+		}
 
-        return ($control % 11) === 0;
-    }//end validate()
+		return ($control % 11) === 0;
+	}//end validate()
 }//end class

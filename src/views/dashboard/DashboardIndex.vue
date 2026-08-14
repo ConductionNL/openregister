@@ -1,6 +1,12 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectStore } from '../../store/store.js'
+import {
+	dashboardStore,
+	searchTrailStore,
+	registerStore,
+	schemaStore,
+	objectStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -15,7 +21,8 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 			@layout-change="onLayoutChange">
 			<!-- Header actions -->
 			<template #actions>
-				<NcButton :disabled="refreshing"
+				<NcButton
+					:disabled="refreshing"
 					:aria-label="t('openregister', 'Refresh dashboard')"
 					@click="refreshDashboard">
 					<template #icon>
@@ -32,9 +39,17 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						<CubeOutline :size="24" />
 					</div>
 					<div class="kpi-content">
-						<span class="kpi-label">{{ t('openregister', 'Objects') }}</span>
-						<span class="kpi-value">{{ totalObjects.toLocaleString() }}</span>
-						<span v-if="totalRegisters > 0" class="kpi-sub">{{ t('openregister', 'across {count} registers', { count: totalRegisters.toLocaleString() }) }}</span>
+						<span class="kpi-label">{{
+							t('openregister', 'Objects')
+						}}</span>
+						<span class="kpi-value">{{
+							totalObjects.toLocaleString()
+						}}</span>
+						<span v-if="totalRegisters > 0" class="kpi-sub">{{
+							t('openregister', 'across {count} registers', {
+								count: totalRegisters.toLocaleString(),
+							})
+						}}</span>
 					</div>
 				</div>
 			</template>
@@ -46,8 +61,12 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						<DatabaseOutline :size="24" />
 					</div>
 					<div class="kpi-content">
-						<span class="kpi-label">{{ t('openregister', 'Registers') }}</span>
-						<span class="kpi-value">{{ totalRegisters.toLocaleString() }}</span>
+						<span class="kpi-label">{{
+							t('openregister', 'Registers')
+						}}</span>
+						<span class="kpi-value">{{
+							totalRegisters.toLocaleString()
+						}}</span>
 					</div>
 				</div>
 			</template>
@@ -59,8 +78,12 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						<FileTreeOutline :size="24" />
 					</div>
 					<div class="kpi-content">
-						<span class="kpi-label">{{ t('openregister', 'Schemas') }}</span>
-						<span class="kpi-value">{{ totalSchemas.toLocaleString() }}</span>
+						<span class="kpi-label">{{
+							t('openregister', 'Schemas')
+						}}</span>
+						<span class="kpi-value">{{
+							totalSchemas.toLocaleString()
+						}}</span>
 					</div>
 				</div>
 			</template>
@@ -72,16 +95,30 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						<Magnify :size="24" />
 					</div>
 					<div class="kpi-content">
-						<span class="kpi-label">{{ t('openregister', 'Searches') }}</span>
-						<span class="kpi-value">{{ totalSearches.toLocaleString() }}</span>
-						<span v-if="totalSearches > 0" class="kpi-sub">{{ t('openregister', '{pct}% success rate', { pct: (searchTrailStore.statistics.successRate * 100).toFixed(0) }) }}</span>
+						<span class="kpi-label">{{
+							t('openregister', 'Searches')
+						}}</span>
+						<span class="kpi-value">{{
+							totalSearches.toLocaleString()
+						}}</span>
+						<span v-if="totalSearches > 0" class="kpi-sub">{{
+							t('openregister', '{pct}% success rate', {
+								pct: (
+									searchTrailStore.statistics.successRate * 100
+								).toFixed(0),
+							})
+						}}</span>
 					</div>
 					<div class="kpi-chip">
-						<NcActions :force-menu="true" container="body" :menu-title="t('openregister', 'Change date range')">
+						<NcActions
+							:force-menu="true"
+							container="body"
+							:menu-title="t('openregister', 'Change date range')">
 							<template #icon>
 								<span class="kpi-chip-label">{{ rangeText }}</span>
 							</template>
-							<NcActionButton v-for="preset in rangePresets"
+							<NcActionButton
+								v-for="preset in rangePresets"
 								:key="preset.id"
 								:close-after-click="true"
 								@click="pickRange(preset.id)">
@@ -102,15 +139,23 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						<History :size="24" />
 					</div>
 					<div class="kpi-content">
-						<span class="kpi-label">{{ t('openregister', 'Events') }}</span>
-						<span class="kpi-value">{{ totalEventsInRange.toLocaleString() }}</span>
+						<span class="kpi-label">{{
+							t('openregister', 'Events')
+						}}</span>
+						<span class="kpi-value">{{
+							totalEventsInRange.toLocaleString()
+						}}</span>
 					</div>
 					<div class="kpi-chip">
-						<NcActions :force-menu="true" container="body" :menu-title="t('openregister', 'Change date range')">
+						<NcActions
+							:force-menu="true"
+							container="body"
+							:menu-title="t('openregister', 'Change date range')">
 							<template #icon>
 								<span class="kpi-chip-label">{{ rangeText }}</span>
 							</template>
-							<NcActionButton v-for="preset in rangePresets"
+							<NcActionButton
+								v-for="preset in rangePresets"
 								:key="preset.id"
 								:close-after-click="true"
 								@click="pickRange(preset.id)">
@@ -126,10 +171,13 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 
 			<!-- Popular Search Terms widget -->
 			<template #widget-popular-terms>
-				<div v-if="searchTrailStore.popularTerms.length === 0" class="widget-empty">
+				<div
+					v-if="searchTrailStore.popularTerms.length === 0"
+					class="widget-empty">
 					{{ t('openregister', 'No search terms data available') }}
 				</div>
-				<CnDataTable v-else
+				<CnDataTable
+					v-else
 					:columns="popularTermsColumns"
 					:rows="searchTrailStore.popularTerms"
 					borderless
@@ -141,7 +189,8 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 				<div v-if="registerData.length === 0" class="widget-empty">
 					{{ t('openregister', 'No register data available') }}
 				</div>
-				<CnDataTable v-else
+				<CnDataTable
+					v-else
 					:columns="objectsByColumns(t('openregister', 'Register'))"
 					:rows="registerData"
 					borderless
@@ -153,7 +202,8 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 				<div v-if="schemaData.length === 0" class="widget-empty">
 					{{ t('openregister', 'No schema data available') }}
 				</div>
-				<CnDataTable v-else
+				<CnDataTable
+					v-else
 					:columns="objectsByColumns(t('openregister', 'Schema'))"
 					:rows="schemaData"
 					borderless
@@ -167,7 +217,7 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 						type="pie"
 						height="260"
 						:options="objectsChartOptions"
-						:series="registerData.map(r => r.count)" />
+						:series="registerData.map((r) => r.count)" />
 				</div>
 				<div v-else class="widget-empty">
 					{{ t('openregister', 'No data available for chart') }}
@@ -178,7 +228,13 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcButton,
+	NcLoadingIcon,
+	NcActions,
+	NcActionButton,
+} from '@nextcloud/vue'
 import { CnDashboardPage, CnDataTable } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue3-apexcharts'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -191,16 +247,87 @@ import CalendarRange from 'vue-material-design-icons/CalendarRange.vue'
 
 const DEFAULT_LAYOUT = [
 	// Row 1 — structural totals (point-in-time).
-	{ id: 1, widgetId: 'count-objects', gridX: 0, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-	{ id: 2, widgetId: 'count-registers', gridX: 4, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-	{ id: 3, widgetId: 'count-schemas', gridX: 8, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
+	{
+		id: 1,
+		widgetId: 'count-objects',
+		gridX: 0,
+		gridY: 0,
+		gridWidth: 4,
+		gridHeight: 2,
+		showTitle: false,
+	},
+	{
+		id: 2,
+		widgetId: 'count-registers',
+		gridX: 4,
+		gridY: 0,
+		gridWidth: 4,
+		gridHeight: 2,
+		showTitle: false,
+	},
+	{
+		id: 3,
+		widgetId: 'count-schemas',
+		gridX: 8,
+		gridY: 0,
+		gridWidth: 4,
+		gridHeight: 2,
+		showTitle: false,
+	},
 	// Row 2 — activity over the selected date range (range-driven, carry a pill).
-	{ id: 4, widgetId: 'count-searches', gridX: 0, gridY: 2, gridWidth: 6, gridHeight: 2, showTitle: false },
-	{ id: 5, widgetId: 'count-events', gridX: 6, gridY: 2, gridWidth: 6, gridHeight: 2, showTitle: false },
-	{ id: 6, widgetId: 'popular-terms', gridX: 0, gridY: 4, gridWidth: 6, gridHeight: 4, flush: true },
-	{ id: 7, widgetId: 'objects-by-register', gridX: 6, gridY: 4, gridWidth: 6, gridHeight: 4, flush: true },
-	{ id: 8, widgetId: 'objects-by-schema', gridX: 0, gridY: 8, gridWidth: 6, gridHeight: 4, flush: true },
-	{ id: 9, widgetId: 'objects-chart', gridX: 6, gridY: 8, gridWidth: 6, gridHeight: 4 },
+	{
+		id: 4,
+		widgetId: 'count-searches',
+		gridX: 0,
+		gridY: 2,
+		gridWidth: 6,
+		gridHeight: 2,
+		showTitle: false,
+	},
+	{
+		id: 5,
+		widgetId: 'count-events',
+		gridX: 6,
+		gridY: 2,
+		gridWidth: 6,
+		gridHeight: 2,
+		showTitle: false,
+	},
+	{
+		id: 6,
+		widgetId: 'popular-terms',
+		gridX: 0,
+		gridY: 4,
+		gridWidth: 6,
+		gridHeight: 4,
+		flush: true,
+	},
+	{
+		id: 7,
+		widgetId: 'objects-by-register',
+		gridX: 6,
+		gridY: 4,
+		gridWidth: 6,
+		gridHeight: 4,
+		flush: true,
+	},
+	{
+		id: 8,
+		widgetId: 'objects-by-schema',
+		gridX: 0,
+		gridY: 8,
+		gridWidth: 6,
+		gridHeight: 4,
+		flush: true,
+	},
+	{
+		id: 9,
+		widgetId: 'objects-chart',
+		gridX: 6,
+		gridY: 8,
+		gridWidth: 6,
+		gridHeight: 4,
+	},
 ]
 
 /**
@@ -237,7 +364,7 @@ const LIVE_REFETCH_DEBOUNCE_MS = 750
  * @return {{from: (string|null), till: (string|null)}} The resolved window.
  */
 function resolvePresetWindow(presetId) {
-	const preset = RANGE_PRESETS.find(p => p.id === presetId) || RANGE_PRESETS[0]
+	const preset = RANGE_PRESETS.find((p) => p.id === presetId) || RANGE_PRESETS[0]
 	if (preset.days === null) return { from: null, till: null }
 	const iso = (d) => d.toISOString().slice(0, 10)
 	const till = new Date()
@@ -295,7 +422,7 @@ export default {
 		liveCollectionType() {
 			const registerId = registerStore.registerItem?.id
 			const schemaId = schemaStore.schemaItem?.id
-			return (registerId && schemaId) ? `${registerId}-${schemaId}` : ''
+			return registerId && schemaId ? `${registerId}-${schemaId}` : ''
 		},
 		/**
 		 * @spec exclude Derived client-state — mirrors the object store's liveLastEventAt diagnostic so the Options-API watcher below can react to live events.
@@ -310,9 +437,11 @@ export default {
 		 * @return {boolean}
 		 */
 		hasData() {
-			return searchTrailStore.statistics.total > 0
+			return (
+				searchTrailStore.statistics.total > 0
 				|| this.registerData.length > 0
 				|| this.totalObjects > 0
+			)
 		},
 		/**
 		 * Total number of objects across all registers (from System Totals).
@@ -356,7 +485,9 @@ export default {
 		},
 		/** @return {string} Compact label for the active KPI range. */
 		rangeText() {
-			const preset = RANGE_PRESETS.find(p => p.id === this.kpiRange.preset) || RANGE_PRESETS[0]
+			const preset =
+				RANGE_PRESETS.find((p) => p.id === this.kpiRange.preset)
+				|| RANGE_PRESETS[0]
 			return t('openregister', preset.label)
 		},
 		/**
@@ -381,7 +512,14 @@ export default {
 			}
 			const series = dashboardStore.chartData.auditTrailActions?.series
 			if (!Array.isArray(series)) return 0
-			return series.reduce((sum, s) => sum + (Array.isArray(s.data) ? s.data.reduce((a, b) => a + (b || 0), 0) : 0), 0)
+			return series.reduce(
+				(sum, s) =>
+					sum
+					+ (Array.isArray(s.data)
+						? s.data.reduce((a, b) => a + (b || 0), 0)
+						: 0),
+				0,
+			)
 		},
 		/**
 		 * Objects-by-register chart rows mapped from store chart data.
@@ -420,15 +558,17 @@ export default {
 		objectsChartOptions() {
 			return {
 				chart: { type: 'pie' },
-				labels: this.registerData.map(r => r.label),
+				labels: this.registerData.map((r) => r.label),
 				legend: { position: 'bottom' },
-				responsive: [{
-					breakpoint: 480,
-					options: {
-						chart: { width: 200 },
-						legend: { position: 'bottom' },
+				responsive: [
+					{
+						breakpoint: 480,
+						options: {
+							chart: { width: 200 },
+							legend: { position: 'bottom' },
+						},
 					},
-				}],
+				],
 			}
 		},
 		/**
@@ -439,8 +579,17 @@ export default {
 		 */
 		popularTermsColumns() {
 			return [
-				{ key: 'term', label: t('openregister', 'Search Term'), sortable: true },
-				{ key: 'count', label: t('openregister', 'Count'), sortable: true, align: 'right' },
+				{
+					key: 'term',
+					label: t('openregister', 'Search Term'),
+					sortable: true,
+				},
+				{
+					key: 'count',
+					label: t('openregister', 'Count'),
+					sortable: true,
+					align: 'right',
+				},
 				{ key: 'effectiveness', label: t('openregister', 'Effectiveness') },
 			]
 		},
@@ -452,15 +601,54 @@ export default {
 		 */
 		widgetDefs() {
 			return [
-				{ id: 'count-objects', title: t('openregister', 'Objects'), type: 'custom' },
-				{ id: 'count-registers', title: t('openregister', 'Registers'), type: 'custom' },
-				{ id: 'count-schemas', title: t('openregister', 'Schemas'), type: 'custom' },
-				{ id: 'count-searches', title: t('openregister', 'Searches'), type: 'custom' },
-				{ id: 'count-events', title: t('openregister', 'Events'), type: 'custom' },
-				{ id: 'popular-terms', title: t('openregister', 'Popular Search Terms'), type: 'custom', flush: true },
-				{ id: 'objects-by-register', title: t('openregister', 'Objects by Register'), type: 'custom', flush: true },
-				{ id: 'objects-by-schema', title: t('openregister', 'Objects by Schema'), type: 'custom', flush: true },
-				{ id: 'objects-chart', title: t('openregister', 'Objects Distribution'), type: 'custom' },
+				{
+					id: 'count-objects',
+					title: t('openregister', 'Objects'),
+					type: 'custom',
+				},
+				{
+					id: 'count-registers',
+					title: t('openregister', 'Registers'),
+					type: 'custom',
+				},
+				{
+					id: 'count-schemas',
+					title: t('openregister', 'Schemas'),
+					type: 'custom',
+				},
+				{
+					id: 'count-searches',
+					title: t('openregister', 'Searches'),
+					type: 'custom',
+				},
+				{
+					id: 'count-events',
+					title: t('openregister', 'Events'),
+					type: 'custom',
+				},
+				{
+					id: 'popular-terms',
+					title: t('openregister', 'Popular Search Terms'),
+					type: 'custom',
+					flush: true,
+				},
+				{
+					id: 'objects-by-register',
+					title: t('openregister', 'Objects by Register'),
+					type: 'custom',
+					flush: true,
+				},
+				{
+					id: 'objects-by-schema',
+					title: t('openregister', 'Objects by Schema'),
+					type: 'custom',
+					flush: true,
+				},
+				{
+					id: 'objects-chart',
+					title: t('openregister', 'Objects Distribution'),
+					type: 'custom',
+				},
 			]
 		},
 	},
@@ -588,7 +776,10 @@ export default {
 				}
 				this.liveHandle = null
 				this.liveType = ''
-				console.warn('[DashboardIndex] live subscription failed:', e?.message ?? e)
+				console.warn(
+					'[DashboardIndex] live subscription failed:',
+					e?.message ?? e,
+				)
 			}
 		},
 		/**
@@ -649,7 +840,10 @@ export default {
 			} catch (e) {
 				// Refetch hint failed — the widgets keep their last state and
 				// the next event (or manual refresh) tries again.
-				console.warn('[DashboardIndex] live refetch failed:', e?.message ?? e)
+				console.warn(
+					'[DashboardIndex] live refetch failed:',
+					e?.message ?? e,
+				)
 			}
 		},
 		/**
@@ -681,7 +875,10 @@ export default {
 		 */
 		async loadSearchTrailData() {
 			try {
-				await searchTrailStore.fetchStatistics({ from: this.kpiRange.from, to: this.kpiRange.till })
+				await searchTrailStore.fetchStatistics({
+					from: this.kpiRange.from,
+					to: this.kpiRange.till,
+				})
 				await searchTrailStore.fetchPopularTerms()
 			} catch (error) {
 				console.error('Error loading search trail data:', error)
@@ -700,9 +897,13 @@ export default {
 				const raw = localStorage.getItem(RANGE_PERSIST_KEY)
 				if (!raw) return
 				const stored = JSON.parse(raw)
-				if (stored && RANGE_PRESETS.some(p => p.id === stored.preset)) {
+				if (stored && RANGE_PRESETS.some((p) => p.id === stored.preset)) {
 					const win = resolvePresetWindow(stored.preset)
-					this.kpiRange = { from: win.from, till: win.till, preset: stored.preset }
+					this.kpiRange = {
+						from: win.from,
+						till: win.till,
+						preset: stored.preset,
+					}
 				}
 			} catch (e) {
 				// Non-fatal (private window / quota / corrupt value) — keep default.
@@ -720,7 +921,10 @@ export default {
 			const win = resolvePresetWindow(presetId)
 			this.kpiRange = { from: win.from, till: win.till, preset: presetId }
 			try {
-				localStorage.setItem(RANGE_PERSIST_KEY, JSON.stringify({ preset: presetId }))
+				localStorage.setItem(
+					RANGE_PERSIST_KEY,
+					JSON.stringify({ preset: presetId }),
+				)
 			} catch (e) {
 				// Non-fatal — in-memory range still applied.
 			}
@@ -769,7 +973,12 @@ export default {
 		objectsByColumns(label) {
 			return [
 				{ key: 'label', label, sortable: true },
-				{ key: 'count', label: t('openregister', 'Objects'), sortable: true, align: 'right' },
+				{
+					key: 'count',
+					label: t('openregister', 'Objects'),
+					sortable: true,
+					align: 'right',
+				},
 			]
 		},
 		/**
@@ -780,7 +989,9 @@ export default {
 		 * @return {void}
 		 */
 		onRegisterRowClick(row) {
-			const match = (registerStore.registerList || []).find(r => r.title === row.label || r.name === row.label)
+			const match = (registerStore.registerList || []).find(
+				(r) => r.title === row.label || r.name === row.label,
+			)
 			if (match?.id) {
 				this.$router.push(`/registers/${match.id}`).catch(() => {})
 			}
@@ -793,7 +1004,9 @@ export default {
 		 * @return {void}
 		 */
 		onSchemaRowClick(row) {
-			const match = (schemaStore.schemaList || []).find(s => s.title === row.label || s.name === row.label)
+			const match = (schemaStore.schemaList || []).find(
+				(s) => s.title === row.label || s.name === row.label,
+			)
 			if (match?.id) {
 				this.$router.push(`/schemas/${match.id}`).catch(() => {})
 			}
@@ -806,7 +1019,10 @@ export default {
 		 * @return {void}
 		 */
 		onPopularTermClick(row) {
-			this.$router.push({ path: '/search-trails', query: { search: row.term } })
+			this.$router.push({
+				path: '/search-trails',
+				query: { search: row.term },
+			})
 		},
 	},
 }

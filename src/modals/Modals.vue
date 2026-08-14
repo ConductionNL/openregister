@@ -43,7 +43,8 @@ import { navigationStore } from '../store/store.js'
 	<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
 	<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
 	<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
-	<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
+	<ManageOrganisationRoles
+		v-if="navigationStore.modal === 'manageOrganisationRoles'" />
 	<EditApplication v-if="navigationStore.modal === 'editApplication'" />
 	<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
 	<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />

@@ -8,7 +8,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<CnIndexPage
 			ref="indexPage"
 			:title="t('openregister', 'Organisations')"
-			:description="t('openregister', 'Manage your organisations and switch between them')"
+			:description="
+				t(
+					'openregister',
+					'Manage your organisations and switch between them',
+				)
+			"
 			:show-title="true"
 			:objects="paginatedOrganisations"
 			:columns="tableColumns"
@@ -37,15 +42,24 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			@select="onSelect">
 			<!-- Active Organisation Status -->
 			<template #below-header>
-				<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
+				<div
+					v-if="organisationStore.userStats.active"
+					class="activeOrgBanner">
 					<div class="activeOrgInfo">
-						<span class="activeOrgLabel">{{ t('openregister', 'Active Organisation:') }}</span>
-						<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
-						<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
+						<span class="activeOrgLabel">{{
+							t('openregister', 'Active Organisation:')
+						}}</span>
+						<span class="activeOrgName">{{
+							organisationStore.userStats.active.name
+						}}</span>
+						<span
+							v-if="organisationStore.userStats.active.isDefault"
+							class="defaultBadge">
 							{{ t('openregister', 'Default') }}
 						</span>
 					</div>
-					<NcButton v-if="organisationStore.userStats.total > 1"
+					<NcButton
+						v-if="organisationStore.userStats.total > 1"
 						variant="secondary"
 						@click="showOrganisationSwitcher = true">
 						<template #icon>
@@ -70,26 +84,38 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<div class="card" :class="{ 'active-org-card': isActiveOrganisation(object) }">
+				<div
+					class="card"
+					:class="{ 'active-org-card': isActiveOrganisation(object) }">
 					<div class="cardHeader">
 						<h2>
 							<OfficeBuilding :size="20" />
 							{{ object.name }}
-							<span v-if="object.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-							<span v-if="isActiveOrganisation(object)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
+							<span v-if="object.isDefault" class="defaultBadge">{{
+								t('openregister', 'Default')
+							}}</span>
+							<span
+								v-if="isActiveOrganisation(object)"
+								class="activeBadge"
+								>{{ t('openregister', 'Active') }}</span
+							>
 						</h2>
-						<NcActions :primary="true" :menu-name="t('openregister', 'Actions')">
+						<NcActions
+							:primary="true"
+							:menu-name="t('openregister', 'Actions')">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click
+							<NcActionButton
+								close-after-click
 								@click="viewOrganisation(object)">
 								<template #icon>
 									<Eye :size="20" />
 								</template>
 								{{ t('openregister', 'View') }}
 							</NcActionButton>
-							<NcActionButton v-if="!isActiveOrganisation(object)"
+							<NcActionButton
+								v-if="!isActiveOrganisation(object)"
 								close-after-click
 								@click="setActiveOrganisation(object.uuid)">
 								<template #icon>
@@ -97,7 +123,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openregister', 'Set as Active') }}
 							</NcActionButton>
-							<NcActionButton v-if="canEditOrganisation(object)"
+							<NcActionButton
+								v-if="canEditOrganisation(object)"
 								close-after-click
 								@click="editOrganisation(object)">
 								<template #icon>
@@ -105,7 +132,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openregister', 'Edit') }}
 							</NcActionButton>
-							<NcActionButton v-if="object.website"
+							<NcActionButton
+								v-if="object.website"
 								close-after-click
 								@click="goToOrganisation(object)">
 								<template #icon>
@@ -121,9 +149,17 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openregister', 'Add User') }}
 							</NcActionButton>
-							<NcActionButton v-if="canDeleteOrganisation(object)"
+							<NcActionButton
+								v-if="canDeleteOrganisation(object)"
 								close-after-click
-								@click="organisationStore.setOrganisationItem(object); navigationStore.setModal('deleteOrganisation')">
+								@click="
+									() => {
+										organisationStore.setOrganisationItem(object)
+										navigationStore.setModal(
+											'deleteOrganisation',
+										)
+									}
+								">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -138,16 +174,28 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</p>
 						<div class="organisationStats">
 							<div class="stat">
-								<span class="statLabel">{{ t('openregister', 'Members:') }}</span>
-								<span class="statValue">{{ object.users?.length || 0 }}</span>
+								<span class="statLabel">{{
+									t('openregister', 'Members:')
+								}}</span>
+								<span class="statValue">{{
+									object.users?.length || 0
+								}}</span>
 							</div>
 							<div class="stat">
-								<span class="statLabel">{{ t('openregister', 'Owner:') }}</span>
-								<span class="statValue">{{ object.owner || 'System' }}</span>
+								<span class="statLabel">{{
+									t('openregister', 'Owner:')
+								}}</span>
+								<span class="statValue">{{
+									object.owner || 'System'
+								}}</span>
 							</div>
 							<div v-if="object.created" class="stat">
-								<span class="statLabel">{{ t('openregister', 'Created:') }}</span>
-								<span class="statValue">{{ formatDate(object.created) }}</span>
+								<span class="statLabel">{{
+									t('openregister', 'Created:')
+								}}</span>
+								<span class="statValue">{{
+									formatDate(object.created)
+								}}</span>
 							</div>
 						</div>
 					</div>
@@ -159,10 +207,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<div class="titleContent">
 					<div class="titleWithBadges">
 						<strong>{{ row.name }}</strong>
-						<span v-if="row.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-						<span v-if="isActiveOrganisation(row)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
+						<span v-if="row.isDefault" class="defaultBadge">{{
+							t('openregister', 'Default')
+						}}</span>
+						<span v-if="isActiveOrganisation(row)" class="activeBadge">{{
+							t('openregister', 'Active')
+						}}</span>
 					</div>
-					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+					<span
+						v-if="row.description"
+						class="textDescription textEllipsis"
+						>{{ row.description }}</span
+					>
 				</div>
 			</template>
 
@@ -178,8 +234,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: active/inactive status -->
 			<template #column-status="{ row }">
-				<span v-if="isActiveOrganisation(row)" class="statusActive">{{ t('openregister', 'Active') }}</span>
-				<span v-else class="statusInactive">{{ t('openregister', 'Inactive') }}</span>
+				<span v-if="isActiveOrganisation(row)" class="statusActive">{{
+					t('openregister', 'Active')
+				}}</span>
+				<span v-else class="statusInactive">{{
+					t('openregister', 'Inactive')
+				}}</span>
 			</template>
 
 			<!-- Custom column: created date -->
@@ -198,14 +258,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click
-						@click="viewOrganisation(row)">
+					<NcActionButton close-after-click @click="viewOrganisation(row)">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						{{ t('openregister', 'View') }}
 					</NcActionButton>
-					<NcActionButton v-if="!isActiveOrganisation(row)"
+					<NcActionButton
+						v-if="!isActiveOrganisation(row)"
 						close-after-click
 						@click="setActiveOrganisation(row.uuid)">
 						<template #icon>
@@ -213,7 +273,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openregister', 'Set as Active') }}
 					</NcActionButton>
-					<NcActionButton v-if="canEditOrganisation(row)"
+					<NcActionButton
+						v-if="canEditOrganisation(row)"
 						close-after-click
 						@click="editOrganisation(row)">
 						<template #icon>
@@ -221,7 +282,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openregister', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton v-if="row.website"
+					<NcActionButton
+						v-if="row.website"
 						close-after-click
 						@click="goToOrganisation(row)">
 						<template #icon>
@@ -229,17 +291,21 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openregister', 'Go to organisation') }}
 					</NcActionButton>
-					<NcActionButton
-						close-after-click
-						@click="openJoinModal(row)">
+					<NcActionButton close-after-click @click="openJoinModal(row)">
 						<template #icon>
 							<AccountMultiplePlus :size="20" />
 						</template>
 						{{ t('openregister', 'Add User') }}
 					</NcActionButton>
-					<NcActionButton v-if="canDeleteOrganisation(row)"
+					<NcActionButton
+						v-if="canDeleteOrganisation(row)"
 						close-after-click
-						@click="organisationStore.setOrganisationItem(row); navigationStore.setModal('deleteOrganisation')">
+						@click="
+							() => {
+								organisationStore.setOrganisationItem(row)
+								navigationStore.setModal('deleteOrganisation')
+							}
+						">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -319,8 +385,16 @@ export default {
 				{ key: 'users', label: t('openregister', 'Members') },
 				{ key: 'owner', label: t('openregister', 'Owner') },
 				{ key: 'status', label: t('openregister', 'Status') },
-				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
-				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
+				{
+					key: 'created',
+					label: t('openregister', 'Created'),
+					sortable: true,
+				},
+				{
+					key: 'updated',
+					label: t('openregister', 'Updated'),
+					sortable: true,
+				},
 			]
 		},
 		/**
@@ -402,7 +476,9 @@ export default {
 		 * @return {string}
 		 */
 		getRowClass(organisation) {
-			return this.isActiveOrganisation(organisation) ? 'viewTableRow--active' : ''
+			return this.isActiveOrganisation(organisation)
+				? 'viewTableRow--active'
+				: ''
 		},
 		/**
 		 * Whether an organisation is the active one.
@@ -412,8 +488,10 @@ export default {
 		 * @return {boolean}
 		 */
 		isActiveOrganisation(organisation) {
-			return organisationStore.userStats.active
-				   && organisationStore.userStats.active.uuid === organisation.uuid
+			return (
+				organisationStore.userStats.active
+				&& organisationStore.userStats.active.uuid === organisation.uuid
+			)
 		},
 		/**
 		 * Resolve the current Nextcloud user id.
@@ -434,8 +512,10 @@ export default {
 		 */
 		canEditOrganisation(organisation) {
 			// Only the owner can edit the organisation (or system for default org)
-			return organisation.owner === 'system'
-				   || organisation.owner === this.getCurrentUser()
+			return (
+				organisation.owner === 'system'
+				|| organisation.owner === this.getCurrentUser()
+			)
 		},
 		/**
 		 * Whether the current user may leave an organisation.
@@ -446,9 +526,11 @@ export default {
 		 */
 		canLeaveOrganisation(organisation) {
 			// Can't leave if it's your only organisation or if you're the owner
-			return organisationStore.userStats.total > 1
-				   && !organisation.isDefault
-				   && organisation.owner !== this.getCurrentUser()
+			return (
+				organisationStore.userStats.total > 1
+				&& !organisation.isDefault
+				&& organisation.owner !== this.getCurrentUser()
+			)
 		},
 		/**
 		 * Whether the current user may delete an organisation.
@@ -459,8 +541,10 @@ export default {
 		 */
 		canDeleteOrganisation(organisation) {
 			// Only owners can delete, and can't delete default organisation
-			return !organisation.isDefault
-				   && organisation.owner === this.getCurrentUser()
+			return (
+				!organisation.isDefault
+				&& organisation.owner === this.getCurrentUser()
+			)
 		},
 		/**
 		 * Set the active organisation and reload app data.
@@ -472,12 +556,20 @@ export default {
 		async setActiveOrganisation(uuid) {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
-				showSuccess(t('openregister', 'Active organisation changed successfully'))
+				showSuccess(
+					t('openregister', 'Active organisation changed successfully'),
+				)
 
 				// Reload all hot-loaded data for the new organisation context
 				await reloadAppData()
 			} catch (error) {
-				showError(t('openregister', 'Failed to change active organisation: {error}', { error: error.message }))
+				showError(
+					t(
+						'openregister',
+						'Failed to change active organisation: {error}',
+						{ error: error.message },
+					),
+				)
 			}
 		},
 		/**
@@ -492,7 +584,11 @@ export default {
 				await this.setActiveOrganisation(organisation.uuid)
 				this.showOrganisationSwitcher = false
 			} catch (error) {
-				showError(t('openregister', 'Failed to switch organisation: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to switch organisation: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
@@ -503,7 +599,13 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async leaveOrganisation(organisation) {
-			if (!confirm(t('openregister', 'Are you sure you want to leave \'{name}\'?', { name: organisation.name }))) {
+			if (
+				!confirm(
+					t('openregister', "Are you sure you want to leave '{name}'?", {
+						name: organisation.name,
+					}),
+				)
+			) {
 				return
 			}
 
@@ -511,7 +613,11 @@ export default {
 				await organisationStore.leaveOrganisation(organisation.uuid)
 				showSuccess(t('openregister', 'Left organisation successfully'))
 			} catch (error) {
-				showError(t('openregister', 'Failed to leave organisation: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to leave organisation: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
@@ -552,14 +658,18 @@ export default {
 		 * @return {string} localized date/time
 		 */
 		formatDate(dateString) {
-			return new Date(dateString).toLocaleDateString({
-				day: '2-digit',
-				month: '2-digit',
-				year: 'numeric',
-			}) + ', ' + new Date(dateString).toLocaleTimeString({
-				hour: '2-digit',
-				minute: '2-digit',
-			})
+			return (
+				new Date(dateString).toLocaleDateString({
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+				})
+				+ ', '
+				+ new Date(dateString).toLocaleTimeString({
+					hour: '2-digit',
+					minute: '2-digit',
+				})
+			)
 		},
 		// Organisation Modal Methods
 		/**
@@ -634,7 +744,10 @@ export default {
 			if (organisation.website) {
 				let websiteUrl = organisation.website
 				// Add https:// if no protocol is specified
-				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+				if (
+					!websiteUrl.startsWith('http://')
+					&& !websiteUrl.startsWith('https://')
+				) {
 					websiteUrl = 'https://' + websiteUrl
 				}
 				window.open(websiteUrl, '_blank')
@@ -686,7 +799,8 @@ export default {
 	color: var(--color-primary-text);
 }
 
-.defaultBadge, .activeBadge {
+.defaultBadge,
+.activeBadge {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 12px;

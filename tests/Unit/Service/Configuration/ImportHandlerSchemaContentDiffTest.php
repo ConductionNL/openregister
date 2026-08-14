@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Unit tests for content-aware existing-schema updates in ImportHandler (#2075).
  *
@@ -29,7 +30,6 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -41,157 +41,146 @@ use Psr\Log\LoggerInterface;
  * version advances while the schema stays stale (#2075), dropping columns and,
  * where an auth rule matches the new property, 500ing every read (#2082).
  */
-class ImportHandlerSchemaContentDiffTest extends TestCase
-{
+class ImportHandlerSchemaContentDiffTest extends TestCase {
 
-    private ImportHandler $handler;
+	private ImportHandler $handler;
 
-    /**
-     * Build an ImportHandler with fully mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->handler = new ImportHandler(
-            schemaMapper:        $this->createMock(SchemaMapper::class),
-            registerMapper:      $this->createMock(RegisterMapper::class),
-            objectEntityMapper:  $this->createMock(MagicMapper::class),
-            configurationMapper: $this->createMock(ConfigurationMapper::class),
-            mappingMapper:       $this->createMock(MappingMapper::class),
-            client:              $this->createMock(Client::class),
-            appConfig:           $this->createMock(IAppConfig::class),
-            logger:              $this->createMock(LoggerInterface::class),
-            appDataPath:         '/tmp',
-            uploadHandler:       $this->createMock(UploadHandler::class),
-            objectService:       $this->createMock(ObjectService::class)
-        );
+	/**
+	 * Build an ImportHandler with fully mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->handler = new ImportHandler(
+			schemaMapper:        $this->createMock(SchemaMapper::class),
+			registerMapper:      $this->createMock(RegisterMapper::class),
+			objectEntityMapper:  $this->createMock(MagicMapper::class),
+			configurationMapper: $this->createMock(ConfigurationMapper::class),
+			mappingMapper:       $this->createMock(MappingMapper::class),
+			client:              $this->createMock(Client::class),
+			appConfig:           $this->createMock(IAppConfig::class),
+			logger:              $this->createMock(LoggerInterface::class),
+			appDataPath:         '/tmp',
+			uploadHandler:       $this->createMock(UploadHandler::class),
+			objectService:       $this->createMock(ObjectService::class)
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Invoke the private content-diff method under test.
-     *
-     * @param array  $data     Incoming schema definition.
-     * @param Schema $existing Stored schema entity.
-     *
-     * @return bool
-     */
-    private function differs(array $data, Schema $existing): bool
-    {
-        $reflection = new \ReflectionMethod(ImportHandler::class, 'schemaContentDiffers');
-        $reflection->setAccessible(true);
-        return (bool) $reflection->invoke($this->handler, $data, $existing);
+	/**
+	 * Invoke the private content-diff method under test.
+	 *
+	 * @param array $data Incoming schema definition.
+	 * @param Schema $existing Stored schema entity.
+	 *
+	 * @return bool
+	 */
+	private function differs(array $data, Schema $existing): bool {
+		$reflection = new \ReflectionMethod(ImportHandler::class, 'schemaContentDiffers');
+		$reflection->setAccessible(true);
+		return (bool)$reflection->invoke($this->handler, $data, $existing);
+	}//end differs()
 
-    }//end differs()
+	/**
+	 * Build a Schema entity with the given content fields.
+	 *
+	 * @param array $properties Schema properties.
+	 * @param array $required Required list.
+	 * @param array $authorization Authorization block.
+	 *
+	 * @return Schema
+	 */
+	private function makeSchema(array $properties = [], array $required = [], array $authorization = []): Schema {
+		$schema = new Schema();
+		$schema->setProperties($properties);
+		$schema->setRequired($required);
+		$schema->setAuthorization($authorization);
 
-    /**
-     * Build a Schema entity with the given content fields.
-     *
-     * @param array $properties    Schema properties.
-     * @param array $required       Required list.
-     * @param array $authorization  Authorization block.
-     *
-     * @return Schema
-     */
-    private function makeSchema(array $properties=[], array $required=[], array $authorization=[]): Schema
-    {
-        $schema = new Schema();
-        $schema->setProperties($properties);
-        $schema->setRequired($required);
-        $schema->setAuthorization($authorization);
+		return $schema;
+	}//end makeSchema()
 
-        return $schema;
+	/**
+	 * A property added by the incoming definition is detected as a difference.
+	 *
+	 * This is the regressed case: `beoordeeling` gained `status` with no
+	 * version bump.
+	 *
+	 * @return void
+	 */
+	public function testAddedPropertyDiffers(): void {
+		$existing = $this->makeSchema(properties: ['naam' => ['type' => 'string']]);
+		$data = ['properties' => ['naam' => ['type' => 'string'], 'status' => ['type' => 'string']]];
 
-    }//end makeSchema()
+		$this->assertTrue($this->differs(data: $data, existing: $existing));
 
-    /**
-     * A property added by the incoming definition is detected as a difference.
-     *
-     * This is the regressed case: `beoordeeling` gained `status` with no
-     * version bump.
-     *
-     * @return void
-     */
-    public function testAddedPropertyDiffers(): void
-    {
-        $existing = $this->makeSchema(properties: ['naam' => ['type' => 'string']]);
-        $data     = ['properties' => ['naam' => ['type' => 'string'], 'status' => ['type' => 'string']]];
+	}//end testAddedPropertyDiffers()
 
-        $this->assertTrue($this->differs(data: $data, existing: $existing));
+	/**
+	 * A changed authorization rule is detected even when properties match.
+	 *
+	 * @return void
+	 */
+	public function testChangedAuthorizationDiffers(): void {
+		$existing = $this->makeSchema(
+			properties: ['naam' => ['type' => 'string']],
+			authorization: ['read' => ['public']]
+		);
+		$data = [
+			'properties' => ['naam' => ['type' => 'string']],
+			'authorization' => ['read' => [['group' => 'public', 'match' => ['status' => 'approved']]]],
+		];
 
-    }//end testAddedPropertyDiffers()
+		$this->assertTrue($this->differs(data: $data, existing: $existing));
 
-    /**
-     * A changed authorization rule is detected even when properties match.
-     *
-     * @return void
-     */
-    public function testChangedAuthorizationDiffers(): void
-    {
-        $existing = $this->makeSchema(
-            properties: ['naam' => ['type' => 'string']],
-            authorization: ['read' => ['public']]
-        );
-        $data = [
-            'properties'    => ['naam' => ['type' => 'string']],
-            'authorization' => ['read' => [['group' => 'public', 'match' => ['status' => 'approved']]]],
-        ];
+	}//end testChangedAuthorizationDiffers()
 
-        $this->assertTrue($this->differs(data: $data, existing: $existing));
+	/**
+	 * A changed required list is detected.
+	 *
+	 * @return void
+	 */
+	public function testChangedRequiredDiffers(): void {
+		$existing = $this->makeSchema(properties: ['naam' => []], required: ['naam']);
+		$data = ['properties' => ['naam' => []], 'required' => ['naam', 'status']];
 
-    }//end testChangedAuthorizationDiffers()
+		$this->assertTrue($this->differs(data: $data, existing: $existing));
 
-    /**
-     * A changed required list is detected.
-     *
-     * @return void
-     */
-    public function testChangedRequiredDiffers(): void
-    {
-        $existing = $this->makeSchema(properties: ['naam' => []], required: ['naam']);
-        $data     = ['properties' => ['naam' => []], 'required' => ['naam', 'status']];
+	}//end testChangedRequiredDiffers()
 
-        $this->assertTrue($this->differs(data: $data, existing: $existing));
+	/**
+	 * Identical content — including reordered keys and reordered required — is
+	 * NOT a difference, so the cheap skip still applies to genuine no-ops.
+	 *
+	 * @return void
+	 */
+	public function testIdenticalContentDoesNotDiffer(): void {
+		$existing = $this->makeSchema(
+			properties: ['naam' => ['type' => 'string'], 'status' => ['type' => 'string']],
+			required: ['naam', 'status'],
+			authorization: ['read' => ['public'], 'create' => ['admin']]
+		);
+		// Same content, keys and lists reordered.
+		$data = [
+			'properties' => ['status' => ['type' => 'string'], 'naam' => ['type' => 'string']],
+			'required' => ['status', 'naam'],
+			'authorization' => ['create' => ['admin'], 'read' => ['public']],
+		];
 
-    }//end testChangedRequiredDiffers()
+		$this->assertFalse($this->differs(data: $data, existing: $existing));
 
-    /**
-     * Identical content — including reordered keys and reordered required — is
-     * NOT a difference, so the cheap skip still applies to genuine no-ops.
-     *
-     * @return void
-     */
-    public function testIdenticalContentDoesNotDiffer(): void
-    {
-        $existing = $this->makeSchema(
-            properties: ['naam' => ['type' => 'string'], 'status' => ['type' => 'string']],
-            required: ['naam', 'status'],
-            authorization: ['read' => ['public'], 'create' => ['admin']]
-        );
-        // Same content, keys and lists reordered.
-        $data = [
-            'properties'    => ['status' => ['type' => 'string'], 'naam' => ['type' => 'string']],
-            'required'      => ['status', 'naam'],
-            'authorization' => ['create' => ['admin'], 'read' => ['public']],
-        ];
+	}//end testIdenticalContentDoesNotDiffer()
 
-        $this->assertFalse($this->differs(data: $data, existing: $existing));
+	/**
+	 * Absent incoming fields equal empty stored fields (no false positive).
+	 *
+	 * @return void
+	 */
+	public function testAbsentEqualsEmpty(): void {
+		$existing = $this->makeSchema(properties: ['naam' => []]);
+		$data = ['properties' => ['naam' => []]];
 
-    }//end testIdenticalContentDoesNotDiffer()
+		$this->assertFalse($this->differs(data: $data, existing: $existing));
 
-    /**
-     * Absent incoming fields equal empty stored fields (no false positive).
-     *
-     * @return void
-     */
-    public function testAbsentEqualsEmpty(): void
-    {
-        $existing = $this->makeSchema(properties: ['naam' => []]);
-        $data     = ['properties' => ['naam' => []]];
-
-        $this->assertFalse($this->differs(data: $data, existing: $existing));
-
-    }//end testAbsentEqualsEmpty()
+	}//end testAbsentEqualsEmpty()
 
 }//end class

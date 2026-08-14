@@ -48,41 +48,39 @@ use Opis\JsonSchema\Format;
  * @version  GIT: <git_id>
  * @link     https://www.conduction.nl
  */
-class SemVerFormat implements Format
-{
-    /**
-     * Regular expression pattern for Semantic Versioning
-     *
-     * Based on the official SemVer regex from semver.org.
-     *
-     * @var string
-     */
-    private const SEMVER_PATTERN = <<<'REGEX'
+class SemVerFormat implements Format {
+	/**
+	 * Regular expression pattern for Semantic Versioning
+	 *
+	 * Based on the official SemVer regex from semver.org.
+	 *
+	 * @var string
+	 */
+	private const SEMVER_PATTERN = <<<'REGEX'
 /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
 (?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
 (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?
 (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/x
 REGEX;
 
-    /**
-     * Validates if a given value conforms to the Semantic Versioning format
-     *
-     * @param mixed $data The data to validate against the SemVer format
-     *
-     * @inheritDoc
-     *
-     * @return bool True if data is a valid semantic version, false otherwise
-     *
-     * @spec openspec/specs/data-import-export/spec.md
-     */
-    public function validate(mixed $data): bool
-    {
-        // Only validate strings.
-        if (is_string($data) === false) {
-            return false;
-        }
+	/**
+	 * Validates if a given value conforms to the Semantic Versioning format
+	 *
+	 * @param mixed $data The data to validate against the SemVer format
+	 *
+	 * @inheritDoc
+	 *
+	 * @return bool True if data is a valid semantic version, false otherwise
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function validate(mixed $data): bool {
+		// Only validate strings.
+		if (is_string($data) === false) {
+			return false;
+		}
 
-        // Validate against SemVer pattern.
-        return preg_match(self::SEMVER_PATTERN, $data) === 1;
-    }//end validate()
+		// Validate against SemVer pattern.
+		return preg_match(self::SEMVER_PATTERN, $data) === 1;
+	}//end validate()
 }//end class

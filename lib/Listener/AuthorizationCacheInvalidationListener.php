@@ -70,87 +70,83 @@ use OCP\EventDispatcher\IEventListener;
  *
  * @template-implements IEventListener<SchemaUpdatedEvent|SchemaDeletedEvent|RegisterUpdatedEvent|RegisterDeletedEvent>
  */
-class AuthorizationCacheInvalidationListener implements IEventListener
-{
-    /**
-     * Wire the RBAC evaluator whose memos are evicted.
-     *
-     * @param PermissionHandler $permissionHandler The evaluator holding the per-request memos.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
-     */
-    public function __construct(
-        private readonly PermissionHandler $permissionHandler
-    ) {
+class AuthorizationCacheInvalidationListener implements IEventListener {
+	/**
+	 * Wire the RBAC evaluator whose memos are evicted.
+	 *
+	 * @param PermissionHandler $permissionHandler The evaluator holding the per-request memos.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+	 */
+	public function __construct(
+		private readonly PermissionHandler $permissionHandler,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Evict whatever the mutated entity could have been memoised under.
-     *
-     * @param Event $event Inbound dispatcher event.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof SchemaUpdatedEvent === true) {
-            $this->evictSchema(schemaId: $event->getNewSchema()->getId());
-            return;
-        }
+	/**
+	 * Evict whatever the mutated entity could have been memoised under.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof SchemaUpdatedEvent === true) {
+			$this->evictSchema(schemaId: $event->getNewSchema()->getId());
+			return;
+		}
 
-        if ($event instanceof SchemaDeletedEvent === true) {
-            $this->evictSchema(schemaId: $event->getSchema()->getId());
-            return;
-        }
+		if ($event instanceof SchemaDeletedEvent === true) {
+			$this->evictSchema(schemaId: $event->getSchema()->getId());
+			return;
+		}
 
-        if ($event instanceof RegisterUpdatedEvent === true || $event instanceof RegisterDeletedEvent === true) {
-            $this->evictEverything();
-        }
+		if ($event instanceof RegisterUpdatedEvent === true || $event instanceof RegisterDeletedEvent === true) {
+			$this->evictEverything();
+		}
 
-    }//end handle()
+	}//end handle()
 
-    /**
-     * Evict one schema's inheritance verdict plus every memoised permission verdict.
-     *
-     * The permission memo has no per-schema eviction: its keys are opaque
-     * strings and there is no index from schema id to key. Clearing it whole is
-     * the honest option — a partial evict that missed a key would leave exactly
-     * the stale grant this listener exists to prevent.
-     *
-     * A null id is passed straight through, which `clearInheritFromPublicCache()`
-     * reads as "clear all". That is the fail-SAFE direction on purpose: an
-     * unidentifiable schema means we cannot know which entry went stale, and
-     * over-evicting costs a recompute where under-evicting costs a wrong verdict.
-     *
-     * @param int|null $schemaId The mutated schema's id, or null when it has none.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
-     */
-    private function evictSchema(?int $schemaId): void
-    {
-        $this->permissionHandler->clearInheritFromPublicCache(schemaId: $schemaId);
-        $this->permissionHandler->clearPermissionCache();
+	/**
+	 * Evict one schema's inheritance verdict plus every memoised permission verdict.
+	 *
+	 * The permission memo has no per-schema eviction: its keys are opaque
+	 * strings and there is no index from schema id to key. Clearing it whole is
+	 * the honest option — a partial evict that missed a key would leave exactly
+	 * the stale grant this listener exists to prevent.
+	 *
+	 * A null id is passed straight through, which `clearInheritFromPublicCache()`
+	 * reads as "clear all". That is the fail-SAFE direction on purpose: an
+	 * unidentifiable schema means we cannot know which entry went stale, and
+	 * over-evicting costs a recompute where under-evicting costs a wrong verdict.
+	 *
+	 * @param int|null $schemaId The mutated schema's id, or null when it has none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+	 */
+	private function evictSchema(?int $schemaId): void {
+		$this->permissionHandler->clearInheritFromPublicCache(schemaId: $schemaId);
+		$this->permissionHandler->clearPermissionCache();
 
-    }//end evictSchema()
+	}//end evictSchema()
 
-    /**
-     * Evict both memos completely.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
-     */
-    private function evictEverything(): void
-    {
-        $this->permissionHandler->clearInheritFromPublicCache();
-        $this->permissionHandler->clearPermissionCache();
+	/**
+	 * Evict both memos completely.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+	 */
+	private function evictEverything(): void {
+		$this->permissionHandler->clearInheritFromPublicCache();
+		$this->permissionHandler->clearPermissionCache();
 
-    }//end evictEverything()
+	}//end evictEverything()
 }//end class

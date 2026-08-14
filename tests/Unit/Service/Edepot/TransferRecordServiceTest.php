@@ -37,113 +37,104 @@ use Psr\Log\LoggerInterface;
 /**
  * TransferRecordServiceTest.
  */
-class TransferRecordServiceTest extends TestCase
-{
+class TransferRecordServiceTest extends TestCase {
 
-    private ObjectService&MockObject $objectService;
+	private ObjectService&MockObject $objectService;
 
-    private TransferRecordService $service;
+	private TransferRecordService $service;
 
+	protected function setUp(): void {
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->service = new TransferRecordService(
+			objectService: $this->objectService,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 
-    protected function setUp(): void
-    {
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->service       = new TransferRecordService(
-            objectService: $this->objectService,
-            logger: $this->createMock(LoggerInterface::class),
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * A transfer list round-trips: saved to the register schema and re-read.
+	 *
+	 * @return void
+	 */
+	public function testSaveAndLoadTransferList(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('t1');
+		$entity->setObject(['status' => 'approved', 'objectReferences' => []]);
 
+		$savedArgs = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($entity, &$savedArgs) {
+				$savedArgs = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid];
+				return $entity;
+			}
+		);
 
-    /**
-     * A transfer list round-trips: saved to the register schema and re-read.
-     *
-     * @return void
-     */
-    public function testSaveAndLoadTransferList(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('t1');
-        $entity->setObject(['status' => 'approved', 'objectReferences' => []]);
+		$saved = $this->service->saveTransferList(['uuid' => 't1', 'status' => 'approved', 'objectReferences' => []]);
 
-        $savedArgs = null;
-        $this->objectService->method('saveObject')->willReturnCallback(
-            function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($entity, &$savedArgs) {
-                $savedArgs = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid];
-                return $entity;
-            }
-        );
+		$this->assertSame(TransferRecordService::REGISTER_SLUG, $savedArgs['register']);
+		$this->assertSame(TransferRecordService::TRANSFER_SCHEMA_SLUG, $savedArgs['schema']);
+		$this->assertSame('t1', $savedArgs['uuid']);
+		$this->assertSame('t1', $saved['uuid']);
 
-        $saved = $this->service->saveTransferList(['uuid' => 't1', 'status' => 'approved', 'objectReferences' => []]);
+		// Load reads it back through the same register/schema.
+		$this->objectService->method('find')->willReturn($entity);
+		$loaded = $this->service->loadTransferList('t1');
+		$this->assertSame('t1', $loaded['uuid']);
+		$this->assertSame('approved', $loaded['status']);
 
-        $this->assertSame(TransferRecordService::REGISTER_SLUG, $savedArgs['register']);
-        $this->assertSame(TransferRecordService::TRANSFER_SCHEMA_SLUG, $savedArgs['schema']);
-        $this->assertSame('t1', $savedArgs['uuid']);
-        $this->assertSame('t1', $saved['uuid']);
+	}//end testSaveAndLoadTransferList()
 
-        // Load reads it back through the same register/schema.
-        $this->objectService->method('find')->willReturn($entity);
-        $loaded = $this->service->loadTransferList('t1');
-        $this->assertSame('t1', $loaded['uuid']);
-        $this->assertSame('approved', $loaded['status']);
+	/**
+	 * A proof is created once; a second create for the same pair returns the
+	 * existing proof (write-once).
+	 *
+	 * @return void
+	 */
+	public function testProofIsWriteOnce(): void {
+		// First call: no existing proof, so createObject runs.
+		$created = new ObjectEntity();
+		$created->setUuid('proof-1');
+		$created->setObject(['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']);
 
-    }//end testSaveAndLoadTransferList()
+		$findAllCalls = 0;
+		$this->objectService->method('findAll')->willReturnCallback(
+			function () use (&$findAllCalls) {
+				$findAllCalls++;
+				if ($findAllCalls === 1) {
+					// No existing proof on first create.
+					return [];
+				}
 
+				// Existing proof on the second create.
+				return [['uuid' => 'proof-1', 'objectUuid' => 'o1', 'transferUuid' => 't1']];
+			}
+		);
 
-    /**
-     * A proof is created once; a second create for the same pair returns the
-     * existing proof (write-once).
-     *
-     * @return void
-     */
-    public function testProofIsWriteOnce(): void
-    {
-        // First call: no existing proof, so createObject runs.
-        $created = new ObjectEntity();
-        $created->setUuid('proof-1');
-        $created->setObject(['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']);
+		$this->objectService->expects($this->once())->method('createObject')->willReturn($created);
 
-        $findAllCalls = 0;
-        $this->objectService->method('findAll')->willReturnCallback(
-            function () use (&$findAllCalls) {
-                $findAllCalls++;
-                if ($findAllCalls === 1) {
-                    // No existing proof on first create.
-                    return [];
-                }
+		$first = $this->service->createProof(
+			proof: ['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']
+		);
+		$this->assertSame('proof-1', $first['uuid']);
 
-                // Existing proof on the second create.
-                return [['uuid' => 'proof-1', 'objectUuid' => 'o1', 'transferUuid' => 't1']];
-            }
-        );
+		// Second create must NOT call createObject again (expects once above).
+		$second = $this->service->createProof(
+			proof: ['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']
+		);
+		$this->assertSame('proof-1', $second['uuid']);
 
-        $this->objectService->expects($this->once())->method('createObject')->willReturn($created);
+	}//end testProofIsWriteOnce()
 
-        $first = $this->service->createProof(
-            proof: ['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']
-        );
-        $this->assertSame('proof-1', $first['uuid']);
+	/**
+	 * Enumeration failure degrades to an empty list, never raises.
+	 *
+	 * @return void
+	 */
+	public function testListDegradesOnFailure(): void {
+		$this->objectService->method('findAll')->willThrowException(new \RuntimeException('db down'));
 
-        // Second create must NOT call createObject again (expects once above).
-        $second = $this->service->createProof(
-            proof: ['objectUuid' => 'o1', 'transferUuid' => 't1', 'eDepotReference' => 'ARCH-9']
-        );
-        $this->assertSame('proof-1', $second['uuid']);
+		$this->assertSame([], $this->service->listTransferLists());
 
-    }//end testProofIsWriteOnce()
-
-
-    /**
-     * Enumeration failure degrades to an empty list, never raises.
-     *
-     * @return void
-     */
-    public function testListDegradesOnFailure(): void
-    {
-        $this->objectService->method('findAll')->willThrowException(new \RuntimeException('db down'));
-
-        $this->assertSame([], $this->service->listTransferLists());
-
-    }//end testListDegradesOnFailure()
+	}//end testListDegradesOnFailure()
 }//end class

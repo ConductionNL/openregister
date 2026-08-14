@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an agent is deleted.
  */
-class AgentDeletedEvent extends Event
-{
+class AgentDeletedEvent extends Event {
 
-    /**
-     * The deleted agent.
-     *
-     * @var Agent The agent that was deleted.
-     */
-    private Agent $agent;
+	/**
+	 * The deleted agent.
+	 *
+	 * @var Agent The agent that was deleted.
+	 */
+	private Agent $agent;
 
-    /**
-     * Constructor for AgentDeletedEvent.
-     *
-     * @param Agent $agent The agent that was deleted.
-     *
-     * @return void
-     */
-    public function __construct(Agent $agent)
-    {
-        parent::__construct();
-        $this->agent = $agent;
-    }//end __construct()
+	/**
+	 * Constructor for AgentDeletedEvent.
+	 *
+	 * @param Agent $agent The agent that was deleted.
+	 *
+	 * @return void
+	 */
+	public function __construct(Agent $agent) {
+		parent::__construct();
+		$this->agent = $agent;
+	}//end __construct()
 
-    /**
-     * Get the deleted agent.
-     *
-     * @return Agent The agent that was deleted.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getAgent(): Agent
-    {
-        return $this->agent;
-    }//end getAgent()
+	/**
+	 * Get the deleted agent.
+	 *
+	 * @return Agent The agent that was deleted.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getAgent(): Agent {
+		return $this->agent;
+	}//end getAgent()
 }//end class

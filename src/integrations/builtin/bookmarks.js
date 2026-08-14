@@ -42,23 +42,30 @@ export function registerBookmarksIntegration(registry) {
 	}
 
 	import('@conduction/nextcloud-vue')
-		.then(({ CnBookmarksTab, CnBookmarksCard, CnIntegrationTab, CnIntegrationCard }) => {
-			const tab = CnBookmarksTab ?? CnIntegrationTab
-			const widget = CnBookmarksCard ?? CnIntegrationCard
+		.then(
+			({
+				CnBookmarksTab,
+				CnBookmarksCard,
+				CnIntegrationTab,
+				CnIntegrationCard,
+			}) => {
+				const tab = CnBookmarksTab ?? CnIntegrationTab
+				const widget = CnBookmarksCard ?? CnIntegrationCard
 
-			registry.register({
-				id: 'bookmarks',
-				label: t('openregister', 'Bookmarks'),
-				icon: 'Bookmark',
-				group: 'docs',
-				requiredApp: 'bookmarks',
-				storage: 'link-table',
-				referenceType: 'bookmarks',
-				tab,
-				widget,
-				defaultSize: { w: 4, h: 3 },
-			})
-		})
+				registry.register({
+					id: 'bookmarks',
+					label: t('openregister', 'Bookmarks'),
+					icon: 'Bookmark',
+					group: 'docs',
+					requiredApp: 'bookmarks',
+					storage: 'link-table',
+					referenceType: 'bookmarks',
+					tab,
+					widget,
+					defaultSize: { w: 4, h: 3 },
+				})
+			},
+		)
 		.catch((e) => {
 			console.error('[bookmarks] failed to register bookmarks integration', e)
 		})

@@ -95,9 +95,12 @@ export async function unsubscribe({ registerId = null, schemaId = null } = {}) {
  * @return {boolean} True when a matching subscription exists.
  * @spec openspec/specs/notificatie-engine/spec.md
  */
-export function hasSubscription(subscriptions, { registerId = null, schemaId = null } = {}) {
+export function hasSubscription(
+	subscriptions,
+	{ registerId = null, schemaId = null } = {},
+) {
 	if (!Array.isArray(subscriptions)) return false
-	return subscriptions.some(sub =>
-		sub.registerId === registerId && sub.schemaId === schemaId,
+	return subscriptions.some(
+		(sub) => sub.registerId === registerId && sub.schemaId === schemaId,
 	)
 }

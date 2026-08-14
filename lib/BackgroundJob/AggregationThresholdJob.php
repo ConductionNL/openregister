@@ -52,75 +52,73 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.3
  */
-class AggregationThresholdJob extends ActorForwardedJob
-{
-    /**
-     * Wire the evaluation collaborators on top of the actor plumbing.
-     *
-     * @param ITimeFactory                $time         Time factory for the parent job class.
-     * @param IUserSession                $userSession  Session to impersonate on / restore.
-     * @param IUserManager                $userManager  Resolver for the captured user id.
-     * @param OrganisationService         $organisation Active-organisation resolver.
-     * @param LoggerInterface             $logger       PSR logger.
-     * @param DeferredEntryObjectResolver $resolver     Stale-safe entry re-fetch.
-     * @param SchemaMapper                $schemaMapper Schema lookup mapper.
-     * @param ThresholdEvaluationService  $evaluator    Shared threshold evaluation logic.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IUserSession $userSession,
-        IUserManager $userManager,
-        OrganisationService $organisation,
-        LoggerInterface $logger,
-        private readonly DeferredEntryObjectResolver $resolver,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly ThresholdEvaluationService $evaluator
-    ) {
-        parent::__construct(
-            time: $time,
-            userSession: $userSession,
-            userManager: $userManager,
-            organisation: $organisation,
-            logger: $logger
-        );
-    }//end __construct()
+class AggregationThresholdJob extends ActorForwardedJob {
+	/**
+	 * Wire the evaluation collaborators on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		OrganisationService $organisation,
+		LoggerInterface $logger,
+		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly ThresholdEvaluationService $evaluator,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $userSession,
+			userManager: $userManager,
+			organisation: $organisation,
+			logger: $logger
+		);
+	}//end __construct()
 
-    /**
-     * Evaluate thresholds for every live entry's schema.
-     *
-     * Per-entry failures are logged and do not abort the chunk.
-     *
-     * @param DeferredListenerContext $context The captured dispatch-time context.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    protected function runDeferred(DeferredListenerContext $context): void
-    {
-        foreach ($context->getEntries() as $entry) {
-            $object = $this->resolver->resolve(entry: $entry);
-            if ($object === null) {
-                continue;
-            }
+	/**
+	 * Evaluate thresholds for every live entry's schema.
+	 *
+	 * Per-entry failures are logged and do not abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$object = $this->resolver->resolve(entry: $entry);
+			if ($object === null) {
+				continue;
+			}
 
-            try {
-                $schema = $this->schemaMapper->find((string) ($entry['schema'] ?? ''));
-                $this->evaluator->evaluateSchema(schema: $schema, object: $object);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[AggregationThresholdJob] Threshold evaluation failed for entry',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'uuid'   => ($entry['uuid'] ?? null),
-                        'schema' => ($entry['schema'] ?? null),
-                        'error'  => $e->getMessage(),
-                    ]
-                );
-            }
-        }//end foreach
-    }//end runDeferred()
+			try {
+				$schema = $this->schemaMapper->find((string)($entry['schema'] ?? ''));
+				$this->evaluator->evaluateSchema(schema: $schema, object: $object);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[AggregationThresholdJob] Threshold evaluation failed for entry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => ($entry['uuid'] ?? null),
+						'schema' => ($entry['schema'] ?? null),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end runDeferred()
 }//end class

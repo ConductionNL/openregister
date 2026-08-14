@@ -49,139 +49,135 @@ use OCP\ICacheFactory;
  *
  * @psalm-suppress UnusedClass
  */
-class RateLimiterService
-{
-    /**
-     * Distributed cache namespace shared by all rate-limit buckets in this service.
-     */
-    private const CACHE_PREFIX = 'openregister_rate_limiter';
+class RateLimiterService {
+	/**
+	 * Distributed cache namespace shared by all rate-limit buckets in this service.
+	 */
+	private const CACHE_PREFIX = 'openregister_rate_limiter';
 
-    /**
-     * Resolved cache instance. May be a no-op Null backend when no cache is configured —
-     * callers MUST check `isOperational()` before relying on rate-limit behaviour.
-     *
-     * @var ICache
-     */
-    private ICache $cache;
+	/**
+	 * Resolved cache instance. May be a no-op Null backend when no cache is configured —
+	 * callers MUST check `isOperational()` before relying on rate-limit behaviour.
+	 *
+	 * @var ICache
+	 */
+	private ICache $cache;
 
-    /**
-     * RateLimiterService constructor.
-     *
-     * @param ICacheFactory $cacheFactory Cache factory — used both to create the distributed
-     *                                    cache and to introspect backend availability.
-     */
-    public function __construct(private readonly ICacheFactory $cacheFactory)
-    {
-        $this->cache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
-    }//end __construct()
+	/**
+	 * RateLimiterService constructor.
+	 *
+	 * @param ICacheFactory $cacheFactory Cache factory — used both to create the distributed
+	 *                                    cache and to introspect backend availability.
+	 */
+	public function __construct(
+		private readonly ICacheFactory $cacheFactory,
+	) {
+		$this->cache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
+	}//end __construct()
 
-    /**
-     * Whether a usable cache backend is available. False on a cache-less instance, in which
-     * case `createDistributed()` would have returned the no-op Null backend and any
-     * rate-limit check would silently pass — callers fail closed (HTTP 503
-     * `rate_limiter_unavailable`) instead.
-     *
-     * @return bool True when APCu and/or a distributed cache is configured.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
-     */
-    public function isOperational(): bool
-    {
-        if ($this->cacheFactory->isAvailable() === true) {
-            return true;
-        }
+	/**
+	 * Whether a usable cache backend is available. False on a cache-less instance, in which
+	 * case `createDistributed()` would have returned the no-op Null backend and any
+	 * rate-limit check would silently pass — callers fail closed (HTTP 503
+	 * `rate_limiter_unavailable`) instead.
+	 *
+	 * @return bool True when APCu and/or a distributed cache is configured.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+	 */
+	public function isOperational(): bool {
+		if ($this->cacheFactory->isAvailable() === true) {
+			return true;
+		}
 
-        if ($this->cacheFactory->isLocalCacheAvailable() === true) {
-            return true;
-        }
+		if ($this->cacheFactory->isLocalCacheAvailable() === true) {
+			return true;
+		}
 
-        return false;
-    }//end isOperational()
+		return false;
+	}//end isOperational()
 
-    /**
-     * Fixed-window limiter: at most one action per `$windowSeconds` for the given `$bucketKey`.
-     *
-     * Call this BEFORE performing the action. Returns null when the action is permitted; on
-     * permit, the caller MUST call `markFixedWindow()` after the action succeeds so the slot is
-     * consumed. Returns the remaining-window seconds when the slot is still occupied.
-     *
-     * @param string $bucketKey     Caller-namespaced bucket key (e.g. `feature_submission:<uid>`).
-     * @param int    $windowSeconds Minimum gap between actions.
-     *
-     * @return int|null Null when permitted, retry-after seconds (≥ 1) when rate-limited.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
-     */
-    public function checkFixedWindow(string $bucketKey, int $windowSeconds): ?int
-    {
-        $occupiedAt = $this->cache->get($bucketKey);
-        if ($occupiedAt === null) {
-            return null;
-        }
+	/**
+	 * Fixed-window limiter: at most one action per `$windowSeconds` for the given `$bucketKey`.
+	 *
+	 * Call this BEFORE performing the action. Returns null when the action is permitted; on
+	 * permit, the caller MUST call `markFixedWindow()` after the action succeeds so the slot is
+	 * consumed. Returns the remaining-window seconds when the slot is still occupied.
+	 *
+	 * @param string $bucketKey Caller-namespaced bucket key (e.g. `feature_submission:<uid>`).
+	 * @param int $windowSeconds Minimum gap between actions.
+	 *
+	 * @return int|null Null when permitted, retry-after seconds (≥ 1) when rate-limited.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+	 */
+	public function checkFixedWindow(string $bucketKey, int $windowSeconds): ?int {
+		$occupiedAt = $this->cache->get($bucketKey);
+		if ($occupiedAt === null) {
+			return null;
+		}
 
-        return max(1, $windowSeconds - (time() - (int) $occupiedAt));
-    }//end checkFixedWindow()
+		return max(1, $windowSeconds - (time() - (int)$occupiedAt));
+	}//end checkFixedWindow()
 
-    /**
-     * Consume the fixed-window slot for `$bucketKey` (call after `checkFixedWindow()` returned
-     * null and the action succeeded).
-     *
-     * @param string $bucketKey     Caller-namespaced bucket key.
-     * @param int    $windowSeconds TTL for the slot.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
-     */
-    public function markFixedWindow(string $bucketKey, int $windowSeconds): void
-    {
-        $this->cache->set($bucketKey, time(), $windowSeconds);
-    }//end markFixedWindow()
+	/**
+	 * Consume the fixed-window slot for `$bucketKey` (call after `checkFixedWindow()` returned
+	 * null and the action succeeded).
+	 *
+	 * @param string $bucketKey Caller-namespaced bucket key.
+	 * @param int $windowSeconds TTL for the slot.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
+	 */
+	public function markFixedWindow(string $bucketKey, int $windowSeconds): void {
+		$this->cache->set($bucketKey, time(), $windowSeconds);
+	}//end markFixedWindow()
 
-    /**
-     * Distinct-key-budget limiter: at most `$maxKeys` distinct `$distinctKey` values seen for
-     * the given `$bucketKey` within a rolling `$windowSeconds`. Used by the GET cache-miss
-     * limiter — each distinct cache-key tuple counts once, repeats are free, and the window
-     * rolls over once it expires.
-     *
-     * The caller does NOT need a separate "mark" step — this method records the key as part of
-     * the same call when the budget is not yet exhausted.
-     *
-     * @param string $bucketKey     Caller-namespaced bucket key (e.g. `getmiss:<uid>`).
-     * @param string $distinctKey   The value being counted (e.g. the read cache key).
-     * @param int    $maxKeys       Maximum distinct values permitted within the window.
-     * @param int    $windowSeconds Rolling window length.
-     *
-     * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
-     *
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
-     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
-     */
-    public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int
-    {
-        $bucket = $this->cache->get($bucketKey);
-        if (is_array($bucket) === false) {
-            $bucket = ['t' => time(), 'keys' => []];
-        }
+	/**
+	 * Distinct-key-budget limiter: at most `$maxKeys` distinct `$distinctKey` values seen for
+	 * the given `$bucketKey` within a rolling `$windowSeconds`. Used by the GET cache-miss
+	 * limiter — each distinct cache-key tuple counts once, repeats are free, and the window
+	 * rolls over once it expires.
+	 *
+	 * The caller does NOT need a separate "mark" step — this method records the key as part of
+	 * the same call when the budget is not yet exhausted.
+	 *
+	 * @param string $bucketKey Caller-namespaced bucket key (e.g. `getmiss:<uid>`).
+	 * @param string $distinctKey The value being counted (e.g. the read cache key).
+	 * @param int $maxKeys Maximum distinct values permitted within the window.
+	 * @param int $windowSeconds Rolling window length.
+	 *
+	 * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
+	 */
+	public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int {
+		$bucket = $this->cache->get($bucketKey);
+		if (is_array($bucket) === false) {
+			$bucket = ['t' => time(), 'keys' => []];
+		}
 
-        $age = time() - (int) ($bucket['t'] ?? 0);
-        if ($age >= $windowSeconds) {
-            $bucket = ['t' => time(), 'keys' => []];
-            $age    = 0;
-        }
+		$age = time() - (int)($bucket['t'] ?? 0);
+		if ($age >= $windowSeconds) {
+			$bucket = ['t' => time(), 'keys' => []];
+			$age = 0;
+		}
 
-        $keys = (array) ($bucket['keys'] ?? []);
-        if (in_array($distinctKey, $keys, true) === false) {
-            $keys[] = $distinctKey;
-        }
+		$keys = (array)($bucket['keys'] ?? []);
+		if (in_array($distinctKey, $keys, true) === false) {
+			$keys[] = $distinctKey;
+		}
 
-        if (count($keys) > $maxKeys) {
-            return max(1, $windowSeconds - $age);
-        }
+		if (count($keys) > $maxKeys) {
+			return max(1, $windowSeconds - $age);
+		}
 
-        $bucket['keys'] = $keys;
-        $this->cache->set($bucketKey, $bucket, $windowSeconds);
-        return null;
-    }//end consumeDistinctKeyBudget()
+		$bucket['keys'] = $keys;
+		$this->cache->set($bucketKey, $bucket, $windowSeconds);
+		return null;
+	}//end consumeDistinctKeyBudget()
 }//end class

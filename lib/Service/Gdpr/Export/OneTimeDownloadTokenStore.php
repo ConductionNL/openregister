@@ -41,131 +41,128 @@ use OCP\Security\ISecureRandom;
 /**
  * Single-use, time-boxed, case-scoped download-token store.
  */
-class OneTimeDownloadTokenStore
-{
+class OneTimeDownloadTokenStore {
 
-    /**
-     * App id for app-config storage.
-     *
-     * @var string
-     */
-    private const APP_ID = 'openregister';
+	/**
+	 * App id for app-config storage.
+	 *
+	 * @var string
+	 */
+	private const APP_ID = 'openregister';
 
-    /**
-     * App-config key prefix for stored token records.
-     *
-     * @var string
-     */
-    private const KEY_PREFIX = 'dsar_bundle_token_';
+	/**
+	 * App-config key prefix for stored token records.
+	 *
+	 * @var string
+	 */
+	private const KEY_PREFIX = 'dsar_bundle_token_';
 
-    /**
-     * Default token lifetime in seconds (15 minutes).
-     *
-     * @var int
-     */
-    public const DEFAULT_TTL_SECONDS = 900;
+	/**
+	 * Default token lifetime in seconds (15 minutes).
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_TTL_SECONDS = 900;
 
-    /**
-     * Constructor.
-     *
-     * @param IAppConfig    $appConfig App-config store for token records.
-     * @param ISecureRandom $random    CSPRNG for token generation.
-     * @param ITimeFactory  $time      Time source for expiry checks.
-     */
-    public function __construct(
-        private readonly IAppConfig $appConfig,
-        private readonly ISecureRandom $random,
-        private readonly ITimeFactory $time
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppConfig $appConfig App-config store for token records.
+	 * @param ISecureRandom $random CSPRNG for token generation.
+	 * @param ITimeFactory $time Time source for expiry checks.
+	 */
+	public function __construct(
+		private readonly IAppConfig $appConfig,
+		private readonly ISecureRandom $random,
+		private readonly ITimeFactory $time,
+	) {
+	}//end __construct()
 
-    /**
-     * Mint a single-use token bound to a case, returning the RAW token.
-     *
-     * Only the token's SHA-256 is persisted (with the case uuid + expiry); the
-     * raw token is returned to the caller once and never stored.
-     *
-     * @param string $caseUuid   The case the token authorises a download for.
-     * @param int    $ttlSeconds Token lifetime in seconds.
-     *
-     * @return string The raw one-time token.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function mint(string $caseUuid, int $ttlSeconds=self::DEFAULT_TTL_SECONDS): string
-    {
-        $token   = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
-        $tokenId = hash(algo: 'sha256', data: $token);
-        $expiry  = ($this->time->getTime() + $ttlSeconds);
+	/**
+	 * Mint a single-use token bound to a case, returning the RAW token.
+	 *
+	 * Only the token's SHA-256 is persisted (with the case uuid + expiry); the
+	 * raw token is returned to the caller once and never stored.
+	 *
+	 * @param string $caseUuid The case the token authorises a download for.
+	 * @param int $ttlSeconds Token lifetime in seconds.
+	 *
+	 * @return string The raw one-time token.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function mint(string $caseUuid, int $ttlSeconds = self::DEFAULT_TTL_SECONDS): string {
+		$token = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
+		$tokenId = hash(algo: 'sha256', data: $token);
+		$expiry = ($this->time->getTime() + $ttlSeconds);
 
-        $this->appConfig->setValueString(
-            app: self::APP_ID,
-            key: self::KEY_PREFIX.$tokenId,
-            value: json_encode(
-                [
-                    'caseUuid' => $caseUuid,
-                    'expiry'   => $expiry,
-                ]
-            )
-        );
+		$this->appConfig->setValueString(
+			app: self::APP_ID,
+			key: self::KEY_PREFIX . $tokenId,
+			value: json_encode(
+				[
+					'caseUuid' => $caseUuid,
+					'expiry' => $expiry,
+				]
+			)
+		);
 
-        return $token;
-    }//end mint()
+		return $token;
+	}//end mint()
 
-    /**
-     * Redeem a token for a case: verify + BURN it in one step.
-     *
-     * Returns true only when the token exists, is bound to the given case, and
-     * has not expired — and the token is deleted before returning, so a second
-     * redemption of the same token is refused. An expired token is also burned.
-     * The check fails closed: any malformed/absent/mismatched record denies.
-     *
-     * @param string $token    The raw token presented at the download endpoint.
-     * @param string $caseUuid The case the download is scoped to.
-     *
-     * @return bool True when the token was valid for this case (and is now burned).
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function redeem(string $token, string $caseUuid): bool
-    {
-        if ($token === '') {
-            return false;
-        }
+	/**
+	 * Redeem a token for a case: verify + BURN it in one step.
+	 *
+	 * Returns true only when the token exists, is bound to the given case, and
+	 * has not expired — and the token is deleted before returning, so a second
+	 * redemption of the same token is refused. An expired token is also burned.
+	 * The check fails closed: any malformed/absent/mismatched record denies.
+	 *
+	 * @param string $token The raw token presented at the download endpoint.
+	 * @param string $caseUuid The case the download is scoped to.
+	 *
+	 * @return bool True when the token was valid for this case (and is now burned).
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function redeem(string $token, string $caseUuid): bool {
+		if ($token === '') {
+			return false;
+		}
 
-        $tokenId = hash(algo: 'sha256', data: $token);
-        $key     = self::KEY_PREFIX.$tokenId;
+		$tokenId = hash(algo: 'sha256', data: $token);
+		$key = self::KEY_PREFIX . $tokenId;
 
-        $raw = $this->appConfig->getValueString(
-            app: self::APP_ID,
-            key: $key,
-            default: ''
-        );
+		$raw = $this->appConfig->getValueString(
+			app: self::APP_ID,
+			key: $key,
+			default: ''
+		);
 
-        if ($raw === '') {
-            return false;
-        }
+		if ($raw === '') {
+			return false;
+		}
 
-        // Burn on first sight: whether valid or expired, the token is single
-        // use. Deleting before the validity verdict guarantees no replay.
-        $this->appConfig->deleteKey(app: self::APP_ID, key: $key);
+		// Burn on first sight: whether valid or expired, the token is single
+		// use. Deleting before the validity verdict guarantees no replay.
+		$this->appConfig->deleteKey(app: self::APP_ID, key: $key);
 
-        $record = json_decode($raw, true);
-        if (is_array($record) === false) {
-            return false;
-        }
+		$record = json_decode($raw, true);
+		if (is_array($record) === false) {
+			return false;
+		}
 
-        $recordCase = (string) ($record['caseUuid'] ?? '');
-        $expiry     = (int) ($record['expiry'] ?? 0);
+		$recordCase = (string)($record['caseUuid'] ?? '');
+		$expiry = (int)($record['expiry'] ?? 0);
 
-        if ($recordCase === '' || $recordCase !== $caseUuid) {
-            return false;
-        }
+		if ($recordCase === '' || $recordCase !== $caseUuid) {
+			return false;
+		}
 
-        if ($expiry < $this->time->getTime()) {
-            return false;
-        }
+		if ($expiry < $this->time->getTime()) {
+			return false;
+		}
 
-        return true;
-    }//end redeem()
+		return true;
+	}//end redeem()
 }//end class

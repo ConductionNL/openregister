@@ -14,11 +14,20 @@
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage and monitor file text extraction status') }}
+					{{
+						t(
+							'openregister',
+							'Manage and monitor file text extraction status',
+						)
+					}}
 				</p>
 			</div>
 
@@ -26,20 +35,17 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="filesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} files', {
-							showing: filesList.length,
-							total: totalFiles
-						}) }}
+						{{
+							t('openregister', 'Showing {showing} of {total} files', {
+								showing: filesList.length,
+								total: totalFiles,
+							})
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshFiles">
+					<NcActions :force-name="true" :inline="1" menu-name="Actions">
+						<NcActionButton close-after-click @click="refreshFiles">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -56,7 +62,9 @@
 				<NcEmptyContent
 					v-else-if="!filesList.length"
 					:name="t('openregister', 'No files found')"
-					:description="t('openregister', 'No files have been extracted yet')">
+					:description="
+						t('openregister', 'No files have been extracted yet')
+					">
 					<template #icon>
 						<FileDocumentOutline :size="64" />
 					</template>
@@ -65,32 +73,74 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th scope="col" class="column-filename sortable" @click="toggleSort('fileName')">
+							<th
+								scope="col"
+								class="column-filename sortable"
+								@click="toggleSort('fileName')">
 								{{ t('openregister', 'File Name') }}
-								<span v-if="sortField === 'fileName'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'fileName'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
 							<th scope="col" class="column-mimetype">
 								{{ t('openregister', 'Type') }}
 							</th>
-							<th scope="col" class="column-size sortable" @click="toggleSort('fileSize')">
+							<th
+								scope="col"
+								class="column-size sortable"
+								@click="toggleSort('fileSize')">
 								{{ t('openregister', 'Size') }}
-								<span v-if="sortField === 'fileSize'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'fileSize'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th scope="col" class="column-chunks sortable" @click="toggleSort('chunkCount')">
+							<th
+								scope="col"
+								class="column-chunks sortable"
+								@click="toggleSort('chunkCount')">
 								{{ t('openregister', 'Chunks') }}
-								<span v-if="sortField === 'chunkCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'chunkCount'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th scope="col" class="column-entities sortable" @click="toggleSort('entityCount')">
+							<th
+								scope="col"
+								class="column-entities sortable"
+								@click="toggleSort('entityCount')">
 								{{ t('openregister', 'Entities') }}
-								<span v-if="sortField === 'entityCount'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'entityCount'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th scope="col" class="column-risk sortable" @click="toggleSort('riskLevel')">
+							<th
+								scope="col"
+								class="column-risk sortable"
+								@click="toggleSort('riskLevel')">
 								{{ t('openregister', 'Risk Level') }}
-								<span v-if="sortField === 'riskLevel'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'riskLevel'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
-							<th scope="col" class="column-extracted sortable" @click="toggleSort('extractedAt')">
+							<th
+								scope="col"
+								class="column-extracted sortable"
+								@click="toggleSort('extractedAt')">
 								{{ t('openregister', 'Extracted At') }}
-								<span v-if="sortField === 'extractedAt'" class="sort-indicator">{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span>
+								<span
+									v-if="sortField === 'extractedAt'"
+									class="sort-indicator"
+									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+								>
 							</th>
 							<th scope="col" class="column-actions">
 								{{ t('openregister', 'Actions') }}
@@ -101,12 +151,18 @@
 						<tr v-for="file in filesList" :key="file.id">
 							<td class="column-filename">
 								<div class="file-name-cell">
-									<FileDocumentOutline :size="20" class="file-icon" />
-									<span class="file-name">{{ file.fileName }}</span>
+									<FileDocumentOutline
+										:size="20"
+										class="file-icon" />
+									<span class="file-name">{{
+										file.fileName
+									}}</span>
 								</div>
 							</td>
 							<td class="column-mimetype">
-								<span class="badge badge-mimetype">{{ formatMimeType(file.mimeType) }}</span>
+								<span class="badge badge-mimetype">{{
+									formatMimeType(file.mimeType)
+								}}</span>
 							</td>
 							<td class="column-size">
 								{{ formatFileSize(file.fileSize) }}
@@ -118,7 +174,9 @@
 								{{ file.entityCount || 0 }}
 							</td>
 							<td class="column-risk">
-								<span class="badge" :class="'badge-risk-' + file.riskLevel">
+								<span
+									class="badge"
+									:class="'badge-risk-' + file.riskLevel">
 									{{ formatRiskLevel(file.riskLevel) }}
 								</span>
 							</td>
@@ -153,16 +211,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalFiles > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalFiles"
@@ -466,7 +524,7 @@ export default {
 			const k = 1024
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
-			return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+			return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 		},
 
 		/**

@@ -83,6 +83,5 @@ namespace OCA\OpenRegister\Service\Flow;
  *
  * @see IFlowTriggerNode The other end: a node a run may begin at.
  */
-interface IFlowEndNode
-{
+interface IFlowEndNode {
 }//end interface

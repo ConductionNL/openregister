@@ -47,228 +47,220 @@ use Psr\Log\LoggerInterface;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
  */
-class PermissionHandlerCustomScopeTest extends TestCase
-{
+class PermissionHandlerCustomScopeTest extends TestCase {
 
-    private PermissionHandler $handler;
+	private PermissionHandler $handler;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private IUserManager&MockObject $userManager;
+	private IUserManager&MockObject $userManager;
 
-    private IGroupManager&MockObject $groupManager;
+	private IGroupManager&MockObject $groupManager;
 
-    private SchemaMapper&MockObject $schemaMapper;
+	private SchemaMapper&MockObject $schemaMapper;
 
-    private MagicMapper&MockObject $objectEntityMapper;
+	private MagicMapper&MockObject $objectEntityMapper;
 
-    private ConditionMatcher&MockObject $conditionMatcher;
+	private ConditionMatcher&MockObject $conditionMatcher;
 
-    private LoggerInterface&MockObject $logger;
+	private LoggerInterface&MockObject $logger;
 
-    private ContainerInterface&MockObject $container;
+	private ContainerInterface&MockObject $container;
 
-    private IEventDispatcher&MockObject $eventDispatcher;
+	private IEventDispatcher&MockObject $eventDispatcher;
 
-    protected function setUp(): void
-    {
-        $this->userSession        = $this->createMock(IUserSession::class);
-        $this->userManager        = $this->createMock(IUserManager::class);
-        $this->groupManager       = $this->createMock(IGroupManager::class);
-        $this->schemaMapper       = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
-        $this->conditionMatcher   = $this->createMock(ConditionMatcher::class);
-        $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->container       = $this->createMock(ContainerInterface::class);
-        $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+	protected function setUp(): void {
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
+		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
-        // These schemas legitimately belong to no register, so the register
-        // cascade finds nothing and authorization resolves to "none configured".
-        // The container MUST be wired: an unconfigured mock returns null, and
-        // calling a method on null is an ERROR the resolver now (correctly)
-        // treats as unresolvable -> deny, which would mask what these tests are
-        // actually about (custom-scope listener voting).
-        $registerMapper = $this->createMock(RegisterMapper::class);
-        $registerMapper->method('getFirstRegisterWithSchema')->willReturn(null);
-        $this->container->method('get')
-            ->with(RegisterMapper::class)
-            ->willReturn($registerMapper);
+		// These schemas legitimately belong to no register, so the register
+		// cascade finds nothing and authorization resolves to "none configured".
+		// The container MUST be wired: an unconfigured mock returns null, and
+		// calling a method on null is an ERROR the resolver now (correctly)
+		// treats as unresolvable -> deny, which would mask what these tests are
+		// actually about (custom-scope listener voting).
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('getFirstRegisterWithSchema')->willReturn(null);
+		$this->container->method('get')
+			->with(RegisterMapper::class)
+			->willReturn($registerMapper);
 
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueBool')->willReturn(true);
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturn(true);
 
-        $this->handler = new PermissionHandler(
-            $this->userSession,
-            $this->userManager,
-            $this->groupManager,
-            $this->schemaMapper,
-            $this->objectEntityMapper,
-            $this->conditionMatcher,
-            $appConfig,
-            $this->logger,
-            $this->container,
-            $this->eventDispatcher
-        );
+		$this->handler = new PermissionHandler(
+			$this->userSession,
+			$this->userManager,
+			$this->groupManager,
+			$this->schemaMapper,
+			$this->objectEntityMapper,
+			$this->conditionMatcher,
+			$appConfig,
+			$this->logger,
+			$this->container,
+			$this->eventDispatcher
+		);
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('behandelaar-1');
-        $user->method('getDisplayName')->willReturn('Behandelaar 1');
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->userManager->method('get')->willReturn($user);
-        $this->groupManager->method('getUserGroupIds')->willReturn(['behandelaar']);
-    }//end setUp()
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('behandelaar-1');
+		$user->method('getDisplayName')->willReturn('Behandelaar 1');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userManager->method('get')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['behandelaar']);
+	}//end setUp()
 
-    public function testListenerVotingAllowGrantsCustomAction(): void
-    {
-        $schema = $this->createSchema(id: 1, authorization: null);
+	public function testListenerVotingAllowGrantsCustomAction(): void {
+		$schema = $this->createSchema(id: 1, authorization: null);
 
-        $dispatched = [];
-        $this->eventDispatcher->method('dispatchTyped')
-            ->willReturnCallback(
-                function ($event) use (&$dispatched) {
-                    $dispatched[] = $event;
-                    if ($event instanceof CustomScopeEvaluatingEvent) {
-                        $event->allow();
-                    }
-                }
-            );
+		$dispatched = [];
+		$this->eventDispatcher->method('dispatchTyped')
+			->willReturnCallback(
+				function ($event) use (&$dispatched) {
+					$dispatched[] = $event;
+					if ($event instanceof CustomScopeEvaluatingEvent) {
+						$event->allow();
+					}
+				}
+			);
 
-        $verdict = $this->handler->hasPermission(
-            schema: $schema,
-            action: 'besluit_nemen',
-            userId: 'behandelaar-1'
-        );
+		$verdict = $this->handler->hasPermission(
+			schema: $schema,
+			action: 'besluit_nemen',
+			userId: 'behandelaar-1'
+		);
 
-        $this->assertTrue($verdict, 'listener allow MUST grant the custom action');
-        $this->assertCount(2, $dispatched, 'evaluating + evaluated events MUST both fire');
-        $this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
-        $this->assertInstanceOf(CustomScopeEvaluatedEvent::class, $dispatched[1]);
-        $this->assertSame('besluit_nemen', $dispatched[0]->getAction());
-        $this->assertSame(['behandelaar'], $dispatched[0]->getUserGroups());
-        $this->assertTrue($dispatched[1]->getVerdict());
-        $this->assertTrue($dispatched[1]->isFromListener());
-    }//end testListenerVotingAllowGrantsCustomAction()
+		$this->assertTrue($verdict, 'listener allow MUST grant the custom action');
+		$this->assertCount(2, $dispatched, 'evaluating + evaluated events MUST both fire');
+		$this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
+		$this->assertInstanceOf(CustomScopeEvaluatedEvent::class, $dispatched[1]);
+		$this->assertSame('besluit_nemen', $dispatched[0]->getAction());
+		$this->assertSame(['behandelaar'], $dispatched[0]->getUserGroups());
+		$this->assertTrue($dispatched[1]->getVerdict());
+		$this->assertTrue($dispatched[1]->isFromListener());
+	}//end testListenerVotingAllowGrantsCustomAction()
 
-    public function testListenerVotingDenyRejectsCustomAction(): void
-    {
-        $schema = $this->createSchema(id: 1, authorization: null);
+	public function testListenerVotingDenyRejectsCustomAction(): void {
+		$schema = $this->createSchema(id: 1, authorization: null);
 
-        $dispatched = [];
-        $this->eventDispatcher->method('dispatchTyped')
-            ->willReturnCallback(
-                function ($event) use (&$dispatched) {
-                    $dispatched[] = $event;
-                    if ($event instanceof CustomScopeEvaluatingEvent) {
-                        $event->deny();
-                    }
-                }
-            );
+		$dispatched = [];
+		$this->eventDispatcher->method('dispatchTyped')
+			->willReturnCallback(
+				function ($event) use (&$dispatched) {
+					$dispatched[] = $event;
+					if ($event instanceof CustomScopeEvaluatingEvent) {
+						$event->deny();
+					}
+				}
+			);
 
-        $verdict = $this->handler->hasPermission(
-            schema: $schema,
-            action: 'besluit_nemen',
-            userId: 'behandelaar-1'
-        );
+		$verdict = $this->handler->hasPermission(
+			schema: $schema,
+			action: 'besluit_nemen',
+			userId: 'behandelaar-1'
+		);
 
-        $this->assertFalse($verdict, 'listener deny MUST reject the custom action');
-        $this->assertCount(2, $dispatched, 'paired telemetry event MUST fire on deny too');
-        $this->assertFalse($dispatched[1]->getVerdict());
-        $this->assertTrue($dispatched[1]->isFromListener());
-    }//end testListenerVotingDenyRejectsCustomAction()
+		$this->assertFalse($verdict, 'listener deny MUST reject the custom action');
+		$this->assertCount(2, $dispatched, 'paired telemetry event MUST fire on deny too');
+		$this->assertFalse($dispatched[1]->getVerdict());
+		$this->assertTrue($dispatched[1]->isFromListener());
+	}//end testListenerVotingDenyRejectsCustomAction()
 
-    public function testFirstVerdictWinsRegardlessOfRegistrationOrder(): void
-    {
-        $schema = $this->createSchema(id: 1, authorization: null);
+	public function testFirstVerdictWinsRegardlessOfRegistrationOrder(): void {
+		$schema = $this->createSchema(id: 1, authorization: null);
 
-        // Two listeners: first allows, second tries to deny. The
-        // first verdict MUST win — `allow()`/`deny()` are no-ops once
-        // a verdict has been set.
-        $this->eventDispatcher->method('dispatchTyped')
-            ->willReturnCallback(
-                function ($event) {
-                    if ($event instanceof CustomScopeEvaluatingEvent) {
-                        $event->allow();
-                        $event->deny();
-                        // MUST be a no-op.
-                    }
-                }
-            );
+		// Two listeners: first allows, second tries to deny. The
+		// first verdict MUST win — `allow()`/`deny()` are no-ops once
+		// a verdict has been set.
+		$this->eventDispatcher->method('dispatchTyped')
+			->willReturnCallback(
+				function ($event) {
+					if ($event instanceof CustomScopeEvaluatingEvent) {
+						$event->allow();
+						$event->deny();
+						// MUST be a no-op.
+					}
+				}
+			);
 
-        $verdict = $this->handler->hasPermission(
-            schema: $schema,
-            action: 'besluit_nemen',
-            userId: 'behandelaar-1'
-        );
+		$verdict = $this->handler->hasPermission(
+			schema: $schema,
+			action: 'besluit_nemen',
+			userId: 'behandelaar-1'
+		);
 
-        $this->assertTrue(
-            $verdict,
-            'first verdict (allow) MUST win even if a later listener calls deny()'
-        );
-    }//end testFirstVerdictWinsRegardlessOfRegistrationOrder()
+		$this->assertTrue(
+			$verdict,
+			'first verdict (allow) MUST win even if a later listener calls deny()'
+		);
+	}//end testFirstVerdictWinsRegardlessOfRegistrationOrder()
 
-    public function testNoListenerVoteFallsThroughToStandardChain(): void
-    {
-        // Schema with an explicit empty rule list for the custom
-        // action — the standard chain returns false because the rule
-        // list exists but contains no group entries that match the
-        // user. This is the canonical "no listener voted, no static
-        // rule matched, so deny" outcome.
-        $schema = $this->createSchema(
-            id: 1,
-            authorization: ['besluit_nemen' => []]
-        );
+	public function testNoListenerVoteFallsThroughToStandardChain(): void {
+		// Schema with an explicit empty rule list for the custom
+		// action — the standard chain returns false because the rule
+		// list exists but contains no group entries that match the
+		// user. This is the canonical "no listener voted, no static
+		// rule matched, so deny" outcome.
+		$schema = $this->createSchema(
+			id: 1,
+			authorization: ['besluit_nemen' => []]
+		);
 
-        $dispatched = [];
-        $this->eventDispatcher->method('dispatchTyped')
-            ->willReturnCallback(
-                function ($event) use (&$dispatched) {
-                    $dispatched[] = $event;
-                    // No vote — listener observes but does not decide.
-                }
-            );
+		$dispatched = [];
+		$this->eventDispatcher->method('dispatchTyped')
+			->willReturnCallback(
+				function ($event) use (&$dispatched) {
+					$dispatched[] = $event;
+					// No vote — listener observes but does not decide.
+				}
+			);
 
-        $verdict = $this->handler->hasPermission(
-            schema: $schema,
-            action: 'besluit_nemen',
-            userId: 'behandelaar-1'
-        );
+		$verdict = $this->handler->hasPermission(
+			schema: $schema,
+			action: 'besluit_nemen',
+			userId: 'behandelaar-1'
+		);
 
-        $this->assertFalse($verdict, 'standard chain MUST decide when no listener votes');
-        $this->assertCount(1, $dispatched, 'only the evaluating event fires when no listener votes');
-        $this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
-    }//end testNoListenerVoteFallsThroughToStandardChain()
+		$this->assertFalse($verdict, 'standard chain MUST decide when no listener votes');
+		$this->assertCount(1, $dispatched, 'only the evaluating event fires when no listener votes');
+		$this->assertInstanceOf(CustomScopeEvaluatingEvent::class, $dispatched[0]);
+	}//end testNoListenerVoteFallsThroughToStandardChain()
 
-    public function testCanonicalActionsSkipEventDispatch(): void
-    {
-        $schema = $this->createSchema(id: 1, authorization: null);
+	public function testCanonicalActionsSkipEventDispatch(): void {
+		$schema = $this->createSchema(id: 1, authorization: null);
 
-        $dispatched = [];
-        $this->eventDispatcher->method('dispatchTyped')
-            ->willReturnCallback(
-                function ($event) use (&$dispatched) {
-                    $dispatched[] = $event;
-                }
-            );
+		$dispatched = [];
+		$this->eventDispatcher->method('dispatchTyped')
+			->willReturnCallback(
+				function ($event) use (&$dispatched) {
+					$dispatched[] = $event;
+				}
+			);
 
-        // Each of the canonical 5 actions MUST NOT trip the event dispatch.
-        foreach (['read', 'create', 'update', 'delete', 'list'] as $action) {
-            $this->handler->clearPermissionCache();
-            $this->handler->hasPermission(
-                schema: $schema,
-                action: $action,
-                userId: 'behandelaar-1'
-            );
-        }
+		// Each of the canonical 5 actions MUST NOT trip the event dispatch.
+		foreach (['read', 'create', 'update', 'delete', 'list'] as $action) {
+			$this->handler->clearPermissionCache();
+			$this->handler->hasPermission(
+				schema: $schema,
+				action: $action,
+				userId: 'behandelaar-1'
+			);
+		}
 
-        $this->assertCount(0, $dispatched, 'canonical actions MUST NOT dispatch CustomScopeEvaluatingEvent');
-    }//end testCanonicalActionsSkipEventDispatch()
+		$this->assertCount(0, $dispatched, 'canonical actions MUST NOT dispatch CustomScopeEvaluatingEvent');
+	}//end testCanonicalActionsSkipEventDispatch()
 
-    private function createSchema(int $id, ?array $authorization): Schema
-    {
-        $schema = new Schema();
-        $schema->setId($id);
-        $schema->setAuthorization($authorization);
-        $schema->setTitle('Test Schema '.$id);
-        return $schema;
-    }//end createSchema()
+	private function createSchema(int $id, ?array $authorization): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setAuthorization($authorization);
+		$schema->setTitle('Test Schema ' . $id);
+		return $schema;
+	}//end createSchema()
 }//end class

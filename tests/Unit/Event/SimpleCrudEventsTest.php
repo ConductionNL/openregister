@@ -46,151 +46,137 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-class SimpleCrudEventsTest extends TestCase
-{
-    /**
-     * Created and Deleted events: single entity constructor, single getter.
-     */
-    public static function singleEntityEventProvider(): array
-    {
-        return [
-            'AgentCreatedEvent' => [AgentCreatedEvent::class, Agent::class, 'getAgent'],
-            'AgentDeletedEvent' => [AgentDeletedEvent::class, Agent::class, 'getAgent'],
-            'ApplicationCreatedEvent' => [ApplicationCreatedEvent::class, Application::class, 'getApplication'],
-            'ApplicationDeletedEvent' => [ApplicationDeletedEvent::class, Application::class, 'getApplication'],
-            'ConfigurationCreatedEvent' => [ConfigurationCreatedEvent::class, Configuration::class, 'getConfiguration'],
-            'ConfigurationDeletedEvent' => [ConfigurationDeletedEvent::class, Configuration::class, 'getConfiguration'],
-            'ConversationCreatedEvent' => [ConversationCreatedEvent::class, Conversation::class, 'getConversation'],
-            'ConversationDeletedEvent' => [ConversationDeletedEvent::class, Conversation::class, 'getConversation'],
-            'ObjectCreatedEvent' => [ObjectCreatedEvent::class, ObjectEntity::class, 'getObject'],
-            'ObjectDeletedEvent' => [ObjectDeletedEvent::class, ObjectEntity::class, 'getObject'],
-            'OrganisationCreatedEvent' => [OrganisationCreatedEvent::class, Organisation::class, 'getOrganisation'],
-            'OrganisationDeletedEvent' => [OrganisationDeletedEvent::class, Organisation::class, 'getOrganisation'],
-            'RegisterCreatedEvent' => [RegisterCreatedEvent::class, Register::class, 'getRegister'],
-            'RegisterDeletedEvent' => [RegisterDeletedEvent::class, Register::class, 'getRegister'],
-            'SchemaCreatedEvent' => [SchemaCreatedEvent::class, Schema::class, 'getSchema'],
-            'SchemaDeletedEvent' => [SchemaDeletedEvent::class, Schema::class, 'getSchema'],
-            'SourceCreatedEvent' => [SourceCreatedEvent::class, Source::class, 'getSource'],
-            'SourceDeletedEvent' => [SourceDeletedEvent::class, Source::class, 'getSource'],
-            'ViewCreatedEvent' => [ViewCreatedEvent::class, View::class, 'getView'],
-            'ViewDeletedEvent' => [ViewDeletedEvent::class, View::class, 'getView'],
-        ];
-    }
+class SimpleCrudEventsTest extends TestCase {
+	/**
+	 * Created and Deleted events: single entity constructor, single getter.
+	 */
+	public static function singleEntityEventProvider(): array {
+		return [
+			'AgentCreatedEvent' => [AgentCreatedEvent::class, Agent::class, 'getAgent'],
+			'AgentDeletedEvent' => [AgentDeletedEvent::class, Agent::class, 'getAgent'],
+			'ApplicationCreatedEvent' => [ApplicationCreatedEvent::class, Application::class, 'getApplication'],
+			'ApplicationDeletedEvent' => [ApplicationDeletedEvent::class, Application::class, 'getApplication'],
+			'ConfigurationCreatedEvent' => [ConfigurationCreatedEvent::class, Configuration::class, 'getConfiguration'],
+			'ConfigurationDeletedEvent' => [ConfigurationDeletedEvent::class, Configuration::class, 'getConfiguration'],
+			'ConversationCreatedEvent' => [ConversationCreatedEvent::class, Conversation::class, 'getConversation'],
+			'ConversationDeletedEvent' => [ConversationDeletedEvent::class, Conversation::class, 'getConversation'],
+			'ObjectCreatedEvent' => [ObjectCreatedEvent::class, ObjectEntity::class, 'getObject'],
+			'ObjectDeletedEvent' => [ObjectDeletedEvent::class, ObjectEntity::class, 'getObject'],
+			'OrganisationCreatedEvent' => [OrganisationCreatedEvent::class, Organisation::class, 'getOrganisation'],
+			'OrganisationDeletedEvent' => [OrganisationDeletedEvent::class, Organisation::class, 'getOrganisation'],
+			'RegisterCreatedEvent' => [RegisterCreatedEvent::class, Register::class, 'getRegister'],
+			'RegisterDeletedEvent' => [RegisterDeletedEvent::class, Register::class, 'getRegister'],
+			'SchemaCreatedEvent' => [SchemaCreatedEvent::class, Schema::class, 'getSchema'],
+			'SchemaDeletedEvent' => [SchemaDeletedEvent::class, Schema::class, 'getSchema'],
+			'SourceCreatedEvent' => [SourceCreatedEvent::class, Source::class, 'getSource'],
+			'SourceDeletedEvent' => [SourceDeletedEvent::class, Source::class, 'getSource'],
+			'ViewCreatedEvent' => [ViewCreatedEvent::class, View::class, 'getView'],
+			'ViewDeletedEvent' => [ViewDeletedEvent::class, View::class, 'getView'],
+		];
+	}
 
-    /**
-     * Updated events with getters: two entity constructor, getNewX and getOldX.
-     */
-    public static function updatedEventWithGettersProvider(): array
-    {
-        return [
-            'AgentUpdatedEvent' => [AgentUpdatedEvent::class, Agent::class, 'getNewAgent', 'getOldAgent'],
-            'ApplicationUpdatedEvent' => [ApplicationUpdatedEvent::class, Application::class, 'getNewApplication', 'getOldApplication'],
-            'ConversationUpdatedEvent' => [ConversationUpdatedEvent::class, Conversation::class, 'getNewConversation', 'getOldConversation'],
-            'OrganisationUpdatedEvent' => [OrganisationUpdatedEvent::class, Organisation::class, 'getNewOrganisation', 'getOldOrganisation'],
-            'RegisterUpdatedEvent' => [RegisterUpdatedEvent::class, Register::class, 'getNewRegister', 'getOldRegister'],
-            'SchemaUpdatedEvent' => [SchemaUpdatedEvent::class, Schema::class, 'getNewSchema', 'getOldSchema'],
-            'SourceUpdatedEvent' => [SourceUpdatedEvent::class, Source::class, 'getNewSource', 'getOldSource'],
-        ];
-    }
+	/**
+	 * Updated events with getters: two entity constructor, getNewX and getOldX.
+	 */
+	public static function updatedEventWithGettersProvider(): array {
+		return [
+			'AgentUpdatedEvent' => [AgentUpdatedEvent::class, Agent::class, 'getNewAgent', 'getOldAgent'],
+			'ApplicationUpdatedEvent' => [ApplicationUpdatedEvent::class, Application::class, 'getNewApplication', 'getOldApplication'],
+			'ConversationUpdatedEvent' => [ConversationUpdatedEvent::class, Conversation::class, 'getNewConversation', 'getOldConversation'],
+			'OrganisationUpdatedEvent' => [OrganisationUpdatedEvent::class, Organisation::class, 'getNewOrganisation', 'getOldOrganisation'],
+			'RegisterUpdatedEvent' => [RegisterUpdatedEvent::class, Register::class, 'getNewRegister', 'getOldRegister'],
+			'SchemaUpdatedEvent' => [SchemaUpdatedEvent::class, Schema::class, 'getNewSchema', 'getOldSchema'],
+			'SourceUpdatedEvent' => [SourceUpdatedEvent::class, Source::class, 'getNewSource', 'getOldSource'],
+		];
+	}
 
-    /**
-     * Updated events without getters (store-only).
-     */
-    public static function updatedEventNoGettersProvider(): array
-    {
-        return [
-            'ConfigurationUpdatedEvent' => [ConfigurationUpdatedEvent::class, Configuration::class],
-            'ViewUpdatedEvent' => [ViewUpdatedEvent::class, View::class],
-        ];
-    }
+	/**
+	 * Updated events without getters (store-only).
+	 */
+	public static function updatedEventNoGettersProvider(): array {
+		return [
+			'ConfigurationUpdatedEvent' => [ConfigurationUpdatedEvent::class, Configuration::class],
+			'ViewUpdatedEvent' => [ViewUpdatedEvent::class, View::class],
+		];
+	}
 
-    #[DataProvider('singleEntityEventProvider')]
-    public function testSingleEntityExtendsEvent(string $eventClass, string $entityClass, string $getter): void
-    {
-        $entity = new $entityClass();
-        $event = new $eventClass($entity);
-        $this->assertInstanceOf(Event::class, $event);
-    }
+	#[DataProvider('singleEntityEventProvider')]
+	public function testSingleEntityExtendsEvent(string $eventClass, string $entityClass, string $getter): void {
+		$entity = new $entityClass();
+		$event = new $eventClass($entity);
+		$this->assertInstanceOf(Event::class, $event);
+	}
 
-    #[DataProvider('singleEntityEventProvider')]
-    public function testSingleEntityConstructAndGet(string $eventClass, string $entityClass, string $getter): void
-    {
-        $entity = new $entityClass();
-        $event = new $eventClass($entity);
-        $this->assertSame($entity, $event->$getter());
-    }
+	#[DataProvider('singleEntityEventProvider')]
+	public function testSingleEntityConstructAndGet(string $eventClass, string $entityClass, string $getter): void {
+		$entity = new $entityClass();
+		$event = new $eventClass($entity);
+		$this->assertSame($entity, $event->$getter());
+	}
 
-    #[DataProvider('singleEntityEventProvider')]
-    public function testSingleEntityGetterReturnsSameInstance(string $eventClass, string $entityClass, string $getter): void
-    {
-        $entity = new $entityClass();
-        $event = new $eventClass($entity);
-        $this->assertSame($event->$getter(), $event->$getter());
-    }
+	#[DataProvider('singleEntityEventProvider')]
+	public function testSingleEntityGetterReturnsSameInstance(string $eventClass, string $entityClass, string $getter): void {
+		$entity = new $entityClass();
+		$event = new $eventClass($entity);
+		$this->assertSame($event->$getter(), $event->$getter());
+	}
 
-    #[DataProvider('updatedEventWithGettersProvider')]
-    public function testUpdatedEventExtendsEvent(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void
-    {
-        $newEntity = new $entityClass();
-        $oldEntity = new $entityClass();
-        $event = new $eventClass($newEntity, $oldEntity);
-        $this->assertInstanceOf(Event::class, $event);
-    }
+	#[DataProvider('updatedEventWithGettersProvider')]
+	public function testUpdatedEventExtendsEvent(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void {
+		$newEntity = new $entityClass();
+		$oldEntity = new $entityClass();
+		$event = new $eventClass($newEntity, $oldEntity);
+		$this->assertInstanceOf(Event::class, $event);
+	}
 
-    #[DataProvider('updatedEventWithGettersProvider')]
-    public function testUpdatedEventGetNewEntity(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void
-    {
-        $newEntity = new $entityClass();
-        $oldEntity = new $entityClass();
-        $event = new $eventClass($newEntity, $oldEntity);
-        $this->assertSame($newEntity, $event->$newGetter());
-    }
+	#[DataProvider('updatedEventWithGettersProvider')]
+	public function testUpdatedEventGetNewEntity(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void {
+		$newEntity = new $entityClass();
+		$oldEntity = new $entityClass();
+		$event = new $eventClass($newEntity, $oldEntity);
+		$this->assertSame($newEntity, $event->$newGetter());
+	}
 
-    #[DataProvider('updatedEventWithGettersProvider')]
-    public function testUpdatedEventGetOldEntity(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void
-    {
-        $newEntity = new $entityClass();
-        $oldEntity = new $entityClass();
-        $event = new $eventClass($newEntity, $oldEntity);
-        $this->assertSame($oldEntity, $event->$oldGetter());
-    }
+	#[DataProvider('updatedEventWithGettersProvider')]
+	public function testUpdatedEventGetOldEntity(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void {
+		$newEntity = new $entityClass();
+		$oldEntity = new $entityClass();
+		$event = new $eventClass($newEntity, $oldEntity);
+		$this->assertSame($oldEntity, $event->$oldGetter());
+	}
 
-    #[DataProvider('updatedEventWithGettersProvider')]
-    public function testUpdatedEventNewAndOldAreDifferentInstances(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void
-    {
-        $newEntity = new $entityClass();
-        $oldEntity = new $entityClass();
-        $event = new $eventClass($newEntity, $oldEntity);
-        $this->assertNotSame($event->$newGetter(), $event->$oldGetter());
-    }
+	#[DataProvider('updatedEventWithGettersProvider')]
+	public function testUpdatedEventNewAndOldAreDifferentInstances(string $eventClass, string $entityClass, string $newGetter, string $oldGetter): void {
+		$newEntity = new $entityClass();
+		$oldEntity = new $entityClass();
+		$event = new $eventClass($newEntity, $oldEntity);
+		$this->assertNotSame($event->$newGetter(), $event->$oldGetter());
+	}
 
-    #[DataProvider('updatedEventNoGettersProvider')]
-    public function testUpdatedEventNoGettersExtendsEvent(string $eventClass, string $entityClass): void
-    {
-        $newEntity = new $entityClass();
-        $oldEntity = new $entityClass();
-        $event = new $eventClass($newEntity, $oldEntity);
-        $this->assertInstanceOf(Event::class, $event);
-    }
+	#[DataProvider('updatedEventNoGettersProvider')]
+	public function testUpdatedEventNoGettersExtendsEvent(string $eventClass, string $entityClass): void {
+		$newEntity = new $entityClass();
+		$oldEntity = new $entityClass();
+		$event = new $eventClass($newEntity, $oldEntity);
+		$this->assertInstanceOf(Event::class, $event);
+	}
 
-    /**
-     * ObjectUpdatedEvent is special: getObject() (backward compat), getNewObject(), optional getOldObject().
-     */
-    public function testObjectUpdatedEventGetObject(): void
-    {
-        $newObject = new ObjectEntity();
-        $oldObject = new ObjectEntity();
-        $event = new ObjectUpdatedEvent($newObject, $oldObject);
-        $this->assertSame($newObject, $event->getObject());
-        $this->assertSame($newObject, $event->getNewObject());
-        $this->assertSame($oldObject, $event->getOldObject());
-    }
+	/**
+	 * ObjectUpdatedEvent is special: getObject() (backward compat), getNewObject(), optional getOldObject().
+	 */
+	public function testObjectUpdatedEventGetObject(): void {
+		$newObject = new ObjectEntity();
+		$oldObject = new ObjectEntity();
+		$event = new ObjectUpdatedEvent($newObject, $oldObject);
+		$this->assertSame($newObject, $event->getObject());
+		$this->assertSame($newObject, $event->getNewObject());
+		$this->assertSame($oldObject, $event->getOldObject());
+	}
 
-    public function testObjectUpdatedEventOldObjectNullByDefault(): void
-    {
-        $newObject = new ObjectEntity();
-        $event = new ObjectUpdatedEvent($newObject);
-        $this->assertSame($newObject, $event->getNewObject());
-        $this->assertNull($event->getOldObject());
-    }
+	public function testObjectUpdatedEventOldObjectNullByDefault(): void {
+		$newObject = new ObjectEntity();
+		$event = new ObjectUpdatedEvent($newObject);
+		$this->assertSame($newObject, $event->getNewObject());
+		$this->assertNull($event->getOldObject());
+	}
 }

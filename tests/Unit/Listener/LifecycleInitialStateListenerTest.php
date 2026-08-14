@@ -36,238 +36,214 @@ use Psr\Log\LoggerInterface;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleInitialStateListener
  */
-class LifecycleInitialStateListenerTest extends TestCase
-{
+class LifecycleInitialStateListenerTest extends TestCase {
 
-    /** @var SchemaMapper&MockObject */
-    private $schemaMapper;
+	/** @var SchemaMapper&MockObject */
+	private $schemaMapper;
 
-    /** @var ReferenceResolver&MockObject */
-    private $references;
+	/** @var ReferenceResolver&MockObject */
+	private $references;
 
-    /** @var LoggerInterface&MockObject */
-    private $logger;
+	/** @var LoggerInterface&MockObject */
+	private $logger;
 
-    private LifecycleInitialStateListener $listener;
+	private LifecycleInitialStateListener $listener;
 
+	/**
+	 * Wire the listener with mocked collaborators.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->references = $this->createMock(ReferenceResolver::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->listener = new LifecycleInitialStateListener(
+			$this->schemaMapper,
+			$this->references,
+			$this->logger
+		);
 
-    /**
-     * Wire the listener with mocked collaborators.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->references   = $this->createMock(ReferenceResolver::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
-        $this->listener     = new LifecycleInitialStateListener(
-            $this->schemaMapper,
-            $this->references,
-            $this->logger
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Build a schema carrying the given configuration block.
+	 *
+	 * @param array<string, mixed> $config The schema configuration.
+	 *
+	 * @return Schema
+	 */
+	private function schema(array $config): Schema {
+		$schema = new Schema();
+		$schema->setConfiguration($config);
+		return $schema;
+	}//end schema()
 
+	/**
+	 * Build an object bound to schema "s1" / register "r1" with the given data.
+	 *
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function object(array $data): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setSchema('s1');
+		$object->setRegister('r1');
+		$object->setObject($data);
+		return $object;
+	}//end object()
 
-    /**
-     * Build a schema carrying the given configuration block.
-     *
-     * @param array<string, mixed> $config The schema configuration.
-     *
-     * @return Schema
-     */
-    private function schema(array $config): Schema
-    {
-        $schema = new Schema();
-        $schema->setConfiguration($config);
-        return $schema;
+	/**
+	 * Static initial still works: empty status field is set to "open".
+	 *
+	 * @return void
+	 */
+	public function testStaticInitialIsApplied(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
+		);
 
-    }//end schema()
+		$object = $this->object(['title' => 'x']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
+		$this->assertSame('open', $object->getObject()['status']);
 
-    /**
-     * Build an object bound to schema "s1" / register "r1" with the given data.
-     *
-     * @param array<string, mixed> $data The object data.
-     *
-     * @return ObjectEntity
-     */
-    private function object(array $data): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setSchema('s1');
-        $object->setRegister('r1');
-        $object->setObject($data);
-        return $object;
+	}//end testStaticInitialIsApplied()
 
-    }//end object()
+	/**
+	 * A caller-supplied value is never overridden.
+	 *
+	 * @return void
+	 */
+	public function testCallerValueNotOverridden(): void {
+		$this->schemaMapper->method('find')->willReturn(
+			$this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
+		);
+		// A static-initial path must not consult the reference resolver.
+		$this->references->expects($this->never())->method('resolveAll');
 
+		$object = $this->object(['status' => 'closed']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-    /**
-     * Static initial still works: empty status field is set to "open".
-     *
-     * @return void
-     */
-    public function testStaticInitialIsApplied(): void
-    {
-        $this->schemaMapper->method('find')->willReturn(
-            $this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
-        );
+		$this->assertSame('closed', $object->getObject()['status']);
 
-        $object = $this->object(['title' => 'x']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
+	}//end testCallerValueNotOverridden()
 
-        $this->assertSame('open', $object->getObject()['status']);
+	/**
+	 * Dynamic initial resolves the state from a related object (dict form).
+	 *
+	 * @return void
+	 */
+	public function testDynamicInitialFromReferenceDict(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
 
-    }//end testStaticInitialIsApplied()
+		$this->references->expects($this->once())
+			->method('resolveAll')
+			->willReturn(['caseType' => ['initialStatus' => 'open']]);
 
+		$object = $this->object(['caseTypeId' => 'ct-1']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-    /**
-     * A caller-supplied value is never overridden.
-     *
-     * @return void
-     */
-    public function testCallerValueNotOverridden(): void
-    {
-        $this->schemaMapper->method('find')->willReturn(
-            $this->schema(['x-openregister-lifecycle' => ['field' => 'status', 'initial' => 'open']])
-        );
-        // A static-initial path must not consult the reference resolver.
-        $this->references->expects($this->never())->method('resolveAll');
+		$this->assertSame('open', $object->getObject()['status']);
 
-        $object = $this->object(['status' => 'closed']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
+	}//end testDynamicInitialFromReferenceDict()
 
-        $this->assertSame('closed', $object->getObject()['status']);
+	/**
+	 * Dynamic initial also accepts the "@ref.<ref>.<field>" token form.
+	 *
+	 * @return void
+	 */
+	public function testDynamicInitialFromRefToken(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => '@ref.caseType.initialStatus',
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
 
-    }//end testCallerValueNotOverridden()
+		$this->references->method('resolveAll')->willReturn(['caseType' => ['initialStatus' => 'intake']]);
 
+		$object = $this->object(['caseTypeId' => 'ct-1']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-    /**
-     * Dynamic initial resolves the state from a related object (dict form).
-     *
-     * @return void
-     */
-    public function testDynamicInitialFromReferenceDict(): void
-    {
-        $config = [
-            'x-openregister-lifecycle'   => [
-                'field'   => 'status',
-                'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
-            ],
-            'x-openregister-references'  => [
-                'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
-            ],
-        ];
-        $this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->assertSame('intake', $object->getObject()['status']);
 
-        $this->references->expects($this->once())
-            ->method('resolveAll')
-            ->willReturn(['caseType' => ['initialStatus' => 'open']]);
+	}//end testDynamicInitialFromRefToken()
 
-        $object = $this->object(['caseTypeId' => 'ct-1']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
+	/**
+	 * An unresolvable dynamic reference is a logged no-op (field stays unset).
+	 *
+	 * @return void
+	 */
+	public function testUnresolvableReferenceIsNoOp(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+			],
+			'x-openregister-references' => [
+				'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->references->method('resolveAll')->willReturn(['caseType' => null]);
 
-        $this->assertSame('open', $object->getObject()['status']);
+		$object = $this->object(['caseTypeId' => 'missing']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-    }//end testDynamicInitialFromReferenceDict()
+		$this->assertArrayNotHasKey('status', $object->getObject());
 
+	}//end testUnresolvableReferenceIsNoOp()
 
-    /**
-     * Dynamic initial also accepts the "@ref.<ref>.<field>" token form.
-     *
-     * @return void
-     */
-    public function testDynamicInitialFromRefToken(): void
-    {
-        $config = [
-            'x-openregister-lifecycle'   => [
-                'field'   => 'status',
-                'initial' => '@ref.caseType.initialStatus',
-            ],
-            'x-openregister-references'  => [
-                'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
-            ],
-        ];
-        $this->schemaMapper->method('find')->willReturn($this->schema($config));
+	/**
+	 * A reference name not declared on the schema is a logged no-op.
+	 *
+	 * @return void
+	 */
+	public function testUndeclaredReferenceIsNoOp(): void {
+		$config = [
+			'x-openregister-lifecycle' => [
+				'field' => 'status',
+				'initial' => ['from' => 'ghost', 'field' => 'initialStatus'],
+			],
+		];
+		$this->schemaMapper->method('find')->willReturn($this->schema($config));
+		$this->references->expects($this->never())->method('resolveAll');
 
-        $this->references->method('resolveAll')->willReturn(['caseType' => ['initialStatus' => 'intake']]);
+		$object = $this->object(['caseTypeId' => 'ct-1']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-        $object = $this->object(['caseTypeId' => 'ct-1']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
+		$this->assertArrayNotHasKey('status', $object->getObject());
 
-        $this->assertSame('intake', $object->getObject()['status']);
+	}//end testUndeclaredReferenceIsNoOp()
 
-    }//end testDynamicInitialFromRefToken()
+	/**
+	 * No lifecycle annotation → completely unaffected.
+	 *
+	 * @return void
+	 */
+	public function testNoLifecycleAnnotationIsNoOp(): void {
+		$this->schemaMapper->method('find')->willReturn($this->schema([]));
 
+		$object = $this->object(['title' => 'x']);
+		$this->listener->handle(new ObjectCreatingEvent($object));
 
-    /**
-     * An unresolvable dynamic reference is a logged no-op (field stays unset).
-     *
-     * @return void
-     */
-    public function testUnresolvableReferenceIsNoOp(): void
-    {
-        $config = [
-            'x-openregister-lifecycle'   => [
-                'field'   => 'status',
-                'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
-            ],
-            'x-openregister-references'  => [
-                'caseType' => ['schema' => 'ct', 'mode' => 'relatedObject', 'field' => 'caseTypeId'],
-            ],
-        ];
-        $this->schemaMapper->method('find')->willReturn($this->schema($config));
-        $this->references->method('resolveAll')->willReturn(['caseType' => null]);
+		$this->assertArrayNotHasKey('status', $object->getObject());
 
-        $object = $this->object(['caseTypeId' => 'missing']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
-
-        $this->assertArrayNotHasKey('status', $object->getObject());
-
-    }//end testUnresolvableReferenceIsNoOp()
-
-
-    /**
-     * A reference name not declared on the schema is a logged no-op.
-     *
-     * @return void
-     */
-    public function testUndeclaredReferenceIsNoOp(): void
-    {
-        $config = [
-            'x-openregister-lifecycle' => [
-                'field'   => 'status',
-                'initial' => ['from' => 'ghost', 'field' => 'initialStatus'],
-            ],
-        ];
-        $this->schemaMapper->method('find')->willReturn($this->schema($config));
-        $this->references->expects($this->never())->method('resolveAll');
-
-        $object = $this->object(['caseTypeId' => 'ct-1']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
-
-        $this->assertArrayNotHasKey('status', $object->getObject());
-
-    }//end testUndeclaredReferenceIsNoOp()
-
-
-    /**
-     * No lifecycle annotation → completely unaffected.
-     *
-     * @return void
-     */
-    public function testNoLifecycleAnnotationIsNoOp(): void
-    {
-        $this->schemaMapper->method('find')->willReturn($this->schema([]));
-
-        $object = $this->object(['title' => 'x']);
-        $this->listener->handle(new ObjectCreatingEvent($object));
-
-        $this->assertArrayNotHasKey('status', $object->getObject());
-
-    }//end testNoLifecycleAnnotationIsNoOp()
-
+	}//end testNoLifecycleAnnotationIsNoOp()
 
 }//end class

@@ -40,177 +40,166 @@ use RuntimeException;
 /**
  * @coversDefaultClass \OCA\OpenRegister\Controller\MergeController
  */
-class MergeControllerTest extends TestCase
-{
+class MergeControllerTest extends TestCase {
 
-    private MergeService&MockObject $mergeService;
+	private MergeService&MockObject $mergeService;
 
-    /**
-     * @var IRequest&MockObject
-     */
-    private $request;
+	/**
+	 * @var IRequest&MockObject
+	 */
+	private $request;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private MergeController $controller;
+	private MergeController $controller;
 
-    protected function setUp(): void
-    {
-        $this->request      = $this->createMock(IRequest::class);
-        $this->mergeService = $this->createMock(MergeService::class);
-        $this->userSession  = $this->createMock(IUserSession::class);
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->mergeService = $this->createMock(MergeService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
 
-        $this->controller = new MergeController(
-            'openregister',
-            $this->request,
-            $this->mergeService,
-            $this->userSession
-        );
-    }//end setUp()
+		$this->controller = new MergeController(
+			'openregister',
+			$this->request,
+			$this->mergeService,
+			$this->userSession
+		);
+	}//end setUp()
 
-    /**
-     * ADR-029 / ADR-005: every merge action must declare @NoAdminRequired +
-     * @NoCSRFRequired via docblock and must NOT be @PublicPage.
-     *
-     * @return void
-     */
-    public function testAllActionsCarryAuthAnnotations(): void
-    {
-        $reflection = new ReflectionClass(MergeController::class);
+	/**
+	 * ADR-029 / ADR-005: every merge action must declare @NoAdminRequired +
+	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 *
+	 * @return void
+	 */
+	public function testAllActionsCarryAuthAnnotations(): void {
+		$reflection = new ReflectionClass(MergeController::class);
 
-        foreach (['preview', 'execute', 'reverse'] as $method) {
-            $doc = $reflection->getMethod($method)->getDocComment();
-            $this->assertNotFalse($doc, sprintf('%s must have a docblock.', $method));
-            $this->assertStringContainsString('@NoAdminRequired', $doc, sprintf('%s missing @NoAdminRequired', $method));
-            $this->assertStringContainsString('@NoCSRFRequired', $doc, sprintf('%s missing @NoCSRFRequired', $method));
-            $this->assertStringNotContainsString('@PublicPage', $doc, sprintf('%s must not be @PublicPage', $method));
-        }
-    }//end testAllActionsCarryAuthAnnotations()
+		foreach (['preview', 'execute', 'reverse'] as $method) {
+			$doc = $reflection->getMethod($method)->getDocComment();
+			$this->assertNotFalse($doc, sprintf('%s must have a docblock.', $method));
+			$this->assertStringContainsString('@NoAdminRequired', $doc, sprintf('%s missing @NoAdminRequired', $method));
+			$this->assertStringContainsString('@NoCSRFRequired', $doc, sprintf('%s missing @NoCSRFRequired', $method));
+			$this->assertStringNotContainsString('@PublicPage', $doc, sprintf('%s must not be @PublicPage', $method));
+		}
+	}//end testAllActionsCarryAuthAnnotations()
 
-    /**
-     * Reachability (ADR-029): every route target method referenced in
-     * routes.php must exist on the controller.
-     *
-     * @return void
-     */
-    public function testRouteTargetMethodsExist(): void
-    {
-        $reflection = new ReflectionClass(MergeController::class);
-        foreach (['preview', 'execute', 'reverse'] as $method) {
-            $this->assertTrue($reflection->hasMethod($method));
-        }
-    }//end testRouteTargetMethodsExist()
+	/**
+	 * Reachability (ADR-029): every route target method referenced in
+	 * routes.php must exist on the controller.
+	 *
+	 * @return void
+	 */
+	public function testRouteTargetMethodsExist(): void {
+		$reflection = new ReflectionClass(MergeController::class);
+		foreach (['preview', 'execute', 'reverse'] as $method) {
+			$this->assertTrue($reflection->hasMethod($method));
+		}
+	}//end testRouteTargetMethodsExist()
 
-    public function testPreviewDelegatesToPreviewMerge(): void
-    {
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['from', '', 'from-uuid'],
-                ['into', '', 'into-uuid'],
-            ]
-        );
+	public function testPreviewDelegatesToPreviewMerge(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['from', '', 'from-uuid'],
+				['into', '', 'into-uuid'],
+			]
+		);
 
-        $payload = ['from' => 'from-uuid', 'into' => 'into-uuid', 'postMergeGoldenRecord' => []];
-        $this->mergeService->expects($this->once())
-            ->method('previewMerge')
-            ->with('from-uuid', 'into-uuid')
-            ->willReturn($payload);
+		$payload = ['from' => 'from-uuid', 'into' => 'into-uuid', 'postMergeGoldenRecord' => []];
+		$this->mergeService->expects($this->once())
+			->method('previewMerge')
+			->with('from-uuid', 'into-uuid')
+			->willReturn($payload);
 
-        $response = $this->controller->preview();
+		$response = $this->controller->preview();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame($payload, $response->getData());
-    }//end testPreviewDelegatesToPreviewMerge()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($payload, $response->getData());
+	}//end testPreviewDelegatesToPreviewMerge()
 
-    public function testPreviewNeverWrites(): void
-    {
-        $this->request->method('getParam')->willReturnArgument(1);
-        $this->mergeService->expects($this->once())->method('previewMerge')->willReturn([]);
-        $this->mergeService->expects($this->never())->method('executeMerge');
-        $this->mergeService->expects($this->never())->method('reverseMerge');
+	public function testPreviewNeverWrites(): void {
+		$this->request->method('getParam')->willReturnArgument(1);
+		$this->mergeService->expects($this->once())->method('previewMerge')->willReturn([]);
+		$this->mergeService->expects($this->never())->method('executeMerge');
+		$this->mergeService->expects($this->never())->method('reverseMerge');
 
-        $this->controller->preview();
-    }//end testPreviewNeverWrites()
+		$this->controller->preview();
+	}//end testPreviewNeverWrites()
 
-    public function testExecuteEnforcesRbacViaNotAuthorized(): void
-    {
-        $this->request->method('getParam')->willReturnArgument(1);
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
+	public function testExecuteEnforcesRbacViaNotAuthorized(): void {
+		$this->request->method('getParam')->willReturnArgument(1);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->mergeService->method('executeMerge')->willThrowException(
-            new NotAuthorizedException(message: 'denied')
-        );
+		$this->mergeService->method('executeMerge')->willThrowException(
+			new NotAuthorizedException(message: 'denied')
+		);
 
-        $response = $this->controller->execute();
+		$response = $this->controller->execute();
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-    }//end testExecuteEnforcesRbacViaNotAuthorized()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testExecuteEnforcesRbacViaNotAuthorized()
 
-    public function testExecuteDelegatesToExecuteMergeWithActingUser(): void
-    {
-        $this->request->method('getParam')->willReturnMap(
-            [
-                ['from', '', 'from-uuid'],
-                ['into', '', 'into-uuid'],
-                ['reason', '', 'dup-review'],
-            ]
-        );
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-        $this->userSession->method('getUser')->willReturn($user);
+	public function testExecuteDelegatesToExecuteMergeWithActingUser(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['from', '', 'from-uuid'],
+				['into', '', 'into-uuid'],
+				['reason', '', 'dup-review'],
+			]
+		);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $operation = ['mergedIntoUuid' => 'into-uuid', 'mergedFromUuids' => ['from-uuid']];
-        $this->mergeService->expects($this->once())
-            ->method('executeMerge')
-            ->with('from-uuid', 'into-uuid', 'dup-review', 'alice')
-            ->willReturn($operation);
+		$operation = ['mergedIntoUuid' => 'into-uuid', 'mergedFromUuids' => ['from-uuid']];
+		$this->mergeService->expects($this->once())
+			->method('executeMerge')
+			->with('from-uuid', 'into-uuid', 'dup-review', 'alice')
+			->willReturn($operation);
 
-        $response = $this->controller->execute();
+		$response = $this->controller->execute();
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame($operation, $response->getData());
-    }//end testExecuteDelegatesToExecuteMergeWithActingUser()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($operation, $response->getData());
+	}//end testExecuteDelegatesToExecuteMergeWithActingUser()
 
-    public function testExecuteMapsRuntimeExceptionToNotFound(): void
-    {
-        $this->request->method('getParam')->willReturnArgument(1);
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->mergeService->method('executeMerge')->willThrowException(new RuntimeException('missing'));
+	public function testExecuteMapsRuntimeExceptionToNotFound(): void {
+		$this->request->method('getParam')->willReturnArgument(1);
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->mergeService->method('executeMerge')->willThrowException(new RuntimeException('missing'));
 
-        $response = $this->controller->execute();
+		$response = $this->controller->execute();
 
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }//end testExecuteMapsRuntimeExceptionToNotFound()
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testExecuteMapsRuntimeExceptionToNotFound()
 
-    public function testReverseDelegatesToReverseMergeWithActingUser(): void
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('bob');
-        $this->userSession->method('getUser')->willReturn($user);
+	public function testReverseDelegatesToReverseMergeWithActingUser(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $updated = ['reversible' => false, 'reversedBy' => 'bob'];
-        $this->mergeService->expects($this->once())
-            ->method('reverseMerge')
-            ->with('op-uuid', 'bob')
-            ->willReturn($updated);
+		$updated = ['reversible' => false, 'reversedBy' => 'bob'];
+		$this->mergeService->expects($this->once())
+			->method('reverseMerge')
+			->with('op-uuid', 'bob')
+			->willReturn($updated);
 
-        $response = $this->controller->reverse('op-uuid');
+		$response = $this->controller->reverse('op-uuid');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame($updated, $response->getData());
-    }//end testReverseDelegatesToReverseMergeWithActingUser()
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame($updated, $response->getData());
+	}//end testReverseDelegatesToReverseMergeWithActingUser()
 
-    public function testReverseMapsNotAuthorizedToForbidden(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-        $this->mergeService->method('reverseMerge')->willThrowException(
-            new NotAuthorizedException(message: 'denied')
-        );
+	public function testReverseMapsNotAuthorizedToForbidden(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->mergeService->method('reverseMerge')->willThrowException(
+			new NotAuthorizedException(message: 'denied')
+		);
 
-        $response = $this->controller->reverse('op-uuid');
+		$response = $this->controller->reverse('op-uuid');
 
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-    }//end testReverseMapsNotAuthorizedToForbidden()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testReverseMapsNotAuthorizedToForbidden()
 }//end class

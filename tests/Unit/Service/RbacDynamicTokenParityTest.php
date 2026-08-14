@@ -47,142 +47,132 @@ use Psr\Log\LoggerInterface;
 /**
  * Asserts the shared resolver understands every token a share rule can use.
  */
-class RbacDynamicTokenParityTest extends TestCase
-{
+class RbacDynamicTokenParityTest extends TestCase {
 
-    private ConditionMatcher $matcher;
+	private ConditionMatcher $matcher;
 
-    private OperatorEvaluator $evaluator;
+	private OperatorEvaluator $evaluator;
 
-    private IUserSession&MockObject $userSession;
+	private IUserSession&MockObject $userSession;
 
-    private IGroupManager&MockObject $groupManager;
+	private IGroupManager&MockObject $groupManager;
 
-    protected function setUp(): void
-    {
-        $logger = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		$logger = $this->createMock(LoggerInterface::class);
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
 
-        $this->userSession = $this->createMock(IUserSession::class);
-        $this->userSession->method('getUser')->willReturn($user);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession->method('getUser')->willReturn($user);
 
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->groupManager->method('getUserGroupIds')->willReturn(['finance', 'hr']);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['finance', 'hr']);
 
-        $this->evaluator = new OperatorEvaluator($logger);
-        $this->matcher   = new ConditionMatcher(
-            $this->userSession,
-            $this->createMock(ContainerInterface::class),
-            $this->evaluator,
-            $logger,
-            $this->groupManager
-        );
-    }//end setUp()
+		$this->evaluator = new OperatorEvaluator($logger);
+		$this->matcher = new ConditionMatcher(
+			$this->userSession,
+			$this->createMock(ContainerInterface::class),
+			$this->evaluator,
+			$logger,
+			$this->groupManager
+		);
+	}//end setUp()
 
-    /**
-     * The bare user token resolves on the shared path.
-     */
-    public function testResolvesBareUserToken(): void
-    {
-        $this->assertSame('alice', $this->matcher->resolveDynamicValue('$userId'));
-        $this->assertSame('alice', $this->matcher->resolveDynamicValue('$user'));
-    }
+	/**
+	 * The bare user token resolves on the shared path.
+	 */
+	public function testResolvesBareUserToken(): void {
+		$this->assertSame('alice', $this->matcher->resolveDynamicValue('$userId'));
+		$this->assertSame('alice', $this->matcher->resolveDynamicValue('$user'));
+	}
 
-    /**
-     * The DOTTED user token resolves too — this is what the SQL path could not do.
-     */
-    public function testResolvesDottedUserToken(): void
-    {
-        $this->assertSame('alice', $this->matcher->resolveDynamicValue('$user.uid'));
-    }
+	/**
+	 * The DOTTED user token resolves too — this is what the SQL path could not do.
+	 */
+	public function testResolvesDottedUserToken(): void {
+		$this->assertSame('alice', $this->matcher->resolveDynamicValue('$user.uid'));
+	}
 
-    /**
-     * `$user.groups` resolves to an ARRAY, which a share rule needs for group grants.
-     */
-    public function testResolvesUserGroupsToAnArray(): void
-    {
-        $resolved = $this->matcher->resolveDynamicValue('$user.groups');
+	/**
+	 * `$user.groups` resolves to an ARRAY, which a share rule needs for group grants.
+	 */
+	public function testResolvesUserGroupsToAnArray(): void {
+		$resolved = $this->matcher->resolveDynamicValue('$user.groups');
 
-        $this->assertIsArray($resolved);
-        $this->assertContains('hr', $resolved);
-    }
+		$this->assertIsArray($resolved);
+		$this->assertContains('hr', $resolved);
+	}
 
-    /**
-     * A non-token value passes through untouched, so ordinary literals still work.
-     */
-    public function testPassesLiteralsThrough(): void
-    {
-        $this->assertSame('finance', $this->matcher->resolveDynamicValue('finance'));
-        $this->assertSame(42, $this->matcher->resolveDynamicValue(42));
-        $this->assertNull($this->matcher->resolveDynamicValue(null));
-    }
+	/**
+	 * A non-token value passes through untouched, so ordinary literals still work.
+	 */
+	public function testPassesLiteralsThrough(): void {
+		$this->assertSame('finance', $this->matcher->resolveDynamicValue('finance'));
+		$this->assertSame(42, $this->matcher->resolveDynamicValue(42));
+		$this->assertNull($this->matcher->resolveDynamicValue(null));
+	}
 
-    /**
-     * An unknown dotted property resolves to null so the caller denies, rather
-     * than being compared as a literal string (which would silently pass through).
-     */
-    public function testUnknownDottedPropertyResolvesToNull(): void
-    {
-        $this->assertNull($this->matcher->resolveDynamicValue('$user.notAThing'));
-    }
+	/**
+	 * An unknown dotted property resolves to null so the caller denies, rather
+	 * than being compared as a literal string (which would silently pass through).
+	 */
+	public function testUnknownDottedPropertyResolvesToNull(): void {
+		$this->assertNull($this->matcher->resolveDynamicValue('$user.notAThing'));
+	}
 
-    /**
-     * End to end: a share rule using `$user.groups` admits an object listing one
-     * of the user's groups, and denies one that lists none of them.
-     *
-     * This is the verdict the SQL path must reproduce; it is asserted here on the
-     * single-object path so the expected answer is unambiguous.
-     */
-    public function testGroupShareRuleAdmitsAndDeniesCorrectly(): void
-    {
-        $match = ['sharedWith' => ['$contains' => '$user.groups']];
+	/**
+	 * End to end: a share rule using `$user.groups` admits an object listing one
+	 * of the user's groups, and denies one that lists none of them.
+	 *
+	 * This is the verdict the SQL path must reproduce; it is asserted here on the
+	 * single-object path so the expected answer is unambiguous.
+	 */
+	public function testGroupShareRuleAdmitsAndDeniesCorrectly(): void {
+		$match = ['sharedWith' => ['$contains' => '$user.groups']];
 
-        $this->assertTrue(
-            $this->matcher->objectMatchesConditions(['sharedWith' => ['hr']], $match),
-            'an object listing one of the user groups should match'
-        );
+		$this->assertTrue(
+			$this->matcher->objectMatchesConditions(['sharedWith' => ['hr']], $match),
+			'an object listing one of the user groups should match'
+		);
 
-        $this->assertFalse(
-            $this->matcher->objectMatchesConditions(['sharedWith' => ['legal']], $match),
-            'an object listing none of the user groups should not match'
-        );
+		$this->assertFalse(
+			$this->matcher->objectMatchesConditions(['sharedWith' => ['legal']], $match),
+			'an object listing none of the user groups should not match'
+		);
 
-        $this->assertFalse(
-            $this->matcher->objectMatchesConditions(['sharedWith' => []], $match),
-            'an empty share list should not match'
-        );
+		$this->assertFalse(
+			$this->matcher->objectMatchesConditions(['sharedWith' => []], $match),
+			'an empty share list should not match'
+		);
 
-        $this->assertFalse(
-            $this->matcher->objectMatchesConditions([], $match),
-            'a missing share list should not match'
-        );
-    }
+		$this->assertFalse(
+			$this->matcher->objectMatchesConditions([], $match),
+			'a missing share list should not match'
+		);
+	}
 
-    /**
-     * A per-user share rule admits the named user and denies everyone else.
-     */
-    public function testUserShareRuleAdmitsAndDeniesCorrectly(): void
-    {
-        $match = ['sharedWith' => ['$contains' => '$userId']];
+	/**
+	 * A per-user share rule admits the named user and denies everyone else.
+	 */
+	public function testUserShareRuleAdmitsAndDeniesCorrectly(): void {
+		$match = ['sharedWith' => ['$contains' => '$userId']];
 
-        $this->assertTrue($this->matcher->objectMatchesConditions(['sharedWith' => ['alice']], $match));
-        $this->assertFalse($this->matcher->objectMatchesConditions(['sharedWith' => ['bob']], $match));
-    }
+		$this->assertTrue($this->matcher->objectMatchesConditions(['sharedWith' => ['alice']], $match));
+		$this->assertFalse($this->matcher->objectMatchesConditions(['sharedWith' => ['bob']], $match));
+	}
 
-    /**
-     * The literal-string trap: if resolution regressed to passing tokens through,
-     * an object whose list happened to contain the token TEXT would match. It
-     * must not, because the token must always be resolved first.
-     */
-    public function testTokenTextIsNeverMatchedLiterally(): void
-    {
-        $match = ['sharedWith' => ['$contains' => '$userId']];
+	/**
+	 * The literal-string trap: if resolution regressed to passing tokens through,
+	 * an object whose list happened to contain the token TEXT would match. It
+	 * must not, because the token must always be resolved first.
+	 */
+	public function testTokenTextIsNeverMatchedLiterally(): void {
+		$match = ['sharedWith' => ['$contains' => '$userId']];
 
-        $this->assertFalse(
-            $this->matcher->objectMatchesConditions(['sharedWith' => ['$userId']], $match),
-            'the literal token text must not satisfy a share rule'
-        );
-    }
+		$this->assertFalse(
+			$this->matcher->objectMatchesConditions(['sharedWith' => ['$userId']], $match),
+			'the literal token text must not satisfy a share rule'
+		);
+	}
 }

@@ -38,105 +38,98 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class SchemasControllerJsonLdMappingTest extends TestCase
-{
-    private IRequest $request;
-    private SchemaMapper $schemaMapper;
-    private SchemasController $controller;
+class SchemasControllerJsonLdMappingTest extends TestCase {
+	private IRequest $request;
+	private SchemaMapper $schemaMapper;
+	private SchemasController $controller;
 
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-    protected function setUp(): void
-    {
-        $this->request      = $this->createMock(IRequest::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
+		$groupManager->method('isAdmin')->willReturn(true);
 
-        $userSession = $this->createMock(\OCP\IUserSession::class);
-        $user        = $this->createMock(\OCP\IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $userSession->method('getUser')->willReturn($user);
-        $groupManager = $this->createMock(\OCP\IGroupManager::class);
-        $groupManager->method('getUserGroupIds')->willReturn(['admin']);
-        $groupManager->method('isAdmin')->willReturn(true);
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function ($id) use ($userSession, $groupManager) {
+				if ($id === \OCP\IUserSession::class) {
+					return $userSession;
+				}
 
-        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
-        $container->method('get')->willReturnCallback(
-            function ($id) use ($userSession, $groupManager) {
-                if ($id === \OCP\IUserSession::class) {
-                    return $userSession;
-                }
+				if ($id === \OCP\IGroupManager::class) {
+					return $groupManager;
+				}
 
-                if ($id === \OCP\IGroupManager::class) {
-                    return $groupManager;
-                }
+				return null;
+			}
+		);
 
-                return null;
-            }
-        );
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/ctx');
 
-        $urlGenerator = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/ctx');
+		$this->controller = new SchemasController(
+			'openregister',
+			$this->request,
+			$this->createMock(IAppConfig::class),
+			$this->schemaMapper,
+			$this->createMock(MagicMapper::class),
+			$this->createMock(UploadService::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(SchemaCacheHandler::class),
+			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(SchemaService::class),
+			$this->createMock(LoggerInterface::class),
+			$container,
+			$this->createMock(SchemaVersioningService::class),
+			new JsonLdContextService($urlGenerator)
+		);
+	}
 
-        $this->controller = new SchemasController(
-            'openregister',
-            $this->request,
-            $this->createMock(IAppConfig::class),
-            $this->schemaMapper,
-            $this->createMock(MagicMapper::class),
-            $this->createMock(UploadService::class),
-            $this->createMock(AuditTrailMapper::class),
-            $this->createMock(OrganisationService::class),
-            $this->createMock(SchemaCacheHandler::class),
-            $this->createMock(FacetCacheHandler::class),
-            $this->createMock(SchemaService::class),
-            $this->createMock(LoggerInterface::class),
-            $container,
-            $this->createMock(SchemaVersioningService::class),
-            new JsonLdContextService($urlGenerator)
-        );
-    }
+	public function testCreateRejectsInvalidMapping(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Persoon',
+				'configuration' => [
+					'jsonld' => ['properties' => ['name' => 'just a label']],
+				],
+			]
+		);
 
+		// The mapper must never be reached for an invalid mapping.
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
 
-    public function testCreateRejectsInvalidMapping(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            [
-                'title'         => 'Persoon',
-                'configuration' => [
-                    'jsonld' => ['properties' => ['name' => 'just a label']],
-                ],
-            ]
-        );
+		$response = $this->controller->create();
 
-        // The mapper must never be reached for an invalid mapping.
-        $this->schemaMapper->expects($this->never())->method('createFromArray');
+		$this->assertSame(400, $response->getStatus());
+		$this->assertArrayHasKey('errors', $response->getData());
+	}
 
-        $response = $this->controller->create();
+	public function testCreateAcceptsValidMapping(): void {
+		$this->request->method('getParams')->willReturn(
+			[
+				'title' => 'Persoon',
+				'configuration' => [
+					'jsonld' => [
+						'@vocab' => 'https://schema.org/',
+						'properties' => ['name' => 'https://schema.org/name'],
+					],
+				],
+			]
+		);
 
-        $this->assertSame(400, $response->getStatus());
-        $this->assertArrayHasKey('errors', $response->getData());
-    }
+		$schema = new Schema();
+		$schema->setId(1);
+		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($schema);
 
+		$response = $this->controller->create();
 
-    public function testCreateAcceptsValidMapping(): void
-    {
-        $this->request->method('getParams')->willReturn(
-            [
-                'title'         => 'Persoon',
-                'configuration' => [
-                    'jsonld' => [
-                        '@vocab'     => 'https://schema.org/',
-                        'properties' => ['name' => 'https://schema.org/name'],
-                    ],
-                ],
-            ]
-        );
-
-        $schema = new Schema();
-        $schema->setId(1);
-        $this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($schema);
-
-        $response = $this->controller->create();
-
-        $this->assertSame(201, $response->getStatus());
-    }
+		$this->assertSame(201, $response->getStatus());
+	}
 }

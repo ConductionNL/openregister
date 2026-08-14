@@ -1,11 +1,17 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	objectStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
 	<div>
-		<NcDialog v-if="navigationStore.modal === 'viewObject'"
+		<NcDialog
+			v-if="navigationStore.modal === 'viewObject'"
 			:name="getModalTitle()"
 			size="large"
 			:can-close="true"
@@ -14,14 +20,25 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<!-- Register/Schema Selection (for new objects with multiple options) -->
 				<div v-if="showRegisterSchemaSelection" class="selection-step">
 					<div class="selection-container">
-						<h3>{{ t('openregister', 'Select Register and Schema') }}</h3>
+						<h3>
+							{{ t('openregister', 'Select Register and Schema') }}
+						</h3>
 						<p class="selection-hint">
-							{{ t('openregister', 'Please select which register and schema to use for the new object') }}
+							{{
+								t(
+									'openregister',
+									'Please select which register and schema to use for the new object',
+								)
+							}}
 						</p>
 
 						<div class="selection-fields">
-							<div v-if="availableRegisters.length > 1" class="field-group">
-								<label for="register-select">{{ t('openregister', 'Register') }}</label>
+							<div
+								v-if="availableRegisters.length > 1"
+								class="field-group">
+								<label for="register-select">{{
+									t('openregister', 'Register')
+								}}</label>
 								<NcSelect
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
@@ -29,12 +46,18 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:options="availableRegisters"
 									label="title"
 									track-by="id"
-									:placeholder="t('openregister', 'Choose a register')"
+									:placeholder="
+										t('openregister', 'Choose a register')
+									"
 									:clearable="false" />
 							</div>
 
-							<div v-if="availableSchemas.length > 1" class="field-group">
-								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
+							<div
+								v-if="availableSchemas.length > 1"
+								class="field-group">
+								<label for="schema-select">{{
+									t('openregister', 'Schema')
+								}}</label>
 								<NcSelect
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
@@ -42,7 +65,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:options="availableSchemas"
 									label="title"
 									track-by="id"
-									:placeholder="t('openregister', 'Choose a schema')"
+									:placeholder="
+										t('openregister', 'Choose a schema')
+									"
 									:clearable="false" />
 							</div>
 
@@ -68,108 +93,367 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
-												<th scope="col" class="tableColumnConstrained">
+												<th
+													scope="col"
+													class="tableColumnConstrained">
 													Property
 												</th>
-												<th scope="col" class="tableColumnExpanded">
+												<th
+													scope="col"
+													class="tableColumnExpanded">
 													Value
 												</th>
 											</tr>
 										</thead>
 										<tbody>
 											<tr
-												v-for="([key, value]) in objectProperties"
+												v-for="[
+													key,
+													value,
+												] in objectProperties"
 												:key="key"
 												class="viewTableRow"
 												:class="{
-													'selected-row': selectedProperty === key,
-													'edited-row': formData[key] !== undefined,
-													'non-editable-row': !isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value),
-													...getPropertyValidationClass(key, value)
+													'selected-row':
+														selectedProperty === key,
+													'edited-row':
+														formData[key] !== undefined,
+													'non-editable-row':
+														!isPropertyEditable(
+															key,
+															formData[key]
+																!== undefined
+																? formData[key]
+																: value,
+														),
+													...getPropertyValidationClass(
+														key,
+														value,
+													),
 												}"
 												@click="handleRowClick(key, $event)">
-												<td class="tableColumnConstrained prop-cell">
+												<td
+													class="tableColumnConstrained prop-cell">
 													<div class="prop-cell-content">
-														<AlertCircle v-if="getPropertyValidationClass(key, value) === 'property-invalid'"
-															:title="getPropertyErrorMessage(key, value)"
+														<AlertCircle
+															v-if="
+																getPropertyValidationClass(
+																	key,
+																	value,
+																)
+																=== 'property-invalid'
+															"
+															:title="
+																getPropertyErrorMessage(
+																	key,
+																	value,
+																)
+															"
 															class="validation-icon error-icon"
 															:size="16" />
-														<Alert v-else-if="getPropertyValidationClass(key, value) === 'property-warning'"
-															:title="getPropertyWarningMessage(key, value)"
+														<Alert
+															v-else-if="
+																getPropertyValidationClass(
+																	key,
+																	value,
+																)
+																=== 'property-warning'
+															"
+															:title="
+																getPropertyWarningMessage(
+																	key,
+																	value,
+																)
+															"
 															class="validation-icon warning-icon"
 															:size="16" />
-														<Plus v-else-if="getPropertyValidationClass(key, value) === 'property-new'"
-															:title="getPropertyNewMessage(key)"
+														<Plus
+															v-else-if="
+																getPropertyValidationClass(
+																	key,
+																	value,
+																) === 'property-new'
+															"
+															:title="
+																getPropertyNewMessage(
+																	key,
+																)
+															"
 															class="validation-icon new-icon"
 															:size="16" />
-														<LockOutline v-else-if="!isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)"
-															:title="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
+														<LockOutline
+															v-else-if="
+																!isPropertyEditable(
+																	key,
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value,
+																)
+															"
+															:title="
+																getEditabilityWarning(
+																	key,
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value,
+																)
+															"
 															class="validation-icon lock-icon"
 															:size="16" />
 														<span
-															:title="getPropertyTooltip(key)">
-															{{ getPropertyDisplayName(key) }}
+															:title="
+																getPropertyTooltip(
+																	key,
+																)
+															">
+															{{
+																getPropertyDisplayName(
+																	key,
+																)
+															}}
 														</span>
 													</div>
 												</td>
-												<td class="tableColumnExpanded value-cell">
-													<div v-if="selectedProperty === key && isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)" class="value-input-container" @click.stop>
+												<td
+													class="tableColumnExpanded value-cell">
+													<div
+														v-if="
+															selectedProperty === key
+															&& isPropertyEditable(
+																key,
+																formData[key]
+																	!== undefined
+																	? formData[key]
+																	: value,
+															)
+														"
+														class="value-input-container"
+														@click.stop>
 														<!-- Boolean properties -->
 														<NcCheckboxRadioSwitch
-															v-if="getPropertyInputComponent(key) === 'NcCheckboxRadioSwitch'"
-															:model-value="formData[key] !== undefined ? formData[key] : value"
+															v-if="
+																getPropertyInputComponent(
+																	key,
+																)
+																=== 'NcCheckboxRadioSwitch'
+															"
+															:model-value="
+																formData[key]
+																!== undefined
+																	? formData[key]
+																	: value
+															"
 															type="switch"
-															@update:modelValue="updatePropertyValue(key, $event)">
-															{{ getPropertyDisplayName(key) }}
+															@update:modelValue="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															">
+															{{
+																getPropertyDisplayName(
+																	key,
+																)
+															}}
 														</NcCheckboxRadioSwitch>
 
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
-															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:model-value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
-															:type="getPropertyInputType(key)"
-															:label="getPropertyDisplayName(key)"
-															@update:modelValue="updatePropertyValue(key, $event)" />
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																)
+																=== 'NcDateTimePickerNative'
+															"
+															:model-value="
+																stringToDate(
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value,
+																	currentSchema
+																		.properties[
+																		key
+																	].format,
+																) || undefined
+															"
+															:type="
+																getPropertyInputType(
+																	key,
+																)
+															"
+															:label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@update:modelValue="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															" />
 
 														<!-- Text/Number properties -->
 														<NcTextField
 															v-else
 															ref="propertyValueInput"
-															:model-value="String(formData[key] !== undefined ? formData[key] : value || '')"
-															:type="getPropertyInputType(key)"
-															:aria-label="getPropertyDisplayName(key)"
-															:placeholder="getPropertyDisplayName(key)"
-															:min="getPropertyMinimum(key)"
-															:max="getPropertyMaximum(key)"
-															:step="getPropertyStep(key)"
-															@update:modelValue="updatePropertyValue(key, $event)" />
+															:model-value="
+																String(
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value
+																				|| '',
+																)
+															"
+															:type="
+																getPropertyInputType(
+																	key,
+																)
+															"
+															:aria-label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															:placeholder="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															:min="
+																getPropertyMinimum(
+																	key,
+																)
+															"
+															:max="
+																getPropertyMaximum(
+																	key,
+																)
+															"
+															:step="
+																getPropertyStep(key)
+															"
+															@update:modelValue="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															" />
 													</div>
 													<div v-else>
-														<template v-if="formData[key] !== undefined">
+														<template
+															v-if="
+																formData[key]
+																!== undefined
+															">
 															<!-- Show edited value -->
 															<pre
-																v-if="typeof formData[key] === 'object' && formData[key] !== null"
+																v-if="
+																	typeof formData[
+																		key
+																	] === 'object'
+																	&& formData[key]
+																		!== null
+																"
 																title="JSON object (edited)"
-																class="json-value">{{ formatValue(formData[key]) }}</pre>
+																class="json-value"
+																>{{
+																	formatValue(
+																		formData[
+																			key
+																		],
+																	)
+																}}</pre>
 															<span
-																v-else-if="isValidDate(formData[key])"
-																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
+																v-else-if="
+																	isValidDate(
+																		formData[
+																			key
+																		],
+																	)
+																"
+																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`"
+																>{{
+																	new Date(
+																		formData[
+																			key
+																		],
+																	).toLocaleString()
+																}}</span
+															>
 															<span
 																v-else
-																:title="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
+																:title="
+																	currentSchema
+																		?.properties?.[
+																		key
+																	]?.description
+																	|| `Property: ${key} (edited)`
+																"
+																>{{
+																	getDisplayValue(
+																		key,
+																		value,
+																	)
+																}}</span
+															>
 														</template>
 														<template v-else>
 															<!-- Show original value -->
 															<pre
-																v-if="typeof value === 'object' && value !== null"
+																v-if="
+																	typeof value
+																		=== 'object'
+																	&& value !== null
+																"
 																title="JSON object"
-																class="json-value">{{ formatValue(value) }}</pre>
+																class="json-value"
+																>{{
+																	formatValue(
+																		value,
+																	)
+																}}</pre>
 															<span
-																v-else-if="isValidDate(value)"
-																:title="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
+																v-else-if="
+																	isValidDate(
+																		value,
+																	)
+																"
+																:title="`Date: ${new Date(value).toISOString()}`"
+																>{{
+																	new Date(
+																		value,
+																	).toLocaleString()
+																}}</span
+															>
 															<span
 																v-else
-																:title="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
+																:title="
+																	currentSchema
+																		?.properties?.[
+																		key
+																	]?.description
+																	|| `Property: ${key}`
+																"
+																>{{
+																	getDisplayValue(
+																		key,
+																		value,
+																	)
+																}}</span
+															>
 														</template>
 													</div>
 												</td>
@@ -178,25 +462,39 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</AppTab>
-							<AppTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
+							<AppTab
+								v-if="!isNewObject"
+								:title="t('openregister', 'Metadata')">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
-												<th scope="col" class="tableColumnConstrained">
-													{{ t('openregister', 'Metadata') }}
+												<th
+													scope="col"
+													class="tableColumnConstrained">
+													{{
+														t('openregister', 'Metadata')
+													}}
 												</th>
-												<th scope="col" class="tableColumnExpanded">
+												<th
+													scope="col"
+													class="tableColumnExpanded">
 													Value
 												</th>
-												<th scope="col" class="tableColumnActions">
+												<th
+													scope="col"
+													class="tableColumnActions">
 													Actions
 												</th>
 											</tr>
 										</thead>
 										<tbody>
 											<tr
-												v-for="([key, value, hasAction]) in metadataProperties"
+												v-for="[
+													key,
+													value,
+													hasAction,
+												] in metadataProperties"
 												:key="key"
 												class="viewTableRow">
 												<td class="tableColumnConstrained">
@@ -207,13 +505,24 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</td>
 												<td class="tableColumnActions">
 													<NcButton
-														v-if="hasAction && key === 'ID'"
+														v-if="
+															hasAction && key === 'ID'
+														"
 														class="copy-button"
 														size="small"
-														@click="copyToClipboard(objectStore.objectItem.id)">
+														@click="
+															copyToClipboard(
+																objectStore
+																	.objectItem.id,
+															)
+														">
 														<template #icon>
-															<Check v-if="isCopied" :size="16" />
-															<ContentCopy v-else :size="16" />
+															<Check
+																v-if="isCopied"
+																:size="16" />
+															<ContentCopy
+																v-else
+																:size="16" />
 														</template>
 														{{ isCopied ? t('openregister', 'Copied') : t('openregister', 'Copy') }}
 													</NcButton>
@@ -224,15 +533,26 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								</div>
 							</AppTab>
 							<AppTab :title="t('openregister', 'Data')">
-								<NcNoteCard v-if="success" type="success" class="note-card">
-									<p>{{ t('openregister', 'Object successfully modified') }}</p>
+								<NcNoteCard
+									v-if="success"
+									type="success"
+									class="note-card">
+									<p>
+										{{
+											t(
+												'openregister',
+												'Object successfully modified',
+											)
+										}}
+									</p>
 								</NcNoteCard>
 								<div class="json-editor">
-									<div :class="`codeMirrorContainer ${getTheme()}`">
+									<div
+										:class="`codeMirrorContainer ${getTheme()}`">
 										<CodeMirror
 											v-model="jsonData"
 											:basic="true"
-											placeholder="{ &quot;key&quot;: &quot;value&quot; }"
+											placeholder='{ "key": "value" }'
 											:dark="getTheme() === 'dark'"
 											:linter="jsonParseLinter()"
 											:lang="json()"
@@ -247,35 +567,33 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											Format JSON
 										</NcButton>
 									</div>
-									<span v-if="!isValidJson(jsonData)" class="error-message">
+									<span
+										v-if="!isValidJson(jsonData)"
+										class="error-message">
 										Invalid JSON format
 									</span>
 								</div>
 							</AppTab>
-							<AppTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
-								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
+							<AppTab
+								v-if="!isNewObject"
+								:title="t('openregister', 'Uses')">
+								<div
+									v-if="objectStore.uses.results.length > 0"
+									class="search-list-table">
 									<table class="table">
 										<thead>
 											<tr class="table-row">
-												<th scope="col">
-													ID
-												</th>
-												<th scope="col">
-													URI
-												</th>
-												<th scope="col">
-													Schema
-												</th>
-												<th scope="col">
-													Register
-												</th>
-												<th scope="col">
-													Actions
-												</th>
+												<th scope="col">ID</th>
+												<th scope="col">URI</th>
+												<th scope="col">Schema</th>
+												<th scope="col">Register</th>
+												<th scope="col">Actions</th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr v-for="use in objectStore.uses.results"
+											<tr
+												v-for="use in objectStore.uses
+													.results"
 												:key="use['@self'].id"
 												class="table-row">
 												<td>{{ use['@self'].id }}</td>
@@ -283,7 +601,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<td>{{ use['@self'].schema }}</td>
 												<td>{{ use['@self'].register }}</td>
 												<td>
-													<NcButton @click="objectStore.setObjectItem(use); navigationStore.setModal('viewObject')">
+													<NcButton
+														@click="
+															() => {
+																objectStore.setObjectItem(
+																	use,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
+														">
 														<template #icon>
 															<Eye :size="20" />
 														</template>
@@ -298,38 +626,46 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No uses found for this object</p>
 								</NcNoteCard>
 							</AppTab>
-							<AppTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
-								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
+							<AppTab
+								v-if="!isNewObject"
+								:title="t('openregister', 'Used by')">
+								<div
+									v-if="objectStore.used.results.length > 0"
+									class="search-list-table">
 									<table class="table">
 										<thead>
 											<tr class="table-row">
-												<th scope="col">
-													ID
-												</th>
-												<th scope="col">
-													URI
-												</th>
-												<th scope="col">
-													Schema
-												</th>
-												<th scope="col">
-													Register
-												</th>
-												<th scope="col">
-													Actions
-												</th>
+												<th scope="col">ID</th>
+												<th scope="col">URI</th>
+												<th scope="col">Schema</th>
+												<th scope="col">Register</th>
+												<th scope="col">Actions</th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr v-for="usedBy in objectStore.used.results"
+											<tr
+												v-for="usedBy in objectStore.used
+													.results"
 												:key="usedBy['@self'].id"
 												class="table-row">
 												<td>{{ usedBy['@self'].id }}</td>
 												<td>{{ usedBy['@self'].uri }}</td>
 												<td>{{ usedBy['@self'].schema }}</td>
-												<td>{{ usedBy['@self'].register }}</td>
 												<td>
-													<NcButton @click="objectStore.setObjectItem(usedBy); navigationStore.setModal('viewObject')">
+													{{ usedBy['@self'].register }}
+												</td>
+												<td>
+													<NcButton
+														@click="
+															() => {
+																objectStore.setObjectItem(
+																	usedBy,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
+														">
 														<template #icon>
 															<Eye :size="20" />
 														</template>
@@ -344,38 +680,47 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No objects are using this object</p>
 								</NcNoteCard>
 							</AppTab>
-							<AppTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
-								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
+							<AppTab
+								v-if="!isNewObject"
+								:title="t('openregister', 'Contracts')">
+								<div
+									v-if="objectStore.contracts.length > 0"
+									class="search-list-table">
 									<table class="table">
 										<thead>
 											<tr class="table-row">
-												<th scope="col">
-													ID
-												</th>
-												<th scope="col">
-													URI
-												</th>
-												<th scope="col">
-													Schema
-												</th>
-												<th scope="col">
-													Register
-												</th>
-												<th scope="col">
-													Actions
-												</th>
+												<th scope="col">ID</th>
+												<th scope="col">URI</th>
+												<th scope="col">Schema</th>
+												<th scope="col">Register</th>
+												<th scope="col">Actions</th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr v-for="contract in objectStore.contracts"
+											<tr
+												v-for="contract in objectStore.contracts"
 												:key="contract['@self'].id"
 												class="table-row">
 												<td>{{ contract['@self'].id }}</td>
 												<td>{{ contract['@self'].uri }}</td>
-												<td>{{ contract['@self'].schema }}</td>
-												<td>{{ contract['@self'].register }}</td>
 												<td>
-													<NcButton @click="objectStore.setObjectItem(contract); navigationStore.setModal('viewObject')">
+													{{ contract['@self'].schema }}
+												</td>
+												<td>
+													{{ contract['@self'].register }}
+												</td>
+												<td>
+													<NcButton
+														@click="
+															() => {
+																objectStore.setObjectItem(
+																	contract,
+																)
+																navigationStore.setModal(
+																	'viewObject',
+																)
+															}
+														">
 														<template #icon>
 															<Eye :size="20" />
 														</template>
@@ -390,112 +735,260 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
 							</AppTab>
-							<AppTab v-if="!isNewObject" :title="t('openregister', 'Files')">
-								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
+							<AppTab
+								v-if="!isNewObject"
+								:title="t('openregister', 'Files')">
+								<div
+									v-if="paginatedFiles.length > 0"
+									class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
 												<th class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:model-value="allFilesSelected"
-														:indeterminate="someFilesSelected"
-														:aria-label="t('openregister', 'Select All')"
-														@update:modelValue="toggleSelectAllFiles" />
+														:model-value="
+															allFilesSelected
+														"
+														:indeterminate="
+															someFilesSelected
+														"
+														:aria-label="
+															t(
+																'openregister',
+																'Select All',
+															)
+														"
+														@update:modelValue="
+															toggleSelectAllFiles
+														" />
 												</th>
-												<th scope="col" class="tableColumnExpanded">
+												<th
+													scope="col"
+													class="tableColumnExpanded">
 													Name
 												</th>
-												<th scope="col" class="tableColumnConstrained">
+												<th
+													scope="col"
+													class="tableColumnConstrained">
 													Size
 												</th>
-												<th scope="col" class="tableColumnConstrained">
+												<th
+													scope="col"
+													class="tableColumnConstrained">
 													Type
 												</th>
-												<th scope="col" class="tableColumnConstrained">
+												<th
+													scope="col"
+													class="tableColumnConstrained">
 													Labels
 												</th>
-												<th scope="col" class="tableColumnActions">
+												<th
+													scope="col"
+													class="tableColumnActions">
 													<NcActions
 														:force-name="true"
-														:disabled="selectedAttachments.length === 0"
-														:title="selectedAttachments.length === 0 ? 'Select one or more files to use mass actions' : `Mass actions (${selectedAttachments.length} selected)`"
+														:disabled="
+															selectedAttachments.length
+															=== 0
+														"
+														:title="
+															selectedAttachments.length
+															=== 0
+																? 'Select one or more files to use mass actions'
+																: `Mass actions (${selectedAttachments.length} selected)`
+														"
 														:menu-name="`Mass Actions (${selectedAttachments.length})`">
 														<template #icon>
-															<FormatListChecks :size="20" />
+															<FormatListChecks
+																:size="20" />
 														</template>
 														<NcActionButton
-															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
-															@click="deleteSelectedFiles">
+															:disabled="
+																fileIdsLoading.length
+																	> 0
+																|| selectedAttachments.length
+																	=== 0
+															"
+															@click="
+																deleteSelectedFiles
+															">
 															<template #icon>
-																<NcLoadingIcon v-if="fileIdsLoading.length > 0" :size="20" />
-																<Delete v-else :size="20" />
+																<NcLoadingIcon
+																	v-if="
+																		fileIdsLoading.length
+																		> 0
+																	"
+																	:size="20" />
+																<Delete
+																	v-else
+																	:size="20" />
 															</template>
-															Delete {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
+															Delete
+															{{
+																selectedAttachments.length
+															}}
+															file{{
+																selectedAttachments.length
+																> 1
+																	? 's'
+																	: ''
+															}}
 														</NcActionButton>
 													</NcActions>
 												</th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr v-for="(attachment, i) in paginatedFiles"
+											<tr
+												v-for="(
+													attachment, i
+												) in paginatedFiles"
 												:key="`${attachment.id}${i}`"
-												:class="{ 'active': activeAttachment === attachment.id }"
+												:class="{
+													active:
+														activeAttachment
+														=== attachment.id,
+												}"
 												class="viewTableRow"
-												@click="() => {
-													if (activeAttachment === attachment.id) activeAttachment = null
-													else activeAttachment = attachment.id
-												}">
+												@click="
+													() => {
+														if (
+															activeAttachment
+															=== attachment.id
+														)
+															activeAttachment = null
+														else
+															activeAttachment =
+																attachment.id
+													}
+												">
 												<td class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:model-value="selectedAttachments.includes(attachment.id)"
+														:model-value="
+															selectedAttachments.includes(
+																attachment.id,
+															)
+														"
 														:aria-labelledby="`attachment-row-title-${attachment.id}`"
-														@update:modelValue="(checked) => toggleFileSelection(attachment.id, checked)" />
+														@update:modelValue="
+															(checked) =>
+																toggleFileSelection(
+																	attachment.id,
+																	checked,
+																)
+														" />
 												</td>
-												<td :id="`attachment-row-title-${attachment.id}`" class="tableColumnExpanded table-row-title">
+												<td
+													:id="`attachment-row-title-${attachment.id}`"
+													class="tableColumnExpanded table-row-title">
 													<!-- Show warning icon if file is not shared -->
-													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
+													<ExclamationThick
+														v-if="
+															!attachment.accessUrl
+															&& !attachment.downloadUrl
+														"
 														title="Not shared"
 														class="warningIcon"
 														:size="20" />
 													<!-- Show published icon if file is shared -->
-													<FileOutline v-else class="publishedIcon" :size="20" />
-													{{ truncateFileName(attachment.name ?? attachment?.title) }}
+													<FileOutline
+														v-else
+														class="publishedIcon"
+														:size="20" />
+													{{
+														truncateFileName(
+															attachment.name
+																?? attachment?.title,
+														)
+													}}
 												</td>
 												<td class="tableColumnConstrained">
-													{{ formatFileSize(attachment?.size) }}
+													{{
+														formatFileSize(
+															attachment?.size,
+														)
+													}}
 												</td>
 												<td class="tableColumnConstrained">
-													{{ attachment?.type || 'No type' }}
+													{{
+														attachment?.type || 'No type'
+													}}
 												</td>
 												<td class="tableColumnConstrained">
-													<div v-if="editingLabelsFileId !== attachment.id" class="fileLabelsContainer">
-														<NcCounterBubble v-for="label of attachment.labels" :key="label">
+													<div
+														v-if="
+															editingLabelsFileId
+															!== attachment.id
+														"
+														class="fileLabelsContainer">
+														<NcCounterBubble
+															v-for="label of attachment.labels"
+															:key="label">
 															{{ label }}
 														</NcCounterBubble>
 													</div>
-													<div v-else class="fileLabelsEditContainer">
+													<div
+														v-else
+														class="fileLabelsEditContainer">
 														<NcSelect
 															v-model="editingLabels"
-															:options="availableLabels"
+															:options="
+																availableLabels
+															"
 															:taggable="true"
 															:multiple="true"
 															:disabled="labelsLoading"
-															:input-label="t('openregister', 'Labels')" />
-														<div class="fileLabelsEditActions">
-															<NcButton :disabled="labelsLoading"
+															:input-label="
+																t(
+																	'openregister',
+																	'Labels',
+																)
+															" />
+														<div
+															class="fileLabelsEditActions">
+															<NcButton
+																:disabled="
+																	labelsLoading
+																"
 																variant="primary"
-																:aria-label="t('openregister', 'Save labels')"
-																@click="saveFileLabels(attachment)">
+																:aria-label="
+																	t(
+																		'openregister',
+																		'Save labels',
+																	)
+																"
+																@click="
+																	saveFileLabels(
+																		attachment,
+																	)
+																">
 																<template #icon>
-																	<NcLoadingIcon v-if="labelsLoading" :size="20" />
-																	<Check v-else :size="20" />
+																	<NcLoadingIcon
+																		v-if="
+																			labelsLoading
+																		"
+																		:size="20" />
+																	<Check
+																		v-else
+																		:size="20" />
 																</template>
 															</NcButton>
-															<NcButton :disabled="labelsLoading"
-																:aria-label="t('openregister', 'Cancel')"
-																@click="cancelFileLabels()">
+															<NcButton
+																:disabled="
+																	labelsLoading
+																"
+																:aria-label="
+																	t(
+																		'openregister',
+																		'Cancel',
+																	)
+																"
+																@click="
+																	cancelFileLabels()
+																">
 																<template #icon>
-																	<Cancel :size="20" />
+																	<Cancel
+																		:size="20" />
 																</template>
 															</NcButton>
 														</div>
@@ -503,24 +996,49 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												</td>
 												<td class="tableColumnActions">
 													<NcActions>
-														<NcActionButton @click="openFile(attachment)">
+														<NcActionButton
+															@click="
+																openFile(attachment)
+															">
 															<template #icon>
-																<OpenInNew :size="20" />
+																<OpenInNew
+																	:size="20" />
 															</template>
 															View
 														</NcActionButton>
-														<NcActionButton @click="editFileLabels(attachment)">
+														<NcActionButton
+															@click="
+																editFileLabels(
+																	attachment,
+																)
+															">
 															<template #icon>
 																<Tag :size="20" />
 															</template>
 															Labels
 														</NcActionButton>
 														<NcActionButton
-															:disabled="fileIdsLoading.includes(attachment.id)"
-															@click="deleteFile(attachment)">
+															:disabled="
+																fileIdsLoading.includes(
+																	attachment.id,
+																)
+															"
+															@click="
+																deleteFile(
+																	attachment,
+																)
+															">
 															<template #icon>
-																<NcLoadingIcon v-if="fileIdsLoading.includes(attachment.id)" :size="20" />
-																<Delete v-else :size="20" />
+																<NcLoadingIcon
+																	v-if="
+																		fileIdsLoading.includes(
+																			attachment.id,
+																		)
+																	"
+																	:size="20" />
+																<Delete
+																	v-else
+																	:size="20" />
 															</template>
 															Delete
 														</NcActionButton>
@@ -530,9 +1048,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-								<NcEmptyContent v-else
+								<NcEmptyContent
+									v-else
 									name="No files attached"
-									:description="isNewObject ? 'Save the object first to attach files' : 'No files have been attached to this object'">
+									:description="
+										isNewObject
+											? 'Save the object first to attach files'
+											: 'No files have been attached to this object'
+									">
 									<template #icon>
 										<FileOutline :size="64" />
 									</template>
@@ -540,40 +1063,55 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 								<!-- Files Pagination -->
 								<PaginationComponent
-									v-if="objectStore.files?.results?.length > filesPerPage"
+									v-if="
+										objectStore.files?.results?.length
+										> filesPerPage
+									"
 									:current-page="filesCurrentPage"
 									:total-pages="filesTotalPages"
-									:total-items="objectStore.files?.results?.length || 0"
+									:total-items="
+										objectStore.files?.results?.length || 0
+									"
 									:current-page-size="filesPerPage"
 									:min-items-to-show="5"
 									@page-changed="onFilesPageChanged"
 									@page-size-changed="onFilesPageSizeChanged" />
 							</AppTab>
-							<AppTab v-if="!isNewObject && relationContext" title="Emails">
+							<AppTab
+								v-if="!isNewObject && relationContext"
+								title="Emails">
 								<EmailsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
 							</AppTab>
-							<AppTab v-if="!isNewObject && relationContext" title="Events">
+							<AppTab
+								v-if="!isNewObject && relationContext"
+								title="Events">
 								<EventsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
 							</AppTab>
-							<AppTab v-if="!isNewObject && relationContext" title="Contacts">
+							<AppTab
+								v-if="!isNewObject && relationContext"
+								title="Contacts">
 								<ContactsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
 							</AppTab>
-							<AppTab v-if="!isNewObject && relationContext" title="Deck">
+							<AppTab
+								v-if="!isNewObject && relationContext"
+								title="Deck">
 								<DeckTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
 							</AppTab>
-							<AppTab v-if="!isNewObject && relationContext" title="Relations">
+							<AppTab
+								v-if="!isNewObject && relationContext"
+								title="Relations">
 								<RelationsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
@@ -591,7 +1129,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Close
 				</NcButton>
-				<NcButton v-if="!isNewObject" @click="navigationStore.setModal('uploadFiles'); objectStore.setObjectItem(objectStore.objectItem)">
+				<NcButton
+					v-if="!isNewObject"
+					@click="
+						() => {
+							navigationStore.setModal('uploadFiles')
+							objectStore.setObjectItem(objectStore.objectItem)
+						}
+					">
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -727,7 +1272,15 @@ export default {
 			// call was a silent no-op there. Gate the call on this flag instead.
 			isMounted: false,
 			objectEditors: {},
-			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
+			tabOptions: [
+				'Properties',
+				'Metadata',
+				'Data',
+				'Uses',
+				'Used by',
+				'Contracts',
+				'Files',
+			],
 			selectedAttachments: [],
 			fileIdsLoading: [],
 			editingLabelsFileId: null,
@@ -752,9 +1305,12 @@ export default {
 		 * @spec exclude computed gate for register/schema selection step
 		 */
 		showRegisterSchemaSelection() {
-			return this.isNewObject
+			return (
+				this.isNewObject
 				&& !this.registerSchemaSelectionConfirmed
-				&& (this.availableRegisters.length > 1 || this.availableSchemas.length > 1)
+				&& (this.availableRegisters.length > 1
+					|| this.availableSchemas.length > 1)
+			)
 		},
 
 		// Available registers for selection
@@ -778,8 +1334,11 @@ export default {
 		 * @spec exclude computed form-validation gate
 		 */
 		canProceedToProperties() {
-			const hasRegister = this.availableRegisters.length === 1 || this.selectedRegisterForNewObject
-			const hasSchema = this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
+			const hasRegister =
+				this.availableRegisters.length === 1
+				|| this.selectedRegisterForNewObject
+			const hasSchema =
+				this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
 			return hasRegister && hasSchema
 		},
 
@@ -796,28 +1355,30 @@ export default {
 
 				const defaultProperties = []
 
-				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
+				for (const [key, schemaProperty] of Object.entries(
+					schemaProperties,
+				)) {
 					// Add with appropriate default value based on type
 					let defaultValue
 					switch (schemaProperty.type) {
-					case 'string':
-						defaultValue = schemaProperty.const || ''
-						break
-					case 'number':
-					case 'integer':
-						defaultValue = 0
-						break
-					case 'boolean':
-						defaultValue = false
-						break
-					case 'array':
-						defaultValue = []
-						break
-					case 'object':
-						defaultValue = {}
-						break
-					default:
-						defaultValue = ''
+						case 'string':
+							defaultValue = schemaProperty.const || ''
+							break
+						case 'number':
+						case 'integer':
+							defaultValue = 0
+							break
+						case 'boolean':
+							defaultValue = false
+							break
+						case 'array':
+							defaultValue = []
+							break
+						case 'object':
+							defaultValue = {}
+							break
+						default:
+							defaultValue = ''
 					}
 					defaultProperties.push([key, defaultValue])
 				}
@@ -829,8 +1390,9 @@ export default {
 			const schemaProperties = this.currentSchema?.properties || {}
 
 			// Start with properties that exist in the object
-			const existingProperties = Object.entries(objectData)
-				.filter(([key]) => key !== '@self' && key !== 'id')
+			const existingProperties = Object.entries(objectData).filter(
+				([key]) => key !== '@self' && key !== 'id',
+			)
 
 			// Add schema properties that don't exist in the object yet
 			const missingSchemaProperties = []
@@ -839,24 +1401,24 @@ export default {
 					// Add with appropriate default value based on type
 					let defaultValue
 					switch (schemaProperty.type) {
-					case 'string':
-						defaultValue = schemaProperty.const || ''
-						break
-					case 'number':
-					case 'integer':
-						defaultValue = 0
-						break
-					case 'boolean':
-						defaultValue = false
-						break
-					case 'array':
-						defaultValue = []
-						break
-					case 'object':
-						defaultValue = {}
-						break
-					default:
-						defaultValue = ''
+						case 'string':
+							defaultValue = schemaProperty.const || ''
+							break
+						case 'number':
+						case 'integer':
+							defaultValue = 0
+							break
+						case 'boolean':
+							defaultValue = false
+							break
+						case 'array':
+							defaultValue = []
+							break
+						case 'object':
+							defaultValue = {}
+							break
+						default:
+							defaultValue = ''
 					}
 					missingSchemaProperties.push([key, defaultValue])
 				}
@@ -890,14 +1452,20 @@ export default {
 			const inherited = {}
 			for (const ref of allOf) {
 				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(s =>
-					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				const parentSchema = schemaStore.schemaList.find(
+					(s) =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| String(s.id) === String(schemaId),
 				)
 				if (parentSchema?.properties) {
 					Object.assign(inherited, parentSchema.properties)
 				}
 			}
-			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
+			return {
+				...schema,
+				properties: { ...inherited, ...(schema.properties || {}) },
+			}
 		},
 		/**
 		 * @spec exclude computed aggregate loading flag for file actions
@@ -925,7 +1493,12 @@ export default {
 		 * @spec exclude computed select-all state for current files page
 		 */
 		allFilesSelected() {
-			return this.paginatedFiles.length > 0 && this.paginatedFiles.every(file => this.selectedAttachments.includes(file.id))
+			return (
+				this.paginatedFiles.length > 0
+				&& this.paginatedFiles.every((file) =>
+					this.selectedAttachments.includes(file.id),
+				)
+			)
 		},
 		/**
 		 * @spec exclude computed indeterminate-selection state for files
@@ -942,7 +1515,9 @@ export default {
 
 			// First, add all schema properties
 			if (this.currentSchema && this.currentSchema.properties) {
-				for (const [key, value] of Object.entries(this.currentSchema.properties)) {
+				for (const [key, value] of Object.entries(
+					this.currentSchema.properties,
+				)) {
 					fields[key] = value || { type: 'string' }
 				}
 			}
@@ -986,44 +1561,32 @@ export default {
 			const metadata = []
 
 			// ID with copy action
-			metadata.push([
-				'ID',
-				obj.id || 'Not set',
-				true,
-			])
+			metadata.push(['ID', obj.id || 'Not set', true])
 
 			// Register
-			metadata.push([
-				'Register',
-				this.registerTitle || 'Not set',
-				false,
-			])
+			metadata.push(['Register', this.registerTitle || 'Not set', false])
 
 			// Schema
-			metadata.push([
-				'Schema',
-				this.schemaTitle || 'Not set',
-				false,
-			])
+			metadata.push(['Schema', this.schemaTitle || 'Not set', false])
 
 			// Version
-			metadata.push([
-				'Version',
-				obj['@self']?.version || 'Not set',
-				false,
-			])
+			metadata.push(['Version', obj['@self']?.version || 'Not set', false])
 
 			// Created
 			metadata.push([
 				'Created',
-				obj['@self']?.created ? new Date(obj['@self'].created).toLocaleString() : 'Not set',
+				obj['@self']?.created
+					? new Date(obj['@self'].created).toLocaleString()
+					: 'Not set',
 				false,
 			])
 
 			// Updated
 			metadata.push([
 				'Updated',
-				obj['@self']?.updated ? new Date(obj['@self'].updated).toLocaleString() : 'Not set',
+				obj['@self']?.updated
+					? new Date(obj['@self'].updated).toLocaleString()
+					: 'Not set',
 				false,
 			])
 
@@ -1032,18 +1595,10 @@ export default {
 			if (obj['@self']?.validation !== null) {
 				validationText = obj['@self'].validation ? 'Valid' : 'Invalid'
 			}
-			metadata.push([
-				'Validation',
-				validationText,
-				false,
-			])
+			metadata.push(['Validation', validationText, false])
 
 			// Owner
-			metadata.push([
-				'Owner',
-				obj['@self']?.owner || 'Not set',
-				false,
-			])
+			metadata.push(['Owner', obj['@self']?.owner || 'Not set', false])
 
 			// Application
 			metadata.push([
@@ -1088,7 +1643,6 @@ export default {
 
 			return { register, schema, id }
 		},
-
 	},
 	watch: {
 		objectStore: {
@@ -1116,13 +1670,16 @@ export default {
 				// active schema looks un-resolved, refetch via the detail endpoint
 				// and let the watcher fire again with merged properties.
 				if (newSchema?.id) {
-					const usesComposition = (newSchema.allOf?.length || 0) > 0
+					const usesComposition =
+						(newSchema.allOf?.length || 0) > 0
 						|| (newSchema.oneOf?.length || 0) > 0
 						|| (newSchema.anyOf?.length || 0) > 0
 					const propsCount = Object.keys(newSchema.properties || {}).length
 					if (usesComposition && propsCount === 0) {
 						try {
-							await schemaStore.getSchema(newSchema.id, { setItem: true })
+							await schemaStore.getSchema(newSchema.id, {
+								setItem: true,
+							})
 							return
 						} catch {
 							// Fall through to use the un-resolved schema if the detail fetch fails
@@ -1190,7 +1747,9 @@ export default {
 		// schemas — the detail endpoint resolves composition.
 		if (schemaStore.schemaItem?.id) {
 			try {
-				await schemaStore.getSchema(schemaStore.schemaItem.id, { setItem: true })
+				await schemaStore.getSchema(schemaStore.schemaItem.id, {
+					setItem: true,
+				})
 			} catch {
 				// Fall through to use the un-resolved schema if the detail fetch fails
 			}
@@ -1223,9 +1782,16 @@ export default {
 		_getFileParams() {
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
-			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
-			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			const registerId =
+				typeof rawRegister === 'object' && rawRegister !== null
+					? rawRegister.id
+					: rawRegister
+			const schemaId =
+				typeof rawSchema === 'object' && rawSchema !== null
+					? rawSchema.id
+					: rawSchema
+			const objectId =
+				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
 			const type = `${registerId}-${schemaId}`
 			if (!objectStore.objectTypes?.includes(type)) {
 				objectStore.registerObjectType(type, schemaId, registerId)
@@ -1237,8 +1803,10 @@ export default {
 		 */
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
-			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
-			const selectedSchema = this.selectedSchemaForNewObject || this.availableSchemas[0]
+			const selectedRegister =
+				this.selectedRegisterForNewObject || this.availableRegisters[0]
+			const selectedSchema =
+				this.selectedSchemaForNewObject || this.availableSchemas[0]
 
 			registerStore.setRegisterItem(selectedRegister)
 			schemaStore.setSchemaItem(selectedSchema)
@@ -1258,11 +1826,13 @@ export default {
 				return 'Add Object'
 			}
 
-			const name = objectStore.objectItem['@self']?.name
+			const name =
+				objectStore.objectItem['@self']?.name
 				|| objectStore.objectItem.name
 				|| objectStore.objectItem.id
 
-			const schemaName = this.currentSchema?.title
+			const schemaName =
+				this.currentSchema?.title
 				|| this.currentSchema?.name
 				|| 'Unknown Schema'
 
@@ -1279,8 +1849,12 @@ export default {
 				return
 			}
 
-			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
-			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
+			const register = await registerStore.getRegister(
+				objectStore.objectItem['@self'].register,
+			)
+			const schema = await schemaStore.getSchema(
+				objectStore.objectItem['@self'].schema,
+			)
 
 			this.registerTitle = register?.title || 'Not set'
 			this.schemaTitle = schema?.title || 'Not set'
@@ -1308,7 +1882,7 @@ export default {
 			objectStore.availableSchemasForNewObject = null
 
 			// Clear debounce timers
-			Object.values(this.propertyChangeDebounceTimers).forEach(timer => {
+			Object.values(this.propertyChangeDebounceTimers).forEach((timer) => {
 				if (timer) clearTimeout(timer)
 			})
 			this.propertyChangeDebounceTimers = {}
@@ -1392,7 +1966,9 @@ export default {
 			try {
 				await navigator.clipboard.writeText(text)
 				this.isCopied = true
-				setTimeout(() => { this.isCopied = false }, 2000)
+				setTimeout(() => {
+					this.isCopied = false
+				}, 2000)
 			} catch (err) {
 				console.error('Failed to copy text:', err)
 			}
@@ -1422,12 +1998,17 @@ export default {
 
 				// Add schema properties with default values
 				if (this.currentSchema?.properties) {
-					for (const [key, property] of Object.entries(this.currentSchema.properties)) {
+					for (const [key, property] of Object.entries(
+						this.currentSchema.properties,
+					)) {
 						// Set default value based on property type
 						let defaultValue = null
 						if (property.type === 'string') {
 							defaultValue = ''
-						} else if (property.type === 'number' || property.type === 'integer') {
+						} else if (
+							property.type === 'number'
+							|| property.type === 'integer'
+						) {
 							defaultValue = 0
 						} else if (property.type === 'boolean') {
 							defaultValue = false
@@ -1437,7 +2018,10 @@ export default {
 							defaultValue = {}
 						}
 
-						initialData[key] = property.default !== undefined ? property.default : defaultValue
+						initialData[key] =
+							property.default !== undefined
+								? property.default
+								: defaultValue
 					}
 				}
 
@@ -1454,9 +2038,16 @@ export default {
 			// Fetch files for the existing object
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
-			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
-			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			const registerId =
+				typeof rawRegister === 'object' && rawRegister !== null
+					? rawRegister.id
+					: rawRegister
+			const schemaId =
+				typeof rawSchema === 'object' && rawSchema !== null
+					? rawSchema.id
+					: rawSchema
+			const objectId =
+				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
 			if (registerId && schemaId && objectId) {
 				const type = `${registerId}-${schemaId}`
 				if (!objectStore.objectTypes?.includes(type)) {
@@ -1464,7 +2055,6 @@ export default {
 				}
 				objectStore.fetchFiles(type, objectId)
 			}
-
 		},
 
 		/**
@@ -1495,10 +2085,17 @@ export default {
 				}
 
 				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
-				objectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
+				objectStore.registerObjectType(
+					type,
+					this.currentSchema.id,
+					this.currentRegister.id,
+				)
 				const data = await objectStore.saveObject(type, dataToSave)
 				if (data) objectStore.setObjectItem(data)
-				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
+				await objectStore.refreshObjectList({
+					register: this.currentRegister.id,
+					schema: this.currentSchema.id,
+				})
 				objectStore.refetchSearchCollection()
 				this.success = !!data
 				if (this.success) {
@@ -1601,12 +2198,16 @@ export default {
 		 * @param v
 		 * @spec exclude display/payload coercion helper for null values
 		 */
-		toDisplay(v) { return v === null ? '' : v },
+		toDisplay(v) {
+			return v === null ? '' : v
+		},
 		/**
 		 * @param v
 		 * @spec exclude display/payload coercion helper for empty values
 		 */
-		toPayload(v) { return v === '' ? null : v },
+		toPayload(v) {
+			return v === '' ? null : v
+		},
 
 		/**
 		 * @param key
@@ -1648,15 +2249,17 @@ export default {
 		toggleSelectAllFiles(checked) {
 			if (checked) {
 				// Add all current page files to selection
-				this.paginatedFiles.forEach(file => {
+				this.paginatedFiles.forEach((file) => {
 					if (!this.selectedAttachments.includes(file.id)) {
 						this.selectedAttachments.push(file.id)
 					}
 				})
 			} else {
 				// Remove all current page files from selection
-				const currentPageIds = this.paginatedFiles.map(file => file.id)
-				this.selectedAttachments = this.selectedAttachments.filter(id => !currentPageIds.includes(id))
+				const currentPageIds = this.paginatedFiles.map((file) => file.id)
+				this.selectedAttachments = this.selectedAttachments.filter(
+					(id) => !currentPageIds.includes(id),
+				)
 			}
 		},
 		/**
@@ -1670,7 +2273,9 @@ export default {
 					this.selectedAttachments.push(fileId)
 				}
 			} else {
-				this.selectedAttachments = this.selectedAttachments.filter(id => id !== fileId)
+				this.selectedAttachments = this.selectedAttachments.filter(
+					(id) => id !== fileId,
+				)
 			}
 		},
 		/**
@@ -1728,9 +2333,8 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
-				await this._runBatchAction(
-					'delete',
-					(type, objectId, fileId) => objectStore.deleteFile(type, objectId, fileId),
+				await this._runBatchAction('delete', (type, objectId, fileId) =>
+					objectStore.deleteFile(type, objectId, fileId),
 				)
 				this.selectedAttachments = []
 			} catch (error) {
@@ -1753,7 +2357,9 @@ export default {
 				// eslint-disable-next-line no-console
 				console.error('Failed to delete file:', error)
 			} finally {
-				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
+				this.fileIdsLoading = this.fileIdsLoading.filter(
+					(id) => id !== file.id,
+				)
 			}
 		},
 		/**
@@ -1764,7 +2370,9 @@ export default {
 			this.editingLabelsFileId = file.id
 			this.editingLabels = [...(file.labels || [])]
 			const tags = await objectStore.fetchTags()
-			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
+			this.availableLabels = Array.isArray(tags)
+				? tags
+				: objectStore.getTags || []
 		},
 		/**
 		 * @spec exclude form-state handler cancelling file-label edit
@@ -1787,8 +2395,14 @@ export default {
 			const { type, objectId } = this._getFileParams()
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
-			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+			const registerId =
+				typeof rawRegister === 'object' && rawRegister !== null
+					? rawRegister.id
+					: rawRegister
+			const schemaId =
+				typeof rawSchema === 'object' && rawSchema !== null
+					? rawSchema.id
+					: rawSchema
 
 			// Snapshot the current value so we can revert on failure.
 			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
@@ -1833,7 +2447,9 @@ export default {
 
 			// Check if property exists in schema
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			const existsInObject = objectStore.objectItem ? Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) : false
+			const existsInObject = objectStore.objectItem
+				? Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
+				: false
 
 			if (!schemaProperty) {
 				// Property exists in object but not in schema - warning (yellow)
@@ -1864,38 +2480,44 @@ export default {
 			// Handle null/undefined values
 			if (value === null || value === undefined || value === '') {
 				// Check if property is required
-				const isRequired = this.currentSchema?.required?.includes(key) || schemaProperty.required
+				const isRequired =
+					this.currentSchema?.required?.includes(key)
+					|| schemaProperty.required
 				return !isRequired // Valid if not required, invalid if required
 			}
 
 			// Validate based on schema type
 			switch (schemaProperty.type) {
-			case 'string':
-				if (typeof value !== 'string') return false
-				// Check format constraints
-				if (schemaProperty.format === 'date-time') {
-					return this.isValidDate(value)
-				}
-				// Check const constraint
-				if (schemaProperty.const && value !== schemaProperty.const) {
-					return false
-				}
-				return true
+				case 'string':
+					if (typeof value !== 'string') return false
+					// Check format constraints
+					if (schemaProperty.format === 'date-time') {
+						return this.isValidDate(value)
+					}
+					// Check const constraint
+					if (schemaProperty.const && value !== schemaProperty.const) {
+						return false
+					}
+					return true
 
-			case 'number':
-				return typeof value === 'number' && !isNaN(value)
+				case 'number':
+					return typeof value === 'number' && !isNaN(value)
 
-			case 'boolean':
-				return typeof value === 'boolean'
+				case 'boolean':
+					return typeof value === 'boolean'
 
-			case 'array':
-				return Array.isArray(value)
+				case 'array':
+					return Array.isArray(value)
 
-			case 'object':
-				return typeof value === 'object' && value !== null && !Array.isArray(value)
+				case 'object':
+					return (
+						typeof value === 'object'
+						&& value !== null
+						&& !Array.isArray(value)
+					)
 
-			default:
-				return true // Unknown type, assume valid
+				default:
+					return true // Unknown type, assume valid
 			}
 		},
 		/**
@@ -1911,8 +2533,13 @@ export default {
 			}
 
 			// Check if required but empty
-			const isRequired = this.currentSchema?.required?.includes(key) || schemaProperty.required
-			if ((value === null || value === undefined || value === '') && isRequired) {
+			const isRequired =
+				this.currentSchema?.required?.includes(key)
+				|| schemaProperty.required
+			if (
+				(value === null || value === undefined || value === '')
+				&& isRequired
+			) {
 				return `Required property '${key}' is missing or empty`
 			}
 
@@ -1975,7 +2602,11 @@ export default {
 		 */
 		handleRowClick(key, event) {
 			// Don't select if clicking on an input or button
-			if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('.value-input-container')) {
+			if (
+				event.target.tagName === 'INPUT'
+				|| event.target.tagName === 'BUTTON'
+				|| event.target.closest('.value-input-container')
+			) {
 				return
 			}
 
@@ -1985,7 +2616,10 @@ export default {
 			}
 
 			// Check if property is editable
-			const value = this.formData[key] !== undefined ? this.formData[key] : this.objectProperties.find(([k]) => k === key)?.[1]
+			const value =
+				this.formData[key] !== undefined
+					? this.formData[key]
+					: this.objectProperties.find(([k]) => k === key)?.[1]
 			if (!this.isPropertyEditable(key, value)) {
 				// Show warning for non-editable properties
 				const warning = this.getEditabilityWarning(key, value)
@@ -1997,14 +2631,21 @@ export default {
 
 			// Only allow editing for supported property types (same as EditObject.vue)
 			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (schemaProperty && ['string', 'number', 'integer', 'boolean'].includes(schemaProperty.type)) {
+			if (
+				schemaProperty
+				&& ['string', 'number', 'integer', 'boolean'].includes(
+					schemaProperty.type,
+				)
+			) {
 				this.selectProperty(key)
 			} else if (!schemaProperty) {
 				// Allow editing for properties not in schema (free-form)
 				this.selectProperty(key)
 			} else {
 				// Show info for unsupported types
-				showWarning(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
+				showWarning(
+					`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`,
+				)
 			}
 		},
 		/**
@@ -2016,8 +2657,12 @@ export default {
 
 			// Focus the input field after Vue updates the DOM
 			this.$nextTick(() => {
-				if (this.$refs.propertyValueInput && this.$refs.propertyValueInput[0]) {
-					const input = this.$refs.propertyValueInput[0].$el.querySelector('input')
+				if (
+					this.$refs.propertyValueInput
+					&& this.$refs.propertyValueInput[0]
+				) {
+					const input =
+						this.$refs.propertyValueInput[0].$el.querySelector('input')
 					if (input) {
 						input.focus()
 						input.select()
@@ -2032,9 +2677,10 @@ export default {
 		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
-			const oldValue = this.formData[key] !== undefined
-				? this.formData[key]
-				: this.objectProperties.find(([k]) => k === key)?.[1]
+			const oldValue =
+				this.formData[key] !== undefined
+					? this.formData[key]
+					: this.objectProperties.find(([k]) => k === key)?.[1]
 
 			// Convert value based on schema property type
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2042,25 +2688,30 @@ export default {
 
 			if (schemaProperty) {
 				switch (schemaProperty.type) {
-				case 'number':
-					convertedValue = newValue === '' ? null : parseFloat(newValue)
-					if (isNaN(convertedValue)) convertedValue = null
-					break
-				case 'integer':
-					convertedValue = newValue === '' ? null : parseInt(newValue, 10)
-					if (isNaN(convertedValue)) convertedValue = null
-					break
-				case 'boolean':
-					convertedValue = Boolean(newValue)
-					break
-				case 'string':
-				default:
-					if (newValue instanceof Date && schemaProperty?.format) {
-						convertedValue = dateToString(newValue, schemaProperty.format)
-					} else {
-						convertedValue = newValue
-					}
-					break
+					case 'number':
+						convertedValue =
+							newValue === '' ? null : parseFloat(newValue)
+						if (isNaN(convertedValue)) convertedValue = null
+						break
+					case 'integer':
+						convertedValue =
+							newValue === '' ? null : parseInt(newValue, 10)
+						if (isNaN(convertedValue)) convertedValue = null
+						break
+					case 'boolean':
+						convertedValue = Boolean(newValue)
+						break
+					case 'string':
+					default:
+						if (newValue instanceof Date && schemaProperty?.format) {
+							convertedValue = dateToString(
+								newValue,
+								schemaProperty.format,
+							)
+						} else {
+							convertedValue = newValue
+						}
+						break
 				}
 			}
 
@@ -2084,7 +2735,11 @@ export default {
 				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
 					const notification = this.pendingNotifications[key]
 					if (notification) {
-						this.showPropertyChangeNotification(key, notification.oldValue, notification.newValue)
+						this.showPropertyChangeNotification(
+							key,
+							notification.oldValue,
+							notification.newValue,
+						)
 						delete this.pendingNotifications[key]
 					}
 					delete this.propertyChangeDebounceTimers[key]
@@ -2096,8 +2751,10 @@ export default {
 		 * @spec exclude toast cleanup UI helper
 		 */
 		clearAllToasts() {
-			const toasts = document.querySelectorAll('.property-change-toast, .property-warning-toast')
-			toasts.forEach(toast => {
+			const toasts = document.querySelectorAll(
+				'.property-change-toast, .property-warning-toast',
+			)
+			toasts.forEach((toast) => {
 				if (toast.parentNode) {
 					toast.parentNode.removeChild(toast)
 				}
@@ -2165,7 +2822,12 @@ export default {
 			}
 
 			// Check if property is immutable and already has a value
-			if (schemaProperty.immutable && (value !== null && value !== undefined && value !== '')) {
+			if (
+				schemaProperty.immutable
+				&& value !== null
+				&& value !== undefined
+				&& value !== ''
+			) {
 				return false // Immutable properties with values cannot be edited
 			}
 
@@ -2183,7 +2845,12 @@ export default {
 				return `This property is constant and must always be '${schemaProperty.const}'. Const properties cannot be modified to maintain data integrity.`
 			}
 
-			if (schemaProperty?.immutable && (value !== null && value !== undefined && value !== '')) {
+			if (
+				schemaProperty?.immutable
+				&& value !== null
+				&& value !== undefined
+				&& value !== ''
+			) {
 				return `This property is immutable and cannot be changed once it has a value. Current value: '${value}'. Immutable properties preserve data consistency.`
 			}
 
@@ -2210,21 +2877,21 @@ export default {
 
 			// Handle different types and formats
 			switch (type) {
-			case 'string':
-				if (format === 'date') return 'date'
-				if (format === 'time') return 'time'
-				if (format === 'date-time') return 'datetime-local'
-				if (format === 'email') return 'email'
-				if (format === 'url' || format === 'uri') return 'url'
-				if (format === 'password') return 'password'
-				return 'text'
-			case 'number':
-			case 'integer':
-				return 'number'
-			case 'boolean':
-				return 'checkbox'
-			default:
-				return 'text'
+				case 'string':
+					if (format === 'date') return 'date'
+					if (format === 'time') return 'time'
+					if (format === 'date-time') return 'datetime-local'
+					if (format === 'email') return 'email'
+					if (format === 'url' || format === 'uri') return 'url'
+					if (format === 'password') return 'password'
+					return 'text'
+				case 'number':
+				case 'integer':
+					return 'number'
+				case 'boolean':
+					return 'checkbox'
+				default:
+					return 'text'
 			}
 		},
 		/**
@@ -2240,18 +2907,22 @@ export default {
 
 			// Handle different types and formats
 			switch (type) {
-			case 'boolean':
-				return 'NcCheckboxRadioSwitch'
-			case 'string':
-				if (format === 'date' || format === 'time' || format === 'date-time') {
-					return 'NcDateTimePickerNative'
-				}
-				return 'NcTextField'
-			case 'number':
-			case 'integer':
-				return 'NcTextField'
-			default:
-				return 'NcTextField'
+				case 'boolean':
+					return 'NcCheckboxRadioSwitch'
+				case 'string':
+					if (
+						format === 'date'
+						|| format === 'time'
+						|| format === 'date-time'
+					) {
+						return 'NcDateTimePickerNative'
+					}
+					return 'NcTextField'
+				case 'number':
+				case 'integer':
+					return 'NcTextField'
+				default:
+					return 'NcTextField'
 			}
 		},
 		/**
@@ -2340,7 +3011,11 @@ export default {
 			}
 
 			// If this is a schema property that doesn't exist in the object yet, show placeholder
-			if (objectStore.objectItem && !Object.prototype.hasOwnProperty.call(objectStore.objectItem, key) && schemaProperty) {
+			if (
+				objectStore.objectItem
+				&& !Object.prototype.hasOwnProperty.call(objectStore.objectItem, key)
+				&& schemaProperty
+			) {
 				return value // This will be the default value we set in objectProperties
 			}
 
@@ -2617,6 +3292,7 @@ export default {
 
 .codeMirrorContainer :deep(.cm-editor) {
 	height: 100%;
+	outline: none !important;
 }
 
 .codeMirrorContainer :deep(.cm-scroller) {
@@ -2626,10 +3302,6 @@ export default {
 .codeMirrorContainer :deep(.cm-content) {
 	border-radius: 0 !important;
 	border: none !important;
-}
-
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
 }
 
 .codeMirrorContainer.light > .vue-codemirror {

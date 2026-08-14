@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,48 +43,46 @@ namespace OCA\OpenRegister\Db;
  *
  * @spec exclude value object enumerating objectConfiguration.handling modes
  */
-final class ObjectHandling
-{
-    /**
-     * Reference an existing object by UUID.
-     */
-    public const RELATED_OBJECT = 'related-object';
+final class ObjectHandling {
+	/**
+	 * Reference an existing object by UUID.
+	 */
+	public const RELATED_OBJECT = 'related-object';
 
-    /**
-     * Reference an object of a given schema by UUID. Storage-identical to
-     * {@see self::RELATED_OBJECT}; this is the mode the docs and the schema editor use.
-     */
-    public const RELATED_SCHEMA = 'related-schema';
+	/**
+	 * Reference an object of a given schema by UUID. Storage-identical to
+	 * {@see self::RELATED_OBJECT}; this is the mode the docs and the schema editor use.
+	 */
+	public const RELATED_SCHEMA = 'related-schema';
 
-    /**
-     * Embed the object inline in the parent.
-     */
-    public const NESTED_OBJECT = 'nested-object';
+	/**
+	 * Embed the object inline in the parent.
+	 */
+	public const NESTED_OBJECT = 'nested-object';
 
-    /**
-     * Store the object separately but embed it in API responses.
-     */
-    public const NESTED_SCHEMA = 'nested-schema';
+	/**
+	 * Store the object separately but embed it in API responses.
+	 */
+	public const NESTED_SCHEMA = 'nested-schema';
 
-    /**
-     * Reference the object by URI.
-     */
-    public const URI = 'uri';
+	/**
+	 * Reference the object by URI.
+	 */
+	public const URI = 'uri';
 
-    /**
-     * Whether this handling stores only a UUID reference to a separately-stored object.
-     *
-     * A property whose handling relates gets a VARCHAR(255) UUID column, NOT a json
-     * column — the value written is a bare UUID string, which is not valid JSON.
-     *
-     * @param string|null $handling The `objectConfiguration.handling` value.
-     *
-     * @return bool True when the property stores a UUID reference.
-     *
-     * @spec exclude pure predicate over the handling enum (no state, no I/O)
-     */
-    public static function relates(?string $handling): bool
-    {
-        return in_array($handling, [self::RELATED_OBJECT, self::RELATED_SCHEMA], true);
-    }//end relates()
+	/**
+	 * Whether this handling stores only a UUID reference to a separately-stored object.
+	 *
+	 * A property whose handling relates gets a VARCHAR(255) UUID column, NOT a json
+	 * column — the value written is a bare UUID string, which is not valid JSON.
+	 *
+	 * @param string|null $handling The `objectConfiguration.handling` value.
+	 *
+	 * @return bool True when the property stores a UUID reference.
+	 *
+	 * @spec exclude pure predicate over the handling enum (no state, no I/O)
+	 */
+	public static function relates(?string $handling): bool {
+		return in_array($handling, [self::RELATED_OBJECT, self::RELATED_SCHEMA], true);
+	}//end relates()
 }//end class

@@ -38,80 +38,71 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when reference existence validation fails.
  */
-class ReferenceValidationFailedEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param string      $propertyName     Schema property carrying the
-     *                                      broken reference.
-     * @param string      $referencedUuid   UUID that did not resolve.
-     * @param string      $targetSchemaSlug Slug (or raw `$ref`) of the
-     *                                      target schema.
-     * @param string|null $targetRegister   Register the lookup was
-     *                                      performed in, or null when
-     *                                      no register context applied.
-     */
-    public function __construct(
-        private readonly string $propertyName,
-        private readonly string $referencedUuid,
-        private readonly string $targetSchemaSlug,
-        private readonly ?string $targetRegister=null
-    ) {
-        parent::__construct();
+class ReferenceValidationFailedEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $propertyName Schema property carrying the
+	 *                             broken reference.
+	 * @param string $referencedUuid UUID that did not resolve.
+	 * @param string $targetSchemaSlug Slug (or raw `$ref`) of the
+	 *                                 target schema.
+	 * @param string|null $targetRegister Register the lookup was
+	 *                                    performed in, or null when
+	 *                                    no register context applied.
+	 */
+	public function __construct(
+		private readonly string $propertyName,
+		private readonly string $referencedUuid,
+		private readonly string $targetSchemaSlug,
+		private readonly ?string $targetRegister = null,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Schema property name that holds the broken reference.
-     *
-     * @return string Property name as declared on the schema.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
-     */
-    public function getPropertyName(): string
-    {
-        return $this->propertyName;
+	/**
+	 * Schema property name that holds the broken reference.
+	 *
+	 * @return string Property name as declared on the schema.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
+	 */
+	public function getPropertyName(): string {
+		return $this->propertyName;
+	}//end getPropertyName()
 
-    }//end getPropertyName()
+	/**
+	 * UUID that failed to resolve during validation.
+	 *
+	 * @return string The unresolved UUID.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
+	 */
+	public function getReferencedUuid(): string {
+		return $this->referencedUuid;
+	}//end getReferencedUuid()
 
-    /**
-     * UUID that failed to resolve during validation.
-     *
-     * @return string The unresolved UUID.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
-     */
-    public function getReferencedUuid(): string
-    {
-        return $this->referencedUuid;
+	/**
+	 * Slug (or raw `$ref`) of the schema the reference targets.
+	 *
+	 * @return string Target schema slug or raw `$ref`.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
+	 */
+	public function getTargetSchemaSlug(): string {
+		return $this->targetSchemaSlug;
+	}//end getTargetSchemaSlug()
 
-    }//end getReferencedUuid()
-
-    /**
-     * Slug (or raw `$ref`) of the schema the reference targets.
-     *
-     * @return string Target schema slug or raw `$ref`.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
-     */
-    public function getTargetSchemaSlug(): string
-    {
-        return $this->targetSchemaSlug;
-
-    }//end getTargetSchemaSlug()
-
-    /**
-     * Register the reference was searched in.
-     *
-     * @return string|null Register identifier or null when no register
-     *                     context applied to the lookup.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
-     */
-    public function getTargetRegister(): ?string
-    {
-        return $this->targetRegister;
-
-    }//end getTargetRegister()
+	/**
+	 * Register the reference was searched in.
+	 *
+	 * @return string|null Register identifier or null when no register
+	 *                     context applied to the lookup.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-6
+	 */
+	public function getTargetRegister(): ?string {
+		return $this->targetRegister;
+	}//end getTargetRegister()
 }//end class

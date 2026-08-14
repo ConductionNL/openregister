@@ -80,123 +80,118 @@ use InvalidArgumentException;
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-3.2
  * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
  */
-class Routes
-{
-    /**
-     * Return the canonical route array, merging app-specific `$extra` routes.
-     *
-     * App-specific routes are inserted BEFORE the SPA catch-all so they keep
-     * priority over the `/{path}` fallback. A duplicate route name in `$extra`
-     * overrides the canonical entry of the same name (intentional: lets an app
-     * re-point one route at a local controller) — but a duplicate name WITHIN
-     * `$extra` itself throws, since Symfony silently replaces same-named routes
-     * and that is always a mistake.
-     *
-     * @param array<int, array<string, mixed>> $extra App-specific routes.
-     *
-     * @return array{routes: array<int, array<string, mixed>>}
-     *
-     * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
-     *
-     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
-     */
-    public static function standard(array $extra=[]): array
-    {
-        self::assertNoDuplicateNames(extra: $extra);
+class Routes {
+	/**
+	 * Return the canonical route array, merging app-specific `$extra` routes.
+	 *
+	 * App-specific routes are inserted BEFORE the SPA catch-all so they keep
+	 * priority over the `/{path}` fallback. A duplicate route name in `$extra`
+	 * overrides the canonical entry of the same name (intentional: lets an app
+	 * re-point one route at a local controller) — but a duplicate name WITHIN
+	 * `$extra` itself throws, since Symfony silently replaces same-named routes
+	 * and that is always a mistake.
+	 *
+	 * @param array<int, array<string, mixed>> $extra App-specific routes.
+	 *
+	 * @return array{routes: array<int, array<string, mixed>>}
+	 *
+	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 */
+	public static function standard(array $extra = []): array {
+		self::assertNoDuplicateNames(extra: $extra);
 
-        $extraNames = [];
-        foreach ($extra as $route) {
-            if (isset($route['name']) === true) {
-                $extraNames[(string) $route['name']] = true;
-            }
-        }
+		$extraNames = [];
+		foreach ($extra as $route) {
+			if (isset($route['name']) === true) {
+				$extraNames[(string)$route['name']] = true;
+			}
+		}
 
-        // Canonical routes, minus the SPA catch-all (appended last).
-        $canonical = [];
-        foreach (self::canonicalRoutes() as $route) {
-            // An $extra route with the same name overrides the canonical one.
-            if (isset($extraNames[$route['name']]) === true) {
-                continue;
-            }
+		// Canonical routes, minus the SPA catch-all (appended last).
+		$canonical = [];
+		foreach (self::canonicalRoutes() as $route) {
+			// An $extra route with the same name overrides the canonical one.
+			if (isset($extraNames[$route['name']]) === true) {
+				continue;
+			}
 
-            $canonical[] = $route;
-        }
+			$canonical[] = $route;
+		}
 
-        $merged   = array_merge($canonical, $extra);
-        $merged[] = self::catchAllRoute();
+		$merged = array_merge($canonical, $extra);
+		$merged[] = self::catchAllRoute();
 
-        return ['routes' => $merged];
-    }//end standard()
+		return ['routes' => $merged];
+	}//end standard()
 
-    /**
-     * The canonical AppHost routes (everything except the SPA catch-all).
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private static function canonicalRoutes(): array
-    {
-        return [
-            // Dashboard page.
-            ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+	/**
+	 * The canonical AppHost routes (everything except the SPA catch-all).
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function canonicalRoutes(): array {
+		return [
+			// Dashboard page.
+			['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
 
-            // Settings API. `create` (POST) is the fleet's legacy write verb;
-            // `update` (PUT) is the canonical ADR-066 write. Both dispatch to
-            // the same write path on the generic controllers.
-            ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
-            ['name' => 'settings#create', 'url' => '/api/settings', 'verb' => 'POST'],
-            ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
-            ['name' => 'settings#load', 'url' => '/api/settings/load', 'verb' => 'POST'],
+			// Settings API. `create` (POST) is the fleet's legacy write verb;
+			// `update` (PUT) is the canonical ADR-066 write. Both dispatch to
+			// the same write path on the generic controllers.
+			['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
+			['name' => 'settings#create', 'url' => '/api/settings', 'verb' => 'POST'],
+			['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
+			['name' => 'settings#load', 'url' => '/api/settings/load', 'verb' => 'POST'],
 
-            // Generic per-user preferences (shared nextcloud-vue widgets).
-            ['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
-            ['name' => 'preferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
+			// Generic per-user preferences (shared nextcloud-vue widgets).
+			['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
+			['name' => 'preferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
-            // Observability (ADR-006 / ADR-040).
-            ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
-            ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
-        ];
-    }//end canonicalRoutes()
+			// Observability (ADR-006 / ADR-040).
+			['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
+			['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+		];
+	}//end canonicalRoutes()
 
-    /**
-     * The SPA catch-all route — same controller as `dashboard#page`, distinct
-     * name so it does not replace the index route in Symfony's router.
-     *
-     * @return array<string, mixed>
-     */
-    private static function catchAllRoute(): array
-    {
-        return [
-            'name'         => 'dashboard#catchAll',
-            'url'          => '/{path}',
-            'verb'         => 'GET',
-            'requirements' => ['path' => '.+'],
-            'defaults'     => ['path' => ''],
-        ];
-    }//end catchAllRoute()
+	/**
+	 * The SPA catch-all route — same controller as `dashboard#page`, distinct
+	 * name so it does not replace the index route in Symfony's router.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function catchAllRoute(): array {
+		return [
+			'name' => 'dashboard#catchAll',
+			'url' => '/{path}',
+			'verb' => 'GET',
+			'requirements' => ['path' => '.+'],
+			'defaults' => ['path' => ''],
+		];
+	}//end catchAllRoute()
 
-    /**
-     * Guard against duplicate route names within the caller's `$extra` set.
-     *
-     * @param array<int, array<string, mixed>> $extra App-specific routes.
-     *
-     * @return void
-     *
-     * @throws \InvalidArgumentException When two `$extra` routes share a name.
-     */
-    private static function assertNoDuplicateNames(array $extra): void
-    {
-        $seen = [];
-        foreach ($extra as $route) {
-            if (isset($route['name']) === false) {
-                continue;
-            }
+	/**
+	 * Guard against duplicate route names within the caller's `$extra` set.
+	 *
+	 * @param array<int, array<string, mixed>> $extra App-specific routes.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When two `$extra` routes share a name.
+	 */
+	private static function assertNoDuplicateNames(array $extra): void {
+		$seen = [];
+		foreach ($extra as $route) {
+			if (isset($route['name']) === false) {
+				continue;
+			}
 
-            $name = (string) $route['name'];
-            if (isset($seen[$name]) === true) {
-                throw new InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
-            }
+			$name = (string)$route['name'];
+			if (isset($seen[$name]) === true) {
+				throw new InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
+			}
 
-            $seen[$name] = true;
-        }
-    }//end assertNoDuplicateNames()
+			$seen[$name] = true;
+		}
+	}//end assertNoDuplicateNames()
 }//end class

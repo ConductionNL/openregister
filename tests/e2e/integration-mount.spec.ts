@@ -55,10 +55,17 @@ import { test, expect, type APIRequestContext, type Page } from '@playwright/tes
  * @param request Playwright request context (Basic auth pre-wired).
  * @return The integrations.providers array, or [] when not wired.
  */
-async function fetchProviders(request: APIRequestContext): Promise<Array<{ id: string, label?: string, group?: string, enabled?: boolean }>> {
-	const response = await request.get('/ocs/v2.php/cloud/capabilities?format=json', {
-		headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
-	})
+async function fetchProviders(
+	request: APIRequestContext,
+): Promise<
+	Array<{ id: string; label?: string; group?: string; enabled?: boolean }>
+> {
+	const response = await request.get(
+		'/ocs/v2.php/cloud/capabilities?format=json',
+		{
+			headers: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
+		},
+	)
 	expect(response.status()).toBe(200)
 	const body = await response.json()
 	return body?.ocs?.data?.capabilities?.openregister?.integrations?.providers ?? []
@@ -72,32 +79,52 @@ async function fetchProviders(request: APIRequestContext): Promise<Array<{ id: s
  *
  * @param request Playwright request context.
  */
-async function pickObjectTriple(request: APIRequestContext): Promise<{ register: string, schema: string, objectId: string } | null> {
+async function pickObjectTriple(
+	request: APIRequestContext,
+): Promise<{ register: string; schema: string; objectId: string } | null> {
 	// Prefer the seeded verification sandbox if present.
-	const sandbox = await request.get('/index.php/apps/openregister/api/registers?slug=integration-verification', {
-		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
-	})
+	const sandbox = await request.get(
+		'/index.php/apps/openregister/api/registers?slug=integration-verification',
+		{
+			headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+		},
+	)
 	if (sandbox.ok()) {
 		const body = await sandbox.json()
-		const reg = (body.results ?? []).find((r: { slug?: string }) => r.slug === 'integration-verification')
+		const reg = (body.results ?? []).find(
+			(r: { slug?: string }) => r.slug === 'integration-verification',
+		)
 		if (reg?.id && Array.isArray(reg.schemas) && reg.schemas.length > 0) {
 			const schemaId = reg.schemas[0]
-			const objects = await request.get(`/index.php/apps/openregister/api/objects/${reg.id}/${schemaId}?_limit=1`, {
-				headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
-			})
+			const objects = await request.get(
+				`/index.php/apps/openregister/api/objects/${reg.id}/${schemaId}?_limit=1`,
+				{
+					headers: {
+						Accept: 'application/json',
+						'OCS-APIRequest': 'true',
+					},
+				},
+			)
 			if (objects.ok()) {
 				const objBody = await objects.json()
 				const first = (objBody.results ?? [])[0]
 				if (first?.id) {
-					return { register: String(reg.id), schema: String(schemaId), objectId: String(first.id) }
+					return {
+						register: String(reg.id),
+						schema: String(schemaId),
+						objectId: String(first.id),
+					}
 				}
 			}
 		}
 	}
 	// Fall back to any register/schema that has at least one object.
-	const fallback = await request.get('/index.php/apps/openregister/api/objects/1/1?_limit=1', {
-		headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
-	})
+	const fallback = await request.get(
+		'/index.php/apps/openregister/api/objects/1/1?_limit=1',
+		{
+			headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' },
+		},
+	)
 	if (fallback.ok()) {
 		const body = await fallback.json()
 		const first = (body.results ?? [])[0]
@@ -125,7 +152,7 @@ async function pickObjectTriple(request: APIRequestContext): Promise<{ register:
 async function openObjectDetail(
 	page: Page,
 	baseURL: string,
-	triple: { register: string, schema: string, objectId: string },
+	triple: { register: string; schema: string; objectId: string },
 ): Promise<string[]> {
 	// vue-router runs in HASH mode (src/main.js, since the #133 fix). A
 	// path-form deep-link is rewritten by the hash router to `.../objects#/`
@@ -144,16 +171,33 @@ async function openObjectDetail(
 	// Wait until nc-vue's in-page registry has been drained onto window.
 	// (installIntegrationRegistry + registerBuiltin + registerLeaf run in
 	// main.js bootstrap.) Tolerate slow boot.
-	await page.waitForFunction(() => {
-		const list = (window as { OCA?: { OpenRegister?: { integrations?: { list?: () => Array<{ id: string }> } } } })
-			.OCA?.OpenRegister?.integrations?.list?.()
-		return Array.isArray(list) && list.length > 0
-	}, { timeout: 30_000 })
+	await page.waitForFunction(
+		() => {
+			const list = (
+				window as {
+					OCA?: {
+						OpenRegister?: {
+							integrations?: { list?: () => Array<{ id: string }> }
+						}
+					}
+				}
+			).OCA?.OpenRegister?.integrations?.list?.()
+			return Array.isArray(list) && list.length > 0
+		},
+		{ timeout: 30_000 },
+	)
 
 	return page.evaluate(() => {
-		const list = (window as { OCA?: { OpenRegister?: { integrations?: { list?: () => Array<{ id: string }> } } } })
-			.OCA?.OpenRegister?.integrations?.list?.()
-		return Array.isArray(list) ? list.map(p => p.id) : []
+		const list = (
+			window as {
+				OCA?: {
+					OpenRegister?: {
+						integrations?: { list?: () => Array<{ id: string }> }
+					}
+				}
+			}
+		).OCA?.OpenRegister?.integrations?.list?.()
+		return Array.isArray(list) ? list.map((p) => p.id) : []
 	})
 }
 
@@ -162,21 +206,37 @@ test.describe('Integration tabs MOUNT on the object detail page (K3 / Phase-A re
 	// the first object load + registry flush.
 	test.setTimeout(180_000)
 
-	test('the Integrations tab is present and dispatches a component per provider', async ({ page, request, baseURL }) => {
+	test('the Integrations tab is present and dispatches a component per provider', async ({
+		page,
+		request,
+		baseURL,
+	}) => {
 		const providers = await fetchProviders(request)
-		test.skip(providers.length === 0, 'integration registry not wired on this deploy')
+		test.skip(
+			providers.length === 0,
+			'integration registry not wired on this deploy',
+		)
 
 		const triple = await pickObjectTriple(request)
-		test.skip(triple === null, 'no saved object reachable to open ObjectDetails.vue against')
+		test.skip(
+			triple === null,
+			'no saved object reachable to open ObjectDetails.vue against',
+		)
 
 		const registeredIds = await openObjectDetail(page, baseURL!, triple!)
-		expect(registeredIds.length, 'in-page registry should advertise providers').toBeGreaterThan(0)
+		expect(
+			registeredIds.length,
+			'in-page registry should advertise providers',
+		).toBeGreaterThan(0)
 
 		// 1. The host-page "Integrations" BTab must exist. Its absence is
 		//    the symptom of the empty-`integrationProviders` half of the
 		//    Phase-A bug (the drained-registry setup() never ran).
 		const integrationsTab = page.locator('role=tab[name="Integrations"]').first()
-		await expect(integrationsTab, 'ObjectDetails.vue must render an "Integrations" tab when providers are advertised').toBeVisible({ timeout: 15_000 })
+		await expect(
+			integrationsTab,
+			'ObjectDetails.vue must render an "Integrations" tab when providers are advertised',
+		).toBeVisible({ timeout: 15_000 })
 		await integrationsTab.click()
 
 		// 2. The inner per-provider tab strip must carry one tab per
@@ -195,10 +255,12 @@ test.describe('Integration tabs MOUNT on the object detail page (K3 / Phase-A re
 		// (`cn-integration-widget-tab-{id}`) that we target directly.
 		const widget = page.locator('.cn-integration-widget')
 		for (const id of registeredIds) {
-			const provider = providers.find(p => p.id === id)
+			const provider = providers.find((p) => p.id === id)
 			const tabName = provider?.label || id
-			const innerTab = widget.locator(`[data-testid="cn-integration-widget-tab-${id}"]`)
-			if (await innerTab.count() === 0) {
+			const innerTab = widget.locator(
+				`[data-testid="cn-integration-widget-tab-${id}"]`,
+			)
+			if ((await innerTab.count()) === 0) {
 				mountFailures.push(`${id}: no inner tab rendered for "${tabName}"`)
 				continue
 			}
@@ -207,16 +269,22 @@ test.describe('Integration tabs MOUNT on the object detail page (K3 / Phase-A re
 			// inside the same `.cn-integration-widget`. Scope here too —
 			// outer BTabs panels would otherwise match first.
 			const activePanel = widget.locator('[role="tabpanel"]').first()
-			const mounted = await activePanel.evaluate((el) => {
-				// A mounted Vue component leaves at least one element child
-				// (the integration tab root). Whitespace-only / comment-only
-				// panels mean nothing dispatched.
-				return el.querySelector('*') !== null
-					&& (el.textContent || '').trim().length >= 0
-					&& el.children.length > 0
-			}).catch(() => false)
+			const mounted = await activePanel
+				.evaluate((el) => {
+					// A mounted Vue component leaves at least one element child
+					// (the integration tab root). Whitespace-only / comment-only
+					// panels mean nothing dispatched.
+					return (
+						el.querySelector('*') !== null
+						&& (el.textContent || '').trim().length >= 0
+						&& el.children.length > 0
+					)
+				})
+				.catch(() => false)
 			if (!mounted) {
-				mountFailures.push(`${id}: Integrations sub-tab "${tabName}" mounted no component (dead-code dispatch)`)
+				mountFailures.push(
+					`${id}: Integrations sub-tab "${tabName}" mounted no component (dead-code dispatch)`,
+				)
 			}
 		}
 

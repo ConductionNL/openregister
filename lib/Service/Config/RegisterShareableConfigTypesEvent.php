@@ -32,30 +32,29 @@ use OCP\EventDispatcher\Event;
 /**
  * Collects the shareable configuration types every app contributes.
  */
-class RegisterShareableConfigTypesEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param ShareableConfigTypeRegistry $registry The registry to contribute to.
-     */
-    public function __construct(private readonly ShareableConfigTypeRegistry $registry)
-    {
+class RegisterShareableConfigTypesEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param ShareableConfigTypeRegistry $registry The registry to contribute to.
+	 */
+	public function __construct(
+		private readonly ShareableConfigTypeRegistry $registry,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Contribute a shareable configuration type.
-     *
-     * @param IShareableConfigType $type The type.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
-     */
-    public function registerType(IShareableConfigType $type): void
-    {
-        $this->registry->register(type: $type);
+	/**
+	 * Contribute a shareable configuration type.
+	 *
+	 * @param IShareableConfigType $type The type.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function registerType(IShareableConfigType $type): void {
+		$this->registry->register(type: $type);
 
-    }//end registerType()
+	}//end registerType()
 }//end class

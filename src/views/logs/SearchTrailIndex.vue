@@ -12,7 +12,14 @@ import formatBytes from '../../services/formatBytes.js'
 				<h1 class="viewHeaderTitleIndented">
 					{{ t('openregister', 'Search Trails') }}
 				</h1>
-				<p>{{ t('openregister', 'View and analyze search trail logs with advanced filtering and analytics capabilities') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'View and analyze search trail logs with advanced filtering and analytics capabilities',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- Actions Bar -->
@@ -20,13 +27,30 @@ import formatBytes from '../../services/formatBytes.js'
 				<div class="viewInfo">
 					<!-- Display pagination info: showing current page items out of total items -->
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} search trail entries', { showing: paginatedSearchTrails.length, total: searchTrailStore.searchTrailPagination.total || 0 }) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} search trail entries',
+								{
+									showing: paginatedSearchTrails.length,
+									total:
+										searchTrailStore.searchTrailPagination.total
+										|| 0,
+								},
+							)
+						}}
 					</span>
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
 					</span>
-					<span v-if="selectedSearchTrails.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedSearchTrails.length }) }})
+					<span
+						v-if="selectedSearchTrails.length > 0"
+						class="viewIndicator">
+						({{
+							t('openregister', '{count} selected', {
+								count: selectedSearchTrails.length,
+							})
+						}})
 					</span>
 				</div>
 				<div class="viewActions">
@@ -41,7 +65,11 @@ import formatBytes from '../../services/formatBytes.js'
 							<template #icon>
 								<Delete :size="20" />
 							</template>
-							{{ t('openregister', 'Delete ({count})', { count: selectedSearchTrails.length }) }}
+							{{
+								t('openregister', 'Delete ({count})', {
+									count: selectedSearchTrails.length,
+								})
+							}}
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
@@ -69,9 +97,15 @@ import formatBytes from '../../services/formatBytes.js'
 				<p>{{ t('openregister', 'Loading search trails...') }}</p>
 			</div>
 
-			<NcEmptyContent v-else-if="!searchTrailStore.searchTrailList.length"
+			<NcEmptyContent
+				v-else-if="!searchTrailStore.searchTrailList.length"
 				:name="t('openregister', 'No search trail entries found')"
-				:description="t('openregister', 'There are no search trail entries matching your current filters.')">
+				:description="
+					t(
+						'openregister',
+						'There are no search trail entries matching your current filters.',
+					)
+				">
 				<template #icon>
 					<MagnifyPlus />
 				</template>
@@ -115,63 +149,109 @@ import formatBytes from '../../services/formatBytes.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="searchTrail in paginatedSearchTrails"
+						<tr
+							v-for="searchTrail in paginatedSearchTrails"
 							:key="searchTrail.id"
 							class="viewTableRow searchTrailRow"
-							:class="{ 'success': searchTrail.totalResults > 0, 'failed': searchTrail.totalResults === 0 }">
+							:class="{
+								success: searchTrail.totalResults > 0,
+								failed: searchTrail.totalResults === 0,
+							}">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:model-value="selectedSearchTrails.includes(searchTrail.id)"
+									:model-value="
+										selectedSearchTrails.includes(searchTrail.id)
+									"
 									:aria-labelledby="`search-trail-row-term-${searchTrail.id}`"
-									@update:modelValue="(checked) => toggleSearchTrailSelection(searchTrail.id, checked)" />
+									@update:modelValue="
+										(checked) =>
+											toggleSearchTrailSelection(
+												searchTrail.id,
+												checked,
+											)
+									" />
 							</td>
-							<td :id="`search-trail-row-term-${searchTrail.id}`" class="searchTermColumn">
-								<span class="searchTermText">{{ searchTrail.searchTerm || '-' }}</span>
-								<span v-if="searchTrail.totalResults > 0" class="searchResultsBadge">
-									{{ searchTrail.totalResults }} {{ t('openregister', 'results') }}
+							<td
+								:id="`search-trail-row-term-${searchTrail.id}`"
+								class="searchTermColumn">
+								<span class="searchTermText">{{
+									searchTrail.searchTerm || '-'
+								}}</span>
+								<span
+									v-if="searchTrail.totalResults > 0"
+									class="searchResultsBadge">
+									{{ searchTrail.totalResults }}
+									{{ t('openregister', 'results') }}
 								</span>
 							</td>
 							<td class="timestampColumn">
-								<NcDateTime :timestamp="new Date(searchTrail.created)" :ignore-seconds="false" />
+								<NcDateTime
+									:timestamp="new Date(searchTrail.created)"
+									:ignore-seconds="false" />
 							</td>
 							<td class="tableColumnConstrained">
-								{{ searchTrail.registerName || searchTrail.register || '-' }}
+								{{
+									searchTrail.registerName
+									|| searchTrail.register
+									|| '-'
+								}}
 							</td>
 							<td class="tableColumnConstrained">
-								{{ searchTrail.schemaName || searchTrail.schema || '-' }}
+								{{
+									searchTrail.schemaName
+									|| searchTrail.schema
+									|| '-'
+								}}
 							</td>
 							<td class="tableColumnConstrained">
 								{{ searchTrail.userName || searchTrail.user || '-' }}
 							</td>
 							<td class="tableColumnConstrained">
-								<span :class="{ 'success-text': searchTrail.totalResults > 0, 'error-text': !searchTrail.totalResults }">
+								<span
+									:class="{
+										'success-text': searchTrail.totalResults > 0,
+										'error-text': !searchTrail.totalResults,
+									}">
 									{{ searchTrail.totalResults || 0 }}
 								</span>
 							</td>
 							<td class="tableColumnConstrained">
-								<span class="executionTime">{{ formatExecutionTime(searchTrail.responseTime) }}</span>
+								<span class="executionTime">{{
+									formatExecutionTime(searchTrail.responseTime)
+								}}</span>
 							</td>
 							<td class="tableColumnActions">
 								<NcActions>
-									<NcActionButton close-after-click @click="viewDetails(searchTrail)">
+									<NcActionButton
+										close-after-click
+										@click="viewDetails(searchTrail)">
 										<template #icon>
 											<Eye :size="20" />
 										</template>
 										{{ t('openregister', 'View Details') }}
 									</NcActionButton>
-									<NcActionButton v-if="hasParameters(searchTrail)" close-after-click @click="viewParameters(searchTrail)">
+									<NcActionButton
+										v-if="hasParameters(searchTrail)"
+										close-after-click
+										@click="viewParameters(searchTrail)">
 										<template #icon>
 											<Cog :size="20" />
 										</template>
 										{{ t('openregister', 'View Parameters') }}
 									</NcActionButton>
-									<NcActionButton v-if="searchTrail.searchTerm" close-after-click @click="rerunSearch(searchTrail)">
+									<NcActionButton
+										v-if="searchTrail.searchTerm"
+										close-after-click
+										@click="rerunSearch(searchTrail)">
 										<template #icon>
 											<Refresh :size="20" />
 										</template>
 										{{ t('openregister', 'Rerun Search') }}
 									</NcActionButton>
-									<NcActionButton close-after-click class="deleteAction" @click="deleteSearchTrail(searchTrail)">
+									<NcActionButton
+										close-after-click
+										class="deleteAction"
+										@click="deleteSearchTrail(searchTrail)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
@@ -189,7 +269,9 @@ import formatBytes from '../../services/formatBytes.js'
 				:current-page="searchTrailStore.searchTrailPagination.page || 1"
 				:total-pages="searchTrailStore.searchTrailPagination.pages || 1"
 				:total-items="searchTrailStore.searchTrailPagination.total || 0"
-				:current-page-size="searchTrailStore.searchTrailPagination.limit || 50"
+				:current-page-size="
+					searchTrailStore.searchTrailPagination.limit || 50
+				"
 				:min-items-to-show="10"
 				@page-changed="onPageChanged"
 				@page-size-changed="onPageSizeChanged" />
@@ -250,10 +332,11 @@ export default {
 		 * @spec exclude list-view active-filter detection helper (computed)
 		 */
 		hasActiveFilters() {
-			return Object.keys(searchTrailStore.searchTrailFilters || {}).some(key =>
-				searchTrailStore.searchTrailFilters[key] !== null
-				&& searchTrailStore.searchTrailFilters[key] !== undefined
-				&& searchTrailStore.searchTrailFilters[key] !== '',
+			return Object.keys(searchTrailStore.searchTrailFilters || {}).some(
+				(key) =>
+					searchTrailStore.searchTrailFilters[key] !== null
+					&& searchTrailStore.searchTrailFilters[key] !== undefined
+					&& searchTrailStore.searchTrailFilters[key] !== '',
 			)
 		},
 		/**
@@ -262,7 +345,9 @@ export default {
 		paginatedSearchTrails() {
 			// Ensure we always return a clean array
 			try {
-				return Array.isArray(searchTrailStore.searchTrailList) ? searchTrailStore.searchTrailList : []
+				return Array.isArray(searchTrailStore.searchTrailList)
+					? searchTrailStore.searchTrailList
+					: []
 			} catch (error) {
 				console.error('Error accessing searchTrailList:', error)
 				return []
@@ -272,7 +357,12 @@ export default {
 		 * @spec exclude list-view select-all checkbox state (computed)
 		 */
 		allSelected() {
-			return this.paginatedSearchTrails.length > 0 && this.paginatedSearchTrails.every(searchTrail => this.selectedSearchTrails.includes(searchTrail.id))
+			return (
+				this.paginatedSearchTrails.length > 0
+				&& this.paginatedSearchTrails.every((searchTrail) =>
+					this.selectedSearchTrails.includes(searchTrail.id),
+				)
+			)
 		},
 		/**
 		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
@@ -333,7 +423,10 @@ export default {
 				await searchTrailStore.refreshSearchTrailList()
 			} catch (error) {
 				console.error('Error loading search trails:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Error loading search trails'), { type: 'error' })
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Error loading search trails'),
+					{ type: 'error' },
+				)
 			}
 		},
 		/**
@@ -358,15 +451,30 @@ export default {
 			// Create a formatted details message
 			const details = []
 			details.push(`Search Term: ${searchTrail.searchTerm || 'N/A'}`)
-			details.push(`Timestamp: ${new Date(searchTrail.created).toLocaleString()}`)
-			details.push(`Register: ${searchTrail.registerName || searchTrail.register || 'N/A'}`)
-			details.push(`Schema: ${searchTrail.schemaName || searchTrail.schema || 'N/A'}`)
-			details.push(`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`)
+			details.push(
+				`Timestamp: ${new Date(searchTrail.created).toLocaleString()}`,
+			)
+			details.push(
+				`Register: ${searchTrail.registerName || searchTrail.register || 'N/A'}`,
+			)
+			details.push(
+				`Schema: ${searchTrail.schemaName || searchTrail.schema || 'N/A'}`,
+			)
+			details.push(
+				`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`,
+			)
 			details.push(`Results: ${searchTrail.totalResults || 0}`)
-			details.push(`Execution Time: ${this.formatExecutionTime(searchTrail.responseTime)}`)
+			details.push(
+				`Execution Time: ${this.formatExecutionTime(searchTrail.responseTime)}`,
+			)
 
-			if (searchTrail.parameters && typeof searchTrail.parameters === 'object') {
-				details.push(`Parameters: ${JSON.stringify(searchTrail.parameters, null, 2)}`)
+			if (
+				searchTrail.parameters
+				&& typeof searchTrail.parameters === 'object'
+			) {
+				details.push(
+					`Parameters: ${JSON.stringify(searchTrail.parameters, null, 2)}`,
+				)
 			}
 
 			// Show details in a dialog
@@ -406,9 +514,10 @@ export default {
 			// Add any additional parameters from the search trail
 			if (searchTrail.parameters) {
 				try {
-					const parsedParams = typeof searchTrail.parameters === 'string'
-						? JSON.parse(searchTrail.parameters)
-						: searchTrail.parameters
+					const parsedParams =
+						typeof searchTrail.parameters === 'string'
+							? JSON.parse(searchTrail.parameters)
+							: searchTrail.parameters
 
 					Object.assign(searchParams, parsedParams)
 				} catch (error) {
@@ -424,7 +533,9 @@ export default {
 
 			// Show notification
 			OC.Notification.showTemporary(
-				this.t('openregister', 'Rerunning search: {searchTerm}', { searchTerm: searchTrail.searchTerm }),
+				this.t('openregister', 'Rerunning search: {searchTerm}', {
+					searchTerm: searchTrail.searchTerm,
+				}),
 				{ type: 'info' },
 			)
 		},
@@ -447,7 +558,14 @@ export default {
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async cleanupSearchTrails() {
-			if (!confirm(this.t('openregister', 'Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.'))) {
+			if (
+				!confirm(
+					this.t(
+						'openregister',
+						'Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.',
+					),
+				)
+			) {
 				return
 			}
 
@@ -455,7 +573,14 @@ export default {
 				const result = await searchTrailStore.cleanupSearchTrails(30)
 
 				if (result.success) {
-					OC.Notification.showTemporary(this.t('openregister', 'Cleanup completed successfully. Deleted {count} entries.', { count: result.deletedCount || 0 }), { type: 'success' })
+					OC.Notification.showTemporary(
+						this.t(
+							'openregister',
+							'Cleanup completed successfully. Deleted {count} entries.',
+							{ count: result.deletedCount || 0 },
+						),
+						{ type: 'success' },
+					)
 					// Refresh the list
 					await this.loadSearchTrails()
 				} else {
@@ -463,7 +588,12 @@ export default {
 				}
 			} catch (error) {
 				console.error('Error during cleanup:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Cleanup failed: {error}', { error: error.message }), { type: 'error' })
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Cleanup failed: {error}', {
+						error: error.message,
+					}),
+					{ type: 'error' },
+				)
 			}
 		},
 		/**
@@ -482,7 +612,9 @@ export default {
 		 */
 		updateCounts() {
 			try {
-				const count = Array.isArray(searchTrailStore.searchTrailList) ? searchTrailStore.searchTrailList.length : 0
+				const count = Array.isArray(searchTrailStore.searchTrailList)
+					? searchTrailStore.searchTrailList.length
+					: 0
 				eventBus.emit('search-trail-filtered-count', count)
 			} catch (error) {
 				console.error('Error updating counts:', error)
@@ -572,7 +704,9 @@ export default {
 		 */
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.selectedSearchTrails = this.paginatedSearchTrails.map(searchTrail => searchTrail.id)
+				this.selectedSearchTrails = this.paginatedSearchTrails.map(
+					(searchTrail) => searchTrail.id,
+				)
 			} else {
 				this.selectedSearchTrails = []
 			}
@@ -586,7 +720,9 @@ export default {
 			if (checked) {
 				this.selectedSearchTrails.push(id)
 			} else {
-				this.selectedSearchTrails = this.selectedSearchTrails.filter(i => i !== id)
+				this.selectedSearchTrails = this.selectedSearchTrails.filter(
+					(i) => i !== id,
+				)
 			}
 		},
 		/**
@@ -598,24 +734,41 @@ export default {
 		async bulkDeleteSearchTrails() {
 			if (this.selectedSearchTrails.length === 0) return
 
-			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected search trails? This action cannot be undone.'))) {
+			if (
+				!confirm(
+					this.t(
+						'openregister',
+						'Are you sure you want to delete the selected search trails? This action cannot be undone.',
+					),
+				)
+			) {
 				return
 			}
 
 			try {
 				// Make the API request to delete selected search trails
-				const response = await fetch('/index.php/apps/openregister/api/search-trails/bulk-delete', {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/search-trails/bulk-delete',
+					{
+						method: 'DELETE',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ ids: this.selectedSearchTrails }),
 					},
-					body: JSON.stringify({ ids: this.selectedSearchTrails }),
-				})
+				)
 
 				const result = await response.json()
 
 				if (result.success) {
-					OC.Notification.showTemporary(result.message || this.t('openregister', 'Selected search trails deleted successfully'), { type: 'success' })
+					OC.Notification.showTemporary(
+						result.message
+							|| this.t(
+								'openregister',
+								'Selected search trails deleted successfully',
+							),
+						{ type: 'success' },
+					)
 					// Clear selection
 					this.selectedSearchTrails = []
 					// Refresh the list
@@ -625,7 +778,12 @@ export default {
 				}
 			} catch (error) {
 				console.error('Error deleting search trails:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Error deleting search trails: {error}', { error: error.message }), { type: 'error' })
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Error deleting search trails: {error}', {
+						error: error.message,
+					}),
+					{ type: 'error' },
+				)
 			}
 		},
 	},
@@ -636,6 +794,9 @@ export default {
 /* Specific column widths for search trail table */
 .searchTermColumn {
 	width: 200px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .timestampColumn {
@@ -652,12 +813,6 @@ export default {
 }
 
 /* Search term styling */
-.searchTermColumn {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
 .searchTermText {
 	font-weight: 500;
 	color: var(--color-main-text);
@@ -714,9 +869,15 @@ export default {
 }
 
 @keyframes copySuccess {
-	0% { transform: scale(1); }
-	50% { transform: scale(1.2); }
-	100% { transform: scale(1); }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.2);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

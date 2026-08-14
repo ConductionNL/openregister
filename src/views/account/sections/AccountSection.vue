@@ -5,7 +5,8 @@
 		<div v-if="status === 'pending'" class="account-section__pending">
 			<p>{{ t('openregister', 'A deactivation request is pending.') }}</p>
 			<p v-if="requestedAt">
-				{{ t('openregister', 'Requested at') }}: {{ formatDate(requestedAt) }}
+				{{ t('openregister', 'Requested at') }}:
+				{{ formatDate(requestedAt) }}
 			</p>
 			<NcButton variant="warning" @click="cancelDeactivation">
 				{{ t('openregister', 'Cancel deactivation request') }}
@@ -13,7 +14,14 @@
 		</div>
 
 		<div v-else class="account-section__active">
-			<p>{{ t('openregister', 'Request account deactivation. This will notify administrators for review.') }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'Request account deactivation. This will notify administrators for review.',
+					)
+				}}
+			</p>
 			<NcButton variant="error" @click="showConfirmModal = true">
 				{{ t('openregister', 'Request account deactivation') }}
 			</NcButton>
@@ -29,7 +37,9 @@
 			@update:reason="reason = $event"
 			@update:confirmUsername="confirmUsername = $event" />
 
-		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+		<p
+			v-if="message"
+			:class="{ section__error: isError, section__success: !isError }">
 			{{ message }}
 		</p>
 	</div>
@@ -67,7 +77,11 @@ export default {
 		try {
 			const [userRes, statusRes] = await Promise.all([
 				axios.get(generateUrl('/apps/openregister/api/user/me')),
-				axios.get(generateUrl('/apps/openregister/api/user/me/deactivation-status')),
+				axios.get(
+					generateUrl(
+						'/apps/openregister/api/user/me/deactivation-status',
+					),
+				),
 			])
 			this.username = userRes.data?.uid || ''
 			this.status = statusRes.data?.status || 'active'
@@ -98,7 +112,9 @@ export default {
 				this.message = t('openregister', 'Deactivation request submitted')
 				this.isError = false
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to request deactivation')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to request deactivation')
 				this.isError = true
 			}
 		},
@@ -110,13 +126,17 @@ export default {
 		 */
 		async cancelDeactivation() {
 			try {
-				await axios.delete(generateUrl('/apps/openregister/api/user/me/deactivate'))
+				await axios.delete(
+					generateUrl('/apps/openregister/api/user/me/deactivate'),
+				)
 				this.status = 'active'
 				this.requestedAt = null
 				this.message = t('openregister', 'Deactivation request cancelled')
 				this.isError = false
 			} catch (e) {
-				this.message = e.response?.data?.error || t('openregister', 'Failed to cancel deactivation')
+				this.message =
+					e.response?.data?.error
+					|| t('openregister', 'Failed to cancel deactivation')
 				this.isError = true
 			}
 		},
@@ -136,10 +156,36 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__field { margin-bottom: 12px; }
-.section__field label { display: block; margin-bottom: 4px; font-weight: bold; }
-.section__error { color: var(--color-error); margin-top: 8px; }
-.section__success { color: var(--color-success); margin-top: 8px; }
-.account-section__pending { background: var(--color-warning-background, #fff3cd); padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__field {
+	margin-bottom: 12px;
+}
+
+.section__field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
+
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
+
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
+
+.account-section__pending {
+	background: var(--color-warning-background, #fff3cd);
+	padding: 16px;
+	border-radius: 8px;
+	margin-bottom: 16px;
+}
 </style>

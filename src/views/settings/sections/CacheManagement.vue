@@ -18,7 +18,12 @@
 				</NcButton>
 				<NcButton
 					variant="error"
-					:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
+					:disabled="
+						loading
+						|| clearingCache
+						|| loadingCache
+						|| cacheStats.unavailable
+					"
 					@click="showClearCacheDialog">
 					<template #icon>
 						<NcLoadingIcon v-if="clearingCache" :size="20" />
@@ -35,15 +40,20 @@
 					<p>Cache monitoring is not available. This can happen when:</p>
 					<ul>
 						<li>Cache systems are not properly configured</li>
-						<li>Statistics collection is disabled for performance reasons</li>
+						<li>
+							Statistics collection is disabled for performance reasons
+						</li>
 						<li>Cache backends don't support statistics</li>
 					</ul>
 					<div v-if="cacheStats.errorMessage" class="error-details">
-						<strong>Technical Details:</strong> {{ cacheStats.errorMessage }}
+						<strong>Technical Details:</strong>
+						{{ cacheStats.errorMessage }}
 					</div>
 					<p class="performance-note">
-						<strong>Note:</strong> This is normal behavior as storing cache metadata in database tables would cause performance issues.
-						Cache systems are working but detailed statistics are not collected.
+						<strong>Note:</strong> This is normal behavior as storing
+						cache metadata in database tables would cause performance
+						issues. Cache systems are working but detailed statistics are
+						not collected.
 					</p>
 				</div>
 			</div>
@@ -55,28 +65,44 @@
 						<div class="cache-overview-card">
 							<h4>📈 Hit Rate</h4>
 							<div class="cache-metric">
-								<span class="metric-value" :class="hitRateClass">{{ cacheStats.overview.overallHitRate.toFixed(1) }}%</span>
+								<span class="metric-value" :class="hitRateClass"
+									>{{
+										cacheStats.overview.overallHitRate.toFixed(
+											1,
+										)
+									}}%</span
+								>
 								<span class="metric-label">Overall Success</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>💾 Total Size</h4>
 							<div class="cache-metric">
-								<span class="metric-value">{{ formatBytes(cacheStats.overview.totalCacheSize) }}</span>
+								<span class="metric-value">{{
+									formatBytes(cacheStats.overview.totalCacheSize)
+								}}</span>
 								<span class="metric-label">Memory Used</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>🗃️ Entries</h4>
 							<div class="cache-metric">
-								<span class="metric-value">{{ cacheStats.overview.totalCacheEntries.toLocaleString() }}</span>
+								<span class="metric-value">{{
+									cacheStats.overview.totalCacheEntries.toLocaleString()
+								}}</span>
 								<span class="metric-label">Cache Items</span>
 							</div>
 						</div>
 						<div class="cache-overview-card">
 							<h4>⚡ Performance</h4>
 							<div class="cache-metric">
-								<span class="metric-value performance-gain">{{ cacheStats.performance.performanceGain.toFixed(0) }}x</span>
+								<span class="metric-value performance-gain"
+									>{{
+										cacheStats.performance.performanceGain.toFixed(
+											0,
+										)
+									}}x</span
+								>
 								<span class="metric-label">Speed Boost</span>
 							</div>
 						</div>
@@ -93,17 +119,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.object.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.object.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.object))">
-										{{ getServiceHitRate(cacheStats.services.object).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.object,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.object,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.object.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.object.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -114,17 +161,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.schema.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.schema.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.schema))">
-										{{ getServiceHitRate(cacheStats.services.schema).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.schema,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.schema,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.schema.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.schema.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -135,17 +203,38 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Entries:</span>
-									<span class="stat-value">{{ (cacheStats.services.facet.entries || 0).toLocaleString() }}</span>
+									<span class="stat-value">{{
+										(
+											cacheStats.services.facet.entries || 0
+										).toLocaleString()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Hit Rate:</span>
-									<span class="stat-value" :class="getHitRateClass(getServiceHitRate(cacheStats.services.facet))">
-										{{ getServiceHitRate(cacheStats.services.facet).toFixed(1) }}%
+									<span
+										class="stat-value"
+										:class="
+											getHitRateClass(
+												getServiceHitRate(
+													cacheStats.services.facet,
+												),
+											)
+										">
+										{{
+											getServiceHitRate(
+												cacheStats.services.facet,
+											).toFixed(1)
+										}}%
 									</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Memory:</span>
-									<span class="stat-value">{{ formatBytes(cacheStats.services.facet.memoryUsage || 0) }}</span>
+									<span class="stat-value">{{
+										formatBytes(
+											cacheStats.services.facet.memoryUsage
+												|| 0,
+										)
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -156,12 +245,24 @@
 							<div class="service-stats">
 								<div class="service-stat">
 									<span class="stat-label">Backend:</span>
-									<span class="stat-value">{{ getDistributedCacheBackend() }}</span>
+									<span class="stat-value">{{
+										getDistributedCacheBackend()
+									}}</span>
 								</div>
 								<div class="service-stat">
 									<span class="stat-label">Status:</span>
-									<span class="stat-value" :class="cacheStats.distributed.available ? 'status-enabled' : 'status-disabled'">
-										{{ cacheStats.distributed.available ? 'Available' : 'Unavailable' }}
+									<span
+										class="stat-value"
+										:class="
+											cacheStats.distributed.available
+												? 'status-enabled'
+												: 'status-disabled'
+										">
+										{{
+											cacheStats.distributed.available
+												? 'Available'
+												: 'Unavailable'
+										}}
 									</span>
 								</div>
 							</div>
@@ -198,11 +299,19 @@
 									<td class="performance-table-value">
 										{{ cacheStats.performance.averageHitTime }}ms
 									</td>
-									<td class="performance-table-value">
-										&lt; 5ms
-									</td>
-									<td class="performance-table-value" :class="cacheStats.performance.averageHitTime < 5 ? 'status-enabled' : 'status-warning'">
-										{{ cacheStats.performance.averageHitTime < 5 ? '✓ Good' : '⚠ Slow' }}
+									<td class="performance-table-value">&lt; 5ms</td>
+									<td
+										class="performance-table-value"
+										:class="
+											cacheStats.performance.averageHitTime < 5
+												? 'status-enabled'
+												: 'status-warning'
+										">
+										{{
+											cacheStats.performance.averageHitTime < 5
+												? '✓ Good'
+												: '⚠ Slow'
+										}}
 									</td>
 								</tr>
 								<tr class="performance-table-row">
@@ -210,13 +319,27 @@
 										Average Miss Time
 									</td>
 									<td class="performance-table-value">
-										{{ cacheStats.performance.averageMissTime }}ms
+										{{
+											cacheStats.performance.averageMissTime
+										}}ms
 									</td>
 									<td class="performance-table-value">
 										&lt; 500ms
 									</td>
-									<td class="performance-table-value" :class="cacheStats.performance.averageMissTime < 500 ? 'status-enabled' : 'status-error'">
-										{{ cacheStats.performance.averageMissTime < 500 ? '✓ Good' : '❌ Slow' }}
+									<td
+										class="performance-table-value"
+										:class="
+											cacheStats.performance.averageMissTime
+											< 500
+												? 'status-enabled'
+												: 'status-error'
+										">
+										{{
+											cacheStats.performance.averageMissTime
+											< 500
+												? '✓ Good'
+												: '❌ Slow'
+										}}
 									</td>
 								</tr>
 								<tr class="performance-table-row">
@@ -224,13 +347,28 @@
 										Overall Hit Rate
 									</td>
 									<td class="performance-table-value">
-										{{ cacheStats.overview.overallHitRate.toFixed(1) }}%
+										{{
+											cacheStats.overview.overallHitRate.toFixed(
+												1,
+											)
+										}}%
 									</td>
 									<td class="performance-table-value">
-										≥ {{ cacheStats.performance.optimalHitRate }}%
+										≥
+										{{ cacheStats.performance.optimalHitRate }}%
 									</td>
-									<td class="performance-table-value" :class="getHitRateClass(cacheStats.overview.overallHitRate)">
-										{{ getHitRateText(cacheStats.overview.overallHitRate) }}
+									<td
+										class="performance-table-value"
+										:class="
+											getHitRateClass(
+												cacheStats.overview.overallHitRate,
+											)
+										">
+										{{
+											getHitRateText(
+												cacheStats.overview.overallHitRate,
+											)
+										}}
 									</td>
 								</tr>
 							</tbody>
@@ -242,7 +380,9 @@
 				<div class="cache-warmup">
 					<h4>Cache Warmup Schedule</h4>
 					<p class="warmup-description">
-						Configure automatic cache warmup to prevent cold-start delays. The background job pre-populates caches at the configured interval.
+						Configure automatic cache warmup to prevent cold-start
+						delays. The background job pre-populates caches at the
+						configured interval.
 					</p>
 					<div class="warmup-controls">
 						<div class="warmup-select">
@@ -264,10 +404,14 @@
 								:disabled="warmingUpCache || savingWarmupInterval"
 								@click="triggerWarmup">
 								<template #icon>
-									<NcLoadingIcon v-if="warmingUpCache" :size="20" />
+									<NcLoadingIcon
+										v-if="warmingUpCache"
+										:size="20" />
 									<Refresh v-else :size="20" />
 								</template>
-								{{ warmingUpCache ? 'Warming up...' : 'Trigger Now' }}
+								{{
+									warmingUpCache ? 'Warming up...' : 'Trigger Now'
+								}}
 							</NcButton>
 						</div>
 					</div>
@@ -400,7 +544,9 @@ export default {
 		 * @return {string} CSS class name
 		 */
 		hitRateClass() {
-			return this.getHitRateClass(this.cacheStats.overview?.overallHitRate || 0)
+			return this.getHitRateClass(
+				this.cacheStats.overview?.overallHitRate || 0,
+			)
 		},
 
 		/**
@@ -458,7 +604,10 @@ export default {
 		 */
 		selectedWarmupOption() {
 			const interval = this.settingsStore.warmupInterval
-			return this.warmupIntervalOptions.find((o) => o.value === interval) || this.warmupIntervalOptions[3]
+			return (
+				this.warmupIntervalOptions.find((o) => o.value === interval)
+				|| this.warmupIntervalOptions[3]
+			)
 		},
 	},
 

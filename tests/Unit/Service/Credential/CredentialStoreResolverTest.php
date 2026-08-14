@@ -37,170 +37,153 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class CredentialStoreResolverTest extends TestCase
-{
-    private const FIXTURE_NS = 'OCA\\OpenRegister\\Tests\\Fixtures\\Doriath\\';
+class CredentialStoreResolverTest extends TestCase {
+	private const FIXTURE_NS = 'OCA\\OpenRegister\\Tests\\Fixtures\\Doriath\\';
 
-    private DoriathCredentialStore $doriathStore;
+	private DoriathCredentialStore $doriathStore;
 
-    private NextcloudVaultCredentialStore $vaultStore;
+	private NextcloudVaultCredentialStore $vaultStore;
 
-    protected function setUp(): void
-    {
-        $this->doriathStore = $this->createMock(DoriathCredentialStore::class);
-        $this->vaultStore   = $this->createMock(NextcloudVaultCredentialStore::class);
-    }
+	protected function setUp(): void {
+		$this->doriathStore = $this->createMock(DoriathCredentialStore::class);
+		$this->vaultStore = $this->createMock(NextcloudVaultCredentialStore::class);
+	}
 
-    /**
-     * Happy path: enabled + classes + seam methods + registration state → Doriath leaf.
-     */
-    public function testEligibleSelectsDoriathStore(): void
-    {
-        $resolver = $this->makeResolver(
-            doriathEnabled: true,
-            registered: true,
-            secretServiceClass: self::FIXTURE_NS.'FakeSecretService'
-        );
+	/**
+	 * Happy path: enabled + classes + seam methods + registration state → Doriath leaf.
+	 */
+	public function testEligibleSelectsDoriathStore(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService'
+		);
 
-        $this->assertTrue($resolver->isDoriathEligible());
-        $this->assertSame($this->doriathStore, $resolver->resolve());
-    }
+		$this->assertTrue($resolver->isDoriathEligible());
+		$this->assertSame($this->doriathStore, $resolver->resolve());
+	}
 
-    /**
-     * Error path: doriath app disabled → vault leaf, nothing else probed.
-     */
-    public function testDisabledAppFallsBackToVault(): void
-    {
-        $resolver = $this->makeResolver(
-            doriathEnabled: false,
-            registered: true,
-            secretServiceClass: self::FIXTURE_NS.'FakeSecretService'
-        );
+	/**
+	 * Error path: doriath app disabled → vault leaf, nothing else probed.
+	 */
+	public function testDisabledAppFallsBackToVault(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: false,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService'
+		);
 
-        $this->assertFalse($resolver->isDoriathEligible());
-        $this->assertSame($this->vaultStore, $resolver->resolve());
-    }
+		$this->assertFalse($resolver->isDoriathEligible());
+		$this->assertSame($this->vaultStore, $resolver->resolve());
+	}
 
-    /**
-     * Error path: a probed service class is missing → vault leaf.
-     */
-    public function testMissingServiceClassFallsBackToVault(): void
-    {
-        $resolver = $this->makeResolver(
-            doriathEnabled: true,
-            registered: true,
-            secretServiceClass: self::FIXTURE_NS.'FakeSecretService',
-            serviceClasses: [self::FIXTURE_NS.'ThisFixtureDoesNotExist']
-        );
+	/**
+	 * Error path: a probed service class is missing → vault leaf.
+	 */
+	public function testMissingServiceClassFallsBackToVault(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService',
+			serviceClasses: [self::FIXTURE_NS . 'ThisFixtureDoesNotExist']
+		);
 
-        $this->assertSame($this->vaultStore, $resolver->resolve());
-    }
+		$this->assertSame($this->vaultStore, $resolver->resolve());
+	}
 
-    /**
-     * Edge (cross-repo rollout order): classes exist but the application-scoped
-     * seam methods have not landed yet → vault leaf, not a broken Doriath leaf.
-     */
-    public function testMissingSeamMethodsFallBackToVault(): void
-    {
-        $resolver = $this->makeResolver(
-            doriathEnabled: true,
-            registered: true,
-            secretServiceClass: self::FIXTURE_NS.'FakeLegacySecretService'
-        );
+	/**
+	 * Edge (cross-repo rollout order): classes exist but the application-scoped
+	 * seam methods have not landed yet → vault leaf, not a broken Doriath leaf.
+	 */
+	public function testMissingSeamMethodsFallBackToVault(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: true,
+			secretServiceClass: self::FIXTURE_NS . 'FakeLegacySecretService'
+		);
 
-        $this->assertSame($this->vaultStore, $resolver->resolve());
-    }
+		$this->assertSame($this->vaultStore, $resolver->resolve());
+	}
 
-    /**
-     * Edge: everything present but OR never self-registered → vault leaf.
-     */
-    public function testUnregisteredFallsBackToVault(): void
-    {
-        $resolver = $this->makeResolver(
-            doriathEnabled: true,
-            registered: false,
-            secretServiceClass: self::FIXTURE_NS.'FakeSecretService'
-        );
+	/**
+	 * Edge: everything present but OR never self-registered → vault leaf.
+	 */
+	public function testUnregisteredFallsBackToVault(): void {
+		$resolver = $this->makeResolver(
+			doriathEnabled: true,
+			registered: false,
+			secretServiceClass: self::FIXTURE_NS . 'FakeSecretService'
+		);
 
-        $this->assertSame($this->vaultStore, $resolver->resolve());
-    }
+		$this->assertSame($this->vaultStore, $resolver->resolve());
+	}
 
-    /**
-     * Build a resolver whose class probes point at the test fixtures.
-     *
-     * @param bool               $doriathEnabled     Whether IAppManager reports doriath enabled.
-     * @param bool               $registered         Whether IAppConfig carries the self-registration state.
-     * @param string             $secretServiceClass FQCN probed for the seam methods.
-     * @param array<int, string> $serviceClasses     FQCNs probed via class_exists (defaults to existing fixtures).
-     */
-    private function makeResolver(
-        bool $doriathEnabled,
-        bool $registered,
-        string $secretServiceClass,
-        ?array $serviceClasses=null
-    ): CredentialStoreResolver {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
+	/**
+	 * Build a resolver whose class probes point at the test fixtures.
+	 *
+	 * @param bool $doriathEnabled Whether IAppManager reports doriath enabled.
+	 * @param bool $registered Whether IAppConfig carries the self-registration state.
+	 * @param string $secretServiceClass FQCN probed for the seam methods.
+	 * @param array<int, string> $serviceClasses FQCNs probed via class_exists (defaults to existing fixtures).
+	 */
+	private function makeResolver(
+		bool $doriathEnabled,
+		bool $registered,
+		string $secretServiceClass,
+		?array $serviceClasses = null,
+	): CredentialStoreResolver {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
 
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturnCallback(
-            static function (string $app, string $key, string $default='') use ($registered): string {
-                if ($registered === false) {
-                    return '';
-                }
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static function (string $app, string $key, string $default = '') use ($registered): string {
+				if ($registered === false) {
+					return '';
+				}
 
-                if ($key === DoriathCredentialStore::APP_CONFIG_APPLICATION_ID) {
-                    return '00000000-0000-0000-0000-000000000000';
-                }
+				if ($key === DoriathCredentialStore::APP_CONFIG_APPLICATION_ID) {
+					return '00000000-0000-0000-0000-000000000000';
+				}
 
-                if ($key === DoriathCredentialStore::APP_CONFIG_PUBLIC_KEY_PEM) {
-                    return '<public-key-pem>';
-                }
+				if ($key === DoriathCredentialStore::APP_CONFIG_PUBLIC_KEY_PEM) {
+					return '<public-key-pem>';
+				}
 
-                return $default;
-            }
-        );
+				return $default;
+			}
+		);
 
-        $classes = ($serviceClasses ?? [
-            self::FIXTURE_NS.'FakeApplicationService',
-            self::FIXTURE_NS.'FakeSecretService',
-            self::FIXTURE_NS.'FakeEncryptService',
-            self::FIXTURE_NS.'FakeDecryptService',
-        ]);
+		$classes = ($serviceClasses ?? [
+			self::FIXTURE_NS . 'FakeApplicationService',
+			self::FIXTURE_NS . 'FakeSecretService',
+			self::FIXTURE_NS . 'FakeEncryptService',
+			self::FIXTURE_NS . 'FakeDecryptService',
+		]);
 
-        return new class (
-            $appManager,
-            $appConfig,
-            $this->doriathStore,
-            $this->vaultStore,
-            $this->createMock(LoggerInterface::class),
-            $classes,
-            $secretServiceClass
-        ) extends CredentialStoreResolver {
-            /**
-             * @param array<int, string> $probedClasses Probed service FQCNs.
-             */
-            public function __construct(
-                IAppManager $appManager,
-                IAppConfig $appConfig,
-                DoriathCredentialStore $doriathStore,
-                NextcloudVaultCredentialStore $vaultStore,
-                LoggerInterface $logger,
-                private readonly array $probedClasses,
-                private readonly string $probedSecretService,
-            ) {
-                parent::__construct($appManager, $appConfig, $doriathStore, $vaultStore, $logger);
-            }
+		return new class($appManager, $appConfig, $this->doriathStore, $this->vaultStore, $this->createMock(LoggerInterface::class), $classes, $secretServiceClass) extends CredentialStoreResolver {
+			/**
+			 * @param array<int, string> $probedClasses Probed service FQCNs.
+			 */
+			public function __construct(
+				IAppManager $appManager,
+				IAppConfig $appConfig,
+				DoriathCredentialStore $doriathStore,
+				NextcloudVaultCredentialStore $vaultStore,
+				LoggerInterface $logger,
+				private readonly array $probedClasses,
+				private readonly string $probedSecretService,
+			) {
+				parent::__construct($appManager, $appConfig, $doriathStore, $vaultStore, $logger);
+			}
 
-            protected function doriathServiceClasses(): array
-            {
-                return $this->probedClasses;
-            }
+			protected function doriathServiceClasses(): array {
+				return $this->probedClasses;
+			}
 
-            protected function secretServiceClass(): string
-            {
-                return $this->probedSecretService;
-            }
-        };
-    }
+			protected function secretServiceClass(): string {
+				return $this->probedSecretService;
+			}
+		};
+	}
 }

@@ -1,10 +1,15 @@
 <template>
 	<div class="section">
 		<h2>{{ t('openregister', 'Personal Data Export') }}</h2>
-		<p>{{ t('openregister', 'Download a copy of all your personal data stored in OpenRegister (GDPR Article 20).') }}</p>
-		<NcButton variant="primary"
-			:disabled="loading"
-			@click="exportData">
+		<p>
+			{{
+				t(
+					'openregister',
+					'Download a copy of all your personal data stored in OpenRegister (GDPR Article 20).',
+				)
+			}}
+		</p>
+		<NcButton variant="primary" :disabled="loading" @click="exportData">
 			<template v-if="loading">
 				{{ t('openregister', 'Exporting...') }}
 			</template>
@@ -12,7 +17,9 @@
 				{{ t('openregister', 'Export my data') }}
 			</template>
 		</NcButton>
-		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
+		<p
+			v-if="message"
+			:class="{ section__error: isError, section__success: !isError }">
 			{{ message }}
 		</p>
 	</div>
@@ -54,7 +61,10 @@ export default {
 				const url = window.URL.createObjectURL(new Blob([response.data]))
 				const link = document.createElement('a')
 				link.href = url
-				link.setAttribute('download', `openregister-export-${new Date().toISOString().slice(0, 10)}.json`)
+				link.setAttribute(
+					'download',
+					`openregister-export-${new Date().toISOString().slice(0, 10)}.json`,
+				)
 				document.body.appendChild(link)
 				link.click()
 				link.remove()
@@ -63,7 +73,10 @@ export default {
 				this.isError = false
 			} catch (e) {
 				if (e.response?.status === 429) {
-					this.message = t('openregister', 'Export is rate limited. Please try again later.')
+					this.message = t(
+						'openregister',
+						'Export is rate limited. Please try again later.',
+					)
 				} else {
 					this.message = t('openregister', 'Failed to export data')
 				}
@@ -77,7 +90,19 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__error { color: var(--color-error); margin-top: 8px; }
-.section__success { color: var(--color-success); margin-top: 8px; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__error {
+	color: var(--color-error);
+	margin-top: 8px;
+}
+
+.section__success {
+	color: var(--color-success);
+	margin-top: 8px;
+}
 </style>

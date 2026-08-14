@@ -34,47 +34,46 @@ namespace OCA\OpenRegister\Service\Credential;
 /**
  * Abstraction over the backing store that holds a credential's raw secret.
  */
-interface CredentialStore
-{
-    /**
-     * Store (or overwrite) the secret for a credential.
-     *
-     * The `scope` selects the vault owner the secret is stored under: `personal`
-     * (the default) keeps the pre-existing per-user behaviour; `organisation`
-     * stores under a reserved system identity so no user owns the shared secret
-     * (credential-broker-organisation-scope design D2).
-     *
-     * @param string $uuid   The owning `credential` object's UUID (the vault key).
-     * @param string $secret The raw secret to store. Never logged or persisted to an OR object.
-     * @param string $scope  The credential scope (`personal`|`organisation`); selects the vault owner.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function put(string $uuid, string $secret, string $scope='personal'): void;
+interface CredentialStore {
+	/**
+	 * Store (or overwrite) the secret for a credential.
+	 *
+	 * The `scope` selects the vault owner the secret is stored under: `personal`
+	 * (the default) keeps the pre-existing per-user behaviour; `organisation`
+	 * stores under a reserved system identity so no user owns the shared secret
+	 * (credential-broker-organisation-scope design D2).
+	 *
+	 * @param string $uuid The owning `credential` object's UUID (the vault key).
+	 * @param string $secret The raw secret to store. Never logged or persisted to an OR object.
+	 * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function put(string $uuid, string $secret, string $scope = 'personal'): void;
 
-    /**
-     * Retrieve the secret for a credential, or null when none is stored.
-     *
-     * @param string $uuid  The owning `credential` object's UUID (the vault key).
-     * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
-     *
-     * @return string|null The raw secret, or null when absent. Never logged.
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function get(string $uuid, string $scope='personal'): ?string;
+	/**
+	 * Retrieve the secret for a credential, or null when none is stored.
+	 *
+	 * @param string $uuid The owning `credential` object's UUID (the vault key).
+	 * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
+	 *
+	 * @return string|null The raw secret, or null when absent. Never logged.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function get(string $uuid, string $scope = 'personal'): ?string;
 
-    /**
-     * Delete the secret for a credential (idempotent — a no-op when absent).
-     *
-     * @param string $uuid  The owning `credential` object's UUID (the vault key).
-     * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/credential-broker/spec.md
-     */
-    public function delete(string $uuid, string $scope='personal'): void;
+	/**
+	 * Delete the secret for a credential (idempotent — a no-op when absent).
+	 *
+	 * @param string $uuid The owning `credential` object's UUID (the vault key).
+	 * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function delete(string $uuid, string $scope = 'personal'): void;
 }//end interface

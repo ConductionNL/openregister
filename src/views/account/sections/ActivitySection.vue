@@ -13,18 +13,21 @@
 			{{ t('openregister', 'Loading activity...') }}
 		</div>
 		<ul v-else class="activity-section__list">
-			<li v-for="activity in activities" :key="activity.id" class="activity-section__item">
+			<li
+				v-for="activity in activities"
+				:key="activity.id"
+				class="activity-section__item">
 				<span class="activity-section__type">{{ activity.type }}</span>
 				<span class="activity-section__summary">{{ activity.summary }}</span>
-				<span class="activity-section__time">{{ formatTime(activity.timestamp) }}</span>
+				<span class="activity-section__time">{{
+					formatTime(activity.timestamp)
+				}}</span>
 			</li>
 		</ul>
 		<p v-if="activities.length === 0 && !loading">
 			{{ t('openregister', 'No activity found.') }}
 		</p>
-		<NcButton v-if="hasMore"
-			:disabled="loading"
-			@click="loadMore">
+		<NcButton v-if="hasMore" :disabled="loading" @click="loadMore">
 			{{ t('openregister', 'Load more') }}
 		</NcButton>
 	</div>
@@ -112,12 +115,46 @@ export default {
 </script>
 
 <style scoped>
-.section { margin-bottom: 32px; padding: 16px; border-bottom: 1px solid var(--color-border); }
-.section__loading { color: var(--color-text-maxcontrast); }
-.activity-section__filters { margin-bottom: 16px; max-width: 200px; }
-.activity-section__list { list-style: none; padding: 0; }
-.activity-section__item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-border-dark); align-items: center; }
-.activity-section__type { font-weight: bold; min-width: 60px; text-transform: capitalize; }
-.activity-section__summary { flex: 1; }
-.activity-section__time { color: var(--color-text-maxcontrast); font-size: 0.9em; }
+.section {
+	margin-bottom: 32px;
+	padding: 16px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.section__loading {
+	color: var(--color-text-maxcontrast);
+}
+
+.activity-section__filters {
+	margin-bottom: 16px;
+	max-width: 200px;
+}
+
+.activity-section__list {
+	list-style: none;
+	padding: 0;
+}
+
+.activity-section__item {
+	display: flex;
+	gap: 12px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border-dark);
+	align-items: center;
+}
+
+.activity-section__type {
+	font-weight: bold;
+	min-width: 60px;
+	text-transform: capitalize;
+}
+
+.activity-section__summary {
+	flex: 1;
+}
+
+.activity-section__time {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
 </style>

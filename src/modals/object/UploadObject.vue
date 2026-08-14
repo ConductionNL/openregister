@@ -1,12 +1,15 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import {
+	objectStore,
+	navigationStore,
+	schemaStore,
+	registerStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Upload Object"
-		size="normal"
-		:can-close="false">
+	<NcDialog name="Upload Object" size="normal" :can-close="false">
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
@@ -15,7 +18,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton v-if="registers?.value?.id && !schemas?.value?.id"
+			<NcButton
+				v-if="registers?.value?.id && !schemas?.value?.id"
 				:disabled="loading"
 				@click="registers.value = null">
 				<template #icon>
@@ -23,7 +27,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Back to Register
 			</NcButton>
-			<NcButton v-if="registers.value?.id && schemas.value?.id"
+			<NcButton
+				v-if="registers.value?.id && schemas.value?.id"
 				:disabled="loading"
 				@click="schemas.value = null">
 				<template #icon>
@@ -31,15 +36,20 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 				</template>
 				Back to Schema
 			</NcButton>
-			<NcButton
-				@click="closeModal">
+			<NcButton @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="success === null"
-				:disabled="!registers.value?.id || !schemas.value?.id || loading || !validateJson(object)"
+			<NcButton
+				v-if="success === null"
+				:disabled="
+					!registers.value?.id
+					|| !schemas.value?.id
+					|| loading
+					|| !validateJson(object)
+				"
 				variant="primary"
 				@click="uploadObject()">
 				<template #icon>
@@ -53,20 +63,17 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 		<div v-if="!success" class="formContainer">
 			<div v-if="registers?.value?.id && success === null">
 				<b>Register:</b> {{ registers.value.label }}
-				<NcButton @click="registers.value = null">
-					Edit Register
-				</NcButton>
+				<NcButton @click="registers.value = null"> Edit Register </NcButton>
 			</div>
 			<div v-if="schemas.value?.id && success === null">
 				<b>Schema:</b> {{ schemas.value.label }}
-				<NcButton @click="schemas.value = null">
-					Edit Schema
-				</NcButton>
+				<NcButton @click="schemas.value = null"> Edit Schema </NcButton>
 			</div>
 
 			<!-- STAGE 1 -->
 			<div v-if="!registers?.value?.id">
-				<NcSelect v-bind="registers"
+				<NcSelect
+					v-bind="registers"
 					v-model="registers.value"
 					:input-label="t('openregister', 'Register')"
 					:loading="registersLoading"
@@ -75,7 +82,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 			<!-- STAGE 2 -->
 			<div v-if="registers?.value?.id && !schemas?.value?.id">
-				<NcSelect v-bind="schemas"
+				<NcSelect
+					v-bind="schemas"
 					v-model="schemas.value"
 					:input-label="t('openregister', 'Schemas')"
 					:loading="schemasLoading"
@@ -84,7 +92,8 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 			<!-- STAGE 3 -->
 			<div v-if="registers.value?.id && schemas.value?.id">
-				<NcSelect v-bind="mappings"
+				<NcSelect
+					v-bind="mappings"
 					v-model="mappings.value"
 					:input-label="t('openregister', 'Mappings')"
 					:loading="mappingsLoading"
@@ -92,12 +101,15 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 				<div :class="`codeMirrorContainer ${getTheme()}`">
 					<p>{{ t('openregister', 'Object') }}</p>
-					<CodeMirror v-model="object"
+					<CodeMirror
+						v-model="object"
 						:basic="true"
 						:dark="getTheme() === 'dark'"
 						:lang="json()"
 						:linter="jsonParseLinter()"
-						:placeholder="t('openregister', 'Enter your object here...')" />
+						:placeholder="
+							t('openregister', 'Enter your object here...')
+						" />
 
 					<NcButton class="prettifyButton" @click="prettifyJson">
 						<template #icon>
@@ -170,7 +182,8 @@ export default {
 		initializeMappings() {
 			this.mappingsLoading = true
 
-			objectStore.getMappings()
+			objectStore
+				.getMappings()
 				.then(({ data }) => {
 					this.mappings = {
 						multiple: false,
@@ -192,7 +205,8 @@ export default {
 		initializeSchemas() {
 			this.schemasLoading = true
 
-			schemaStore.refreshSchemaList()
+			schemaStore
+				.refreshSchemaList()
 				.then(() => {
 					this.schemas = {
 						multiple: false,
@@ -214,7 +228,8 @@ export default {
 		initializeRegisters() {
 			this.registersLoading = true
 
-			registerStore.refreshRegisterList()
+			registerStore
+				.refreshRegisterList()
 				.then(() => {
 					this.registers = {
 						multiple: false,
@@ -259,16 +274,25 @@ export default {
 			}
 
 			const type = `${newObject.register}-${newObject.schema}`
-			objectStore.registerObjectType(type, newObject.schema, newObject.register)
-			objectStore.saveObject(type, newObject)
+			objectStore.registerObjectType(
+				type,
+				newObject.schema,
+				newObject.register,
+			)
+			objectStore
+				.saveObject(type, newObject)
 				.then((data) => {
 					this.success = !!data
 					this.error = false
 					data && setTimeout(this.closeModal, 2000)
-				}).catch((error) => {
+				})
+				.catch((error) => {
 					this.success = false
-					this.error = error.message || 'An error occurred while uploading the object'
-				}).finally(() => {
+					this.error =
+						error.message
+						|| 'An error occurred while uploading the object'
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},

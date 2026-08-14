@@ -1,10 +1,16 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { configurationStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	configurationStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'importConfiguration'"
 		name="importConfiguration"
 		:title="t('openregister', 'Import Configuration')"
 		size="large"
@@ -28,17 +34,27 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Search GitHub and GitLab for OpenRegister configurations created by the community.
+							Search GitHub and GitLab for OpenRegister configurations
+							created by the community.
 						</p>
 
 						<!-- Token Warning -->
-						<NcNoteCard v-if="!hasGithubToken || !hasGitlabToken" type="warning">
+						<NcNoteCard
+							v-if="!hasGithubToken || !hasGitlabToken"
+							type="warning">
 							<p>
-								<strong>{{ getTokenWarningTitle() }}</strong><br>
+								<strong>{{ getTokenWarningTitle() }}</strong
+								><br />
 								{{ getTokenWarningMessage() }}
 							</p>
-							<p style="margin-top: 8px;">
-								<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
+							<p style="margin-top: 8px">
+								<a
+									:href="settingsUrl"
+									target="_blank"
+									style="
+										color: var(--color-primary-element);
+										font-weight: 600;
+									">
 									→ Configure API Tokens in Settings
 								</a>
 							</p>
@@ -48,7 +64,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<NcTextField
 								v-model="searchQuery"
 								:label="t('openregister', 'Search configurations')"
-								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
+								:placeholder="
+									t(
+										'openregister',
+										'Enter search terms or leave empty to browse all',
+									)
+								"
 								@keyup.enter="searchConfigurations">
 								<Magnify :size="20" />
 							</NcTextField>
@@ -56,7 +77,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<NcButton
 								class="github-button"
 								:disabled="!hasGithubToken || searchLoading"
-								@click="searchSource = 'github'; searchConfigurations()">
+								@click="
+									() => {
+										searchSource = 'github'
+										searchConfigurations()
+									}
+								">
 								<template #icon>
 									<Github :size="20" />
 								</template>
@@ -66,7 +92,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<NcButton
 								class="gitlab-button"
 								:disabled="!hasGitlabToken || searchLoading"
-								@click="searchSource = 'gitlab'; searchConfigurations()">
+								@click="
+									() => {
+										searchSource = 'gitlab'
+										searchConfigurations()
+									}
+								">
 								<template #icon>
 									<Gitlab :size="20" />
 								</template>
@@ -75,14 +106,22 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</div>
 
 						<!-- Individual Token Warnings -->
-						<div v-if="!hasGithubToken || !hasGitlabToken" class="token-warnings">
+						<div
+							v-if="!hasGithubToken || !hasGitlabToken"
+							class="token-warnings">
 							<div v-if="!hasGithubToken" class="token-warning-item">
 								<Github :size="16" />
-								<span>GitHub token not configured - Search disabled</span>
+								<span
+									>GitHub token not configured - Search
+									disabled</span
+								>
 							</div>
 							<div v-if="!hasGitlabToken" class="token-warning-item">
 								<Gitlab :size="16" />
-								<span>GitLab token not configured - Search disabled</span>
+								<span
+									>GitLab token not configured - Search
+									disabled</span
+								>
 							</div>
 						</div>
 
@@ -94,7 +133,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<p>{{ searchError }}</p>
 						</NcNoteCard>
 
-						<div v-else-if="searchResults.length > 0" class="resultsGrid">
+						<div
+							v-else-if="searchResults.length > 0"
+							class="resultsGrid">
 							<ConfigurationCard
 								v-for="(result, index) in searchResults"
 								:key="index"
@@ -103,7 +144,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 								@check-version="handleCheckVersion" />
 						</div>
 
-						<NcEmptyContent v-else-if="hasSearched"
+						<NcEmptyContent
+							v-else-if="hasSearched"
 							name="No configurations found"
 							description="Try adjusting your search terms or browse a different source.">
 							<template #icon>
@@ -121,7 +163,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Import a configuration from a specific GitHub or GitLab repository and branch.
+							Import a configuration from a specific GitHub or GitLab
+							repository and branch.
 						</p>
 
 						<NcSelect
@@ -143,7 +186,11 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<NcTextField
 							v-model="repoName"
-							:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
+							:label="
+								repoSource === 'GitHub'
+									? 'Repository Name'
+									: 'Project Name'
+							"
 							placeholder="e.g., openregister" />
 
 						<NcButton
@@ -179,7 +226,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 									{{ file.config.description || 'No description' }}
 								</p>
 								<span class="filePath">{{ file.path }}</span>
-								<span class="fileVersion">v{{ file.config.version }}</span>
+								<span class="fileVersion"
+									>v{{ file.config.version }}</span
+								>
 							</div>
 						</div>
 					</div>
@@ -193,7 +242,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Import a configuration from a direct URL. The URL must point to a valid OpenRegister JSON file.
+							Import a configuration from a direct URL. The URL must
+							point to a valid OpenRegister JSON file.
 						</p>
 
 						<NcTextField
@@ -223,13 +273,18 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							click handler is inert and the body contains a real "Clear" button,
 							which role="button" would hide (children-presentational). The zone is
 							then named by its visible text in both states, so no aria-label. -->
-						<div class="fileUploadZone"
-							:class="{ 'dragover': isDragging }"
+						<div
+							class="fileUploadZone"
+							:class="{ dragover: isDragging }"
 							:role="selectedUploadFile ? null : 'button'"
 							:tabindex="selectedUploadFile ? null : 0"
 							@click="!selectedUploadFile && $refs.fileInput.click()"
-							@keydown.enter="!selectedUploadFile && $refs.fileInput.click()"
-							@keydown.space.prevent="!selectedUploadFile && $refs.fileInput.click()"
+							@keydown.enter="
+								!selectedUploadFile && $refs.fileInput.click()
+							"
+							@keydown.space.prevent="
+								!selectedUploadFile && $refs.fileInput.click()
+							"
 							@drop.prevent="handleFileDrop"
 							@dragover.prevent="isDragging = true"
 							@dragleave.prevent="isDragging = false">
@@ -238,19 +293,22 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 								ref="fileInput"
 								type="file"
 								accept=".json,application/json"
-								style="display: none;"
-								@change="handleFileSelect">
+								style="display: none"
+								@change="handleFileSelect" />
 
 							<FileUpload :size="48" class="uploadIcon" />
 
 							<p v-if="!selectedUploadFile" class="uploadText">
-								<strong>Drop your configuration file here</strong><br>
+								<strong>Drop your configuration file here</strong
+								><br />
 								or click anywhere to browse
 							</p>
 
 							<div v-else class="selectedFileInfo">
 								<Check :size="32" class="checkIcon" />
-								<p><strong>{{ selectedUploadFile.name }}</strong></p>
+								<p>
+									<strong>{{ selectedUploadFile.name }}</strong>
+								</p>
 								<p class="fileSize">
 									{{ formatFileSize(selectedUploadFile.size) }}
 								</p>
@@ -290,7 +348,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 				:min="1"
 				:max="168">
 				<template #helper>
-					{{ t('openregister', 'How often to check for updates (1-168 hours)') }}
+					{{
+						t(
+							'openregister',
+							'How often to check for updates (1-168 hours)',
+						)
+					}}
 				</template>
 			</NcTextField>
 		</div>
@@ -422,7 +485,10 @@ export default {
 		 * @spec exclude Computed deep-link to the admin api-tokens settings page; UI presentation helper.
 		 */
 		settingsUrl() {
-			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
+			return (
+				window.location.origin
+				+ '/index.php/settings/admin/openregister#api-tokens'
+			)
 		},
 		/**
 		 * @spec exclude Computed form-enablement guard for the fetch-branches button; UI validation helper.
@@ -437,8 +503,8 @@ export default {
 		 * @spec exclude Computed per-tab form-enablement guard for the import button; UI validation helper.
 		 */
 		canImport() {
-		// Tab 0: Discover (imports are handled per-card, not via main button)
-		// Tab 1: GitHub/GitLab
+			// Tab 0: Discover (imports are handled per-card, not via main button)
+			// Tab 1: GitHub/GitLab
 			if (this.activeTab === 1) {
 				return this.selectedFile !== null
 			}
@@ -465,11 +531,19 @@ export default {
 		 */
 		async checkTokenAvailability() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/api-tokens'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+				)
 				// Check if tokens exist and are not empty strings
 				// The backend returns masked tokens, so we just check if they exist
-				this.hasGithubToken = !!(response.data.github_token && response.data.github_token.length > 0)
-				this.hasGitlabToken = !!(response.data.gitlab_token && response.data.gitlab_token.length > 0)
+				this.hasGithubToken = !!(
+					response.data.github_token
+					&& response.data.github_token.length > 0
+				)
+				this.hasGitlabToken = !!(
+					response.data.gitlab_token
+					&& response.data.gitlab_token.length > 0
+				)
 
 				// Debug logging removed for production
 			} catch (error) {
@@ -615,7 +689,8 @@ export default {
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
-				const errorMessage = error.message || 'Failed to import configuration'
+				const errorMessage =
+					error.message || 'Failed to import configuration'
 				if (!errorMessage.includes('already exists')) {
 					this.error = errorMessage
 				}
@@ -641,20 +716,26 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params = this.repoSource === 'GitHub'
-					? { owner: this.repoOwner, repo: this.repoName }
-					: { namespace: this.repoNamespace, project: this.repoName }
+				const params =
+					this.repoSource === 'GitHub'
+						? { owner: this.repoOwner, repo: this.repoName }
+						: { namespace: this.repoNamespace, project: this.repoName }
 
 				const branches = await configurationStore.getBranches(
 					this.repoSource.toLowerCase(),
 					params,
 				)
 
-				this.branches = branches.map(b => ({ id: b.name, label: b.name }))
+				this.branches = branches.map((b) => ({ id: b.name, label: b.name }))
 				// Pre-select default/main branch if available
-				const defaultBranch = branches.find(b => b.default || b.name === 'main' || b.name === 'master')
+				const defaultBranch = branches.find(
+					(b) => b.default || b.name === 'main' || b.name === 'master',
+				)
 				if (defaultBranch) {
-					this.selectedBranch = { id: defaultBranch.name, label: defaultBranch.name }
+					this.selectedBranch = {
+						id: defaultBranch.name,
+						label: defaultBranch.name,
+					}
 					await this.fetchConfigurationFiles()
 				}
 			} catch (error) {
@@ -675,9 +756,18 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params = this.repoSource === 'GitHub'
-					? { owner: this.repoOwner, repo: this.repoName, branch: this.selectedBranch.id }
-					: { namespace: this.repoNamespace, project: this.repoName, ref: this.selectedBranch.id }
+				const params =
+					this.repoSource === 'GitHub'
+						? {
+								owner: this.repoOwner,
+								repo: this.repoName,
+								branch: this.selectedBranch.id,
+							}
+						: {
+								namespace: this.repoNamespace,
+								project: this.repoName,
+								ref: this.selectedBranch.id,
+							}
 
 				this.configFiles = await configurationStore.getConfigurationFiles(
 					this.repoSource.toLowerCase(),
@@ -697,7 +787,7 @@ export default {
 			this.error = null
 
 			try {
-			// Tab 1: GitHub/GitLab
+				// Tab 1: GitHub/GitLab
 				if (this.activeTab === 1) {
 					const params = {
 						path: this.selectedFile.path,
@@ -859,12 +949,17 @@ export default {
 			// Handle check version for already imported configurations
 			try {
 				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
+					generateUrl(
+						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
+					),
 				)
 
 				if (response.data.hasUpdate) {
 					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', { local: response.data.localVersion, remote: response.data.remoteVersion }),
+						t('openregister', 'Update available: {local} → {remote}', {
+							local: response.data.localVersion,
+							remote: response.data.remoteVersion,
+						}),
 					)
 				} else {
 					showSuccess(t('openregister', 'Configuration is up to date'))
@@ -874,7 +969,11 @@ export default {
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
-				showError(t('openregister', 'Failed to check version: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					t('openregister', 'Failed to check version: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			}
 		},
 	},

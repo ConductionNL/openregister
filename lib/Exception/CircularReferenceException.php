@@ -38,105 +38,97 @@ use Throwable;
  * Cycle-detection variant of `ValidationException` for the
  * reference-existence path.
  */
-class CircularReferenceException extends ValidationException
-{
-    /**
-     * Constructor.
-     *
-     * @param string         $referencedUuid   The UUID whose re-entry triggered detection.
-     * @param string         $targetSchemaSlug Slug of the target schema (or raw `$ref`).
-     * @param array          $cycle            Chain of (register, schema, uuid) entries that caused the cycle.
-     * @param string|null    $message          Optional override for the human-readable message.
-     * @param int            $code             HTTP status code (default 422).
-     * @param Throwable|null $previous         Previous exception in the chain.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
-     */
-    public function __construct(
-        private readonly string $referencedUuid,
-        private readonly string $targetSchemaSlug,
-        private readonly array $cycle=[],
-        ?string $message=null,
-        int $code=422,
-        ?Throwable $previous=null
-    ) {
-        if ($message === null || $message === '') {
-            $message = sprintf(
-                "Circular reference detected for object '%s' in schema '%s'",
-                $referencedUuid,
-                $targetSchemaSlug
-            );
-        }
+class CircularReferenceException extends ValidationException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $referencedUuid The UUID whose re-entry triggered detection.
+	 * @param string $targetSchemaSlug Slug of the target schema (or raw `$ref`).
+	 * @param array $cycle Chain of (register, schema, uuid) entries that caused the cycle.
+	 * @param string|null $message Optional override for the human-readable message.
+	 * @param int $code HTTP status code (default 422).
+	 * @param Throwable|null $previous Previous exception in the chain.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
+	 */
+	public function __construct(
+		private readonly string $referencedUuid,
+		private readonly string $targetSchemaSlug,
+		private readonly array $cycle = [],
+		?string $message = null,
+		int $code = 422,
+		?Throwable $previous = null,
+	) {
+		if ($message === null || $message === '') {
+			$message = sprintf(
+				"Circular reference detected for object '%s' in schema '%s'",
+				$referencedUuid,
+				$targetSchemaSlug
+			);
+		}
 
-        parent::__construct(
-            message: $message,
-            code: $code,
-            previous: $previous
-        );
+		parent::__construct(
+			message: $message,
+			code: $code,
+			previous: $previous
+		);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The UUID whose re-entry triggered the cycle detection.
-     *
-     * @return string The UUID at the closing edge of the cycle.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
-     */
-    public function getReferencedUuid(): string
-    {
-        return $this->referencedUuid;
+	/**
+	 * The UUID whose re-entry triggered the cycle detection.
+	 *
+	 * @return string The UUID at the closing edge of the cycle.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
+	 */
+	public function getReferencedUuid(): string {
+		return $this->referencedUuid;
+	}//end getReferencedUuid()
 
-    }//end getReferencedUuid()
+	/**
+	 * Slug (or raw `$ref`) of the schema involved in the cycle.
+	 *
+	 * @return string Target schema slug or raw `$ref`.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
+	 */
+	public function getTargetSchemaSlug(): string {
+		return $this->targetSchemaSlug;
+	}//end getTargetSchemaSlug()
 
-    /**
-     * Slug (or raw `$ref`) of the schema involved in the cycle.
-     *
-     * @return string Target schema slug or raw `$ref`.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
-     */
-    public function getTargetSchemaSlug(): string
-    {
-        return $this->targetSchemaSlug;
+	/**
+	 * The cycle chain that triggered the detection.
+	 *
+	 * @return array<int, array{register?:string|null,schema:string,uuid:string}> Visited stack.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
+	 */
+	public function getCycle(): array {
+		return $this->cycle;
+	}//end getCycle()
 
-    }//end getTargetSchemaSlug()
+	/**
+	 * Render the diagnostic data as a structured array.
+	 *
+	 * @return array{
+	 *     referencedUuid: string,
+	 *     targetSchemaSlug: string,
+	 *     cycle: array<int, array<string, mixed>>,
+	 *     message: string,
+	 *     code: int
+	 * }
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
+	 */
+	public function toArray(): array {
+		return [
+			'referencedUuid' => $this->referencedUuid,
+			'targetSchemaSlug' => $this->targetSchemaSlug,
+			'cycle' => $this->cycle,
+			'message' => $this->getMessage(),
+			'code' => $this->getCode(),
+		];
 
-    /**
-     * The cycle chain that triggered the detection.
-     *
-     * @return array<int, array{register?:string|null,schema:string,uuid:string}> Visited stack.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
-     */
-    public function getCycle(): array
-    {
-        return $this->cycle;
-
-    }//end getCycle()
-
-    /**
-     * Render the diagnostic data as a structured array.
-     *
-     * @return array{
-     *     referencedUuid: string,
-     *     targetSchemaSlug: string,
-     *     cycle: array<int, array<string, mixed>>,
-     *     message: string,
-     *     code: int
-     * }
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
-     */
-    public function toArray(): array
-    {
-        return [
-            'referencedUuid'   => $this->referencedUuid,
-            'targetSchemaSlug' => $this->targetSchemaSlug,
-            'cycle'            => $this->cycle,
-            'message'          => $this->getMessage(),
-            'code'             => $this->getCode(),
-        ];
-
-    }//end toArray()
+	}//end toArray()
 }//end class

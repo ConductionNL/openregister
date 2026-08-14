@@ -38,276 +38,263 @@ use UnexpectedValueException;
 /**
  * IterateNode behaviour.
  */
-class IterateNodeTest extends TestCase
-{
+class IterateNodeTest extends TestCase {
 
-    /**
-     * The node under test.
-     *
-     * @var IterateNode
-     */
-    private IterateNode $node;
+	/**
+	 * The node under test.
+	 *
+	 * @var IterateNode
+	 */
+	private IterateNode $node;
 
-    /**
-     * The dispatcher the node drives its source and body through.
-     *
-     * @var FlowStepDispatcher|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $dispatcher;
+	/**
+	 * The dispatcher the node drives its source and body through.
+	 *
+	 * @var FlowStepDispatcher|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private $dispatcher;
 
-    /**
-     * Build the node with a mocked dispatcher.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
+	/**
+	 * Build the node with a mocked dispatcher.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
 
-        $urls = $this->createMock(IURLGenerator::class);
-        $urls->method('imagePath')->willReturn('/icon.svg');
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('imagePath')->willReturn('/icon.svg');
 
-        $this->dispatcher = $this->createMock(FlowStepDispatcher::class);
+		$this->dispatcher = $this->createMock(FlowStepDispatcher::class);
 
-        $container = $this->createMock(ContainerInterface::class);
-        $container->method('get')->willReturn($this->dispatcher);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->dispatcher);
 
-        $this->node = new IterateNode(l10n: $l10n, urls: $urls, container: $container);
+		$this->node = new IterateNode(l10n: $l10n, urls: $urls, container: $container);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * A three-page source runs the body three times and returns every item.
-     *
-     * @return void
-     */
-    public function testItRunsTheBodyOncePerBatchAndAccumulates(): void
-    {
-        $pages = [
-            [FlowItems::item(json: ['p' => 1])],
-            [FlowItems::item(json: ['p' => 2])],
-            [FlowItems::item(json: ['p' => 3])],
-            [],
-        ];
+	/**
+	 * A three-page source runs the body three times and returns every item.
+	 *
+	 * @return void
+	 */
+	public function testItRunsTheBodyOncePerBatchAndAccumulates(): void {
+		$pages = [
+			[FlowItems::item(json: ['p' => 1])],
+			[FlowItems::item(json: ['p' => 2])],
+			[FlowItems::item(json: ['p' => 3])],
+			[],
+		];
 
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static function (array $step, array $items, array $context) use (&$pages): array {
-                if ($step['type'] === 'src') {
-                    return array_shift($pages);
-                }
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static function (array $step, array $items, array $context) use (&$pages): array {
+				if ($step['type'] === 'src') {
+					return array_shift($pages);
+				}
 
-                return $items;
-            }
-        );
+				return $items;
+			}
+		);
 
-        $out = $this->node->execute(
-            [],
-            [
-                'source' => ['type' => 'src'],
-                'body'   => [['type' => 'body']],
-            ],
-            []
-        );
+		$out = $this->node->execute(
+			[],
+			[
+				'source' => ['type' => 'src'],
+				'body' => [['type' => 'body']],
+			],
+			[]
+		);
 
-        $this->assertCount(3, $out, 'every page must survive, not just the last');
+		$this->assertCount(3, $out, 'every page must survive, not just the last');
 
-    }//end testItRunsTheBodyOncePerBatchAndAccumulates()
+	}//end testItRunsTheBodyOncePerBatchAndAccumulates()
 
-    /**
-     * An empty first batch means the body never runs.
-     *
-     * @return void
-     */
-    public function testAnEmptySourceRunsTheBodyNotAtAll(): void
-    {
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static function (array $step, array $items, array $context): array {
-                if ($step['type'] === 'src') {
-                    return [];
-                }
+	/**
+	 * An empty first batch means the body never runs.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptySourceRunsTheBodyNotAtAll(): void {
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static function (array $step, array $items, array $context): array {
+				if ($step['type'] === 'src') {
+					return [];
+				}
 
-                throw new \LogicException('the body must not run when the source is empty');
-            }
-        );
+				throw new \LogicException('the body must not run when the source is empty');
+			}
+		);
 
-        $out = $this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'body']]], []);
-        $this->assertSame([], $out);
+		$out = $this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'body']]], []);
+		$this->assertSame([], $out);
 
-    }//end testAnEmptySourceRunsTheBodyNotAtAll()
+	}//end testAnEmptySourceRunsTheBodyNotAtAll()
 
-    /**
-     * The source is told which iteration it is on, so it can page.
-     *
-     * @return void
-     */
-    public function testTheSourceSeesItsIterationIndex(): void
-    {
-        $seen = [];
+	/**
+	 * The source is told which iteration it is on, so it can page.
+	 *
+	 * @return void
+	 */
+	public function testTheSourceSeesItsIterationIndex(): void {
+		$seen = [];
 
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static function (array $step, array $items, array $context) use (&$seen): array {
-                if ($step['type'] !== 'src') {
-                    return $items;
-                }
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static function (array $step, array $items, array $context) use (&$seen): array {
+				if ($step['type'] !== 'src') {
+					return $items;
+				}
 
-                $seen[] = $context['iteration']['index'];
+				$seen[] = $context['iteration']['index'];
 
-                return count($seen) < 3 ? [FlowItems::item(json: [])] : [];
-            }
-        );
+				return count($seen) < 3 ? [FlowItems::item(json: [])] : [];
+			}
+		);
 
-        $this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'b']]], []);
+		$this->node->execute([], ['source' => ['type' => 'src'], 'body' => [['type' => 'b']]], []);
 
-        $this->assertSame([0, 1, 2], $seen, 'the source must be able to ask for the right page');
+		$this->assertSame([0, 1, 2], $seen, 'the source must be able to ask for the right page');
 
-    }//end testTheSourceSeesItsIterationIndex()
+	}//end testTheSourceSeesItsIterationIndex()
 
-    /**
-     * A source that never runs out FAILS rather than looping forever.
-     *
-     * @return void
-     */
-    public function testANonConvergingLoopFails(): void
-    {
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static fn (array $step, array $items, array $context): array => [FlowItems::item(json: [])]
-        );
+	/**
+	 * A source that never runs out FAILS rather than looping forever.
+	 *
+	 * @return void
+	 */
+	public function testANonConvergingLoopFails(): void {
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static fn (array $step, array $items, array $context): array => [FlowItems::item(json: [])]
+		);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/did not finish within 5 iterations/');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/did not finish within 5 iterations/');
 
-        $this->node->execute(
-            [],
-            [
-                'source'        => ['type' => 'src'],
-                'body'          => [['type' => 'b']],
-                'maxIterations' => 5,
-            ],
-            []
-        );
+		$this->node->execute(
+			[],
+			[
+				'source' => ['type' => 'src'],
+				'body' => [['type' => 'b']],
+				'maxIterations' => 5,
+			],
+			[]
+		);
 
-    }//end testANonConvergingLoopFails()
+	}//end testANonConvergingLoopFails()
 
-    /**
-     * onLimit=stop keeps what it gathered instead of failing.
-     *
-     * @return void
-     */
-    public function testOnLimitStopKeepsWhatItGathered(): void
-    {
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static fn (array $step, array $items, array $context): array => [FlowItems::item(json: [])]
-        );
+	/**
+	 * onLimit=stop keeps what it gathered instead of failing.
+	 *
+	 * @return void
+	 */
+	public function testOnLimitStopKeepsWhatItGathered(): void {
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static fn (array $step, array $items, array $context): array => [FlowItems::item(json: [])]
+		);
 
-        $out = $this->node->execute(
-            [],
-            [
-                'source'        => ['type' => 'src'],
-                'body'          => [['type' => 'b']],
-                'maxIterations' => 4,
-                'onLimit'       => IterateNode::ON_LIMIT_STOP,
-            ],
-            []
-        );
+		$out = $this->node->execute(
+			[],
+			[
+				'source' => ['type' => 'src'],
+				'body' => [['type' => 'b']],
+				'maxIterations' => 4,
+				'onLimit' => IterateNode::ON_LIMIT_STOP,
+			],
+			[]
+		);
 
-        $this->assertCount(4, $out);
+		$this->assertCount(4, $out);
 
-    }//end testOnLimitStopKeepsWhatItGathered()
+	}//end testOnLimitStopKeepsWhatItGathered()
 
-    /**
-     * Every body step runs, in the declared order.
-     *
-     * @return void
-     */
-    public function testTheWholeBodyChainRunsInOrder(): void
-    {
-        $order = [];
-        $pages = [[FlowItems::item(json: [])], []];
+	/**
+	 * Every body step runs, in the declared order.
+	 *
+	 * @return void
+	 */
+	public function testTheWholeBodyChainRunsInOrder(): void {
+		$order = [];
+		$pages = [[FlowItems::item(json: [])], []];
 
-        $this->dispatcher->method('dispatch')->willReturnCallback(
-            static function (array $step, array $items, array $context) use (&$order, &$pages): array {
-                if ($step['type'] === 'src') {
-                    return array_shift($pages);
-                }
+		$this->dispatcher->method('dispatch')->willReturnCallback(
+			static function (array $step, array $items, array $context) use (&$order, &$pages): array {
+				if ($step['type'] === 'src') {
+					return array_shift($pages);
+				}
 
-                $order[] = $step['type'];
+				$order[] = $step['type'];
 
-                return $items;
-            }
-        );
+				return $items;
+			}
+		);
 
-        $this->node->execute(
-            [],
-            [
-                'source' => ['type' => 'src'],
-                'body'   => [['type' => 'one'], ['type' => 'two'], ['type' => 'three']],
-            ],
-            []
-        );
+		$this->node->execute(
+			[],
+			[
+				'source' => ['type' => 'src'],
+				'body' => [['type' => 'one'], ['type' => 'two'], ['type' => 'three']],
+			],
+			[]
+		);
 
-        $this->assertSame(['one', 'two', 'three'], $order);
+		$this->assertSame(['one', 'two', 'three'], $order);
 
-    }//end testTheWholeBodyChainRunsInOrder()
+	}//end testTheWholeBodyChainRunsInOrder()
 
-    /**
-     * A loop with no source is refused at save time.
-     *
-     * @return void
-     */
-    public function testALoopWithoutASourceIsRefused(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->node->validateConfig(['body' => [['type' => 'b']]]);
+	/**
+	 * A loop with no source is refused at save time.
+	 *
+	 * @return void
+	 */
+	public function testALoopWithoutASourceIsRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->node->validateConfig(['body' => [['type' => 'b']]]);
 
-    }//end testALoopWithoutASourceIsRefused()
+	}//end testALoopWithoutASourceIsRefused()
 
-    /**
-     * A loop with an empty body is refused — it would spin doing nothing.
-     *
-     * @return void
-     */
-    public function testALoopWithAnEmptyBodyIsRefused(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->node->validateConfig(['source' => ['type' => 'src'], 'body' => []]);
+	/**
+	 * A loop with an empty body is refused — it would spin doing nothing.
+	 *
+	 * @return void
+	 */
+	public function testALoopWithAnEmptyBodyIsRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->node->validateConfig(['source' => ['type' => 'src'], 'body' => []]);
 
-    }//end testALoopWithAnEmptyBodyIsRefused()
+	}//end testALoopWithAnEmptyBodyIsRefused()
 
-    /**
-     * A body step with no type is refused, naming its position.
-     *
-     * @return void
-     */
-    public function testATypelessBodyStepIsRefused(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->node->validateConfig(['source' => ['type' => 'src'], 'body' => [['config' => []]]]);
+	/**
+	 * A body step with no type is refused, naming its position.
+	 *
+	 * @return void
+	 */
+	public function testATypelessBodyStepIsRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->node->validateConfig(['source' => ['type' => 'src'], 'body' => [['config' => []]]]);
 
-    }//end testATypelessBodyStepIsRefused()
+	}//end testATypelessBodyStepIsRefused()
 
-    /**
-     * A non-positive limit is refused: zero iterations is not a loop.
-     *
-     * @return void
-     */
-    public function testANonPositiveLimitIsRefused(): void
-    {
-        $this->expectException(UnexpectedValueException::class);
-        $this->node->validateConfig(
-            ['source' => ['type' => 'src'], 'body' => [['type' => 'b']], 'maxIterations' => 0]
-        );
+	/**
+	 * A non-positive limit is refused: zero iterations is not a loop.
+	 *
+	 * @return void
+	 */
+	public function testANonPositiveLimitIsRefused(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->node->validateConfig(
+			['source' => ['type' => 'src'], 'body' => [['type' => 'b']], 'maxIterations' => 0]
+		);
 
-    }//end testANonPositiveLimitIsRefused()
+	}//end testANonPositiveLimitIsRefused()
 
-    /**
-     * The catalogue id stored flow definitions reference.
-     *
-     * @return void
-     */
-    public function testItsCatalogueIdIsStable(): void
-    {
-        $this->assertSame('openregister.iterate', $this->node->getId());
+	/**
+	 * The catalogue id stored flow definitions reference.
+	 *
+	 * @return void
+	 */
+	public function testItsCatalogueIdIsStable(): void {
+		$this->assertSame('openregister.iterate', $this->node->getId());
 
-    }//end testItsCatalogueIdIsStable()
+	}//end testItsCatalogueIdIsStable()
 }//end class

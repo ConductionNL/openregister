@@ -47,93 +47,88 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
  */
-class GenericSettingsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                 $appName         The calling (leaf) app id.
-     * @param IRequest               $request         HTTP request.
-     * @param AppHostSettingsService $settingsService Generic settings service bound to this app.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly AppHostSettingsService $settingsService
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class GenericSettingsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The calling (leaf) app id.
+	 * @param IRequest $request HTTP request.
+	 * @param AppHostSettingsService $settingsService Generic settings service bound to this app.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly AppHostSettingsService $settingsService,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Retrieve all current settings.
-     *
-     * Admin-sensitive fields (the register binding) are stripped for non-admin
-     * users so the register UUID is not exposed to regular authenticated users.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
-     */
-    #[NoAdminRequired]
-    public function index(): JSONResponse
-    {
-        $settings = $this->settingsService->getSettings();
-        $isAdmin  = ($settings['isAdmin'] ?? false);
+	/**
+	 * Retrieve all current settings.
+	 *
+	 * Admin-sensitive fields (the register binding) are stripped for non-admin
+	 * users so the register UUID is not exposed to regular authenticated users.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
+	 */
+	#[NoAdminRequired]
+	public function index(): JSONResponse {
+		$settings = $this->settingsService->getSettings();
+		$isAdmin = ($settings['isAdmin'] ?? false);
 
-        if ($isAdmin === false) {
-            unset($settings['register']);
-        }
+		if ($isAdmin === false) {
+			unset($settings['register']);
+		}
 
-        return new JSONResponse($settings);
-    }//end index()
+		return new JSONResponse($settings);
+	}//end index()
 
-    /**
-     * Update settings with the provided data. Full admin required (no attribute).
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
-     */
-    public function create(): JSONResponse
-    {
-        $data   = $this->request->getParams();
-        $config = $this->settingsService->updateSettings($data);
+	/**
+	 * Update settings with the provided data. Full admin required (no attribute).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
+	 */
+	public function create(): JSONResponse {
+		$data = $this->request->getParams();
+		$config = $this->settingsService->updateSettings($data);
 
-        return new JSONResponse(
-            [
-                'success' => true,
-                'config'  => $config,
-            ]
-        );
-    }//end create()
+		return new JSONResponse(
+			[
+				'success' => true,
+				'config' => $config,
+			]
+		);
+	}//end create()
 
-    /**
-     * Update settings with the provided data — canonical ADR-066 write verb
-     * (`settings#update`, PUT /api/settings). Full admin required (no
-     * attribute). Same write path as {@see create()}, which remains for the
-     * fleet's legacy POST dialect.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md — Requirement: Generic settings surface
-     */
-    public function update(): JSONResponse
-    {
-        return $this->create();
-    }//end update()
+	/**
+	 * Update settings with the provided data — canonical ADR-066 write verb
+	 * (`settings#update`, PUT /api/settings). Full admin required (no
+	 * attribute). Same write path as {@see create()}, which remains for the
+	 * fleet's legacy POST dialect.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md — Requirement: Generic settings surface
+	 */
+	public function update(): JSONResponse {
+		return $this->create();
+	}//end update()
 
-    /**
-     * Re-import the configuration from the app's register JSON. Full admin
-     * required (no attribute). Forces a fresh import regardless of version.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
-     */
-    public function load(): JSONResponse
-    {
-        $result = $this->settingsService->loadConfiguration(force: true);
+	/**
+	 * Re-import the configuration from the app's register JSON. Full admin
+	 * required (no attribute). Forces a fresh import regardless of version.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.3
+	 */
+	public function load(): JSONResponse {
+		$result = $this->settingsService->loadConfiguration(force: true);
 
-        return new JSONResponse($result);
-    }//end load()
+		return new JSONResponse($result);
+	}//end load()
 }//end class

@@ -9,7 +9,12 @@
 					</h1>
 				</div>
 				<p>
-					{{ t('openregister', 'Manage processing activities, run data-subject access requests, and audit compliance under the EU GDPR / Dutch AVG.') }}
+					{{
+						t(
+							'openregister',
+							'Manage processing activities, run data-subject access requests, and audit compliance under the EU GDPR / Dutch AVG.',
+						)
+					}}
 				</p>
 			</div>
 
@@ -32,7 +37,13 @@
 				<div class="viewActionsBar">
 					<div class="viewInfo">
 						<span v-if="activities.length" class="viewTotalCount">
-							{{ t('openregister', 'Showing {count} processing activities', { count: activities.length }) }}
+							{{
+								t(
+									'openregister',
+									'Showing {count} processing activities',
+									{ count: activities.length },
+								)
+							}}
 						</span>
 					</div>
 					<div class="viewActions">
@@ -42,7 +53,10 @@
 							</template>
 							{{ t('openregister', 'New activity') }}
 						</NcButton>
-						<NcButton variant="tertiary" :disabled="loading" @click="refreshActivities">
+						<NcButton
+							variant="tertiary"
+							:disabled="loading"
+							@click="refreshActivities">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<Refresh v-else :size="20" />
@@ -56,7 +70,12 @@
 					<NcEmptyContent
 						v-if="!activities.length && !loading"
 						:name="t('openregister', 'No processing activities yet')"
-						:description="t('openregister', 'Create the first verwerkingsactiviteit to start tagging audit-trail rows with their AVG Art 30 attribution.')">
+						:description="
+							t(
+								'openregister',
+								'Create the first verwerkingsactiviteit to start tagging audit-trail rows with their AVG Art 30 attribution.',
+							)
+						">
 						<template #icon>
 							<ShieldLockOutline :size="64" />
 						</template>
@@ -88,13 +107,18 @@
 						<tbody>
 							<tr v-for="a in activities" :key="a.uuid">
 								<td>{{ a.naam }}</td>
-								<td><code v-if="a.code">{{ a.code }}</code></td>
+								<td>
+									<code v-if="a.code">{{ a.code }}</code>
+								</td>
 								<td>
 									<span class="badge">{{ a.rechtsgrond }}</span>
 								</td>
 								<td>{{ a.bewaartermijn || '—' }}</td>
 								<td>
-									<span :class="'badge badge-status-' + a.status">{{ a.status }}</span>
+									<span
+										:class="'badge badge-status-' + a.status"
+										>{{ a.status }}</span
+									>
 								</td>
 								<td>
 									<NcActions :force-name="false">
@@ -123,11 +147,18 @@
 				<div class="viewActionsBar">
 					<div class="viewInfo">
 						<span v-if="verantwoording" class="viewTotalCount">
-							{{ t('openregister', 'Generated: {time}', { time: formatTime(verantwoording.generated) }) }}
+							{{
+								t('openregister', 'Generated: {time}', {
+									time: formatTime(verantwoording.generated),
+								})
+							}}
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton variant="primary" :disabled="loading" @click="loadVerantwoording">
+						<NcButton
+							variant="primary"
+							:disabled="loading"
+							@click="loadVerantwoording">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<FileDocumentOutline v-else :size="20" />
@@ -140,8 +171,15 @@
 				<div class="tableContainer">
 					<NcEmptyContent
 						v-if="!verantwoording"
-						:name="t('openregister', 'Generate the verantwoordingsdocument')"
-						:description="t('openregister', 'AVG Art 30 §4: this report joins each processing activity with the lifetime audit-trail counts attributed to it. Auditors and the Autoriteit Persoonsgegevens use this for supervisory review.')">
+						:name="
+							t('openregister', 'Generate the verantwoordingsdocument')
+						"
+						:description="
+							t(
+								'openregister',
+								'AVG Art 30 §4: this report joins each processing activity with the lifetime audit-trail counts attributed to it. Auditors and the Autoriteit Persoonsgegevens use this for supervisory review.',
+							)
+						">
 						<template #icon>
 							<FileDocumentOutline :size="64" />
 						</template>
@@ -177,11 +215,17 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="row in verantwoording.activities" :key="row.uuid">
+							<tr
+								v-for="row in verantwoording.activities"
+								:key="row.uuid">
 								<td>{{ row.naam }}</td>
-								<td><span class="badge">{{ row.rechtsgrond }}</span></td>
+								<td>
+									<span class="badge">{{ row.rechtsgrond }}</span>
+								</td>
 								<td>{{ row.bewaartermijn || '—' }}</td>
-								<td><strong>{{ row.activity.totalEvents }}</strong></td>
+								<td>
+									<strong>{{ row.activity.totalEvents }}</strong>
+								</td>
 								<td>{{ row.activity.byAction?.create ?? 0 }}</td>
 								<td>{{ row.activity.byAction?.update ?? 0 }}</td>
 								<td>{{ row.activity.byAction?.delete ?? 0 }}</td>
@@ -197,37 +241,69 @@
 				<div class="dsarPanel">
 					<h2>{{ t('openregister', 'Data-subject access request') }}</h2>
 					<p>
-						{{ t('openregister', 'Locate every object referencing a data subject (Art 15 inzage), preview an erasure (Art 17 vergetelheid), or export their data (Art 20 portabiliteit).') }}
+						{{
+							t(
+								'openregister',
+								'Locate every object referencing a data subject (Art 15 inzage), preview an erasure (Art 17 vergetelheid), or export their data (Art 20 portabiliteit).',
+							)
+						}}
 					</p>
 
 					<div class="dsarForm">
 						<NcTextField
 							v-model="dsar.subject"
-							:label="t('openregister', 'Subject identifier (email, BSN, name, etc.)')"
+							:label="
+								t(
+									'openregister',
+									'Subject identifier (email, BSN, name, etc.)',
+								)
+							"
 							required />
 						<NcTextField
 							v-model="dsar.type"
-							:label="t('openregister', 'Type filter (optional, e.g. email)')" />
+							:label="
+								t(
+									'openregister',
+									'Type filter (optional, e.g. email)',
+								)
+							" />
 						<div class="dsarActions">
-							<NcButton variant="primary" :disabled="!dsar.subject || loading" @click="runInzage">
+							<NcButton
+								variant="primary"
+								:disabled="!dsar.subject || loading"
+								@click="runInzage">
 								<template #icon>
 									<Magnify :size="20" />
 								</template>
 								{{ t('openregister', 'Inzage (Art 15)') }}
 							</NcButton>
-							<NcButton variant="secondary" :disabled="!dsar.subject || loading" @click="runVergetelheidDryRun">
+							<NcButton
+								variant="secondary"
+								:disabled="!dsar.subject || loading"
+								@click="runVergetelheidDryRun">
 								<template #icon>
 									<EyeOutline :size="20" />
 								</template>
 								{{ t('openregister', 'Preview erasure') }}
 							</NcButton>
-							<NcButton variant="error" :disabled="!dsar.subject || !dsarSummary || !dsarSummary.matchedCount || loading" @click="confirmVergetelheid">
+							<NcButton
+								variant="error"
+								:disabled="
+									!dsar.subject
+									|| !dsarSummary
+									|| !dsarSummary.matchedCount
+									|| loading
+								"
+								@click="confirmVergetelheid">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
 								{{ t('openregister', 'Erase (Art 17)') }}
 							</NcButton>
-							<NcButton variant="tertiary" :disabled="!dsar.subject || loading" @click="downloadPortabiliteit">
+							<NcButton
+								variant="tertiary"
+								:disabled="!dsar.subject || loading"
+								@click="downloadPortabiliteit">
 								<template #icon>
 									<Download :size="20" />
 								</template>
@@ -237,11 +313,20 @@
 					</div>
 
 					<div v-if="dsarResults" class="dsarResults">
-						<h3>{{ t('openregister', 'Inzage results') }} ({{ dsarResults.count }})</h3>
+						<h3>
+							{{ t('openregister', 'Inzage results') }} ({{
+								dsarResults.count
+							}})
+						</h3>
 						<NcEmptyContent
 							v-if="!dsarResults.count"
 							:name="t('openregister', 'No matches')"
-							:description="t('openregister', 'No personal data was found for this subject identifier.')">
+							:description="
+								t(
+									'openregister',
+									'No personal data was found for this subject identifier.',
+								)
+							">
 							<template #icon>
 								<MagnifyClose :size="64" />
 							</template>
@@ -250,10 +335,17 @@
 							<li v-for="(entry, i) in dsarResults.results" :key="i">
 								<details>
 									<summary>
-										<code>{{ entry.object?.id ?? entry.object?.uuid }}</code>
-										<span class="badge">{{ entry.gdprEntities?.length ?? 0 }} {{ t('openregister', 'PII hits') }}</span>
+										<code>{{
+											entry.object?.id ?? entry.object?.uuid
+										}}</code>
+										<span class="badge"
+											>{{ entry.gdprEntities?.length ?? 0 }}
+											{{ t('openregister', 'PII hits') }}</span
+										>
 									</summary>
-									<pre class="dsarObjectPayload">{{ JSON.stringify(entry, null, 2) }}</pre>
+									<pre class="dsarObjectPayload">{{
+										JSON.stringify(entry, null, 2)
+									}}</pre>
 								</details>
 							</li>
 						</ul>
@@ -269,10 +361,16 @@
 							</template>
 						</h3>
 						<p>
-							{{ t('openregister', '{matched} object(s) matched. {erased} erased.', {
-								matched: dsarSummary.matchedCount,
-								erased: dsarSummary.erased?.length ?? 0,
-							}) }}
+							{{
+								t(
+									'openregister',
+									'{matched} object(s) matched. {erased} erased.',
+									{
+										matched: dsarSummary.matchedCount,
+										erased: dsarSummary.erased?.length ?? 0,
+									},
+								)
+							}}
 						</p>
 					</div>
 				</div>
@@ -283,13 +381,24 @@
 				<div class="viewActionsBar">
 					<div class="viewInfo">
 						<span v-if="complianceReport" class="viewTotalCount">
-							{{ t('openregister', '{count} compliance issue(s) detected', {
-								count: complianceReport.totals?.unannotatedSchemasWithPii ?? 0,
-							}) }}
+							{{
+								t(
+									'openregister',
+									'{count} compliance issue(s) detected',
+									{
+										count:
+											complianceReport.totals
+												?.unannotatedSchemasWithPii ?? 0,
+									},
+								)
+							}}
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton variant="primary" :disabled="loading" @click="loadCompliance">
+						<NcButton
+							variant="primary"
+							:disabled="loading"
+							@click="loadCompliance">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<Refresh v-else :size="20" />
@@ -303,16 +412,28 @@
 					<NcEmptyContent
 						v-if="!complianceReport"
 						:name="t('openregister', 'No scan run yet')"
-						:description="t('openregister', 'Click Run compliance scan to find schemas where PII has been detected but no processing-activity annotation exists.')">
+						:description="
+							t(
+								'openregister',
+								'Click Run compliance scan to find schemas where PII has been detected but no processing-activity annotation exists.',
+							)
+						">
 						<template #icon>
 							<ShieldAlertOutline :size="64" />
 						</template>
 					</NcEmptyContent>
 
 					<NcEmptyContent
-						v-else-if="!complianceReport.totals?.unannotatedSchemasWithPii"
+						v-else-if="
+							!complianceReport.totals?.unannotatedSchemasWithPii
+						"
 						:name="t('openregister', 'All clear')"
-						:description="t('openregister', 'Every schema with detected PII has a processing-activity annotation.')">
+						:description="
+							t(
+								'openregister',
+								'Every schema with detected PII has a processing-activity annotation.',
+							)
+						">
 						<template #icon>
 							<CheckCircleOutline :size="64" />
 						</template>
@@ -339,18 +460,45 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="issue in complianceReport.issues.unannotatedSchemasWithPii" :key="issue.schemaId">
+							<tr
+								v-for="issue in complianceReport.issues
+									.unannotatedSchemasWithPii"
+								:key="issue.schemaId">
 								<td>{{ issue.schemaTitle || issue.schemaId }}</td>
-								<td><code>{{ issue.registerId }}</code></td>
-								<td><strong>{{ issue.piiCount }}</strong></td>
 								<td>
-									<span :class="'badge badge-status-' + (issue.schemaHasAnnotation ? 'ok' : 'missing')">
-										{{ issue.schemaHasAnnotation ? t('openregister', 'set') : t('openregister', 'missing') }}
+									<code>{{ issue.registerId }}</code>
+								</td>
+								<td>
+									<strong>{{ issue.piiCount }}</strong>
+								</td>
+								<td>
+									<span
+										:class="
+											'badge badge-status-'
+											+ (issue.schemaHasAnnotation
+												? 'ok'
+												: 'missing')
+										">
+										{{
+											issue.schemaHasAnnotation
+												? t('openregister', 'set')
+												: t('openregister', 'missing')
+										}}
 									</span>
 								</td>
 								<td>
-									<span :class="'badge badge-status-' + (issue.registerHasAnnotation ? 'ok' : 'missing')">
-										{{ issue.registerHasAnnotation ? t('openregister', 'set') : t('openregister', 'missing') }}
+									<span
+										:class="
+											'badge badge-status-'
+											+ (issue.registerHasAnnotation
+												? 'ok'
+												: 'missing')
+										">
+										{{
+											issue.registerHasAnnotation
+												? t('openregister', 'set')
+												: t('openregister', 'missing')
+										}}
 									</span>
 								</td>
 							</tr>
@@ -366,11 +514,23 @@
 					<div class="viewActionsBar">
 						<div class="viewInfo">
 							<span v-if="cases.length" class="viewTotalCount">
-								{{ t('openregister', 'Showing {shown} of {total} case(s)', { shown: filteredCases.length, total: cases.length }) }}
+								{{
+									t(
+										'openregister',
+										'Showing {shown} of {total} case(s)',
+										{
+											shown: filteredCases.length,
+											total: cases.length,
+										},
+									)
+								}}
 							</span>
 						</div>
 						<div class="viewActions">
-							<NcButton variant="tertiary" :disabled="loading" @click="refreshCases">
+							<NcButton
+								variant="tertiary"
+								:disabled="loading"
+								@click="refreshCases">
 								<template #icon>
 									<NcLoadingIcon v-if="loading" :size="20" />
 									<Refresh v-else :size="20" />
@@ -387,7 +547,9 @@
 							:options="statusFilterOptions"
 							:label-outside="false"
 							:input-label="t('openregister', 'Filter by status')"
-							:aria-label-combobox="t('openregister', 'Filter by status')"
+							:aria-label-combobox="
+								t('openregister', 'Filter by status')
+							"
 							:reduce="(o) => o.value" />
 						<NcSelect
 							v-model="caseFilters.handler"
@@ -395,7 +557,9 @@
 							:options="handlerFilterOptions"
 							:label-outside="false"
 							:input-label="t('openregister', 'Filter by handler')"
-							:aria-label-combobox="t('openregister', 'Filter by handler')"
+							:aria-label-combobox="
+								t('openregister', 'Filter by handler')
+							"
 							:reduce="(o) => o.value" />
 						<NcCheckboxRadioSwitch
 							v-model="caseFilters.overdue"
@@ -408,9 +572,17 @@
 						<NcEmptyContent
 							v-if="!filteredCases.length && !loading"
 							:name="t('openregister', 'No cases')"
-							:description="cases.length
-								? t('openregister', 'No cases match the current filters. Clear the filters to see the full authorised set.')
-								: t('openregister', 'No data-subject-request cases are tracked for you yet.')">
+							:description="
+								cases.length
+									? t(
+											'openregister',
+											'No cases match the current filters. Clear the filters to see the full authorised set.',
+										)
+									: t(
+											'openregister',
+											'No data-subject-request cases are tracked for you yet.',
+										)
+							">
 							<template #icon>
 								<ClipboardTextClockOutline :size="64" />
 							</template>
@@ -446,17 +618,30 @@
 								<tr v-for="c in filteredCases" :key="caseId(c)">
 									<td>{{ c.subjectId || '—' }}</td>
 									<td>{{ c.type || '—' }}</td>
-									<td><span class="badge">{{ statusLabel(c.status) }}</span></td>
-									<td>{{ c.handler || t('openregister', 'Unassigned') }}</td>
+									<td>
+										<span class="badge">{{
+											statusLabel(c.status)
+										}}</span>
+									</td>
+									<td>
+										{{
+											c.handler
+											|| t('openregister', 'Unassigned')
+										}}
+									</td>
 									<td>{{ deadlineText(c) }}</td>
 									<td>
 										<span :class="tierClass(c.escalationTier)">
-											<component :is="tierIcon(c.escalationTier)" :size="16" />
+											<component
+												:is="tierIcon(c.escalationTier)"
+												:size="16" />
 											{{ tierLabel(c.escalationTier) }}
 										</span>
 									</td>
 									<td>
-										<NcButton variant="tertiary" @click="selectCase(c)">
+										<NcButton
+											variant="tertiary"
+											@click="selectCase(c)">
 											<template #icon>
 												<OpenInNew :size="20" />
 											</template>
@@ -481,7 +666,10 @@
 							</NcButton>
 						</div>
 						<div class="viewActions">
-							<NcButton variant="tertiary" :disabled="loading" @click="reloadSelectedCase">
+							<NcButton
+								variant="tertiary"
+								:disabled="loading"
+								@click="reloadSelectedCase">
 								<template #icon>
 									<NcLoadingIcon v-if="loading" :size="20" />
 									<Refresh v-else :size="20" />
@@ -497,10 +685,19 @@
 
 					<div class="caseDetail">
 						<div class="caseDetailHeader">
-							<h2>{{ selectedCase.subjectId || t('openregister', 'Data-subject request') }}</h2>
-							<span class="badge">{{ statusLabel(selectedCase.status) }}</span>
+							<h2>
+								{{
+									selectedCase.subjectId
+									|| t('openregister', 'Data-subject request')
+								}}
+							</h2>
+							<span class="badge">{{
+								statusLabel(selectedCase.status)
+							}}</span>
 							<span :class="tierClass(selectedCase.escalationTier)">
-								<component :is="tierIcon(selectedCase.escalationTier)" :size="16" />
+								<component
+									:is="tierIcon(selectedCase.escalationTier)"
+									:size="16" />
 								{{ tierLabel(selectedCase.escalationTier) }}
 							</span>
 						</div>
@@ -515,22 +712,55 @@
 								</div>
 								<div>
 									<dt>{{ t('openregister', 'Handler') }}</dt>
-									<dd>{{ selectedCase.handler || t('openregister', 'Unassigned') }}</dd>
+									<dd>
+										{{
+											selectedCase.handler
+											|| t('openregister', 'Unassigned')
+										}}
+									</dd>
 								</div>
 								<div>
-									<dt>{{ t('openregister', 'Days remaining') }}</dt>
+									<dt>
+										{{ t('openregister', 'Days remaining') }}
+									</dt>
 									<dd>{{ daysRemainingText(selectedCase) }}</dd>
 								</div>
 								<div>
-									<dt>{{ t('openregister', 'Effective deadline') }}</dt>
-									<dd>{{ formatTime(selectedCase.extendedUntil || selectedCase.dueAt) || '—' }}</dd>
+									<dt>
+										{{ t('openregister', 'Effective deadline') }}
+									</dt>
+									<dd>
+										{{
+											formatTime(
+												selectedCase.extendedUntil
+													|| selectedCase.dueAt,
+											) || '—'
+										}}
+									</dd>
 								</div>
 								<div>
-									<dt>{{ t('openregister', 'Escalation tier') }}</dt>
+									<dt>
+										{{ t('openregister', 'Escalation tier') }}
+									</dt>
 									<dd>
-										<span :class="tierClass(selectedCase.escalationTier)">
-											<component :is="tierIcon(selectedCase.escalationTier)" :size="16" />
-											{{ tierLabel(selectedCase.escalationTier) }}
+										<span
+											:class="
+												tierClass(
+													selectedCase.escalationTier,
+												)
+											">
+											<component
+												:is="
+													tierIcon(
+														selectedCase.escalationTier,
+													)
+												"
+												:size="16" />
+											{{
+												tierLabel(
+													selectedCase.escalationTier,
+												)
+											}}
 										</span>
 									</dd>
 								</div>
@@ -541,21 +771,41 @@
 						<div class="caseCard">
 							<h3>{{ t('openregister', 'Lifecycle') }}</h3>
 							<p v-if="!availableTransitions.length" class="caseHint">
-								{{ t('openregister', 'No transitions are available from the current state.') }}
+								{{
+									t(
+										'openregister',
+										'No transitions are available from the current state.',
+									)
+								}}
 							</p>
 							<div v-else class="caseActionsRow">
 								<NcButton
 									v-for="tr in availableTransitions"
 									:key="tr.action"
-									:variant="tr.action === 'finaliseDenial' ? 'warning' : 'secondary'"
-									:disabled="loading || (tr.action === 'finaliseDenial' && !hasRegulatorReference)"
+									:variant="
+										tr.action === 'finaliseDenial'
+											? 'warning'
+											: 'secondary'
+									"
+									:disabled="
+										loading
+										|| (tr.action === 'finaliseDenial'
+											&& !hasRegulatorReference)
+									"
 									@click="onTransition(tr)">
 									{{ transitionLabel(tr.action) }}
 								</NcButton>
 							</div>
-							<p v-if="finaliseVisible && !hasRegulatorReference" class="caseHint caseHint-warning">
+							<p
+								v-if="finaliseVisible && !hasRegulatorReference"
+								class="caseHint caseHint-warning">
 								<AlertCircleOutline :size="16" />
-								{{ t('openregister', 'Finalising a denial is blocked until a regulator reference is recorded on the case.') }}
+								{{
+									t(
+										'openregister',
+										'Finalising a denial is blocked until a regulator reference is recorded on the case.',
+									)
+								}}
 							</p>
 						</div>
 
@@ -564,18 +814,39 @@
 							<h3>{{ t('openregister', 'Denial') }}</h3>
 							<dl class="caseFacts">
 								<div>
-									<dt>{{ t('openregister', 'Recorded ground') }}</dt>
-									<dd>{{ selectedCase.denialGround ? groundLabel(selectedCase.denialGround) : '—' }}</dd>
+									<dt>
+										{{ t('openregister', 'Recorded ground') }}
+									</dt>
+									<dd>
+										{{
+											selectedCase.denialGround
+												? groundLabel(
+														selectedCase.denialGround,
+													)
+												: '—'
+										}}
+									</dd>
 								</div>
 								<div>
-									<dt>{{ t('openregister', 'Regulator reference') }}</dt>
-									<dd>{{ selectedCase.regulatorReference || '—' }}</dd>
+									<dt>
+										{{
+											t('openregister', 'Regulator reference')
+										}}
+									</dt>
+									<dd>
+										{{ selectedCase.regulatorReference || '—' }}
+									</dd>
 								</div>
 							</dl>
 							<div class="caseInlineForm">
 								<NcTextField
 									v-model="regulatorReferenceDraft"
-									:label="t('openregister', 'Record a regulator reference')" />
+									:label="
+										t(
+											'openregister',
+											'Record a regulator reference',
+										)
+									" />
 								<NcButton
 									variant="secondary"
 									:disabled="loading || !regulatorReferenceDraft"
@@ -584,7 +855,10 @@
 								</NcButton>
 							</div>
 							<div class="caseActionsRow">
-								<NcButton variant="secondary" :disabled="loading" @click="openDenialDialog">
+								<NcButton
+									variant="secondary"
+									:disabled="loading"
+									@click="openDenialDialog">
 									<template #icon>
 										<FileDocumentEditOutline :size="20" />
 									</template>
@@ -597,7 +871,10 @@
 						<div class="caseCard">
 							<div class="caseCardHead">
 								<h3>{{ t('openregister', 'Evidence') }}</h3>
-								<NcButton variant="secondary" :disabled="loading" @click="harvestEvidence">
+								<NcButton
+									variant="secondary"
+									:disabled="loading"
+									@click="harvestEvidence">
 									<template #icon>
 										<NcLoadingIcon v-if="loading" :size="20" />
 										<DatabaseSearchOutline v-else :size="20" />
@@ -621,8 +898,14 @@
 								</thead>
 								<tbody>
 									<tr v-for="(ev, i) in caseEvidence" :key="i">
-										<td><code>{{ ev.sourceId || '—' }}</code></td>
-										<td><span class="badge">{{ ev.status || '—' }}</span></td>
+										<td>
+											<code>{{ ev.sourceId || '—' }}</code>
+										</td>
+										<td>
+											<span class="badge">{{
+												ev.status || '—'
+											}}</span>
+										</td>
 									</tr>
 								</tbody>
 							</table>
@@ -632,7 +915,10 @@
 						<div class="caseCard">
 							<div class="caseCardHead">
 								<h3>{{ t('openregister', 'Redactions') }}</h3>
-								<NcButton variant="secondary" :disabled="loading" @click="openRedactionDialog">
+								<NcButton
+									variant="secondary"
+									:disabled="loading"
+									@click="openRedactionDialog">
 									<template #icon>
 										<MarkerIcon :size="20" />
 									</template>
@@ -655,7 +941,9 @@
 								</thead>
 								<tbody>
 									<tr v-for="(r, i) in caseRedactions" :key="i">
-										<td><code>{{ r.field }}</code></td>
+										<td>
+											<code>{{ r.field }}</code>
+										</td>
 										<td>{{ groundLabel(r.ground) }}</td>
 									</tr>
 								</tbody>
@@ -666,20 +954,29 @@
 						<div class="caseCard">
 							<h3>{{ t('openregister', 'Export & escalation') }}</h3>
 							<div class="caseActionsRow">
-								<NcButton variant="primary" :disabled="loading" @click="generateAndDownloadBundle">
+								<NcButton
+									variant="primary"
+									:disabled="loading"
+									@click="generateAndDownloadBundle">
 									<template #icon>
 										<NcLoadingIcon v-if="loading" :size="20" />
 										<Download v-else :size="20" />
 									</template>
 									{{ t('openregister', 'Generate export bundle') }}
 								</NcButton>
-								<NcButton variant="secondary" :disabled="loading" @click="runVerifyIdentity">
+								<NcButton
+									variant="secondary"
+									:disabled="loading"
+									@click="runVerifyIdentity">
 									<template #icon>
 										<AccountCheckOutline :size="20" />
 									</template>
 									{{ t('openregister', 'Verify identity') }}
 								</NcButton>
-								<NcButton variant="secondary" :disabled="loading" @click="runEscalate">
+								<NcButton
+									variant="secondary"
+									:disabled="loading"
+									@click="runEscalate">
 									<template #icon>
 										<BankOutline :size="20" />
 									</template>
@@ -687,14 +984,34 @@
 								</NcButton>
 							</div>
 
-							<NcNoteCard v-if="identityResult" :type="seamNoteType(identityResult.status, 'verified')">
-								{{ t('openregister', 'Identity verification: {status}', { status: identityResult.status }) }}
+							<NcNoteCard
+								v-if="identityResult"
+								:type="
+									seamNoteType(identityResult.status, 'verified')
+								">
+								{{
+									t(
+										'openregister',
+										'Identity verification: {status}',
+										{ status: identityResult.status },
+									)
+								}}
 								<template v-if="identityResult.message">
 									— {{ identityResult.message }}
 								</template>
 							</NcNoteCard>
-							<NcNoteCard v-if="escalateResult" :type="seamNoteType(escalateResult.status, 'escalated')">
-								{{ t('openregister', 'Regulator escalation: {status}', { status: escalateResult.status }) }}
+							<NcNoteCard
+								v-if="escalateResult"
+								:type="
+									seamNoteType(escalateResult.status, 'escalated')
+								">
+								{{
+									t(
+										'openregister',
+										'Regulator escalation: {status}',
+										{ status: escalateResult.status },
+									)
+								}}
 								<template v-if="escalateResult.reference">
 									— {{ escalateResult.reference }}
 								</template>
@@ -870,11 +1187,31 @@ export default {
 		 */
 		tabs() {
 			return [
-				{ id: 'activities', label: t('openregister', 'Activities'), icon: 'ShieldLockOutline' },
-				{ id: 'verantwoording', label: t('openregister', 'Verantwoording'), icon: 'FileDocumentOutline' },
-				{ id: 'dsar', label: t('openregister', 'DSAR'), icon: 'AccountSearch' },
-				{ id: 'cases', label: t('openregister', 'Cases'), icon: 'ClipboardTextClockOutline' },
-				{ id: 'compliance', label: t('openregister', 'Compliance'), icon: 'ShieldAlertOutline' },
+				{
+					id: 'activities',
+					label: t('openregister', 'Activities'),
+					icon: 'ShieldLockOutline',
+				},
+				{
+					id: 'verantwoording',
+					label: t('openregister', 'Verantwoording'),
+					icon: 'FileDocumentOutline',
+				},
+				{
+					id: 'dsar',
+					label: t('openregister', 'DSAR'),
+					icon: 'AccountSearch',
+				},
+				{
+					id: 'cases',
+					label: t('openregister', 'Cases'),
+					icon: 'ClipboardTextClockOutline',
+				},
+				{
+					id: 'compliance',
+					label: t('openregister', 'Compliance'),
+					icon: 'ShieldAlertOutline',
+				},
 			]
 		},
 		/**
@@ -966,9 +1303,11 @@ export default {
 		 */
 		selectedCase() {
 			if (!this.selectedCaseId) return null
-			return avgStore.getActiveCase
+			return (
+				avgStore.getActiveCase
 				?? this.cases.find((c) => this.caseId(c) === this.selectedCaseId)
 				?? null
+			)
 		},
 		/**
 		 * Client-side filtered case list (status / handler / overdue),
@@ -979,8 +1318,13 @@ export default {
 		 */
 		filteredCases() {
 			return this.cases.filter((c) => {
-				if (this.caseFilters.status && c.status !== this.caseFilters.status) return false
-				if (this.caseFilters.handler && c.handler !== this.caseFilters.handler) return false
+				if (this.caseFilters.status && c.status !== this.caseFilters.status)
+					return false
+				if (
+					this.caseFilters.handler
+					&& c.handler !== this.caseFilters.handler
+				)
+					return false
 				if (this.caseFilters.overdue && !c.isOverdue) return false
 				return true
 			})
@@ -994,7 +1338,10 @@ export default {
 		statusFilterOptions() {
 			return [
 				{ value: null, label: t('openregister', 'All statuses') },
-				...CASE_STATUS_VOCABULARY.map((s) => ({ value: s, label: this.statusLabel(s) })),
+				...CASE_STATUS_VOCABULARY.map((s) => ({
+					value: s,
+					label: this.statusLabel(s),
+				})),
 			]
 		},
 		/**
@@ -1004,7 +1351,9 @@ export default {
 		 * @return {Array<object>}
 		 */
 		handlerFilterOptions() {
-			const handlers = [...new Set(this.cases.map((c) => c.handler).filter(Boolean))]
+			const handlers = [
+				...new Set(this.cases.map((c) => c.handler).filter(Boolean)),
+			]
 			return [
 				{ value: null, label: t('openregister', 'All handlers') },
 				...handlers.map((h) => ({ value: h, label: h })),
@@ -1020,7 +1369,9 @@ export default {
 		availableTransitions() {
 			const status = this.selectedCase?.status
 			if (!status) return []
-			return CASE_LIFECYCLE_TRANSITIONS.filter((tr) => tr.from.includes(status))
+			return CASE_LIFECYCLE_TRANSITIONS.filter((tr) =>
+				tr.from.includes(status),
+			)
 		},
 		/**
 		 * Whether a finaliseDenial control is offered from the current state.
@@ -1029,7 +1380,9 @@ export default {
 		 * @return {boolean}
 		 */
 		finaliseVisible() {
-			return this.availableTransitions.some((tr) => tr.action === 'finaliseDenial')
+			return this.availableTransitions.some(
+				(tr) => tr.action === 'finaliseDenial',
+			)
 		},
 		/**
 		 * Whether the selected case carries a regulator reference (gates finalise).
@@ -1038,7 +1391,7 @@ export default {
 		 * @return {boolean}
 		 */
 		hasRegulatorReference() {
-			return !!(this.selectedCase?.regulatorReference)
+			return !!this.selectedCase?.regulatorReference
 		},
 		/**
 		 * Evidence sub-collection of the selected case.
@@ -1047,7 +1400,9 @@ export default {
 		 * @return {Array<object>}
 		 */
 		caseEvidence() {
-			return Array.isArray(this.selectedCase?.evidence) ? this.selectedCase.evidence : []
+			return Array.isArray(this.selectedCase?.evidence)
+				? this.selectedCase.evidence
+				: []
 		},
 		/**
 		 * Redactions sub-collection of the selected case.
@@ -1056,7 +1411,9 @@ export default {
 		 * @return {Array<object>}
 		 */
 		caseRedactions() {
-			return Array.isArray(this.selectedCase?.redactions) ? this.selectedCase.redactions : []
+			return Array.isArray(this.selectedCase?.redactions)
+				? this.selectedCase.redactions
+				: []
 		},
 	},
 
@@ -1171,7 +1528,14 @@ export default {
 		 */
 		async archiveActivity(activity) {
 			// eslint-disable-next-line no-alert
-			if (!confirm(t('openregister', 'Archive this verwerkingsactiviteit? Audit-trail rows will keep referring to it.'))) {
+			if (
+				!confirm(
+					t(
+						'openregister',
+						'Archive this verwerkingsactiviteit? Audit-trail rows will keep referring to it.',
+					),
+				)
+			) {
 				return
 			}
 			try {
@@ -1239,9 +1603,17 @@ export default {
 		 */
 		async confirmVergetelheid() {
 			// eslint-disable-next-line no-alert
-			if (!confirm(t('openregister', 'Erase {count} object(s) for this subject? This action is logged in the audit trail.', {
-				count: this.dsarSummary?.matchedCount ?? 0,
-			}))) {
+			if (
+				!confirm(
+					t(
+						'openregister',
+						'Erase {count} object(s) for this subject? This action is logged in the audit trail.',
+						{
+							count: this.dsarSummary?.matchedCount ?? 0,
+						},
+					),
+				)
+			) {
 				return
 			}
 			try {
@@ -1268,7 +1640,9 @@ export default {
 					type: this.dsar.type || undefined,
 				})
 				if (!data) return
-				const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+				const blob = new Blob([JSON.stringify(data, null, 2)], {
+					type: 'application/json',
+				})
 				const url = URL.createObjectURL(blob)
 				const a = document.createElement('a')
 				a.href = url
@@ -1321,7 +1695,9 @@ export default {
 			try {
 				await Promise.all([
 					avgStore.fetchCases(params),
-					this.activePolicyPack ? Promise.resolve() : avgStore.fetchActivePolicyPack(),
+					this.activePolicyPack
+						? Promise.resolve()
+						: avgStore.fetchActivePolicyPack(),
 				])
 			} catch (e) {
 				// surfaced via store error
@@ -1343,7 +1719,9 @@ export default {
 			this.regulatorReferenceDraft = ''
 			try {
 				await avgStore.fetchCase(this.selectedCaseId)
-				await avgStore.fetchActivePolicyPack({ jurisdiction: this.selectedCase?.jurisdiction })
+				await avgStore.fetchActivePolicyPack({
+					jurisdiction: this.selectedCase?.jurisdiction,
+				})
 			} catch (e) {
 				// surfaced via store error
 			}
@@ -1406,7 +1784,9 @@ export default {
 		 * @return {string}
 		 */
 		groundLabel(key) {
-			const found = resolveGroundOptions(this.activePolicyPack).find((o) => o.value === key)
+			const found = resolveGroundOptions(this.activePolicyPack).find(
+				(o) => o.value === key,
+			)
 			return found?.label ?? key
 		},
 
@@ -1418,7 +1798,9 @@ export default {
 		 * @return {string}
 		 */
 		transitionLabel(action) {
-			return action.replace(/([A-Z])/g, ' $1').replace(/^\w/, (c) => c.toUpperCase())
+			return action
+				.replace(/([A-Z])/g, ' $1')
+				.replace(/^\w/, (c) => c.toUpperCase())
 		},
 
 		/**
@@ -1441,10 +1823,14 @@ export default {
 		 */
 		tierIcon(tier) {
 			switch (tier) {
-			case 'breached': return 'AlertCircleOutline'
-			case 'escalation': return 'AlertOutline'
-			case 'reminder': return 'ClockOutline'
-			default: return 'CheckboxMarkedCircleOutline'
+				case 'breached':
+					return 'AlertCircleOutline'
+				case 'escalation':
+					return 'AlertOutline'
+				case 'reminder':
+					return 'ClockOutline'
+				default:
+					return 'CheckboxMarkedCircleOutline'
 			}
 		},
 
@@ -1460,7 +1846,9 @@ export default {
 				return t('openregister', 'Overdue')
 			}
 			if (typeof c.daysRemaining === 'number') {
-				return t('openregister', '{days} day(s) left', { days: c.daysRemaining })
+				return t('openregister', '{days} day(s) left', {
+					days: c.daysRemaining,
+				})
 			}
 			return '—'
 		},
@@ -1475,9 +1863,13 @@ export default {
 		daysRemainingText(c) {
 			if (typeof c.daysRemaining !== 'number') return '—'
 			if (c.isOverdue || c.daysRemaining < 0) {
-				return t('openregister', 'Overdue by {days} day(s)', { days: Math.abs(c.daysRemaining) })
+				return t('openregister', 'Overdue by {days} day(s)', {
+					days: Math.abs(c.daysRemaining),
+				})
 			}
-			return t('openregister', '{days} day(s) remaining', { days: c.daysRemaining })
+			return t('openregister', '{days} day(s) remaining', {
+				days: c.daysRemaining,
+			})
 		},
 
 		/**
@@ -1526,7 +1918,9 @@ export default {
 		async recordRegulatorReference() {
 			if (!this.regulatorReferenceDraft) return
 			try {
-				await avgStore.updateCase(this.selectedCaseId, { regulatorReference: this.regulatorReferenceDraft })
+				await avgStore.updateCase(this.selectedCaseId, {
+					regulatorReference: this.regulatorReferenceDraft,
+				})
 				this.regulatorReferenceDraft = ''
 				await this.reloadSelectedCase()
 			} catch (e) {
@@ -1593,7 +1987,10 @@ export default {
 				const meta = await avgStore.generateBundle(this.selectedCaseId)
 				const token = meta?.downloadToken
 				if (!token) return
-				const blob = await avgStore.downloadBundle(this.selectedCaseId, token)
+				const blob = await avgStore.downloadBundle(
+					this.selectedCaseId,
+					token,
+				)
 				if (!blob) return
 				const url = URL.createObjectURL(blob)
 				const a = document.createElement('a')
@@ -1615,7 +2012,9 @@ export default {
 		 */
 		async runVerifyIdentity() {
 			try {
-				this.identityResult = await avgStore.verifyIdentity(this.selectedCaseId)
+				this.identityResult = await avgStore.verifyIdentity(
+					this.selectedCaseId,
+				)
 				await this.reloadSelectedCase()
 			} catch (e) {
 				// surfaced via store error
@@ -1630,7 +2029,9 @@ export default {
 		 */
 		async runEscalate() {
 			try {
-				this.escalateResult = await avgStore.escalateRegulator(this.selectedCaseId)
+				this.escalateResult = await avgStore.escalateRegulator(
+					this.selectedCaseId,
+				)
 				await this.reloadSelectedCase()
 			} catch (e) {
 				// surfaced via store error

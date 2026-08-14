@@ -55,127 +55,123 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
  *
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
-class PropertySemanticReferenceValidator
-{
-    /**
-     * Constructor.
-     *
-     * @param JsonLdContextService $jsonLd IRI validation helper (isAbsoluteIri).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly JsonLdContextService $jsonLd,
-    ) {
-    }//end __construct()
+class PropertySemanticReferenceValidator {
+	/**
+	 * Constructor.
+	 *
+	 * @param JsonLdContextService $jsonLd IRI validation helper (isAbsoluteIri).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly JsonLdContextService $jsonLd,
+	) {
+	}//end __construct()
 
-    /**
-     * Validate a single property definition.
-     *
-     * Properties without a `referenceSemanticType` key pass through.
-     * Properties with one MUST carry a non-empty absolute IRI; an optional
-     * `referenceSemanticApp` MUST be a string.
-     *
-     * @param array<string,mixed> $property     Schema property definition.
-     * @param string|null         $propertyName Optional property name for error messages.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException When referenceSemanticType is not a
-     *                                  well-formed absolute IRI, or the app
-     *                                  hint is non-string.
-     *
-     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
-     *   (Requirement: A property can reference a semantic type)
-     */
-    public function validate(array $property, ?string $propertyName=null): void
-    {
-        if (array_key_exists('referenceSemanticType', $property) === false) {
-            return;
-        }
+	/**
+	 * Validate a single property definition.
+	 *
+	 * Properties without a `referenceSemanticType` key pass through.
+	 * Properties with one MUST carry a non-empty absolute IRI; an optional
+	 * `referenceSemanticApp` MUST be a string.
+	 *
+	 * @param array<string,mixed> $property Schema property definition.
+	 * @param string|null $propertyName Optional property name for error messages.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When referenceSemanticType is not a
+	 *                                  well-formed absolute IRI, or the app
+	 *                                  hint is non-string.
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+	 *   (Requirement: A property can reference a semantic type)
+	 */
+	public function validate(array $property, ?string $propertyName = null): void {
+		if (array_key_exists('referenceSemanticType', $property) === false) {
+			return;
+		}
 
-        $value = $property['referenceSemanticType'];
-        if ($value === null) {
-            return;
-        }
+		$value = $property['referenceSemanticType'];
+		if ($value === null) {
+			return;
+		}
 
-        if (is_string($value) === false || $value === '') {
-            throw new InvalidArgumentException(
-                $this->formatError(
-                    propertyName: $propertyName,
-                    key: 'referenceSemanticType',
-                    detail: 'must be a non-empty string'
-                )
-            );
-        }
+		if (is_string($value) === false || $value === '') {
+			throw new InvalidArgumentException(
+				$this->formatError(
+					propertyName: $propertyName,
+					key: 'referenceSemanticType',
+					detail: 'must be a non-empty string'
+				)
+			);
+		}
 
-        if ($this->jsonLd->isAbsoluteIri(value: $value) === false) {
-            throw new InvalidArgumentException(
-                $this->formatError(
-                    propertyName: $propertyName,
-                    key: 'referenceSemanticType',
-                    detail: sprintf("must be an absolute IRI, got '%s'", $value)
-                )
-            );
-        }
+		if ($this->jsonLd->isAbsoluteIri(value: $value) === false) {
+			throw new InvalidArgumentException(
+				$this->formatError(
+					propertyName: $propertyName,
+					key: 'referenceSemanticType',
+					detail: sprintf("must be an absolute IRI, got '%s'", $value)
+				)
+			);
+		}
 
-        // Optional provider hint — string when present.
-        if (array_key_exists('referenceSemanticApp', $property) === true) {
-            $appHint = $property['referenceSemanticApp'];
-            if ($appHint !== null && is_string($appHint) === false) {
-                throw new InvalidArgumentException(
-                    $this->formatError(
-                        propertyName: $propertyName,
-                        key: 'referenceSemanticApp',
-                        detail: 'must be a string when present'
-                    )
-                );
-            }
-        }
-    }//end validate()
+		// Optional provider hint — string when present.
+		if (array_key_exists('referenceSemanticApp', $property) === true) {
+			$appHint = $property['referenceSemanticApp'];
+			if ($appHint !== null && is_string($appHint) === false) {
+				throw new InvalidArgumentException(
+					$this->formatError(
+						propertyName: $propertyName,
+						key: 'referenceSemanticApp',
+						detail: 'must be a string when present'
+					)
+				);
+			}
+		}
+	}//end validate()
 
-    /**
-     * Validate every property in a schema's `properties` map.
-     *
-     * @param array<string,array<string,mixed>> $properties Property map.
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException On the first invalid property.
-     *
-     * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
-     *   (Requirement: A property can reference a semantic type)
-     */
-    public function validateAll(array $properties): void
-    {
-        foreach ($properties as $name => $definition) {
-            if (is_array($definition) === true) {
-                $resolvedName = null;
-                if (is_string($name) === true) {
-                    $resolvedName = $name;
-                }
+	/**
+	 * Validate every property in a schema's `properties` map.
+	 *
+	 * @param array<string,array<string,mixed>> $properties Property map.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On the first invalid property.
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+	 *   (Requirement: A property can reference a semantic type)
+	 */
+	public function validateAll(array $properties): void {
+		foreach ($properties as $name => $definition) {
+			if (is_array($definition) === true) {
+				$resolvedName = null;
+				if (is_string($name) === true) {
+					$resolvedName = $name;
+				}
 
-                $this->validate(property: $definition, propertyName: $resolvedName);
-            }
-        }
-    }//end validateAll()
+				$this->validate(property: $definition, propertyName: $resolvedName);
+			}
+		}
+	}//end validateAll()
 
-    /**
-     * Build the standard error-message prefix.
-     *
-     * @param string|null $propertyName Property name (or null for schema-level).
-     * @param string      $key          The offending keyword.
-     * @param string      $detail       Specific failure detail.
-     *
-     * @return string
-     */
-    private function formatError(?string $propertyName, string $key, string $detail): string
-    {
-        $prefix = $key;
-        if ($propertyName !== null) {
-            $prefix = sprintf("Property '%s' %s", $propertyName, $key);
-        }
+	/**
+	 * Build the standard error-message prefix.
+	 *
+	 * @param string|null $propertyName Property name (or null for schema-level).
+	 * @param string $key The offending keyword.
+	 * @param string $detail Specific failure detail.
+	 *
+	 * @return string
+	 */
+	private function formatError(?string $propertyName, string $key, string $detail): string {
+		$prefix = $key;
+		if ($propertyName !== null) {
+			$prefix = sprintf("Property '%s' %s", $propertyName, $key);
+		}
 
-        return sprintf('%s %s', $prefix, $detail);
-    }//end formatError()
+		return sprintf('%s %s', $prefix, $detail);
+	}//end formatError()
 }//end class

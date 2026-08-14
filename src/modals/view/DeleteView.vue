@@ -4,15 +4,34 @@
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			{{ t('openregister', 'Are you sure you want to permanently delete') }} <b>{{ view?.name || t('openregister', 'Untitled View') }}</b>?
+			{{ t('openregister', 'Are you sure you want to permanently delete') }}
+			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b
+			>?
 			{{ t('openregister', 'This action cannot be undone.') }}
 		</p>
 
 		<NcNoteCard v-if="!success" type="warning">
-			<p><strong>{{ t('openregister', 'Warning:') }}</strong> {{ t('openregister', 'This will permanently delete:') }}</p>
+			<p>
+				<strong>{{ t('openregister', 'Warning:') }}</strong>
+				{{ t('openregister', 'This will permanently delete:') }}
+			</p>
 			<ul>
-				<li>{{ t('openregister', 'The saved view and all its search configuration') }}</li>
-				<li>{{ t('openregister', 'Any favorites and sharing settings for this view') }}</li>
+				<li>
+					{{
+						t(
+							'openregister',
+							'The saved view and all its search configuration',
+						)
+					}}
+				</li>
+				<li>
+					{{
+						t(
+							'openregister',
+							'Any favorites and sharing settings for this view',
+						)
+					}}
+				</li>
 			</ul>
 		</NcNoteCard>
 
@@ -29,7 +48,11 @@
 				<template #icon>
 					<Close :size="20" />
 				</template>
-				{{ success ? t('openregister', 'Close') : t('openregister', 'Cancel') }}
+				{{
+					success
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -47,12 +70,7 @@
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 
 import Close from 'vue-material-design-icons/Close.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
@@ -115,7 +133,13 @@ export default {
 			} catch (error) {
 				console.error('Error deleting view:', error)
 				this.success = false
-				this.error = error.response?.data?.error || error.message || this.t('openregister', 'An error occurred while deleting the view')
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| this.t(
+						'openregister',
+						'An error occurred while deleting the view',
+					)
 			} finally {
 				this.loading = false
 			}

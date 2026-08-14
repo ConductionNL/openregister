@@ -1,4 +1,5 @@
 <?php
+
 /**
  * The save path is the seam that matters.
  *
@@ -36,149 +37,140 @@ use UnexpectedValueException;
 /**
  * @covers \OCA\OpenRegister\Listener\FlowNodePreflightListener
  */
-class FlowNodePreflightListenerTest extends TestCase
-{
+class FlowNodePreflightListenerTest extends TestCase {
 
-    /**
-     * An object entity carrying the given data.
-     *
-     * @param array $data The object data.
-     *
-     * @return ObjectEntity
-     */
-    private function entity(array $data): ObjectEntity
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('11111111-1111-1111-1111-111111111111');
-        $entity->setObject($data);
+	/**
+	 * An object entity carrying the given data.
+	 *
+	 * @param array $data The object data.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function entity(array $data): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-1111-1111-1111-111111111111');
+		$entity->setObject($data);
 
-        return $entity;
-    }
+		return $entity;
+	}
 
-    /**
-     * A flow document naming a type this instance cannot run.
-     *
-     * @return array
-     */
-    private function badFlow(): array
-    {
-        return [
-            'name'  => 'hydra-file-findings',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.explode']],
-        ];
-    }
+	/**
+	 * A flow document naming a type this instance cannot run.
+	 *
+	 * @return array
+	 */
+	private function badFlow(): array {
+		return [
+			'name' => 'hydra-file-findings',
+			'nodes' => [['id' => 'a'], ['id' => 'b']],
+			'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.explode']],
+		];
+	}
 
-    /**
-     * A preflight stub that refuses everything graph-shaped.
-     *
-     * @param boolean $refuse Whether assertRunnable throws.
-     *
-     * @return FlowNodePreflight
-     */
-    private function preflight(bool $refuse): FlowNodePreflight
-    {
-        $preflight = $this->createMock(FlowNodePreflight::class);
-        $preflight->method('looksLikeFlow')->willReturnCallback(
-            static fn (array $data): bool => (isset($data['nodes']) === true && isset($data['edges']) === true)
-        );
+	/**
+	 * A preflight stub that refuses everything graph-shaped.
+	 *
+	 * @param boolean $refuse Whether assertRunnable throws.
+	 *
+	 * @return FlowNodePreflight
+	 */
+	private function preflight(bool $refuse): FlowNodePreflight {
+		$preflight = $this->createMock(FlowNodePreflight::class);
+		$preflight->method('looksLikeFlow')->willReturnCallback(
+			static fn (array $data): bool => (isset($data['nodes']) === true && isset($data['edges']) === true)
+		);
 
-        if ($refuse === true) {
-            $preflight->method('assertRunnable')->willThrowException(
-                new UnexpectedValueException('Flow "hydra-file-findings" names 1 step type(s) this instance cannot run')
-            );
-        }
+		if ($refuse === true) {
+			$preflight->method('assertRunnable')->willThrowException(
+				new UnexpectedValueException('Flow "hydra-file-findings" names 1 step type(s) this instance cannot run')
+			);
+		}
 
-        return $preflight;
-    }
+		return $preflight;
+	}
 
-    /**
-     * Creation is stopped and carries a message naming the problem.
-     */
-    public function testCreationIsRefused(): void
-    {
-        $listener = new FlowNodePreflightListener(
-            $this->preflight(refuse: true),
-            $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * Creation is stopped and carries a message naming the problem.
+	 */
+	public function testCreationIsRefused(): void {
+		$listener = new FlowNodePreflightListener(
+			$this->preflight(refuse: true),
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $event = new ObjectCreatingEvent($this->entity($this->badFlow()));
-        $listener->handle($event);
+		$event = new ObjectCreatingEvent($this->entity($this->badFlow()));
+		$listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-        $this->assertSame('flow-node-type-unavailable', $event->getErrors()['code']);
-        $this->assertStringContainsString('cannot run', $event->getErrors()['message']);
-    }
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('flow-node-type-unavailable', $event->getErrors()['code']);
+		$this->assertStringContainsString('cannot run', $event->getErrors()['message']);
+	}
 
-    /**
-     * An update to an existing flow is refused the same way.
-     */
-    public function testUpdateIsRefused(): void
-    {
-        $listener = new FlowNodePreflightListener(
-            $this->preflight(refuse: true),
-            $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * An update to an existing flow is refused the same way.
+	 */
+	public function testUpdateIsRefused(): void {
+		$listener = new FlowNodePreflightListener(
+			$this->preflight(refuse: true),
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $event = new ObjectUpdatingEvent(
-            newObject: $this->entity($this->badFlow()),
-            oldObject: $this->entity([])
-        );
-        $listener->handle($event);
+		$event = new ObjectUpdatingEvent(
+			newObject: $this->entity($this->badFlow()),
+			oldObject: $this->entity([])
+		);
+		$listener->handle($event);
 
-        $this->assertTrue($event->isPropagationStopped());
-    }
+		$this->assertTrue($event->isPropagationStopped());
+	}
 
-    /**
-     * An ordinary object is untouched — the listener must not gate every save.
-     */
-    public function testANonFlowObjectIsUntouched(): void
-    {
-        $listener = new FlowNodePreflightListener(
-            $this->preflight(refuse: true),
-            $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * An ordinary object is untouched — the listener must not gate every save.
+	 */
+	public function testANonFlowObjectIsUntouched(): void {
+		$listener = new FlowNodePreflightListener(
+			$this->preflight(refuse: true),
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $event = new ObjectCreatingEvent($this->entity(['title' => 'a lead', 'status' => 'open']));
-        $listener->handle($event);
+		$event = new ObjectCreatingEvent($this->entity(['title' => 'a lead', 'status' => 'open']));
+		$listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-        $this->assertSame([], $event->getErrors());
-    }
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame([], $event->getErrors());
+	}
 
-    /**
-     * A runnable flow saves.
-     */
-    public function testARunnableFlowIsAllowed(): void
-    {
-        $listener = new FlowNodePreflightListener(
-            $this->preflight(refuse: false),
-            $this->createMock(LoggerInterface::class)
-        );
+	/**
+	 * A runnable flow saves.
+	 */
+	public function testARunnableFlowIsAllowed(): void {
+		$listener = new FlowNodePreflightListener(
+			$this->preflight(refuse: false),
+			$this->createMock(LoggerInterface::class)
+		);
 
-        $event = new ObjectCreatingEvent($this->entity($this->badFlow()));
-        $listener->handle($event);
+		$event = new ObjectCreatingEvent($this->entity($this->badFlow()));
+		$listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-    }
+		$this->assertFalse($event->isPropagationStopped());
+	}
 
-    /**
-     * Preflight failing for a reason of its own must not block unrelated saves.
-     *
-     * The run-time refusal in FlowNodeRegistry::get() is still the backstop,
-     * which is precisely the situation that held before this listener existed.
-     */
-    public function testAnInternalFailureDoesNotBlockTheSave(): void
-    {
-        $preflight = $this->createMock(FlowNodePreflight::class);
-        $preflight->method('looksLikeFlow')->willReturn(true);
-        $preflight->method('assertRunnable')->willThrowException(new \RuntimeException('registry exploded'));
+	/**
+	 * Preflight failing for a reason of its own must not block unrelated saves.
+	 *
+	 * The run-time refusal in FlowNodeRegistry::get() is still the backstop,
+	 * which is precisely the situation that held before this listener existed.
+	 */
+	public function testAnInternalFailureDoesNotBlockTheSave(): void {
+		$preflight = $this->createMock(FlowNodePreflight::class);
+		$preflight->method('looksLikeFlow')->willReturn(true);
+		$preflight->method('assertRunnable')->willThrowException(new \RuntimeException('registry exploded'));
 
-        $listener = new FlowNodePreflightListener($preflight, $this->createMock(LoggerInterface::class));
+		$listener = new FlowNodePreflightListener($preflight, $this->createMock(LoggerInterface::class));
 
-        $event = new ObjectCreatingEvent($this->entity($this->badFlow()));
-        $listener->handle($event);
+		$event = new ObjectCreatingEvent($this->entity($this->badFlow()));
+		$listener->handle($event);
 
-        $this->assertFalse($event->isPropagationStopped());
-    }
+		$this->assertFalse($event->isPropagationStopped());
+	}
 }

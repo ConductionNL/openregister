@@ -37,238 +37,226 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class QualityStatisticsServiceTest extends TestCase
-{
+class QualityStatisticsServiceTest extends TestCase {
 
-    /**
-     * @var ObjectService&MockObject
-     */
-    private $objectService;
+	/**
+	 * @var ObjectService&MockObject
+	 */
+	private $objectService;
 
-    /**
-     * @var SchemaMapper&MockObject
-     */
-    private $schemaMapper;
+	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private $schemaMapper;
 
-    private QualityStatisticsService $service;
+	private QualityStatisticsService $service;
 
-    protected function setUp(): void
-    {
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->schemaMapper  = $this->createMock(SchemaMapper::class);
-        $this->service       = new QualityStatisticsService(
-            $this->objectService,
-            $this->schemaMapper,
-            new QualityScorer(),
-            $this->createMock(LoggerInterface::class)
-        );
-    }//end setUp()
+	protected function setUp(): void {
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->service = new QualityStatisticsService(
+			$this->objectService,
+			$this->schemaMapper,
+			new QualityScorer(),
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end setUp()
 
-    /**
-     * Build an ObjectEntity carrying the nil placeholder uuid + payload.
-     *
-     * @param string               $uuid    Object uuid (placeholder-only in fixtures).
-     * @param array<string, mixed> $payload Object data.
-     *
-     * @return ObjectEntity
-     */
-    private function makeObject(string $uuid, array $payload): ObjectEntity
-    {
-        $object = new ObjectEntity();
-        $object->setUuid($uuid);
-        $object->setObject($payload);
+	/**
+	 * Build an ObjectEntity carrying the nil placeholder uuid + payload.
+	 *
+	 * @param string $uuid Object uuid (placeholder-only in fixtures).
+	 * @param array<string, mixed> $payload Object data.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function makeObject(string $uuid, array $payload): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setObject($payload);
 
-        return $object;
-    }//end makeObject()
+		return $object;
+	}//end makeObject()
 
-    /**
-     * Stub the schema mapper to return a schema declaring the given
-     * `x-openregister-quality` config (empty by default => scorer defaults apply).
-     *
-     * @param array<string, mixed> $quality Quality annotation body.
-     *
-     * @return void
-     */
-    private function stubQualityAnnotation(array $quality): void
-    {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getConfiguration')->willReturn(['x-openregister-quality' => $quality]);
-        $this->schemaMapper->method('find')->willReturn($schema);
-    }//end stubQualityAnnotation()
+	/**
+	 * Stub the schema mapper to return a schema declaring the given
+	 * `x-openregister-quality` config (empty by default => scorer defaults apply).
+	 *
+	 * @param array<string, mixed> $quality Quality annotation body.
+	 *
+	 * @return void
+	 */
+	private function stubQualityAnnotation(array $quality): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getConfiguration')->willReturn(['x-openregister-quality' => $quality]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+	}//end stubQualityAnnotation()
 
-    public function testAverageAndBucketsOverScoredSchema(): void
-    {
-        $this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
+	public function testAverageAndBucketsOverScoredSchema(): void {
+		$this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.6]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.2]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.6]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.2]),
+			]
+		);
 
-        $stats = $this->service->statisticsFor('reg', 'sch');
+		$stats = $this->service->statisticsFor('reg', 'sch');
 
-        $this->assertSame(3, $stats['total']);
-        $this->assertEqualsWithDelta((0.9 + 0.6 + 0.2) / 3, $stats['average'], 0.0001);
-        $this->assertSame(1, $stats['buckets']['good']);
-        $this->assertSame(1, $stats['buckets']['fair']);
-        $this->assertSame(1, $stats['buckets']['poor']);
+		$this->assertSame(3, $stats['total']);
+		$this->assertEqualsWithDelta((0.9 + 0.6 + 0.2) / 3, $stats['average'], 0.0001);
+		$this->assertSame(1, $stats['buckets']['good']);
+		$this->assertSame(1, $stats['buckets']['fair']);
+		$this->assertSame(1, $stats['buckets']['poor']);
 
-        $bucketSum = array_sum($stats['buckets']);
-        $this->assertSame($stats['total'], $bucketSum);
-    }//end testAverageAndBucketsOverScoredSchema()
+		$bucketSum = array_sum($stats['buckets']);
+		$this->assertSame($stats['total'], $bucketSum);
+	}//end testAverageAndBucketsOverScoredSchema()
 
-    public function testStatusBucketsHonourSchemaThresholds(): void
-    {
-        $this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
+	public function testStatusBucketsHonourSchemaThresholds(): void {
+		$this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.6]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.2]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.6]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.2]),
+			]
+		);
 
-        $stats = $this->service->statisticsFor('reg', 'sch');
+		$stats = $this->service->statisticsFor('reg', 'sch');
 
-        $this->assertSame(1, $stats['buckets']['good']);
-        $this->assertSame(1, $stats['buckets']['fair']);
-        $this->assertSame(1, $stats['buckets']['poor']);
-    }//end testStatusBucketsHonourSchemaThresholds()
+		$this->assertSame(1, $stats['buckets']['good']);
+		$this->assertSame(1, $stats['buckets']['fair']);
+		$this->assertSame(1, $stats['buckets']['poor']);
+	}//end testStatusBucketsHonourSchemaThresholds()
 
-    public function testHistogramSumsToTotal(): void
-    {
-        $this->stubQualityAnnotation([]);
+	public function testHistogramSumsToTotal(): void {
+		$this->stubQualityAnnotation([]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.05]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.55]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 1.0]),
-                $this->makeObject('00000000-0000-0000-0000-000000000004', ['qualityScore' => 0.0]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.05]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.55]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 1.0]),
+				$this->makeObject('00000000-0000-0000-0000-000000000004', ['qualityScore' => 0.0]),
+			]
+		);
 
-        $stats = $this->service->statisticsFor('reg', 'sch');
+		$stats = $this->service->statisticsFor('reg', 'sch');
 
-        $this->assertCount(10, $stats['histogram']);
+		$this->assertCount(10, $stats['histogram']);
 
-        $histogramSum = 0;
-        foreach ($stats['histogram'] as $bucket) {
-            $histogramSum += $bucket['count'];
-        }
+		$histogramSum = 0;
+		foreach ($stats['histogram'] as $bucket) {
+			$histogramSum += $bucket['count'];
+		}
 
-        $this->assertSame($stats['total'], $histogramSum);
+		$this->assertSame($stats['total'], $histogramSum);
 
-        // 0.05 -> bucket 0, 0.55 -> bucket 5, 1.0 -> bucket 9 (closed on both ends), 0.0 -> bucket 0.
-        $this->assertSame(2, $stats['histogram'][0]['count']);
-        $this->assertSame(1, $stats['histogram'][5]['count']);
-        $this->assertSame(1, $stats['histogram'][9]['count']);
-    }//end testHistogramSumsToTotal()
+		// 0.05 -> bucket 0, 0.55 -> bucket 5, 1.0 -> bucket 9 (closed on both ends), 0.0 -> bucket 0.
+		$this->assertSame(2, $stats['histogram'][0]['count']);
+		$this->assertSame(1, $stats['histogram'][5]['count']);
+		$this->assertSame(1, $stats['histogram'][9]['count']);
+	}//end testHistogramSumsToTotal()
 
-    public function testEmptySetReturnsZeroedStatistics(): void
-    {
-        $this->stubQualityAnnotation([]);
-        $this->objectService->method('findAll')->willReturn([]);
+	public function testEmptySetReturnsZeroedStatistics(): void {
+		$this->stubQualityAnnotation([]);
+		$this->objectService->method('findAll')->willReturn([]);
 
-        $stats = $this->service->statisticsFor('reg', 'sch');
+		$stats = $this->service->statisticsFor('reg', 'sch');
 
-        $this->assertSame(0, $stats['total']);
-        $this->assertNull($stats['average']);
-        $this->assertSame(['good' => 0, 'fair' => 0, 'poor' => 0], $stats['buckets']);
+		$this->assertSame(0, $stats['total']);
+		$this->assertNull($stats['average']);
+		$this->assertSame(['good' => 0, 'fair' => 0, 'poor' => 0], $stats['buckets']);
 
-        $histogramSum = 0;
-        foreach ($stats['histogram'] as $bucket) {
-            $histogramSum += $bucket['count'];
-        }
+		$histogramSum = 0;
+		foreach ($stats['histogram'] as $bucket) {
+			$histogramSum += $bucket['count'];
+		}
 
-        $this->assertSame(0, $histogramSum);
-    }//end testEmptySetReturnsZeroedStatistics()
+		$this->assertSame(0, $histogramSum);
+	}//end testEmptySetReturnsZeroedStatistics()
 
-    public function testThresholdDrivenBucketingUsesAnnotationField(): void
-    {
-        // Score materialised at a custom field name, annotation declares custom thresholds.
-        $this->stubQualityAnnotation(
-            [
-                'field'      => 'dqScore',
-                'thresholds' => ['good' => 0.95, 'fair' => 0.7],
-            ]
-        );
+	public function testThresholdDrivenBucketingUsesAnnotationField(): void {
+		// Score materialised at a custom field name, annotation declares custom thresholds.
+		$this->stubQualityAnnotation(
+			[
+				'field' => 'dqScore',
+				'thresholds' => ['good' => 0.95, 'fair' => 0.7],
+			]
+		);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                // 0.9 would be "good" under default thresholds but is "fair" under 0.95/0.7.
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['dqScore' => 0.9]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				// 0.9 would be "good" under default thresholds but is "fair" under 0.95/0.7.
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['dqScore' => 0.9]),
+			]
+		);
 
-        $stats = $this->service->statisticsFor('reg', 'sch');
+		$stats = $this->service->statisticsFor('reg', 'sch');
 
-        $this->assertSame(1, $stats['total']);
-        $this->assertSame(0, $stats['buckets']['good']);
-        $this->assertSame(1, $stats['buckets']['fair']);
-        $this->assertSame(0, $stats['buckets']['poor']);
-    }//end testThresholdDrivenBucketingUsesAnnotationField()
+		$this->assertSame(1, $stats['total']);
+		$this->assertSame(0, $stats['buckets']['good']);
+		$this->assertSame(1, $stats['buckets']['fair']);
+		$this->assertSame(0, $stats['buckets']['poor']);
+	}//end testThresholdDrivenBucketingUsesAnnotationField()
 
-    public function testLowestQualityOrdersAscendingByScore(): void
-    {
-        $this->stubQualityAnnotation([]);
+	public function testLowestQualityOrdersAscendingByScore(): void {
+		$this->stubQualityAnnotation([]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.5]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.5]),
+			]
+		);
 
-        $result = $this->service->lowestQuality('reg', 'sch');
+		$result = $this->service->lowestQuality('reg', 'sch');
 
-        $scores = array_column($result['items'], 'qualityScore');
-        $this->assertSame([0.2, 0.5, 0.9], $scores);
-        $this->assertSame(3, $result['total']);
-    }//end testLowestQualityOrdersAscendingByScore()
+		$scores = array_column($result['items'], 'qualityScore');
+		$this->assertSame([0.2, 0.5, 0.9], $scores);
+		$this->assertSame(3, $result['total']);
+	}//end testLowestQualityOrdersAscendingByScore()
 
-    public function testLowestQualityFiltersByStatus(): void
-    {
-        $this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
+	public function testLowestQualityFiltersByStatus(): void {
+		$this->stubQualityAnnotation(['thresholds' => ['good' => 0.8, 'fair' => 0.5]]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.55]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.9]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.55]),
+			]
+		);
 
-        $result = $this->service->lowestQuality('reg', 'sch', qualityStatus: 'poor');
+		$result = $this->service->lowestQuality('reg', 'sch', qualityStatus: 'poor');
 
-        $this->assertCount(1, $result['items']);
-        $this->assertSame('poor', $result['items'][0]['qualityStatus']);
-        $this->assertSame(0.2, $result['items'][0]['qualityScore']);
-    }//end testLowestQualityFiltersByStatus()
+		$this->assertCount(1, $result['items']);
+		$this->assertSame('poor', $result['items'][0]['qualityStatus']);
+		$this->assertSame(0.2, $result['items'][0]['qualityScore']);
+	}//end testLowestQualityFiltersByStatus()
 
-    public function testLowestQualityPaginates(): void
-    {
-        $this->stubQualityAnnotation([]);
+	public function testLowestQualityPaginates(): void {
+		$this->stubQualityAnnotation([]);
 
-        $this->objectService->method('findAll')->willReturn(
-            [
-                $this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.1]),
-                $this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
-                $this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.3]),
-            ]
-        );
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->makeObject('00000000-0000-0000-0000-000000000001', ['qualityScore' => 0.1]),
+				$this->makeObject('00000000-0000-0000-0000-000000000002', ['qualityScore' => 0.2]),
+				$this->makeObject('00000000-0000-0000-0000-000000000003', ['qualityScore' => 0.3]),
+			]
+		);
 
-        $page1 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 0);
-        $page2 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 2);
+		$page1 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 0);
+		$page2 = $this->service->lowestQuality('reg', 'sch', limit: 2, offset: 2);
 
-        $this->assertCount(2, $page1['items']);
-        $this->assertCount(1, $page2['items']);
-        $this->assertSame(3, $page1['total']);
-        $this->assertSame(3, $page2['total']);
-    }//end testLowestQualityPaginates()
+		$this->assertCount(2, $page1['items']);
+		$this->assertCount(1, $page2['items']);
+		$this->assertSame(3, $page1['total']);
+		$this->assertSame(3, $page2['total']);
+	}//end testLowestQualityPaginates()
 }//end class

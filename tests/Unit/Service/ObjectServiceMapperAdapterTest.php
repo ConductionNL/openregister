@@ -36,130 +36,120 @@ use PHPUnit\Framework\TestCase;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ObjectServiceMapperAdapterTest extends TestCase
-{
+class ObjectServiceMapperAdapterTest extends TestCase {
 
+	/**
+	 * Adapter forwards its bound register + schema to ObjectService::deleteObject().
+	 *
+	 * @return void
+	 */
+	public function testDeleteForwardsBoundScopeToObjectService(): void {
+		/** @var ObjectService&MockObject $service */
+		$service = $this->createMock(ObjectService::class);
 
-    /**
-     * Adapter forwards its bound register + schema to ObjectService::deleteObject().
-     *
-     * @return void
-     */
-    public function testDeleteForwardsBoundScopeToObjectService(): void
-    {
-        /** @var ObjectService&MockObject $service */
-        $service = $this->createMock(ObjectService::class);
+		$service
+			->expects($this->once())
+			->method('deleteObject')
+			->with(
+				$this->equalTo('abc-123'),
+				$this->equalTo(1),
+				$this->equalTo(10)
+			)
+			->willReturn(true);
 
-        $service
-            ->expects($this->once())
-            ->method('deleteObject')
-            ->with(
-                $this->equalTo('abc-123'),
-                $this->equalTo(1),
-                $this->equalTo(10)
-            )
-            ->willReturn(true);
+		$adapter = new ObjectServiceMapperAdapter(
+			objectService: $service,
+			register: 1,
+			schema: 10
+		);
 
-        $adapter = new ObjectServiceMapperAdapter(
-            objectService: $service,
-            register: 1,
-            schema: 10
-        );
+		$this->assertTrue($adapter->delete(['id' => 'abc-123']));
 
-        $this->assertTrue($adapter->delete(['id' => 'abc-123']));
+	}//end testDeleteForwardsBoundScopeToObjectService()
 
-    }//end testDeleteForwardsBoundScopeToObjectService()
+	/**
+	 * Adapter without a bound scope forwards null + null (legacy unscoped path).
+	 *
+	 * @return void
+	 */
+	public function testDeleteWithoutScopeForwardsNulls(): void {
+		/** @var ObjectService&MockObject $service */
+		$service = $this->createMock(ObjectService::class);
 
+		$service
+			->expects($this->once())
+			->method('deleteObject')
+			->with(
+				$this->equalTo('abc-123'),
+				$this->isNull(),
+				$this->isNull()
+			)
+			->willReturn(true);
 
-    /**
-     * Adapter without a bound scope forwards null + null (legacy unscoped path).
-     *
-     * @return void
-     */
-    public function testDeleteWithoutScopeForwardsNulls(): void
-    {
-        /** @var ObjectService&MockObject $service */
-        $service = $this->createMock(ObjectService::class);
+		$adapter = new ObjectServiceMapperAdapter(
+			objectService: $service,
+			register: null,
+			schema: null
+		);
 
-        $service
-            ->expects($this->once())
-            ->method('deleteObject')
-            ->with(
-                $this->equalTo('abc-123'),
-                $this->isNull(),
-                $this->isNull()
-            )
-            ->willReturn(true);
+		$this->assertTrue($adapter->delete(['id' => 'abc-123']));
 
-        $adapter = new ObjectServiceMapperAdapter(
-            objectService: $service,
-            register: null,
-            schema: null
-        );
+	}//end testDeleteWithoutScopeForwardsNulls()
 
-        $this->assertTrue($adapter->delete(['id' => 'abc-123']));
+	/**
+	 * Adapter propagates DoesNotExistException raised by the scoped lookup.
+	 *
+	 * When the adapter is bound to a register+schema and the UUID lives in a
+	 * different magic table, ObjectService::deleteObject() raises
+	 * DoesNotExistException. The adapter MUST propagate it instead of
+	 * swallowing it — callers can then distinguish "scope mismatch" from
+	 * "operation succeeded".
+	 *
+	 * @return void
+	 */
+	public function testDeletePropagatesDoesNotExistExceptionFromService(): void {
+		/** @var ObjectService&MockObject $service */
+		$service = $this->createMock(ObjectService::class);
 
-    }//end testDeleteWithoutScopeForwardsNulls()
+		$service
+			->method('deleteObject')
+			->willThrowException(new DoesNotExistException('not in scope'));
 
+		$adapter = new ObjectServiceMapperAdapter(
+			objectService: $service,
+			register: 1,
+			schema: 10
+		);
 
-    /**
-     * Adapter propagates DoesNotExistException raised by the scoped lookup.
-     *
-     * When the adapter is bound to a register+schema and the UUID lives in a
-     * different magic table, ObjectService::deleteObject() raises
-     * DoesNotExistException. The adapter MUST propagate it instead of
-     * swallowing it — callers can then distinguish "scope mismatch" from
-     * "operation succeeded".
-     *
-     * @return void
-     */
-    public function testDeletePropagatesDoesNotExistExceptionFromService(): void
-    {
-        /** @var ObjectService&MockObject $service */
-        $service = $this->createMock(ObjectService::class);
+		$this->expectException(DoesNotExistException::class);
 
-        $service
-            ->method('deleteObject')
-            ->willThrowException(new DoesNotExistException('not in scope'));
+		$adapter->delete(['id' => 'abc-123']);
 
-        $adapter = new ObjectServiceMapperAdapter(
-            objectService: $service,
-            register: 1,
-            schema: 10
-        );
+	}//end testDeletePropagatesDoesNotExistExceptionFromService()
 
-        $this->expectException(DoesNotExistException::class);
+	/**
+	 * Adapter rejects delete() with no id.
+	 *
+	 * @return void
+	 */
+	public function testDeleteWithoutIdThrowsValidationException(): void {
+		/** @var ObjectService&MockObject $service */
+		$service = $this->createMock(ObjectService::class);
 
-        $adapter->delete(['id' => 'abc-123']);
+		$service
+			->expects($this->never())
+			->method('deleteObject');
 
-    }//end testDeletePropagatesDoesNotExistExceptionFromService()
+		$adapter = new ObjectServiceMapperAdapter(
+			objectService: $service,
+			register: 1,
+			schema: 10
+		);
 
+		$this->expectException(ValidationException::class);
 
-    /**
-     * Adapter rejects delete() with no id.
-     *
-     * @return void
-     */
-    public function testDeleteWithoutIdThrowsValidationException(): void
-    {
-        /** @var ObjectService&MockObject $service */
-        $service = $this->createMock(ObjectService::class);
+		$adapter->delete([]);
 
-        $service
-            ->expects($this->never())
-            ->method('deleteObject');
-
-        $adapter = new ObjectServiceMapperAdapter(
-            objectService: $service,
-            register: 1,
-            schema: 10
-        );
-
-        $this->expectException(ValidationException::class);
-
-        $adapter->delete([]);
-
-    }//end testDeleteWithoutIdThrowsValidationException()
-
+	}//end testDeleteWithoutIdThrowsValidationException()
 
 }//end class

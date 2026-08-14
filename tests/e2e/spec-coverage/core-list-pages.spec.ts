@@ -82,7 +82,8 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 	page.on('response', (r) => {
 		if (r.status() < 400) return
 		const u = r.url()
-		if (!isNoise(u)) errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
+		if (!isNoise(u))
+			errors.http.push(`${r.status()} ${u.replace(/^https?:\/\/[^/]+/, '')}`)
 	})
 	return errors
 }
@@ -93,9 +94,15 @@ async function gotoPage(page: Page, route: string): Promise<void> {
 	// deep-link (`/apps/openregister/registers`) is rewritten by the hash
 	// router to `/registers#/` and renders the DASHBOARD, not the target page
 	// (verified empirically 2026-07-27).
-	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
-	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
-	await page.waitForSelector('#app-content-vue, .app-content, main', { timeout: 20_000 })
+	await page.goto(`/index.php/apps/openregister/#${route}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await page.waitForSelector('#header, header.header-appcontainer', {
+		timeout: 25_000,
+	})
+	await page.waitForSelector('#app-content-vue, .app-content, main', {
+		timeout: 20_000,
+	})
 	// Wait for the OR page component to actually mount its own heading inside
 	// the content area — the manifest shell renders the chrome first and the
 	// routed component a beat later, so a fixed sleep races the <h1>.
@@ -103,9 +110,13 @@ async function gotoPage(page: Page, route: string): Promise<void> {
 	// EndpointsIndex render no page <h1>, so falling back to a visible
 	// content button keeps the wait short on those pages.
 	await Promise.race([
-		page.locator('#app-content-vue h1, .app-content h1, main h1').first()
+		page
+			.locator('#app-content-vue h1, .app-content h1, main h1')
+			.first()
 			.waitFor({ state: 'visible', timeout: 15_000 }),
-		page.locator('.app-content button, main button').first()
+		page
+			.locator('.app-content button, main button')
+			.first()
 			.waitFor({ state: 'visible', timeout: 15_000 }),
 	]).catch(() => {})
 	await page.waitForTimeout(800)
@@ -122,9 +133,9 @@ async function expectListSurface(page: Page): Promise<void> {
 	// actually-rendered surface.
 	const surface = page.locator(
 		'table:visible, .v-data-table:visible, [role="table"]:visible, '
-		+ '.empty-content:visible, [class*="empty-content"]:visible, '
-		+ '.list:visible, .viewContainer:visible, .viewTableContainer:visible, '
-		+ '.pageContent:visible, .titleContent:visible',
+			+ '.empty-content:visible, [class*="empty-content"]:visible, '
+			+ '.list:visible, .viewContainer:visible, .viewTableContainer:visible, '
+			+ '.pageContent:visible, .titleContent:visible',
 	)
 	await expect(surface.first()).toBeVisible({ timeout: 15_000 })
 }
@@ -136,20 +147,24 @@ async function expectListSurface(page: Page): Promise<void> {
  * textContent, so an anchored /^X$/ against the raw node text would miss.
  */
 async function expectHeading(page: Page, text: RegExp): Promise<void> {
-	await expect(page.getByRole('heading', { name: text }).first())
-		.toBeVisible({ timeout: 15_000 })
+	await expect(page.getByRole('heading', { name: text }).first()).toBeVisible({
+		timeout: 15_000,
+	})
 }
 
 /** Assert a visible button whose accessible name matches `name`. */
 async function expectButton(page: Page, name: RegExp): Promise<void> {
-	await expect(page.getByRole('button', { name }).first())
-		.toBeVisible({ timeout: 12_000 })
+	await expect(page.getByRole('button', { name }).first()).toBeVisible({
+		timeout: 12_000,
+	})
 }
 
 test.describe('core-list-pages — real UI render + actions', () => {
 	test.use({ storageState: STORAGE_STATE })
 
-	test('Registers page: heading + Add Register + list surface', async ({ page }) => {
+	test('Registers page: heading + Add Register + list surface', async ({
+		page,
+	}) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/registers')
 		await expectHeading(page, /^Registers$/)
@@ -159,15 +174,21 @@ test.describe('core-list-pages — real UI render + actions', () => {
 		expect(e.http, `5xx: ${e.http.join(' | ')}`).toHaveLength(0)
 	})
 
-	test('Registers: opening Add Register surfaces the create modal', async ({ page }) => {
+	test('Registers: opening Add Register surfaces the create modal', async ({
+		page,
+	}) => {
 		await gotoPage(page, '/registers')
-		await page.getByRole('button', { name: /Add Register/i }).first().click()
+		await page
+			.getByRole('button', { name: /Add Register/i })
+			.first()
+			.click()
 		// NcModal/NcDialog renders a dialog with a name/title field.
 		const modal = page.locator('.modal-container, [role="dialog"]').first()
 		await expect(modal).toBeVisible({ timeout: 10_000 })
 		// A create form exposes at least one text input.
-		await expect(modal.locator('input, textarea, .v-select').first())
-			.toBeVisible({ timeout: 8_000 })
+		await expect(
+			modal.locator('input, textarea, .v-select').first(),
+		).toBeVisible({ timeout: 8_000 })
 	})
 
 	test('Schemas page: heading + Add Schema + list surface', async ({ page }) => {
@@ -200,7 +221,9 @@ test.describe('core-list-pages — real UI render + actions', () => {
 		expect(e.http, `5xx: ${e.http.join(' | ')}`).toHaveLength(0)
 	})
 
-	test('Applications page: heading + Add Application + list surface', async ({ page }) => {
+	test('Applications page: heading + Add Application + list surface', async ({
+		page,
+	}) => {
 		const e = trackErrors(page)
 		await gotoPage(page, '/applications')
 		await expectHeading(page, /^Applications$/)

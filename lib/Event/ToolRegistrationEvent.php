@@ -61,51 +61,48 @@ use OCP\EventDispatcher\Event;
  * @category Event
  * @package  OCA\OpenRegister\Event
  */
-class ToolRegistrationEvent extends Event
-{
+class ToolRegistrationEvent extends Event {
 
-    /**
-     * Tool registry
-     *
-     * @var ToolRegistry
-     */
-    private ToolRegistry $registry;
+	/**
+	 * Tool registry
+	 *
+	 * @var ToolRegistry
+	 */
+	private ToolRegistry $registry;
 
-    /**
-     * Constructor
-     *
-     * @param ToolRegistry $registry Tool registry to register tools with
-     *
-     * @spec openspec/specs/ai-mcp/spec.md
-     */
-    public function __construct(ToolRegistry $registry)
-    {
-        parent::__construct();
-        $this->registry = $registry;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param ToolRegistry $registry Tool registry to register tools with
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function __construct(ToolRegistry $registry) {
+		parent::__construct();
+		$this->registry = $registry;
+	}//end __construct()
 
-    /**
-     * Register a tool
-     *
-     * Call this method from your event listener to register your tool.
-     *
-     * @param string        $id       Unique tool identifier (format: app_name.tool_name)
-     * @param ToolInterface $tool     Your tool implementation
-     * @param array         $metadata Tool metadata
-     *                                - name (string): Human-readable name
-     *                                - description (string): What the tool does
-     *                                - icon (string): Nextcloud icon class or MDI icon
-     *                                - app (string): Your app name
-     *
-     * @return void
-     *
-     * @throws \InvalidArgumentException If validation fails
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     * @spec openspec/specs/ai-mcp/spec.md
-     */
-    public function registerTool(string $id, ToolInterface $tool, array $metadata): void
-    {
-        $this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
-    }//end registerTool()
+	/**
+	 * Register a tool
+	 *
+	 * Call this method from your event listener to register your tool.
+	 *
+	 * @param string $id Unique tool identifier (format: app_name.tool_name)
+	 * @param ToolInterface $tool Your tool implementation
+	 * @param array $metadata Tool metadata
+	 *                        - name (string): Human-readable name
+	 *                        - description (string): What the tool does
+	 *                        - icon (string): Nextcloud icon class or MDI icon
+	 *                        - app (string): Your app name
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException If validation fails
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function registerTool(string $id, ToolInterface $tool, array $metadata): void {
+		$this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
+	}//end registerTool()
 }//end class

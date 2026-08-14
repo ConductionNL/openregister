@@ -17,96 +17,88 @@ use PHPUnit\Framework\TestCase;
  * declared by the spec ("Validation events dispatched for notification
  * and extensibility").
  */
-class ReferenceValidationEventsTest extends TestCase
-{
-    public function testValidatedEventExtendsEvent(): void
-    {
-        $event = new ReferenceValidatedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'uuid-1',
-            targetSchemaSlug: 'organisations'
-        );
-        $this->assertInstanceOf(Event::class, $event);
-    }
+class ReferenceValidationEventsTest extends TestCase {
+	public function testValidatedEventExtendsEvent(): void {
+		$event = new ReferenceValidatedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'uuid-1',
+			targetSchemaSlug: 'organisations'
+		);
+		$this->assertInstanceOf(Event::class, $event);
+	}
 
-    public function testValidatedEventExposesAllFields(): void
-    {
-        $event = new ReferenceValidatedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'uuid-1',
-            targetSchemaSlug: 'organisations',
-            targetRegister: '42'
-        );
+	public function testValidatedEventExposesAllFields(): void {
+		$event = new ReferenceValidatedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'uuid-1',
+			targetSchemaSlug: 'organisations',
+			targetRegister: '42'
+		);
 
-        $this->assertSame('organisation', $event->getPropertyName());
-        $this->assertSame('uuid-1', $event->getReferencedUuid());
-        $this->assertSame('organisations', $event->getTargetSchemaSlug());
-        $this->assertSame('42', $event->getTargetRegister());
-    }
+		$this->assertSame('organisation', $event->getPropertyName());
+		$this->assertSame('uuid-1', $event->getReferencedUuid());
+		$this->assertSame('organisations', $event->getTargetSchemaSlug());
+		$this->assertSame('42', $event->getTargetRegister());
+	}
 
-    public function testValidatedEventDefaultsTargetRegisterToNull(): void
-    {
-        $event = new ReferenceValidatedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'uuid-1',
-            targetSchemaSlug: 'organisations'
-        );
+	public function testValidatedEventDefaultsTargetRegisterToNull(): void {
+		$event = new ReferenceValidatedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'uuid-1',
+			targetSchemaSlug: 'organisations'
+		);
 
-        $this->assertNull($event->getTargetRegister());
-    }
+		$this->assertNull($event->getTargetRegister());
+	}
 
-    public function testFailedEventExtendsEvent(): void
-    {
-        $event = new ReferenceValidationFailedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'missing-uuid',
-            targetSchemaSlug: 'organisations'
-        );
-        $this->assertInstanceOf(Event::class, $event);
-    }
+	public function testFailedEventExtendsEvent(): void {
+		$event = new ReferenceValidationFailedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'missing-uuid',
+			targetSchemaSlug: 'organisations'
+		);
+		$this->assertInstanceOf(Event::class, $event);
+	}
 
-    public function testFailedEventExposesAllFields(): void
-    {
-        $event = new ReferenceValidationFailedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'missing-uuid',
-            targetSchemaSlug: 'organisations',
-            targetRegister: '42'
-        );
+	public function testFailedEventExposesAllFields(): void {
+		$event = new ReferenceValidationFailedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'missing-uuid',
+			targetSchemaSlug: 'organisations',
+			targetRegister: '42'
+		);
 
-        $this->assertSame('organisation', $event->getPropertyName());
-        $this->assertSame('missing-uuid', $event->getReferencedUuid());
-        $this->assertSame('organisations', $event->getTargetSchemaSlug());
-        $this->assertSame('42', $event->getTargetRegister());
-    }
+		$this->assertSame('organisation', $event->getPropertyName());
+		$this->assertSame('missing-uuid', $event->getReferencedUuid());
+		$this->assertSame('organisations', $event->getTargetSchemaSlug());
+		$this->assertSame('42', $event->getTargetRegister());
+	}
 
-    public function testFailedEventDefaultsTargetRegisterToNull(): void
-    {
-        $event = new ReferenceValidationFailedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'missing-uuid',
-            targetSchemaSlug: 'organisations'
-        );
+	public function testFailedEventDefaultsTargetRegisterToNull(): void {
+		$event = new ReferenceValidationFailedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'missing-uuid',
+			targetSchemaSlug: 'organisations'
+		);
 
-        $this->assertNull($event->getTargetRegister());
-    }
+		$this->assertNull($event->getTargetRegister());
+	}
 
-    public function testValidatedAndFailedEventsAreDistinctTypes(): void
-    {
-        $valid = new ReferenceValidatedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'uuid-1',
-            targetSchemaSlug: 'organisations'
-        );
-        $failed = new ReferenceValidationFailedEvent(
-            propertyName: 'organisation',
-            referencedUuid: 'uuid-1',
-            targetSchemaSlug: 'organisations'
-        );
+	public function testValidatedAndFailedEventsAreDistinctTypes(): void {
+		$valid = new ReferenceValidatedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'uuid-1',
+			targetSchemaSlug: 'organisations'
+		);
+		$failed = new ReferenceValidationFailedEvent(
+			propertyName: 'organisation',
+			referencedUuid: 'uuid-1',
+			targetSchemaSlug: 'organisations'
+		);
 
-        // Listeners must be able to subscribe to one without catching
-        // the other — these are siblings, not parent/child.
-        $this->assertNotInstanceOf(ReferenceValidatedEvent::class, $failed);
-        $this->assertNotInstanceOf(ReferenceValidationFailedEvent::class, $valid);
-    }
+		// Listeners must be able to subscribe to one without catching
+		// the other — these are siblings, not parent/child.
+		$this->assertNotInstanceOf(ReferenceValidatedEvent::class, $failed);
+		$this->assertNotInstanceOf(ReferenceValidationFailedEvent::class, $valid);
+	}
 }

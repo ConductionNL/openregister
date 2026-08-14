@@ -620,6 +620,9 @@ class ObjectService
      *                                                Pass false when the caller performs its own single render
      *                                                (e.g. ObjectsController::show()) so the object is not
      *                                                rendered twice; permission checks and read logging still run.
+     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
+     *                                                Pass false for machine-to-machine reads inside one
+     *                                                operation; the instance setting is all-or-nothing.
      *
      * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
      *
@@ -640,7 +643,8 @@ class ObjectService
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $_render=true
+        bool $_render=true,
+        bool $_audit=true
     ): ?ObjectEntity {
         // Resolve the call's register / schema, isolating it from any
         // stale `currentRegister` / `currentSchema` state left over from
@@ -699,7 +703,8 @@ class ObjectService
                     _extend: $_extend,
                     files: $files,
                     _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
+                    _multitenancy: $_multitenancy,
+                    _audit: $_audit
                 );
             } catch (OcpDoesNotExistException $e) {
                 // Cross-schema fallback for relation name-resolution.
@@ -743,7 +748,8 @@ class ObjectService
                     _extend: $_extend,
                     files: $files,
                     _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
+                    _multitenancy: $_multitenancy,
+                    _audit: $_audit
                 );
 
                 // Force re-anchoring below to the resolved object's real context.
@@ -1165,6 +1171,9 @@ class ObjectService
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
+     * @param bool                     $_validation   Whether to validate the object against its schema (default: true).
+     *                                                Was hardcoded true here, so a bulk importer with pre-validated
+     *                                                rows had no way to decline re-validating every one of them.
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
      * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
@@ -1195,6 +1204,7 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $silent=false,
+        bool $_validation=true,
         ?array $uploadedFiles=null,
         ?IUser $currentUser=null,
         bool $failIfExists=false
@@ -1349,7 +1359,7 @@ class ObjectService
             _multitenancy: $_multitenancy,
             persist: true,
             silent: $silent,
-            _validation: true,
+            _validation: $_validation,
             uploadedFiles: $uploadedFiles,
             currentUser: $currentUser,
             failIfExists: $failIfExists
@@ -1905,6 +1915,15 @@ class ObjectService
      *                                                  import pipeline) MUST pass one: anonymous is
      *                                                  default-deny, so without it the delete is
      *                                                  neither attributable nor permitted.
+     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
+     *                                                  its identifier becomes reusable. Defaults to
+     *                                                  false — the soft delete every existing caller
+     *                                                  already gets, and the thing that makes a
+     *                                                  mistaken delete recoverable. Reserve it for
+     *                                                  rows that are a CLAIM rather than a record;
+     *                                                  see the parameter's full note on
+     *                                                  `DeleteObject::deleteObject()` and
+     *                                                  openregister#2459.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1927,7 +1946,8 @@ class ObjectService
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $_retentionSweep=false,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $permanent=false
     ): bool {
         // Explicit acting user for the permission check; null keeps today's
         // session-resolved behaviour for every existing caller.
@@ -2042,7 +2062,8 @@ class ObjectService
             originalObjectId: null,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            scoped: $hasScope
+            scoped: $hasScope,
+            permanent: $permanent
         );
     }//end deleteObject()
 
@@ -3568,6 +3589,7 @@ class ObjectService
      * @param bool                     $events         Whether to dispatch object lifecycle events
      * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID
      * @param bool                     $enrich         Whether to enrich objects with metadata
+     * @param bool                     $_audit         Whether to write audit trail rows (bulk mirror of `silent`)
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -3578,6 +3600,12 @@ class ObjectService
      * @return array Comprehensive bulk operation results with statistics and categorized objects
      *
      * @phpstan-return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
+     *   policy switch that the single-object saveObject() also takes, and the two paths have to
+     *   offer the same switches or a caller cannot move between them — which is exactly what the
+     *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
+     *   is a change to BOTH save paths and all their callers, not to this signature alone.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
@@ -3590,7 +3618,8 @@ class ObjectService
         bool $validation=false,
         bool $events=false,
         bool $deduplicateIds=true,
-        bool $enrich=true
+        bool $enrich=true,
+        bool $_audit=true
     ): array {
 
         // Bound the folder-access revalidation cache to this bulk-save call
@@ -3616,7 +3645,8 @@ class ObjectService
             _validation: $validation,
             _events: $events,
             deduplicateIds: $deduplicateIds,
-            enrich: $enrich
+            enrich: $enrich,
+            _audit: $_audit
         );
 
         // Invalidate collection caches after successful bulk operations.

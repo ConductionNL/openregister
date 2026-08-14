@@ -1,18 +1,28 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { schemaStore, navigationStore, objectStore, registerStore } from '../../store/store.js'
+import {
+	schemaStore,
+	navigationStore,
+	objectStore,
+	registerStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteSchema'"
+	<NcDialog
+		v-if="navigationStore.dialog === 'deleteSchema'"
 		name="Verwijder Schema"
 		size="normal"
 		:can-close="false">
 		<p v-if="!success && canDelete">
-			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen?
+			Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<p v-if="!success && !canDelete">
-			Er {{ objects.length > 1 ? 'zijn' : 'is' }} {{ objects.length }} {{ objects.length > 1 ? 'objecten' : 'object' }} in dit schema in het register <b>{{ registerName }}</b>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
+			Er {{ objects.length > 1 ? 'zijn' : 'is' }} {{ objects.length }}
+			{{ objects.length > 1 ? 'objecten' : 'object' }} in dit schema in het
+			register <b>{{ registerName }}</b
+			>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
 		</p>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -41,12 +51,7 @@ import { schemaStore, navigationStore, objectStore, registerStore } from '../../
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -102,22 +107,30 @@ export default {
 
 			// Use the upgraded stats endpoint to get object count efficiently
 			try {
-				const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				const stats = await schemaStore.getSchemaStats(
+					schemaStore.schemaItem.id,
+				)
 				const totalObjects = stats.objects?.total || 0
 
 				if (totalObjects > 0) {
 					// Find the first register that contains this schema for display purposes
-					const register = registerStore.registerList.find(reg =>
+					const register = registerStore.registerList.find((reg) =>
 						reg.schemas.includes(schemaStore.schemaItem.id),
 					)
 					if (register) {
 						this.registerName = register.title
 						// Create a mock object array for display purposes
-						this.objects = Array(totalObjects).fill({ id: '...', name: 'Object' })
+						this.objects = Array(totalObjects).fill({
+							id: '...',
+							name: 'Object',
+						})
 					}
 				}
 			} catch (err) {
-				console.warn('Could not load schema stats, falling back to individual register checks:', err)
+				console.warn(
+					'Could not load schema stats, falling back to individual register checks:',
+					err,
+				)
 				// Fallback to the original method if stats endpoint fails
 				for (const reg of registerStore.registerList) {
 					if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
@@ -131,7 +144,9 @@ export default {
 					})
 
 					if (objectStore.getCollection(objectStore.currentType).length) {
-						this.objects.push(...objectStore.getCollection(objectStore.currentType))
+						this.objects.push(
+							...objectStore.getCollection(objectStore.currentType),
+						)
 						this.registerName = reg.title
 					}
 				}
@@ -156,18 +171,28 @@ export default {
 		async deleteSchema() {
 			this.loading = true
 
-			schemaStore.deleteSchema({
-				...schemaStore.schemaItem,
-			}).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeDialog, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while deleting the schema'
-			}).finally(() => {
-				this.loading = false
-			})
+			schemaStore
+				.deleteSchema({
+					...schemaStore.schemaItem,
+				})
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					response.ok
+						&& (this.closeModalTimeout = setTimeout(
+							this.closeDialog,
+							2000,
+						))
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message
+						|| 'An error occurred while deleting the schema'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 	},
 }

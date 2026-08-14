@@ -4,8 +4,17 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'restoreMultiple'"
-		:name="n('openregister', 'Restore {count} object', 'Restore {count} objects', objectsToRestore.length, { count: objectsToRestore.length })"
+	<NcDialog
+		v-if="navigationStore.dialog === 'restoreMultiple'"
+		:name="
+			n(
+				'openregister',
+				'Restore {count} object',
+				'Restore {count} objects',
+				objectsToRestore.length,
+				{ count: objectsToRestore.length },
+			)
+		"
 		size="normal"
 		:can-close="false">
 		<!-- Object Selection Review -->
@@ -15,14 +24,26 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 			</h3>
 
 			<NcNoteCard type="info">
-				{{ t('openregister', 'Review the selected objects below. You can remove any objects you don\'t want to restore by clicking the remove button. Objects will be restored to their original location.') }}
+				{{
+					t(
+						'openregister',
+						"Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.",
+					)
+				}}
 			</NcNoteCard>
 
 			<div class="selected-objects-container">
-				<h4>{{ t('openregister', 'Selected Objects ({count})', { count: objectsToRestore.length }) }}</h4>
+				<h4>
+					{{
+						t('openregister', 'Selected Objects ({count})', {
+							count: objectsToRestore.length,
+						})
+					}}
+				</h4>
 
 				<div v-if="objectsToRestore.length" class="selected-objects-list">
-					<div v-for="obj in objectsToRestore"
+					<div
+						v-for="obj in objectsToRestore"
 						:key="obj.id"
 						class="selected-object-item">
 						<div class="object-info">
@@ -31,8 +52,13 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
-						<NcButton variant="tertiary"
-							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
+						<NcButton
+							variant="tertiary"
+							:aria-label="
+								t('openregister', 'Remove {title}', {
+									title: getObjectTitle(obj),
+								})
+							"
 							@click="removeObject(obj.id)">
 							<template #icon>
 								<Close :size="20" />
@@ -41,9 +67,16 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 					</div>
 				</div>
 
-				<NcEmptyContent v-else :name="t('openregister', 'No objects selected')">
+				<NcEmptyContent
+					v-else
+					:name="t('openregister', 'No objects selected')">
 					<template #description>
-						{{ t('openregister', 'No objects are currently selected for restoration.') }}
+						{{
+							t(
+								'openregister',
+								'No objects are currently selected for restoration.',
+							)
+						}}
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -61,7 +94,11 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success === null ? t('openregister', 'Cancel') : t('openregister', 'Close') }}
+				{{
+					success === null
+						? t('openregister', 'Cancel')
+						: t('openregister', 'Close')
+				}}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -154,7 +191,9 @@ export default {
 		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
+			this.selectedObjects = this.selectedObjects.filter(
+				(obj) => obj.id !== objectId,
+			)
 			if (this.selectedObjects.length === 0) {
 				this.closeDialog()
 			}
@@ -188,12 +227,18 @@ export default {
 			this.loading = true
 
 			try {
-				const ids = this.objectsToRestore.map(obj => obj.id)
+				const ids = this.objectsToRestore.map((obj) => obj.id)
 				await deletedStore.restoreMultiple(ids)
 
 				this.success = true
 				this.error = false
-				this.successMessage = n('openregister', 'Successfully restored {count} object', 'Successfully restored {count} objects', this.objectsToRestore.length, { count: this.objectsToRestore.length })
+				this.successMessage = n(
+					'openregister',
+					'Successfully restored {count} object',
+					'Successfully restored {count} objects',
+					this.objectsToRestore.length,
+					{ count: this.objectsToRestore.length },
+				)
 
 				// Auto-close after 2 seconds
 				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
@@ -202,7 +247,12 @@ export default {
 				eventBus.emit('deleted-objects-restored', ids)
 			} catch (error) {
 				this.success = false
-				this.error = error.message || t('openregister', 'An error occurred while restoring the objects')
+				this.error =
+					error.message
+					|| t(
+						'openregister',
+						'An error occurred while restoring the objects',
+					)
 			} finally {
 				this.loading = false
 			}
@@ -214,7 +264,15 @@ export default {
 		 * @return {string} The object title
 		 */
 		getObjectTitle(object) {
-			return object?.title || object?.fileName || object?.name || object?.object?.title || object?.object?.name || object?.id || 'Unknown'
+			return (
+				object?.title
+				|| object?.fileName
+				|| object?.name
+				|| object?.object?.title
+				|| object?.object?.name
+				|| object?.id
+				|| 'Unknown'
+			)
 		},
 	},
 }

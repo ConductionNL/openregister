@@ -36,303 +36,296 @@ namespace OCA\OpenRegister\AppHost\Observability;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */
-final class MetricDescriptor
-{
-    /**
-     * Closed set of supported source kinds (ADR-040).
-     *
-     * @var string[]
-     */
-    public const KINDS = [
-        'objectCount',
-        'objectSum',
-        'tableCount',
-        'appConfig',
-        'provider',
-    ];
+final class MetricDescriptor {
+	/**
+	 * Closed set of supported source kinds (ADR-040).
+	 *
+	 * @var string[]
+	 */
+	public const KINDS = [
+		'objectCount',
+		'objectSum',
+		'tableCount',
+		'appConfig',
+		'provider',
+	];
 
-    /**
-     * Closed set of supported Prometheus metric types.
-     *
-     * @var string[]
-     */
-    public const METRIC_TYPES = ['gauge', 'counter'];
+	/**
+	 * Closed set of supported Prometheus metric types.
+	 *
+	 * @var string[]
+	 */
+	public const METRIC_TYPES = ['gauge', 'counter'];
 
-    /**
-     * Closed set of supported filter operators (ADR-040).
-     *
-     * @var string[]
-     */
-    public const FILTER_OPERATORS = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like'];
+	/**
+	 * Closed set of supported filter operators (ADR-040).
+	 *
+	 * @var string[]
+	 */
+	public const FILTER_OPERATORS = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like'];
 
-    /**
-     * Allowlist regex for a `tableCount.table` value. The security boundary:
-     * only `[a-z0-9_]+` table names reach the QueryBuilder table API.
-     */
-    public const TABLE_REGEX = '/^[a-z0-9_]+$/';
+	/**
+	 * Allowlist regex for a `tableCount.table` value. The security boundary:
+	 * only `[a-z0-9_]+` table names reach the QueryBuilder table API.
+	 */
+	public const TABLE_REGEX = '/^[a-z0-9_]+$/';
 
-    /**
-     * Constructor.
-     *
-     * @param string               $name     Metric name (without the `{app}_` prefix).
-     * @param string               $type     Prometheus type (gauge|counter).
-     * @param string               $kind     Source kind (self::KINDS).
-     * @param array<string, mixed> $source   Raw validated source params.
-     * @param string|null          $help     HELP text.
-     * @param int                  $cacheTtl Per-metric cache TTL in seconds (0 = no cache).
-     */
-    public function __construct(
-        public readonly string $name,
-        public readonly string $type,
-        public readonly string $kind,
-        public readonly array $source,
-        public readonly ?string $help=null,
-        public readonly int $cacheTtl=0
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $name Metric name (without the `{app}_` prefix).
+	 * @param string $type Prometheus type (gauge|counter).
+	 * @param string $kind Source kind (self::KINDS).
+	 * @param array<string, mixed> $source Raw validated source params.
+	 * @param string|null $help HELP text.
+	 * @param int $cacheTtl Per-metric cache TTL in seconds (0 = no cache).
+	 */
+	public function __construct(
+		public readonly string $name,
+		public readonly string $type,
+		public readonly string $kind,
+		public readonly array $source,
+		public readonly ?string $help = null,
+		public readonly int $cacheTtl = 0,
+	) {
+	}//end __construct()
 
-    /**
-     * Build a validated descriptor from a raw manifest array entry.
-     *
-     * @param array<string, mixed> $raw Raw `metrics[]` entry.
-     *
-     * @return self
-     *
-     * @throws ObservabilityValidationException When the entry is malformed.
-     *
-     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
-     */
-    public static function fromArray(array $raw): self
-    {
-        $name = $raw['name'] ?? null;
-        if (is_string($name) === false || preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name) !== 1) {
-            throw new ObservabilityValidationException('Metric "name" must be a valid Prometheus metric name.');
-        }
+	/**
+	 * Build a validated descriptor from a raw manifest array entry.
+	 *
+	 * @param array<string, mixed> $raw Raw `metrics[]` entry.
+	 *
+	 * @return self
+	 *
+	 * @throws ObservabilityValidationException When the entry is malformed.
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
+	 */
+	public static function fromArray(array $raw): self {
+		$name = $raw['name'] ?? null;
+		if (is_string($name) === false || preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name) !== 1) {
+			throw new ObservabilityValidationException('Metric "name" must be a valid Prometheus metric name.');
+		}
 
-        $type = $raw['type'] ?? 'gauge';
-        if (is_string($type) === false || in_array($type, self::METRIC_TYPES, true) === false) {
-            $allowed = implode(', ', self::METRIC_TYPES);
-            throw new ObservabilityValidationException(
-                sprintf('Invalid metric type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
-            );
-        }
+		$type = $raw['type'] ?? 'gauge';
+		if (is_string($type) === false || in_array($type, self::METRIC_TYPES, true) === false) {
+			$allowed = implode(', ', self::METRIC_TYPES);
+			throw new ObservabilityValidationException(
+				sprintf('Invalid metric type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
+			);
+		}
 
-        $source = $raw['source'] ?? null;
-        if (is_array($source) === false) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" requires a "source" object.', $name));
-        }
+		$source = $raw['source'] ?? null;
+		if (is_array($source) === false) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" requires a "source" object.', $name));
+		}
 
-        $kind = $source['kind'] ?? null;
-        if (is_string($kind) === false || in_array($kind, self::KINDS, true) === false) {
-            $allowed = implode(', ', self::KINDS);
-            throw new ObservabilityValidationException(
-                sprintf('Unknown metric source kind "%s" (allowed: %s).', self::describe(value: $kind), $allowed)
-            );
-        }
+		$kind = $source['kind'] ?? null;
+		if (is_string($kind) === false || in_array($kind, self::KINDS, true) === false) {
+			$allowed = implode(', ', self::KINDS);
+			throw new ObservabilityValidationException(
+				sprintf('Unknown metric source kind "%s" (allowed: %s).', self::describe(value: $kind), $allowed)
+			);
+		}
 
-        self::validateSource(name: $name, kind: $kind, source: $source);
+		self::validateSource(name: $name, kind: $kind, source: $source);
 
-        $cacheTtl = $raw['cacheTtl'] ?? 0;
-        if (is_int($cacheTtl) === false || $cacheTtl < 0) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" cacheTtl must be a non-negative integer.', $name));
-        }
+		$cacheTtl = $raw['cacheTtl'] ?? 0;
+		if (is_int($cacheTtl) === false || $cacheTtl < 0) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" cacheTtl must be a non-negative integer.', $name));
+		}
 
-        $help = $raw['help'] ?? null;
-        if ($help !== null && is_string($help) === false) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" help must be a string.', $name));
-        }
+		$help = $raw['help'] ?? null;
+		if ($help !== null && is_string($help) === false) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" help must be a string.', $name));
+		}
 
-        return new self(
-            name: $name,
-            type: $type,
-            kind: $kind,
-            source: $source,
-            help: $help,
-            cacheTtl: $cacheTtl
-        );
-    }//end fromArray()
+		return new self(
+			name: $name,
+			type: $type,
+			kind: $kind,
+			source: $source,
+			help: $help,
+			cacheTtl: $cacheTtl
+		);
+	}//end fromArray()
 
-    /**
-     * Validate a source block per its kind.
-     *
-     * @param string               $name   Metric name (for messages).
-     * @param string               $kind   Source kind.
-     * @param array<string, mixed> $source Raw source block.
-     *
-     * @return void
-     *
-     * @throws ObservabilityValidationException When the source is malformed.
-     */
-    private static function validateSource(string $name, string $kind, array $source): void
-    {
-        switch ($kind) {
-            case 'objectCount':
-            case 'objectSum':
-                if (isset($source['schema']) === false || is_string($source['schema']) === false || $source['schema'] === '') {
-                    throw new ObservabilityValidationException(sprintf('Metric "%s" %s source requires a "schema" slug.', $name, $kind));
-                }
+	/**
+	 * Validate a source block per its kind.
+	 *
+	 * @param string $name Metric name (for messages).
+	 * @param string $kind Source kind.
+	 * @param array<string, mixed> $source Raw source block.
+	 *
+	 * @return void
+	 *
+	 * @throws ObservabilityValidationException When the source is malformed.
+	 */
+	private static function validateSource(string $name, string $kind, array $source): void {
+		switch ($kind) {
+			case 'objectCount':
+			case 'objectSum':
+				if (isset($source['schema']) === false || is_string($source['schema']) === false || $source['schema'] === '') {
+					throw new ObservabilityValidationException(sprintf('Metric "%s" %s source requires a "schema" slug.', $name, $kind));
+				}
 
-                if (isset($source['register']) === true && is_string($source['register']) === false) {
-                    throw new ObservabilityValidationException(sprintf('Metric "%s" "register" must be a slug string.', $name));
-                }
+				if (isset($source['register']) === true && is_string($source['register']) === false) {
+					throw new ObservabilityValidationException(sprintf('Metric "%s" "register" must be a slug string.', $name));
+				}
 
-                if ($kind === 'objectSum') {
-                    $field        = $source['field'] ?? null;
-                    $fieldInvalid = (is_string($field) === false || $field === '');
-                    if ($fieldInvalid === true) {
-                        throw new ObservabilityValidationException(sprintf('Metric "%s" objectSum source requires a numeric "field".', $name));
-                    }
-                }
+				if ($kind === 'objectSum') {
+					$field = $source['field'] ?? null;
+					$fieldInvalid = (is_string($field) === false || $field === '');
+					if ($fieldInvalid === true) {
+						throw new ObservabilityValidationException(sprintf('Metric "%s" objectSum source requires a numeric "field".', $name));
+					}
+				}
 
-                self::validateGroupBy(name: $name, source: $source);
-                self::validateFilter(name: $name, source: $source);
-                break;
+				self::validateGroupBy(name: $name, source: $source);
+				self::validateFilter(name: $name, source: $source);
+				break;
 
-            case 'tableCount':
-                $table = $source['table'] ?? null;
-                if (is_string($table) === false || preg_match(self::TABLE_REGEX, $table) !== 1) {
-                    $shown = self::describe(value: $table);
-                    throw new ObservabilityValidationException(
-                        sprintf('Metric "%s" tableCount "table" must match %s (got "%s").', $name, self::TABLE_REGEX, $shown)
-                    );
-                }
+			case 'tableCount':
+				$table = $source['table'] ?? null;
+				if (is_string($table) === false || preg_match(self::TABLE_REGEX, $table) !== 1) {
+					$shown = self::describe(value: $table);
+					throw new ObservabilityValidationException(
+						sprintf('Metric "%s" tableCount "table" must match %s (got "%s").', $name, self::TABLE_REGEX, $shown)
+					);
+				}
 
-                self::validateGroupBy(name: $name, source: $source);
-                self::validateFilter(name: $name, source: $source);
-                self::validateColumnMap(name: $name, key: 'labelMap', source: $source);
-                self::validateColumnMap(name: $name, key: 'labelDefaults', source: $source);
-                break;
+				self::validateGroupBy(name: $name, source: $source);
+				self::validateFilter(name: $name, source: $source);
+				self::validateColumnMap(name: $name, key: 'labelMap', source: $source);
+				self::validateColumnMap(name: $name, key: 'labelDefaults', source: $source);
+				break;
 
-            case 'appConfig':
-                if (isset($source['key']) === false || is_string($source['key']) === false || $source['key'] === '') {
-                    throw new ObservabilityValidationException(sprintf('Metric "%s" appConfig source requires a "key".', $name));
-                }
-                break;
+			case 'appConfig':
+				if (isset($source['key']) === false || is_string($source['key']) === false || $source['key'] === '') {
+					throw new ObservabilityValidationException(sprintf('Metric "%s" appConfig source requires a "key".', $name));
+				}
+				break;
 
-            case 'provider':
-                // No parameters; resolution happens via the registered IMetricsProvider alias.
-                break;
-        }//end switch
-    }//end validateSource()
+			case 'provider':
+				// No parameters; resolution happens via the registered IMetricsProvider alias.
+				break;
+		}//end switch
+	}//end validateSource()
 
-    /**
-     * Validate a `groupBy` list of string field/column names.
-     *
-     * @param string               $name   Metric name.
-     * @param array<string, mixed> $source Source block.
-     *
-     * @return void
-     *
-     * @throws ObservabilityValidationException When malformed.
-     */
-    private static function validateGroupBy(string $name, array $source): void
-    {
-        if (isset($source['groupBy']) === false) {
-            return;
-        }
+	/**
+	 * Validate a `groupBy` list of string field/column names.
+	 *
+	 * @param string $name Metric name.
+	 * @param array<string, mixed> $source Source block.
+	 *
+	 * @return void
+	 *
+	 * @throws ObservabilityValidationException When malformed.
+	 */
+	private static function validateGroupBy(string $name, array $source): void {
+		if (isset($source['groupBy']) === false) {
+			return;
+		}
 
-        if (is_array($source['groupBy']) === false) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy must be an array.', $name));
-        }
+		if (is_array($source['groupBy']) === false) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy must be an array.', $name));
+		}
 
-        foreach ($source['groupBy'] as $field) {
-            if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
-                $shown = self::describe(value: $field);
-                throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy field "%s" is invalid.', $name, $shown));
-            }
-        }
-    }//end validateGroupBy()
+		foreach ($source['groupBy'] as $field) {
+			if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
+				$shown = self::describe(value: $field);
+				throw new ObservabilityValidationException(sprintf('Metric "%s" groupBy field "%s" is invalid.', $name, $shown));
+			}
+		}
+	}//end validateGroupBy()
 
-    /**
-     * Validate a `filter` map of field => { operator: value } against the
-     * operator allowlist.
-     *
-     * @param string               $name   Metric name.
-     * @param array<string, mixed> $source Source block.
-     *
-     * @return void
-     *
-     * @throws ObservabilityValidationException When an operator is not allowlisted.
-     */
-    private static function validateFilter(string $name, array $source): void
-    {
-        if (isset($source['filter']) === false) {
-            return;
-        }
+	/**
+	 * Validate a `filter` map of field => { operator: value } against the
+	 * operator allowlist.
+	 *
+	 * @param string $name Metric name.
+	 * @param array<string, mixed> $source Source block.
+	 *
+	 * @return void
+	 *
+	 * @throws ObservabilityValidationException When an operator is not allowlisted.
+	 */
+	private static function validateFilter(string $name, array $source): void {
+		if (isset($source['filter']) === false) {
+			return;
+		}
 
-        if (is_array($source['filter']) === false) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" filter must be an object.', $name));
-        }
+		if (is_array($source['filter']) === false) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" filter must be an object.', $name));
+		}
 
-        foreach ($source['filter'] as $field => $ops) {
-            if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
-                $shown = self::describe(value: $field);
-                throw new ObservabilityValidationException(sprintf('Metric "%s" filter field "%s" is invalid.', $name, $shown));
-            }
+		foreach ($source['filter'] as $field => $ops) {
+			if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
+				$shown = self::describe(value: $field);
+				throw new ObservabilityValidationException(sprintf('Metric "%s" filter field "%s" is invalid.', $name, $shown));
+			}
 
-            if (is_array($ops) === false) {
-                throw new ObservabilityValidationException(sprintf('Metric "%s" filter "%s" must map operators to values.', $name, $field));
-            }
+			if (is_array($ops) === false) {
+				throw new ObservabilityValidationException(sprintf('Metric "%s" filter "%s" must map operators to values.', $name, $field));
+			}
 
-            foreach (array_keys($ops) as $operator) {
-                if (in_array($operator, self::FILTER_OPERATORS, true) === false) {
-                    $shown   = self::describe(value: $operator);
-                    $allowed = implode(', ', self::FILTER_OPERATORS);
-                    throw new ObservabilityValidationException(
-                        sprintf('Metric "%s" filter operator "%s" is not allowed (allowed: %s).', $name, $shown, $allowed)
-                    );
-                }
-            }
-        }//end foreach
-    }//end validateFilter()
+			foreach (array_keys($ops) as $operator) {
+				if (in_array($operator, self::FILTER_OPERATORS, true) === false) {
+					$shown = self::describe(value: $operator);
+					$allowed = implode(', ', self::FILTER_OPERATORS);
+					throw new ObservabilityValidationException(
+						sprintf('Metric "%s" filter operator "%s" is not allowed (allowed: %s).', $name, $shown, $allowed)
+					);
+				}
+			}
+		}//end foreach
+	}//end validateFilter()
 
-    /**
-     * Validate a column => string map (labelMap / labelDefaults).
-     *
-     * @param string               $name   Metric name.
-     * @param string               $key    Source key.
-     * @param array<string, mixed> $source Source block.
-     *
-     * @return void
-     *
-     * @throws ObservabilityValidationException When malformed.
-     */
-    private static function validateColumnMap(string $name, string $key, array $source): void
-    {
-        if (isset($source[$key]) === false) {
-            return;
-        }
+	/**
+	 * Validate a column => string map (labelMap / labelDefaults).
+	 *
+	 * @param string $name Metric name.
+	 * @param string $key Source key.
+	 * @param array<string, mixed> $source Source block.
+	 *
+	 * @return void
+	 *
+	 * @throws ObservabilityValidationException When malformed.
+	 */
+	private static function validateColumnMap(string $name, string $key, array $source): void {
+		if (isset($source[$key]) === false) {
+			return;
+		}
 
-        if (is_array($source[$key]) === false) {
-            throw new ObservabilityValidationException(sprintf('Metric "%s" %s must be an object.', $name, $key));
-        }
+		if (is_array($source[$key]) === false) {
+			throw new ObservabilityValidationException(sprintf('Metric "%s" %s must be an object.', $name, $key));
+		}
 
-        foreach ($source[$key] as $column => $value) {
-            if (is_string($column) === false || preg_match('/^[a-zA-Z0-9_]+$/', $column) !== 1) {
-                $shown = self::describe(value: $column);
-                throw new ObservabilityValidationException(sprintf('Metric "%s" %s column "%s" is invalid.', $name, $key, $shown));
-            }
+		foreach ($source[$key] as $column => $value) {
+			if (is_string($column) === false || preg_match('/^[a-zA-Z0-9_]+$/', $column) !== 1) {
+				$shown = self::describe(value: $column);
+				throw new ObservabilityValidationException(sprintf('Metric "%s" %s column "%s" is invalid.', $name, $key, $shown));
+			}
 
-            if (is_scalar($value) === false) {
-                throw new ObservabilityValidationException(sprintf('Metric "%s" %s value for "%s" must be scalar.', $name, $key, $column));
-            }
-        }
-    }//end validateColumnMap()
+			if (is_scalar($value) === false) {
+				throw new ObservabilityValidationException(sprintf('Metric "%s" %s value for "%s" must be scalar.', $name, $key, $column));
+			}
+		}
+	}//end validateColumnMap()
 
-    /**
-     * Render a raw (possibly non-scalar) value as a short string for an
-     * error message, without leaking object internals.
-     *
-     * @param mixed $value Raw value.
-     *
-     * @return string
-     */
-    private static function describe(mixed $value): string
-    {
-        if (is_scalar($value) === true) {
-            return (string) $value;
-        }
+	/**
+	 * Render a raw (possibly non-scalar) value as a short string for an
+	 * error message, without leaking object internals.
+	 *
+	 * @param mixed $value Raw value.
+	 *
+	 * @return string
+	 */
+	private static function describe(mixed $value): string {
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
 
-        return gettype($value);
-    }//end describe()
+		return gettype($value);
+	}//end describe()
 }//end class

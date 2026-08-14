@@ -44,44 +44,42 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260704120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema, or null if no changes
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        $schema = $schemaClosure();
+class Version1Date20260704120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema, or null if no changes
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_conversations') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_conversations') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_conversations');
+		$table = $schema->getTable('openregister_conversations');
 
-        if ($table->hasColumn('owner') === true) {
-            return null;
-        }
+		if ($table->hasColumn('owner') === true) {
+			return null;
+		}
 
-        // Nullable string matching Conversation::$owner (?string). A Nextcloud
-        // user id is at most 64 characters.
-        $table->addColumn(
-            'owner',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 64,
-                'default' => null,
-            ]
-        );
-        $output->info('   ✓ Added owner column to openregister_conversations table');
+		// Nullable string matching Conversation::$owner (?string). A Nextcloud
+		// user id is at most 64 characters.
+		$table->addColumn(
+			'owner',
+			Types::STRING,
+			[
+				'notnull' => false,
+				'length' => 64,
+				'default' => null,
+			]
+		);
+		$output->info('   ✓ Added owner column to openregister_conversations table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

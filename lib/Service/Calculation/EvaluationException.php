@@ -26,6 +26,5 @@ namespace OCA\OpenRegister\Service\Calculation;
 
 use RuntimeException;
 
-class EvaluationException extends RuntimeException
-{
+class EvaluationException extends RuntimeException {
 }//end class

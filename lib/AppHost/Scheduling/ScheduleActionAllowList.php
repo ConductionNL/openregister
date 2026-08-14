@@ -34,46 +34,43 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
  *
  * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
  */
-class ScheduleActionAllowList
-{
-    /**
-     * The closed action-type → vetted `jobClass` map.
-     *
-     * Kept as plain strings so referencing this map never autoloads the
-     * cross-app job class (it is resolved lazily by OpenConnector's JobService
-     * container at execution time, not by OpenRegister).
-     *
-     * @var array<string, string>
-     */
-    private const MAP = [
-        'openconnector:synchronization' => 'OCA\\OpenConnector\\Action\\SynchronizationAction',
-    ];
+class ScheduleActionAllowList {
+	/**
+	 * The closed action-type → vetted `jobClass` map.
+	 *
+	 * Kept as plain strings so referencing this map never autoloads the
+	 * cross-app job class (it is resolved lazily by OpenConnector's JobService
+	 * container at execution time, not by OpenRegister).
+	 *
+	 * @var array<string, string>
+	 */
+	private const MAP = [
+		'openconnector:synchronization' => 'OCA\\OpenConnector\\Action\\SynchronizationAction',
+	];
 
-    /**
-     * Resolve an action type to its vetted `jobClass`, or null when not allow-listed.
-     *
-     * @param string $action The manifest-declared action type.
-     *
-     * @return string|null The server-vetted job class, or null when the action is not allow-listed.
-     *
-     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
-     */
-    public function resolve(string $action): ?string
-    {
-        return self::MAP[$action] ?? null;
-    }//end resolve()
+	/**
+	 * Resolve an action type to its vetted `jobClass`, or null when not allow-listed.
+	 *
+	 * @param string $action The manifest-declared action type.
+	 *
+	 * @return string|null The server-vetted job class, or null when the action is not allow-listed.
+	 *
+	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 */
+	public function resolve(string $action): ?string {
+		return self::MAP[$action] ?? null;
+	}//end resolve()
 
-    /**
-     * Whether an action type is on the allow-list.
-     *
-     * @param string $action The manifest-declared action type.
-     *
-     * @return bool
-     *
-     * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
-     */
-    public function isAllowed(string $action): bool
-    {
-        return isset(self::MAP[$action]);
-    }//end isAllowed()
+	/**
+	 * Whether an action type is on the allow-list.
+	 *
+	 * @param string $action The manifest-declared action type.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 */
+	public function isAllowed(string $action): bool {
+		return isset(self::MAP[$action]);
+	}//end isAllowed()
 }//end class

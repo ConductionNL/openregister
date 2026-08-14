@@ -66,51 +66,48 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class ObjectExistsException extends Exception
-{
+class ObjectExistsException extends Exception {
 
-    /**
-     * The identifier of the object that already existed.
-     *
-     * @var string|null
-     */
-    private ?string $uuid = null;
+	/**
+	 * The identifier of the object that already existed.
+	 *
+	 * @var string|null
+	 */
+	private ?string $uuid = null;
 
-    /**
-     * Constructor for ObjectExistsException
-     *
-     * @param string         $message  The error message describing the conflict
-     * @param string|null    $uuid     The identifier that already existed
-     * @param int            $code     The error code (default: 409 Conflict)
-     * @param Throwable|null $previous The previous exception that caused this one
-     *
-     * @return void
-     */
-    public function __construct(
-        string $message='An object with this identifier already exists',
-        ?string $uuid=null,
-        int $code=409,
-        ?Throwable $previous=null
-    ) {
-        $this->uuid = $uuid;
+	/**
+	 * Constructor for ObjectExistsException
+	 *
+	 * @param string $message The error message describing the conflict
+	 * @param string|null $uuid The identifier that already existed
+	 * @param int $code The error code (default: 409 Conflict)
+	 * @param Throwable|null $previous The previous exception that caused this one
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $message = 'An object with this identifier already exists',
+		?string $uuid = null,
+		int $code = 409,
+		?Throwable $previous = null,
+	) {
+		$this->uuid = $uuid;
 
-        // HTTP 409 Conflict — the caller asked to create, and creating would
-        // have overwritten something that was already there.
-        parent::__construct(message: $message, code: $code, previous: $previous);
+		// HTTP 409 Conflict — the caller asked to create, and creating would
+		// have overwritten something that was already there.
+		parent::__construct(message: $message, code: $code, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the identifier of the object that already existed.
-     *
-     * Lets a caller distinguish "my claim lost" from "something else went
-     * wrong" without parsing the message.
-     *
-     * @return string|null The conflicting identifier, when known.
-     */
-    public function getUuid(): ?string
-    {
-        return $this->uuid;
-
-    }//end getUuid()
+	/**
+	 * Get the identifier of the object that already existed.
+	 *
+	 * Lets a caller distinguish "my claim lost" from "something else went
+	 * wrong" without parsing the message.
+	 *
+	 * @return string|null The conflicting identifier, when known.
+	 */
+	public function getUuid(): ?string {
+		return $this->uuid;
+	}//end getUuid()
 }//end class

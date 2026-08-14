@@ -12,15 +12,24 @@ import { generateUrl } from '@nextcloud/router'
 			<p>{{ t('openregister', 'No approval steps for this object.') }}</p>
 		</div>
 		<div v-for="step in steps" :key="step.id" class="step-row">
-			<span class="step-order">{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span>
+			<span class="step-order"
+				>{{ t('openregister', 'Step') }} {{ step.stepOrder }}</span
+			>
 			<span class="step-role">{{ t('openregister', step.role) }}</span>
-			<span :class="['status-badge', `status-${step.status}`]">{{ t('openregister', step.status) }}</span>
-			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
-			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
-				<input v-model="comments[step.id]"
+			<span :class="['status-badge', `status-${step.status}`]">{{
+				t('openregister', step.status)
+			}}</span>
+			<span v-if="step.decidedBy" class="decided-by"
+				>{{ t('openregister', 'by') }} {{ step.decidedBy }}</span
+			>
+			<div
+				v-if="step.status === 'pending' && canDecide(step)"
+				class="step-actions">
+				<input
+					v-model="comments[step.id]"
 					type="text"
 					:aria-label="t('openregister', 'Comment...')"
-					:placeholder="t('openregister', 'Comment...')">
+					:placeholder="t('openregister', 'Comment...')" />
 				<NcButton variant="success" @click="approve(step)">
 					{{ t('openregister', 'Approve') }}
 				</NcButton>
@@ -58,7 +67,9 @@ export default {
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
-				const response = await axios.get(url, { params: { objectUuid: this.objectUuid } })
+				const response = await axios.get(url, {
+					params: { objectUuid: this.objectUuid },
+				})
 				this.steps = response.data || []
 			} catch (error) {
 				console.error('Failed to fetch steps:', error)
@@ -76,7 +87,9 @@ export default {
 		 */
 		async approve(step) {
 			try {
-				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/approve`)
+				const url = generateUrl(
+					`/apps/openregister/api/approval-steps/${step.id}/approve`,
+				)
 				await axios.post(url, { comment: this.comments[step.id] || '' })
 				this.fetchSteps()
 			} catch (error) {
@@ -89,7 +102,9 @@ export default {
 		 */
 		async reject(step) {
 			try {
-				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/reject`)
+				const url = generateUrl(
+					`/apps/openregister/api/approval-steps/${step.id}/reject`,
+				)
 				await axios.post(url, { comment: this.comments[step.id] || '' })
 				this.fetchSteps()
 			} catch (error) {
@@ -101,12 +116,46 @@ export default {
 </script>
 
 <style scoped>
-.step-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
-.step-order { font-weight: bold; }
-.status-badge { padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
-.status-pending { background: var(--color-warning); color: white; }
-.status-approved { background: var(--color-success); color: white; }
-.status-rejected { background: var(--color-error); color: white; }
-.status-waiting { background: var(--color-background-dark); }
-.step-actions { display: flex; gap: 4px; margin-left: auto; }
+.step-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.step-order {
+	font-weight: bold;
+}
+
+.status-badge {
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 0.85em;
+}
+
+.status-pending {
+	background: var(--color-warning);
+	color: white;
+}
+
+.status-approved {
+	background: var(--color-success);
+	color: white;
+}
+
+.status-rejected {
+	background: var(--color-error);
+	color: white;
+}
+
+.status-waiting {
+	background: var(--color-background-dark);
+}
+
+.step-actions {
+	display: flex;
+	gap: 4px;
+	margin-left: auto;
+}
 </style>

@@ -35,48 +35,47 @@ use OCA\OpenRegister\Exception\SchemaImportException;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-interface SchemaDialectImporter
-{
-    /**
-     * The dialect identifier this importer handles (e.g. `schema.org`, `ggm`).
-     *
-     * @return string The dialect key.
-     *
-     * @spec openspec/specs/schema-import/spec.md
-     */
-    public function dialect(): string;
+interface SchemaDialectImporter {
+	/**
+	 * The dialect identifier this importer handles (e.g. `schema.org`, `ggm`).
+	 *
+	 * @return string The dialect key.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function dialect(): string;
 
-    /**
-     * Search the bundled snapshot for importable types/objecttypes.
-     *
-     * @param string $query A name/term query; empty returns a bounded sample.
-     *
-     * @return array<int, array<string, mixed>> Candidates: id, label, description, parent (where applicable), snapshotVersion.
-     *
-     * @spec openspec/specs/schema-import/spec.md
-     */
-    public function discover(string $query): array;
+	/**
+	 * Search the bundled snapshot for importable types/objecttypes.
+	 *
+	 * @param string $query A name/term query; empty returns a bounded sample.
+	 *
+	 * @return array<int, array<string, mixed>> Candidates: id, label, description, parent (where applicable), snapshotVersion.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function discover(string $query): array;
 
-    /**
-     * Resolve and map an external type reference into a register schema.
-     *
-     * @param string        $reference The type reference (IRI, bare name, or objecttype id).
-     * @param ImportOptions $options   Import options (subset, ancestors, target register).
-     *
-     * @return ImportedSchema The mapped schema + configuration fragments.
-     *
-     * @throws SchemaImportException When the reference is unknown to the snapshot.
-     *
-     * @spec openspec/specs/schema-import/spec.md
-     */
-    public function import(string $reference, ImportOptions $options): ImportedSchema;
+	/**
+	 * Resolve and map an external type reference into a register schema.
+	 *
+	 * @param string $reference The type reference (IRI, bare name, or objecttype id).
+	 * @param ImportOptions $options Import options (subset, ancestors, target register).
+	 *
+	 * @return ImportedSchema The mapped schema + configuration fragments.
+	 *
+	 * @throws SchemaImportException When the reference is unknown to the snapshot.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function import(string $reference, ImportOptions $options): ImportedSchema;
 
-    /**
-     * The bundled snapshot version this importer reads from.
-     *
-     * @return string The snapshot/release version identifier.
-     *
-     * @spec openspec/specs/schema-import/spec.md
-     */
-    public function snapshotVersion(): string;
+	/**
+	 * The bundled snapshot version this importer reads from.
+	 *
+	 * @return string The snapshot/release version identifier.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function snapshotVersion(): string;
 }//end interface

@@ -33,44 +33,43 @@ use OCA\OpenRegister\Db\Source;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-interface SourceFetcherInterface
-{
-    /**
-     * Whether this fetcher can handle the given source type.
-     *
-     * @param string $type The source type (rest-api, odata, soap, csv-file, openregister)
-     *
-     * @return bool True when supported
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function supports(string $type): bool;
+interface SourceFetcherInterface {
+	/**
+	 * Whether this fetcher can handle the given source type.
+	 *
+	 * @param string $type The source type (rest-api, odata, soap, csv-file, openregister)
+	 *
+	 * @return bool True when supported
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function supports(string $type): bool;
 
-    /**
-     * Gather stage: return the list of external record identifiers to process.
-     *
-     * Implementations MUST honour incremental sync when $since is provided,
-     * returning only records modified since that checkpoint where the source
-     * supports it.
-     *
-     * @param Source      $source The source being synced
-     * @param string|null $since  Incremental checkpoint (ISO-8601 timestamp or delta token), or null for full sync
-     *
-     * @return list<string> External record identifiers
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function gather(Source $source, ?string $since=null): array;
+	/**
+	 * Gather stage: return the list of external record identifiers to process.
+	 *
+	 * Implementations MUST honour incremental sync when $since is provided,
+	 * returning only records modified since that checkpoint where the source
+	 * supports it.
+	 *
+	 * @param Source $source The source being synced
+	 * @param string|null $since Incremental checkpoint (ISO-8601 timestamp or delta token), or null for full sync
+	 *
+	 * @return list<string> External record identifiers
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function gather(Source $source, ?string $since = null): array;
 
-    /**
-     * Fetch stage: retrieve the full raw payload for a single record.
-     *
-     * @param Source $source     The source being synced
-     * @param string $externalId The external record identifier
-     *
-     * @return array<string, mixed> The raw record payload
-     *
-     * @spec openspec/specs/data-sync-harvesting/spec.md
-     */
-    public function fetch(Source $source, string $externalId): array;
+	/**
+	 * Fetch stage: retrieve the full raw payload for a single record.
+	 *
+	 * @param Source $source The source being synced
+	 * @param string $externalId The external record identifier
+	 *
+	 * @return array<string, mixed> The raw record payload
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function fetch(Source $source, string $externalId): array;
 }//end interface

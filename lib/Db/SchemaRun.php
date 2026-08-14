@@ -72,264 +72,257 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class SchemaRun extends Entity implements JsonSerializable
-{
+class SchemaRun extends Entity implements JsonSerializable {
 
-    /**
-     * Run type constants.
-     *
-     * @var string
-     */
-    public const TYPE_REVALIDATION = 'revalidation';
-    public const TYPE_MIGRATION    = 'migration';
-    public const TYPE_ROLLBACK     = 'rollback';
+	/**
+	 * Run type constants.
+	 *
+	 * @var string
+	 */
+	public const TYPE_REVALIDATION = 'revalidation';
+	public const TYPE_MIGRATION = 'migration';
+	public const TYPE_ROLLBACK = 'rollback';
 
-    /**
-     * Run state constants.
-     *
-     * @var string
-     */
-    public const STATE_DRAFT       = 'draft';
-    public const STATE_PREVIEWED   = 'previewed';
-    public const STATE_RUNNING     = 'running';
-    public const STATE_COMPLETED   = 'completed';
-    public const STATE_FAILED      = 'failed';
-    public const STATE_ROLLED_BACK = 'rolled-back';
+	/**
+	 * Run state constants.
+	 *
+	 * @var string
+	 */
+	public const STATE_DRAFT = 'draft';
+	public const STATE_PREVIEWED = 'previewed';
+	public const STATE_RUNNING = 'running';
+	public const STATE_COMPLETED = 'completed';
+	public const STATE_FAILED = 'failed';
+	public const STATE_ROLLED_BACK = 'rolled-back';
 
-    /**
-     * The states that count as "active" (block a second concurrent run).
-     *
-     * @var array<int, string>
-     */
-    public const ACTIVE_STATES = [
-        self::STATE_DRAFT,
-        self::STATE_PREVIEWED,
-        self::STATE_RUNNING,
-    ];
+	/**
+	 * The states that count as "active" (block a second concurrent run).
+	 *
+	 * @var array<int, string>
+	 */
+	public const ACTIVE_STATES = [
+		self::STATE_DRAFT,
+		self::STATE_PREVIEWED,
+		self::STATE_RUNNING,
+	];
 
-    /**
-     * Stable UUID.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Stable UUID.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * The schema this run targets.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema this run targets.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The register the schema's objects live in (magic-mapper routing).
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register the schema's objects live in (magic-mapper routing).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The run type (revalidation | migration | rollback).
-     *
-     * @var string|null
-     */
-    protected ?string $type = null;
+	/**
+	 * The run type (revalidation | migration | rollback).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $type = null;
 
-    /**
-     * The run state.
-     *
-     * @var string|null
-     */
-    protected ?string $state = null;
+	/**
+	 * The run state.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $state = null;
 
-    /**
-     * A proposed definition to validate against (dry-run of an edit).
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $proposedDefinition = null;
+	/**
+	 * A proposed definition to validate against (dry-run of an edit).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $proposedDefinition = null;
 
-    /**
-     * The migration transform plan.
-     *
-     * @var array<int, array<string, mixed>>|null
-     */
-    protected ?array $plan = null;
+	/**
+	 * The migration transform plan.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	protected ?array $plan = null;
 
-    /**
-     * Run options (e.g. stopOnError, batchSize).
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $options = null;
+	/**
+	 * Run options (e.g. stopOnError, batchSize).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $options = null;
 
-    /**
-     * Number of processed objects.
-     *
-     * @var integer
-     */
-    protected int $processed = 0;
+	/**
+	 * Number of processed objects.
+	 *
+	 * @var integer
+	 */
+	protected int $processed = 0;
 
-    /**
-     * Total number of objects in scope.
-     *
-     * @var integer
-     */
-    protected int $total = 0;
+	/**
+	 * Total number of objects in scope.
+	 *
+	 * @var integer
+	 */
+	protected int $total = 0;
 
-    /**
-     * Resumable cursor (last processed object id).
-     *
-     * @var integer
-     */
-    protected int $cursor = 0;
+	/**
+	 * Resumable cursor (last processed object id).
+	 *
+	 * @var integer
+	 */
+	protected int $cursor = 0;
 
-    /**
-     * Summary report (counts; per-object entries live in the side table).
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $report = null;
+	/**
+	 * Summary report (counts; per-object entries live in the side table).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $report = null;
 
-    /**
-     * The user who started the run.
-     *
-     * @var string|null
-     */
-    protected ?string $startedBy = null;
+	/**
+	 * The user who started the run.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $startedBy = null;
 
-    /**
-     * For a rollback run, the migration run id it rolls back.
-     *
-     * @var integer|null
-     */
-    protected ?int $rolledBackFrom = null;
+	/**
+	 * For a rollback run, the migration run id it rolls back.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $rolledBackFrom = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Last-update timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last-update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor — registers field types for hydration.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'type', type: 'string');
-        $this->addType(fieldName: 'state', type: 'string');
-        $this->addType(fieldName: 'proposedDefinition', type: 'json');
-        $this->addType(fieldName: 'plan', type: 'json');
-        $this->addType(fieldName: 'options', type: 'json');
-        $this->addType(fieldName: 'processed', type: 'integer');
-        $this->addType(fieldName: 'total', type: 'integer');
-        $this->addType(fieldName: 'cursor', type: 'integer');
-        $this->addType(fieldName: 'report', type: 'json');
-        $this->addType(fieldName: 'startedBy', type: 'string');
-        $this->addType(fieldName: 'rolledBackFrom', type: 'integer');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+	/**
+	 * Constructor — registers field types for hydration.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'type', type: 'string');
+		$this->addType(fieldName: 'state', type: 'string');
+		$this->addType(fieldName: 'proposedDefinition', type: 'json');
+		$this->addType(fieldName: 'plan', type: 'json');
+		$this->addType(fieldName: 'options', type: 'json');
+		$this->addType(fieldName: 'processed', type: 'integer');
+		$this->addType(fieldName: 'total', type: 'integer');
+		$this->addType(fieldName: 'cursor', type: 'integer');
+		$this->addType(fieldName: 'report', type: 'json');
+		$this->addType(fieldName: 'startedBy', type: 'string');
+		$this->addType(fieldName: 'rolledBackFrom', type: 'integer');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The field names registered with the 'json' type.
-     *
-     * @return array<int, string> The json-typed field names.
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                static function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
+	/**
+	 * The field names registered with the 'json' type.
+	 *
+	 * @return array<int, string> The json-typed field names.
+	 */
+	public function getJsonFields(): array {
+		return array_keys(
+			array_filter(
+				$this->getFieldTypes(),
+				static function ($field) {
+					return $field === 'json';
+				}
+			)
+		);
+	}//end getJsonFields()
 
-    /**
-     * Hydrate the entity from an array.
-     *
-     * Without this, SchemaRunMapper's `$entity->hydrate()` call hit Entity::__call
-     * and threw "hydrate does not exist", so every migration-run write failed.
-     *
-     * @param array<string, mixed> $object The source data.
-     *
-     * @return static This entity, hydrated.
-     *
-     * @spec openspec/specs/schema-migration/spec.md
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
+	/**
+	 * Hydrate the entity from an array.
+	 *
+	 * Without this, SchemaRunMapper's `$entity->hydrate()` call hit Entity::__call
+	 * and threw "hydrate does not exist", so every migration-run write failed.
+	 *
+	 * @param array<string, mixed> $object The source data.
+	 *
+	 * @return static This entity, hydrated.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields, true) === true && $value === []) {
-                $value = null;
-            }
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields, true) === true && $value === []) {
+				$value = null;
+			}
 
-            $method = 'set'.ucfirst($key);
+			$method = 'set' . ucfirst($key);
 
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
 
-        return $this;
-    }//end hydrate()
+		return $this;
+	}//end hydrate()
 
-    /**
-     * Whether the run is in an active (blocking) state.
-     *
-     * @return bool True when active.
-     */
-    public function isActive(): bool
-    {
-        return in_array($this->state, self::ACTIVE_STATES, true);
+	/**
+	 * Whether the run is in an active (blocking) state.
+	 *
+	 * @return bool True when active.
+	 */
+	public function isActive(): bool {
+		return in_array($this->state, self::ACTIVE_STATES, true);
+	}//end isActive()
 
-    }//end isActive()
+	/**
+	 * JSON serialisation.
+	 *
+	 * @return array<string, mixed> The serialised run.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'schemaId' => $this->schemaId,
+			'registerId' => $this->registerId,
+			'type' => $this->type,
+			'state' => $this->state,
+			'proposedDefinition' => $this->proposedDefinition,
+			'plan' => ($this->plan ?? []),
+			'options' => ($this->options ?? []),
+			'processed' => $this->processed,
+			'total' => $this->total,
+			'cursor' => $this->cursor,
+			'report' => ($this->report ?? []),
+			'startedBy' => $this->startedBy,
+			'rolledBackFrom' => $this->rolledBackFrom,
+			'created' => $this->created?->format(DateTime::ATOM),
+			'updated' => $this->updated?->format(DateTime::ATOM),
+		];
 
-    /**
-     * JSON serialisation.
-     *
-     * @return array<string, mixed> The serialised run.
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                 => $this->id,
-            'uuid'               => $this->uuid,
-            'schemaId'           => $this->schemaId,
-            'registerId'         => $this->registerId,
-            'type'               => $this->type,
-            'state'              => $this->state,
-            'proposedDefinition' => $this->proposedDefinition,
-            'plan'               => ($this->plan ?? []),
-            'options'            => ($this->options ?? []),
-            'processed'          => $this->processed,
-            'total'              => $this->total,
-            'cursor'             => $this->cursor,
-            'report'             => ($this->report ?? []),
-            'startedBy'          => $this->startedBy,
-            'rolledBackFrom'     => $this->rolledBackFrom,
-            'created'            => $this->created?->format(DateTime::ATOM),
-            'updated'            => $this->updated?->format(DateTime::ATOM),
-        ];
-
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

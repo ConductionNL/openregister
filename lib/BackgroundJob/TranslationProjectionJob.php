@@ -49,71 +49,69 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.1
  */
-class TranslationProjectionJob extends ActorForwardedJob
-{
-    /**
-     * Wire the projection collaborators on top of the actor plumbing.
-     *
-     * @param ITimeFactory                 $time         Time factory for the parent job class.
-     * @param IUserSession                 $userSession  Session to impersonate on / restore.
-     * @param IUserManager                 $userManager  Resolver for the captured user id.
-     * @param OrganisationService          $organisation Active-organisation resolver.
-     * @param LoggerInterface              $logger       PSR logger.
-     * @param DeferredEntryObjectResolver  $resolver     Stale-safe entry re-fetch.
-     * @param TranslationProjectionService $projection   Projection service doing the real work.
-     *
-     * @return void
-     */
-    public function __construct(
-        ITimeFactory $time,
-        IUserSession $userSession,
-        IUserManager $userManager,
-        OrganisationService $organisation,
-        LoggerInterface $logger,
-        private readonly DeferredEntryObjectResolver $resolver,
-        private readonly TranslationProjectionService $projection
-    ) {
-        parent::__construct(
-            time: $time,
-            userSession: $userSession,
-            userManager: $userManager,
-            organisation: $organisation,
-            logger: $logger
-        );
-    }//end __construct()
+class TranslationProjectionJob extends ActorForwardedJob {
+	/**
+	 * Wire the projection collaborators on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param IUserSession $userSession Session to impersonate on / restore.
+	 * @param IUserManager $userManager Resolver for the captured user id.
+	 * @param OrganisationService $organisation Active-organisation resolver.
+	 * @param LoggerInterface $logger PSR logger.
+	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param TranslationProjectionService $projection Projection service doing the real work.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		OrganisationService $organisation,
+		LoggerInterface $logger,
+		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly TranslationProjectionService $projection,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $userSession,
+			userManager: $userManager,
+			organisation: $organisation,
+			logger: $logger
+		);
+	}//end __construct()
 
-    /**
-     * Project every still-live entry's current state into the sidecar.
-     *
-     * Per-entry failures are logged and do not abort the chunk.
-     *
-     * @param DeferredListenerContext $context The captured dispatch-time context.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    protected function runDeferred(DeferredListenerContext $context): void
-    {
-        foreach ($context->getEntries() as $entry) {
-            $object = $this->resolver->resolve(entry: $entry);
-            if ($object === null) {
-                continue;
-            }
+	/**
+	 * Project every still-live entry's current state into the sidecar.
+	 *
+	 * Per-entry failures are logged and do not abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$object = $this->resolver->resolve(entry: $entry);
+			if ($object === null) {
+				continue;
+			}
 
-            try {
-                $this->projection->project($object);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[TranslationProjectionJob] Projection failed for entry',
-                    context: [
-                        'file'  => __FILE__,
-                        'line'  => __LINE__,
-                        'uuid'  => ($entry['uuid'] ?? null),
-                        'error' => $e->getMessage(),
-                    ]
-                );
-            }
-        }//end foreach
-    }//end runDeferred()
+			try {
+				$this->projection->project($object);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[TranslationProjectionJob] Projection failed for entry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => ($entry['uuid'] ?? null),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end runDeferred()
 }//end class

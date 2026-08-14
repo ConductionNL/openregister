@@ -9,7 +9,6 @@ jest.mock('vue', () => ({
 const { useAttachmentDrag, ATTACHMENT_MIME } = require('./useAttachmentDrag.js')
 
 class MockDataTransfer {
-
 	constructor() {
 		this.data = {}
 		this.effectAllowed = 'none'
@@ -18,7 +17,6 @@ class MockDataTransfer {
 	setData(type, value) {
 		this.data[type] = value
 	}
-
 }
 
 describe('useAttachmentDrag', () => {
@@ -63,8 +61,12 @@ describe('useAttachmentDrag', () => {
 		expect(payload.messageId).toBe(77)
 		expect(payload.attachmentId).toBe('att-1')
 		expect(payload.fileName).toBe('contract.pdf')
-		expect(payload.downloadUrl).toBe('/apps/mail/api/messages/77/attachment/att-1')
-		expect(event.dataTransfer.data['text/uri-list']).toBe('/apps/mail/api/messages/77/attachment/att-1')
+		expect(payload.downloadUrl).toBe(
+			'/apps/mail/api/messages/77/attachment/att-1',
+		)
+		expect(event.dataTransfer.data['text/uri-list']).toBe(
+			'/apps/mail/api/messages/77/attachment/att-1',
+		)
 	})
 
 	it('does not double-patch already scanned attachment', () => {

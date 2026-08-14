@@ -47,51 +47,49 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
  */
-class Version1Date20260724000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema, or null if no changes were needed
-     *
-     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260724000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema, or null if no changes were needed
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_views') === false) {
-            $output->info(message: 'openregister_views table does not exist, skipping...');
-            return null;
-        }
+		if ($schema->hasTable('openregister_views') === false) {
+			$output->info(message: 'openregister_views table does not exist, skipping...');
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_views');
+		$table = $schema->getTable('openregister_views');
 
-        if ($table->hasColumn('presentation') === true) {
-            $output->info(message: 'presentation column already exists on openregister_views, skipping...');
-            return null;
-        }
+		if ($table->hasColumn('presentation') === true) {
+			$output->info(message: 'presentation column already exists on openregister_views, skipping...');
+			return null;
+		}
 
-        $table->addColumn(
-            'presentation',
-            Types::JSON,
-            [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'Presentation config: viewType (table|kanban|calendar) + type-specific config',
-            ]
-        );
+		$table->addColumn(
+			'presentation',
+			Types::JSON,
+			[
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'Presentation config: viewType (table|kanban|calendar) + type-specific config',
+			]
+		);
 
-        $output->info(message: 'Added presentation column to openregister_views table');
+		$output->info(message: 'Added presentation column to openregister_views table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

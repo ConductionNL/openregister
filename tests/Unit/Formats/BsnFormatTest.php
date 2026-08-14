@@ -8,91 +8,80 @@ use OCA\OpenRegister\Formats\BsnFormat;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-class BsnFormatTest extends TestCase
-{
-    private BsnFormat $bsnFormat;
+class BsnFormatTest extends TestCase {
+	private BsnFormat $bsnFormat;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->bsnFormat = new BsnFormat();
-    }
+	protected function setUp(): void {
+		parent::setUp();
+		$this->bsnFormat = new BsnFormat();
+	}
 
-    public static function validBsnProvider(): array
-    {
-        return [
-            'standard 9-digit BSN' => ['111222333'],
-            'BSN with leading zeros' => ['000000012'],
-            'another valid BSN' => ['123456782'],
-            'short input padded to valid' => ['12'],
-        ];
-    }
+	public static function validBsnProvider(): array {
+		return [
+			'standard 9-digit BSN' => ['111222333'],
+			'BSN with leading zeros' => ['000000012'],
+			'another valid BSN' => ['123456782'],
+			'short input padded to valid' => ['12'],
+		];
+	}
 
-    #[DataProvider('validBsnProvider')]
-    public function testValidBsn(string $bsn): void
-    {
-        $this->assertTrue(
-            $this->bsnFormat->validate($bsn),
-            sprintf('BSN "%s" should be valid but was marked as invalid', $bsn)
-        );
-    }
+	#[DataProvider('validBsnProvider')]
+	public function testValidBsn(string $bsn): void {
+		$this->assertTrue(
+			$this->bsnFormat->validate($bsn),
+			sprintf('BSN "%s" should be valid but was marked as invalid', $bsn)
+		);
+	}
 
-    public static function invalidBsnProvider(): array
-    {
-        return [
-            'wrong checksum' => ['123456789'],
-            'non-numeric' => ['abcdefghi'],
-            'mixed alphanumeric' => ['12345678a'],
-            'single wrong digit' => ['1'],
-            'all ones (invalid checksum)' => ['111111111'],
-            'all zeros sentinel rejected' => ['000000000'],
-            'empty string (pads to all zeros) rejected' => [''],
-            'over-length numeric rejected' => ['1234567890'],
-        ];
-    }
+	public static function invalidBsnProvider(): array {
+		return [
+			'wrong checksum' => ['123456789'],
+			'non-numeric' => ['abcdefghi'],
+			'mixed alphanumeric' => ['12345678a'],
+			'single wrong digit' => ['1'],
+			'all ones (invalid checksum)' => ['111111111'],
+			'all zeros sentinel rejected' => ['000000000'],
+			'empty string (pads to all zeros) rejected' => [''],
+			'over-length numeric rejected' => ['1234567890'],
+		];
+	}
 
-    #[DataProvider('invalidBsnProvider')]
-    public function testInvalidBsn(string $bsn): void
-    {
-        $this->assertFalse(
-            $this->bsnFormat->validate($bsn),
-            sprintf('BSN "%s" should be invalid but passed validation', $bsn)
-        );
-    }
+	#[DataProvider('invalidBsnProvider')]
+	public function testInvalidBsn(string $bsn): void {
+		$this->assertFalse(
+			$this->bsnFormat->validate($bsn),
+			sprintf('BSN "%s" should be invalid but passed validation', $bsn)
+		);
+	}
 
-    public function testNumericInputCoerced(): void
-    {
-        // PHP coerces int to string via str_pad — matches same BSN string
-        $this->assertSame(
-            $this->bsnFormat->validate('123456782'),
-            $this->bsnFormat->validate(123456782)
-        );
-    }
+	public function testNumericInputCoerced(): void {
+		// PHP coerces int to string via str_pad — matches same BSN string
+		$this->assertSame(
+			$this->bsnFormat->validate('123456782'),
+			$this->bsnFormat->validate(123456782)
+		);
+	}
 
-    public function testNullRejectedAsAllZeroSentinel(): void
-    {
-        // null coerces to "" and pads to "000000000" — rejected as the all-zero
-        // sentinel (ADR-008 Rule 4), not a real BSN.
-        $this->assertFalse($this->bsnFormat->validate(null));
-    }
+	public function testNullRejectedAsAllZeroSentinel(): void {
+		// null coerces to "" and pads to "000000000" — rejected as the all-zero
+		// sentinel (ADR-008 Rule 4), not a real BSN.
+		$this->assertFalse($this->bsnFormat->validate(null));
+	}
 
-    public function testFalseRejectedAsAllZeroSentinel(): void
-    {
-        // false coerces to "" and pads to "000000000" — rejected.
-        $this->assertFalse($this->bsnFormat->validate(false));
-    }
+	public function testFalseRejectedAsAllZeroSentinel(): void {
+		// false coerces to "" and pads to "000000000" — rejected.
+		$this->assertFalse($this->bsnFormat->validate(false));
+	}
 
-    public function testArrayThrowsTypeError(): void
-    {
-        $this->expectException(\TypeError::class);
-        $this->bsnFormat->validate(['111222333']);
-    }
+	public function testArrayThrowsTypeError(): void {
+		$this->expectException(\TypeError::class);
+		$this->bsnFormat->validate(['111222333']);
+	}
 
-    public function testChecksumAlgorithm(): void
-    {
-        // Verify the weighted modulo-11 checksum:
-        // BSN "111222333": 1*9 + 1*8 + 1*7 + 2*6 + 2*5 + 2*4 + 3*3 + 3*2 + 3*(-1)
-        // = 9 + 8 + 7 + 12 + 10 + 8 + 9 + 6 - 3 = 66, 66 % 11 = 0 → valid
-        $this->assertTrue($this->bsnFormat->validate('111222333'));
-    }
+	public function testChecksumAlgorithm(): void {
+		// Verify the weighted modulo-11 checksum:
+		// BSN "111222333": 1*9 + 1*8 + 1*7 + 2*6 + 2*5 + 2*4 + 3*3 + 3*2 + 3*(-1)
+		// = 9 + 8 + 7 + 12 + 10 + 8 + 9 + 6 - 3 = 66, 66 % 11 = 0 → valid
+		$this->assertTrue($this->bsnFormat->validate('111222333'));
+	}
 }

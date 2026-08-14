@@ -28,55 +28,50 @@ use Psr\Log\NullLogger;
 /**
  * Tests for the per-object dedup pruning listener.
  */
-class NotificationDedupePruneListenerTest extends TestCase
-{
+class NotificationDedupePruneListenerTest extends TestCase {
 
-    public function testCallsDeleteByObjectOnObjectDeletedEvent(): void
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('aaaa-bbbb-cccc-dddd');
+	public function testCallsDeleteByObjectOnObjectDeletedEvent(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('aaaa-bbbb-cccc-dddd');
 
-        $mapper = $this->createMock(NotificationDedupeStateMapper::class);
-        $mapper->expects($this->once())
-            ->method('deleteByObject')
-            ->with('aaaa-bbbb-cccc-dddd');
+		$mapper = $this->createMock(NotificationDedupeStateMapper::class);
+		$mapper->expects($this->once())
+			->method('deleteByObject')
+			->with('aaaa-bbbb-cccc-dddd');
 
-        $listener = new NotificationDedupePruneListener($mapper, new NullLogger());
-        $listener->handle(new ObjectDeletedEvent($object));
-    }//end testCallsDeleteByObjectOnObjectDeletedEvent()
+		$listener = new NotificationDedupePruneListener($mapper, new NullLogger());
+		$listener->handle(new ObjectDeletedEvent($object));
+	}//end testCallsDeleteByObjectOnObjectDeletedEvent()
 
-    public function testIgnoresUnrelatedEvents(): void
-    {
-        $mapper = $this->createMock(NotificationDedupeStateMapper::class);
-        $mapper->expects($this->never())->method('deleteByObject');
+	public function testIgnoresUnrelatedEvents(): void {
+		$mapper = $this->createMock(NotificationDedupeStateMapper::class);
+		$mapper->expects($this->never())->method('deleteByObject');
 
-        $listener = new NotificationDedupePruneListener($mapper, new NullLogger());
-        $listener->handle(new Event());
-    }//end testIgnoresUnrelatedEvents()
+		$listener = new NotificationDedupePruneListener($mapper, new NullLogger());
+		$listener->handle(new Event());
+	}//end testIgnoresUnrelatedEvents()
 
-    public function testSkipsWhenUuidEmpty(): void
-    {
-        $object = new ObjectEntity();
-        // No UUID set.
+	public function testSkipsWhenUuidEmpty(): void {
+		$object = new ObjectEntity();
+		// No UUID set.
 
-        $mapper = $this->createMock(NotificationDedupeStateMapper::class);
-        $mapper->expects($this->never())->method('deleteByObject');
+		$mapper = $this->createMock(NotificationDedupeStateMapper::class);
+		$mapper->expects($this->never())->method('deleteByObject');
 
-        $listener = new NotificationDedupePruneListener($mapper, new NullLogger());
-        $listener->handle(new ObjectDeletedEvent($object));
-    }//end testSkipsWhenUuidEmpty()
+		$listener = new NotificationDedupePruneListener($mapper, new NullLogger());
+		$listener->handle(new ObjectDeletedEvent($object));
+	}//end testSkipsWhenUuidEmpty()
 
-    public function testSwallowsMapperFailures(): void
-    {
-        $object = new ObjectEntity();
-        $object->setUuid('aaaa-bbbb-cccc-dddd');
+	public function testSwallowsMapperFailures(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('aaaa-bbbb-cccc-dddd');
 
-        $mapper = $this->createMock(NotificationDedupeStateMapper::class);
-        $mapper->method('deleteByObject')->willThrowException(new \RuntimeException('db'));
+		$mapper = $this->createMock(NotificationDedupeStateMapper::class);
+		$mapper->method('deleteByObject')->willThrowException(new \RuntimeException('db'));
 
-        $listener = new NotificationDedupePruneListener($mapper, new NullLogger());
-        $listener->handle(new ObjectDeletedEvent($object));
+		$listener = new NotificationDedupePruneListener($mapper, new NullLogger());
+		$listener->handle(new ObjectDeletedEvent($object));
 
-        $this->expectNotToPerformAssertions();
-    }//end testSwallowsMapperFailures()
+		$this->expectNotToPerformAssertions();
+	}//end testSwallowsMapperFailures()
 }//end class

@@ -46,31 +46,30 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the registry an app registers its node types on.
  */
-class RegisterFlowNodesEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param FlowNodeRegistry $registry The registry to contribute to.
-     */
-    public function __construct(private readonly FlowNodeRegistry $registry)
-    {
-        parent::__construct();
+class RegisterFlowNodesEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowNodeRegistry $registry The registry to contribute to.
+	 */
+	public function __construct(
+		private readonly FlowNodeRegistry $registry,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Contribute a node type.
-     *
-     * @param IFlowNode $node The node type.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-     */
-    public function registerNode(IFlowNode $node): void
-    {
-        $this->registry->register(node: $node);
+	/**
+	 * Contribute a node type.
+	 *
+	 * @param IFlowNode $node The node type.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function registerNode(IFlowNode $node): void {
+		$this->registry->register(node: $node);
 
-    }//end registerNode()
+	}//end registerNode()
 }//end class

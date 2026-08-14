@@ -36,61 +36,60 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use OCP\IDBConnection;
 use Throwable;
 
-trait MarkerLookupTrait
-{
-    /**
-     * Find rows in an upstream NC app's table whose marker column
-     * contains the given marker substring.
-     *
-     * @param IDBConnection     $db           NC DB connection.
-     * @param string            $table        Table name without the `oc_` prefix.
-     * @param string            $markerColumn Column to search the marker in.
-     * @param string            $marker       Marker substring (e.g. `[or:UUID]`).
-     * @param array<int,string> $extraColumns Other columns to return alongside the row.
-     * @param string            $idColumn     Primary-key column (default `id`).
-     *
-     * @return array<int,array<string,mixed>> Matching rows.
-     *
-     * @spec exclude Shared defensive LIKE-scan helper for leaf list() impls — no standalone contract;
-     *              the behavioural contract is each leaf provider's list() (annotated to its integration-* change).
-     */
-    protected function findByMarker(
-        IDBConnection $db,
-        string $table,
-        string $markerColumn,
-        string $marker,
-        array $extraColumns=[],
-        string $idColumn='id'
-    ): array {
-        try {
-            $qb     = $db->getQueryBuilder();
-            $select = array_unique(array_merge([$idColumn, $markerColumn], $extraColumns));
-            $qb->select(...$select)
-                ->from($table)
-                ->where(
-                    $qb->expr()->iLike(
-                        $markerColumn,
-                        $qb->createNamedParameter('%'.$marker.'%')
-                    )
-                );
-            // NC's IResult uses fetch() not fetchAllAssociative() in
-            // older versions — iterate manually.
-            $result = $qb->executeQuery();
-            $rows   = [];
-            $row    = $result->fetch();
-            while ($row !== false) {
-                $rows[] = $row;
-                $row    = $result->fetch();
-            }
+trait MarkerLookupTrait {
+	/**
+	 * Find rows in an upstream NC app's table whose marker column
+	 * contains the given marker substring.
+	 *
+	 * @param IDBConnection $db NC DB connection.
+	 * @param string $table Table name without the `oc_` prefix.
+	 * @param string $markerColumn Column to search the marker in.
+	 * @param string $marker Marker substring (e.g. `[or:UUID]`).
+	 * @param array<int,string> $extraColumns Other columns to return alongside the row.
+	 * @param string $idColumn Primary-key column (default `id`).
+	 *
+	 * @return array<int,array<string,mixed>> Matching rows.
+	 *
+	 * @spec exclude Shared defensive LIKE-scan helper for leaf list() impls — no standalone contract;
+	 *              the behavioural contract is each leaf provider's list() (annotated to its integration-* change).
+	 */
+	protected function findByMarker(
+		IDBConnection $db,
+		string $table,
+		string $markerColumn,
+		string $marker,
+		array $extraColumns = [],
+		string $idColumn = 'id',
+	): array {
+		try {
+			$qb = $db->getQueryBuilder();
+			$select = array_unique(array_merge([$idColumn, $markerColumn], $extraColumns));
+			$qb->select(...$select)
+				->from($table)
+				->where(
+					$qb->expr()->iLike(
+						$markerColumn,
+						$qb->createNamedParameter('%' . $marker . '%')
+					)
+				);
+			// NC's IResult uses fetch() not fetchAllAssociative() in
+			// older versions — iterate manually.
+			$result = $qb->executeQuery();
+			$rows = [];
+			$row = $result->fetch();
+			while ($row !== false) {
+				$rows[] = $row;
+				$row = $result->fetch();
+			}
 
-            return $rows;
-        } catch (Throwable $e) {
-            \OCP\Server::get(\Psr\Log\LoggerInterface::class)->debug(
-                '[MarkerLookupTrait] '.$table.'.'.$markerColumn.' query failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            // Schema mismatch / app uninstalled / column missing — empty list (AD-23).
-            return [];
-        }//end try
-    }//end findByMarker()
+			return $rows;
+		} catch (Throwable $e) {
+			\OCP\Server::get(\Psr\Log\LoggerInterface::class)->debug(
+				'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			// Schema mismatch / app uninstalled / column missing — empty list (AD-23).
+			return [];
+		}//end try
+	}//end findByMarker()
 }//end trait

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fixture: a leaf app that ships its OWN DashboardController.
  *
@@ -25,18 +26,15 @@ namespace OCA\LeafWithOwnDashboard\Controller;
  * was being shadowed, taking its `summary()` route and its
  * `allowEvalWasm(true)` CSP with it.
  */
-class DashboardController
-{
-    /**
-     * A method that exists ONLY on the leaf's controller. Routed as
-     * `dashboard#summary`, it 500'd while the generic controller was aliased
-     * over this class.
-     *
-     * @return array<string,mixed>
-     */
-    public function summary(): array
-    {
-        return [];
-
-    }//end summary()
+class DashboardController {
+	/**
+	 * A method that exists ONLY on the leaf's controller. Routed as
+	 * `dashboard#summary`, it 500'd while the generic controller was aliased
+	 * over this class.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function summary(): array {
+		return [];
+	}//end summary()
 }//end class

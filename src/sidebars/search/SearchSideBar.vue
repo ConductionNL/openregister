@@ -17,7 +17,9 @@
 			<!-- Save View Action -->
 			<div class="saveViewSection">
 				<!-- Active View Mode: Show view name with Save and Delete buttons -->
-				<div v-if="viewsStore.activeView && !showSaveForm" class="activeViewActions">
+				<div
+					v-if="viewsStore.activeView && !showSaveForm"
+					class="activeViewActions">
 					<div class="activeViewHeader">
 						<NcTextField
 							v-model="activeViewName"
@@ -47,9 +49,7 @@
 							</template>
 							{{ t('openregister', 'Save') }}
 						</NcButton>
-						<NcButton
-							variant="error"
-							@click="confirmDeleteActiveView">
+						<NcButton variant="error" @click="confirmDeleteActiveView">
 							<template #icon>
 								<Delete :size="20" />
 							</template>
@@ -78,7 +78,11 @@
 						:label="t('openregister', 'View Name')"
 						:required="true"
 						:error="viewName.trim() === '' && viewNameTouched"
-						:helper-text="viewName.trim() === '' && viewNameTouched ? t('openregister', 'View name is required') : ''"
+						:helper-text="
+							viewName.trim() === '' && viewNameTouched
+								? t('openregister', 'View name is required')
+								: ''
+						"
 						@blur="viewNameTouched = true"
 						@keyup.enter="saveView">
 						<template #icon>
@@ -92,16 +96,21 @@
 							@click="saveView">
 							{{ t('openregister', 'Save') }}
 						</NcButton>
-						<NcButton
-							variant="secondary"
-							@click="cancelSaveView">
+						<NcButton variant="secondary" @click="cancelSaveView">
 							{{ t('openregister', 'Cancel') }}
 						</NcButton>
 					</div>
 				</div>
 
-				<p v-if="!canSaveView && !showSaveForm && !viewsStore.activeView" class="saveViewHint">
-					{{ t('openregister', 'Select registers and schemas to save a view') }}
+				<p
+					v-if="!canSaveView && !showSaveForm && !viewsStore.activeView"
+					class="saveViewHint">
+					{{
+						t(
+							'openregister',
+							'Select registers and schemas to save a view',
+						)
+					}}
 				</p>
 			</div>
 
@@ -109,8 +118,11 @@
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Registers') }}</label>
-					<NcSelect v-bind="registerOptions"
+					<label for="registerSelect">{{
+						t('openregister', 'Registers')
+					}}</label>
+					<NcSelect
+						v-bind="registerOptions"
 						id="registerSelect"
 						:model-value="selectedRegisters"
 						:loading="registerLoading"
@@ -118,22 +130,32 @@
 						:input-label="t('openregister', 'Registers')"
 						:multiple="true"
 						:close-on-select="false"
-						:placeholder="t('openregister', 'Select one or more registers')"
+						:placeholder="
+							t('openregister', 'Select one or more registers')
+						"
 						@update:modelValue="handleRegisterChange">
 						<template #option="{ title, description }">
 							<div class="option-content">
 								<span class="option-title">{{ title }}</span>
-								<span v-if="description" class="option-description">{{ description }}</span>
+								<span
+									v-if="description"
+									class="option-description"
+									>{{ description }}</span
+								>
 							</div>
 						</template>
 					</NcSelect>
 					<p class="field-hint">
-						{{ selectedRegisters.length }} {{ t('openregister', 'register(s) selected') }}
+						{{ selectedRegisters.length }}
+						{{ t('openregister', 'register(s) selected') }}
 					</p>
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schemas') }}</label>
-					<NcSelect v-bind="schemaOptions"
+					<label for="schemaSelect">{{
+						t('openregister', 'Schemas')
+					}}</label>
+					<NcSelect
+						v-bind="schemaOptions"
 						id="schemaSelect"
 						:model-value="selectedSchemas"
 						:loading="schemaLoading"
@@ -141,17 +163,24 @@
 						:input-label="t('openregister', 'Schemas')"
 						:multiple="true"
 						:close-on-select="false"
-						:placeholder="t('openregister', 'Select one or more schemas')"
+						:placeholder="
+							t('openregister', 'Select one or more schemas')
+						"
 						@update:modelValue="handleSchemaChange">
 						<template #option="{ title, description }">
 							<div class="option-content">
 								<span class="option-title">{{ title }}</span>
-								<span v-if="description" class="option-description">{{ description }}</span>
+								<span
+									v-if="description"
+									class="option-description"
+									>{{ description }}</span
+								>
 							</div>
 						</template>
 					</NcSelect>
 					<p class="field-hint">
-						{{ selectedSchemas.length }} {{ t('openregister', 'schema(s) selected') }}
+						{{ selectedSchemas.length }}
+						{{ t('openregister', 'schema(s) selected') }}
 					</p>
 				</div>
 			</div>
@@ -163,7 +192,9 @@
 				</h3>
 
 				<!-- Stage 1: Facet Discovery -->
-				<div v-if="!facetableFields && canSearch" class="facets-discovery-container">
+				<div
+					v-if="!facetableFields && canSearch"
+					class="facets-discovery-container">
 					<NcButton
 						variant="secondary"
 						:disabled="facetsLoading"
@@ -175,14 +206,23 @@
 						{{ t('openregister', 'Load Advanced Filters') }}
 					</NcButton>
 					<p class="facets-description">
-						{{ t('openregister', 'Load advanced filters with live data from your search index') }}
+						{{
+							t(
+								'openregister',
+								'Load advanced filters with live data from your search index',
+							)
+						}}
 					</p>
 				</div>
 
 				<!-- Loading -->
-				<div v-if="facetsLoading && !facetableFields" class="loading-container">
+				<div
+					v-if="facetsLoading && !facetableFields"
+					class="loading-container">
 					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading advanced filters...') }}</span>
+					<span>{{
+						t('openregister', 'Loading advanced filters...')
+					}}</span>
 				</div>
 
 				<!-- Available Facets (Stage 1 Complete) -->
@@ -197,15 +237,26 @@
 							{{ t('openregister', 'Metadata Filters') }}
 						</h5>
 						<div class="facet-checkboxes">
-							<div v-for="(field, fieldName) in facetableFields['@self']" :key="`@self.${fieldName}`" class="facet-checkbox">
+							<div
+								v-for="(field, fieldName) in facetableFields[
+									'@self'
+								]"
+								:key="`@self.${fieldName}`"
+								class="facet-checkbox">
 								<input
 									:id="`facet-@self-${fieldName}`"
 									v-model="enabledFacets[`@self.${fieldName}`]"
 									type="checkbox"
-									@change="toggleFacet(`@self.${fieldName}`, field)">
-								<label :for="`facet-@self-${fieldName}`" class="facet-checkbox-label">
+									@change="
+										toggleFacet(`@self.${fieldName}`, field)
+									" />
+								<label
+									:for="`facet-@self-${fieldName}`"
+									class="facet-checkbox-label">
 									{{ field.description || fieldName }}
-									<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+									<span class="facet-types"
+										>({{ field.facet_types.join(', ') }})</span
+									>
 								</label>
 							</div>
 						</div>
@@ -217,24 +268,42 @@
 							{{ t('openregister', 'Content Filters') }}
 						</h5>
 						<div class="facet-checkboxes">
-							<div v-for="(field, fieldName) in facetableFields.object_fields" :key="fieldName" class="facet-checkbox">
+							<div
+								v-for="(
+									field, fieldName
+								) in facetableFields.object_fields"
+								:key="fieldName"
+								class="facet-checkbox">
 								<input
 									:id="`facet-${fieldName}`"
 									v-model="enabledFacets[fieldName]"
 									type="checkbox"
-									@change="toggleFacet(fieldName, field)">
-								<label :for="`facet-${fieldName}`" class="facet-checkbox-label">
-									{{ field.title || field.description || fieldName }}
-									<span class="facet-types">({{ field.facet_types.join(', ') }})</span>
+									@change="toggleFacet(fieldName, field)" />
+								<label
+									:for="`facet-${fieldName}`"
+									class="facet-checkbox-label">
+									{{
+										field.title || field.description || fieldName
+									}}
+									<span class="facet-types"
+										>({{ field.facet_types.join(', ') }})</span
+									>
 								</label>
 							</div>
 						</div>
 					</div>
 
 					<!-- Info about loaded facets -->
-					<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
+					<div
+						v-if="facetData && Object.keys(facetData).length > 0"
+						class="facets-loaded-info">
 						<p class="facets-loaded-description">
-							{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
+							{{
+								t(
+									'openregister',
+									'Filter data loaded automatically. Use the filters below to refine your search.',
+								)
+							}}
 						</p>
 					</div>
 				</div>
@@ -246,40 +315,54 @@
 				</div>
 
 				<!-- Stage 2: Facet Data (Active Filters) -->
-				<div v-else-if="facetData && Object.keys(facetData).length > 0" class="active-facets-container">
+				<div
+					v-else-if="facetData && Object.keys(facetData).length > 0"
+					class="active-facets-container">
 					<h4 class="active-facets-title">
 						{{ t('openregister', 'Active Filters') }}
 					</h4>
 
 					<!-- Metadata facets (@self) -->
-					<div v-for="(facet, field) in facetData?.['@self'] || {}" :key="`@self.${field}`" class="facet-group">
-						<label class="facet-label">{{ getFacetLabel(field, facet, true) }}</label>
+					<div
+						v-for="(facet, field) in facetData?.['@self'] || {}"
+						:key="`@self.${field}`"
+						class="facet-group">
+						<label class="facet-label">{{
+							getFacetLabel(field, facet, true)
+						}}</label>
 						<NcSelect
 							:model-value="facetFilters[`@self.${field}`] || []"
 							:options="getFacetOptions(facet)"
 							:multiple="true"
 							:placeholder="t('openregister', 'Select options...')"
 							:input-label="getFacetLabel(field, facet, true)"
-							@update:modelValue="(value) => updateFacetFilter(`@self.${field}`, value)" />
+							@update:modelValue="
+								(value) => updateFacetFilter(`@self.${field}`, value)
+							" />
 					</div>
 
 					<!-- Object field facets -->
-					<div v-for="(facet, field) in facetData?.object_fields || {}" :key="field" class="facet-group">
-						<label class="facet-label">{{ getFacetLabel(field, facet, false) }}</label>
+					<div
+						v-for="(facet, field) in facetData?.object_fields || {}"
+						:key="field"
+						class="facet-group">
+						<label class="facet-label">{{
+							getFacetLabel(field, facet, false)
+						}}</label>
 						<NcSelect
 							:model-value="facetFilters[field] || []"
 							:options="getFacetOptions(facet)"
 							:multiple="true"
 							:placeholder="t('openregister', 'Select options...')"
 							:input-label="getFacetLabel(field, facet, false)"
-							@update:modelValue="(value) => updateFacetFilter(field, value)" />
+							@update:modelValue="
+								(value) => updateFacetFilter(field, value)
+							" />
 					</div>
 
 					<!-- Reset Facets Button -->
 					<div class="facets-reset-container">
-						<NcButton
-							variant="secondary"
-							@click="resetFacets">
+						<NcButton variant="secondary" @click="resetFacets">
 							{{ t('openregister', 'Reset Filters') }}
 						</NcButton>
 					</div>
@@ -300,7 +383,12 @@
 				<div class="viewsSection">
 					<h3>{{ t('openregister', 'Saved Views') }}</h3>
 					<p class="viewsDescription">
-						{{ t('openregister', 'Manage your saved search configurations') }}
+						{{
+							t(
+								'openregister',
+								'Manage your saved search configurations',
+							)
+						}}
 					</p>
 
 					<!-- Search Views -->
@@ -323,7 +411,14 @@
 
 					<div v-else-if="filteredViews.length === 0" class="noViews">
 						<NcNoteCard type="info">
-							{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. create one in the search tab!') }}
+							{{
+								viewSearchQuery
+									? t('openregister', 'No views match your search')
+									: t(
+											'openregister',
+											'No saved views yet. create one in the search tab!',
+										)
+							}}
 						</NcNoteCard>
 					</div>
 
@@ -335,29 +430,56 @@
 							:class="{ 'viewRow--active': isActiveView(view) }">
 							<div class="viewRowHeader">
 								<div class="viewRowTitle">
-									<strong>{{ view.name || t('openregister', 'Untitled View') }}</strong>
-									<span v-if="view.isDefault" class="viewBadge viewBadge--default">
+									<strong>{{
+										view.name
+										|| t('openregister', 'Untitled View')
+									}}</strong>
+									<span
+										v-if="view.isDefault"
+										class="viewBadge viewBadge--default">
 										{{ t('openregister', 'Default') }}
 									</span>
-									<span v-if="view.isPublic" class="viewBadge viewBadge--public">
+									<span
+										v-if="view.isPublic"
+										class="viewBadge viewBadge--public">
 										{{ t('openregister', 'Public') }}
 									</span>
 								</div>
 								<div class="viewRowActions">
 									<!-- Star/Favorite button -->
 									<NcButton
-										:variant="isFavorited(view) ? 'primary' : 'secondary'"
-										:aria-label="isFavorited(view) ? t('openregister', 'Remove from favorites') : t('openregister', 'Add to favorites')"
+										:variant="
+											isFavorited(view)
+												? 'primary'
+												: 'secondary'
+										"
+										:aria-label="
+											isFavorited(view)
+												? t(
+														'openregister',
+														'Remove from favorites',
+													)
+												: t(
+														'openregister',
+														'Add to favorites',
+													)
+										"
 										@click="toggleFavorite(view)">
 										<template #icon>
-											<Star v-if="isFavorited(view)" :size="20" />
+											<Star
+												v-if="isFavorited(view)"
+												:size="20" />
 											<StarOutline v-else :size="20" />
 										</template>
 									</NcButton>
 
 									<!-- Load View (Magnify) -->
 									<NcButton
-										:variant="isActiveView(view) ? 'primary' : 'secondary'"
+										:variant="
+											isActiveView(view)
+												? 'primary'
+												: 'secondary'
+										"
 										:aria-label="t('openregister', 'Load view')"
 										@click="loadView(view)">
 										<template #icon>
@@ -378,7 +500,9 @@
 									<!-- Delete View -->
 									<NcButton
 										variant="error"
-										:aria-label="t('openregister', 'Delete view')"
+										:aria-label="
+											t('openregister', 'Delete view')
+										"
 										@click="confirmDeleteView(view)">
 										<template #icon>
 											<Delete :size="20" />
@@ -389,7 +513,9 @@
 							<p v-if="view.description" class="viewRowDescription">
 								{{ view.description }}
 							</p>
-							<p v-else class="viewRowDescription viewRowDescription--empty">
+							<p
+								v-else
+								class="viewRowDescription viewRowDescription--empty">
 								{{ t('openregister', 'No description provided') }}
 							</p>
 						</div>
@@ -400,10 +526,7 @@
 	</CnIndexSidebar>
 
 	<!-- Edit View Modal -->
-	<EditView
-		v-if="showEditDialog"
-		:view="editingView"
-		@close="cancelEditView" />
+	<EditView v-if="showEditDialog" :view="editingView" @close="cancelEditView" />
 
 	<!-- Delete View Modal -->
 	<DeleteView
@@ -413,8 +536,21 @@
 </template>
 
 <script>
-import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } from '../../store/store.js'
-import { NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+	viewsStore,
+} from '../../store/store.js'
+import {
+	NcAppSidebarTab,
+	NcSelect,
+	NcNoteCard,
+	NcTextField,
+	NcButton,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import { CnIndexSidebar } from '@conduction/nextcloud-vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
@@ -512,16 +648,16 @@ export default {
 		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					description: register.description,
 					register,
 				})),
-				reduce: option => option.value, // Return only the ID for multi-select
+				reduce: (option) => option.value, // Return only the ID for multi-select
 				label: 'title',
-				getOptionLabel: option => {
+				getOptionLabel: (option) => {
 					return option.title || option.label || ''
 				},
 			}
@@ -536,26 +672,28 @@ export default {
 			if (this.selectedRegisters.length === 0) return { options: [] }
 
 			const schemaIds = new Set()
-			this.selectedRegisters.forEach(registerId => {
-				const register = registerStore.registerList.find(r => r.id === registerId)
+			this.selectedRegisters.forEach((registerId) => {
+				const register = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
 				if (register && register.schemas) {
-					register.schemas.forEach(schema => schemaIds.add(schema.id))
+					register.schemas.forEach((schema) => schemaIds.add(schema.id))
 				}
 			})
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => schemaIds.has(schema.id))
-					.map(schema => ({
+					.filter((schema) => schemaIds.has(schema.id))
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						description: schema.description,
 						schema,
 					})),
-				reduce: option => option.value, // Return only the ID for multi-select
+				reduce: (option) => option.value, // Return only the ID for multi-select
 				label: 'title',
-				getOptionLabel: option => {
+				getOptionLabel: (option) => {
 					return option.title || option.label || ''
 				},
 			}
@@ -566,7 +704,7 @@ export default {
 		 * @return {Array} View options
 		 */
 		viewOptions() {
-			return viewsStore.getAllViews.map(view => ({
+			return viewsStore.getAllViews.map((view) => ({
 				value: view.id || view.uuid,
 				label: view.name,
 				description: view.description,
@@ -598,9 +736,12 @@ export default {
 			let views = viewsStore.getAllViews
 			if (this.viewSearchQuery) {
 				const query = this.viewSearchQuery.toLowerCase()
-				views = views.filter(view => {
-					return view.name.toLowerCase().includes(query)
-						|| (view.description && view.description.toLowerCase().includes(query))
+				views = views.filter((view) => {
+					return (
+						view.name.toLowerCase().includes(query)
+						|| (view.description
+							&& view.description.toLowerCase().includes(query))
+					)
 				})
 			}
 
@@ -624,7 +765,9 @@ export default {
 		 */
 		canSearch() {
 			// Allow search if at least one register and one schema are selected
-			return this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0
+			return (
+				this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0
+			)
 		},
 		/**
 		 * Whether the current search configuration can be saved as a view.
@@ -641,10 +784,12 @@ export default {
 		 * @return {string}
 		 */
 		searchPlaceholder() {
-			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
+			return this.searchTerms.length > 0
+				? 'Add more search terms...'
+				: 'Type to search...'
 		},
 		hasEnabledFacets() {
-			return Object.values(this.enabledFacets).some(enabled => enabled)
+			return Object.values(this.enabledFacets).some((enabled) => enabled)
 		},
 		/**
 		 * Flatten the object metadata map into column descriptors for display.
@@ -671,8 +816,10 @@ export default {
 			}
 
 			return this.selectedSchemas
-				.map(schemaId => {
-					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
+				.map((schemaId) => {
+					const schema = schemaStore.schemaList.find(
+						(s) => s.id === schemaId,
+					)
 					if (!schema || !schema.properties) {
 						return null
 					}
@@ -747,7 +894,7 @@ export default {
 				// Auto-expand newly selected schemas
 				if (newSchemas && newSchemas.length > 0) {
 					const newExpanded = { ...this.expandedSchemas }
-					newSchemas.forEach(schemaId => {
+					newSchemas.forEach((schemaId) => {
 						// Only auto-expand if not already in the list
 						if (!oldSchemas || !oldSchemas.includes(schemaId)) {
 							newExpanded[schemaId] = true
@@ -788,20 +935,22 @@ export default {
 		}
 
 		// Load views
-		viewsStore.fetchViews().catch(error => {
+		viewsStore.fetchViews().catch((error) => {
 			console.error('Error loading views:', error)
 		})
 
 		// Only load lists if they're empty
 		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+			registerStore
+				.refreshRegisterList()
 				.finally(() => (this.registerLoading = false))
 		} else {
 			this.registerLoading = false
 		}
 
 		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+			schemaStore
+				.refreshSchemaList()
 				.finally(() => (this.schemaLoading = false))
 		} else {
 			this.schemaLoading = false
@@ -826,7 +975,9 @@ export default {
 		onSearchInput(value) {
 			const search = value || ''
 			objectStore.updateSearchParams({ search })
-			this.searchTerms = search ? search.trim().split(/\s+/).filter(Boolean) : []
+			this.searchTerms = search
+				? search.trim().split(/\s+/).filter(Boolean)
+				: []
 			objectStore.refetchSearchCollection()
 		},
 		/**
@@ -837,7 +988,10 @@ export default {
 		 * @param root0.values
 		 */
 		onFilterChange({ key, values }) {
-			const filters = { ...objectStore.searchParams.filters, [key]: values || [] }
+			const filters = {
+				...objectStore.searchParams.filters,
+				[key]: values || [],
+			}
 			objectStore.updateSearchParams({ filters })
 			this.facetFilters = { ...this.facetFilters, [key]: values || [] }
 			objectStore.refetchSearchCollection()
@@ -912,22 +1066,35 @@ export default {
 			if (!schema) this.selectedSchemas = []
 			// Search terms
 			if (typeof q === 'string') {
-				const terms = q.split(',').map(s => s.trim()).filter(Boolean)
+				const terms = q
+					.split(',')
+					.map((s) => s.trim())
+					.filter(Boolean)
 				this.searchTerms = Array.from(new Set(terms))
 			}
 			// Registers and schemas depend on lists being loaded
 			const applyRegisters = () => {
 				if (!register) return true
 				if (!registerStore.registerList.length) return false
-				const registerIds = String(register).split(',').map(id => parseInt(id, 10)).filter(Boolean)
-				this.selectedRegisters = registerIds.filter(id => registerStore.registerList.some(r => r.id === id))
+				const registerIds = String(register)
+					.split(',')
+					.map((id) => parseInt(id, 10))
+					.filter(Boolean)
+				this.selectedRegisters = registerIds.filter((id) =>
+					registerStore.registerList.some((r) => r.id === id),
+				)
 				return true
 			}
 			const applySchemas = () => {
 				if (!schema) return true
 				if (!schemaStore.schemaList.length) return false
-				const schemaIds = String(schema).split(',').map(id => parseInt(id, 10)).filter(Boolean)
-				this.selectedSchemas = schemaIds.filter(id => schemaStore.schemaList.some(s => s.id === id))
+				const schemaIds = String(schema)
+					.split(',')
+					.map((id) => parseInt(id, 10))
+					.filter(Boolean)
+				this.selectedSchemas = schemaIds.filter((id) =>
+					schemaStore.schemaList.some((s) => s.id === id),
+				)
 				return true
 			}
 			// Try apply now, or retry shortly if lists not yet loaded.
@@ -947,7 +1114,10 @@ export default {
 				const regOk = applyRegisters()
 				const schOk = applySchemas()
 				if (regOk && schOk) {
-					if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) {
+					if (
+						this.selectedRegisters.length > 0
+						&& this.selectedSchemas.length > 0
+					) {
 						this.performSearchWithFacets()
 					} else {
 						objectStore.clearSearchCollection()
@@ -982,13 +1152,19 @@ export default {
 
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
-			this.selectedRegisters.forEach(registerId => {
-				const register = registerStore.registerList.find(r => r.id === registerId)
+			this.selectedRegisters.forEach((registerId) => {
+				const register = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
 				if (register && register.schemas) {
-					register.schemas.forEach(schemaId => validSchemaIds.add(schemaId))
+					register.schemas.forEach((schemaId) =>
+						validSchemaIds.add(schemaId),
+					)
 				}
 			})
-			this.selectedSchemas = this.selectedSchemas.filter(id => validSchemaIds.has(id))
+			this.selectedSchemas = this.selectedSchemas.filter((id) =>
+				validSchemaIds.has(id),
+			)
 
 			if (this.selectedRegisters.length === 0) {
 				objectStore.clearSearchCollection()
@@ -1027,12 +1203,17 @@ export default {
 		 * @return {void}
 		 */
 		syncSearchParamsAndRefetch() {
-			const registerId = this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
-			const schemaId = this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
-			const search = this.searchTerms.length > 0 ? this.searchTerms.join(' ') : ''
+			const registerId =
+				this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
+			const schemaId =
+				this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
+			const search =
+				this.searchTerms.length > 0 ? this.searchTerms.join(' ') : ''
 			const filters = { ...this.facetFilters }
 			if (registerId) {
-				const reg = registerStore.registerList.find((r) => r.id === registerId)
+				const reg = registerStore.registerList.find(
+					(r) => r.id === registerId,
+				)
 				if (reg) registerStore.setRegisterItem(reg)
 			} else {
 				registerStore.setRegisterItem(null)
@@ -1060,11 +1241,13 @@ export default {
 			// Parse search terms from input (support comma and space separation)
 			const inputTerms = this.searchQuery
 				.split(/[,\s]+/)
-				.map(term => term.trim())
-				.filter(term => term.length > 0)
+				.map((term) => term.trim())
+				.filter((term) => term.length > 0)
 
 			// Find terms that are new (not already in searchTerms)
-			const newTerms = inputTerms.filter(term => !this.searchTerms.includes(term))
+			const newTerms = inputTerms.filter(
+				(term) => !this.searchTerms.includes(term),
+			)
 
 			// Add only new terms to existing ones
 			if (newTerms.length > 0) {
@@ -1135,7 +1318,6 @@ export default {
 					total: objectStore.pagination.total || 0,
 					time: executionTime,
 				}
-
 			} catch (error) {
 				// Search failed - error is handled by setting lastSearchStats to defaults
 				this.lastSearchStats = {
@@ -1162,8 +1344,11 @@ export default {
 			const inherited = {}
 			for (const ref of allOf) {
 				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(s =>
-					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				const parentSchema = schemaStore.schemaList.find(
+					(s) =>
+						s.id === schemaId
+						|| s.uuid === schemaId
+						|| String(s.id) === String(schemaId),
 				)
 				if (parentSchema?.properties) {
 					Object.assign(inherited, parentSchema.properties)
@@ -1178,15 +1363,25 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async discoverFacets() {
-			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
+			if (
+				!objectStore.searchParams.register
+				|| !objectStore.searchParams.schema
+			)
+				return
 			try {
 				this.facetsLoading = true
 				this.facetableFields = null
-				await objectStore.refetchSearchCollection({ _facets: 'extend', _limit: 0 })
+				await objectStore.refetchSearchCollection({
+					_facets: 'extend',
+					_limit: 0,
+				})
 				this.facetData = objectStore.searchFacets || null
 				const searchSchema = objectStore.searchSchema
 				this.facetableFields = searchSchema?.properties
-					? { object_fields: this.resolveInheritedProperties(searchSchema) }
+					? {
+							object_fields:
+								this.resolveInheritedProperties(searchSchema),
+						}
 					: {}
 			} catch (error) {
 				console.error('Error loading complete faceting data:', error)
@@ -1240,7 +1435,8 @@ export default {
 					}
 				} else {
 					// Object field facet
-					const fieldInfo = this.facetableFields?.object_fields?.[fieldName]
+					const fieldInfo =
+						this.facetableFields?.object_fields?.[fieldName]
 					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
 
 					config[fieldName] = { type: facetType }
@@ -1303,7 +1499,11 @@ export default {
 				return fieldInfo?.description || this.capitalizeFieldName(field)
 			} else {
 				const fieldInfo = this.facetableFields?.object_fields?.[field]
-				return fieldInfo?.title || fieldInfo?.description || this.capitalizeFieldName(field)
+				return (
+					fieldInfo?.title
+					|| fieldInfo?.description
+					|| this.capitalizeFieldName(field)
+				)
 			}
 		},
 
@@ -1327,13 +1527,13 @@ export default {
 
 			if (facetData.type === 'terms') {
 				// Terms facet: simple buckets with value and count
-				return (facetData.buckets || []).map(bucket => ({
+				return (facetData.buckets || []).map((bucket) => ({
 					value: bucket.value,
 					label: `${bucket.label || bucket.value} (${bucket.count || 0})`,
 				}))
 			} else if (facetData.type === 'range') {
 				// Range facet: numeric ranges
-				return (facetData.buckets || []).map(bucket => ({
+				return (facetData.buckets || []).map((bucket) => ({
 					value: `${bucket.from}-${bucket.to}`,
 					label: `${bucket.label || `${bucket.from} - ${bucket.to}`} (${bucket.count || 0})`,
 				}))
@@ -1343,7 +1543,7 @@ export default {
 
 				// Add yearly options
 				if (facetData.brackets?.yearly?.buckets) {
-					facetData.brackets.yearly.buckets.forEach(bucket => {
+					facetData.brackets.yearly.buckets.forEach((bucket) => {
 						options.push({
 							value: `year:${bucket.date}`,
 							label: `${bucket.label} (${bucket.count || 0})`,
@@ -1353,7 +1553,7 @@ export default {
 
 				// Add monthly options
 				if (facetData.brackets?.monthly?.buckets) {
-					facetData.brackets.monthly.buckets.forEach(bucket => {
+					facetData.brackets.monthly.buckets.forEach((bucket) => {
 						options.push({
 							value: `month:${bucket.date}`,
 							label: `${bucket.label} (${bucket.count || 0})`,
@@ -1363,12 +1563,14 @@ export default {
 
 				// Add daily options (limit to recent entries to avoid clutter)
 				if (facetData.brackets?.daily?.buckets) {
-					facetData.brackets.daily.buckets.slice(0, 30).forEach(bucket => {
-						options.push({
-							value: `day:${bucket.date}`,
-							label: `${bucket.label} (${bucket.count || 0})`,
+					facetData.brackets.daily.buckets
+						.slice(0, 30)
+						.forEach((bucket) => {
+							options.push({
+								value: `day:${bucket.date}`,
+								label: `${bucket.label} (${bucket.count || 0})`,
+							})
 						})
-					})
 				}
 
 				return options
@@ -1387,7 +1589,7 @@ export default {
 			// Convert field names like 'tooiCategorieNaam' to 'Tooi Categorie Naam'
 			return fieldName
 				.replace(/([a-z])([A-Z])/g, '$1 $2') // Split camelCase
-				.replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+				.replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
 		},
 
 		/**
@@ -1518,10 +1720,16 @@ export default {
 				this.showSaveForm = false
 
 				// Show success message
-				OC.Notification.showTemporary(this.t('openregister', 'View saved successfully!'))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'View saved successfully!'),
+				)
 			} catch (error) {
 				console.error('Error saving view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to save view: {error}', { error: error.message }))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to save view: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 
@@ -1563,7 +1771,10 @@ export default {
 					},
 				}
 
-				const updatedView = await viewsStore.updateView(viewsStore.activeView.id || viewsStore.activeView.uuid, viewData)
+				const updatedView = await viewsStore.updateView(
+					viewsStore.activeView.id || viewsStore.activeView.uuid,
+					viewData,
+				)
 
 				// Refresh the view list to show the updated view
 				await viewsStore.fetchViews()
@@ -1572,10 +1783,16 @@ export default {
 				viewsStore.activeView = updatedView
 				this.activeViewName = viewsStore.activeView.name
 
-				OC.Notification.showTemporary(this.t('openregister', 'View updated successfully!'))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'View updated successfully!'),
+				)
 			} catch (error) {
 				console.error('Error updating view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to update view: {error}', { error: error.message }))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to update view: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 
@@ -1622,7 +1839,11 @@ export default {
 				this.activeTab = 'search-tab'
 			} catch (error) {
 				console.error('Error loading view:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to load view: {error}', { error: error.message }))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to load view: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 
@@ -1677,7 +1898,12 @@ export default {
 				// eslint-disable-next-line @nextcloud/no-deprecations
 				const currentUser = OC.getCurrentUser()?.uid
 				if (!currentUser) {
-					OC.Notification.showTemporary(this.t('openregister', 'You must be logged in to favorite views'))
+					OC.Notification.showTemporary(
+						this.t(
+							'openregister',
+							'You must be logged in to favorite views',
+						),
+					)
 					return
 				}
 
@@ -1686,20 +1912,25 @@ export default {
 
 				// Add or remove user from favoredBy array
 				const updatedFavoredBy = isFavorited
-					? currentFavoredBy.filter(uid => uid !== currentUser)
+					? currentFavoredBy.filter((uid) => uid !== currentUser)
 					: [...currentFavoredBy, currentUser]
 
 				// Use PATCH to update only the favoredBy property
-				const response = await fetch(generateUrl(`/apps/openregister/api/views/${view.id || view.uuid}`), {
-					method: 'PATCH',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					generateUrl(
+						`/apps/openregister/api/views/${view.id || view.uuid}`,
+					),
+					{
+						method: 'PATCH',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
+						body: JSON.stringify({
+							favoredBy: updatedFavoredBy,
+						}),
 					},
-					body: JSON.stringify({
-						favoredBy: updatedFavoredBy,
-					}),
-				})
+				)
 
 				if (!response.ok) {
 					throw new Error('Failed to toggle favorite status')
@@ -1715,7 +1946,9 @@ export default {
 				)
 			} catch (error) {
 				console.error('Error toggling favorite:', error)
-				OC.Notification.showTemporary(this.t('openregister', 'Failed to update favorite status'))
+				OC.Notification.showTemporary(
+					this.t('openregister', 'Failed to update favorite status'),
+				)
 			}
 		},
 
@@ -1746,8 +1979,11 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async handleDeleteClose() {
-			const wasActiveView = this.viewToDelete && viewsStore.activeView
-				&& (this.viewToDelete.id === viewsStore.activeView.id || this.viewToDelete.uuid === viewsStore.activeView.uuid)
+			const wasActiveView =
+				this.viewToDelete
+				&& viewsStore.activeView
+				&& (this.viewToDelete.id === viewsStore.activeView.id
+					|| this.viewToDelete.uuid === viewsStore.activeView.uuid)
 
 			this.showDeleteDialog = false
 			this.viewToDelete = null
@@ -1789,12 +2025,15 @@ export default {
 			const activeFilters = {}
 			Object.entries(this.facetFilters).forEach(([field, values]) => {
 				if (values && values.length > 0) {
-					const filterValues = values.map((option) => (option && option.value !== undefined ? option.value : option))
+					const filterValues = values.map((option) =>
+						option && option.value !== undefined ? option.value : option,
+					)
 					activeFilters[field] = filterValues
 				}
 			})
 			objectStore.updateSearchParams({
-				search: this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
+				search:
+					this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
 				filters: activeFilters,
 			})
 		},

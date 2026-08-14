@@ -34,154 +34,134 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class ContextsControllerTest extends TestCase
-{
-    private IRequest&MockObject $request;
-    private RegisterMapper&MockObject $registerMapper;
-    private SchemaMapper&MockObject $schemaMapper;
-    private ContextsController $controller;
+class ContextsControllerTest extends TestCase {
+	private IRequest&MockObject $request;
+	private RegisterMapper&MockObject $registerMapper;
+	private SchemaMapper&MockObject $schemaMapper;
+	private ContextsController $controller;
 
+	protected function setUp(): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-    protected function setUp(): void
-    {
-        $this->request        = $this->createMock(IRequest::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRouteAbsolute')->willReturnCallback(
+			function (string $route, array $params = []): string {
+				$r = ($params['register'] ?? '');
+				$s = ($params['schema'] ?? '');
+				return 'https://nc.test/api/contexts/' . $r . ($s !== '' ? '/' . $s : '');
+			}
+		);
 
-        $urlGenerator = $this->createMock(IURLGenerator::class);
-        $urlGenerator->method('linkToRouteAbsolute')->willReturnCallback(
-            function (string $route, array $params = []): string {
-                $r = ($params['register'] ?? '');
-                $s = ($params['schema'] ?? '');
-                return 'https://nc.test/api/contexts/'.$r.($s !== '' ? '/'.$s : '');
-            }
-        );
+		$contextService = new JsonLdContextService($urlGenerator);
 
-        $contextService = new JsonLdContextService($urlGenerator);
+		$this->controller = new ContextsController(
+			'openregister',
+			$this->request,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$contextService
+		);
+	}
 
-        $this->controller = new ContextsController(
-            'openregister',
-            $this->request,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $contextService
-        );
-    }
+	private function makeRegister(): Register {
+		$register = new Register();
+		$register->setSlug('personen');
+		$register->setSchemas([1]);
+		$register->setUpdated(new DateTime('2026-01-01T00:00:00+00:00'));
+		return $register;
+	}
 
+	private function makeSchema(): Schema {
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setSlug('persoon');
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$schema->setUpdated(new DateTime('2026-02-02T00:00:00+00:00'));
+		return $schema;
+	}
 
-    private function makeRegister(): Register
-    {
-        $register = new Register();
-        $register->setSlug('personen');
-        $register->setSchemas([1]);
-        $register->setUpdated(new DateTime('2026-01-01T00:00:00+00:00'));
-        return $register;
-    }
+	public function testSchemaContextShape(): void {
+		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
+		$this->request->method('getHeader')->willReturn('');
 
+		$response = $this->controller->schema('personen', 'persoon');
 
-    private function makeSchema(): Schema
-    {
-        $schema = new Schema();
-        $schema->setId(1);
-        $schema->setSlug('persoon');
-        $schema->setProperties(['name' => ['type' => 'string']]);
-        $schema->setUpdated(new DateTime('2026-02-02T00:00:00+00:00'));
-        return $schema;
-    }
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		$this->assertArrayHasKey('@context', $data);
+		$this->assertArrayHasKey('name', $data['@context']);
 
+		// getHeaders() reads \OC::$server; only assert headers under NC.
+		if ($this->hasOcServer() === true) {
+			$this->assertSame('application/ld+json', $response->getHeaders()['Content-Type']);
+			$this->assertArrayHasKey('ETag', $response->getHeaders());
+		}
+	}
 
-    public function testSchemaContextShape(): void
-    {
-        $this->registerMapper->method('find')->willReturn($this->makeRegister());
-        $this->schemaMapper->method('find')->willReturn($this->makeSchema());
-        $this->request->method('getHeader')->willReturn('');
+	private function hasOcServer(): bool {
+		return class_exists('\OC', false) === true && isset(\OC::$server) === true;
+	}
 
-        $response = $this->controller->schema('personen', 'persoon');
+	public function testRegisterContextZeroConfig(): void {
+		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
+		$this->request->method('getHeader')->willReturn('');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertArrayHasKey('@context', $data);
-        $this->assertArrayHasKey('name', $data['@context']);
+		$response = $this->controller->register('personen');
 
-        // getHeaders() reads \OC::$server; only assert headers under NC.
-        if ($this->hasOcServer() === true) {
-            $this->assertSame('application/ld+json', $response->getHeaders()['Content-Type']);
-            $this->assertArrayHasKey('ETag', $response->getHeaders());
-        }
-    }
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		$this->assertArrayHasKey('@context', $data);
+		$this->assertArrayHasKey('name', $data['@context']);
+	}
 
+	public function testConditionalGetReturns304(): void {
+		if ($this->hasOcServer() === false) {
+			$this->markTestSkipped('Reading the ETag header requires the Nextcloud container (\OC::$server).');
+		}
 
-    private function hasOcServer(): bool
-    {
-        return class_exists('\OC', false) === true && isset(\OC::$server) === true;
-    }
+		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
 
+		// First call to learn the ETag.
+		$this->request->method('getHeader')->willReturnCallback(
+			function (string $name): string {
+				return ($name === 'If-None-Match') ? ($this->ifNoneMatch ?? '') : '';
+			}
+		);
 
-    public function testRegisterContextZeroConfig(): void
-    {
-        $this->registerMapper->method('find')->willReturn($this->makeRegister());
-        $this->schemaMapper->method('find')->willReturn($this->makeSchema());
-        $this->request->method('getHeader')->willReturn('');
+		$this->ifNoneMatch = '';
+		$first = $this->controller->schema('personen', 'persoon');
+		$etag = $first->getHeaders()['ETag'];
 
-        $response = $this->controller->register('personen');
+		$this->ifNoneMatch = $etag;
+		$second = $this->controller->schema('personen', 'persoon');
 
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $data = $response->getData();
-        $this->assertArrayHasKey('@context', $data);
-        $this->assertArrayHasKey('name', $data['@context']);
-    }
+		$this->assertSame(Http::STATUS_NOT_MODIFIED, $second->getStatus());
+	}
 
+	/** @var string */
+	private string $ifNoneMatch = '';
 
-    public function testConditionalGetReturns304(): void
-    {
-        if ($this->hasOcServer() === false) {
-            $this->markTestSkipped('Reading the ETag header requires the Nextcloud container (\OC::$server).');
-        }
+	public function testUnknownRegisterReturns404(): void {
+		$this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+		$this->request->method('getHeader')->willReturn('');
 
-        $this->registerMapper->method('find')->willReturn($this->makeRegister());
-        $this->schemaMapper->method('find')->willReturn($this->makeSchema());
+		$response = $this->controller->register('does-not-exist');
 
-        // First call to learn the ETag.
-        $this->request->method('getHeader')->willReturnCallback(
-            function (string $name): string {
-                return ($name === 'If-None-Match') ? ($this->ifNoneMatch ?? '') : '';
-            }
-        );
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}
 
-        $this->ifNoneMatch = '';
-        $first = $this->controller->schema('personen', 'persoon');
-        $etag  = $first->getHeaders()['ETag'];
+	public function testUnknownSchemaReturns404(): void {
+		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+		$this->request->method('getHeader')->willReturn('');
 
-        $this->ifNoneMatch = $etag;
-        $second = $this->controller->schema('personen', 'persoon');
+		$response = $this->controller->schema('personen', 'does-not-exist');
 
-        $this->assertSame(Http::STATUS_NOT_MODIFIED, $second->getStatus());
-    }
-
-
-    /** @var string */
-    private string $ifNoneMatch = '';
-
-
-    public function testUnknownRegisterReturns404(): void
-    {
-        $this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
-        $this->request->method('getHeader')->willReturn('');
-
-        $response = $this->controller->register('does-not-exist');
-
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }
-
-
-    public function testUnknownSchemaReturns404(): void
-    {
-        $this->registerMapper->method('find')->willReturn($this->makeRegister());
-        $this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
-        $this->request->method('getHeader')->willReturn('');
-
-        $response = $this->controller->schema('personen', 'does-not-exist');
-
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}
 }

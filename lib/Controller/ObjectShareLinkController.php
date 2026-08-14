@@ -61,196 +61,190 @@ use Throwable;
 /**
  * Resolves an object share token to the one object it addresses.
  */
-class ObjectShareLinkController extends Controller
-{
+class ObjectShareLinkController extends Controller {
 
-    /**
-     * Share types this endpoint will honour.
-     *
-     * Only the two bearer-capability types. A USER or GROUP share names a
-     * principal and is decided by the RBAC filter for a logged-in caller; it
-     * must not also be redeemable as an anonymous token.
-     *
-     * @var int[]
-     */
-    private const TOKEN_SHARE_TYPES = [
-        IShare::TYPE_LINK,
-        IShare::TYPE_EMAIL,
-    ];
+	/**
+	 * Share types this endpoint will honour.
+	 *
+	 * Only the two bearer-capability types. A USER or GROUP share names a
+	 * principal and is decided by the RBAC filter for a logged-in caller; it
+	 * must not also be redeemable as an anonymous token.
+	 *
+	 * @var int[]
+	 */
+	private const TOKEN_SHARE_TYPES = [
+		IShare::TYPE_LINK,
+		IShare::TYPE_EMAIL,
+	];
 
-    /**
-     * Constructor.
-     *
-     * @param string          $appName       App name.
-     * @param IRequest        $request       Request.
-     * @param IManager        $shareManager  Core share manager — validates the token.
-     * @param ObjectService   $objectService Loads the addressed object.
-     * @param LoggerInterface $logger        Logger.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly IManager $shareManager,
-        private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param IManager $shareManager Core share manager — validates the token.
+	 * @param ObjectService $objectService Loads the addressed object.
+	 * @param LoggerInterface $logger Logger.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly IManager $shareManager,
+		private readonly ObjectService $objectService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Resolve a share token to its object.
-     *
-     * @param string $token The share token.
-     *
-     * @return JSONResponse The object, or a refusal.
-     */
-    #[PublicPage]
-    #[NoCSRFRequired]
-    public function show(string $token): JSONResponse
-    {
-        $share = $this->resolveLiveShare(token: $token);
-        if ($share === null) {
-            // One shape for every refusal — invalid, revoked, expired, wrong
-            // type, wrong password. Distinguishing them would turn this into an
-            // oracle for which tokens exist.
-            return $this->refused();
-        }
+	/**
+	 * Resolve a share token to its object.
+	 *
+	 * @param string $token The share token.
+	 *
+	 * @return JSONResponse The object, or a refusal.
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	public function show(string $token): JSONResponse {
+		$share = $this->resolveLiveShare(token: $token);
+		if ($share === null) {
+			// One shape for every refusal — invalid, revoked, expired, wrong
+			// type, wrong password. Distinguishing them would turn this into an
+			// oracle for which tokens exist.
+			return $this->refused();
+		}
 
-        $uuid = $this->objectUuidOf(share: $share);
-        if ($uuid === null) {
-            return $this->refused();
-        }
+		$uuid = $this->objectUuidOf(share: $share);
+		if ($uuid === null) {
+			return $this->refused();
+		}
 
-        try {
-            // RBAC off: there is no principal to evaluate, and the token that
-            // core just validated IS the authorization. Multitenancy off for the
-            // same reason — an anonymous caller belongs to no organisation.
-            $object = $this->objectService->find(
-                id: $uuid,
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning(
-                message: '[ObjectShareLink] Could not load the object a live token addressed',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return $this->refused();
-        }
+		try {
+			// RBAC off: there is no principal to evaluate, and the token that
+			// core just validated IS the authorization. Multitenancy off for the
+			// same reason — an anonymous caller belongs to no organisation.
+			$object = $this->objectService->find(
+				id: $uuid,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectShareLink] Could not load the object a live token addressed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return $this->refused();
+		}
 
-        if ($object === null) {
-            return $this->refused();
-        }
+		if ($object === null) {
+			return $this->refused();
+		}
 
-        return new JSONResponse(
-            [
-                'object'      => $object->jsonSerialize(),
-                'permissions' => $share->getPermissions(),
-            ]
-        );
-    }//end show()
+		return new JSONResponse(
+			[
+				'object' => $object->jsonSerialize(),
+				'permissions' => $share->getPermissions(),
+			]
+		);
+	}//end show()
 
-    /**
-     * Resolve a token to a live, permitted share, or null.
-     *
-     * @param string $token The share token.
-     *
-     * @return IShare|null The share, or null when it must not be honoured.
-     */
-    private function resolveLiveShare(string $token): ?IShare
-    {
-        if (trim($token) === '') {
-            return null;
-        }
+	/**
+	 * Resolve a token to a live, permitted share, or null.
+	 *
+	 * @param string $token The share token.
+	 *
+	 * @return IShare|null The share, or null when it must not be honoured.
+	 */
+	private function resolveLiveShare(string $token): ?IShare {
+		if (trim($token) === '') {
+			return null;
+		}
 
-        try {
-            // Throws for an unknown token, and for one whose share has expired
-            // or been revoked — so expiry and revocation need no handling here.
-            $share = $this->shareManager->getShareByToken($token);
-        } catch (Throwable $e) {
-            return null;
-        }
+		try {
+			// Throws for an unknown token, and for one whose share has expired
+			// or been revoked — so expiry and revocation need no handling here.
+			$share = $this->shareManager->getShareByToken($token);
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        if (in_array($share->getShareType(), self::TOKEN_SHARE_TYPES, true) === false) {
-            return null;
-        }
+		if (in_array($share->getShareType(), self::TOKEN_SHARE_TYPES, true) === false) {
+			return null;
+		}
 
-        if ($this->passwordSatisfied(share: $share) === false) {
-            return null;
-        }
+		if ($this->passwordSatisfied(share: $share) === false) {
+			return null;
+		}
 
-        return $share;
-    }//end resolveLiveShare()
+		return $share;
+	}//end resolveLiveShare()
 
-    /**
-     * Whether a password-protected share has been unlocked.
-     *
-     * The comparison is core's `checkPassword()`, never a local one — it is what
-     * knows the hashing scheme and applies the brute-force protection.
-     *
-     * @param IShare $share The share.
-     *
-     * @return bool True when the share needs no password, or the supplied one matches.
-     */
-    private function passwordSatisfied(IShare $share): bool
-    {
-        if ($share->getPassword() === null) {
-            return true;
-        }
+	/**
+	 * Whether a password-protected share has been unlocked.
+	 *
+	 * The comparison is core's `checkPassword()`, never a local one — it is what
+	 * knows the hashing scheme and applies the brute-force protection.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return bool True when the share needs no password, or the supplied one matches.
+	 */
+	private function passwordSatisfied(IShare $share): bool {
+		if ($share->getPassword() === null) {
+			return true;
+		}
 
-        $supplied = $this->request->getParam('password');
-        if (is_string($supplied) === false || $supplied === '') {
-            return false;
-        }
+		$supplied = $this->request->getParam('password');
+		if (is_string($supplied) === false || $supplied === '') {
+			return false;
+		}
 
-        try {
-            return $this->shareManager->checkPassword($share, $supplied);
-        } catch (Throwable $e) {
-            return false;
-        }
-    }//end passwordSatisfied()
+		try {
+			return $this->shareManager->checkPassword($share, $supplied);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end passwordSatisfied()
 
-    /**
-     * The object UUID a share addresses, or null when it addresses none.
-     *
-     * An object's folder is named after its UUID. A share of a FILE inside that
-     * folder is a file share and grants no object — the same rule the grant
-     * resolver applies, kept identical here on purpose.
-     *
-     * @param IShare $share The share.
-     *
-     * @return string|null The object UUID.
-     */
-    private function objectUuidOf(IShare $share): ?string
-    {
-        try {
-            if ($share->getNodeType() !== 'folder') {
-                return null;
-            }
+	/**
+	 * The object UUID a share addresses, or null when it addresses none.
+	 *
+	 * An object's folder is named after its UUID. A share of a FILE inside that
+	 * folder is a file share and grants no object — the same rule the grant
+	 * resolver applies, kept identical here on purpose.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return string|null The object UUID.
+	 */
+	private function objectUuidOf(IShare $share): ?string {
+		try {
+			if ($share->getNodeType() !== 'folder') {
+				return null;
+			}
 
-            $name = $share->getNode()->getName();
-        } catch (Throwable $e) {
-            return null;
-        }
+			$name = $share->getNode()->getName();
+		} catch (Throwable $e) {
+			return null;
+		}
 
-        $uuidPattern = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
-        if ($name === '' || preg_match($uuidPattern, $name) !== 1) {
-            return null;
-        }
+		$uuidPattern = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
+		if ($name === '' || preg_match($uuidPattern, $name) !== 1) {
+			return null;
+		}
 
-        return $name;
-    }//end objectUuidOf()
+		return $name;
+	}//end objectUuidOf()
 
-    /**
-     * The single refusal shape.
-     *
-     * @return JSONResponse A 404.
-     */
-    private function refused(): JSONResponse
-    {
-        return new JSONResponse(
-            ['message' => 'No such share'],
-            Http::STATUS_NOT_FOUND
-        );
-    }//end refused()
+	/**
+	 * The single refusal shape.
+	 *
+	 * @return JSONResponse A 404.
+	 */
+	private function refused(): JSONResponse {
+		return new JSONResponse(
+			['message' => 'No such share'],
+			Http::STATUS_NOT_FOUND
+		);
+	}//end refused()
 }//end class

@@ -22,4 +22,5 @@ export const mockDatabaseData = (): TDatabase[] => [
 	},
 ]
 
-export const mockDatabase = (data: TDatabase[] = mockDatabaseData()): TDatabase[] => data.map(item => new Database(item))
+export const mockDatabase = (data: TDatabase[] = mockDatabaseData()): TDatabase[] =>
+	data.map((item) => new Database(item))

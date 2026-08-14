@@ -62,116 +62,113 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class FlowLink extends Entity implements JsonSerializable
-{
+class FlowLink extends Entity implements JsonSerializable {
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The Flow operation id (primary key in `oc_flow_operations`).
-     *
-     * @var integer|null
-     */
-    protected ?int $operationId = null;
+	/**
+	 * The Flow operation id (primary key in `oc_flow_operations`).
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $operationId = null;
 
-    /**
-     * The IOperation FQCN that handles this rule.
-     *
-     * @var string|null
-     */
-    protected ?string $operationClass = null;
+	/**
+	 * The IOperation FQCN that handles this rule.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $operationClass = null;
 
-    /**
-     * The operation display name (cached at link time).
-     *
-     * @var string|null
-     */
-    protected ?string $operationName = null;
+	/**
+	 * The operation display name (cached at link time).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $operationName = null;
 
-    /**
-     * The entity class the operation is bound to
-     * (e.g. `OCA\WorkflowEngine\Entity\File`).
-     *
-     * @var string|null
-     */
-    protected ?string $entityType = null;
+	/**
+	 * The entity class the operation is bound to
+	 * (e.g. `OCA\WorkflowEngine\Entity\File`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $entityType = null;
 
-    /**
-     * Whether the operation is currently enabled in NC Flow.
-     *
-     * @var boolean|null
-     */
-    protected ?bool $enabled = true;
+	/**
+	 * Whether the operation is currently enabled in NC Flow.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $enabled = true;
 
-    /**
-     * The linked by uid.
-     *
-     * @var string|null
-     */
-    protected ?string $linkedBy = null;
+	/**
+	 * The linked by uid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $linkedBy = null;
 
-    /**
-     * The linked at timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $linkedAt = null;
+	/**
+	 * The linked at timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $linkedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'operationId', type: 'integer');
-        $this->addType(fieldName: 'operationClass', type: 'string');
-        $this->addType(fieldName: 'operationName', type: 'string');
-        $this->addType(fieldName: 'entityType', type: 'string');
-        $this->addType(fieldName: 'enabled', type: 'boolean');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'operationId', type: 'integer');
+		$this->addType(fieldName: 'operationClass', type: 'string');
+		$this->addType(fieldName: 'operationName', type: 'string');
+		$this->addType(fieldName: 'entityType', type: 'string');
+		$this->addType(fieldName: 'enabled', type: 'boolean');
+		$this->addType(fieldName: 'linkedBy', type: 'string');
+		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'             => $this->id,
-            'objectUuid'     => $this->objectUuid,
-            'registerId'     => $this->registerId,
-            'schemaId'       => $this->schemaId,
-            'operationId'    => $this->operationId,
-            'operationClass' => $this->operationClass,
-            'operationName'  => $this->operationName,
-            'entityType'     => $this->entityType,
-            'enabled'        => (bool) $this->enabled,
-            'linkedBy'       => $this->linkedBy,
-            'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'objectUuid' => $this->objectUuid,
+			'registerId' => $this->registerId,
+			'schemaId' => $this->schemaId,
+			'operationId' => $this->operationId,
+			'operationClass' => $this->operationClass,
+			'operationName' => $this->operationName,
+			'entityType' => $this->entityType,
+			'enabled' => (bool)$this->enabled,
+			'linkedBy' => $this->linkedBy,
+			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+		];
+	}//end jsonSerialize()
 }//end class

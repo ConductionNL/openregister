@@ -48,43 +48,41 @@ use OCP\Util;
  *
  * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
  */
-class PushClientScriptListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param IUserSession $userSession The current user session.
-     */
-    public function __construct(
-        private readonly IUserSession $userSession
-    ) {
-    }//end __construct()
+class PushClientScriptListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserSession $userSession The current user session.
+	 */
+	public function __construct(
+		private readonly IUserSession $userSession,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle the event.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        if ($event instanceof BeforeTemplateRenderedEvent === false) {
-            return;
-        }
+	/**
+	 * Handle the event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof BeforeTemplateRenderedEvent === false) {
+			return;
+		}
 
-        // Only for an authenticated user (subscriptions are user-scoped).
-        if ($this->userSession->getUser() === null) {
-            return;
-        }
+		// Only for an authenticated user (subscriptions are user-scoped).
+		if ($this->userSession->getUser() === null) {
+			return;
+		}
 
-        // Load the static, opt-in subscribe client (no prompt on load).
-        if (file_exists(__DIR__.'/../../js/openregister-push-client.js') === true) {
-            Util::addScript('openregister', '../js/openregister-push-client');
-        }
-    }//end handle()
+		// Load the static, opt-in subscribe client (no prompt on load).
+		if (file_exists(__DIR__ . '/../../js/openregister-push-client.js') === true) {
+			Util::addScript('openregister', '../js/openregister-push-client');
+		}
+	}//end handle()
 }//end class

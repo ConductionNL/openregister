@@ -37,50 +37,47 @@ use OCP\Migration\SimpleMigrationStep;
  * Adds an indexed nullable `import_job_id` column to the
  * `openregister_audit_trails` table.
  */
-class Version1Date20260502120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260502120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_audit_trails');
+		$table = $schema->getTable(tableName: 'openregister_audit_trails');
 
-        if ($table->hasColumn(name: 'import_job_id') === false) {
-            $table->addColumn(
-                name: 'import_job_id',
-                typeName: Types::STRING,
-                options: [
-                    'notnull' => false,
-                    'length'  => 36,
-                ]
-            );
-        }
+		if ($table->hasColumn(name: 'import_job_id') === false) {
+			$table->addColumn(
+				name: 'import_job_id',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => false,
+					'length' => 36,
+				]
+			);
+		}
 
-        if ($table->hasIndex(name: 'idx_audit_trails_import_job_id') === false) {
-            $table->addIndex(
-                columnNames: ['import_job_id'],
-                indexName: 'idx_audit_trails_import_job_id'
-            );
-        }
+		if ($table->hasIndex(name: 'idx_audit_trails_import_job_id') === false) {
+			$table->addIndex(
+				columnNames: ['import_job_id'],
+				indexName: 'idx_audit_trails_import_job_id'
+			);
+		}
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

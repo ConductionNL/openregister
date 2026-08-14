@@ -14,7 +14,11 @@
 						<template #icon>
 							<FilterVariant :size="20" />
 						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
+						{{
+							sidebarOpen
+								? t('openregister', 'Hide Filters')
+								: t('openregister', 'Show Filters')
+						}}
 					</NcButton>
 				</div>
 				<p>
@@ -26,20 +30,21 @@
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="templatesList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} templates', {
-							showing: templatesList.length,
-							total: totalTemplates
-						}) }}
+						{{
+							t(
+								'openregister',
+								'Showing {showing} of {total} templates',
+								{
+									showing: templatesList.length,
+									total: totalTemplates,
+								},
+							)
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshTemplates">
+					<NcActions :force-name="true" :inline="1" menu-name="Actions">
+						<NcActionButton close-after-click @click="refreshTemplates">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -56,7 +61,12 @@
 				<NcEmptyContent
 					v-else-if="!templatesList.length"
 					:name="t('openregister', 'Templates are coming soon')"
-					:description="t('openregister', 'The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.')">
+					:description="
+						t(
+							'openregister',
+							'The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.',
+						)
+					">
 					<template #icon>
 						<FileOutline :size="64" />
 					</template>
@@ -85,10 +95,14 @@
 					<tbody>
 						<tr v-for="template in templatesList" :key="template.id">
 							<td class="column-name">
-								<span class="template-name">{{ template.name }}</span>
+								<span class="template-name">{{
+									template.name
+								}}</span>
 							</td>
 							<td class="column-type">
-								<span class="badge badge-type">{{ template.type }}</span>
+								<span class="badge badge-type">{{
+									template.type
+								}}</span>
 							</td>
 							<td class="column-description">
 								{{ template.description || '-' }}
@@ -114,16 +128,16 @@
 
 				<!-- Pagination -->
 				<div v-if="totalTemplates > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
+					<NcButton :disabled="offset === 0" @click="previousPage">
 						{{ t('openregister', 'Previous') }}
 					</NcButton>
 					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
+						{{
+							t('openregister', 'Page {current} of {total}', {
+								current: currentPage,
+								total: totalPages,
+							})
+						}}
 					</span>
 					<NcButton
 						:disabled="offset + limit >= totalTemplates"

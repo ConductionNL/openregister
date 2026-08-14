@@ -3,16 +3,19 @@
 		<!-- Page info first -->
 		<div class="viewPaginationInfo">
 			<span class="viewPageInfo">
-				{{ t('openregister', 'Page {current} of {total}', { current: currentPage, total: totalPages }) }}
+				{{
+					t('openregister', 'Page {current} of {total}', {
+						current: currentPage,
+						total: totalPages,
+					})
+				}}
 			</span>
 		</div>
 
 		<!-- Page navigation in middle -->
 		<div v-if="totalPages > 1" class="viewPaginationNav">
 			<!-- First page button -->
-			<NcButton
-				:disabled="currentPage === 1"
-				@click="changePage(1)">
+			<NcButton :disabled="currentPage === 1" @click="changePage(1)">
 				{{ t('openregister', 'First') }}
 			</NcButton>
 
@@ -26,7 +29,9 @@
 			<!-- Page number buttons -->
 			<div class="viewPaginationNumbers">
 				<template v-for="page in visiblePages" :key="page">
-					<span v-if="page === '...'" class="viewPaginationEllipsis">...</span>
+					<span v-if="page === '...'" class="viewPaginationEllipsis"
+						>...</span
+					>
 					<NcButton
 						v-else
 						:variant="page === currentPage ? 'primary' : 'secondary'"
@@ -156,7 +161,11 @@ export default {
 		 * @spec exclude computed lookup of current page-size option, UI plumbing
 		 */
 		currentPageSizeOption() {
-			return this.pageSizeOptions.find(option => option.value === this.currentPageSize) || this.pageSizeOptions[1]
+			return (
+				this.pageSizeOptions.find(
+					(option) => option.value === this.currentPageSize,
+				) || this.pageSizeOptions[1]
+			)
 		},
 		/**
 		 * Calculate visible page numbers for pagination

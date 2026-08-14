@@ -44,7 +44,6 @@ use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -57,260 +56,253 @@ use ReflectionClass;
 /**
  * Unit tests for RegistersController::destroy DELETE-safety guard.
  */
-class RegistersDestroySafetyTest extends TestCase
-{
+class RegistersDestroySafetyTest extends TestCase {
 
-    private RegistersController $controller;
+	private RegistersController $controller;
 
-    /**
-     * @var IRequest&MockObject
-     */
-    private IRequest $request;
+	/**
+	 * @var IRequest&MockObject
+	 */
+	private IRequest $request;
 
-    /**
-     * @var RegisterService&MockObject
-     */
-    private RegisterService $registerService;
+	/**
+	 * @var RegisterService&MockObject
+	 */
+	private RegisterService $registerService;
 
-    /**
-     * @var MagicMapper&MockObject
-     */
-    private MagicMapper $objectMapper;
+	/**
+	 * @var MagicMapper&MockObject
+	 */
+	private MagicMapper $objectMapper;
 
-    /**
-     * @var RegisterCacheHandler&MockObject
-     */
-    private RegisterCacheHandler $registerCacheHandler;
+	/**
+	 * @var RegisterCacheHandler&MockObject
+	 */
+	private RegisterCacheHandler $registerCacheHandler;
 
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface $logger;
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface $logger;
 
-    /**
-     * @var IUserSession&MockObject
-     */
-    private IUserSession $userSession;
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession $userSession;
 
-    /**
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager $groupManager;
+	/**
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager $groupManager;
 
-    /**
-     * @var ContainerInterface&MockObject
-     */
-    private ContainerInterface $container;
+	/**
+	 * @var ContainerInterface&MockObject
+	 */
+	private ContainerInterface $container;
 
-    /**
-     * Wire up RegistersController with every dependency mocked.
-     * Default user is an authenticated admin so all permission checks pass.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Wire up RegistersController with every dependency mocked.
+	 * Default user is an authenticated admin so all permission checks pass.
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->request         = $this->createMock(IRequest::class);
-        $this->registerService = $this->createMock(RegisterService::class);
-        $this->objectMapper    = $this->createMock(MagicMapper::class);
-        $this->registerCacheHandler = $this->createMock(RegisterCacheHandler::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
-        $this->userSession  = $this->createMock(IUserSession::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->registerService = $this->createMock(RegisterService::class);
+		$this->objectMapper = $this->createMock(MagicMapper::class);
+		$this->registerCacheHandler = $this->createMock(RegisterCacheHandler::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
-        // Default to an authenticated admin so checkRegisterManagePermission passes.
-        $adminUser = $this->createMock(\OCP\IUser::class);
-        $adminUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($adminUser);
-        $this->groupManager->method('isAdmin')->willReturn(true);
-        $this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
+		// Default to an authenticated admin so checkRegisterManagePermission passes.
+		$adminUser = $this->createMock(\OCP\IUser::class);
+		$adminUser->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($adminUser);
+		$this->groupManager->method('isAdmin')->willReturn(true);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
-        // checkRegisterManagePermission() resolves IGroupManager via the container
-        // on its no-authorization (admin-only) branch — return the stubbed one.
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->container->method('get')->willReturnCallback(
-            function ($id) {
-                if ($id === \OCP\IGroupManager::class) {
-                    return $this->groupManager;
-                }
+		// checkRegisterManagePermission() resolves IGroupManager via the container
+		// on its no-authorization (admin-only) branch — return the stubbed one.
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->container->method('get')->willReturnCallback(
+			function ($id) {
+				if ($id === \OCP\IGroupManager::class) {
+					return $this->groupManager;
+				}
 
-                return null;
-            }
-        );
+				return null;
+			}
+		);
 
-        $this->controller = new RegistersController(
-            'openregister',
-            $this->request,
-            $this->registerService,
-            $this->objectMapper,
-            $this->createMock(UploadService::class),
-            $this->logger,
-            $this->userSession,
-            $this->createMock(ConfigurationService::class),
-            $this->createMock(AuditTrailMapper::class),
-            $this->createMock(ExportService::class),
-            $this->createMock(ImportService::class),
-            $this->createMock(SchemaMapper::class),
-            $this->createMock(RegisterMapper::class),
-            $this->createMock(GitHubHandler::class),
-            $this->createMock(IAppManager::class),
-            $this->createMock(OasService::class),
-            $this->container,
-            $this->groupManager,
-            $this->registerCacheHandler,
-            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->createMock(SchemaMapper::class), $this->logger),
-            $this->createMock(MigrationPackService::class)
-        );
+		$this->controller = new RegistersController(
+			'openregister',
+			$this->request,
+			$this->registerService,
+			$this->objectMapper,
+			$this->createMock(UploadService::class),
+			$this->logger,
+			$this->userSession,
+			$this->createMock(ConfigurationService::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ExportService::class),
+			$this->createMock(ImportService::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(GitHubHandler::class),
+			$this->createMock(IAppManager::class),
+			$this->createMock(OasService::class),
+			$this->container,
+			$this->groupManager,
+			$this->registerCacheHandler,
+			new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->createMock(SchemaMapper::class), $this->logger),
+			$this->createMock(MigrationPackService::class)
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    /**
-     * Build a Register entity with injected id + slug.
-     */
-    private function makeRegister(int $id, string $slug='test-register'): Register
-    {
-        $register = new Register();
-        $register->setSlug($slug);
-        $register->setTitle($slug);
+	/**
+	 * Build a Register entity with injected id + slug.
+	 */
+	private function makeRegister(int $id, string $slug = 'test-register'): Register {
+		$register = new Register();
+		$register->setSlug($slug);
+		$register->setTitle($slug);
 
-        $ref  = new ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, $id);
+		$ref = new ReflectionClass($register);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($register, $id);
 
-        return $register;
+		return $register;
+	}//end makeRegister()
 
-    }//end makeRegister()
+	/**
+	 * REQ + SCENARIO: "Delete register with attached schemas-with-objects".
+	 *
+	 * MUST return HTTP 409 with `{ error: 'register-has-objects', objectCount: N }`
+	 * — and MUST NOT call RegisterService::delete. The register stays persisted.
+	 */
+	public function testDestroyWithoutForceReturns409WhenObjectsExist(): void {
+		$register = $this->makeRegister(7, 'openbuild');
 
-    /**
-     * REQ + SCENARIO: "Delete register with attached schemas-with-objects".
-     *
-     * MUST return HTTP 409 with `{ error: 'register-has-objects', objectCount: N }`
-     * — and MUST NOT call RegisterService::delete. The register stays persisted.
-     */
-    public function testDestroyWithoutForceReturns409WhenObjectsExist(): void
-    {
-        $register = $this->makeRegister(7, 'openbuild');
+		$this->registerService
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(7))
+			->willReturn($register);
 
-        $this->registerService
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo(7))
-            ->willReturn($register);
+		// 12 objects still reference schemas attached to this register.
+		$this->objectMapper
+			->expects($this->once())
+			->method('getStatistics')
+			->with($this->equalTo(7), $this->equalTo(null))
+			->willReturn(['total' => 12]);
 
-        // 12 objects still reference schemas attached to this register.
-        $this->objectMapper
-            ->expects($this->once())
-            ->method('getStatistics')
-            ->with($this->equalTo(7), $this->equalTo(null))
-            ->willReturn(['total' => 12]);
+		$this->request
+			->method('getParam')
+			->with($this->equalTo('force'))
+			->willReturn(null);
 
-        $this->request
-            ->method('getParam')
-            ->with($this->equalTo('force'))
-            ->willReturn(null);
+		$this->registerService->expects($this->never())->method('delete');
+		$this->registerCacheHandler->expects($this->never())->method('invalidate');
 
-        $this->registerService->expects($this->never())->method('delete');
-        $this->registerCacheHandler->expects($this->never())->method('invalidate');
+		$response = $this->controller->destroy(7);
 
-        $response = $this->controller->destroy(7);
+		$this->assertSame(409, $response->getStatus());
 
-        $this->assertSame(409, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('register-has-objects', $data['error']);
+		$this->assertSame(12, $data['objectCount']);
 
-        $data = $response->getData();
-        $this->assertSame('register-has-objects', $data['error']);
-        $this->assertSame(12, $data['objectCount']);
+	}//end testDestroyWithoutForceReturns409WhenObjectsExist()
 
-    }//end testDestroyWithoutForceReturns409WhenObjectsExist()
+	/**
+	 * REQ + SCENARIO: Delete register with ?force=true.
+	 *
+	 * MUST proceed with delete (200), MUST invoke
+	 * RegisterCacheHandler::invalidate(id), MUST log a WARNING.
+	 */
+	public function testDestroyWithForceTrueDeletesAndInvalidatesCache(): void {
+		$register = $this->makeRegister(7, 'openbuild');
 
-    /**
-     * REQ + SCENARIO: Delete register with ?force=true.
-     *
-     * MUST proceed with delete (200), MUST invoke
-     * RegisterCacheHandler::invalidate(id), MUST log a WARNING.
-     */
-    public function testDestroyWithForceTrueDeletesAndInvalidatesCache(): void
-    {
-        $register = $this->makeRegister(7, 'openbuild');
+		$this->registerService
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(7))
+			->willReturn($register);
 
-        $this->registerService
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo(7))
-            ->willReturn($register);
+		$this->objectMapper
+			->expects($this->once())
+			->method('getStatistics')
+			->willReturn(['total' => 4]);
 
-        $this->objectMapper
-            ->expects($this->once())
-            ->method('getStatistics')
-            ->willReturn(['total' => 4]);
+		$this->request
+			->method('getParam')
+			->with($this->equalTo('force'))
+			->willReturn('true');
 
-        $this->request
-            ->method('getParam')
-            ->with($this->equalTo('force'))
-            ->willReturn('true');
+		$this->registerService
+			->expects($this->once())
+			->method('delete')
+			->with($this->equalTo($register));
 
-        $this->registerService
-            ->expects($this->once())
-            ->method('delete')
-            ->with($this->equalTo($register));
+		$this->registerCacheHandler
+			->expects($this->once())
+			->method('invalidate')
+			->with($this->equalTo(7));
 
-        $this->registerCacheHandler
-            ->expects($this->once())
-            ->method('invalidate')
-            ->with($this->equalTo(7));
+		$this->logger
+			->expects($this->atLeastOnce())
+			->method('warning')
+			->with(
+				$this->stringContains('Force-deleting register with attached objects'),
+				$this->callback(
+					function (array $ctx): bool {
+						return ($ctx['registerId'] ?? null) === 7
+						&& ($ctx['objectCount'] ?? null) === 4;
+					}
+				)
+			);
 
-        $this->logger
-            ->expects($this->atLeastOnce())
-            ->method('warning')
-            ->with(
-                $this->stringContains('Force-deleting register with attached objects'),
-                $this->callback(
-                        function (array $ctx): bool {
-                            return ($ctx['registerId'] ?? null) === 7
-                            && ($ctx['objectCount'] ?? null) === 4;
-                        }
-                        )
-            );
+		$response = $this->controller->destroy(7);
 
-        $response = $this->controller->destroy(7);
+		$this->assertSame(200, $response->getStatus());
 
-        $this->assertSame(200, $response->getStatus());
+	}//end testDestroyWithForceTrueDeletesAndInvalidatesCache()
 
-    }//end testDestroyWithForceTrueDeletesAndInvalidatesCache()
+	/**
+	 * REQ + SCENARIO: Delete unused register (regression baseline).
+	 *
+	 * Establishes that the destroy path proceeds through delete + invalidate
+	 * when no objects reference the register, validating the 409/force paths
+	 * above are not vacuous.
+	 */
+	public function testDestroyOnUnusedRegisterSucceeds(): void {
+		$register = $this->makeRegister(13, 'empty-register');
 
-    /**
-     * REQ + SCENARIO: Delete unused register (regression baseline).
-     *
-     * Establishes that the destroy path proceeds through delete + invalidate
-     * when no objects reference the register, validating the 409/force paths
-     * above are not vacuous.
-     */
-    public function testDestroyOnUnusedRegisterSucceeds(): void
-    {
-        $register = $this->makeRegister(13, 'empty-register');
+		$this->registerService
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(13))
+			->willReturn($register);
 
-        $this->registerService
-            ->expects($this->once())
-            ->method('find')
-            ->with($this->equalTo(13))
-            ->willReturn($register);
+		$this->objectMapper
+			->expects($this->once())
+			->method('getStatistics')
+			->willReturn(['total' => 0]);
 
-        $this->objectMapper
-            ->expects($this->once())
-            ->method('getStatistics')
-            ->willReturn(['total' => 0]);
+		$this->request
+			->method('getParam')
+			->with($this->equalTo('force'))
+			->willReturn(null);
 
-        $this->request
-            ->method('getParam')
-            ->with($this->equalTo('force'))
-            ->willReturn(null);
+		$this->registerService->expects($this->once())->method('delete');
+		$this->registerCacheHandler->expects($this->once())->method('invalidate')->with($this->equalTo(13));
 
-        $this->registerService->expects($this->once())->method('delete');
-        $this->registerCacheHandler->expects($this->once())->method('invalidate')->with($this->equalTo(13));
+		$response = $this->controller->destroy(13);
 
-        $response = $this->controller->destroy(13);
+		$this->assertSame(200, $response->getStatus());
 
-        $this->assertSame(200, $response->getStatus());
-
-    }//end testDestroyOnUnusedRegisterSucceeds()
+	}//end testDestroyOnUnusedRegisterSucceeds()
 }//end class

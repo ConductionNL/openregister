@@ -36,118 +36,112 @@ use PHPUnit\Framework\TestCase;
  *
  * @coversDefaultClass \OCA\OpenRegister\Settings\OpenRegisterAdmin
  */
-class OpenRegisterAdminTest extends TestCase
-{
+class OpenRegisterAdminTest extends TestCase {
 
-    private OpenRegisterAdmin $admin;
+	private OpenRegisterAdmin $admin;
 
-    /**
-     * @var IConfig&MockObject
-     */
-    private IConfig $config;
+	/**
+	 * @var IConfig&MockObject
+	 */
+	private IConfig $config;
 
-    /**
-     * @var IL10N&MockObject
-     */
-    private IL10N $l10n;
+	/**
+	 * @var IL10N&MockObject
+	 */
+	private IL10N $l10n;
 
-    /**
-     * @var IAppManager&MockObject
-     */
-    private IAppManager $appManager;
+	/**
+	 * @var IAppManager&MockObject
+	 */
+	private IAppManager $appManager;
 
-    /**
-     * @var IAppConfig&MockObject
-     */
-    private IAppConfig $appConfig;
+	/**
+	 * @var IAppConfig&MockObject
+	 */
+	private IAppConfig $appConfig;
 
-    /**
-     * @var IInitialState&MockObject
-     */
-    private IInitialState $initialState;
+	/**
+	 * @var IInitialState&MockObject
+	 */
+	private IInitialState $initialState;
 
-    /**
-     * Set up mocks and admin instance before each test.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up mocks and admin instance before each test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->config       = $this->createMock(IConfig::class);
-        $this->l10n         = $this->createMock(IL10N::class);
-        $this->appManager   = $this->createMock(IAppManager::class);
-        $this->appConfig    = $this->createMock(IAppConfig::class);
-        $this->initialState = $this->createMock(IInitialState::class);
+		$this->config = $this->createMock(IConfig::class);
+		$this->l10n = $this->createMock(IL10N::class);
+		$this->appManager = $this->createMock(IAppManager::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->initialState = $this->createMock(IInitialState::class);
 
-        $this->admin = new OpenRegisterAdmin(
-            $this->config,
-            $this->l10n,
-            $this->appManager,
-            $this->appConfig,
-            $this->initialState
-        );
-    }//end setUp()
+		$this->admin = new OpenRegisterAdmin(
+			$this->config,
+			$this->l10n,
+			$this->appManager,
+			$this->appConfig,
+			$this->initialState
+		);
+	}//end setUp()
 
-    /**
-     * Test that getForm() returns a TemplateResponse for the settings/admin template.
-     *
-     * @return void
-     */
-    public function testGetForm(): void
-    {
-        $this->config->expects($this->once())
-            ->method('getSystemValue')
-            ->with('open_register_setting', true)
-            ->willReturn(true);
+	/**
+	 * Test that getForm() returns a TemplateResponse for the settings/admin template.
+	 *
+	 * @return void
+	 */
+	public function testGetForm(): void {
+		$this->config->expects($this->once())
+			->method('getSystemValue')
+			->with('open_register_setting', true)
+			->willReturn(true);
 
-        // notify_push not installed — pushStatus = 'not_installed'.
-        $this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
-        $this->initialState->expects($this->once())->method('provideInitialState');
+		// notify_push not installed — pushStatus = 'not_installed'.
+		$this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
+		$this->initialState->expects($this->once())->method('provideInitialState');
 
-        $result = $this->admin->getForm();
+		$result = $this->admin->getForm();
 
-        $this->assertInstanceOf(TemplateResponse::class, $result);
-        $this->assertSame('settings/admin', $result->getTemplateName());
-    }//end testGetForm()
+		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('settings/admin', $result->getTemplateName());
+	}//end testGetForm()
 
-    /**
-     * Test that getSection() returns 'openregister'.
-     *
-     * @return void
-     */
-    public function testGetSection(): void
-    {
-        $this->assertSame('openregister', $this->admin->getSection());
-    }//end testGetSection()
+	/**
+	 * Test that getSection() returns 'openregister'.
+	 *
+	 * @return void
+	 */
+	public function testGetSection(): void {
+		$this->assertSame('openregister', $this->admin->getSection());
+	}//end testGetSection()
 
-    /**
-     * Test that getPriority() returns 11.
-     *
-     * @return void
-     */
-    public function testGetPriority(): void
-    {
-        $this->assertSame(11, $this->admin->getPriority());
-    }//end testGetPriority()
+	/**
+	 * Test that getPriority() returns 11.
+	 *
+	 * @return void
+	 */
+	public function testGetPriority(): void {
+		$this->assertSame(11, $this->admin->getPriority());
+	}//end testGetPriority()
 
-    /**
-     * Test getForm() when the system setting is false.
-     *
-     * @return void
-     */
-    public function testGetFormWithFalseSetting(): void
-    {
-        $this->config->method('getSystemValue')
-            ->with('open_register_setting', true)
-            ->willReturn(false);
+	/**
+	 * Test getForm() when the system setting is false.
+	 *
+	 * @return void
+	 */
+	public function testGetFormWithFalseSetting(): void {
+		$this->config->method('getSystemValue')
+			->with('open_register_setting', true)
+			->willReturn(false);
 
-        $this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
-        $this->initialState->method('provideInitialState');
+		$this->appManager->method('isInstalled')->with('notify_push')->willReturn(false);
+		$this->initialState->method('provideInitialState');
 
-        $result = $this->admin->getForm();
+		$result = $this->admin->getForm();
 
-        $this->assertInstanceOf(TemplateResponse::class, $result);
-    }//end testGetFormWithFalseSetting()
+		$this->assertInstanceOf(TemplateResponse::class, $result);
+	}//end testGetFormWithFalseSetting()
 }//end class

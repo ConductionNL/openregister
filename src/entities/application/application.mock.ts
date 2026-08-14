@@ -34,4 +34,5 @@ export const mockApplicationData = (): TApplication[] => [
 	},
 ]
 
-export const mockApplication = (): Application => new Application(mockApplicationData()[0])
+export const mockApplication = (): Application =>
+	new Application(mockApplicationData()[0])

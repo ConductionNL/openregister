@@ -6,7 +6,8 @@ SPDX-License-Identifier: EUPL-1.2
 	<div class="relations-tab">
 		<!-- Type filter chips -->
 		<div v-if="!loading && relations.length > 0" class="relations-tab__filters">
-			<NcCheckboxRadioSwitch v-for="type in availableTypes"
+			<NcCheckboxRadioSwitch
+				v-for="type in availableTypes"
 				:key="type"
 				:model-value="selectedTypes.includes(type)"
 				type="button"
@@ -21,7 +22,8 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load related entities')"
 			:description="errorMessage">
 			<template #icon>
@@ -30,9 +32,15 @@ SPDX-License-Identifier: EUPL-1.2
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="visibleRelations.length === 0"
+		<NcEmptyContent
+			v-else-if="visibleRelations.length === 0"
 			:name="t('openregister', 'No related entities')"
-			:description="t('openregister', 'Linked emails, calendar events, contacts and Deck cards will appear here.')">
+			:description="
+				t(
+					'openregister',
+					'Linked emails, calendar events, contacts and Deck cards will appear here.',
+				)
+			">
 			<template #icon>
 				<LinkVariantOff :size="44" />
 			</template>
@@ -40,14 +48,17 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Timeline -->
 		<ol v-else class="relations-tab__timeline">
-			<li v-for="entry in visibleRelations"
+			<li
+				v-for="entry in visibleRelations"
 				:key="entry.id"
 				class="relations-tab__entry"
 				:class="`relations-tab__entry--${entry.type}`">
 				<div class="relations-tab__icon">
 					<EmailOutline v-if="entry.type === 'email'" :size="20" />
 					<CalendarOutline v-else-if="entry.type === 'event'" :size="20" />
-					<AccountOutline v-else-if="entry.type === 'contact'" :size="20" />
+					<AccountOutline
+						v-else-if="entry.type === 'contact'"
+						:size="20" />
 					<TableLargePlus v-else-if="entry.type === 'deck'" :size="20" />
 					<LinkVariant v-else :size="20" />
 				</div>
@@ -56,11 +67,23 @@ SPDX-License-Identifier: EUPL-1.2
 						{{ entry.title || t('openregister', '(no title)') }}
 					</div>
 					<div class="relations-tab__meta">
-						<span class="relations-tab__type-badge">{{ typeLabels[entry.type] || entry.type }}</span>
-						<span v-if="entry.subtitle" class="relations-tab__separator">&middot;</span>
-						<span v-if="entry.subtitle" class="relations-tab__subtitle">{{ entry.subtitle }}</span>
-						<span v-if="entry.timestamp" class="relations-tab__separator">&middot;</span>
-						<span v-if="entry.timestamp" class="relations-tab__date">{{ formatDate(entry.timestamp) }}</span>
+						<span class="relations-tab__type-badge">{{
+							typeLabels[entry.type] || entry.type
+						}}</span>
+						<span v-if="entry.subtitle" class="relations-tab__separator"
+							>&middot;</span
+						>
+						<span
+							v-if="entry.subtitle"
+							class="relations-tab__subtitle"
+							>{{ entry.subtitle }}</span
+						>
+						<span v-if="entry.timestamp" class="relations-tab__separator"
+							>&middot;</span
+						>
+						<span v-if="entry.timestamp" class="relations-tab__date">{{
+							formatDate(entry.timestamp)
+						}}</span>
 					</div>
 				</div>
 			</li>
@@ -165,7 +188,7 @@ export default {
 				return this.relations
 			}
 
-			return this.relations.filter(r => this.selectedTypes.includes(r.type))
+			return this.relations.filter((r) => this.selectedTypes.includes(r.type))
 		},
 	},
 
@@ -198,14 +221,19 @@ export default {
 			this.error = false
 			this.errorMessage = ''
 
-			const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/relations', {
-				register: this.register,
-				schema: this.schema,
-				id: this.objectId,
-			})
+			const url = generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/relations',
+				{
+					register: this.register,
+					schema: this.schema,
+					id: this.objectId,
+				},
+			)
 
 			try {
-				const response = await axios.get(url, { params: { view: 'timeline' } })
+				const response = await axios.get(url, {
+					params: { view: 'timeline' },
+				})
 				this.relations = this.normaliseResponse(response.data)
 			} catch (err) {
 				this.error = true
@@ -260,9 +288,16 @@ export default {
 		 */
 		normaliseEntry(raw) {
 			const type = raw.type || raw.entityType || 'unknown'
-			let title = raw.title || raw.subject || raw.summary || raw.displayName || raw.name || ''
+			let title =
+				raw.title
+				|| raw.subject
+				|| raw.summary
+				|| raw.displayName
+				|| raw.name
+				|| ''
 			let subtitle = raw.subtitle || ''
-			const timestamp = raw.timestamp
+			const timestamp =
+				raw.timestamp
 				|| raw.receivedAt
 				|| raw.startsAt
 				|| raw.createdAt
@@ -292,7 +327,7 @@ export default {
 		 */
 		toggleType(type) {
 			if (this.selectedTypes.includes(type)) {
-				this.selectedTypes = this.selectedTypes.filter(t => t !== type)
+				this.selectedTypes = this.selectedTypes.filter((t) => t !== type)
 			} else {
 				this.selectedTypes = [...this.selectedTypes, type]
 			}

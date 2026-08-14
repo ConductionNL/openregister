@@ -15,15 +15,28 @@
  * See _visual-helpers.ts for the platform-rendering caveat.
  */
 import { test, expect, type Page } from '@playwright/test'
-import { shootSurface, waitForContentReady, dismissSupportDialog, freezePage, SHOT_OPTIONS, dynamicMasks } from './_visual-helpers'
+import {
+	shootSurface,
+	waitForContentReady,
+	dismissSupportDialog,
+	freezePage,
+	SHOT_OPTIONS,
+	dynamicMasks,
+} from './_visual-helpers'
 
 const APP = '/index.php/apps/openregister'
 
 /** Click a combobox and wait for its options to appear; returns false on timeout. */
-async function clickAndWaitForOptions(page: Page, combo: ReturnType<Page['getByRole']>, timeout = 15_000): Promise<boolean> {
+async function clickAndWaitForOptions(
+	page: Page,
+	combo: ReturnType<Page['getByRole']>,
+	timeout = 15_000,
+): Promise<boolean> {
 	await combo.click()
 	try {
-		await page.waitForSelector('[role="option"], [role="listbox"] li', { timeout })
+		await page.waitForSelector('[role="option"], [role="listbox"] li', {
+			timeout,
+		})
 		return true
 	} catch {
 		return false
@@ -47,7 +60,11 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 test.describe('mdm-merge-ui — visual baselines', () => {
 	// MergeOperationsIndex (Merge Operations audit list).
 	test('MergeOperationsIndex', async ({ page }) => {
-		await shootSurface(page, `${APP}/#/mergeOperations`, 'MergeOperationsIndex.png')
+		await shootSurface(
+			page,
+			`${APP}/#/mergeOperations`,
+			'MergeOperationsIndex.png',
+		)
 	})
 
 	// MdmMergeWizardModal — opened from a candidate pair on DuplicatesIndex.
@@ -57,14 +74,21 @@ test.describe('mdm-merge-ui — visual baselines', () => {
 		await waitForContentReady(page)
 
 		const selected = await selectFirstRegisterAndSchema(page)
-		test.skip(!selected, 'No register/schema options available — seed data needed')
+		test.skip(
+			!selected,
+			'No register/schema options available — seed data needed',
+		)
 
 		const mergeButton = page.getByRole('button', { name: /^merge$/i }).first()
-		const hasPair = await mergeButton.isVisible({ timeout: 8_000 }).catch(() => false)
+		const hasPair = await mergeButton
+			.isVisible({ timeout: 8_000 })
+			.catch(() => false)
 		test.skip(!hasPair, 'No candidate pairs available — seed data needed')
 
 		await mergeButton.click()
-		await page.getByRole('dialog', { name: /Merge objects/i }).waitFor({ state: 'visible', timeout: 10_000 })
+		await page
+			.getByRole('dialog', { name: /Merge objects/i })
+			.waitFor({ state: 'visible', timeout: 10_000 })
 		// Wait for the preview request to settle (either content or an error note).
 		await page.waitForTimeout(1_000)
 		await freezePage(page)

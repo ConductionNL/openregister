@@ -26,14 +26,20 @@ test.describe('registers — REST CRUD', () => {
 
 	test('POST /api/registers creates a register', async ({ request }) => {
 		const slug = `${RUN_ID}-register`
-		const resp = await request.post('/index.php/apps/openregister/api/registers', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: {
-				slug,
-				title: 'E2E Test Register',
-				description: 'Created by e2e registers-schemas.spec.ts',
+		const resp = await request.post(
+			'/index.php/apps/openregister/api/registers',
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: {
+					slug,
+					title: 'E2E Test Register',
+					description: 'Created by e2e registers-schemas.spec.ts',
+				},
 			},
-		})
+		)
 		// 200 or 201 depending on idempotent handling.
 		expect(resp.status(), 'POST /api/registers').toBeLessThanOrEqual(201)
 		const body = await resp.json()
@@ -43,10 +49,15 @@ test.describe('registers — REST CRUD', () => {
 		expect(body.title).toBe('E2E Test Register')
 	})
 
-	test('GET /api/registers returns list with standard envelope', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/registers returns list with standard envelope', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body).toHaveProperty('results')
@@ -65,12 +76,17 @@ test.describe('registers — REST CRUD', () => {
 		expect(body.title).toBe('E2E Test Register')
 	})
 
-	test('PUT /api/registers/:id updates title and description', async ({ request }) => {
+	test('PUT /api/registers/:id updates title and description', async ({
+		request,
+	}) => {
 		if (!createdRegisterId) test.skip(true, 'no register created in this run')
 		const resp = await request.put(
 			`/index.php/apps/openregister/api/registers/${createdRegisterId}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					slug: createdRegisterSlug,
 					title: 'E2E Test Register (Updated)',
@@ -96,13 +112,20 @@ test.describe('registers — REST CRUD', () => {
 			`/index.php/apps/openregister/api/registers/${createdRegisterId}`,
 			{ headers: { Accept: 'application/json' } },
 		)
-		expect(gone.status(), 'deleted register should not return 200').toBeGreaterThanOrEqual(400)
+		expect(
+			gone.status(),
+			'deleted register should not return 200',
+		).toBeGreaterThanOrEqual(400)
 		createdRegisterId = null
 	})
 
 	test.afterAll(async ({ request }) => {
 		if (!createdRegisterId) return
-		await request.delete(`/index.php/apps/openregister/api/registers/${createdRegisterId}`).catch(() => {})
+		await request
+			.delete(
+				`/index.php/apps/openregister/api/registers/${createdRegisterId}`,
+			)
+			.catch(() => {})
 	})
 })
 
@@ -115,14 +138,25 @@ test.describe('schemas — REST CRUD', () => {
 	test('POST /api/schemas creates a schema', async ({ request }) => {
 		const slug = `${RUN_ID}-schema`
 		const resp = await request.post('/index.php/apps/openregister/api/schemas', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
 			data: {
 				slug,
 				title: 'E2E Test Schema',
 				description: 'Created by e2e test',
 				properties: {
-					name: { type: 'string', title: 'Name', description: 'Record name' },
-					value: { type: 'integer', title: 'Value', description: 'Numeric value' },
+					name: {
+						type: 'string',
+						title: 'Name',
+						description: 'Record name',
+					},
+					value: {
+						type: 'integer',
+						title: 'Value',
+						description: 'Numeric value',
+					},
 				},
 			},
 		})
@@ -133,17 +167,24 @@ test.describe('schemas — REST CRUD', () => {
 		expect(body.title).toBe('E2E Test Schema')
 	})
 
-	test('GET /api/schemas returns list with standard envelope', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/schemas?_limit=5', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/schemas returns list with standard envelope', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/schemas?_limit=5',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		expect(body).toHaveProperty('results')
 		expect(Array.isArray(body.results)).toBe(true)
 	})
 
-	test('GET /api/schemas/:id returns the schema with properties', async ({ request }) => {
+	test('GET /api/schemas/:id returns the schema with properties', async ({
+		request,
+	}) => {
 		if (!createdSchemaId) test.skip(true, 'no schema created in this run')
 		const resp = await request.get(
 			`/index.php/apps/openregister/api/schemas/${createdSchemaId}`,
@@ -160,14 +201,29 @@ test.describe('schemas — REST CRUD', () => {
 		const resp = await request.put(
 			`/index.php/apps/openregister/api/schemas/${createdSchemaId}`,
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: {
 					title: 'E2E Test Schema (Updated)',
 					description: 'Updated by e2e test',
 					properties: {
-						name: { type: 'string', title: 'Name', description: 'Record name' },
-						value: { type: 'integer', title: 'Value', description: 'Numeric value' },
-						extra: { type: 'string', title: 'Extra', description: 'Additional field' },
+						name: {
+							type: 'string',
+							title: 'Name',
+							description: 'Record name',
+						},
+						value: {
+							type: 'integer',
+							title: 'Value',
+							description: 'Numeric value',
+						},
+						extra: {
+							type: 'string',
+							title: 'Extra',
+							description: 'Additional field',
+						},
 					},
 				},
 			},
@@ -190,13 +246,18 @@ test.describe('schemas — REST CRUD', () => {
 			{ headers: { Accept: 'application/json' } },
 		)
 		// After deletion the schema should not return 200.
-		expect(gone.status(), 'deleted schema should not return 200').toBeGreaterThanOrEqual(400)
+		expect(
+			gone.status(),
+			'deleted schema should not return 200',
+		).toBeGreaterThanOrEqual(400)
 		createdSchemaId = null
 	})
 
 	test.afterAll(async ({ request }) => {
 		if (!createdSchemaId) return
-		await request.delete(`/index.php/apps/openregister/api/schemas/${createdSchemaId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/schemas/${createdSchemaId}`)
+			.catch(() => {})
 	})
 })
 
@@ -204,10 +265,15 @@ test.describe('schemas — REST CRUD', () => {
 // oas-generation — OAS endpoint generates valid OpenAPI document
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('oas-generation — OAS endpoint produces valid document', () => {
-	test('GET /api/registers/oas returns JSON with openapi field and paths', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas', {
-			headers: { Accept: 'application/json' },
-		})
+	test('GET /api/registers/oas returns JSON with openapi field and paths', async ({
+		request,
+	}) => {
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		// Must be a valid OpenAPI 3.x document.
@@ -216,17 +282,24 @@ test.describe('oas-generation — OAS endpoint produces valid document', () => {
 		expect(body).toHaveProperty('info')
 		expect(body).toHaveProperty('paths')
 		// Must have at least one path entry.
-		expect(Object.keys(body.paths).length, 'OAS must have at least one path').toBeGreaterThan(0)
+		expect(
+			Object.keys(body.paths).length,
+			'OAS must have at least one path',
+		).toBeGreaterThan(0)
 	})
 
 	test('OAS document covers object paths', async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/registers/oas')
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/registers/oas',
+		)
 		expect(resp.status()).toBe(200)
 		const body = await resp.json()
 		const paths = Object.keys(body.paths ?? {})
 		// OAS uses slug-based paths for objects (e.g. /objects/{register}/{schema}).
 		// Verify there is at least one path defined.
-		expect(paths.length, 'OAS should define at least one path').toBeGreaterThan(0)
+		expect(paths.length, 'OAS should define at least one path').toBeGreaterThan(
+			0,
+		)
 		// Components/schemas should be present for the registered data types.
 		const componentSchemas = body.components?.schemas ?? {}
 		expect(
@@ -240,11 +313,16 @@ test.describe('oas-generation — OAS endpoint produces valid document', () => {
 // data-import-export — configuration export (OAS/JSON format)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('data-import-export — register configuration export', () => {
-	test('GET /api/registers/:id with Accept application/json returns JSON export', async ({ request }) => {
+	test('GET /api/registers/:id with Accept application/json returns JSON export', async ({
+		request,
+	}) => {
 		// Use the first available register.
-		const listResp = await request.get('/index.php/apps/openregister/api/registers?_limit=1', {
-			headers: { Accept: 'application/json' },
-		})
+		const listResp = await request.get(
+			'/index.php/apps/openregister/api/registers?_limit=1',
+			{
+				headers: { Accept: 'application/json' },
+			},
+		)
 		expect(listResp.status()).toBe(200)
 		const list = await listResp.json()
 		const reg = (list.results ?? [])[0]
@@ -261,7 +339,9 @@ test.describe('data-import-export — register configuration export', () => {
 		expect(body.title ?? body.name).toBeTruthy()
 	})
 
-	test('POST /api/objects with CSV-like data creates objects (import path)', async ({ request }) => {
+	test('POST /api/objects with CSV-like data creates objects (import path)', async ({
+		request,
+	}) => {
 		// Exercise the import surface by posting objects with known IDs.
 		const importPayload = {
 			name: `${RUN_ID}-import-test`,
@@ -272,7 +352,10 @@ test.describe('data-import-export — register configuration export', () => {
 		const resp = await request.post(
 			'/index.php/apps/openregister/api/objects/8/18',
 			{
-				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
 				data: importPayload,
 			},
 		)
@@ -283,7 +366,9 @@ test.describe('data-import-export — register configuration export', () => {
 
 		// Clean up.
 		if (id) {
-			await request.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`).catch(() => {})
+			await request
+				.delete(`/index.php/apps/openregister/api/objects/8/18/${id}`)
+				.catch(() => {})
 		}
 	})
 })
@@ -296,14 +381,20 @@ test.describe('register-i18n — multilingual title/description', () => {
 
 	test('register title accepts Dutch accented characters', async ({ request }) => {
 		const slug = `${RUN_ID}-i18n`
-		const resp = await request.post('/index.php/apps/openregister/api/registers', {
-			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-			data: {
-				slug,
-				title: 'Gegevensregister voor Zorgaanbieders',
-				description: 'Beschrijving met speciale tekens: é, ü, ö, ñ',
+		const resp = await request.post(
+			'/index.php/apps/openregister/api/registers',
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+				data: {
+					slug,
+					title: 'Gegevensregister voor Zorgaanbieders',
+					description: 'Beschrijving met speciale tekens: é, ü, ö, ñ',
+				},
 			},
-		})
+		)
 		expect(resp.status()).toBeLessThanOrEqual(201)
 		const body = await resp.json()
 		createdId = body.id ?? null
@@ -314,6 +405,8 @@ test.describe('register-i18n — multilingual title/description', () => {
 
 	test.afterAll(async ({ request }) => {
 		if (!createdId) return
-		await request.delete(`/index.php/apps/openregister/api/registers/${createdId}`).catch(() => {})
+		await request
+			.delete(`/index.php/apps/openregister/api/registers/${createdId}`)
+			.catch(() => {})
 	})
 })

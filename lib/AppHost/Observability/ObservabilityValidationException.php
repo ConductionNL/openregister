@@ -32,6 +32,5 @@ namespace OCA\OpenRegister\AppHost\Observability;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-1.1
  */
-class ObservabilityValidationException extends \InvalidArgumentException
-{
+class ObservabilityValidationException extends \InvalidArgumentException {
 }//end class

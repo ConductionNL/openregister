@@ -33,6 +33,5 @@ use RuntimeException;
 /**
  * Signals a transport-level failure of the brokered call (maps to a static 502).
  */
-class CredentialUpstreamException extends RuntimeException
-{
+class CredentialUpstreamException extends RuntimeException {
 }//end class

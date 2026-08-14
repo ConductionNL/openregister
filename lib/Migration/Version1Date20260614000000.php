@@ -67,59 +67,56 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
-class Version1Date20260614000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/avg-verwerkingsregister/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260614000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_processing_log') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_processing_log') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_processing_log');
+		$table = $schema->createTable('openregister_processing_log');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('activity_id', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('action', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'read']);
-        $table->addColumn('actor', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
-        $table->addColumn('channel', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'ui']);
-        $table->addColumn('register_id', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('schema_id', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('subject_id_type', Types::STRING, ['notnull' => false, 'length' => 64]);
-        $table->addColumn('subject_id_value', Types::STRING, ['notnull' => false, 'length' => 191]);
-        $table->addColumn('object_count', Types::INTEGER, ['notnull' => true, 'default' => 1, 'unsigned' => true]);
-        $table->addColumn('confidential', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
-        $table->addColumn('organisation_id', Types::STRING, ['notnull' => false, 'length' => 36]);
-        $table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('activity_id', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('action', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'read']);
+		$table->addColumn('actor', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('channel', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'ui']);
+		$table->addColumn('register_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('schema_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('subject_id_type', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('subject_id_value', Types::STRING, ['notnull' => false, 'length' => 191]);
+		$table->addColumn('object_count', Types::INTEGER, ['notnull' => true, 'default' => 1, 'unsigned' => true]);
+		$table->addColumn('confidential', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
+		$table->addColumn('organisation_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['uuid'], 'idx_proclog_uuid');
-        $table->addIndex(['subject_id_type', 'subject_id_value'], 'idx_proclog_subject');
-        $table->addIndex(['register_id', 'activity_id', 'created'], 'idx_proclog_slice');
-        $table->addIndex(['created'], 'idx_proclog_created');
-        $table->addIndex(['actor'], 'idx_proclog_actor');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['uuid'], 'idx_proclog_uuid');
+		$table->addIndex(['subject_id_type', 'subject_id_value'], 'idx_proclog_subject');
+		$table->addIndex(['register_id', 'activity_id', 'created'], 'idx_proclog_slice');
+		$table->addIndex(['created'], 'idx_proclog_created');
+		$table->addIndex(['actor'], 'idx_proclog_actor');
 
-        $output->info('Created openregister_processing_log table');
+		$output->info('Created openregister_processing_log table');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

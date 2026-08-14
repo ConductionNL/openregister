@@ -52,336 +52,326 @@ use Psr\Log\LoggerInterface;
 /**
  * Bewaartermijn-driven object retention enforcement.
  */
-class AvgRetentionService
-{
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection               $db           DB for audit-trail aggregation.
-     * @param VerwerkingsactiviteitMapper $vrwMapper    Catalog reader.
-     * @param MagicMapper                 $objectMapper Object loader.
-     * @param LoggerInterface             $logger       Logger.
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    public function __construct(
-        private readonly IDBConnection $db,
-        private readonly VerwerkingsactiviteitMapper $vrwMapper,
-        private readonly MagicMapper $objectMapper,
-        private readonly LoggerInterface $logger,
-    ) {
+class AvgRetentionService {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db DB for audit-trail aggregation.
+	 * @param VerwerkingsactiviteitMapper $vrwMapper Catalog reader.
+	 * @param MagicMapper $objectMapper Object loader.
+	 * @param LoggerInterface $logger Logger.
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	public function __construct(
+		private readonly IDBConnection $db,
+		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly MagicMapper $objectMapper,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Run a single retention-enforcement pass.
-     *
-     * Returns a summary envelope:
-     *
-     *   {
-     *     "evaluatedActivities": <int>,
-     *     "skippedActivities":   <int>,
-     *     "objectsErased":       <int>,
-     *     "dryRun":              bool,
-     *     "perActivity": [
-     *       {"uuid": "...", "naam": "...", "bewaartermijn": "P10Y",
-     *        "cutoff": "<iso>", "matchedObjects": <int>, "erased": <int>},
-     *       ...
-     *     ]
-     *   }
-     *
-     * Activities without a `bewaartermijn` (or with a malformed
-     * duration) are reported under `skippedActivities` so operators
-     * can see at-a-glance which catalog rows aren't yet retention-
-     * enforced.
-     *
-     * @param bool $dryRun When true, evaluates and reports without
-     *                     actually soft-deleting anything.
-     *
-     * @return array<string, mixed>
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    public function runRetentionPass(bool $dryRun=false): array
-    {
-        $now     = new DateTime();
-        $summary = [
-            'evaluatedActivities' => 0,
-            'skippedActivities'   => 0,
-            'objectsErased'       => 0,
-            'dryRun'              => $dryRun,
-            'perActivity'         => [],
-        ];
+	/**
+	 * Run a single retention-enforcement pass.
+	 *
+	 * Returns a summary envelope:
+	 *
+	 *   {
+	 *     "evaluatedActivities": <int>,
+	 *     "skippedActivities":   <int>,
+	 *     "objectsErased":       <int>,
+	 *     "dryRun":              bool,
+	 *     "perActivity": [
+	 *       {"uuid": "...", "naam": "...", "bewaartermijn": "P10Y",
+	 *        "cutoff": "<iso>", "matchedObjects": <int>, "erased": <int>},
+	 *       ...
+	 *     ]
+	 *   }
+	 *
+	 * Activities without a `bewaartermijn` (or with a malformed
+	 * duration) are reported under `skippedActivities` so operators
+	 * can see at-a-glance which catalog rows aren't yet retention-
+	 * enforced.
+	 *
+	 * @param bool $dryRun When true, evaluates and reports without
+	 *                     actually soft-deleting anything.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	public function runRetentionPass(bool $dryRun = false): array {
+		$now = new DateTime();
+		$summary = [
+			'evaluatedActivities' => 0,
+			'skippedActivities' => 0,
+			'objectsErased' => 0,
+			'dryRun' => $dryRun,
+			'perActivity' => [],
+		];
 
-        $activities = $this->vrwMapper->findAll(status: 'published');
-        foreach ($activities as $activity) {
-            $perActivity = $this->processActivity(
-                activity: $activity,
-                now: $now,
-                dryRun: $dryRun
-            );
-            if ($perActivity === null) {
-                $summary['skippedActivities']++;
-                continue;
-            }
+		$activities = $this->vrwMapper->findAll(status: 'published');
+		foreach ($activities as $activity) {
+			$perActivity = $this->processActivity(
+				activity: $activity,
+				now: $now,
+				dryRun: $dryRun
+			);
+			if ($perActivity === null) {
+				$summary['skippedActivities']++;
+				continue;
+			}
 
-            $summary['evaluatedActivities']++;
-            $summary['objectsErased'] += $perActivity['erased'];
-            $summary['perActivity'][]  = $perActivity;
-        }
+			$summary['evaluatedActivities']++;
+			$summary['objectsErased'] += $perActivity['erased'];
+			$summary['perActivity'][] = $perActivity;
+		}
 
-        return $summary;
+		return $summary;
+	}//end runRetentionPass()
 
-    }//end runRetentionPass()
+	/**
+	 * Evaluate one verwerkingsactiviteit. Null when its bewaartermijn
+	 * is unset or unparseable (caller increments `skippedActivities`).
+	 *
+	 * @param Verwerkingsactiviteit $activity Catalog entry.
+	 * @param DateTime $now Reference timestamp.
+	 * @param bool $dryRun Pass-through dry-run flag.
+	 *
+	 * @return array<string, mixed>|null Per-activity result or null skip.
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array {
+		$bewaartermijn = (string)($activity->getBewaartermijn() ?? '');
+		if ($bewaartermijn === '') {
+			return null;
+		}
 
-    /**
-     * Evaluate one verwerkingsactiviteit. Null when its bewaartermijn
-     * is unset or unparseable (caller increments `skippedActivities`).
-     *
-     * @param Verwerkingsactiviteit $activity Catalog entry.
-     * @param DateTime              $now      Reference timestamp.
-     * @param bool                  $dryRun   Pass-through dry-run flag.
-     *
-     * @return array<string, mixed>|null Per-activity result or null skip.
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array
-    {
-        $bewaartermijn = (string) ($activity->getBewaartermijn() ?? '');
-        if ($bewaartermijn === '') {
-            return null;
-        }
+		$cutoff = $this->computeCutoff(now: $now, duration: $bewaartermijn);
+		if ($cutoff === null) {
+			$this->logger->warning(
+				message: '[AVG retention] Unparseable bewaartermijn — skipping activity',
+				context: [
+					'activity' => $activity->getUuid(),
+					'bewaartermijn' => $bewaartermijn,
+				]
+			);
+			return null;
+		}
 
-        $cutoff = $this->computeCutoff(now: $now, duration: $bewaartermijn);
-        if ($cutoff === null) {
-            $this->logger->warning(
-                message: '[AVG retention] Unparseable bewaartermijn — skipping activity',
-                context: [
-                    'activity'      => $activity->getUuid(),
-                    'bewaartermijn' => $bewaartermijn,
-                ]
-            );
-            return null;
-        }
+		$candidates = $this->findOverdueObjectsForActivity(
+			activityUuid: (string)$activity->getUuid(),
+			cutoff: $cutoff
+		);
 
-        $candidates = $this->findOverdueObjectsForActivity(
-            activityUuid: (string) $activity->getUuid(),
-            cutoff: $cutoff
-        );
+		$erased = 0;
+		if ($dryRun === false && $candidates !== []) {
+			$erased = $this->erasePastRetention(
+				candidates: $candidates,
+				activity: $activity
+			);
+		}
 
-        $erased = 0;
-        if ($dryRun === false && $candidates !== []) {
-            $erased = $this->erasePastRetention(
-                candidates: $candidates,
-                activity: $activity
-            );
-        }
+		return [
+			'uuid' => $activity->getUuid(),
+			'naam' => $activity->getNaam(),
+			'bewaartermijn' => $bewaartermijn,
+			'cutoff' => $cutoff->format('c'),
+			'matchedObjects' => count($candidates),
+			'erased' => $erased,
+		];
 
-        return [
-            'uuid'           => $activity->getUuid(),
-            'naam'           => $activity->getNaam(),
-            'bewaartermijn'  => $bewaartermijn,
-            'cutoff'         => $cutoff->format('c'),
-            'matchedObjects' => count($candidates),
-            'erased'         => $erased,
-        ];
+	}//end processActivity()
 
-    }//end processActivity()
+	/**
+	 * Compute the cut-off timestamp for a bewaartermijn duration.
+	 *
+	 * Accepts ISO-8601 duration syntax (`P10Y`, `P30D`, `P6M`) — the
+	 * canonical AVG / NEN-2082 representation. Returns null on parse
+	 * failure so the caller can flag the activity as skipped.
+	 *
+	 * @param DateTime $now Reference timestamp.
+	 * @param string $duration ISO-8601 duration string.
+	 *
+	 * @return DateTime|null Cutoff timestamp or null on parse error.
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function computeCutoff(DateTime $now, string $duration): ?DateTime {
+		try {
+			$interval = new DateInterval($duration);
+		} catch (Exception $e) {
+			return null;
+		}
 
-    /**
-     * Compute the cut-off timestamp for a bewaartermijn duration.
-     *
-     * Accepts ISO-8601 duration syntax (`P10Y`, `P30D`, `P6M`) — the
-     * canonical AVG / NEN-2082 representation. Returns null on parse
-     * failure so the caller can flag the activity as skipped.
-     *
-     * @param DateTime $now      Reference timestamp.
-     * @param string   $duration ISO-8601 duration string.
-     *
-     * @return DateTime|null Cutoff timestamp or null on parse error.
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function computeCutoff(DateTime $now, string $duration): ?DateTime
-    {
-        try {
-            $interval = new DateInterval($duration);
-        } catch (Exception $e) {
-            return null;
-        }
+		$cutoff = clone $now;
+		$cutoff->sub($interval);
+		return $cutoff;
+	}//end computeCutoff()
 
-        $cutoff = clone $now;
-        $cutoff->sub($interval);
-        return $cutoff;
+	/**
+	 * Find objects whose latest audit-trail row predates the cut-off.
+	 *
+	 * "Latest audit row" rather than "oldest" because we want to keep
+	 * objects that have been touched recently — the bewaartermijn
+	 * clock resets on every write under that processing activity.
+	 *
+	 * @param string $activityUuid Activity uuid.
+	 * @param DateTime $cutoff Cut-off timestamp.
+	 *
+	 * @return array<int, array{object: int, object_uuid: string|null, register: int|null, schema: int|null}>
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function findOverdueObjectsForActivity(string $activityUuid, DateTime $cutoff): array {
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select(
+				[
+					'object',
+					'object_uuid',
+					'register',
+					'schema',
+				]
+			)
+				->selectAlias($qb->func()->max('created'), 'last_seen')
+				->from('openregister_audit_trails')
+				->where(
+					$qb->expr()->eq(
+						'processing_activity_id',
+						$qb->createNamedParameter($activityUuid)
+					)
+				)
+				->groupBy('object', 'object_uuid', 'register', 'schema')
+				->having(
+					'MAX(created) < ' . $qb->createNamedParameter(
+						$cutoff,
+						IQueryBuilder::PARAM_DATE
+					)
+				);
 
-    }//end computeCutoff()
+			$result = $qb->executeQuery();
+			$rows = $result->fetchAll();
+			$result->closeCursor();
 
-    /**
-     * Find objects whose latest audit-trail row predates the cut-off.
-     *
-     * "Latest audit row" rather than "oldest" because we want to keep
-     * objects that have been touched recently — the bewaartermijn
-     * clock resets on every write under that processing activity.
-     *
-     * @param string   $activityUuid Activity uuid.
-     * @param DateTime $cutoff       Cut-off timestamp.
-     *
-     * @return array<int, array{object: int, object_uuid: string|null, register: int|null, schema: int|null}>
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function findOverdueObjectsForActivity(string $activityUuid, DateTime $cutoff): array
-    {
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select(
-                [
-                    'object',
-                    'object_uuid',
-                    'register',
-                    'schema',
-                ]
-            )
-                ->selectAlias($qb->func()->max('created'), 'last_seen')
-                ->from('openregister_audit_trails')
-                ->where(
-                    $qb->expr()->eq(
-                        'processing_activity_id',
-                        $qb->createNamedParameter($activityUuid)
-                    )
-                )
-                ->groupBy('object', 'object_uuid', 'register', 'schema')
-                ->having(
-                    'MAX(created) < '.$qb->createNamedParameter(
-                        $cutoff,
-                        IQueryBuilder::PARAM_DATE
-                    )
-                );
+			$candidates = [];
+			foreach ($rows as $row) {
+				$candidateRegister = null;
+				if (isset($row['register']) === true) {
+					$candidateRegister = (int)$row['register'];
+				}
 
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
+				$candidateSchema = null;
+				if (isset($row['schema']) === true) {
+					$candidateSchema = (int)$row['schema'];
+				}
 
-            $candidates = [];
-            foreach ($rows as $row) {
-                $candidateRegister = null;
-                if (isset($row['register']) === true) {
-                    $candidateRegister = (int) $row['register'];
-                }
+				$candidates[] = [
+					'object' => (int)($row['object'] ?? 0),
+					'object_uuid' => ($row['object_uuid'] ?? null),
+					'register' => $candidateRegister,
+					'schema' => $candidateSchema,
+				];
+			}
 
-                $candidateSchema = null;
-                if (isset($row['schema']) === true) {
-                    $candidateSchema = (int) $row['schema'];
-                }
+			return $candidates;
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AVG retention] Failed to enumerate overdue objects for activity',
+				context: ['activity' => $activityUuid, 'error' => $e->getMessage()]
+			);
+			return [];
+		}//end try
 
-                $candidates[] = [
-                    'object'      => (int) ($row['object'] ?? 0),
-                    'object_uuid' => ($row['object_uuid'] ?? null),
-                    'register'    => $candidateRegister,
-                    'schema'      => $candidateSchema,
-                ];
-            }
+	}//end findOverdueObjectsForActivity()
 
-            return $candidates;
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[AVG retention] Failed to enumerate overdue objects for activity',
-                context: ['activity' => $activityUuid, 'error' => $e->getMessage()]
-            );
-            return [];
-        }//end try
+	/**
+	 * Soft-delete each candidate. Returns the count of successful
+	 * erasures; failures are logged and skipped so a single bad
+	 * object doesn't abort the whole pass.
+	 *
+	 * @param array<int, array<string, mixed>> $candidates Overdue objects.
+	 * @param Verwerkingsactiviteit $activity Owning activity.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int {
+		$deletionData = [
+			'deletedBy' => 'system',
+			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+			'reason' => 'avg-bewaartermijn',
+			'activityUuid' => $activity->getUuid(),
+			'bewaartermijn' => $activity->getBewaartermijn(),
+		];
 
-    }//end findOverdueObjectsForActivity()
+		$erased = 0;
+		foreach ($candidates as $candidate) {
+			$object = $this->loadCandidate(candidate: $candidate);
+			if ($object === null) {
+				continue;
+			}
 
-    /**
-     * Soft-delete each candidate. Returns the count of successful
-     * erasures; failures are logged and skipped so a single bad
-     * object doesn't abort the whole pass.
-     *
-     * @param array<int, array<string, mixed>> $candidates Overdue objects.
-     * @param Verwerkingsactiviteit            $activity   Owning activity.
-     *
-     * @return int
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int
-    {
-        $deletionData = [
-            'deletedBy'     => 'system',
-            'deletedAt'     => (new DateTime())->format(DateTime::ATOM),
-            'reason'        => 'avg-bewaartermijn',
-            'activityUuid'  => $activity->getUuid(),
-            'bewaartermijn' => $activity->getBewaartermijn(),
-        ];
+			$object->setDeleted($deletionData);
+			$object->setProcessingActivityId((string)$activity->getUuid());
 
-        $erased = 0;
-        foreach ($candidates as $candidate) {
-            $object = $this->loadCandidate(candidate: $candidate);
-            if ($object === null) {
-                continue;
-            }
+			try {
+				$this->objectMapper->update(entity: $object);
+				$erased++;
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[AVG retention] Soft-delete failed during retention pass',
+					context: ['candidate' => $candidate, 'error' => $e->getMessage()]
+				);
+			}
+		}
 
-            $object->setDeleted($deletionData);
-            $object->setProcessingActivityId((string) $activity->getUuid());
+		return $erased;
+	}//end erasePastRetention()
 
-            try {
-                $this->objectMapper->update(entity: $object);
-                $erased++;
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[AVG retention] Soft-delete failed during retention pass',
-                    context: ['candidate' => $candidate, 'error' => $e->getMessage()]
-                );
-            }
-        }
+	/**
+	 * Load a candidate object — uuid first (deterministic), int id as
+	 * fallback for legacy audit rows.
+	 *
+	 * @param array<string, mixed> $candidate Single candidate row.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function loadCandidate(array $candidate): ?ObjectEntity {
+		$uuid = (string)($candidate['object_uuid'] ?? '');
+		$id = (int)($candidate['object'] ?? 0);
 
-        return $erased;
+		$identifier = $id;
+		if ($uuid !== '') {
+			$identifier = $uuid;
+		}
 
-    }//end erasePastRetention()
+		if ($identifier === 0 || $identifier === '') {
+			return null;
+		}
 
-    /**
-     * Load a candidate object — uuid first (deterministic), int id as
-     * fallback for legacy audit rows.
-     *
-     * @param array<string, mixed> $candidate Single candidate row.
-     *
-     * @return ObjectEntity|null
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function loadCandidate(array $candidate): ?ObjectEntity
-    {
-        $uuid = (string) ($candidate['object_uuid'] ?? '');
-        $id   = (int) ($candidate['object'] ?? 0);
+		try {
+			return $this->objectMapper->find(
+				$identifier,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (DoesNotExistException $e) {
+			return null;
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[AVG retention] Failed to load candidate',
+				context: ['candidate' => $candidate, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
 
-        $identifier = $id;
-        if ($uuid !== '') {
-            $identifier = $uuid;
-        }
-
-        if ($identifier === 0 || $identifier === '') {
-            return null;
-        }
-
-        try {
-            return $this->objectMapper->find(
-                $identifier,
-                _rbac: false,
-                _multitenancy: false
-            );
-        } catch (DoesNotExistException $e) {
-            return null;
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                message: '[AVG retention] Failed to load candidate',
-                context: ['candidate' => $candidate, 'error' => $e->getMessage()]
-            );
-            return null;
-        }
-
-    }//end loadCandidate()
+	}//end loadCandidate()
 }//end class

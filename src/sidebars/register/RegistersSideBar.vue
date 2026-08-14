@@ -1,6 +1,12 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { objectStore, registerStore, schemaStore, dashboardStore, navigationStore } from '../../store/store.js'
+import {
+	objectStore,
+	registerStore,
+	schemaStore,
+	dashboardStore,
+	navigationStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -11,10 +17,15 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 		:subtitle="t('openregister', 'Register Overview')"
 		:subname="t('openregister', 'Statistics and Metrics')"
 		:open="navigationStore.sidebarState.registers"
-		@update:open="(e) => {
-			navigationStore.setSidebarState('registers', e)
-		}">
-		<NcAppSidebarTab id="overview-tab" :name="t('openregister', 'Overview')" :order="1">
+		@update:open="
+			(e) => {
+				navigationStore.setSidebarState('registers', e)
+			}
+		">
+		<NcAppSidebarTab
+			id="overview-tab"
+			:name="t('openregister', 'Overview')"
+			:order="1">
 			<template #icon>
 				<ChartBar :size="20" />
 			</template>
@@ -23,8 +34,11 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
 				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect v-bind="registerOptions"
+					<label for="registerSelect">{{
+						t('openregister', 'Register')
+					}}</label>
+					<NcSelect
+						v-bind="registerOptions"
 						id="registerSelect"
 						:model-value="selectedRegisterValue"
 						:loading="registerLoading"
@@ -34,8 +48,11 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect v-bind="schemaOptions"
+					<label for="schemaSelect">{{
+						t('openregister', 'Schema')
+					}}</label>
+					<NcSelect
+						v-bind="schemaOptions"
 						id="schemaSelect"
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
@@ -59,9 +76,11 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Registers')"
 						:count="filteredRegisters.length"
-						:count-label="t('openregister', 'register{plural}', {
-							plural: filteredRegisters.length !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'register{plural}', {
+								plural: filteredRegisters.length !== 1 ? 's' : '',
+							})
+						"
 						:icon="DatabaseOutline"
 						variant="primary"
 						horizontal
@@ -69,9 +88,11 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Schemas')"
 						:count="totalSchemas"
-						:count-label="t('openregister', 'schema{plural}', {
-							plural: totalSchemas !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'schema{plural}', {
+								plural: totalSchemas !== 1 ? 's' : '',
+							})
+						"
 						:icon="TableIcon"
 						variant="primary"
 						horizontal
@@ -79,9 +100,14 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="systemTotals.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'object{plural}', {
+								plural:
+									systemTotals.stats?.objects?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="PackageVariantClosed"
 						variant="primary"
 						horizontal
@@ -90,9 +116,12 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="systemTotals.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'log{plural}', {
+								plural:
+									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="TextBoxOutline"
 						horizontal
 						show-zero-count
@@ -100,13 +129,20 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="systemTotals.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'file{plural}', {
+								plural:
+									systemTotals.stats?.files?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="FileDocumentOutline"
 						horizontal
 						show-zero-count
-						:breakdown="sizeBreakdown(systemTotals.stats?.files?.size)" />
+						:breakdown="
+							sizeBreakdown(systemTotals.stats?.files?.size)
+						" />
 				</div>
 			</div>
 
@@ -123,9 +159,14 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Objects')"
 						:count="orphanedItems.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'object{plural}', {
+								plural:
+									systemTotals.stats?.objects?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="PackageVariantClosed"
 						variant="warning"
 						horizontal
@@ -134,25 +175,37 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<CnStatsBlock
 						:title="t('openregister', 'Logs')"
 						:count="orphanedItems.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'log{plural}', {
+								plural:
+									systemTotals.stats?.logs?.total !== 1 ? 's' : '',
+							})
+						"
 						:icon="TextBoxOutline"
 						variant="warning"
 						horizontal
 						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.logs?.size)" />
+						:breakdown="
+							sizeBreakdown(orphanedItems.stats?.logs?.size)
+						" />
 					<CnStatsBlock
 						:title="t('openregister', 'Files')"
 						:count="orphanedItems.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
+						:count-label="
+							t('openregister', 'file{plural}', {
+								plural:
+									systemTotals.stats?.files?.total !== 1
+										? 's'
+										: '',
+							})
+						"
 						:icon="FileDocumentOutline"
 						variant="warning"
 						horizontal
 						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.files?.size)" />
+						:breakdown="
+							sizeBreakdown(orphanedItems.stats?.files?.size)
+						" />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -160,7 +213,12 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
+import {
+	NcAppSidebar,
+	NcAppSidebarTab,
+	NcLoadingIcon,
+	NcSelect,
+} from '@nextcloud/vue'
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
@@ -226,9 +284,10 @@ export default {
 		 * @return {Array}
 		 */
 		filteredRegisters() {
-			return dashboardStore.registers.filter(register =>
-				register.title !== 'System Totals'
-				&& register.title !== 'Orphaned Items',
+			return dashboardStore.registers.filter(
+				(register) =>
+					register.title !== 'System Totals'
+					&& register.title !== 'Orphaned Items',
 			)
 		},
 		/**
@@ -248,16 +307,21 @@ export default {
 		 */
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					register,
 				})),
-				reduce: option => option.register,
+				reduce: (option) => option.register,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.register && option.register.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},
@@ -271,17 +335,26 @@ export default {
 
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
+					.filter((schema) =>
+						registerStore.registerItem.schemas.some(
+							(registerSchema) => registerSchema.id === schema.id,
+						),
+					)
+					.map((schema) => ({
 						value: schema.id,
 						label: schema.title,
 						title: schema.title,
 						schema,
 					})),
-				reduce: option => option.schema,
+				reduce: (option) => option.schema,
 				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
+				getOptionLabel: (option) => {
+					return (
+						option.title
+						|| (option.schema && option.schema.title)
+						|| option.label
+						|| ''
+					)
 				},
 			}
 		},

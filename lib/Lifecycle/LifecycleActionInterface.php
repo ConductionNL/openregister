@@ -44,19 +44,18 @@ namespace OCA\OpenRegister\Lifecycle;
  * it MUST NOT silently no-op. Silent no-op is the exact defect the executor
  * exists to eliminate (issue #427).
  */
-interface LifecycleActionInterface
-{
-    /**
-     * Run the action on a transitioning object.
-     *
-     * @param array<string, mixed> $objectData   The object payload after the lifecycle field was moved to its target value.
-     * @param array<string, mixed> $previousData The object payload before the transition (for conditions / diffing).
-     * @param array<string, mixed> $parameters   The declared `actionParameters` block (empty array when absent).
-     * @param string               $actionName   The declared `action` name that resolved to this handler.
-     *
-     * @return array<string, mixed> The object payload, with any self-mutations applied. Return the input unchanged for pure side-effect actions.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array;
+interface LifecycleActionInterface {
+	/**
+	 * Run the action on a transitioning object.
+	 *
+	 * @param array<string, mixed> $objectData The object payload after the lifecycle field was moved to its target value.
+	 * @param array<string, mixed> $previousData The object payload before the transition (for conditions / diffing).
+	 * @param array<string, mixed> $parameters The declared `actionParameters` block (empty array when absent).
+	 * @param string $actionName The declared `action` name that resolved to this handler.
+	 *
+	 * @return array<string, mixed> The object payload, with any self-mutations applied. Return the input unchanged for pure side-effect actions.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array;
 }//end interface

@@ -1,18 +1,21 @@
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		name="Bulk translate"
 		size="normal"
 		:can-close="!loading"
 		@closing="$emit('close')">
 		<form class="bulkTranslateForm" @submit.prevent="onSubmit">
-			<NcSelect v-model="source"
+			<NcSelect
+				v-model="source"
 				:options="languages"
 				:label-outside="false"
 				input-label="From language"
 				aria-label-combobox="From language"
 				:disabled="loading" />
 
-			<NcSelect v-model="target"
+			<NcSelect
+				v-model="target"
 				:options="languages"
 				:label-outside="false"
 				input-label="To language"
@@ -26,14 +29,19 @@
 
 			<div v-if="result" class="bulkTranslateResult">
 				<p v-if="hasTranslated">
-					Translated <strong>{{ Object.keys(result.translated).length }}</strong> field(s).
+					Translated
+					<strong>{{ Object.keys(result.translated).length }}</strong>
+					field(s).
 				</p>
 				<p v-if="hasSkipped">
-					Skipped <strong>{{ Object.keys(result.skipped).length }}</strong> field(s):
+					Skipped
+					<strong>{{ Object.keys(result.skipped).length }}</strong>
+					field(s):
 				</p>
 				<ul v-if="hasSkipped" class="bulkTranslateSkipped">
 					<li v-for="(reason, prop) in result.skipped" :key="prop">
-						<strong>{{ prop }}</strong>: {{ reason }}
+						<strong>{{ prop }}</strong
+						>: {{ reason }}
 					</li>
 				</ul>
 			</div>
@@ -43,7 +51,10 @@
 			</NcNoteCard>
 
 			<div class="bulkTranslateActions">
-				<NcButton variant="tertiary" :disabled="loading" @click="$emit('close')">
+				<NcButton
+					variant="tertiary"
+					:disabled="loading"
+					@click="$emit('close')">
 					{{ result ? 'Close' : 'Cancel' }}
 				</NcButton>
 				<NcButton variant="primary" type="submit" :disabled="!canSubmit">
@@ -177,10 +188,12 @@ export default {
 		 * @spec exclude computed submit-enabled form-validation flag, UI plumbing
 		 */
 		canSubmit() {
-			return !this.loading
+			return (
+				!this.loading
 				&& this.from !== ''
 				&& this.to !== ''
 				&& this.from !== this.to
+			)
 		},
 		/**
 		 * Whether a source language is chosen and the target repeats it.
@@ -193,10 +206,15 @@ export default {
 			return this.from !== '' && this.from === this.to
 		},
 		hasTranslated() {
-			return this.result?.translated && Object.keys(this.result.translated).length > 0
+			return (
+				this.result?.translated
+				&& Object.keys(this.result.translated).length > 0
+			)
 		},
 		hasSkipped() {
-			return this.result?.skipped && Object.keys(this.result.skipped).length > 0
+			return (
+				this.result?.skipped && Object.keys(this.result.skipped).length > 0
+			)
 		},
 	},
 
@@ -248,10 +266,15 @@ export default {
 			this.result = null
 			try {
 				const store = useTranslationsStore()
-				this.result = await store.bulkTranslate(this.uuid, this.from, this.to)
+				this.result = await store.bulkTranslate(
+					this.uuid,
+					this.from,
+					this.to,
+				)
 				this.$emit('translated', this.result)
 			} catch (e) {
-				this.error = e?.response?.data?.error ?? e?.message ?? 'Translation failed'
+				this.error =
+					e?.response?.data?.error ?? e?.message ?? 'Translation failed'
 			} finally {
 				this.loading = false
 			}

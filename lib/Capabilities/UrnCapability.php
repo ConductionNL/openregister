@@ -39,66 +39,65 @@ use OCP\Capabilities\ICapability;
  * Closes spec requirement "URN capabilities MUST be discoverable via
  * Nextcloud capabilities API" of the urn-resource-addressing change.
  */
-class UrnCapability implements ICapability
-{
-    /**
-     * Constructor.
-     *
-     * @param UrnService $urnService URN identifier service used to read
-     *                               the configured instance slug.
-     */
-    public function __construct(private readonly UrnService $urnService)
-    {
-    }//end __construct()
+class UrnCapability implements ICapability {
+	/**
+	 * Constructor.
+	 *
+	 * @param UrnService $urnService URN identifier service used to read
+	 *                               the configured instance slug.
+	 */
+	public function __construct(
+		private readonly UrnService $urnService,
+	) {
+	}//end __construct()
 
-    /**
-     * Return the URN block under the `openregister` namespace.
-     *
-     * Shape:
-     *
-     *   openregister:
-     *     urn:
-     *       enabled: true
-     *       version: '1'
-     *       nid: 'nl-or'
-     *       instance: '<configured-instance-slug>'
-     *       endpoints:
-     *         resolve: '/apps/openregister/api/urn/resolve'
-     *         lookup:  '/apps/openregister/api/urn/lookup'
-     *         bulk:    '/apps/openregister/api/urn/bulk'
-     *       features:
-     *         bulkResolve:    true
-     *         reverseLookup:  true
-     *         crossInstance:  false   # federation deferred to v1.1
-     *         aliases:        false   # human-readable aliases deferred
-     *         versioning:     false   # version-suffix addressing deferred
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    public function getCapabilities(): array
-    {
-        return [
-            'openregister' => [
-                'urn' => [
-                    'enabled'   => true,
-                    'version'   => '1',
-                    'nid'       => UrnService::DEFAULT_NID,
-                    'instance'  => $this->urnService->getInstanceSlug(),
-                    'endpoints' => [
-                        'resolve' => '/apps/openregister/api/urn/resolve',
-                        'lookup'  => '/apps/openregister/api/urn/lookup',
-                        'bulk'    => '/apps/openregister/api/urn/bulk',
-                    ],
-                    'features'  => [
-                        'bulkResolve'   => true,
-                        'reverseLookup' => true,
-                        'crossInstance' => false,
-                        'aliases'       => false,
-                        'versioning'    => false,
-                    ],
-                ],
-            ],
-        ];
+	/**
+	 * Return the URN block under the `openregister` namespace.
+	 *
+	 * Shape:
+	 *
+	 *   openregister:
+	 *     urn:
+	 *       enabled: true
+	 *       version: '1'
+	 *       nid: 'nl-or'
+	 *       instance: '<configured-instance-slug>'
+	 *       endpoints:
+	 *         resolve: '/apps/openregister/api/urn/resolve'
+	 *         lookup:  '/apps/openregister/api/urn/lookup'
+	 *         bulk:    '/apps/openregister/api/urn/bulk'
+	 *       features:
+	 *         bulkResolve:    true
+	 *         reverseLookup:  true
+	 *         crossInstance:  false   # federation deferred to v1.1
+	 *         aliases:        false   # human-readable aliases deferred
+	 *         versioning:     false   # version-suffix addressing deferred
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public function getCapabilities(): array {
+		return [
+			'openregister' => [
+				'urn' => [
+					'enabled' => true,
+					'version' => '1',
+					'nid' => UrnService::DEFAULT_NID,
+					'instance' => $this->urnService->getInstanceSlug(),
+					'endpoints' => [
+						'resolve' => '/apps/openregister/api/urn/resolve',
+						'lookup' => '/apps/openregister/api/urn/lookup',
+						'bulk' => '/apps/openregister/api/urn/bulk',
+					],
+					'features' => [
+						'bulkResolve' => true,
+						'reverseLookup' => true,
+						'crossInstance' => false,
+						'aliases' => false,
+						'versioning' => false,
+					],
+				],
+			],
+		];
 
-    }//end getCapabilities()
+	}//end getCapabilities()
 }//end class

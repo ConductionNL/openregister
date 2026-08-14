@@ -1,10 +1,16 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { sourceStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import {
+	sourceStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'viewSource'"
+	<NcDialog
+		v-if="navigationStore.modal === 'viewSource'"
 		:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
 		size="large"
 		:can-close="false">
@@ -13,7 +19,9 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 			<div class="sourceDetailsGrid">
 				<div class="sourceMainInfo">
 					<h2>{{ sourceStore.sourceItem?.title }}</h2>
-					<p v-if="sourceStore.sourceItem?.description" class="sourceDescription">
+					<p
+						v-if="sourceStore.sourceItem?.description"
+						class="sourceDescription">
 						{{ sourceStore.sourceItem.description }}
 					</p>
 				</div>
@@ -23,17 +31,25 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 						<strong>{{ t('openregister', 'Type') }}:</strong>
 						<span>{{ sourceStore.sourceItem?.type || 'Unknown' }}</span>
 					</div>
-					<div v-if="sourceStore.sourceItem?.databaseUrl" class="propertyItem">
+					<div
+						v-if="sourceStore.sourceItem?.databaseUrl"
+						class="propertyItem">
 						<strong>{{ t('openregister', 'Database URL') }}:</strong>
-						<span class="urlValue">{{ sourceStore.sourceItem.databaseUrl }}</span>
+						<span class="urlValue">{{
+							sourceStore.sourceItem.databaseUrl
+						}}</span>
 					</div>
 					<div v-if="sourceStore.sourceItem?.created" class="propertyItem">
 						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{ new Date(sourceStore.sourceItem.created).toLocaleString() }}</span>
+						<span>{{
+							new Date(sourceStore.sourceItem.created).toLocaleString()
+						}}</span>
 					</div>
 					<div v-if="sourceStore.sourceItem?.updated" class="propertyItem">
 						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{ new Date(sourceStore.sourceItem.updated).toLocaleString() }}</span>
+						<span>{{
+							new Date(sourceStore.sourceItem.updated).toLocaleString()
+						}}</span>
 					</div>
 				</div>
 			</div>
@@ -55,20 +71,23 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 					<!-- Registers Tab -->
 					<div v-if="activeTab === 0" class="tabPanel">
 						<div v-if="filterRegisters.length > 0" class="registersGrid">
-							<div v-for="register in filterRegisters"
+							<div
+								v-for="register in filterRegisters"
 								:key="register.id"
 								class="registerCard">
 								<div class="registerHeader">
 									<h3>{{ register.title }}</h3>
 									<NcActions>
-										<NcActionButton close-after-click
+										<NcActionButton
+											close-after-click
 											@click="viewRegister(register)">
 											<template #icon>
 												<Eye :size="20" />
 											</template>
 											View
 										</NcActionButton>
-										<NcActionButton close-after-click
+										<NcActionButton
+											close-after-click
 											@click="editRegister(register)">
 											<template #icon>
 												<Pencil :size="20" />
@@ -77,7 +96,9 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 										</NcActionButton>
 									</NcActions>
 								</div>
-								<p v-if="register.description" class="registerDescription">
+								<p
+									v-if="register.description"
+									class="registerDescription">
 									{{ register.description }}
 								</p>
 							</div>
@@ -85,7 +106,12 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 						<div v-else class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No registers found')"
-								:description="t('openregister', 'This source has no associated registers.')">
+								:description="
+									t(
+										'openregister',
+										'This source has no associated registers.',
+									)
+								">
 								<template #icon>
 									<DatabaseOutline :size="64" />
 								</template>
@@ -98,7 +124,12 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 						<div class="emptyTabContent">
 							<NcEmptyContent
 								:name="t('openregister', 'No logs found')"
-								:description="t('openregister', 'No logs are available for this source.')">
+								:description="
+									t(
+										'openregister',
+										'No logs are available for this source.',
+									)
+								">
 								<template #icon>
 									<PostOutline :size="64" />
 								</template>
@@ -146,17 +177,17 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 					:model-value="formData.title || ''"
 					:error="!!errors.title"
 					:helper-text="errors.title"
-					@update:modelValue="v => updateField('title', v)" />
+					@update:modelValue="(v) => updateField('title', v)" />
 				<NcTextField
 					:label="t('openregister', 'Slug') + ' *'"
 					:model-value="formData.slug || ''"
 					:error="!!errors.slug"
 					:helper-text="errors.slug"
-					@update:modelValue="v => updateField('slug', v)" />
+					@update:modelValue="(v) => updateField('slug', v)" />
 				<NcTextArea
 					:label="t('openregister', 'Description')"
 					:model-value="formData.description || ''"
-					@update:modelValue="v => updateField('description', v)" />
+					@update:modelValue="(v) => updateField('description', v)" />
 				<NcSelect
 					:input-label="t('openregister', 'Schemas')"
 					:options="schemaSelectOptions"
@@ -164,7 +195,7 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 					:multiple="true"
 					:close-on-select="false"
 					:loading="schemasLoading"
-					@update:modelValue="vals => updateField('schemas', vals)" />
+					@update:modelValue="(vals) => updateField('schemas', vals)" />
 			</div>
 		</template>
 	</CnFormDialog>
@@ -231,10 +262,30 @@ export default {
 			return {
 				title: t('openregister', 'Register'),
 				properties: {
-					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
-					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
-					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						required: true,
+						minLength: 1,
+						order: 1,
+					},
+					slug: {
+						type: 'string',
+						title: t('openregister', 'Slug'),
+						required: true,
+						minLength: 1,
+						order: 2,
+					},
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						order: 3,
+					},
+					schemas: {
+						type: 'array',
+						title: t('openregister', 'Schemas'),
+						order: 4,
+					},
 				},
 				required: ['title', 'slug'],
 			}
@@ -247,7 +298,11 @@ export default {
 				return []
 			}
 			return registerStore.registerList.filter((register) => {
-				return register.source && register.source.toString() === sourceStore.sourceItem.id.toString()
+				return (
+					register.source
+					&& register.source.toString()
+						=== sourceStore.sourceItem.id.toString()
+				)
 			})
 		},
 	},
@@ -299,7 +354,10 @@ export default {
 			this.schemasLoading = true
 			try {
 				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
+					id: s.id,
+					label: s.title,
+				}))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -312,10 +370,13 @@ export default {
 		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
+			return schemas.map((s) => {
 				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
+				return (
+					this.schemaSelectOptions.find(
+						(o) => String(o.id) === String(id),
+					) || { id, label: String(id) }
+				)
 			})
 		},
 		/**
@@ -326,7 +387,9 @@ export default {
 			try {
 				await registerStore.saveRegister({
 					...formData,
-					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+					schemas: (formData.schemas || []).map((s) =>
+						typeof s === 'object' ? s.id : s,
+					),
 				})
 				this.$refs.editRegisterDialog.setResult({ success: true })
 				this.fetchRegisters()
@@ -339,7 +402,8 @@ export default {
 		 */
 		fetchRegisters() {
 			this.registersLoading = true
-			registerStore.refreshRegisterList()
+			registerStore
+				.refreshRegisterList()
 				.then(() => {
 					this.registersLoading = false
 				})

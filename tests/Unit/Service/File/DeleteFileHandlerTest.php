@@ -23,8 +23,8 @@ use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -33,92 +33,89 @@ use Psr\Log\LoggerInterface;
  * Covers the per-action delete-permission gate: a readable file the session
  * may not delete MUST be refused with NotPermittedException before delete().
  */
-class DeleteFileHandlerTest extends TestCase
-{
+class DeleteFileHandlerTest extends TestCase {
 
-    /**
-     * @var DeleteFileHandler
-     */
-    private DeleteFileHandler $handler;
+	/**
+	 * @var DeleteFileHandler
+	 */
+	private DeleteFileHandler $handler;
 
-    /**
-     * @var IRootFolder&MockObject
-     */
-    private $rootFolder;
+	/**
+	 * @var IRootFolder&MockObject
+	 */
+	private $rootFolder;
 
-    /**
-     * @var ReadFileHandler&MockObject
-     */
-    private $readFileHandler;
+	/**
+	 * @var ReadFileHandler&MockObject
+	 */
+	private $readFileHandler;
 
-    /**
-     * @var FileValidationHandler&MockObject
-     */
-    private $fileValidHandler;
+	/**
+	 * @var FileValidationHandler&MockObject
+	 */
+	private $fileValidHandler;
 
-    /**
-     * @var FileOwnershipHandler&MockObject
-     */
-    private $fileOwnershipHandler;
+	/**
+	 * @var FileOwnershipHandler&MockObject
+	 */
+	private $fileOwnershipHandler;
 
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private $logger;
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private $logger;
 
-    /**
-     * @var FileLockHandler&MockObject
-     */
-    private $fileLockHandler;
+	/**
+	 * @var FileLockHandler&MockObject
+	 */
+	private $fileLockHandler;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	protected function setUp(): void {
+		parent::setUp();
 
-        // IRootFolder extends OC\Hooks\Emitter, which is only present when the
-        // Nextcloud server source tree is on the include path (Docker / CI).
-        // Skip cleanly in a bare composer-autoload context (local worktree).
-        if (interface_exists('OC\\Hooks\\Emitter') === false) {
-            $this->markTestSkipped('Nextcloud server classes unavailable; run in the Docker test environment.');
-        }
+		// IRootFolder extends OC\Hooks\Emitter, which is only present when the
+		// Nextcloud server source tree is on the include path (Docker / CI).
+		// Skip cleanly in a bare composer-autoload context (local worktree).
+		if (interface_exists('OC\\Hooks\\Emitter') === false) {
+			$this->markTestSkipped('Nextcloud server classes unavailable; run in the Docker test environment.');
+		}
 
-        $this->rootFolder           = $this->createMock(IRootFolder::class);
-        $this->readFileHandler      = $this->createMock(ReadFileHandler::class);
-        $this->fileValidHandler     = $this->createMock(FileValidationHandler::class);
-        $this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
-        $this->logger               = $this->createMock(LoggerInterface::class);
-        $this->fileLockHandler      = $this->createMock(FileLockHandler::class);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->readFileHandler = $this->createMock(ReadFileHandler::class);
+		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
+		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->fileLockHandler = $this->createMock(FileLockHandler::class);
 
-        $this->handler = new DeleteFileHandler(
-            $this->rootFolder,
-            $this->readFileHandler,
-            $this->fileValidHandler,
-            $this->fileOwnershipHandler,
-            $this->logger,
-            $this->fileLockHandler
-        );
-    }//end setUp()
+		$this->handler = new DeleteFileHandler(
+			$this->rootFolder,
+			$this->readFileHandler,
+			$this->fileValidHandler,
+			$this->fileOwnershipHandler,
+			$this->logger,
+			$this->fileLockHandler
+		);
+	}//end setUp()
 
-    // =========================================================================
-    // deleteFile - delete-permission gate
-    // =========================================================================
+	// =========================================================================
+	// deleteFile - delete-permission gate
+	// =========================================================================
 
-    public function testDeleteRefusedWithoutDeletePermission(): void
-    {
-        // A readable file the session may not delete must be refused before any
-        // delete() call. checkOwnership() (readability) passes; isDeletable() fails.
-        // Resolve by id (avoids the `(string) $file` cast on a non-Stringable mock).
-        $file = $this->createMock(File::class);
-        $file->method('getId')->willReturn(42);
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('isDeletable')->willReturn(false);
-        $file->expects($this->never())->method('delete');
+	public function testDeleteRefusedWithoutDeletePermission(): void {
+		// A readable file the session may not delete must be refused before any
+		// delete() call. checkOwnership() (readability) passes; isDeletable() fails.
+		// Resolve by id (avoids the `(string) $file` cast on a non-Stringable mock).
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getName')->willReturn('test.pdf');
+		$file->method('isDeletable')->willReturn(false);
+		$file->expects($this->never())->method('delete');
 
-        $this->readFileHandler->method('getFile')->willReturn($file);
+		$this->readFileHandler->method('getFile')->willReturn($file);
 
-        $this->expectException(NotPermittedException::class);
-        $this->expectExceptionMessage('is not deletable');
+		$this->expectException(NotPermittedException::class);
+		$this->expectExceptionMessage('is not deletable');
 
-        $this->handler->deleteFile(file: 42, object: $this->createMock(ObjectEntity::class));
-    }//end testDeleteRefusedWithoutDeletePermission()
+		$this->handler->deleteFile(file: 42, object: $this->createMock(ObjectEntity::class));
+	}//end testDeleteRefusedWithoutDeletePermission()
 }//end class

@@ -34,48 +34,46 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260318120000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema or null if no changes
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // Get the schema wrapper from the closure.
-        $schema = $schemaClosure();
+class Version1Date20260318120000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema or null if no changes
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// Get the schema wrapper from the closure.
+		$schema = $schemaClosure();
 
-        $tableName = 'openregister_registers';
+		$tableName = 'openregister_registers';
 
-        if ($schema->hasTable($tableName) === false) {
-            $output->info("Table {$tableName} does not exist, skipping migration");
-            return null;
-        }
+		if ($schema->hasTable($tableName) === false) {
+			$output->info("Table {$tableName} does not exist, skipping migration");
+			return null;
+		}
 
-        $table = $schema->getTable($tableName);
+		$table = $schema->getTable($tableName);
 
-        if ($table->hasColumn('languages') === true) {
-            $output->info("Column 'languages' already exists on {$tableName}, skipping");
-            return null;
-        }
+		if ($table->hasColumn('languages') === true) {
+			$output->info("Column 'languages' already exists on {$tableName}, skipping");
+			return null;
+		}
 
-        $table->addColumn(
-                'languages',
-                Types::TEXT,
-                [
-                    'notnull' => false,
-                    'default' => null,
-                    'comment' => 'JSON array of available BCP 47 language codes, e.g. ["nl","en"]',
-                ]
-                );
+		$table->addColumn(
+			'languages',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+				'comment' => 'JSON array of available BCP 47 language codes, e.g. ["nl","en"]',
+			]
+		);
 
-        $output->info("Added 'languages' column to {$tableName}");
+		$output->info("Added 'languages' column to {$tableName}");
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

@@ -53,60 +53,56 @@ use OCP\IRequest;
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.1
  * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
  */
-class GenericDashboardController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string   $appName The calling (leaf) app id, supplied by the alias closure.
-     * @param IRequest $request HTTP request.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class GenericDashboardController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The calling (leaf) app id, supplied by the alias closure.
+	 * @param IRequest $request HTTP request.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Render the main SPA page from the leaf app's `templates/index.php`.
-     *
-     * @return TemplateResponse The rendered template for the calling app.
-     *
-     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function page(): TemplateResponse
-    {
-        return $this->renderIndex();
-    }//end page()
+	/**
+	 * Render the main SPA page from the leaf app's `templates/index.php`.
+	 *
+	 * @return TemplateResponse The rendered template for the calling app.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function page(): TemplateResponse {
+		return $this->renderIndex();
+	}//end page()
 
-    /**
-     * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
-     *
-     * @return TemplateResponse The rendered template for the calling app.
-     *
-     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
-     */
-    #[NoAdminRequired]
-    #[NoCSRFRequired]
-    public function catchAll(): TemplateResponse
-    {
-        return $this->page();
-    }//end catchAll()
+	/**
+	 * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
+	 *
+	 * @return TemplateResponse The rendered template for the calling app.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function catchAll(): TemplateResponse {
+		return $this->page();
+	}//end catchAll()
 
-    /**
-     * Build the `index` TemplateResponse for the calling app.
-     *
-     * Overridable hook: a leaf app needing extra initial-state or a non-default
-     * template name aliases its DashboardController at a local subclass and
-     * overrides this single method — all routing stays generic.
-     *
-     * @return TemplateResponse
-     */
-    protected function renderIndex(): TemplateResponse
-    {
-        return new TemplateResponse($this->appName, 'index');
-    }//end renderIndex()
+	/**
+	 * Build the `index` TemplateResponse for the calling app.
+	 *
+	 * Overridable hook: a leaf app needing extra initial-state or a non-default
+	 * template name aliases its DashboardController at a local subclass and
+	 * overrides this single method — all routing stays generic.
+	 *
+	 * @return TemplateResponse
+	 */
+	protected function renderIndex(): TemplateResponse {
+		return new TemplateResponse($this->appName, 'index');
+	}//end renderIndex()
 }//end class

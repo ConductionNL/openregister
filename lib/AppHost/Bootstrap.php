@@ -110,461 +110,453 @@ use Psr\Container\ContainerInterface;
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-3.1
  * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
  */
-class Bootstrap
-{
-    /**
-     * Fully-qualified generic class names, kept as plain strings so they are
-     * never autoloaded by referencing this map (only when a closure resolves
-     * one through the container).
-     */
-    private const GENERIC_DASHBOARD_CONTROLLER   = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericDashboardController';
-    private const GENERIC_PREFERENCES_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericPreferencesController';
-    private const GENERIC_SETTINGS_CONTROLLER    = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsController';
-    private const GENERIC_HEALTH_CONTROLLER      = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
-    private const GENERIC_METRICS_CONTROLLER     = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
-    private const GENERIC_SETTINGS_SERVICE       = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
-    private const GENERIC_ACTION_AUTH_SERVICE    = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
-    private const GENERIC_INITIALIZE_SETTINGS    = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
-    private const GENERIC_INITIALIZE_ACTIONS     = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions';
-    private const GENERIC_ADMIN_SETTINGS         = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings';
-    private const GENERIC_SETTINGS_SECTION       = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
-    private const GENERIC_DEEPLINK_LISTENER      = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
+class Bootstrap {
+	/**
+	 * Fully-qualified generic class names, kept as plain strings so they are
+	 * never autoloaded by referencing this map (only when a closure resolves
+	 * one through the container).
+	 */
+	private const GENERIC_DASHBOARD_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericDashboardController';
+	private const GENERIC_PREFERENCES_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericPreferencesController';
+	private const GENERIC_SETTINGS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsController';
+	private const GENERIC_HEALTH_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
+	private const GENERIC_METRICS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
+	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
+	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
+	private const GENERIC_INITIALIZE_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeSettings';
+	private const GENERIC_INITIALIZE_ACTIONS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions';
+	private const GENERIC_ADMIN_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings';
+	private const GENERIC_SETTINGS_SECTION = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
+	private const GENERIC_DEEPLINK_LISTENER = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
-    private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
-    private const REGISTER_CONFIG_RESOLVER       = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
+	private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
+	private const REGISTER_CONFIG_RESOLVER = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
 
-    private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
-    private const OBSERVABILITY_EXECUTOR        = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
-    private const OBSERVABILITY_METRICS_ENGINE  = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
+	private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
+	private const OBSERVABILITY_EXECUTOR = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
+	private const OBSERVABILITY_METRICS_ENGINE = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
 
-    private const DEEPLINK_EVENT = 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent';
+	private const DEEPLINK_EVENT = 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent';
 
-    /**
-     * Register all standard AppHost plumbing for a leaf app.
-     *
-     * @param IRegistrationContext $context The leaf app's registration context.
-     * @param string               $appId   The leaf app id (e.g. 'petstore').
-     * @param array<string, mixed> $options Optional overrides:
-     *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
-     *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
-     *                                      namespaces are not derivable from the app id (petstore →
-     *                                      PetStore, opencatalogi → OpenCatalogi, decidesk → Decidesk),
-     *                                      so pass it explicitly. When omitted, a StudlyCase guess from
-     *                                      the app id is used as a last-resort fallback.
-     *                                      - 'controllerNamespace' (string): override just the controller namespace.
-     *                                      - 'repairNamespace' (string): override just the repair namespace.
-     *                                      - 'settingsNamespace' (string): override just the settings namespace.
-     *                                      - 'sectionsNamespace' (string): override just the sections namespace.
-     *                                      - 'listenerNamespace' (string): override just the listener namespace.
-     *                                      - 'serviceNamespace' (string): override just the service namespace.
-     *                                      - 'sectionId' (string): admin section id, default `$appId`.
-     *                                      - 'sectionName' (string): admin section display name, default StudlyAppId.
-     *                                      - 'sectionIcon' (string): icon file, default 'app-dark.svg'.
-     *                                      - 'sectionPriority' (int): default 75.
-     *                                      - 'adminPriority' (int): default 10.
-     *                                      - 'dashboardWidgets' (string[]): widget classes to register.
-     *                                      - 'mcpProvider' (string): MCP tool provider class to alias.
-     *                                      - 'deepLinks' (bool): register the deep-link listener, default true.
-     *                                      - 'observability' (bool): alias health/metrics controllers, default true.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
-     */
-    public static function register(IRegistrationContext $context, string $appId, array $options=[]): void
-    {
-        $studly       = self::studly(appId: $appId);
-        $base         = rtrim(string: (string) ($options['namespace'] ?? ('OCA\\'.$studly)), characters: '\\');
-        $controllerNs = (string) ($options['controllerNamespace'] ?? ($base.'\\Controller'));
-        $repairNs     = (string) ($options['repairNamespace'] ?? ($base.'\\Repair'));
-        $settingsNs   = (string) ($options['settingsNamespace'] ?? ($base.'\\Settings'));
-        $sectionsNs   = (string) ($options['sectionsNamespace'] ?? ($base.'\\Sections'));
-        $listenerNs   = (string) ($options['listenerNamespace'] ?? ($base.'\\Listener'));
-        $serviceNs    = (string) ($options['serviceNamespace'] ?? ($base.'\\Service'));
+	/**
+	 * Register all standard AppHost plumbing for a leaf app.
+	 *
+	 * @param IRegistrationContext $context The leaf app's registration context.
+	 * @param string $appId The leaf app id (e.g. 'petstore').
+	 * @param array<string, mixed> $options Optional overrides:
+	 *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
+	 *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
+	 *                                      namespaces are not derivable from the app id (petstore →
+	 *                                      PetStore, opencatalogi → OpenCatalogi, decidesk → Decidesk),
+	 *                                      so pass it explicitly. When omitted, a StudlyCase guess from
+	 *                                      the app id is used as a last-resort fallback.
+	 *                                      - 'controllerNamespace' (string): override just the controller namespace.
+	 *                                      - 'repairNamespace' (string): override just the repair namespace.
+	 *                                      - 'settingsNamespace' (string): override just the settings namespace.
+	 *                                      - 'sectionsNamespace' (string): override just the sections namespace.
+	 *                                      - 'listenerNamespace' (string): override just the listener namespace.
+	 *                                      - 'serviceNamespace' (string): override just the service namespace.
+	 *                                      - 'sectionId' (string): admin section id, default `$appId`.
+	 *                                      - 'sectionName' (string): admin section display name, default StudlyAppId.
+	 *                                      - 'sectionIcon' (string): icon file, default 'app-dark.svg'.
+	 *                                      - 'sectionPriority' (int): default 75.
+	 *                                      - 'adminPriority' (int): default 10.
+	 *                                      - 'dashboardWidgets' (string[]): widget classes to register.
+	 *                                      - 'mcpProvider' (string): MCP tool provider class to alias.
+	 *                                      - 'deepLinks' (bool): register the deep-link listener, default true.
+	 *                                      - 'observability' (bool): alias health/metrics controllers, default true.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+	 */
+	public static function register(IRegistrationContext $context, string $appId, array $options = []): void {
+		$studly = self::studly(appId: $appId);
+		$base = rtrim(string: (string)($options['namespace'] ?? ('OCA\\' . $studly)), characters: '\\');
+		$controllerNs = (string)($options['controllerNamespace'] ?? ($base . '\\Controller'));
+		$repairNs = (string)($options['repairNamespace'] ?? ($base . '\\Repair'));
+		$settingsNs = (string)($options['settingsNamespace'] ?? ($base . '\\Settings'));
+		$sectionsNs = (string)($options['sectionsNamespace'] ?? ($base . '\\Sections'));
+		$listenerNs = (string)($options['listenerNamespace'] ?? ($base . '\\Listener'));
+		$serviceNs = (string)($options['serviceNamespace'] ?? ($base . '\\Service'));
 
-        $sectionId         = (string) ($options['sectionId'] ?? $appId);
-        $sectionName       = (string) ($options['sectionName'] ?? $studly);
-        $sectionIcon       = (string) ($options['sectionIcon'] ?? 'app-dark.svg');
-        $sectionPriority   = (int) ($options['sectionPriority'] ?? 75);
-        $adminPriority     = (int) ($options['adminPriority'] ?? 10);
-        $registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
-        $registerObserv    = ($options['observability'] ?? true) !== false;
+		$sectionId = (string)($options['sectionId'] ?? $appId);
+		$sectionName = (string)($options['sectionName'] ?? $studly);
+		$sectionIcon = (string)($options['sectionIcon'] ?? 'app-dark.svg');
+		$sectionPriority = (int)($options['sectionPriority'] ?? 75);
+		$adminPriority = (int)($options['adminPriority'] ?? 10);
+		$registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
+		$registerObserv = ($options['observability'] ?? true) !== false;
 
-        self::registerControllers(context: $context, appId: $appId, controllerNs: $controllerNs, observability: $registerObserv);
-        self::registerServices(context: $context, appId: $appId, serviceNs: $serviceNs);
-        self::registerRepairSteps(context: $context, appId: $appId, repairNs: $repairNs);
-        self::registerAdminSettings(
-            context: $context,
-            appId: $appId,
-            settingsNs: $settingsNs,
-            sectionsNs: $sectionsNs,
-            sectionId: $sectionId,
-            sectionName: $sectionName,
-            sectionIcon: $sectionIcon,
-            sectionPriority: $sectionPriority,
-            adminPriority: $adminPriority
-        );
+		self::registerControllers(context: $context, appId: $appId, controllerNs: $controllerNs, observability: $registerObserv);
+		self::registerServices(context: $context, appId: $appId, serviceNs: $serviceNs);
+		self::registerRepairSteps(context: $context, appId: $appId, repairNs: $repairNs);
+		self::registerAdminSettings(
+			context: $context,
+			appId: $appId,
+			settingsNs: $settingsNs,
+			sectionsNs: $sectionsNs,
+			sectionId: $sectionId,
+			sectionName: $sectionName,
+			sectionIcon: $sectionIcon,
+			sectionPriority: $sectionPriority,
+			adminPriority: $adminPriority
+		);
 
-        if ($registerDeepLinks === true) {
-            self::registerDeepLinkListener(context: $context, appId: $appId, listenerNs: $listenerNs);
-        }
+		if ($registerDeepLinks === true) {
+			self::registerDeepLinkListener(context: $context, appId: $appId, listenerNs: $listenerNs);
+		}
 
-        foreach ((array) ($options['dashboardWidgets'] ?? []) as $widgetClass) {
-            $context->registerDashboardWidget((string) $widgetClass);
-        }
+		foreach ((array)($options['dashboardWidgets'] ?? []) as $widgetClass) {
+			$context->registerDashboardWidget((string)$widgetClass);
+		}
 
-        if (isset($options['mcpProvider']) === true) {
-            $context->registerServiceAlias(
-                'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
-                (string) $options['mcpProvider']
-            );
-        }
-    }//end register()
+		if (isset($options['mcpProvider']) === true) {
+			$context->registerServiceAlias(
+				'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::' . $appId,
+				(string)$options['mcpProvider']
+			);
+		}
+	}//end register()
 
-    /**
-     * Alias the leaf controller class names to the generic controllers, with
-     * the leaf appId injected as the controllers' `$appName`.
-     *
-     * @param IRegistrationContext $context       Leaf registration context.
-     * @param string               $appId         Leaf app id.
-     * @param string               $controllerNs  Leaf controller namespace.
-     * @param bool                 $observability Whether to alias health/metrics.
-     *
-     * @return void
-     */
-    private static function registerControllers(IRegistrationContext $context, string $appId, string $controllerNs, bool $observability): void
-    {
-        self::aliasControllerUnlessLeafDefinesIt(
-            context: $context,
-            leafClass: $controllerNs.'\\DashboardController',
-            factory: static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_DASHBOARD_CONTROLLER;
-                return new $class(
-                    appName: $appId,
-                    request: $c->get('OCP\\IRequest')
-                );
-            }
-        );
+	/**
+	 * Alias the leaf controller class names to the generic controllers, with
+	 * the leaf appId injected as the controllers' `$appName`.
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $appId Leaf app id.
+	 * @param string $controllerNs Leaf controller namespace.
+	 * @param bool $observability Whether to alias health/metrics.
+	 *
+	 * @return void
+	 */
+	private static function registerControllers(IRegistrationContext $context, string $appId, string $controllerNs, bool $observability): void {
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\DashboardController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_DASHBOARD_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest')
+				);
+			}
+		);
 
-        self::aliasControllerUnlessLeafDefinesIt(
-            context: $context,
-            leafClass: $controllerNs.'\\PreferencesController',
-            factory: static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_PREFERENCES_CONTROLLER;
-                return new $class(
-                    appName: $appId,
-                    request: $c->get('OCP\\IRequest'),
-                    config: $c->get('OCP\\IConfig'),
-                    userSession: $c->get('OCP\\IUserSession')
-                );
-            }
-        );
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\PreferencesController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_PREFERENCES_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					config: $c->get('OCP\\IConfig'),
+					userSession: $c->get('OCP\\IUserSession')
+				);
+			}
+		);
 
-        self::aliasControllerUnlessLeafDefinesIt(
-            context: $context,
-            leafClass: $controllerNs.'\\SettingsController',
-            factory: static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_SETTINGS_CONTROLLER;
-                return new $class(
-                    appName: $appId,
-                    request: $c->get('OCP\\IRequest'),
-                    settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE)
-                );
-            }
-        );
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\SettingsController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_SETTINGS_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE)
+				);
+			}
+		);
 
-        if ($observability === false) {
-            return;
-        }
+		if ($observability === false) {
+			return;
+		}
 
-        self::aliasControllerUnlessLeafDefinesIt(
-            context: $context,
-            leafClass: $controllerNs.'\\HealthController',
-            factory: static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_HEALTH_CONTROLLER;
-                return new $class(
-                    appName: $appId,
-                    request: $c->get('OCP\\IRequest'),
-                    manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-                    executor: $c->get(self::OBSERVABILITY_EXECUTOR)
-                );
-            }
-        );
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\HealthController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_HEALTH_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+					executor: $c->get(self::OBSERVABILITY_EXECUTOR)
+				);
+			}
+		);
 
-        self::aliasControllerUnlessLeafDefinesIt(
-            context: $context,
-            leafClass: $controllerNs.'\\MetricsController',
-            factory: static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_METRICS_CONTROLLER;
-                return new $class(
-                    appName: $appId,
-                    request: $c->get('OCP\\IRequest'),
-                    manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-                    engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE)
-                );
-            }
-        );
-    }//end registerControllers()
+		self::aliasControllerUnlessLeafDefinesIt(
+			context: $context,
+			leafClass: $controllerNs . '\\MetricsController',
+			factory: static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_METRICS_CONTROLLER;
+				return new $class(
+					appName: $appId,
+					request: $c->get('OCP\\IRequest'),
+					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+					engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE)
+				);
+			}
+		);
+	}//end registerControllers()
 
-    /**
-     * Alias one leaf controller class name to a generic AppHost controller,
-     * but ONLY when the leaf app does not ship a controller of that name
-     * itself.
-     *
-     * `IRegistrationContext::registerService()` OVERRIDES the container's
-     * autowiring for the given class name. Registering unconditionally
-     * therefore SHADOWED any controller the consuming app already provided:
-     * the leaf's routes still resolved, but they dispatched to OpenRegister's
-     * generic controller instead of the leaf's own. Two symptoms were observed
-     * live on a consuming app:
-     *
-     *   1. Routes calling a method that only exists on the leaf's controller
-     *      (e.g. `dashboard#summary`) 500'd, because the generic controller
-     *      has no such method.
-     *   2. Response-level behaviour the leaf's controller applied — notably a
-     *      Content-Security-Policy built with `allowEvalWasm(true)` — never
-     *      ran, so the served CSP lacked `wasm-unsafe-eval` and every
-     *      WASM-backed feature (Argon2 share/export/import) was blocked.
-     *
-     * A leaf that defines the class wins; a leaf that does not still gets the
-     * generic implementation for free, which is the whole point of AppHost.
-     *
-     * @param IRegistrationContext $context   Leaf registration context.
-     * @param string               $leafClass Fully-qualified leaf controller class name.
-     * @param \Closure             $factory   Factory building the generic controller.
-     *
-     * @return void
-     */
-    private static function aliasControllerUnlessLeafDefinesIt(IRegistrationContext $context, string $leafClass, \Closure $factory): void
-    {
-        // `class_exists()` autoloads, so this resolves the leaf app's own
-        // controller through its composer autoloader when it has one.
-        if (class_exists($leafClass) === true) {
-            return;
-        }
+	/**
+	 * Alias one leaf controller class name to a generic AppHost controller,
+	 * but ONLY when the leaf app does not ship a controller of that name
+	 * itself.
+	 *
+	 * `IRegistrationContext::registerService()` OVERRIDES the container's
+	 * autowiring for the given class name. Registering unconditionally
+	 * therefore SHADOWED any controller the consuming app already provided:
+	 * the leaf's routes still resolved, but they dispatched to OpenRegister's
+	 * generic controller instead of the leaf's own. Two symptoms were observed
+	 * live on a consuming app:
+	 *
+	 *   1. Routes calling a method that only exists on the leaf's controller
+	 *      (e.g. `dashboard#summary`) 500'd, because the generic controller
+	 *      has no such method.
+	 *   2. Response-level behaviour the leaf's controller applied — notably a
+	 *      Content-Security-Policy built with `allowEvalWasm(true)` — never
+	 *      ran, so the served CSP lacked `wasm-unsafe-eval` and every
+	 *      WASM-backed feature (Argon2 share/export/import) was blocked.
+	 *
+	 * A leaf that defines the class wins; a leaf that does not still gets the
+	 * generic implementation for free, which is the whole point of AppHost.
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $leafClass Fully-qualified leaf controller class name.
+	 * @param \Closure $factory Factory building the generic controller.
+	 *
+	 * @return void
+	 */
+	private static function aliasControllerUnlessLeafDefinesIt(IRegistrationContext $context, string $leafClass, \Closure $factory): void {
+		// `class_exists()` autoloads, so this resolves the leaf app's own
+		// controller through its composer autoloader when it has one.
+		if (class_exists($leafClass) === true) {
+			return;
+		}
 
-        $context->registerService($leafClass, $factory);
+		$context->registerService($leafClass, $factory);
 
-    }//end aliasControllerUnlessLeafDefinesIt()
+	}//end aliasControllerUnlessLeafDefinesIt()
 
-    /**
-     * Register the app-scoped settings + action-auth services under both the
-     * generic class name (so the controllers resolve them) and the leaf's
-     * conventional service class names (so leaf code keeps working).
-     *
-     * @param IRegistrationContext $context   Leaf registration context.
-     * @param string               $appId     Leaf app id.
-     * @param string               $serviceNs Leaf service namespace.
-     *
-     * @return void
-     */
-    private static function registerServices(IRegistrationContext $context, string $appId, string $serviceNs): void
-    {
-        $settingsFactory = static function (ContainerInterface $c) use ($appId) {
-            $class = self::GENERIC_SETTINGS_SERVICE;
-            return new $class(
-                appId: $appId,
-                appConfig: $c->get('OCP\\IAppConfig'),
-                appManager: $c->get('OCP\\App\\IAppManager'),
-                container: $c,
-                groupManager: $c->get('OCP\\IGroupManager'),
-                userSession: $c->get('OCP\\IUserSession'),
-                logger: $c->get('Psr\\Log\\LoggerInterface')
-            );
-        };
-        $context->registerService(self::GENERIC_SETTINGS_SERVICE, $settingsFactory);
-        $context->registerService($serviceNs.'\\SettingsService', $settingsFactory);
+	/**
+	 * Register the app-scoped settings + action-auth services under both the
+	 * generic class name (so the controllers resolve them) and the leaf's
+	 * conventional service class names (so leaf code keeps working).
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $appId Leaf app id.
+	 * @param string $serviceNs Leaf service namespace.
+	 *
+	 * @return void
+	 */
+	private static function registerServices(IRegistrationContext $context, string $appId, string $serviceNs): void {
+		$settingsFactory = static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_SETTINGS_SERVICE;
+			return new $class(
+				appId: $appId,
+				appConfig: $c->get('OCP\\IAppConfig'),
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				container: $c,
+				groupManager: $c->get('OCP\\IGroupManager'),
+				userSession: $c->get('OCP\\IUserSession'),
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+		$context->registerService(self::GENERIC_SETTINGS_SERVICE, $settingsFactory);
+		$context->registerService($serviceNs . '\\SettingsService', $settingsFactory);
 
-        $actionAuthFactory = static function (ContainerInterface $c) use ($appId) {
-            $class = self::GENERIC_ACTION_AUTH_SERVICE;
-            return new $class(
-                appId: $appId,
-                appConfig: $c->get('OCP\\IAppConfig'),
-                groupManager: $c->get('OCP\\IGroupManager')
-            );
-        };
-        $context->registerService(self::GENERIC_ACTION_AUTH_SERVICE, $actionAuthFactory);
-        $context->registerService($serviceNs.'\\ActionAuthService', $actionAuthFactory);
+		$actionAuthFactory = static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_ACTION_AUTH_SERVICE;
+			return new $class(
+				appId: $appId,
+				appConfig: $c->get('OCP\\IAppConfig'),
+				groupManager: $c->get('OCP\\IGroupManager')
+			);
+		};
+		$context->registerService(self::GENERIC_ACTION_AUTH_SERVICE, $actionAuthFactory);
+		$context->registerService($serviceNs . '\\ActionAuthService', $actionAuthFactory);
 
-        // ADR-066 settings-plane consumables. Appended AFTER the pre-existing
-        // registrations on purpose — the AppHost bootstrap load-order incident
-        // (listeners killed by a reorder) makes registration order here part of
-        // the contract: never reorder, only append. Both are lazy closures, so
-        // a disabled OpenRegister still never fatals NC bootstrap.
-        $settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
-            $class = self::GENERIC_SETTINGS_PLANE_SERVICE;
-            return new $class(
-                appId: $appId,
-                appConfig: $c->get('OCP\\IAppConfig'),
-                appManager: $c->get('OCP\\App\\IAppManager'),
-                container: $c,
-                groupManager: $c->get('OCP\\IGroupManager'),
-                userSession: $c->get('OCP\\IUserSession'),
-                logger: $c->get('Psr\\Log\\LoggerInterface')
-            );
-        };
-        $context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
+		// ADR-066 settings-plane consumables. Appended AFTER the pre-existing
+		// registrations on purpose — the AppHost bootstrap load-order incident
+		// (listeners killed by a reorder) makes registration order here part of
+		// the contract: never reorder, only append. Both are lazy closures, so
+		// a disabled OpenRegister still never fatals NC bootstrap.
+		$settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_SETTINGS_PLANE_SERVICE;
+			return new $class(
+				appId: $appId,
+				appConfig: $c->get('OCP\\IAppConfig'),
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				container: $c,
+				groupManager: $c->get('OCP\\IGroupManager'),
+				userSession: $c->get('OCP\\IUserSession'),
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+		$context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
 
-        $registerConfigResolverFactory = static function (ContainerInterface $c) use ($appId) {
-            $class = self::REGISTER_CONFIG_RESOLVER;
-            return new $class(
-                appId: $appId,
-                appManager: $c->get('OCP\\App\\IAppManager'),
-                container: $c,
-                logger: $c->get('Psr\\Log\\LoggerInterface')
-            );
-        };
-        $context->registerService(self::REGISTER_CONFIG_RESOLVER, $registerConfigResolverFactory);
-        $context->registerService($serviceNs.'\\RegisterConfigResolver', $registerConfigResolverFactory);
-    }//end registerServices()
+		$registerConfigResolverFactory = static function (ContainerInterface $c) use ($appId) {
+			$class = self::REGISTER_CONFIG_RESOLVER;
+			return new $class(
+				appId: $appId,
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				container: $c,
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+		$context->registerService(self::REGISTER_CONFIG_RESOLVER, $registerConfigResolverFactory);
+		$context->registerService($serviceNs . '\\RegisterConfigResolver', $registerConfigResolverFactory);
+	}//end registerServices()
 
-    /**
-     * Bind the leaf repair-step class names (referenced by info.xml) to the
-     * generic repair steps with the appId + app-scoped services injected.
-     *
-     * @param IRegistrationContext $context  Leaf registration context.
-     * @param string               $appId    Leaf app id.
-     * @param string               $repairNs Leaf repair namespace.
-     *
-     * @return void
-     */
-    private static function registerRepairSteps(IRegistrationContext $context, string $appId, string $repairNs): void
-    {
-        $context->registerService(
-            $repairNs.'\\InitializeSettings',
-            static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_INITIALIZE_SETTINGS;
-                return new $class(
-                    appId: $appId,
-                    settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
-                    logger: $c->get('Psr\\Log\\LoggerInterface'),
-                    appManager: $c->get('OCP\\App\\IAppManager'),
-                    tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
-                    applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
-                );
-            }
-        );
+	/**
+	 * Bind the leaf repair-step class names (referenced by info.xml) to the
+	 * generic repair steps with the appId + app-scoped services injected.
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $appId Leaf app id.
+	 * @param string $repairNs Leaf repair namespace.
+	 *
+	 * @return void
+	 */
+	private static function registerRepairSteps(IRegistrationContext $context, string $appId, string $repairNs): void {
+		$context->registerService(
+			$repairNs . '\\InitializeSettings',
+			static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_INITIALIZE_SETTINGS;
+				return new $class(
+					appId: $appId,
+					settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
+					logger: $c->get('Psr\\Log\\LoggerInterface'),
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
+					applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
+				);
+			}
+		);
 
-        $context->registerService(
-            $repairNs.'\\InitializeActions',
-            static function (ContainerInterface $c) use ($appId) {
-                $class = self::GENERIC_INITIALIZE_ACTIONS;
-                return new $class(
-                    appId: $appId,
-                    actionAuth: $c->get(self::GENERIC_ACTION_AUTH_SERVICE),
-                    appManager: $c->get('OCP\\App\\IAppManager'),
-                    logger: $c->get('Psr\\Log\\LoggerInterface')
-                );
-            }
-        );
-    }//end registerRepairSteps()
+		$context->registerService(
+			$repairNs . '\\InitializeActions',
+			static function (ContainerInterface $c) use ($appId) {
+				$class = self::GENERIC_INITIALIZE_ACTIONS;
+				return new $class(
+					appId: $appId,
+					actionAuth: $c->get(self::GENERIC_ACTION_AUTH_SERVICE),
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					logger: $c->get('Psr\\Log\\LoggerInterface')
+				);
+			}
+		);
+	}//end registerRepairSteps()
 
-    /**
-     * Bind the leaf admin-settings + section class names (referenced by
-     * info.xml) to the generic admin settings/section with the leaf metadata.
-     *
-     * @param IRegistrationContext $context         Leaf registration context.
-     * @param string               $appId           Leaf app id.
-     * @param string               $settingsNs      Leaf settings namespace.
-     * @param string               $sectionsNs      Leaf sections namespace.
-     * @param string               $sectionId       Section id.
-     * @param string               $sectionName     Section display name.
-     * @param string               $sectionIcon     Section icon file.
-     * @param int                  $sectionPriority Section priority.
-     * @param int                  $adminPriority   Admin form priority.
-     *
-     * @return void
-     */
-    private static function registerAdminSettings(
-        IRegistrationContext $context,
-        string $appId,
-        string $settingsNs,
-        string $sectionsNs,
-        string $sectionId,
-        string $sectionName,
-        string $sectionIcon,
-        int $sectionPriority,
-        int $adminPriority
-    ): void {
-        $context->registerService(
-            $settingsNs.'\\AdminSettings',
-            static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
-                $class = self::GENERIC_ADMIN_SETTINGS;
-                return new $class(
-                    appId: $appId,
-                    sectionId: $sectionId,
-                    priority: $adminPriority,
-                    appManager: $c->get('OCP\\App\\IAppManager'),
-                    initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
-                    appConfig: $c->get('OCP\\IAppConfig')
-                );
-            }
-        );
+	/**
+	 * Bind the leaf admin-settings + section class names (referenced by
+	 * info.xml) to the generic admin settings/section with the leaf metadata.
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $appId Leaf app id.
+	 * @param string $settingsNs Leaf settings namespace.
+	 * @param string $sectionsNs Leaf sections namespace.
+	 * @param string $sectionId Section id.
+	 * @param string $sectionName Section display name.
+	 * @param string $sectionIcon Section icon file.
+	 * @param int $sectionPriority Section priority.
+	 * @param int $adminPriority Admin form priority.
+	 *
+	 * @return void
+	 */
+	private static function registerAdminSettings(
+		IRegistrationContext $context,
+		string $appId,
+		string $settingsNs,
+		string $sectionsNs,
+		string $sectionId,
+		string $sectionName,
+		string $sectionIcon,
+		int $sectionPriority,
+		int $adminPriority,
+	): void {
+		$context->registerService(
+			$settingsNs . '\\AdminSettings',
+			static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
+				$class = self::GENERIC_ADMIN_SETTINGS;
+				return new $class(
+					appId: $appId,
+					sectionId: $sectionId,
+					priority: $adminPriority,
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
+					appConfig: $c->get('OCP\\IAppConfig')
+				);
+			}
+		);
 
-        $context->registerService(
-            $sectionsNs.'\\SettingsSection',
-            static function (ContainerInterface $c) use ($appId, $sectionId, $sectionName, $sectionIcon, $sectionPriority) {
-                $class = self::GENERIC_SETTINGS_SECTION;
-                return new $class(
-                    sectionId: $sectionId,
-                    name: $sectionName,
-                    appId: $appId,
-                    iconFile: $sectionIcon,
-                    priority: $sectionPriority,
-                    urlGenerator: $c->get('OCP\\IURLGenerator')
-                );
-            }
-        );
-    }//end registerAdminSettings()
+		$context->registerService(
+			$sectionsNs . '\\SettingsSection',
+			static function (ContainerInterface $c) use ($appId, $sectionId, $sectionName, $sectionIcon, $sectionPriority) {
+				$class = self::GENERIC_SETTINGS_SECTION;
+				return new $class(
+					sectionId: $sectionId,
+					name: $sectionName,
+					appId: $appId,
+					iconFile: $sectionIcon,
+					priority: $sectionPriority,
+					urlGenerator: $c->get('OCP\\IURLGenerator')
+				);
+			}
+		);
+	}//end registerAdminSettings()
 
-    /**
-     * Register the generic deep-link listener (manifest-driven) and bind the
-     * leaf listener class name to it. The event listener is registered against
-     * OpenRegister's DeepLinkRegistrationEvent by its string name, so a
-     * disabled OR simply never dispatches the event — no fatal.
-     *
-     * @param IRegistrationContext $context    Leaf registration context.
-     * @param string               $appId      Leaf app id.
-     * @param string               $listenerNs Leaf listener namespace.
-     *
-     * @return void
-     */
-    private static function registerDeepLinkListener(IRegistrationContext $context, string $appId, string $listenerNs): void
-    {
-        $factory = static function (ContainerInterface $c) use ($appId) {
-            $class = self::GENERIC_DEEPLINK_LISTENER;
-            return new $class(
-                appId: $appId,
-                appManager: $c->get('OCP\\App\\IAppManager'),
-                logger: $c->get('Psr\\Log\\LoggerInterface')
-            );
-        };
-        $context->registerService(self::GENERIC_DEEPLINK_LISTENER, $factory);
-        $context->registerService($listenerNs.'\\DeepLinkRegistrationListener', $factory);
+	/**
+	 * Register the generic deep-link listener (manifest-driven) and bind the
+	 * leaf listener class name to it. The event listener is registered against
+	 * OpenRegister's DeepLinkRegistrationEvent by its string name, so a
+	 * disabled OR simply never dispatches the event — no fatal.
+	 *
+	 * @param IRegistrationContext $context Leaf registration context.
+	 * @param string $appId Leaf app id.
+	 * @param string $listenerNs Leaf listener namespace.
+	 *
+	 * @return void
+	 */
+	private static function registerDeepLinkListener(IRegistrationContext $context, string $appId, string $listenerNs): void {
+		$factory = static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_DEEPLINK_LISTENER;
+			return new $class(
+				appId: $appId,
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+		$context->registerService(self::GENERIC_DEEPLINK_LISTENER, $factory);
+		$context->registerService($listenerNs . '\\DeepLinkRegistrationListener', $factory);
 
-        $context->registerEventListener(self::DEEPLINK_EVENT, $listenerNs.'\\DeepLinkRegistrationListener');
-    }//end registerDeepLinkListener()
+		$context->registerEventListener(self::DEEPLINK_EVENT, $listenerNs . '\\DeepLinkRegistrationListener');
+	}//end registerDeepLinkListener()
 
-    /**
-     * Convert a dash/underscore app id into a StudlyCase namespace segment
-     * (e.g. `pet_store` / `pet-store` → `PetStore`).
-     *
-     * @param string $appId The app id.
-     *
-     * @return string StudlyCase form.
-     */
-    private static function studly(string $appId): string
-    {
-        $parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
-        if ($parts === false || count($parts) === 0) {
-            $parts = [$appId];
-        }
+	/**
+	 * Convert a dash/underscore app id into a StudlyCase namespace segment
+	 * (e.g. `pet_store` / `pet-store` → `PetStore`).
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return string StudlyCase form.
+	 */
+	private static function studly(string $appId): string {
+		$parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
+		if ($parts === false || count($parts) === 0) {
+			$parts = [$appId];
+		}
 
-        $studly = '';
-        foreach ($parts as $part) {
-            $studly .= ucfirst($part);
-        }//end foreach
+		$studly = '';
+		foreach ($parts as $part) {
+			$studly .= ucfirst($part);
+		}//end foreach
 
-        return $studly;
-    }//end studly()
+		return $studly;
+	}//end studly()
 }//end class

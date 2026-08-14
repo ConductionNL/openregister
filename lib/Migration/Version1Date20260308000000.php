@@ -31,42 +31,39 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20260308000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null The updated schema
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+class Version1Date20260308000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_configurations') === false) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_configurations') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_configurations');
+		$table = $schema->getTable('openregister_configurations');
 
-        if ($table->hasColumn('mappings') === true) {
-            return null;
-        }
+		if ($table->hasColumn('mappings') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            'mappings',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			'mappings',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

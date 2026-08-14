@@ -34,44 +34,42 @@ namespace OCA\OpenRegister\AppHost\Observability;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
  */
-final class MetricSample
-{
-    /**
-     * Constructor.
-     *
-     * @param string                                                            $name    Metric name (without `{app}_` prefix).
-     * @param string                                                            $type    Prometheus type (gauge|counter).
-     * @param string                                                            $help    HELP text.
-     * @param array<int, array{labels: array<string,string>, value: float|int}> $samples Labelled samples.
-     */
-    public function __construct(
-        public readonly string $name,
-        public readonly string $type,
-        public readonly string $help,
-        public readonly array $samples
-    ) {
-    }//end __construct()
+final class MetricSample {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $name Metric name (without `{app}_` prefix).
+	 * @param string $type Prometheus type (gauge|counter).
+	 * @param string $help HELP text.
+	 * @param array<int, array{labels: array<string,string>, value: float|int}> $samples Labelled samples.
+	 */
+	public function __construct(
+		public readonly string $name,
+		public readonly string $type,
+		public readonly string $help,
+		public readonly array $samples,
+	) {
+	}//end __construct()
 
-    /**
-     * Convenience factory for a single unlabelled sample.
-     *
-     * @param string                $name   Metric name.
-     * @param string                $type   Prometheus type.
-     * @param string                $help   HELP text.
-     * @param float|int             $value  Sample value.
-     * @param array<string, string> $labels Optional labels.
-     *
-     * @return self
-     *
-     * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
-     */
-    public static function single(string $name, string $type, string $help, float|int $value, array $labels=[]): self
-    {
-        return new self(
-            name: $name,
-            type: $type,
-            help: $help,
-            samples: [['labels' => $labels, 'value' => $value]]
-        );
-    }//end single()
+	/**
+	 * Convenience factory for a single unlabelled sample.
+	 *
+	 * @param string $name Metric name.
+	 * @param string $type Prometheus type.
+	 * @param string $help HELP text.
+	 * @param float|int $value Sample value.
+	 * @param array<string, string> $labels Optional labels.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
+	 */
+	public static function single(string $name, string $type, string $help, float|int $value, array $labels = []): self {
+		return new self(
+			name: $name,
+			type: $type,
+			help: $help,
+			samples: [['labels' => $labels, 'value' => $value]]
+		);
+	}//end single()
 }//end class

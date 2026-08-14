@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Bootstrap file for Integration Tests
  *
@@ -27,4 +28,3 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 // No Nextcloud bootstrap needed for integration tests.
 // They use HTTP client to test the running API.
-

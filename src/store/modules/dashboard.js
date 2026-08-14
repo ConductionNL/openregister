@@ -43,8 +43,10 @@ export const useDashboardStore = defineStore('dashboard', {
 		getRegisters: (state) => state.registers,
 		isLoading: (state) => state.loading,
 		getError: (state) => state.error,
-		getSystemTotals: (state) => state.registers.find(register => register.title === 'System Totals'),
-		getOrphanedItems: (state) => state.registers.find(register => register.title === 'Orphaned Items'),
+		getSystemTotals: (state) =>
+			state.registers.find((register) => register.title === 'System Totals'),
+		getOrphanedItems: (state) =>
+			state.registers.find((register) => register.title === 'Orphaned Items'),
 		getDateRange: (state) => state.dateRange,
 		getChartData: (state) => state.chartData,
 		isChartLoading: (state) => state.chartLoading,
@@ -76,17 +78,20 @@ export const useDashboardStore = defineStore('dashboard', {
 			const schemaStore = useSchemaStore()
 
 			// Watch for changes in the active register or schema and refresh dashboard data
-			watch([
-				() => registerStore.registerItem?.id,
-				() => schemaStore.schemaItem?.id,
-			], async () => {
-				// Fetch registers to update sidebar tables
-				await this.fetchRegisters()
-				// Fetch all chart data to update dashboard charts
-				await this.fetchAllChartData()
-				// Fetch all statistics to update audit trail sidebar
-				await this.fetchAllStatistics()
-			})
+			watch(
+				[
+					() => registerStore.registerItem?.id,
+					() => schemaStore.schemaItem?.id,
+				],
+				async () => {
+					// Fetch registers to update sidebar tables
+					await this.fetchRegisters()
+					// Fetch all chart data to update dashboard charts
+					await this.fetchAllChartData()
+					// Fetch all statistics to update audit trail sidebar
+					await this.fetchAllStatistics()
+				},
+			)
 		},
 
 		/**
@@ -102,14 +107,19 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.chartLoading.auditTrailActions = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/audit-trail-actions'), {
-					params: {
-						from: this.dateRange.from,
-						till: this.dateRange.till,
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/charts/audit-trail-actions',
+					),
+					{
+						params: {
+							from: this.dateRange.from,
+							till: this.dateRange.till,
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+						},
 					},
-				})
+				)
 				this.chartData.auditTrailActions = response.data
 			} catch (error) {
 				console.error('Error fetching audit trail action chart:', error)
@@ -132,12 +142,17 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.chartLoading.objectsByRegister = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-register'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/charts/objects-by-register',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+						},
 					},
-				})
+				)
 				this.chartData.objectsByRegister = response.data
 			} catch (error) {
 				console.error('Error fetching objects by register chart:', error)
@@ -160,12 +175,17 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.chartLoading.objectsBySchema = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-schema'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/charts/objects-by-schema',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+						},
 					},
-				})
+				)
 				this.chartData.objectsBySchema = response.data
 			} catch (error) {
 				console.error('Error fetching objects by schema chart:', error)
@@ -188,12 +208,17 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.chartLoading.objectsBySize = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-size'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/charts/objects-by-size',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+						},
 					},
-				})
+				)
 				this.chartData.objectsBySize = response.data
 			} catch (error) {
 				console.error('Error fetching objects by size chart:', error)
@@ -231,13 +256,18 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.statisticsLoading.auditTrailStats = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
-						hours,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/statistics/audit-trail',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+							hours,
+						},
 					},
-				})
+				)
 				this.statisticsData.auditTrailStats = response.data
 			} catch (error) {
 				console.error('Error fetching audit trail statistics:', error)
@@ -261,13 +291,18 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.statisticsLoading.actionDistribution = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail-distribution'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
-						hours,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/statistics/audit-trail-distribution',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+							hours,
+						},
 					},
-				})
+				)
 				this.statisticsData.actionDistribution = response.data
 			} catch (error) {
 				console.error('Error fetching action distribution:', error)
@@ -292,14 +327,19 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			try {
 				this.statisticsLoading.mostActiveObjects = true
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/most-active-objects'), {
-					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
-						limit,
-						hours,
+				const response = await axios.get(
+					generateUrl(
+						'/apps/openregister/api/dashboard/statistics/most-active-objects',
+					),
+					{
+						params: {
+							registerId: registerStore.registerItem?.id,
+							schemaId: schemaStore.schemaItem?.id,
+							limit,
+							hours,
+						},
 					},
-				})
+				)
 				this.statisticsData.mostActiveObjects = response.data
 			} catch (error) {
 				console.error('Error fetching most active objects:', error)
@@ -351,9 +391,14 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.loading = true
 				this.error = null
 				const params = {}
-				if (registerStore.registerItem?.id) params.registerId = registerStore.registerItem.id
-				if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
-				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'), { params })
+				if (registerStore.registerItem?.id)
+					params.registerId = registerStore.registerItem.id
+				if (schemaStore.schemaItem?.id)
+					params.schemaId = schemaStore.schemaItem.id
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/dashboard'),
+					{ params },
+				)
 				this.registers = response.data.registers
 				return this.registers
 			} catch (error) {
@@ -373,7 +418,11 @@ export const useDashboardStore = defineStore('dashboard', {
 		 */
 		async calculateSizes(registerId) {
 			try {
-				await axios.post(generateUrl(`/apps/openregister/api/dashboard/calculate/${registerId}`))
+				await axios.post(
+					generateUrl(
+						`/apps/openregister/api/dashboard/calculate/${registerId}`,
+					),
+				)
 				// Refresh the registers after calculation
 				await this.fetchRegisters()
 				return true
@@ -432,15 +481,15 @@ export function setupDashboardStoreWatchers() {
 	const schemaStore = useSchemaStore()
 
 	// Watch for changes in the active register or schema and refresh dashboard data
-	watch([
-		() => registerStore.registerItem?.id,
-		() => schemaStore.schemaItem?.id,
-	], () => {
-		// Fetch registers to update sidebar tables, using current store state
-		dashboardStore.fetchRegisters()
-		// Fetch all chart data to update dashboard charts
-		dashboardStore.fetchAllChartData()
-		// Fetch all statistics to update audit trail sidebar
-		dashboardStore.fetchAllStatistics()
-	})
+	watch(
+		[() => registerStore.registerItem?.id, () => schemaStore.schemaItem?.id],
+		() => {
+			// Fetch registers to update sidebar tables, using current store state
+			dashboardStore.fetchRegisters()
+			// Fetch all chart data to update dashboard charts
+			dashboardStore.fetchAllChartData()
+			// Fetch all statistics to update audit trail sidebar
+			dashboardStore.fetchAllStatistics()
+		},
+	)
 }

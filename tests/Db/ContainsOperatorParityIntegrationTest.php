@@ -70,409 +70,398 @@ use Symfony\Component\Uid\Uuid;
 /**
  * @group DB
  */
-class ContainsOperatorParityIntegrationTest extends TestCase
-{
+class ContainsOperatorParityIntegrationTest extends TestCase {
 
-    /**
-     * Owner of every fixture — deliberately NOT the session user, so the
-     * owner-always-wins condition cannot mask the share predicate.
-     *
-     * @var string
-     */
-    private const FIXTURE_OWNER = 'parity-fixture-owner';
+	/**
+	 * Owner of every fixture — deliberately NOT the session user, so the
+	 * owner-always-wins condition cannot mask the share predicate.
+	 *
+	 * @var string
+	 */
+	private const FIXTURE_OWNER = 'parity-fixture-owner';
 
-    private MagicMapper $mapper;
+	private MagicMapper $mapper;
 
-    private MagicRbacHandler $rbacHandler;
+	private MagicRbacHandler $rbacHandler;
 
-    private RegisterMapper $registerMapper;
+	private RegisterMapper $registerMapper;
 
-    private SchemaMapper $schemaMapper;
+	private SchemaMapper $schemaMapper;
 
-    private IUserSession $userSession;
+	private IUserSession $userSession;
 
-    private IUserManager $userManager;
+	private IUserManager $userManager;
 
-    private IGroupManager $groupManager;
+	private IGroupManager $groupManager;
 
-    private ?IUser $testUser = null;
+	private ?IUser $testUser = null;
 
-    private string $testUid = '';
+	private string $testUid = '';
 
-    private string $testGroup = '';
+	private string $testGroup = '';
 
-    /**
-     * @var int[]
-     */
-    private array $createdSchemaIds = [];
+	/**
+	 * @var int[]
+	 */
+	private array $createdSchemaIds = [];
 
-    /**
-     * @var int[]
-     */
-    private array $createdRegisterIds = [];
+	/**
+	 * @var int[]
+	 */
+	private array $createdRegisterIds = [];
 
-    /**
-     * @var string[]
-     */
-    private array $createdTables = [];
+	/**
+	 * @var string[]
+	 */
+	private array $createdTables = [];
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->mapper         = \OC::$server->get(MagicMapper::class);
-        $this->rbacHandler    = \OC::$server->get(MagicRbacHandler::class);
-        $this->registerMapper = \OC::$server->get(RegisterMapper::class);
-        $this->schemaMapper   = \OC::$server->get(SchemaMapper::class);
-        $this->userSession    = \OC::$server->get(IUserSession::class);
-        $this->userManager    = \OC::$server->get(IUserManager::class);
-        $this->groupManager   = \OC::$server->get(IGroupManager::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->mapper = \OC::$server->get(MagicMapper::class);
+		$this->rbacHandler = \OC::$server->get(MagicRbacHandler::class);
+		$this->registerMapper = \OC::$server->get(RegisterMapper::class);
+		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
+		$this->userSession = \OC::$server->get(IUserSession::class);
+		$this->userManager = \OC::$server->get(IUserManager::class);
+		$this->groupManager = \OC::$server->get(IGroupManager::class);
 
-        $suffix          = substr((string) Uuid::v4(), 0, 8);
-        $this->testUid   = 'parity-user-'.$suffix;
-        $this->testGroup = 'parity-group-'.$suffix;
+		$suffix = substr((string)Uuid::v4(), 0, 8);
+		$this->testUid = 'parity-user-' . $suffix;
+		$this->testGroup = 'parity-group-' . $suffix;
 
-        // NC enforces a minimum password length; a short one fails silently.
-        $this->testUser = $this->userManager->createUser($this->testUid, 'Parity-Test-Pass-123');
-        if ($this->testUser === false || $this->testUser === null) {
-            $this->markTestSkipped('could not create a test user');
-        }
+		// NC enforces a minimum password length; a short one fails silently.
+		$this->testUser = $this->userManager->createUser($this->testUid, 'Parity-Test-Pass-123');
+		if ($this->testUser === false || $this->testUser === null) {
+			$this->markTestSkipped('could not create a test user');
+		}
 
-        $group = $this->groupManager->createGroup($this->testGroup);
-        if ($group !== null) {
-            $group->addUser($this->testUser);
-        }
+		$group = $this->groupManager->createGroup($this->testGroup);
+		if ($group !== null) {
+			$group->addUser($this->testUser);
+		}
 
-        // Log the user in: without a session the list path takes its documented
-        // CLI bypass and applies no filter at all (design D11).
-        $this->userSession->setUser($this->testUser);
+		// Log the user in: without a session the list path takes its documented
+		// CLI bypass and applies no filter at all (design D11).
+		$this->userSession->setUser($this->testUser);
 
-        if ($this->rbacHandler->isAdmin() === true) {
-            $this->markTestSkipped('the test user resolved as admin, which bypasses RBAC');
-        }
-    }//end setUp()
+		if ($this->rbacHandler->isAdmin() === true) {
+			$this->markTestSkipped('the test user resolved as admin, which bypasses RBAC');
+		}
+	}//end setUp()
 
-    protected function tearDown(): void
-    {
-        $this->userSession->setUser(null);
+	protected function tearDown(): void {
+		$this->userSession->setUser(null);
 
-        $group = $this->groupManager->get($this->testGroup);
-        if ($group !== null) {
-            $group->delete();
-        }
+		$group = $this->groupManager->get($this->testGroup);
+		if ($group !== null) {
+			$group->delete();
+		}
 
-        if ($this->testUser !== null) {
-            $this->testUser->delete();
-        }
+		if ($this->testUser !== null) {
+			$this->testUser->delete();
+		}
 
-        $db = \OC::$server->get(\OCP\IDBConnection::class);
+		$db = \OC::$server->get(\OCP\IDBConnection::class);
 
-        foreach ($this->createdTables as $tableName) {
-            try {
-                $db->prepare("DROP TABLE IF EXISTS $tableName")->execute();
-            } catch (\Exception $e) {
-                // Table may not exist.
-            }
-        }
+		foreach ($this->createdTables as $tableName) {
+			try {
+				$db->prepare("DROP TABLE IF EXISTS $tableName")->execute();
+			} catch (\Exception $e) {
+				// Table may not exist.
+			}
+		}
 
-        foreach ($this->createdSchemaIds as $id) {
-            try {
-                $qb = $db->getQueryBuilder();
-                $qb->delete('openregister_schemas')
-                    ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-                $qb->executeStatement();
-            } catch (\Exception $e) {
-                // Already cleaned up.
-            }
-        }
+		foreach ($this->createdSchemaIds as $id) {
+			try {
+				$qb = $db->getQueryBuilder();
+				$qb->delete('openregister_schemas')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+				$qb->executeStatement();
+			} catch (\Exception $e) {
+				// Already cleaned up.
+			}
+		}
 
-        foreach ($this->createdRegisterIds as $id) {
-            try {
-                $qb = $db->getQueryBuilder();
-                $qb->delete('openregister_registers')
-                    ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-                $qb->executeStatement();
-            } catch (\Exception $e) {
-                // Already cleaned up.
-            }
-        }
+		foreach ($this->createdRegisterIds as $id) {
+			try {
+				$qb = $db->getQueryBuilder();
+				$qb->delete('openregister_registers')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+				$qb->executeStatement();
+			} catch (\Exception $e) {
+				// Already cleaned up.
+			}
+		}
 
-        parent::tearDown();
-    }//end tearDown()
+		parent::tearDown();
+	}//end tearDown()
 
-    /**
-     * The fixture matrix.
-     *
-     * @return array<string, array{0: array<string, mixed>, 1: bool}>
-     */
-    private function fixtureMatrix(): array
-    {
-        return [
-            'shared with this user directly' => [
-                ['name' => 'direct', 'sharedUsers' => [$this->testUid], 'sharedGroups' => []],
-                true,
-            ],
-            'user among several'             => [
-                ['name' => 'several', 'sharedUsers' => ['someone-else', $this->testUid], 'sharedGroups' => []],
-                true,
-            ],
-            'shared with a group of theirs'  => [
-                ['name' => 'viagroup', 'sharedUsers' => [], 'sharedGroups' => [$this->testGroup]],
-                true,
-            ],
-            'shared with another user'       => [
-                ['name' => 'otheruser', 'sharedUsers' => ['someone-else'], 'sharedGroups' => []],
-                false,
-            ],
-            'shared with another group'      => [
-                ['name' => 'othergroup', 'sharedUsers' => [], 'sharedGroups' => ['unrelated-group']],
-                false,
-            ],
-            'both lists empty'              => [
-                ['name' => 'empty', 'sharedUsers' => [], 'sharedGroups' => []],
-                false,
-            ],
-            'properties absent'             => [
-                ['name' => 'absent'],
-                false,
-            ],
-            // A LIKE/substring implementation would wrongly admit these two;
-            // jsonb containment and in_array are exact-member tests.
-            'uid is a prefix only'          => [
-                ['name' => 'prefix', 'sharedUsers' => [$this->testUid.'-extra'], 'sharedGroups' => []],
-                false,
-            ],
-            'uid differs by case'           => [
-                ['name' => 'case', 'sharedUsers' => [strtoupper($this->testUid)], 'sharedGroups' => []],
-                false,
-            ],
-            // Guards against an implementation that stringifies or flattens.
-            'uid nested one level deeper'   => [
-                ['name' => 'nested', 'sharedUsers' => [['id' => $this->testUid]], 'sharedGroups' => []],
-                false,
-            ],
-        ];
-    }//end fixtureMatrix()
+	/**
+	 * The fixture matrix.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: bool}>
+	 */
+	private function fixtureMatrix(): array {
+		return [
+			'shared with this user directly' => [
+				['name' => 'direct', 'sharedUsers' => [$this->testUid], 'sharedGroups' => []],
+				true,
+			],
+			'user among several' => [
+				['name' => 'several', 'sharedUsers' => ['someone-else', $this->testUid], 'sharedGroups' => []],
+				true,
+			],
+			'shared with a group of theirs' => [
+				['name' => 'viagroup', 'sharedUsers' => [], 'sharedGroups' => [$this->testGroup]],
+				true,
+			],
+			'shared with another user' => [
+				['name' => 'otheruser', 'sharedUsers' => ['someone-else'], 'sharedGroups' => []],
+				false,
+			],
+			'shared with another group' => [
+				['name' => 'othergroup', 'sharedUsers' => [], 'sharedGroups' => ['unrelated-group']],
+				false,
+			],
+			'both lists empty' => [
+				['name' => 'empty', 'sharedUsers' => [], 'sharedGroups' => []],
+				false,
+			],
+			'properties absent' => [
+				['name' => 'absent'],
+				false,
+			],
+			// A LIKE/substring implementation would wrongly admit these two;
+			// jsonb containment and in_array are exact-member tests.
+			'uid is a prefix only' => [
+				['name' => 'prefix', 'sharedUsers' => [$this->testUid . '-extra'], 'sharedGroups' => []],
+				false,
+			],
+			'uid differs by case' => [
+				['name' => 'case', 'sharedUsers' => [strtoupper($this->testUid)], 'sharedGroups' => []],
+				false,
+			],
+			// Guards against an implementation that stringifies or flattens.
+			'uid nested one level deeper' => [
+				['name' => 'nested', 'sharedUsers' => [['id' => $this->testUid]], 'sharedGroups' => []],
+				false,
+			],
+		];
+	}//end fixtureMatrix()
 
-    /**
-     * Every fixture yields the same verdict from both paths, and it is correct.
-     */
-    public function testContainsVerdictsAgreeAcrossBothPaths(): void
-    {
-        $register = $this->createTestRegister();
-        $schema   = $this->createShareSchema();
+	/**
+	 * Every fixture yields the same verdict from both paths, and it is correct.
+	 */
+	public function testContainsVerdictsAgreeAcrossBothPaths(): void {
+		$register = $this->createTestRegister();
+		$schema = $this->createShareSchema();
 
-        $this->mapper->ensureTableForRegisterSchema($register, $schema);
-        $this->trackTable($register, $schema);
+		$this->mapper->ensureTableForRegisterSchema($register, $schema);
+		$this->trackTable($register, $schema);
 
-        $fixtures = $this->fixtureMatrix();
+		$fixtures = $this->fixtureMatrix();
 
-        // Insert everything first so ONE list query covers the whole matrix — the
-        // list path has to be exercised the way it actually runs.
-        foreach ($fixtures as $case) {
-            $this->insertTestObject($register, $schema, $case[0]);
-        }
+		// Insert everything first so ONE list query covers the whole matrix — the
+		// list path has to be exercised the way it actually runs.
+		foreach ($fixtures as $case) {
+			$this->insertTestObject($register, $schema, $case[0]);
+		}
 
-        $listedNames = $this->listVisibleNames($register, $schema);
+		$listedNames = $this->listVisibleNames($register, $schema);
 
-        $disagreements = [];
-        $wrongVerdicts = [];
+		$disagreements = [];
+		$wrongVerdicts = [];
 
-        foreach ($fixtures as $label => $case) {
-            [$objectData, $expected] = $case;
+		foreach ($fixtures as $label => $case) {
+			[$objectData, $expected] = $case;
 
-            $phpVerdict = $this->rbacHandler->hasPermission($schema, 'read', self::FIXTURE_OWNER, $objectData);
-            $sqlVerdict = in_array($objectData['name'], $listedNames, true);
+			$phpVerdict = $this->rbacHandler->hasPermission($schema, 'read', self::FIXTURE_OWNER, $objectData);
+			$sqlVerdict = in_array($objectData['name'], $listedNames, true);
 
-            if ($phpVerdict !== $sqlVerdict) {
-                $disagreements[] = sprintf(
-                    '%s: find=%s list=%s',
-                    $label,
-                    var_export($phpVerdict, true),
-                    var_export($sqlVerdict, true)
-                );
-            }
+			if ($phpVerdict !== $sqlVerdict) {
+				$disagreements[] = sprintf(
+					'%s: find=%s list=%s',
+					$label,
+					var_export($phpVerdict, true),
+					var_export($sqlVerdict, true)
+				);
+			}
 
-            if ($phpVerdict !== $expected) {
-                $wrongVerdicts[] = sprintf(
-                    '%s: expected %s, find said %s',
-                    $label,
-                    var_export($expected, true),
-                    var_export($phpVerdict, true)
-                );
-            }
-        }//end foreach
+			if ($phpVerdict !== $expected) {
+				$wrongVerdicts[] = sprintf(
+					'%s: expected %s, find said %s',
+					$label,
+					var_export($expected, true),
+					var_export($phpVerdict, true)
+				);
+			}
+		}//end foreach
 
-        $this->assertSame(
-            [],
-            $disagreements,
-            "The single-object and list paths disagreed:\n  ".implode("\n  ", $disagreements)
-        );
+		$this->assertSame(
+			[],
+			$disagreements,
+			"The single-object and list paths disagreed:\n  " . implode("\n  ", $disagreements)
+		);
 
-        $this->assertSame(
-            [],
-            $wrongVerdicts,
-            "A verdict was wrong on BOTH paths:\n  ".implode("\n  ", $wrongVerdicts)
-        );
-    }//end testContainsVerdictsAgreeAcrossBothPaths()
+		$this->assertSame(
+			[],
+			$wrongVerdicts,
+			"A verdict was wrong on BOTH paths:\n  " . implode("\n  ", $wrongVerdicts)
+		);
+	}//end testContainsVerdictsAgreeAcrossBothPaths()
 
-    /**
-     * The list query must actually filter.
-     *
-     * Without this, a matrix in which everything is returned would satisfy the
-     * parity assertion above while proving nothing at all.
-     */
-    public function testListQueryActuallyFilters(): void
-    {
-        $register = $this->createTestRegister();
-        $schema   = $this->createShareSchema();
+	/**
+	 * The list query must actually filter.
+	 *
+	 * Without this, a matrix in which everything is returned would satisfy the
+	 * parity assertion above while proving nothing at all.
+	 */
+	public function testListQueryActuallyFilters(): void {
+		$register = $this->createTestRegister();
+		$schema = $this->createShareSchema();
 
-        $this->mapper->ensureTableForRegisterSchema($register, $schema);
-        $this->trackTable($register, $schema);
+		$this->mapper->ensureTableForRegisterSchema($register, $schema);
+		$this->trackTable($register, $schema);
 
-        $this->insertTestObject(
-            $register,
-            $schema,
-            ['name' => 'granted', 'sharedUsers' => [$this->testUid], 'sharedGroups' => []]
-        );
-        $this->insertTestObject(
-            $register,
-            $schema,
-            ['name' => 'denied', 'sharedUsers' => ['someone-else'], 'sharedGroups' => []]
-        );
+		$this->insertTestObject(
+			$register,
+			$schema,
+			['name' => 'granted', 'sharedUsers' => [$this->testUid], 'sharedGroups' => []]
+		);
+		$this->insertTestObject(
+			$register,
+			$schema,
+			['name' => 'denied', 'sharedUsers' => ['someone-else'], 'sharedGroups' => []]
+		);
 
-        $names = $this->listVisibleNames($register, $schema);
+		$names = $this->listVisibleNames($register, $schema);
 
-        $this->assertContains('granted', $names, 'the shared object should be listed');
-        $this->assertNotContains('denied', $names, 'an unshared object must not be listed');
-    }//end testListQueryActuallyFilters()
+		$this->assertContains('granted', $names, 'the shared object should be listed');
+		$this->assertNotContains('denied', $names, 'an unshared object must not be listed');
+	}//end testListQueryActuallyFilters()
 
-    /**
-     * Run the list path and collect the `name` of every visible object.
-     *
-     * @param Register $register The register.
-     * @param Schema   $schema   The schema.
-     *
-     * @return string[] Names of the objects the list path returned.
-     */
-    private function listVisibleNames(Register $register, Schema $schema): array
-    {
-        $listed = $this->mapper->searchObjectsInRegisterSchemaTable(
-            ['_multitenancy' => false],
-            $register,
-            $schema
-        );
+	/**
+	 * Run the list path and collect the `name` of every visible object.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string[] Names of the objects the list path returned.
+	 */
+	private function listVisibleNames(Register $register, Schema $schema): array {
+		$listed = $this->mapper->searchObjectsInRegisterSchemaTable(
+			['_multitenancy' => false],
+			$register,
+			$schema
+		);
 
-        $names = [];
-        foreach ($listed as $row) {
-            $data = $row instanceof ObjectEntity ? $row->getObject() : (array) $row;
-            if (isset($data['name']) === true) {
-                $names[] = $data['name'];
-            }
-        }
+		$names = [];
+		foreach ($listed as $row) {
+			$data = $row instanceof ObjectEntity ? $row->getObject() : (array)$row;
+			if (isset($data['name']) === true) {
+				$names[] = $data['name'];
+			}
+		}
 
-        return $names;
-    }//end listVisibleNames()
+		return $names;
+	}//end listVisibleNames()
 
-    /**
-     * Create a register for the test.
-     *
-     * @return Register
-     */
-    private function createTestRegister(): Register
-    {
-        $register = $this->registerMapper->createFromArray(
-            [
-                'title'       => 'PHPUnit contains-parity Register '.uniqid(),
-                'description' => 'Register for $contains verdict-parity tests',
-            ]
-        );
+	/**
+	 * Create a register for the test.
+	 *
+	 * @return Register
+	 */
+	private function createTestRegister(): Register {
+		$register = $this->registerMapper->createFromArray(
+			[
+				'title' => 'PHPUnit contains-parity Register ' . uniqid(),
+				'description' => 'Register for $contains verdict-parity tests',
+			]
+		);
 
-        $this->createdRegisterIds[] = $register->getId();
+		$this->createdRegisterIds[] = $register->getId();
 
-        return $register;
-    }//end createTestRegister()
+		return $register;
+	}//end createTestRegister()
 
-    /**
-     * Create a schema whose read rules are the two share checks (design D9).
-     *
-     * @return Schema
-     */
-    private function createShareSchema(): Schema
-    {
-        $schema = $this->schemaMapper->createFromArray(
-            [
-                'title'         => 'PHPUnit contains-parity Schema '.uniqid(),
-                'description'   => 'Schema whose read rules are $contains share checks',
-                'properties'    => [
-                    'name'         => [
-                        'type'      => 'string',
-                        'title'     => 'Name',
-                        'maxLength' => 255,
-                    ],
-                    'sharedUsers'  => [
-                        'type'  => 'array',
-                        'title' => 'Shared users',
-                    ],
-                    'sharedGroups' => [
-                        'type'  => 'array',
-                        'title' => 'Shared groups',
-                    ],
-                ],
-                // Two rules, OR'd — which is how multiple rules already combine.
-                // `authenticated` qualifies any logged-in user, leaving the match
-                // clause as the sole discriminator.
-                'authorization' => [
-                    'read' => [
-                        [
-                            'group' => 'authenticated',
-                            'match' => ['sharedUsers' => ['$contains' => '$userId']],
-                        ],
-                        [
-                            'group' => 'authenticated',
-                            'match' => ['sharedGroups' => ['$contains' => '$user.groups']],
-                        ],
-                    ],
-                ],
-            ]
-        );
+	/**
+	 * Create a schema whose read rules are the two share checks (design D9).
+	 *
+	 * @return Schema
+	 */
+	private function createShareSchema(): Schema {
+		$schema = $this->schemaMapper->createFromArray(
+			[
+				'title' => 'PHPUnit contains-parity Schema ' . uniqid(),
+				'description' => 'Schema whose read rules are $contains share checks',
+				'properties' => [
+					'name' => [
+						'type' => 'string',
+						'title' => 'Name',
+						'maxLength' => 255,
+					],
+					'sharedUsers' => [
+						'type' => 'array',
+						'title' => 'Shared users',
+					],
+					'sharedGroups' => [
+						'type' => 'array',
+						'title' => 'Shared groups',
+					],
+				],
+				// Two rules, OR'd — which is how multiple rules already combine.
+				// `authenticated` qualifies any logged-in user, leaving the match
+				// clause as the sole discriminator.
+				'authorization' => [
+					'read' => [
+						[
+							'group' => 'authenticated',
+							'match' => ['sharedUsers' => ['$contains' => '$userId']],
+						],
+						[
+							'group' => 'authenticated',
+							'match' => ['sharedGroups' => ['$contains' => '$user.groups']],
+						],
+					],
+				],
+			]
+		);
 
-        $this->createdSchemaIds[] = $schema->getId();
+		$this->createdSchemaIds[] = $schema->getId();
 
-        return $schema;
-    }//end createShareSchema()
+		return $schema;
+	}//end createShareSchema()
 
-    /**
-     * Track the magic table for cleanup.
-     *
-     * @param Register $register The register.
-     * @param Schema   $schema   The schema.
-     *
-     * @return void
-     */
-    private function trackTable(Register $register, Schema $schema): void
-    {
-        $tableName             = $this->mapper->getTableNameForRegisterSchema($register, $schema);
-        $this->createdTables[] = 'oc_'.$tableName;
-    }//end trackTable()
+	/**
+	 * Track the magic table for cleanup.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema $schema The schema.
+	 *
+	 * @return void
+	 */
+	private function trackTable(Register $register, Schema $schema): void {
+		$tableName = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+		$this->createdTables[] = 'oc_' . $tableName;
+	}//end trackTable()
 
-    /**
-     * Insert one fixture, owned by someone other than the session user.
-     *
-     * @param Register             $register   The register.
-     * @param Schema               $schema     The schema.
-     * @param array<string, mixed> $objectData The object body.
-     *
-     * @return ObjectEntity
-     */
-    private function insertTestObject(Register $register, Schema $schema, array $objectData): ObjectEntity
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid(Uuid::v4()->toRfc4122());
-        $entity->setRegister((string) $register->getId());
-        $entity->setSchema((string) $schema->getId());
-        $entity->setObject($objectData);
-        $entity->setOwner(self::FIXTURE_OWNER);
+	/**
+	 * Insert one fixture, owned by someone other than the session user.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema $schema The schema.
+	 * @param array<string, mixed> $objectData The object body.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function insertTestObject(Register $register, Schema $schema, array $objectData): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid(Uuid::v4()->toRfc4122());
+		$entity->setRegister((string)$register->getId());
+		$entity->setSchema((string)$schema->getId());
+		$entity->setObject($objectData);
+		$entity->setOwner(self::FIXTURE_OWNER);
 
-        return $this->mapper->insertObjectEntity($entity, $register, $schema, false);
-    }//end insertTestObject()
+		return $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+	}//end insertTestObject()
 }

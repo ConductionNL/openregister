@@ -45,204 +45,184 @@ use UnexpectedValueException;
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode implements IFlowNode, IFlowNodeConfigKeys
-{
-    /**
-     * Constructor.
-     *
-     * @param IL10N         $l10n Translations.
-     * @param IURLGenerator $urls For the palette icon.
-     */
-    public function __construct(
-        private readonly IL10N $l10n,
-        private readonly IURLGenerator $urls
-    ) {
+class RouterNode implements IFlowNode, IFlowNodeConfigKeys {
+	/**
+	 * Constructor.
+	 *
+	 * @param IL10N $l10n Translations.
+	 * @param IURLGenerator $urls For the palette icon.
+	 */
+	public function __construct(
+		private readonly IL10N $l10n,
+		private readonly IURLGenerator $urls,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * The step type.
-     *
-     * @return string The id.
-     */
-    public function getId(): string
-    {
-        return 'openregister.route';
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 */
+	public function getId(): string {
+		return 'openregister.route';
+	}//end getId()
 
-    }//end getId()
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Route items');
+	}//end getDisplayName()
 
-    /**
-     * Palette name.
-     *
-     * @return string The display name.
-     */
-    public function getDisplayName(): string
-    {
-        return $this->l10n->t('Route items');
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Send each item down a different branch, chosen per item by a rule.');
+	}//end getDescription()
 
-    }//end getDisplayName()
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/arrow-right.svg');
+	}//end getIcon()
 
-    /**
-     * Palette description.
-     *
-     * @return string The description.
-     */
-    public function getDescription(): string
-    {
-        return $this->l10n->t('Send each item down a different branch, chosen per item by a rule.');
+	/**
+	 * Routing grants no privilege.
+	 *
+	 * @param int $scope The scope constant.
+	 *
+	 * @return boolean Whether it is available.
+	 */
+	public function isAvailableForScope(int $scope): bool {
+		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	}//end isAvailableForScope()
 
-    }//end getDescription()
+	/**
+	 * The config vocabulary of a route step.
+	 *
+	 * `routes` is NOT here, deliberately. It is the single most common way to
+	 * author this node wrong (hydra-analyze-verdicts shipped it), and it is
+	 * wrong all the way down — the entries are `when`/`to` where this node
+	 * reads `condition`/`output`. Accepting the outer key would leave the
+	 * inner mismatch just as silent.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function configKeys(): array {
+		return ['rules', 'default'];
+	}//end configKeys()
 
-    /**
-     * Palette icon.
-     *
-     * @return string The icon URL.
-     */
-    public function getIcon(): string
-    {
-        return $this->urls->imagePath('core', 'actions/arrow-right.svg');
+	/**
+	 * Reject a router with no rules — it would route nothing.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When no rules are configured.
+	 */
+	public function validateConfig(array $config): void {
+		if ($this->rulesOf(config: $config) === []) {
+			throw new UnexpectedValueException($this->l10n->t('A router needs at least one rule.'));
+		}
 
-    }//end getIcon()
+	}//end validateConfig()
 
-    /**
-     * Routing grants no privilege.
-     *
-     * @param int $scope The scope constant.
-     *
-     * @return boolean Whether it is available.
-     */
-    public function isAvailableForScope(int $scope): bool
-    {
-        return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
+	/**
+	 * Tag each item with the output it matches.
+	 *
+	 * Rules are tried in order; the first whose condition holds for the item wins
+	 * and the item is tagged for that rule's output. An item matching no rule
+	 * takes the fallback (`default`) when one is set, and is otherwise dropped —
+	 * the same as a Switch case with no match and no default.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The items, each tagged (or dropped when unmatched).
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		$rules = $this->rulesOf(config: $config);
+		$fallback = trim((string)($config['default'] ?? ''));
+		$count = count($items);
 
-    }//end isAvailableForScope()
+		$out = [];
+		foreach ($items as $index => $item) {
+			$data = FlowExpression::dataFor(
+				item: (array)$item,
+				itemCount: $count,
+				context: $context
+			);
+			$output = $this->outputFor(rules: $rules, data: $data, fallback: $fallback);
+			if ($output === null) {
+				// No rule matched and no fallback: this item goes nowhere.
+				continue;
+			}
 
-    /**
-     * The config vocabulary of a route step.
-     *
-     * `routes` is NOT here, deliberately. It is the single most common way to
-     * author this node wrong (hydra-analyze-verdicts shipped it), and it is
-     * wrong all the way down — the entries are `when`/`to` where this node
-     * reads `condition`/`output`. Accepting the outer key would leave the
-     * inner mismatch just as silent.
-     *
-     * @return array<int, string> The accepted config keys.
-     *
-     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
-     */
-    public function configKeys(): array
-    {
-        return ['rules', 'default'];
+			$out[] = FlowItems::item(
+				json: (array)($item[FlowItems::JSON] ?? []),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: $index,
+				output: $output
+			);
+		}//end foreach
 
-    }//end configKeys()
+		return $out;
+	}//end execute()
 
-    /**
-     * Reject a router with no rules — it would route nothing.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return void
-     *
-     * @throws UnexpectedValueException When no rules are configured.
-     */
-    public function validateConfig(array $config): void
-    {
-        if ($this->rulesOf(config: $config) === []) {
-            throw new UnexpectedValueException($this->l10n->t('A router needs at least one rule.'));
-        }
+	/**
+	 * The output branch an item's data selects, or null when it selects none.
+	 *
+	 * @param array<int, array> $rules The routing rules.
+	 * @param array $data The item's expression data.
+	 * @param string $fallback The default output, empty for none.
+	 *
+	 * @return string|null The chosen output, or null.
+	 */
+	private function outputFor(array $rules, array $data, string $fallback): ?string {
+		foreach ($rules as $rule) {
+			$output = trim((string)($rule['output'] ?? ''));
+			if ($output === '') {
+				continue;
+			}
 
-    }//end validateConfig()
+			if (FlowExpression::isTrue(logic: ($rule['condition'] ?? null), data: $data) === true) {
+				return $output;
+			}
+		}
 
-    /**
-     * Tag each item with the output it matches.
-     *
-     * Rules are tried in order; the first whose condition holds for the item wins
-     * and the item is tagged for that rule's output. An item matching no rule
-     * takes the fallback (`default`) when one is set, and is otherwise dropped —
-     * the same as a Switch case with no match and no default.
-     *
-     * @param array $items   The input items.
-     * @param array $config  The step configuration.
-     * @param array $context Run-level metadata.
-     *
-     * @return array The items, each tagged (or dropped when unmatched).
-     */
-    public function execute(array $items, array $config, array $context): array
-    {
-        $rules    = $this->rulesOf(config: $config);
-        $fallback = trim((string) ($config['default'] ?? ''));
-        $count    = count($items);
+		if ($fallback !== '') {
+			return $fallback;
+		}
 
-        $out = [];
-        foreach ($items as $index => $item) {
-            $data   = FlowExpression::dataFor(
-                item: (array) $item,
-                itemCount: $count,
-                context: $context
-            );
-            $output = $this->outputFor(rules: $rules, data: $data, fallback: $fallback);
-            if ($output === null) {
-                // No rule matched and no fallback: this item goes nowhere.
-                continue;
-            }
+		return null;
+	}//end outputFor()
 
-            $out[] = FlowItems::item(
-                json: (array) ($item[FlowItems::JSON] ?? []),
-                binary: (array) ($item[FlowItems::BINARY] ?? []),
-                fromItemIndex: $index,
-                output: $output
-            );
-        }//end foreach
+	/**
+	 * The configured rules, as a clean list.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return array<int, array> The rules.
+	 */
+	private function rulesOf(array $config): array {
+		$rules = ($config['rules'] ?? []);
+		if (is_array($rules) === false) {
+			return [];
+		}
 
-        return $out;
-
-    }//end execute()
-
-    /**
-     * The output branch an item's data selects, or null when it selects none.
-     *
-     * @param array<int, array> $rules    The routing rules.
-     * @param array             $data     The item's expression data.
-     * @param string            $fallback The default output, empty for none.
-     *
-     * @return string|null The chosen output, or null.
-     */
-    private function outputFor(array $rules, array $data, string $fallback): ?string
-    {
-        foreach ($rules as $rule) {
-            $output = trim((string) ($rule['output'] ?? ''));
-            if ($output === '') {
-                continue;
-            }
-
-            if (FlowExpression::isTrue(logic: ($rule['condition'] ?? null), data: $data) === true) {
-                return $output;
-            }
-        }
-
-        if ($fallback !== '') {
-            return $fallback;
-        }
-
-        return null;
-
-    }//end outputFor()
-
-    /**
-     * The configured rules, as a clean list.
-     *
-     * @param array $config The step configuration.
-     *
-     * @return array<int, array> The rules.
-     */
-    private function rulesOf(array $config): array
-    {
-        $rules = ($config['rules'] ?? []);
-        if (is_array($rules) === false) {
-            return [];
-        }
-
-        return array_values(array_filter($rules, static fn ($rule): bool => is_array($rule) === true));
-
-    }//end rulesOf()
+		return array_values(array_filter($rules, static fn ($rule): bool => is_array($rule) === true));
+	}//end rulesOf()
 }//end class

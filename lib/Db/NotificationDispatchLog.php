@@ -48,54 +48,51 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class NotificationDispatchLog extends Entity implements JsonSerializable
-{
+class NotificationDispatchLog extends Entity implements JsonSerializable {
 
-    /**
-     * The notification annotation key (slug) that was dispatched.
-     *
-     * @var string|null
-     */
-    protected ?string $notificationSlug = null;
+	/**
+	 * The notification annotation key (slug) that was dispatched.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $notificationSlug = null;
 
-    /**
-     * The resolved idempotency key for this dispatch.
-     *
-     * @var string|null
-     */
-    protected ?string $idempotencyKey = null;
+	/**
+	 * The resolved idempotency key for this dispatch.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $idempotencyKey = null;
 
-    /**
-     * Wall-clock timestamp of the first dispatch for this key.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $dispatchedAt = null;
+	/**
+	 * Wall-clock timestamp of the first dispatch for this key.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $dispatchedAt = null;
 
-    /**
-     * Constructor.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'notificationSlug', type: 'string');
-        $this->addType(fieldName: 'idempotencyKey', type: 'string');
-        $this->addType(fieldName: 'dispatchedAt', type: 'datetime');
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'notificationSlug', type: 'string');
+		$this->addType(fieldName: 'idempotencyKey', type: 'string');
+		$this->addType(fieldName: 'dispatchedAt', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * JSON serialization.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'               => $this->id,
-            'notificationSlug' => $this->notificationSlug,
-            'idempotencyKey'   => $this->idempotencyKey,
-            'dispatchedAt'     => $this->dispatchedAt?->format(DateTime::ATOM),
-        ];
+	/**
+	 * JSON serialization.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'notificationSlug' => $this->notificationSlug,
+			'idempotencyKey' => $this->idempotencyKey,
+			'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

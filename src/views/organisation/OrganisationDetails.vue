@@ -6,7 +6,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcAppContent>
 		<div v-if="!organisationStore.organisationItem">
-			<NcEmptyContent name="Loading" description="Loading organisation details...">
+			<NcEmptyContent
+				name="Loading"
+				description="Loading organisation details...">
 				<template #icon>
 					<NcLoadingIcon :size="64" />
 				</template>
@@ -17,22 +19,28 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<h2 class="pageHeader">
 					<OfficeBuilding :size="24" />
 					{{ organisationStore.organisationItem.name }}
-					<span v-if="organisationStore.organisationItem.isDefault" class="defaultBadge">Default</span>
-					<span v-if="isActiveOrganisation" class="activeBadge">Active</span>
+					<span
+						v-if="organisationStore.organisationItem.isDefault"
+						class="defaultBadge"
+						>Default</span
+					>
+					<span v-if="isActiveOrganisation" class="activeBadge"
+						>Active</span
+					>
 				</h2>
 				<div class="headerActionsContainer">
 					<NcActions :primary="true" menu-name="Actions">
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton close-after-click
-							@click="viewOrganisation">
+						<NcActionButton close-after-click @click="viewOrganisation">
 							<template #icon>
 								<Eye :size="20" />
 							</template>
 							View
 						</NcActionButton>
-						<NcActionButton v-if="canEdit"
+						<NcActionButton
+							v-if="canEdit"
 							close-after-click
 							@click="editOrganisation">
 							<template #icon>
@@ -40,14 +48,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Edit
 						</NcActionButton>
-						<NcActionButton close-after-click
-							@click="copyOrganisation">
+						<NcActionButton close-after-click @click="copyOrganisation">
 							<template #icon>
 								<ContentCopy :size="20" />
 							</template>
 							Copy
 						</NcActionButton>
-						<NcActionButton v-if="organisationStore.organisationItem?.website"
+						<NcActionButton
+							v-if="organisationStore.organisationItem?.website"
 							close-after-click
 							@click="goToOrganisation">
 							<template #icon>
@@ -55,7 +63,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Go to organisation
 						</NcActionButton>
-						<NcActionButton v-if="!isActiveOrganisation"
+						<NcActionButton
+							v-if="!isActiveOrganisation"
 							close-after-click
 							@click="setActiveOrganisation">
 							<template #icon>
@@ -63,15 +72,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Activeren
 						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="openJoinModal">
+						<NcActionButton close-after-click @click="openJoinModal">
 							<template #icon>
 								<AccountPlus :size="20" />
 							</template>
 							Add User
 						</NcActionButton>
-						<NcActionButton v-if="canDelete"
+						<NcActionButton
+							v-if="canDelete"
 							close-after-click
 							@click="navigationStore.setDialog('deleteOrganisation')">
 							<template #icon>
@@ -85,17 +93,26 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 			<div class="organisationContent">
 				<div class="organisationOverview">
-					<p v-if="organisationStore.organisationItem.description" class="description">
+					<p
+						v-if="organisationStore.organisationItem.description"
+						class="description">
 						{{ organisationStore.organisationItem.description }}
 					</p>
 
 					<div class="organisationMeta">
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'UUID:') }}</strong>
-							<span class="uuid">{{ organisationStore.organisationItem.uuid }}</span>
-							<NcButton class="copy-button"
+							<span class="uuid">{{
+								organisationStore.organisationItem.uuid
+							}}</span>
+							<NcButton
+								class="copy-button"
 								:aria-label="t('openregister', 'Copy to clipboard')"
-								@click="copyToClipboard(organisationStore.organisationItem.uuid)">
+								@click="
+									copyToClipboard(
+										organisationStore.organisationItem.uuid,
+									)
+								">
 								<template #icon>
 									<ContentCopy :size="16" />
 								</template>
@@ -103,19 +120,35 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'Owner:') }}</strong>
-							<span>{{ organisationStore.organisationItem.owner || 'System' }}</span>
+							<span>{{
+								organisationStore.organisationItem.owner || 'System'
+							}}</span>
 						</div>
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'Members:') }}</strong>
-							<span>{{ organisationStore.organisationItem.users?.length || 0 }}</span>
+							<span>{{
+								organisationStore.organisationItem.users?.length || 0
+							}}</span>
 						</div>
-						<div v-if="organisationStore.organisationItem.created" class="metaRow">
+						<div
+							v-if="organisationStore.organisationItem.created"
+							class="metaRow">
 							<strong>{{ t('openregister', 'Created:') }}</strong>
-							<span>{{ formatDate(organisationStore.organisationItem.created) }}</span>
+							<span>{{
+								formatDate(
+									organisationStore.organisationItem.created,
+								)
+							}}</span>
 						</div>
-						<div v-if="organisationStore.organisationItem.updated" class="metaRow">
+						<div
+							v-if="organisationStore.organisationItem.updated"
+							class="metaRow">
 							<strong>{{ t('openregister', 'Updated:') }}</strong>
-							<span>{{ formatDate(organisationStore.organisationItem.updated) }}</span>
+							<span>{{
+								formatDate(
+									organisationStore.organisationItem.updated,
+								)
+							}}</span>
 						</div>
 					</div>
 				</div>
@@ -123,18 +156,38 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<!-- Members List -->
 				<div class="membersSection">
 					<h3>{{ t('openregister', 'Organisation Members') }}</h3>
-					<div v-if="organisationStore.organisationItem.users && organisationStore.organisationItem.users.length"
+					<div
+						v-if="
+							organisationStore.organisationItem.users
+							&& organisationStore.organisationItem.users.length
+						"
 						class="membersList">
-						<div v-for="userId in organisationStore.organisationItem.users"
+						<div
+							v-for="userId in organisationStore.organisationItem
+								.users"
 							:key="userId"
 							class="memberItem">
 							<div class="memberInfo">
 								<Account :size="20" />
 								<span class="memberName">{{ userId }}</span>
-								<span v-if="userId === organisationStore.organisationItem.owner" class="ownerBadge">Owner</span>
+								<span
+									v-if="
+										userId
+										=== organisationStore.organisationItem.owner
+									"
+									class="ownerBadge"
+									>Owner</span
+								>
 							</div>
-							<NcActions v-if="canManageMembers && userId !== organisationStore.organisationItem.owner">
-								<NcActionButton close-after-click @click="removeMember(userId)">
+							<NcActions
+								v-if="
+									canManageMembers
+									&& userId
+										!== organisationStore.organisationItem.owner
+								">
+								<NcActionButton
+									close-after-click
+									@click="removeMember(userId)">
 									<template #icon>
 										<AccountMinus :size="16" />
 									</template>
@@ -143,7 +196,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</NcActions>
 						</div>
 					</div>
-					<NcEmptyContent v-else
+					<NcEmptyContent
+						v-else
 						name="No members"
 						description="This organisation has no members yet">
 						<template #icon>
@@ -191,7 +245,14 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import {
+	NcActions,
+	NcActionButton,
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcButton,
+} from '@nextcloud/vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -242,40 +303,54 @@ export default {
 		 * @spec exclude detail-view active-organisation flag (computed; tenant-lifecycle contract)
 		 */
 		isActiveOrganisation() {
-			return organisationStore.userStats.active
-				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
+			return (
+				organisationStore.userStats.active
+				&& organisationStore.userStats.active.uuid
+					=== organisationStore.organisationItem?.uuid
+			)
 		},
 		/**
 		 * @spec exclude detail-view edit-permission gate (computed)
 		 */
 		canEdit() {
 			// Only owner can edit (or system for default org)
-			return organisationStore.organisationItem?.owner === 'system'
-				   || organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return (
+				organisationStore.organisationItem?.owner === 'system'
+				|| organisationStore.organisationItem?.owner
+					=== this.getCurrentUser()
+			)
 		},
 		/**
 		 * @spec exclude detail-view leave-permission gate (computed)
 		 */
 		canLeave() {
 			// Can't leave if it's your only organisation, you're the owner, or it's default
-			return organisationStore.userStats.total > 1
-				   && !organisationStore.organisationItem?.isDefault
-				   && organisationStore.organisationItem?.owner !== this.getCurrentUser()
+			return (
+				organisationStore.userStats.total > 1
+				&& !organisationStore.organisationItem?.isDefault
+				&& organisationStore.organisationItem?.owner
+					!== this.getCurrentUser()
+			)
 		},
 		/**
 		 * @spec exclude detail-view delete-permission gate (computed)
 		 */
 		canDelete() {
 			// Only owners can delete, and can't delete default organisation
-			return !organisationStore.organisationItem?.isDefault
-				   && organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return (
+				!organisationStore.organisationItem?.isDefault
+				&& organisationStore.organisationItem?.owner
+					=== this.getCurrentUser()
+			)
 		},
 		/**
 		 * @spec exclude detail-view manage-members permission gate (computed)
 		 */
 		canManageMembers() {
 			// Only owners can manage members
-			return organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return (
+				organisationStore.organisationItem?.owner === this.getCurrentUser()
+			)
 		},
 	},
 	/**
@@ -298,27 +373,45 @@ export default {
 		 */
 		async setActiveOrganisation() {
 			try {
-				await organisationStore.setActiveOrganisationById(organisationStore.organisationItem.uuid)
+				await organisationStore.setActiveOrganisationById(
+					organisationStore.organisationItem.uuid,
+				)
 				showSuccess(t('openregister', 'Set as active organisation'))
 			} catch (error) {
-				showError(t('openregister', 'Failed to set active organisation: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to set active organisation: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
 		 * @spec exclude detail-view action; confirms then delegates to store leave + navigates back (tenant-lifecycle contract)
 		 */
 		async leaveOrganisation() {
-			if (!confirm(t('openregister', 'Are you sure you want to leave \'{name}\'?', { name: organisationStore.organisationItem.name }))) {
+			if (
+				!confirm(
+					t('openregister', "Are you sure you want to leave '{name}'?", {
+						name: organisationStore.organisationItem.name,
+					}),
+				)
+			) {
 				return
 			}
 
 			try {
-				await organisationStore.leaveOrganisation(organisationStore.organisationItem.uuid)
+				await organisationStore.leaveOrganisation(
+					organisationStore.organisationItem.uuid,
+				)
 				showSuccess(t('openregister', 'Left organisation successfully'))
 				// Navigate back to organisations list
 				this.$router.push('/organisation')
 			} catch (error) {
-				showError(t('openregister', 'Failed to leave organisation: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to leave organisation: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
@@ -326,7 +419,13 @@ export default {
 		 * @spec exclude detail-view member-removal stub (confirm + toast; API endpoint not yet implemented)
 		 */
 		async removeMember(userId) {
-			if (!confirm(t('openregister', 'Remove {userId} from this organisation?', { userId }))) {
+			if (
+				!confirm(
+					t('openregister', 'Remove {userId} from this organisation?', {
+						userId,
+					}),
+				)
+			) {
 				return
 			}
 
@@ -335,7 +434,11 @@ export default {
 				// TODO: Implement member removal API endpoint
 				showSuccess(t('openregister', 'Member removed successfully'))
 			} catch (error) {
-				showError(t('openregister', 'Failed to remove member: {error}', { error: error.message }))
+				showError(
+					t('openregister', 'Failed to remove member: {error}', {
+						error: error.message,
+					}),
+				)
 			}
 		},
 		/**
@@ -369,14 +472,18 @@ export default {
 		 * @spec exclude detail-view date-formatting display helper
 		 */
 		formatDate(dateString) {
-			return new Date(dateString).toLocaleDateString({
-				day: '2-digit',
-				month: '2-digit',
-				year: 'numeric',
-			}) + ', ' + new Date(dateString).toLocaleTimeString({
-				hour: '2-digit',
-				minute: '2-digit',
-			})
+			return (
+				new Date(dateString).toLocaleDateString({
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+				})
+				+ ', '
+				+ new Date(dateString).toLocaleTimeString({
+					hour: '2-digit',
+					minute: '2-digit',
+				})
+			)
 		},
 		/**
 		 * @param bytes
@@ -431,7 +538,10 @@ export default {
 			if (organisationStore.organisationItem?.website) {
 				let websiteUrl = organisationStore.organisationItem.website
 				// Add https:// if no protocol is specified
-				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+				if (
+					!websiteUrl.startsWith('http://')
+					&& !websiteUrl.startsWith('https://')
+				) {
 					websiteUrl = 'https://' + websiteUrl
 				}
 				window.open(websiteUrl, '_blank')
@@ -458,7 +568,9 @@ export default {
 	margin: 0;
 }
 
-.defaultBadge, .activeBadge, .ownerBadge {
+.defaultBadge,
+.activeBadge,
+.ownerBadge {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 12px;
@@ -528,11 +640,13 @@ export default {
 	padding: 4px 8px !important;
 }
 
-.membersSection, .statisticsSection {
+.membersSection,
+.statisticsSection {
 	margin-bottom: 40px;
 }
 
-.membersSection h3, .statisticsSection h3 {
+.membersSection h3,
+.statisticsSection h3 {
 	margin-bottom: 20px;
 	color: var(--color-text-dark);
 	font-size: 18px;

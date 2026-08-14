@@ -35,16 +35,15 @@ namespace OCA\OpenRegister\Service\Gdpr\Export;
 /**
  * Signs (or stub-signs) rendered export-bundle bytes.
  */
-interface PadesSigner
-{
-    /**
-     * Sign the rendered bundle bytes and return the signed result + hash.
-     *
-     * @param string $bytes The rendered bundle bytes (the PDF disclosure document).
-     *
-     * @return SignedBundle The bytes, their SHA-256 content hash, and the signature state.
-     *
-     * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
-     */
-    public function sign(string $bytes): SignedBundle;
+interface PadesSigner {
+	/**
+	 * Sign the rendered bundle bytes and return the signed result + hash.
+	 *
+	 * @param string $bytes The rendered bundle bytes (the PDF disclosure document).
+	 *
+	 * @return SignedBundle The bytes, their SHA-256 content hash, and the signature state.
+	 *
+	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 */
+	public function sign(string $bytes): SignedBundle;
 }//end interface

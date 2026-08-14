@@ -1,6 +1,12 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, registerStore, navigationStore, configurationStore, schemaStore } from '../../store/store.js'
+import {
+	dashboardStore,
+	registerStore,
+	navigationStore,
+	configurationStore,
+	schemaStore,
+} from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 
@@ -10,14 +16,25 @@ import formatBytes from '../../services/formatBytes.js'
 			:title="register?.title || ''"
 			:loading="dashboardStore.loading || hydrating"
 			:loading-label="t('openregister', 'Loading register data...')"
-			:error="!!dashboardStore.error || (!dashboardStore.loading && !hydrating && !register)"
-			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
-			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
-			:stats-columns="registerStats ? [
-				{ key: 'type', label: t('openregister', 'Type') },
-				{ key: 'total', label: t('openregister', 'Total') },
-				{ key: 'size', label: t('openregister', 'Size') },
-			] : []">
+			:error="
+				!!dashboardStore.error
+				|| (!dashboardStore.loading && !hydrating && !register)
+			"
+			:error-message="
+				dashboardStore.error || t('openregister', 'Register not found')
+			"
+			:stats-title="
+				registerStats ? t('openregister', 'Register Statistics') : ''
+			"
+			:stats-columns="
+				registerStats
+					? [
+							{ key: 'type', label: t('openregister', 'Type') },
+							{ key: 'total', label: t('openregister', 'Total') },
+							{ key: 'size', label: t('openregister', 'Size') },
+						]
+					: []
+			">
 			<!-- Error actions -->
 			<template #error-actions>
 				<NcButton @click="$router.push('/registers')">
@@ -72,7 +89,9 @@ import formatBytes from '../../services/formatBytes.js'
 						type="line"
 						height="350"
 						:options="auditTrailChartOptions"
-						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
+						:series="
+							dashboardStore.chartData.auditTrailActions?.series || []
+						" />
 				</div>
 
 				<!-- Objects by Schema Chart -->
@@ -82,8 +101,12 @@ import formatBytes from '../../services/formatBytes.js'
 						type="pie"
 						height="350"
 						:options="schemaChartOptions"
-						:series="dashboardStore.chartData.objectsBySchema?.series || []"
-						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+						:series="
+							dashboardStore.chartData.objectsBySchema?.series || []
+						"
+						:labels="
+							dashboardStore.chartData.objectsBySchema?.labels || []
+						" />
 				</div>
 
 				<!-- Objects by Size Chart -->
@@ -93,7 +116,14 @@ import formatBytes from '../../services/formatBytes.js'
 						type="bar"
 						height="350"
 						:options="sizeChartOptions"
-						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+						:series="[
+							{
+								name: 'Objects',
+								data:
+									dashboardStore.chartData.objectsBySize?.series
+									|| [],
+							},
+						]" />
 				</div>
 			</div>
 
@@ -103,13 +133,14 @@ import formatBytes from '../../services/formatBytes.js'
 				<span>Loading schemas...</span>
 			</div>
 			<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
-				<NcEmptyContent
-					:name="t('openregister', 'No schemas found')">
+				<NcEmptyContent :name="t('openregister', 'No schemas found')">
 					<template #icon>
 						<FolderOutline :size="48" />
 					</template>
 					<template #action>
-						<NcButton v-if="!managingConfiguration" @click="showEditDialog = true">
+						<NcButton
+							v-if="!managingConfiguration"
+							@click="showEditDialog = true">
 							{{ t('openregister', 'Add Schema') }}
 						</NcButton>
 					</template>
@@ -121,7 +152,13 @@ import formatBytes from '../../services/formatBytes.js'
 						<h3>
 							<FileCodeOutline :size="20" />
 							{{ schema.title }}
-							<span v-if="managingConfiguration" :title="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+							<span
+								v-if="managingConfiguration"
+								:title="
+									'Managed by configuration: '
+									+ managingConfiguration.title
+								"
+								class="managedBadge">
 								<Database :size="16" />
 								Managed
 							</span>
@@ -130,13 +167,18 @@ import formatBytes from '../../services/formatBytes.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="viewObjects(schema)">
+							<NcActionButton
+								close-after-click
+								@click="viewObjects(schema)">
 								<template #icon>
 									<TableEye :size="20" />
 								</template>
 								{{ t('openregister', 'View objects') }}
 							</NcActionButton>
-							<NcActionButton v-if="!managingConfiguration" close-after-click @click="editSchema(schema)">
+							<NcActionButton
+								v-if="!managingConfiguration"
+								close-after-click
+								@click="editSchema(schema)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
@@ -146,12 +188,20 @@ import formatBytes from '../../services/formatBytes.js'
 					</div>
 					<div class="statGrid">
 						<div class="statItem">
-							<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
-							<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
+							<span class="statLabel">{{
+								t('openregister', 'Total Objects')
+							}}</span>
+							<span class="statValue">{{
+								schema.stats?.objects?.total || 0
+							}}</span>
 						</div>
 						<div class="statItem">
-							<span class="statLabel">{{ t('openregister', 'Total Size') }}</span>
-							<span class="statValue">{{ formatBytes(schema.stats?.objects?.size || 0) }}</span>
+							<span class="statLabel">{{
+								t('openregister', 'Total Size')
+							}}</span>
+							<span class="statValue">{{
+								formatBytes(schema.stats?.objects?.size || 0)
+							}}</span>
 						</div>
 					</div>
 					<div class="schemaChart">
@@ -185,17 +235,17 @@ import formatBytes from '../../services/formatBytes.js'
 						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:modelValue="v => updateField('title', v)" />
+						@update:modelValue="(v) => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
 						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:modelValue="v => updateField('slug', v)" />
+						@update:modelValue="(v) => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
 						:model-value="formData.description || ''"
-						@update:modelValue="v => updateField('description', v)" />
+						@update:modelValue="(v) => updateField('description', v)" />
 					<NcSelect
 						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
@@ -203,7 +253,9 @@ import formatBytes from '../../services/formatBytes.js'
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@update:modelValue="vals => updateField('schemas', vals)" />
+						@update:modelValue="
+							(vals) => updateField('schemas', vals)
+						" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -211,7 +263,17 @@ import formatBytes from '../../services/formatBytes.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcActions,
+	NcActionButton,
+	NcButton,
+	NcTextField,
+	NcTextArea,
+	NcSelect,
+} from '@nextcloud/vue'
 import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue3-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
@@ -271,10 +333,30 @@ export default {
 			return {
 				title: t('openregister', 'Register'),
 				properties: {
-					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
-					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
-					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						required: true,
+						minLength: 1,
+						order: 1,
+					},
+					slug: {
+						type: 'string',
+						title: t('openregister', 'Slug'),
+						required: true,
+						minLength: 1,
+						order: 2,
+					},
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						order: 3,
+					},
+					schemas: {
+						type: 'array',
+						title: t('openregister', 'Schemas'),
+						order: 4,
+					},
 				},
 				required: ['title', 'slug'],
 			}
@@ -288,12 +370,15 @@ export default {
 		register() {
 			// Find the register in the dashboard store using the ID from the register
 			// store, falling back to the route param on a deep link / page refresh.
-			const registerId = registerStore.getRegisterItem?.id || this.$route.params.id
+			const registerId =
+				registerStore.getRegisterItem?.id || this.$route.params.id
 			if (!registerId) {
 				return undefined
 			}
 			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(r => String(r.id) === String(registerId))
+			return dashboardStore.registers.find(
+				(r) => String(r.id) === String(registerId),
+			)
 		},
 		/**
 		 * ApexCharts options for the audit-trail line chart.
@@ -313,7 +398,8 @@ export default {
 					},
 				},
 				xaxis: {
-					categories: dashboardStore.chartData.auditTrailActions?.labels || [],
+					categories:
+						dashboardStore.chartData.auditTrailActions?.labels || [],
 					title: {
 						text: 'Date',
 					},
@@ -351,17 +437,19 @@ export default {
 				legend: {
 					position: 'bottom',
 				},
-				responsive: [{
-					breakpoint: 480,
-					options: {
-						chart: {
-							width: 200,
-						},
-						legend: {
-							position: 'bottom',
+				responsive: [
+					{
+						breakpoint: 480,
+						options: {
+							chart: {
+								width: 200,
+							},
+							legend: {
+								position: 'bottom',
+							},
 						},
 					},
-				}],
+				],
 			}
 		},
 		/**
@@ -439,7 +527,10 @@ export default {
 		// seed the store from the `:id` route param — without this the page bounced
 		// straight back to /registers.
 		const routeId = this.$route.params.id
-		if (routeId && String(registerStore.getRegisterItem?.id || '') !== String(routeId)) {
+		if (
+			routeId
+			&& String(registerStore.getRegisterItem?.id || '') !== String(routeId)
+		) {
 			registerStore.setRegisterItem({ id: routeId })
 		}
 
@@ -488,7 +579,9 @@ export default {
 			this.statsError = null
 
 			try {
-				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
+				this.registerStats = await registerStore.getRegisterStats(
+					registerStore.getRegisterItem.id,
+				)
 			} catch (error) {
 				console.error('Error loading register stats:', error)
 				this.statsError = error.message
@@ -540,7 +633,10 @@ export default {
 			this.schemasLoading = true
 			try {
 				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
+					id: s.id,
+					label: s.title,
+				}))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -556,10 +652,13 @@ export default {
 		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
+			return schemas.map((s) => {
 				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
+				return (
+					this.schemaSelectOptions.find(
+						(o) => String(o.id) === String(id),
+					) || { id, label: String(id) }
+				)
 			})
 		},
 		/**
@@ -573,7 +672,9 @@ export default {
 			try {
 				await registerStore.saveRegister({
 					...formData,
-					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+					schemas: (formData.schemas || []).map((s) =>
+						typeof s === 'object' ? s.id : s,
+					),
 				})
 				this.$refs.editRegisterDialog.setResult({ success: true })
 				await dashboardStore.fetchRegisters()
@@ -606,10 +707,15 @@ export default {
 			if (!registerId || !schema?.id) {
 				return
 			}
-			this.$router.push({
-				path: '/tables',
-				query: { register: String(registerId), schema: String(schema.id) },
-			}).catch(() => {})
+			this.$router
+				.push({
+					path: '/tables',
+					query: {
+						register: String(registerId),
+						schema: String(schema.id),
+					},
+				})
+				.catch(() => {})
 		},
 		/**
 		 * Normalise one schema for the cards.
@@ -646,12 +752,14 @@ export default {
 				// GET /api/schemas/{id} does not return — so use those as they are.
 				// Only bare ids need fetching (stringifying an object gave us
 				// /api/schemas/[object Object]).
-				const promises = schemas.map(async schema => {
+				const promises = schemas.map(async (schema) => {
 					if (schema !== null && typeof schema === 'object') {
 						return this.normalizeSchema(schema)
 					}
 					try {
-						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schema}`)
+						const response = await fetch(
+							`/index.php/apps/openregister/api/schemas/${schema}`,
+						)
 						if (response.ok) {
 							return this.normalizeSchema(await response.json())
 						}
@@ -687,7 +795,11 @@ export default {
 				// Check all configurations to see if any manages this register
 				const configurations = configurationStore.configurationList || []
 				for (const config of configurations) {
-					if (config.registers && Array.isArray(config.registers) && config.registers.includes(this.register.id)) {
+					if (
+						config.registers
+						&& Array.isArray(config.registers)
+						&& config.registers.includes(this.register.id)
+					) {
 						this.managingConfiguration = config
 						return
 					}
@@ -714,7 +826,7 @@ export default {
 
 .chartGrid {
 	display: grid;
-	grid-template-columns: repeat( auto-fit, minmax(330px, 1fr) );
+	grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
 	gap: 20px;
 	padding: 20px;
 }

@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\GraphQL\SubscriptionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
-use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
 
 /**
@@ -42,123 +41,120 @@ use OCP\IRequest;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class GraphQLSubscriptionController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string              $appName             Application name
-     * @param IRequest            $request             Request object
-     * @param SubscriptionService $subscriptionService Subscription service
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly SubscriptionService $subscriptionService,
-    ) {
-        parent::__construct(appName: $appName, request: $request);
+class GraphQLSubscriptionController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName Application name
+	 * @param IRequest $request Request object
+	 * @param SubscriptionService $subscriptionService Subscription service
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly SubscriptionService $subscriptionService,
+	) {
+		parent::__construct(appName: $appName, request: $request);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * SSE subscription endpoint.
-     *
-     * Streams object change events (create, update, delete) in real-time.
-     * Filters by schema and register when specified.
-     * Supports reconnection via Last-Event-ID header.
-     *
-     * @return Response SSE stream response
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     * @no-admin-idor-exempt Guarded downstream: SubscriptionService filters every streamed event through
-     *   verifyEventRBAC -> PermissionHandler::hasPermission(schema,'read'); non-readable schemas are never streamed.
-     *
-     * @CORS
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md
-     */
-    public function subscribe(): Response
-    {
-        $schemaId   = $this->request->getParam('schema');
-        $registerId = $this->request->getParam('register');
-        $lastId     = $this->request->getHeader('Last-Event-ID');
+	/**
+	 * SSE subscription endpoint.
+	 *
+	 * Streams object change events (create, update, delete) in real-time.
+	 * Filters by schema and register when specified.
+	 * Supports reconnection via Last-Event-ID header.
+	 *
+	 * @return Response SSE stream response
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt Guarded downstream: SubscriptionService filters every streamed event through
+	 *   verifyEventRBAC -> PermissionHandler::hasPermission(schema,'read'); non-readable schemas are never streamed.
+	 *
+	 * @CORS
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function subscribe(): Response {
+		$schemaId = $this->request->getParam('schema');
+		$registerId = $this->request->getParam('register');
+		$lastId = $this->request->getHeader('Last-Event-ID');
 
-        if ($schemaId !== null) {
-            $schemaId = (int) $schemaId;
-        }
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+		}
 
-        if ($registerId !== null) {
-            $registerId = (int) $registerId;
-        }
+		if ($registerId !== null) {
+			$registerId = (int)$registerId;
+		}
 
-        $lastEventId = null;
-        if (empty($lastId) === false) {
-            $lastEventId = $lastId;
-        }
+		$lastEventId = null;
+		if (empty($lastId) === false) {
+			$lastEventId = $lastId;
+		}
 
-        // Set SSE headers.
-        header('Content-Type: text/event-stream');
-        header('Cache-Control: no-cache');
-        header('Connection: keep-alive');
-        header('X-Accel-Buffering: no');
+		// Set SSE headers.
+		header('Content-Type: text/event-stream');
+		header('Cache-Control: no-cache');
+		header('Connection: keep-alive');
+		header('X-Accel-Buffering: no');
 
-        // Disable output buffering.
-        if (ob_get_level() > 0) {
-            ob_end_flush();
-        }
+		// Disable output buffering.
+		if (ob_get_level() > 0) {
+			ob_end_flush();
+		}
 
-        // Send initial events (replay from buffer since lastEventId).
-        $events = $this->subscriptionService->getEventsSince(
-            $lastEventId,
-            $schemaId,
-            $registerId
-        );
+		// Send initial events (replay from buffer since lastEventId).
+		$events = $this->subscriptionService->getEventsSince(
+			$lastEventId,
+			$schemaId,
+			$registerId
+		);
 
-        foreach ($events as $event) {
-            echo $this->subscriptionService->formatAsSSE($event);
-        }
+		foreach ($events as $event) {
+			echo $this->subscriptionService->formatAsSSE($event);
+		}
 
-        // Send heartbeat comment to keep connection alive.
-        echo ": heartbeat\n\n";
-        flush();
+		// Send heartbeat comment to keep connection alive.
+		echo ": heartbeat\n\n";
+		flush();
 
-        // Poll for new events (max 30 seconds to avoid PHP timeout).
-        $startTime     = time();
-        $maxDuration   = 30;
-        $pollInterval  = 1;
-        $currentLastId = $lastEventId;
-        if (empty($events) === false) {
-            $currentLastId = end($events)['id'];
-        }
+		// Poll for new events (max 30 seconds to avoid PHP timeout).
+		$startTime = time();
+		$maxDuration = 30;
+		$pollInterval = 1;
+		$currentLastId = $lastEventId;
+		if (empty($events) === false) {
+			$currentLastId = end($events)['id'];
+		}
 
-        while ((time() - $startTime) < $maxDuration) {
-            sleep($pollInterval);
+		while ((time() - $startTime) < $maxDuration) {
+			sleep($pollInterval);
 
-            $newEvents = $this->subscriptionService->getEventsSince(
-                $currentLastId,
-                $schemaId,
-                $registerId
-            );
+			$newEvents = $this->subscriptionService->getEventsSince(
+				$currentLastId,
+				$schemaId,
+				$registerId
+			);
 
-            foreach ($newEvents as $event) {
-                echo $this->subscriptionService->formatAsSSE($event);
-                $currentLastId = $event['id'];
-            }
+			foreach ($newEvents as $event) {
+				echo $this->subscriptionService->formatAsSSE($event);
+				$currentLastId = $event['id'];
+			}
 
-            // Send heartbeat every poll interval.
-            echo ": heartbeat\n\n";
-            flush();
+			// Send heartbeat every poll interval.
+			echo ": heartbeat\n\n";
+			flush();
 
-            // Check if client disconnected.
-            if (connection_aborted() === 1) {
-                break;
-            }
-        }//end while
+			// Check if client disconnected.
+			if (connection_aborted() === 1) {
+				break;
+			}
+		}//end while
 
-        // Return empty response (output already sent via echo).
-        return new Response();
-
-    }//end subscribe()
+		// Return empty response (output already sent via echo).
+		return new Response();
+	}//end subscribe()
 }//end class

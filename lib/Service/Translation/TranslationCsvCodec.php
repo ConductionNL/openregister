@@ -31,176 +31,172 @@ namespace OCA\OpenRegister\Service\Translation;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 
-class TranslationCsvCodec
-{
-    /**
-     * Constructor.
-     *
-     * @param TranslationHandler $translationHandler Handler exposing translatable property metadata.
-     */
-    public function __construct(
-        private readonly TranslationHandler $translationHandler
-    ) {
-    }//end __construct()
+class TranslationCsvCodec {
+	/**
+	 * Constructor.
+	 *
+	 * @param TranslationHandler $translationHandler Handler exposing translatable property metadata.
+	 */
+	public function __construct(
+		private readonly TranslationHandler $translationHandler,
+	) {
+	}//end __construct()
 
-    /**
-     * Flatten an object's data into CSV-compatible columns.
-     *
-     * For each translatable property, emit one column per language
-     * present in the value (`title` → `title_nl`, `title_en`).
-     * Untranslatable properties pass through with their original key.
-     *
-     * Caller iterates the rows in their CSV-build path; this method
-     * is per-row.
-     *
-     * @param array<string, mixed> $data   The object's data payload to flatten.
-     * @param Schema               $schema The schema describing translatable properties.
-     *
-     * @return array<string, scalar|null>
-     *
-     * @spec openspec/specs/register-i18n/spec.md
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function flattenForCsv(array $data, Schema $schema): array
-    {
-        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $row = [];
+	/**
+	 * Flatten an object's data into CSV-compatible columns.
+	 *
+	 * For each translatable property, emit one column per language
+	 * present in the value (`title` → `title_nl`, `title_en`).
+	 * Untranslatable properties pass through with their original key.
+	 *
+	 * Caller iterates the rows in their CSV-build path; this method
+	 * is per-row.
+	 *
+	 * @param array<string, mixed> $data The object's data payload to flatten.
+	 * @param Schema $schema The schema describing translatable properties.
+	 *
+	 * @return array<string, scalar|null>
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
+	public function flattenForCsv(array $data, Schema $schema): array {
+		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+		$row = [];
 
-        foreach ($data as $key => $value) {
-            // Untranslatable property: pass through as-is. Non-scalar
-            // values get JSON-encoded so the CSV row stays single-cell-per-column.
-            if (in_array($key, $translatableProps, true) === false) {
-                if (is_scalar($value) === true || $value === null) {
-                    $row[$key] = $value;
-                    continue;
-                }
+		foreach ($data as $key => $value) {
+			// Untranslatable property: pass through as-is. Non-scalar
+			// values get JSON-encoded so the CSV row stays single-cell-per-column.
+			if (in_array($key, $translatableProps, true) === false) {
+				if (is_scalar($value) === true || $value === null) {
+					$row[$key] = $value;
+					continue;
+				}
 
-                $row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
-                continue;
-            }
+				$row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
+				continue;
+			}
 
-            // Translatable property with language-keyed value:
-            // emit `field_lang` columns per language present.
-            if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
-                foreach ($value as $lang => $langValue) {
-                    if (is_string($lang) === false || $lang === '') {
-                        continue;
-                    }
+			// Translatable property with language-keyed value:
+			// emit `field_lang` columns per language present.
+			if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
+				foreach ($value as $lang => $langValue) {
+					if (is_string($lang) === false || $lang === '') {
+						continue;
+					}
 
-                    $langScalar = null;
-                    if (is_scalar($langValue) === true) {
-                        $langScalar = $langValue;
-                    }
+					$langScalar = null;
+					if (is_scalar($langValue) === true) {
+						$langScalar = $langValue;
+					}
 
-                    $row[$key.'_'.$lang] = $langScalar;
-                }
+					$row[$key . '_' . $lang] = $langScalar;
+				}
 
-                continue;
-            }
+				continue;
+			}
 
-            // Translatable property holding a plain string (legacy
-            // single-language data): emit under `field_und` (BCP 47
-            // "und" = undetermined language) so the round-trip
-            // preserves the variant without guessing.
-            if (is_string($value) === true) {
-                $row[$key.'_und'] = $value;
-                continue;
-            }
+			// Translatable property holding a plain string (legacy
+			// single-language data): emit under `field_und` (BCP 47
+			// "und" = undetermined language) so the round-trip
+			// preserves the variant without guessing.
+			if (is_string($value) === true) {
+				$row[$key . '_und'] = $value;
+				continue;
+			}
 
-            // Anything else: pass through.
-            $scalarValue = null;
-            if (is_scalar($value) === true) {
-                $scalarValue = $value;
-            }
+			// Anything else: pass through.
+			$scalarValue = null;
+			if (is_scalar($value) === true) {
+				$scalarValue = $value;
+			}
 
-            $row[$key] = $scalarValue;
-        }//end foreach
+			$row[$key] = $scalarValue;
+		}//end foreach
 
-        return $row;
-    }//end flattenForCsv()
+		return $row;
+	}//end flattenForCsv()
 
-    /**
-     * Reverse of `flattenForCsv`. Reconstructs the nested
-     * `{lang: value}` shape from a flat row.
-     *
-     * Recognises any column matching `<property>_<lang>` where the
-     * `<property>` portion is one of the schema's translatable
-     * properties. Other `_`-suffixed columns are passed through as-is
-     * (they may be unrelated user fields with underscores in the name).
-     *
-     * @param array<string, mixed> $row    The flat CSV row to unflatten.
-     * @param Schema               $schema The schema describing translatable properties.
-     *
-     * @return array<string, mixed>
-     *
-     * @spec openspec/specs/register-i18n/spec.md
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function unflattenFromCsv(array $row, Schema $schema): array
-    {
-        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $out = [];
+	/**
+	 * Reverse of `flattenForCsv`. Reconstructs the nested
+	 * `{lang: value}` shape from a flat row.
+	 *
+	 * Recognises any column matching `<property>_<lang>` where the
+	 * `<property>` portion is one of the schema's translatable
+	 * properties. Other `_`-suffixed columns are passed through as-is
+	 * (they may be unrelated user fields with underscores in the name).
+	 *
+	 * @param array<string, mixed> $row The flat CSV row to unflatten.
+	 * @param Schema $schema The schema describing translatable properties.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
+	public function unflattenFromCsv(array $row, Schema $schema): array {
+		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+		$out = [];
 
-        foreach ($row as $column => $value) {
-            // Check if this column matches a translatable-property + language suffix.
-            $matched = false;
-            foreach ($translatableProps as $prop) {
-                $prefix = $prop.'_';
-                if (str_starts_with($column, $prefix) === true) {
-                    $lang = substr($column, strlen($prefix));
-                    if ($lang === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1) {
-                        continue;
-                    }
+		foreach ($row as $column => $value) {
+			// Check if this column matches a translatable-property + language suffix.
+			$matched = false;
+			foreach ($translatableProps as $prop) {
+				$prefix = $prop . '_';
+				if (str_starts_with($column, $prefix) === true) {
+					$lang = substr($column, strlen($prefix));
+					if ($lang === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1) {
+						continue;
+					}
 
-                    if (is_string($value) === false || $value === '') {
-                        // Empty cells: don't write a slot (lets the
-                        // projection treat this as "not translated").
-                        $matched = true;
-                        break;
-                    }
+					if (is_string($value) === false || $value === '') {
+						// Empty cells: don't write a slot (lets the
+						// projection treat this as "not translated").
+						$matched = true;
+						break;
+					}
 
-                    if (isset($out[$prop]) === false || is_array($out[$prop]) === false) {
-                        $out[$prop] = [];
-                    }
+					if (isset($out[$prop]) === false || is_array($out[$prop]) === false) {
+						$out[$prop] = [];
+					}
 
-                    $out[$prop][$lang] = $value;
-                    $matched           = true;
-                    break;
-                }//end if
-            }//end foreach
+					$out[$prop][$lang] = $value;
+					$matched = true;
+					break;
+				}//end if
+			}//end foreach
 
-            if ($matched === true) {
-                continue;
-            }
+			if ($matched === true) {
+				continue;
+			}
 
-            // Untranslatable / unrecognised column: pass through.
-            $out[$column] = $value;
-        }//end foreach
+			// Untranslatable / unrecognised column: pass through.
+			$out[$column] = $value;
+		}//end foreach
 
-        return $out;
-    }//end unflattenFromCsv()
+		return $out;
+	}//end unflattenFromCsv()
 
-    /**
-     * Detect whether an array's keys are all BCP 47-style language codes.
-     *
-     * @param array<mixed> $value The array whose keys should be inspected.
-     *
-     * @return bool True when every key looks like a language code.
-     */
-    private function isLanguageKeyed(array $value): bool
-    {
-        if (count($value) === 0) {
-            return false;
-        }
+	/**
+	 * Detect whether an array's keys are all BCP 47-style language codes.
+	 *
+	 * @param array<mixed> $value The array whose keys should be inspected.
+	 *
+	 * @return bool True when every key looks like a language code.
+	 */
+	private function isLanguageKeyed(array $value): bool {
+		if (count($value) === 0) {
+			return false;
+		}
 
-        foreach (array_keys($value) as $key) {
-            if (is_string($key) === false || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $key) !== 1) {
-                return false;
-            }
-        }
+		foreach (array_keys($value) as $key) {
+			if (is_string($key) === false || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $key) !== 1) {
+				return false;
+			}
+		}
 
-        return true;
-    }//end isLanguageKeyed()
+		return true;
+	}//end isLanguageKeyed()
 }//end class

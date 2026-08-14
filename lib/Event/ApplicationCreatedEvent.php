@@ -29,38 +29,35 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an application is created.
  */
-class ApplicationCreatedEvent extends Event
-{
+class ApplicationCreatedEvent extends Event {
 
-    /**
-     * The newly created application.
-     *
-     * @var Application The application that was created.
-     */
-    private Application $application;
+	/**
+	 * The newly created application.
+	 *
+	 * @var Application The application that was created.
+	 */
+	private Application $application;
 
-    /**
-     * Constructor for ApplicationCreatedEvent.
-     *
-     * @param Application $application The application that was created.
-     *
-     * @return void
-     */
-    public function __construct(Application $application)
-    {
-        parent::__construct();
-        $this->application = $application;
-    }//end __construct()
+	/**
+	 * Constructor for ApplicationCreatedEvent.
+	 *
+	 * @param Application $application The application that was created.
+	 *
+	 * @return void
+	 */
+	public function __construct(Application $application) {
+		parent::__construct();
+		$this->application = $application;
+	}//end __construct()
 
-    /**
-     * Get the created application.
-     *
-     * @return Application The application that was created.
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getApplication(): Application
-    {
-        return $this->application;
-    }//end getApplication()
+	/**
+	 * Get the created application.
+	 *
+	 * @return Application The application that was created.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getApplication(): Application {
+		return $this->application;
+	}//end getApplication()
 }//end class

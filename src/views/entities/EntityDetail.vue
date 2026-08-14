@@ -39,7 +39,12 @@
 						<span class="badge badge-type">{{ entity.type }}</span>
 					</div>
 					<p>
-						{{ t('openregister', 'View entity details and manage relations') }}
+						{{
+							t(
+								'openregister',
+								'View entity details and manage relations',
+							)
+						}}
 					</p>
 				</div>
 
@@ -47,7 +52,11 @@
 				<div class="viewActionsBar">
 					<div class="viewInfo">
 						<span class="viewTotalCount">
-							{{ t('openregister', 'Entity ID: {id}', { id: entity.id }) }}
+							{{
+								t('openregister', 'Entity ID: {id}', {
+									id: entity.id,
+								})
+							}}
 						</span>
 					</div>
 					<div class="viewActions">
@@ -55,9 +64,7 @@
 							:force-name="true"
 							:inline="1"
 							menu-name="Actions">
-							<NcActionButton
-								close-after-click
-								@click="refreshEntity">
+							<NcActionButton close-after-click @click="refreshEntity">
 								<template #icon>
 									<Refresh :size="20" />
 								</template>
@@ -85,29 +92,52 @@
 								<th scope="row">
 									<strong>{{ t('openregister', 'Type') }}</strong>
 								</th>
-								<td><span class="badge badge-type">{{ entity.type }}</span></td>
+								<td>
+									<span class="badge badge-type">{{
+										entity.type
+									}}</span>
+								</td>
 							</tr>
 							<tr>
 								<th scope="row">
-									<strong>{{ t('openregister', 'Category') }}</strong>
+									<strong>{{
+										t('openregister', 'Category')
+									}}</strong>
 								</th>
-								<td><span class="badge badge-category">{{ entity.category }}</span></td>
+								<td>
+									<span class="badge badge-category">{{
+										entity.category
+									}}</span>
+								</td>
 							</tr>
 							<tr>
 								<th scope="row">
-									<strong>{{ t('openregister', 'Detected At') }}</strong>
+									<strong>{{
+										t('openregister', 'Detected At')
+									}}</strong>
 								</th>
 								<td>{{ formatDate(entity.detectedAt) }}</td>
 							</tr>
 							<tr>
 								<th scope="row">
-									<strong>{{ t('openregister', 'Confidence Score') }}</strong>
+									<strong>{{
+										t('openregister', 'Confidence Score')
+									}}</strong>
 								</th>
-								<td>{{ entity.confidence ? (entity.confidence * 100).toFixed(2) + '%' : '-' }}</td>
+								<td>
+									{{
+										entity.confidence
+											? (entity.confidence * 100).toFixed(2)
+												+ '%'
+											: '-'
+									}}
+								</td>
 							</tr>
 							<tr v-if="entity.source">
 								<th scope="row">
-									<strong>{{ t('openregister', 'Source') }}</strong>
+									<strong>{{
+										t('openregister', 'Source')
+									}}</strong>
 								</th>
 								<td>{{ entity.source }}</td>
 							</tr>
@@ -120,14 +150,21 @@
 					<div class="cardHeader">
 						<h2>
 							{{ t('openregister', 'Relations') }}
-							<span class="badge badge-count">{{ relations.length }}</span>
+							<span class="badge badge-count">{{
+								relations.length
+							}}</span>
 						</h2>
 					</div>
 
 					<NcEmptyContent
 						v-if="!loadingRelations && !relations.length"
 						:name="t('openregister', 'No relations found')"
-						:description="t('openregister', 'This entity has no relations to objects or files')">
+						:description="
+							t(
+								'openregister',
+								'This entity has no relations to objects or files',
+							)
+						">
 						<template #icon>
 							<LinkVariantOff :size="64" />
 						</template>
@@ -138,30 +175,57 @@
 					</div>
 
 					<div v-else class="relationsContainer">
-						<div v-for="relation in relations" :key="relation.id" class="relationCard">
+						<div
+							v-for="relation in relations"
+							:key="relation.id"
+							class="relationCard">
 							<div class="relationHeader">
 								<div class="relationTitle">
-									<FileDocumentOutline v-if="relation.fileId" :size="20" />
-									<DatabaseOutline v-else-if="relation.objectId" :size="20" />
+									<FileDocumentOutline
+										v-if="relation.fileId"
+										:size="20" />
+									<DatabaseOutline
+										v-else-if="relation.objectId"
+										:size="20" />
 									<TextBoxOutline v-else :size="20" />
 									<strong>
 										{{ getRelationTitle(relation) }}
 									</strong>
 								</div>
-								<span class="relationType">{{ getRelationType(relation) }}</span>
+								<span class="relationType">{{
+									getRelationType(relation)
+								}}</span>
 							</div>
 							<div v-if="relation.context" class="relationDescription">
 								{{ relation.context }}
 							</div>
 							<div class="relationMeta">
 								<span v-if="relation.confidence">
-									{{ t('openregister', 'Confidence: {confidence}%', { confidence: (relation.confidence * 100).toFixed(1) }) }}
+									{{
+										t(
+											'openregister',
+											'Confidence: {confidence}%',
+											{
+												confidence: (
+													relation.confidence * 100
+												).toFixed(1),
+											},
+										)
+									}}
 								</span>
 								<span v-if="relation.detectionMethod">
-									{{ t('openregister', 'Method: {method}', { method: relation.detectionMethod }) }}
+									{{
+										t('openregister', 'Method: {method}', {
+											method: relation.detectionMethod,
+										})
+									}}
 								</span>
 								<span v-if="relation.createdAt">
-									{{ t('openregister', 'Detected: {date}', { date: formatDate(relation.createdAt) }) }}
+									{{
+										t('openregister', 'Detected: {date}', {
+											date: formatDate(relation.createdAt),
+										})
+									}}
 								</span>
 							</div>
 							<div class="relationActions">
@@ -276,7 +340,9 @@ export default {
 			try {
 				const entityId = this.$route.params.id
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', { id: entityId }),
+					generateUrl('/apps/openregister/api/entities/{id}', {
+						id: entityId,
+					}),
 				)
 
 				if (response.data.success) {
@@ -284,11 +350,15 @@ export default {
 					// Relations are returned in the same response.
 					this.relations = response.data.relations || []
 				} else {
-					this.error = response.data.message || t('openregister', 'Failed to load entity')
+					this.error =
+						response.data.message
+						|| t('openregister', 'Failed to load entity')
 				}
 			} catch (error) {
 				console.error('Failed to load entity:', error)
-				this.error = error.response?.data?.message || t('openregister', 'Failed to load entity')
+				this.error =
+					error.response?.data?.message
+					|| t('openregister', 'Failed to load entity')
 				showError(this.error)
 			} finally {
 				this.loading = false
@@ -349,7 +419,10 @@ export default {
 		 */
 		viewObject(relation) {
 			if (relation.objectId) {
-				this.$router.push({ path: '/objects', query: { id: relation.objectId } })
+				this.$router.push({
+					path: '/objects',
+					query: { id: relation.objectId },
+				})
 			}
 		},
 

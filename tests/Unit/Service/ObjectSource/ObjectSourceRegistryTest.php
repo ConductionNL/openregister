@@ -36,90 +36,80 @@ use Psr\Log\NullLogger;
 /**
  * Minimal stub object-source provider for registry tests.
  */
-class _DummyObjectSource implements ObjectSourceProvider
-{
+class _DummyObjectSource implements ObjectSourceProvider {
 
-    public function __construct(
-        private string $id,
-        private bool $enabled = true,
-    ) {
-    }//end __construct()
+	public function __construct(
+		private string $id,
+		private bool $enabled = true,
+	) {
+	}//end __construct()
 
-    public function getId(): string
-    {
-        return $this->id;
-    }//end getId()
+	public function getId(): string {
+		return $this->id;
+	}//end getId()
 
-    public function isEnabled(): bool
-    {
-        return $this->enabled;
-    }//end isEnabled()
+	public function isEnabled(): bool {
+		return $this->enabled;
+	}//end isEnabled()
 
-    public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
-    {
-        return null;
-    }//end find()
+	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return null;
+	}//end find()
 
-    public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array
-    {
-        return [];
-    }//end findAll()
+	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		return [];
+	}//end findAll()
 
-    public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int
-    {
-        return 0;
-    }//end count()
+	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+		return 0;
+	}//end count()
 }//end class
 
 /**
  * Test class for ObjectSourceRegistry.
  */
-class ObjectSourceRegistryTest extends TestCase
-{
+class ObjectSourceRegistryTest extends TestCase {
 
-    /**
-     * addProvider() indexes by id and get() resolves it.
-     *
-     * @return void
-     */
-    public function testAddAndResolve(): void
-    {
-        $registry = new ObjectSourceRegistry(new NullLogger());
-        $this->assertTrue($registry->addProvider(new _DummyObjectSource('caldav-vtodo')));
-        $this->assertSame('caldav-vtodo', $registry->get('caldav-vtodo')?->getId());
-        $this->assertNull($registry->get('unknown'));
-        $this->assertSame(['caldav-vtodo'], $registry->listIds());
-        $this->assertCount(1, $registry->list());
-    }//end testAddAndResolve()
+	/**
+	 * addProvider() indexes by id and get() resolves it.
+	 *
+	 * @return void
+	 */
+	public function testAddAndResolve(): void {
+		$registry = new ObjectSourceRegistry(new NullLogger());
+		$this->assertTrue($registry->addProvider(new _DummyObjectSource('caldav-vtodo')));
+		$this->assertSame('caldav-vtodo', $registry->get('caldav-vtodo')?->getId());
+		$this->assertNull($registry->get('unknown'));
+		$this->assertSame(['caldav-vtodo'], $registry->listIds());
+		$this->assertCount(1, $registry->list());
+	}//end testAddAndResolve()
 
-    /**
-     * Duplicate id: first registration wins, second is rejected.
-     *
-     * @return void
-     */
-    public function testDuplicateIdFirstWins(): void
-    {
-        $registry = new ObjectSourceRegistry(new NullLogger());
-        $first    = new _DummyObjectSource('caldav-vtodo', true);
-        $second   = new _DummyObjectSource('caldav-vtodo', false);
+	/**
+	 * Duplicate id: first registration wins, second is rejected.
+	 *
+	 * @return void
+	 */
+	public function testDuplicateIdFirstWins(): void {
+		$registry = new ObjectSourceRegistry(new NullLogger());
+		$first = new _DummyObjectSource('caldav-vtodo', true);
+		$second = new _DummyObjectSource('caldav-vtodo', false);
 
-        $this->assertTrue($registry->addProvider($first));
-        $this->assertFalse($registry->addProvider($second));
-        $this->assertSame($first, $registry->get('caldav-vtodo'));
-    }//end testDuplicateIdFirstWins()
+		$this->assertTrue($registry->addProvider($first));
+		$this->assertFalse($registry->addProvider($second));
+		$this->assertSame($first, $registry->get('caldav-vtodo'));
+	}//end testDuplicateIdFirstWins()
 
-    /**
-     * withProviders() replaces the entire registered set.
-     *
-     * @return void
-     */
-    public function testWithProvidersReplacesSet(): void
-    {
-        $registry = new ObjectSourceRegistry(new NullLogger());
-        $registry->addProvider(new _DummyObjectSource('a'));
-        $registry->withProviders([new _DummyObjectSource('b'), new _DummyObjectSource('c')]);
+	/**
+	 * withProviders() replaces the entire registered set.
+	 *
+	 * @return void
+	 */
+	public function testWithProvidersReplacesSet(): void {
+		$registry = new ObjectSourceRegistry(new NullLogger());
+		$registry->addProvider(new _DummyObjectSource('a'));
+		$registry->withProviders([new _DummyObjectSource('b'), new _DummyObjectSource('c')]);
 
-        $this->assertNull($registry->get('a'));
-        $this->assertSame(['b', 'c'], $registry->listIds());
-    }//end testWithProvidersReplacesSet()
+		$this->assertNull($registry->get('a'));
+		$this->assertSame(['b', 'c'], $registry->listIds());
+	}//end testWithProvidersReplacesSet()
 }//end class

@@ -48,100 +48,97 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class MailAppScriptListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param IAppManager     $appManager     The app manager.
-     * @param IUserSession    $userSession    The user session.
-     * @param RegisterMapper  $registerMapper The register mapper.
-     * @param LoggerInterface $logger         The logger.
-     */
-    public function __construct(
-        private readonly IAppManager $appManager,
-        private readonly IUserSession $userSession,
-        private readonly RegisterMapper $registerMapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
+class MailAppScriptListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppManager $appManager The app manager.
+	 * @param IUserSession $userSession The user session.
+	 * @param RegisterMapper $registerMapper The register mapper.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private readonly IAppManager $appManager,
+		private readonly IUserSession $userSession,
+		private readonly RegisterMapper $registerMapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Handle the event.
-     *
-     * @param Event $event The event.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess)
-     *
-     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
-     * @spec openspec/specs/mail-sidebar/spec.md
-     */
-    public function handle(Event $event): void
-    {
-        // Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
-        if ($event instanceof BeforeTemplateRenderedEvent === false) {
-            return;
-        }
+	/**
+	 * Handle the event.
+	 *
+	 * @param Event $event The event.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+	 * @spec openspec/specs/mail-sidebar/spec.md
+	 */
+	public function handle(Event $event): void {
+		// Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
+		if ($event instanceof BeforeTemplateRenderedEvent === false) {
+			return;
+		}
 
-        $response = $event->getResponse();
-        if ($response instanceof TemplateResponse === false) {
-            return;
-        }
+		$response = $event->getResponse();
+		if ($response instanceof TemplateResponse === false) {
+			return;
+		}
 
-        if ($response->getApp() !== 'mail') {
-            return;
-        }
+		if ($response->getApp() !== 'mail') {
+			return;
+		}
 
-        // Check Mail app is enabled.
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return;
-        }
+		// Check Mail app is enabled.
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return;
+		}
 
-        if ($this->appManager->isEnabledForUser('mail', $user) === false) {
-            return;
-        }
+		if ($this->appManager->isEnabledForUser('mail', $user) === false) {
+			return;
+		}
 
-        // Check user has access to at least one register.
-        if ($this->userHasRegisterAccess() === false) {
-            return;
-        }
+		// Check user has access to at least one register.
+		if ($this->userHasRegisterAccess() === false) {
+			return;
+		}
 
-        // Inject the sidebar script (only if compiled JS exists).
-        $jsPath = __DIR__.'/../../js/openregister-mail-sidebar.js';
-        if (file_exists($jsPath) === true) {
-            ScriptManifestLoader::addEntryScripts('openregister', 'mailSidebar', 'openregister-mail-sidebar');
-            Util::addStyle('openregister', 'mail-sidebar');
-        }
+		// Inject the sidebar script (only if compiled JS exists).
+		$jsPath = __DIR__ . '/../../js/openregister-mail-sidebar.js';
+		if (file_exists($jsPath) === true) {
+			ScriptManifestLoader::addEntryScripts('openregister', 'mailSidebar', 'openregister-mail-sidebar');
+			Util::addStyle('openregister', 'mail-sidebar');
+		}
 
-        $this->logger->debug(
-                'Mail sidebar script injected for user {user}',
-                [
-                    'user' => $user->getUID(),
-                ]
-                );
-    }//end handle()
+		$this->logger->debug(
+			'Mail sidebar script injected for user {user}',
+			[
+				'user' => $user->getUID(),
+			]
+		);
+	}//end handle()
 
-    /**
-     * Check if the current user has access to any OpenRegister register.
-     *
-     * @return bool True if the user has register access.
-     *
-     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
-     */
-    private function userHasRegisterAccess(): bool
-    {
-        try {
-            $registers = $this->registerMapper->findAll(1, 0);
-            return count($registers) > 0;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Could not check register access for mail sidebar: {error}',
-                ['error' => $e->getMessage()]
-            );
-            return false;
-        }
-    }//end userHasRegisterAccess()
+	/**
+	 * Check if the current user has access to any OpenRegister register.
+	 *
+	 * @return bool True if the user has register access.
+	 *
+	 * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+	 */
+	private function userHasRegisterAccess(): bool {
+		try {
+			$registers = $this->registerMapper->findAll(1, 0);
+			return count($registers) > 0;
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				'Could not check register access for mail sidebar: {error}',
+				['error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end userHasRegisterAccess()
 }//end class

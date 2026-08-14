@@ -40,102 +40,99 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use RuntimeException;
 
-class QualityController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * @param string                   $appName    The application name.
-     * @param IRequest                 $request    The current request.
-     * @param QualityStatisticsService $statistics Quality statistics/query service.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly QualityStatisticsService $statistics
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class QualityController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $appName The application name.
+	 * @param IRequest $request The current request.
+	 * @param QualityStatisticsService $statistics Quality statistics/query service.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly QualityStatisticsService $statistics,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Schema-scoped quality statistics: average, per-status buckets,
-     * a 10-bucket score histogram, and total.
-     *
-     * @param string $register Register reference.
-     * @param string $schema   Schema reference.
-     *
-     * @return JSONResponse JSON response with the statistics envelope.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
-     */
-    public function stats(string $register, string $schema): JSONResponse
-    {
-        try {
-            $result = $this->statistics->statisticsFor(register: $register, schema: $schema);
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (RuntimeException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        }
+	/**
+	 * Schema-scoped quality statistics: average, per-status buckets,
+	 * a 10-bucket score histogram, and total.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return JSONResponse JSON response with the statistics envelope.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
+	 */
+	public function stats(string $register, string $schema): JSONResponse {
+		try {
+			$result = $this->statistics->statisticsFor(register: $register, schema: $schema);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
 
-        return new JSONResponse($result);
-    }//end stats()
+		return new JSONResponse($result);
+	}//end stats()
 
-    /**
-     * Lowest-quality object listing (worst-first by default). Accepts
-     * `qualityStatus` (filter), `sort` (`qualityScore`|`qualityStatus`),
-     * `order` (`asc`|`desc`), and `limit`/`offset` pagination params.
-     *
-     * @param string $register Register reference.
-     * @param string $schema   Schema reference.
-     *
-     * @return JSONResponse JSON response with the paginated listing.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
-     */
-    public function index(string $register, string $schema): JSONResponse
-    {
-        $qualityStatus = $this->request->getParam('qualityStatus');
-        if ($qualityStatus !== null) {
-            $qualityStatus = (string) $qualityStatus;
-        }
+	/**
+	 * Lowest-quality object listing (worst-first by default). Accepts
+	 * `qualityStatus` (filter), `sort` (`qualityScore`|`qualityStatus`),
+	 * `order` (`asc`|`desc`), and `limit`/`offset` pagination params.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return JSONResponse JSON response with the paginated listing.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
+	 */
+	public function index(string $register, string $schema): JSONResponse {
+		$qualityStatus = $this->request->getParam('qualityStatus');
+		if ($qualityStatus !== null) {
+			$qualityStatus = (string)$qualityStatus;
+		}
 
-        $sort  = (string) $this->request->getParam('sort', 'qualityScore');
-        $order = (string) $this->request->getParam('order', 'asc');
+		$sort = (string)$this->request->getParam('sort', 'qualityScore');
+		$order = (string)$this->request->getParam('order', 'asc');
 
-        $limit  = (int) $this->request->getParam('limit', 20);
-        $offset = (int) $this->request->getParam('offset', 0);
+		$limit = (int)$this->request->getParam('limit', 20);
+		$offset = (int)$this->request->getParam('offset', 0);
 
-        if ($limit <= 0) {
-            $limit = 20;
-        }
+		if ($limit <= 0) {
+			$limit = 20;
+		}
 
-        if ($offset < 0) {
-            $offset = 0;
-        }
+		if ($offset < 0) {
+			$offset = 0;
+		}
 
-        try {
-            $result = $this->statistics->lowestQuality(
-                register: $register,
-                schema: $schema,
-                qualityStatus: $qualityStatus,
-                sort: $sort,
-                order: $order,
-                limit: $limit,
-                offset: $offset
-            );
-        } catch (NotAuthorizedException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-        } catch (RuntimeException $e) {
-            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-        }
+		try {
+			$result = $this->statistics->lowestQuality(
+				register: $register,
+				schema: $schema,
+				qualityStatus: $qualityStatus,
+				sort: $sort,
+				order: $order,
+				limit: $limit,
+				offset: $offset
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
 
-        return new JSONResponse($result);
-    }//end index()
+		return new JSONResponse($result);
+	}//end index()
 }//end class

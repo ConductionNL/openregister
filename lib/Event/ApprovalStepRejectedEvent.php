@@ -37,75 +37,69 @@ use OCP\EventDispatcher\Event;
  * apps can subscribe to roll back state, notify the requester, or trigger
  * a `rejected` notification.
  */
-class ApprovalStepRejectedEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param ApprovalChain $chain          The approval chain.
-     * @param ApprovalStep  $step           The step that was rejected.
-     * @param string        $userId         ID of the user who rejected.
-     * @param string        $statusOnReject The configured `statusOnReject` from
-     *                                      the chain step definition.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ApprovalChain $chain,
-        private readonly ApprovalStep $step,
-        private readonly string $userId,
-        private readonly string $statusOnReject
-    ) {
-        parent::__construct();
-    }//end __construct()
+class ApprovalStepRejectedEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param ApprovalChain $chain The approval chain.
+	 * @param ApprovalStep $step The step that was rejected.
+	 * @param string $userId ID of the user who rejected.
+	 * @param string $statusOnReject The configured `statusOnReject` from
+	 *                               the chain step definition.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ApprovalChain $chain,
+		private readonly ApprovalStep $step,
+		private readonly string $userId,
+		private readonly string $statusOnReject,
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Get the approval chain.
-     *
-     * @return ApprovalChain The approval chain configuration.
-     */
-    public function getChain(): ApprovalChain
-    {
-        return $this->chain;
-    }//end getChain()
+	/**
+	 * Get the approval chain.
+	 *
+	 * @return ApprovalChain The approval chain configuration.
+	 */
+	public function getChain(): ApprovalChain {
+		return $this->chain;
+	}//end getChain()
 
-    /**
-     * Get the rejected step.
-     *
-     * @return ApprovalStep The step that was rejected.
-     */
-    public function getStep(): ApprovalStep
-    {
-        return $this->step;
-    }//end getStep()
+	/**
+	 * Get the rejected step.
+	 *
+	 * @return ApprovalStep The step that was rejected.
+	 */
+	public function getStep(): ApprovalStep {
+		return $this->step;
+	}//end getStep()
 
-    /**
-     * Get the ID of the rejecting user.
-     *
-     * @return string Nextcloud user ID.
-     */
-    public function getUserId(): string
-    {
-        return $this->userId;
-    }//end getUserId()
+	/**
+	 * Get the ID of the rejecting user.
+	 *
+	 * @return string Nextcloud user ID.
+	 */
+	public function getUserId(): string {
+		return $this->userId;
+	}//end getUserId()
 
-    /**
-     * Get the configured status the parent object should adopt on rejection.
-     *
-     * @return string Status string from the chain step's `statusOnReject`.
-     */
-    public function getStatusOnReject(): string
-    {
-        return $this->statusOnReject;
-    }//end getStatusOnReject()
+	/**
+	 * Get the configured status the parent object should adopt on rejection.
+	 *
+	 * @return string Status string from the chain step's `statusOnReject`.
+	 */
+	public function getStatusOnReject(): string {
+		return $this->statusOnReject;
+	}//end getStatusOnReject()
 
-    /**
-     * Convenience: the object UUID being rejected.
-     *
-     * @return string Object UUID (empty string if the step has none yet).
-     */
-    public function getObjectUuid(): string
-    {
-        return $this->step->getObjectUuid() ?? '';
-    }//end getObjectUuid()
+	/**
+	 * Convenience: the object UUID being rejected.
+	 *
+	 * @return string Object UUID (empty string if the step has none yet).
+	 */
+	public function getObjectUuid(): string {
+		return $this->step->getObjectUuid() ?? '';
+	}//end getObjectUuid()
 }//end class

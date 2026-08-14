@@ -6,7 +6,8 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load register data')"
 			:description="errorMessage">
 			<template #icon>
@@ -15,7 +16,8 @@
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="objects.length === 0"
+		<NcEmptyContent
+			v-else-if="objects.length === 0"
 			:name="t('openregister', 'No register objects reference this file')">
 			<template #icon>
 				<DatabaseOffOutline :size="44" />
@@ -24,10 +26,12 @@
 
 		<!-- Objects list -->
 		<ul v-else class="register-objects-tab__list">
-			<li v-for="obj in objects"
+			<li
+				v-for="obj in objects"
 				:key="obj.uuid"
 				class="register-objects-tab__item">
-				<a :href="getObjectUrl(obj)"
+				<a
+					:href="getObjectUrl(obj)"
 					class="register-objects-tab__link"
 					:aria-label="getAriaLabel(obj)">
 					<div class="register-objects-tab__title">
@@ -111,16 +115,20 @@ export default {
 			this.objects = []
 
 			try {
-				const url = generateUrl('/apps/openregister/api/files/{fileId}/objects', {
-					fileId: this.fileId,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/files/{fileId}/objects',
+					{
+						fileId: this.fileId,
+					},
+				)
 				const response = await axios.get(url)
 
 				if (response.data?.success) {
 					this.objects = response.data.data || []
 				} else {
 					this.error = true
-					this.errorMessage = response.data?.error || t('openregister', 'Unknown error')
+					this.errorMessage =
+						response.data?.error || t('openregister', 'Unknown error')
 				}
 			} catch (err) {
 				this.error = true

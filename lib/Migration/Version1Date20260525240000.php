@@ -57,124 +57,120 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Tier-2 openproject-links table — create-or-extend.
  */
-class Version1Date20260525240000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260525240000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable('openregister_openproject_links') === false) {
-            $this->createOpenProjectLinksTable(schema: $schema, output: $output);
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_openproject_links') === false) {
+			$this->createOpenProjectLinksTable(schema: $schema, output: $output);
+			$changed = true;
+		}
 
-        if ($schema->hasTable('openregister_openproject_links') === true
-            && $this->extendOpenProjectLinksTable(schema: $schema, output: $output) === true
-        ) {
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_openproject_links') === true
+			&& $this->extendOpenProjectLinksTable(schema: $schema, output: $output) === true
+		) {
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Create the openregister_openproject_links table at the Tier-2 shape.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createOpenProjectLinksTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $table = $schema->createTable('openregister_openproject_links');
+	/**
+	 * Create the openregister_openproject_links table at the Tier-2 shape.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createOpenProjectLinksTable(ISchemaWrapper $schema, IOutput $output): void {
+		$table = $schema->createTable('openregister_openproject_links');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('work_package_id', Types::INTEGER, ['notnull' => true]);
-        $table->addColumn('subject', Types::STRING, ['notnull' => true, 'length' => 512]);
-        $table->addColumn('type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-        $table->addColumn('project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-        $table->addColumn('url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
-        $table->addColumn('cached_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
-        $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('work_package_id', Types::INTEGER, ['notnull' => true]);
+		$table->addColumn('subject', Types::STRING, ['notnull' => true, 'length' => 512]);
+		$table->addColumn('type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
+		$table->addColumn('project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
+		$table->addColumn('url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
+		$table->addColumn('cached_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
+		$table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['object_uuid', 'work_package_id'], 'idx_op_object_wp');
-        $table->addIndex(['object_uuid'], 'idx_op_object');
-        $table->addIndex(['register_id'], 'idx_op_register');
-        $table->addIndex(['schema_id'], 'idx_op_schema');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['object_uuid', 'work_package_id'], 'idx_op_object_wp');
+		$table->addIndex(['object_uuid'], 'idx_op_object');
+		$table->addIndex(['register_id'], 'idx_op_register');
+		$table->addIndex(['schema_id'], 'idx_op_schema');
 
-        $output->info('Created openregister_openproject_links table (Tier-2 schema)');
-    }//end createOpenProjectLinksTable()
+		$output->info('Created openregister_openproject_links table (Tier-2 schema)');
+	}//end createOpenProjectLinksTable()
 
-    /**
-     * Add any missing Tier-2 columns to an existing openproject_links table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return bool True when a column was added.
-     */
-    private function extendOpenProjectLinksTable(ISchemaWrapper $schema, IOutput $output): bool
-    {
-        $table = $schema->getTable('openregister_openproject_links');
+	/**
+	 * Add any missing Tier-2 columns to an existing openproject_links table.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return bool True when a column was added.
+	 */
+	private function extendOpenProjectLinksTable(ISchemaWrapper $schema, IOutput $output): bool {
+		$table = $schema->getTable('openregister_openproject_links');
 
-        // [column name, type, options, index name or null]. Driven from a spec
-        // list so the method carries one branch per concern rather than one per
-        // column (eight independent ifs put NPath complexity at 256).
-        $newColumns = [
-            ['schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null], 'idx_op_schema'],
-            ['type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
-            ['status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
-            ['priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
-            ['assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
-            ['project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
-            ['url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null], null],
-            ['cached_at', Types::DATETIME, ['notnull' => false, 'default' => null], null],
-        ];
+		// [column name, type, options, index name or null]. Driven from a spec
+		// list so the method carries one branch per concern rather than one per
+		// column (eight independent ifs put NPath complexity at 256).
+		$newColumns = [
+			['schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null], 'idx_op_schema'],
+			['type', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+			['status', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+			['priority', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null], null],
+			['assignee', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
+			['project', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null], null],
+			['url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null], null],
+			['cached_at', Types::DATETIME, ['notnull' => false, 'default' => null], null],
+		];
 
-        $changed = false;
+		$changed = false;
 
-        foreach ($newColumns as [$columnName, $columnType, $columnOptions, $indexName]) {
-            if ($table->hasColumn($columnName) === true) {
-                continue;
-            }
+		foreach ($newColumns as [$columnName, $columnType, $columnOptions, $indexName]) {
+			if ($table->hasColumn($columnName) === true) {
+				continue;
+			}
 
-            $table->addColumn($columnName, $columnType, $columnOptions);
+			$table->addColumn($columnName, $columnType, $columnOptions);
 
-            if ($indexName !== null) {
-                $table->addIndex([$columnName], $indexName);
-            }
+			if ($indexName !== null) {
+				$table->addIndex([$columnName], $indexName);
+			}
 
-            $output->info('Added '.$columnName.' column to openregister_openproject_links');
-            $changed = true;
-        }
+			$output->info('Added ' . $columnName . ' column to openregister_openproject_links');
+			$changed = true;
+		}
 
-        return $changed;
-    }//end extendOpenProjectLinksTable()
+		return $changed;
+	}//end extendOpenProjectLinksTable()
 }//end class

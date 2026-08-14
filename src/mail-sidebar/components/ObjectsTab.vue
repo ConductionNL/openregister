@@ -7,7 +7,12 @@
 		<NcEmptyContent
 			v-else-if="objects.length === 0"
 			:name="t('openregister', 'No connections yet')"
-			:description="t('openregister', 'Connect this email to a case, lead, invoice and more.')">
+			:description="
+				t(
+					'openregister',
+					'Connect this email to a case, lead, invoice and more.',
+				)
+			">
 			<template #icon>
 				<LinkVariant :size="48" />
 			</template>
@@ -43,7 +48,11 @@
 						</div>
 						<NcButton
 							variant="tertiary"
-							:aria-label="t('openregister', 'Remove connection to {name}', { name: displayName(obj) })"
+							:aria-label="
+								t('openregister', 'Remove connection to {name}', {
+									name: displayName(obj),
+								})
+							"
 							@click="promptUnlink(obj)">
 							<template #icon>
 								<Close :size="20" />
@@ -51,12 +60,17 @@
 						</NcButton>
 					</div>
 					<div class="or-mail-object-card__meta">
-						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
+						<span class="or-mail-object-card__schema">{{
+							obj.schema
+						}}</span>
 					</div>
 				</div>
 			</div>
 			<div class="or-tab-objects__actions">
-				<NcButton variant="secondary" wide @click="$emit('switch-tab', 'actions')">
+				<NcButton
+					variant="secondary"
+					wide
+					@click="$emit('switch-tab', 'actions')">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -145,7 +159,9 @@ export default {
 			const raw = obj.name || obj.uuid || ''
 			if (typeof raw === 'string' && raw.startsWith('{')) {
 				try {
-					const values = Object.values(JSON.parse(raw)).filter((v) => typeof v === 'string')
+					const values = Object.values(JSON.parse(raw)).filter(
+						(v) => typeof v === 'string',
+					)
 					if (values.length > 0) return values[0]
 				} catch (e) {
 					// not JSON — fall through to the raw value
@@ -165,11 +181,14 @@ export default {
 			if (obj.url) {
 				return obj.url
 			}
-			return generateUrl('/apps/openregister/registers/{register}/{schemaId}/{uuid}', {
-				register: obj.register,
-				schemaId: obj.schemaId,
-				uuid: obj.uuid,
-			})
+			return generateUrl(
+				'/apps/openregister/registers/{register}/{schemaId}/{uuid}',
+				{
+					register: obj.register,
+					schemaId: obj.schemaId,
+					uuid: obj.uuid,
+				},
+			)
 		},
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -224,9 +243,12 @@ export default {
 			}
 			this.removing = true
 			try {
-				const base = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
-					uuid: obj.uuid,
-				})
+				const base = generateUrl(
+					'/apps/openregister/api/objects/{uuid}/_linked/mail',
+					{
+						uuid: obj.uuid,
+					},
+				)
 				const url = `${base}/${this.accountId}/${this.messageId}`
 				await axios.delete(url)
 				showSuccess(t('openregister', 'Connection removed'))
@@ -259,14 +281,24 @@ export default {
 			const schema = obj.schemaId || obj.schema
 			const objectId = obj.id || obj.uuid
 			if (!register || !schema || !objectId) {
-				showError(t('openregister', 'Object metadata incomplete for file upload'))
+				showError(
+					t('openregister', 'Object metadata incomplete for file upload'),
+				)
 				return
 			}
 			try {
 				const attachment = JSON.parse(raw)
 				this.uploadingObjectUuid = obj.uuid
-				await this.uploadAttachmentToObject(attachment, { register, schema, objectId })
-				showSuccess(t('openregister', 'Attachment added to {name}', { name: this.displayName(obj) }))
+				await this.uploadAttachmentToObject(attachment, {
+					register,
+					schema,
+					objectId,
+				})
+				showSuccess(
+					t('openregister', 'Attachment added to {name}', {
+						name: this.displayName(obj),
+					}),
+				)
 			} catch (err) {
 				showError(t('openregister', 'Failed to add attachment'))
 				console.error('[ObjectsTab] Attachment drop upload failed:', err)
@@ -278,20 +310,30 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {
-			const response = await fetch(attachment.downloadUrl, { credentials: 'same-origin' })
+			const response = await fetch(attachment.downloadUrl, {
+				credentials: 'same-origin',
+			})
 			if (!response.ok) {
-				throw new Error(`Attachment download failed with status ${response.status}`)
+				throw new Error(
+					`Attachment download failed with status ${response.status}`,
+				)
 			}
 			const blob = await response.blob()
-			const fileName = attachment.fileName || `attachment-${attachment.attachmentId}`
-			const file = new File([blob], fileName, { type: attachment.mime || blob.type || 'application/octet-stream' })
+			const fileName =
+				attachment.fileName || `attachment-${attachment.attachmentId}`
+			const file = new File([blob], fileName, {
+				type: attachment.mime || blob.type || 'application/octet-stream',
+			})
 			const formData = new FormData()
 			formData.append('files[]', file)
-			const uploadUrl = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart', {
-				register: target.register,
-				schema: target.schema,
-				id: target.objectId,
-			})
+			const uploadUrl = generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart',
+				{
+					register: target.register,
+					schema: target.schema,
+					id: target.objectId,
+				},
+			)
 			await axios.post(uploadUrl, formData, {
 				headers: { 'Content-Type': 'multipart/form-data' },
 				timeout: 20000,

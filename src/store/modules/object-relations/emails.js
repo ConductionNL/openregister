@@ -46,11 +46,15 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/emails' + suffix, {
-				register,
-				schema,
-				id,
-			})
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails'
+					+ suffix,
+				{
+					register,
+					schema,
+					id,
+				},
+			)
 		},
 
 		/**
@@ -80,7 +84,10 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 					return []
 				}
 
-				this.errors = { ...this.errors, [k]: err.response?.data?.error || err.message || '' }
+				this.errors = {
+					...this.errors,
+					[k]: err.response?.data?.error || err.message || '',
+				}
 				throw err
 			} finally {
 				this.loading = { ...this.loading, [k]: false }
@@ -98,9 +105,11 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async unlink(register, schema, id, emailId) {
-			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(emailId)))
+			await axios.delete(
+				this._url(register, schema, id, '/' + encodeURIComponent(emailId)),
+			)
 			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter(e => e.id !== emailId)
+			const next = (this.byObject[k] || []).filter((e) => e.id !== emailId)
 			this.byObject = { ...this.byObject, [k]: next }
 			return next
 		},

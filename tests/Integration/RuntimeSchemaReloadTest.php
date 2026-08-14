@@ -82,406 +82,392 @@ use Symfony\Component\Uid\Uuid;
  * @group integration
  * @group runtime-schema-api
  */
-class RuntimeSchemaReloadTest extends TestCase
-{
+class RuntimeSchemaReloadTest extends TestCase {
 
-    /**
-     * Real Schemas controller built from the DI container.
-     *
-     * @var SchemasController
-     */
-    private SchemasController $schemasController;
+	/**
+	 * Real Schemas controller built from the DI container.
+	 *
+	 * @var SchemasController
+	 */
+	private SchemasController $schemasController;
 
-    /**
-     * Real SchemaMapper from DI (writes hit the DB).
-     *
-     * @var SchemaMapper
-     */
-    private SchemaMapper $schemaMapper;
+	/**
+	 * Real SchemaMapper from DI (writes hit the DB).
+	 *
+	 * @var SchemaMapper
+	 */
+	private SchemaMapper $schemaMapper;
 
-    /**
-     * Real RegisterMapper from DI.
-     *
-     * @var RegisterMapper
-     */
-    private RegisterMapper $registerMapper;
+	/**
+	 * Real RegisterMapper from DI.
+	 *
+	 * @var RegisterMapper
+	 */
+	private RegisterMapper $registerMapper;
 
-    /**
-     * Real MagicMapper from DI for object writes and cleanup.
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $objectMapper;
+	/**
+	 * Real MagicMapper from DI for object writes and cleanup.
+	 *
+	 * @var MagicMapper
+	 */
+	private MagicMapper $objectMapper;
 
-    /**
-     * Real ObjectService for slug-aware searches.
-     *
-     * @var ObjectService
-     */
-    private ObjectService $objectService;
+	/**
+	 * Real ObjectService for slug-aware searches.
+	 *
+	 * @var ObjectService
+	 */
+	private ObjectService $objectService;
 
-    /**
-     * Real cache handler — the unit under test for invalidation behaviour.
-     *
-     * @var SchemaCacheHandler
-     */
-    private SchemaCacheHandler $schemaCacheHandler;
+	/**
+	 * Real cache handler — the unit under test for invalidation behaviour.
+	 *
+	 * @var SchemaCacheHandler
+	 */
+	private SchemaCacheHandler $schemaCacheHandler;
 
-    /**
-     * Mock request — only used to inject controller params.
-     *
-     * @var IRequest&MockObject
-     */
-    private IRequest $request;
+	/**
+	 * Mock request — only used to inject controller params.
+	 *
+	 * @var IRequest&MockObject
+	 */
+	private IRequest $request;
 
-    /**
-     * Schemas/registers created during a test for tearDown cleanup.
-     *
-     * @var int[]
-     */
-    private array $createdSchemaIds = [];
+	/**
+	 * Schemas/registers created during a test for tearDown cleanup.
+	 *
+	 * @var int[]
+	 */
+	private array $createdSchemaIds = [];
 
-    /**
-     * @var int[]
-     */
-    private array $createdRegisterIds = [];
+	/**
+	 * @var int[]
+	 */
+	private array $createdRegisterIds = [];
 
-    /**
-     * @var string[]
-     */
-    private array $createdObjectUuids = [];
+	/**
+	 * @var string[]
+	 */
+	private array $createdObjectUuids = [];
 
+	/**
+	 * Wire up real services or skip the suite if Nextcloud is not loaded.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-    /**
-     * Wire up real services or skip the suite if Nextcloud is not loaded.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+		if (class_exists('\\OC') === false || isset(\OC::$server) === false) {
+			$this->markTestSkipped(
+				'RuntimeSchemaReloadTest requires a bootstrapped Nextcloud DI container '
+				. '(run via `composer test:api` inside the Docker container).'
+			);
+		}
 
-        if (class_exists('\\OC') === false || isset(\OC::$server) === false) {
-            $this->markTestSkipped(
-                'RuntimeSchemaReloadTest requires a bootstrapped Nextcloud DI container '
-                .'(run via `composer test:api` inside the Docker container).'
-            );
-        }
+		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
+		$this->registerMapper = \OC::$server->get(RegisterMapper::class);
+		$this->objectMapper = \OC::$server->get(MagicMapper::class);
+		$this->objectService = \OC::$server->get(ObjectService::class);
+		$this->schemaCacheHandler = \OC::$server->get(SchemaCacheHandler::class);
 
-        $this->schemaMapper       = \OC::$server->get(SchemaMapper::class);
-        $this->registerMapper     = \OC::$server->get(RegisterMapper::class);
-        $this->objectMapper       = \OC::$server->get(MagicMapper::class);
-        $this->objectService      = \OC::$server->get(ObjectService::class);
-        $this->schemaCacheHandler = \OC::$server->get(SchemaCacheHandler::class);
+		$this->request = $this->createMock(IRequest::class);
 
-        $this->request = $this->createMock(IRequest::class);
+		$this->schemasController = new SchemasController(
+			'openregister',
+			$this->request,
+			\OC::$server->get(IAppConfig::class),
+			$this->schemaMapper,
+			$this->objectMapper,
+			\OC::$server->get(UploadService::class),
+			\OC::$server->get(AuditTrailMapper::class),
+			\OC::$server->get(OrganisationService::class),
+			$this->schemaCacheHandler,
+			\OC::$server->get(FacetCacheHandler::class),
+			\OC::$server->get(SchemaService::class),
+			\OC::$server->get(LoggerInterface::class)
+		);
 
-        $this->schemasController = new SchemasController(
-            'openregister',
-            $this->request,
-            \OC::$server->get(IAppConfig::class),
-            $this->schemaMapper,
-            $this->objectMapper,
-            \OC::$server->get(UploadService::class),
-            \OC::$server->get(AuditTrailMapper::class),
-            \OC::$server->get(OrganisationService::class),
-            $this->schemaCacheHandler,
-            \OC::$server->get(FacetCacheHandler::class),
-            \OC::$server->get(SchemaService::class),
-            \OC::$server->get(LoggerInterface::class)
-        );
+	}//end setUp()
 
-    }//end setUp()
+	/**
+	 * Best-effort cleanup of every fixture created by a test method.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		$db = null;
+		if (class_exists('\\OC') === true && isset(\OC::$server) === true) {
+			try {
+				$db = \OC::$server->get(IDBConnection::class);
+			} catch (\Throwable $e) {
+				$db = null;
+			}
+		}
 
+		// Object cleanup via direct DB so an orphaned-row guard never blocks teardown.
+		if ($db !== null) {
+			foreach ($this->createdObjectUuids as $uuid) {
+				try {
+					$qb = $db->getQueryBuilder();
+					$qb->delete('openregister_objects')
+						->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
+					$qb->executeStatement();
+				} catch (\Throwable $e) {
+					// Cleanup is best-effort.
+				}
+			}
+		}
 
-    /**
-     * Best-effort cleanup of every fixture created by a test method.
-     *
-     * @return void
-     */
-    protected function tearDown(): void
-    {
-        $db = null;
-        if (class_exists('\\OC') === true && isset(\OC::$server) === true) {
-            try {
-                $db = \OC::$server->get(IDBConnection::class);
-            } catch (\Throwable $e) {
-                $db = null;
-            }
-        }
+		foreach ($this->createdSchemaIds as $id) {
+			try {
+				$entity = $this->schemaMapper->find($id);
+				$this->schemaMapper->delete($entity);
+			} catch (\Throwable $e) {
+				// Schema may already have been deleted by the test itself.
+			}
+		}
 
-        // Object cleanup via direct DB so an orphaned-row guard never blocks teardown.
-        if ($db !== null) {
-            foreach ($this->createdObjectUuids as $uuid) {
-                try {
-                    $qb = $db->getQueryBuilder();
-                    $qb->delete('openregister_objects')
-                        ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-                    $qb->executeStatement();
-                } catch (\Throwable $e) {
-                    // Cleanup is best-effort.
-                }
-            }
-        }
+		foreach ($this->createdRegisterIds as $id) {
+			try {
+				$entity = $this->registerMapper->find($id);
+				$this->registerMapper->delete($entity);
+			} catch (\Throwable $e) {
+				// Register may already have been deleted by the test itself.
+			}
+		}
 
-        foreach ($this->createdSchemaIds as $id) {
-            try {
-                $entity = $this->schemaMapper->find($id);
-                $this->schemaMapper->delete($entity);
-            } catch (\Throwable $e) {
-                // Schema may already have been deleted by the test itself.
-            }
-        }
+		parent::tearDown();
 
-        foreach ($this->createdRegisterIds as $id) {
-            try {
-                $entity = $this->registerMapper->find($id);
-                $this->registerMapper->delete($entity);
-            } catch (\Throwable $e) {
-                // Register may already have been deleted by the test itself.
-            }
-        }
+	}//end tearDown()
 
-        parent::tearDown();
+	/**
+	 * REQ + SCENARIO: "POST /api/schemas creates a schema and invalidates the cache
+	 * so the immediate GET on the same worker sees the new entity".
+	 *
+	 * Asserts:
+	 *  - POST returns 201 with a numeric id
+	 *  - GET on that id returns the same canonical entity in the same PHP worker
+	 *  - The cache invalidate was a no-op on a cold cache but did not error
+	 *
+	 * @return void
+	 */
+	public function testPostSchemaCachesAreInvalidatedAndImmediateGetSeesNewSchema(): void {
+		$title = 'phpunit-rt-schema-' . uniqid();
+		$slug = 'phpunit-rt-' . uniqid();
 
-    }//end tearDown()
+		$payload = [
+			'title' => $title,
+			'description' => 'Created by RuntimeSchemaReloadTest',
+			'slug' => $slug,
+			'version' => '0.0.1',
+			'properties' => [
+				'name' => ['type' => 'string', 'title' => 'Name'],
+			],
+			// The lifecycle block is the canonical engine-reload trigger;
+			// we persist it to prove the round-trip preserves extension keys.
+			'x-openregister-lifecycle' => [
+				'states' => ['draft', 'published'],
+				'transitions' => [],
+			],
+		];
 
+		$this->request->method('getParams')->willReturn($payload);
 
-    /**
-     * REQ + SCENARIO: "POST /api/schemas creates a schema and invalidates the cache
-     * so the immediate GET on the same worker sees the new entity".
-     *
-     * Asserts:
-     *  - POST returns 201 with a numeric id
-     *  - GET on that id returns the same canonical entity in the same PHP worker
-     *  - The cache invalidate was a no-op on a cold cache but did not error
-     *
-     * @return void
-     */
-    public function testPostSchemaCachesAreInvalidatedAndImmediateGetSeesNewSchema(): void
-    {
-        $title = 'phpunit-rt-schema-'.uniqid();
-        $slug  = 'phpunit-rt-'.uniqid();
+		$response = $this->schemasController->create();
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(201, $response->getStatus(), 'POST /api/schemas MUST return 201');
 
-        $payload = [
-            'title'                    => $title,
-            'description'              => 'Created by RuntimeSchemaReloadTest',
-            'slug'                     => $slug,
-            'version'                  => '0.0.1',
-            'properties'               => [
-                'name' => ['type' => 'string', 'title' => 'Name'],
-            ],
-            // The lifecycle block is the canonical engine-reload trigger;
-            // we persist it to prove the round-trip preserves extension keys.
-            'x-openregister-lifecycle' => [
-                'states'      => ['draft', 'published'],
-                'transitions' => [],
-            ],
-        ];
+		$data = $response->getData();
+		$createdId = $data instanceof Schema ? $data->getId() : ($data['id'] ?? null);
+		$this->assertIsInt($createdId, 'POST response MUST carry a numeric schema id');
+		$this->createdSchemaIds[] = $createdId;
 
-        $this->request->method('getParams')->willReturn($payload);
+		// Same-worker GET MUST observe the new schema (cache invalidation proof).
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParam')->willReturn(null);
+		$reflection = new \ReflectionClass($this->schemasController);
+		$prop = $reflection->getProperty('request');
+		$prop->setAccessible(true);
+		$prop->setValue($this->schemasController, $this->request);
 
-        $response = $this->schemasController->create();
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(201, $response->getStatus(), 'POST /api/schemas MUST return 201');
+		$getResponse = $this->schemasController->show($createdId);
+		$this->assertSame(200, $getResponse->getStatus(), 'Immediate GET MUST succeed');
+		$getData = $getResponse->getData();
+		$this->assertSame($title, $getData['title'] ?? null);
+		$this->assertSame($slug, $getData['slug'] ?? null);
 
-        $data = $response->getData();
-        $createdId = $data instanceof Schema ? $data->getId() : ($data['id'] ?? null);
-        $this->assertIsInt($createdId, 'POST response MUST carry a numeric schema id');
-        $this->createdSchemaIds[] = $createdId;
+	}//end testPostSchemaCachesAreInvalidatedAndImmediateGetSeesNewSchema()
 
-        // Same-worker GET MUST observe the new schema (cache invalidation proof).
-        $this->request = $this->createMock(IRequest::class);
-        $this->request->method('getParam')->willReturn(null);
-        $reflection = new \ReflectionClass($this->schemasController);
-        $prop       = $reflection->getProperty('request');
-        $prop->setAccessible(true);
-        $prop->setValue($this->schemasController, $this->request);
+	/**
+	 * REQ + SCENARIO: "PUT /api/schemas/{id} updates a schema and re-invalidates
+	 * the cache so a subsequent GET sees the new description".
+	 *
+	 * @return void
+	 */
+	public function testPutSchemaInvalidatesCacheOnUpdate(): void {
+		// Seed: create a schema directly via the mapper.
+		$schema = new Schema();
+		$schema->setTitle('phpunit-put-' . uniqid());
+		$schema->setSlug('phpunit-put-' . uniqid());
+		$schema->setUuid(Uuid::v4()->toRfc4122());
+		$schema->setDescription('initial-description');
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$inserted = $this->schemaMapper->insert($schema);
+		$this->createdSchemaIds[] = $inserted->getId();
 
-        $getResponse = $this->schemasController->show($createdId);
-        $this->assertSame(200, $getResponse->getStatus(), 'Immediate GET MUST succeed');
-        $getData = $getResponse->getData();
-        $this->assertSame($title, $getData['title'] ?? null);
-        $this->assertSame($slug, $getData['slug'] ?? null);
+		// Warm the cache by reading once.
+		$this->schemaMapper->find($inserted->getId());
 
-    }//end testPostSchemaCachesAreInvalidatedAndImmediateGetSeesNewSchema()
+		// Now PUT a new description via the controller.
+		$this->request->method('getParams')->willReturn([
+			'description' => 'updated-by-runtime-schema-reload-test',
+		]);
 
+		$response = $this->schemasController->update($inserted->getId());
+		$this->assertSame(
+			200,
+			$response->getStatus(),
+			'PUT MUST return 200; got ' . $response->getStatus()
+			. ' body=' . json_encode($response->getData())
+		);
 
-    /**
-     * REQ + SCENARIO: "PUT /api/schemas/{id} updates a schema and re-invalidates
-     * the cache so a subsequent GET sees the new description".
-     *
-     * @return void
-     */
-    public function testPutSchemaInvalidatesCacheOnUpdate(): void
-    {
-        // Seed: create a schema directly via the mapper.
-        $schema = new Schema();
-        $schema->setTitle('phpunit-put-'.uniqid());
-        $schema->setSlug('phpunit-put-'.uniqid());
-        $schema->setUuid(Uuid::v4()->toRfc4122());
-        $schema->setDescription('initial-description');
-        $schema->setProperties(['name' => ['type' => 'string']]);
-        $inserted = $this->schemaMapper->insert($schema);
-        $this->createdSchemaIds[] = $inserted->getId();
+		// Read fresh — the cache invalidate on update MUST surface the new
+		// description in the same worker.
+		$fresh = $this->schemaMapper->find($inserted->getId());
+		$this->assertSame(
+			'updated-by-runtime-schema-reload-test',
+			$fresh->getDescription(),
+			'In-worker re-read MUST see the new description (cache invalidated)'
+		);
 
-        // Warm the cache by reading once.
-        $this->schemaMapper->find($inserted->getId());
+	}//end testPutSchemaInvalidatesCacheOnUpdate()
 
-        // Now PUT a new description via the controller.
-        $this->request->method('getParams')->willReturn([
-            'description' => 'updated-by-runtime-schema-reload-test',
-        ]);
+	/**
+	 * REQ + SCENARIO: "DELETE /api/schemas/{id} without ?force=true MUST return
+	 * 409 when the schema has attached objects; with ?force=true MUST return 200".
+	 *
+	 * Full chain: create schema → create register pointing at it → POST an
+	 * object via ObjectService → DELETE (no force) returns 409 → DELETE
+	 * (force=true) returns 200.
+	 *
+	 * @return void
+	 */
+	public function testDeleteSchemaForceFlagGuardsAgainstOrphans(): void {
+		// 1. Schema.
+		$schema = new Schema();
+		$schema->setTitle('phpunit-del-' . uniqid());
+		$schema->setSlug('phpunit-del-' . uniqid());
+		$schema->setUuid(Uuid::v4()->toRfc4122());
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$schema = $this->schemaMapper->insert($schema);
+		$this->createdSchemaIds[] = $schema->getId();
 
-        $response = $this->schemasController->update($inserted->getId());
-        $this->assertSame(
-            200,
-            $response->getStatus(),
-            'PUT MUST return 200; got '.$response->getStatus()
-            .' body='.json_encode($response->getData())
-        );
+		// 2. Register that references the schema.
+		$register = new Register();
+		$register->setTitle('phpunit-del-reg-' . uniqid());
+		$register->setSlug('phpunit-del-reg-' . uniqid());
+		$register->setUuid(Uuid::v4()->toRfc4122());
+		$register->setSchemas([$schema->getId()]);
+		$register = $this->registerMapper->insert($register);
+		$this->createdRegisterIds[] = $register->getId();
 
-        // Read fresh — the cache invalidate on update MUST surface the new
-        // description in the same worker.
-        $fresh = $this->schemaMapper->find($inserted->getId());
-        $this->assertSame(
-            'updated-by-runtime-schema-reload-test',
-            $fresh->getDescription(),
-            'In-worker re-read MUST see the new description (cache invalidated)'
-        );
+		// 3. Persist an object so the DELETE-safety guard has something to trip on.
+		try {
+			$created = $this->objectService->saveObject(
+				['name' => 'guard-fixture'],
+				$register,
+				$schema
+			);
+			if (is_array($created) === true) {
+				$uuid = $created['uuid'] ?? null;
+			} else {
+				$uuid = method_exists($created, 'getUuid') ? $created->getUuid() : null;
+			}
+			if (is_string($uuid) === true) {
+				$this->createdObjectUuids[] = $uuid;
+			}
+		} catch (\Throwable $e) {
+			$this->markTestSkipped(
+				'Object persistence not available in this environment: ' . $e->getMessage()
+			);
+		}
 
-    }//end testPutSchemaInvalidatesCacheOnUpdate()
+		// 4. DELETE without force → 409.
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) {
+				return $key === 'force' ? null : $default;
+			}
+		);
+		$reflection = new \ReflectionClass($this->schemasController);
+		$prop = $reflection->getProperty('request');
+		$prop->setAccessible(true);
+		$prop->setValue($this->schemasController, $this->request);
 
+		$rejected = $this->schemasController->destroy($schema->getId());
+		$this->assertSame(409, $rejected->getStatus(), 'DELETE without ?force MUST return 409');
+		$rejBody = $rejected->getData();
+		$this->assertSame('schema-has-objects', $rejBody['error'] ?? null);
+		$this->assertGreaterThan(0, $rejBody['objectCount'] ?? 0);
 
-    /**
-     * REQ + SCENARIO: "DELETE /api/schemas/{id} without ?force=true MUST return
-     * 409 when the schema has attached objects; with ?force=true MUST return 200".
-     *
-     * Full chain: create schema → create register pointing at it → POST an
-     * object via ObjectService → DELETE (no force) returns 409 → DELETE
-     * (force=true) returns 200.
-     *
-     * @return void
-     */
-    public function testDeleteSchemaForceFlagGuardsAgainstOrphans(): void
-    {
-        // 1. Schema.
-        $schema = new Schema();
-        $schema->setTitle('phpunit-del-'.uniqid());
-        $schema->setSlug('phpunit-del-'.uniqid());
-        $schema->setUuid(Uuid::v4()->toRfc4122());
-        $schema->setProperties(['name' => ['type' => 'string']]);
-        $schema = $this->schemaMapper->insert($schema);
-        $this->createdSchemaIds[] = $schema->getId();
+		// 5. Schema MUST still exist (the 409 must not silently delete).
+		$stillThere = $this->schemaMapper->find($schema->getId());
+		$this->assertSame($schema->getId(), $stillThere->getId());
 
-        // 2. Register that references the schema.
-        $register = new Register();
-        $register->setTitle('phpunit-del-reg-'.uniqid());
-        $register->setSlug('phpunit-del-reg-'.uniqid());
-        $register->setUuid(Uuid::v4()->toRfc4122());
-        $register->setSchemas([$schema->getId()]);
-        $register = $this->registerMapper->insert($register);
-        $this->createdRegisterIds[] = $register->getId();
+		// 6. DELETE with ?force=true → 200, cache invalidated, schema gone.
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) {
+				return $key === 'force' ? 'true' : $default;
+			}
+		);
+		$prop->setValue($this->schemasController, $this->request);
 
-        // 3. Persist an object so the DELETE-safety guard has something to trip on.
-        try {
-            $created = $this->objectService->saveObject(
-                ['name' => 'guard-fixture'],
-                $register,
-                $schema
-            );
-            if (is_array($created) === true) {
-                $uuid = $created['uuid'] ?? null;
-            } else {
-                $uuid = method_exists($created, 'getUuid') ? $created->getUuid() : null;
-            }
-            if (is_string($uuid) === true) {
-                $this->createdObjectUuids[] = $uuid;
-            }
-        } catch (\Throwable $e) {
-            $this->markTestSkipped(
-                'Object persistence not available in this environment: '.$e->getMessage()
-            );
-        }
+		$accepted = $this->schemasController->destroy($schema->getId());
+		$this->assertSame(200, $accepted->getStatus(), 'DELETE with ?force=true MUST return 200');
 
-        // 4. DELETE without force → 409.
-        $this->request = $this->createMock(IRequest::class);
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, mixed $default = null) {
-                return $key === 'force' ? null : $default;
-            }
-        );
-        $reflection = new \ReflectionClass($this->schemasController);
-        $prop       = $reflection->getProperty('request');
-        $prop->setAccessible(true);
-        $prop->setValue($this->schemasController, $this->request);
+		// 7. Schema MUST be gone from the DB (cache invalidate ensures the next read is fresh).
+		$this->expectException(DoesNotExistException::class);
+		$this->schemaMapper->find($schema->getId());
 
-        $rejected = $this->schemasController->destroy($schema->getId());
-        $this->assertSame(409, $rejected->getStatus(), 'DELETE without ?force MUST return 409');
-        $rejBody = $rejected->getData();
-        $this->assertSame('schema-has-objects', $rejBody['error'] ?? null);
-        $this->assertGreaterThan(0, $rejBody['objectCount'] ?? 0);
+	}//end testDeleteSchemaForceFlagGuardsAgainstOrphans()
 
-        // 5. Schema MUST still exist (the 409 must not silently delete).
-        $stillThere = $this->schemaMapper->find($schema->getId());
-        $this->assertSame($schema->getId(), $stillThere->getId());
+	/**
+	 * REQ + SCENARIO: "ObjectService::searchObjectsBySlug resolves a slug-pair
+	 * to a numeric search in the same worker — proves the slug helper composes
+	 * with the cache invalidation chain (i.e. a freshly-created register/schema
+	 * is reachable by slug)".
+	 *
+	 * @return void
+	 */
+	public function testSearchObjectsBySlugSeesFreshSchemaInSameWorker(): void {
+		$schema = new Schema();
+		$schema->setTitle('phpunit-sbs-' . uniqid());
+		$schema->setSlug('phpunit-sbs-schema-' . uniqid());
+		$schema->setUuid(Uuid::v4()->toRfc4122());
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$schema = $this->schemaMapper->insert($schema);
+		$this->createdSchemaIds[] = $schema->getId();
 
-        // 6. DELETE with ?force=true → 200, cache invalidated, schema gone.
-        $this->request = $this->createMock(IRequest::class);
-        $this->request->method('getParam')->willReturnCallback(
-            static function (string $key, mixed $default = null) {
-                return $key === 'force' ? 'true' : $default;
-            }
-        );
-        $prop->setValue($this->schemasController, $this->request);
+		$register = new Register();
+		$register->setTitle('phpunit-sbs-reg-' . uniqid());
+		$register->setSlug('phpunit-sbs-reg-' . uniqid());
+		$register->setUuid(Uuid::v4()->toRfc4122());
+		$register->setSchemas([$schema->getId()]);
+		$register = $this->registerMapper->insert($register);
+		$this->createdRegisterIds[] = $register->getId();
 
-        $accepted = $this->schemasController->destroy($schema->getId());
-        $this->assertSame(200, $accepted->getStatus(), 'DELETE with ?force=true MUST return 200');
+		// searchObjectsBySlug MUST resolve and return an array (empty is fine —
+		// we just need to prove the slug path doesn't throw DoesNotExistException
+		// on a freshly-created pair, which would expose a missed invalidation).
+		$result = $this->objectService->searchObjectsBySlug(
+			$register->getSlug(),
+			$schema->getSlug(),
+			[]
+		);
+		$this->assertIsArray($result);
 
-        // 7. Schema MUST be gone from the DB (cache invalidate ensures the next read is fresh).
-        $this->expectException(DoesNotExistException::class);
-        $this->schemaMapper->find($schema->getId());
-
-    }//end testDeleteSchemaForceFlagGuardsAgainstOrphans()
-
-
-    /**
-     * REQ + SCENARIO: "ObjectService::searchObjectsBySlug resolves a slug-pair
-     * to a numeric search in the same worker — proves the slug helper composes
-     * with the cache invalidation chain (i.e. a freshly-created register/schema
-     * is reachable by slug)".
-     *
-     * @return void
-     */
-    public function testSearchObjectsBySlugSeesFreshSchemaInSameWorker(): void
-    {
-        $schema = new Schema();
-        $schema->setTitle('phpunit-sbs-'.uniqid());
-        $schema->setSlug('phpunit-sbs-schema-'.uniqid());
-        $schema->setUuid(Uuid::v4()->toRfc4122());
-        $schema->setProperties(['name' => ['type' => 'string']]);
-        $schema = $this->schemaMapper->insert($schema);
-        $this->createdSchemaIds[] = $schema->getId();
-
-        $register = new Register();
-        $register->setTitle('phpunit-sbs-reg-'.uniqid());
-        $register->setSlug('phpunit-sbs-reg-'.uniqid());
-        $register->setUuid(Uuid::v4()->toRfc4122());
-        $register->setSchemas([$schema->getId()]);
-        $register = $this->registerMapper->insert($register);
-        $this->createdRegisterIds[] = $register->getId();
-
-        // searchObjectsBySlug MUST resolve and return an array (empty is fine —
-        // we just need to prove the slug path doesn't throw DoesNotExistException
-        // on a freshly-created pair, which would expose a missed invalidation).
-        $result = $this->objectService->searchObjectsBySlug(
-            $register->getSlug(),
-            $schema->getSlug(),
-            []
-        );
-        $this->assertIsArray($result);
-
-    }//end testSearchObjectsBySlugSeesFreshSchemaInSameWorker()
-
+	}//end testSearchObjectsBySlugSeesFreshSchemaInSameWorker()
 
 }//end class

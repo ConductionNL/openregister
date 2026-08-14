@@ -34,113 +34,104 @@ use Exception;
  *
  * @phpstan-consistent-constructor
  */
-class PropertyNotFoundException extends Exception
-{
+class PropertyNotFoundException extends Exception {
 
-    /**
-     * Consumer app id (e.g. `openconnector`).
-     *
-     * @var string
-     */
-    private string $appId;
+	/**
+	 * Consumer app id (e.g. `openconnector`).
+	 *
+	 * @var string
+	 */
+	private string $appId;
 
-    /**
-     * Config key the resolver read.
-     *
-     * @var string
-     */
-    private string $configKey;
+	/**
+	 * Config key the resolver read.
+	 *
+	 * @var string
+	 */
+	private string $configKey;
 
-    /**
-     * Slug/UUID/name that failed to resolve to a property.
-     *
-     * @var string
-     */
-    private string $resolvedValue;
+	/**
+	 * Slug/UUID/name that failed to resolve to a property.
+	 *
+	 * @var string
+	 */
+	private string $resolvedValue;
 
-    /**
-     * Slug/UUID of the schema the property lookup targeted.
-     *
-     * @var string
-     */
-    private string $schemaIdentifier;
+	/**
+	 * Slug/UUID of the schema the property lookup targeted.
+	 *
+	 * @var string
+	 */
+	private string $schemaIdentifier;
 
-    /**
-     * Construct the not-found exception with diagnostic context.
-     *
-     * @param string         $appId            Consumer app id.
-     * @param string         $configKey        Config key that resolved.
-     * @param string         $resolvedValue    Slug/UUID/name the lookup attempted.
-     * @param string         $schemaIdentifier Schema slug/UUID the lookup targeted.
-     * @param Exception|null $previous         Previous exception in the chain.
-     */
-    public function __construct(
-        string $appId,
-        string $configKey,
-        string $resolvedValue,
-        string $schemaIdentifier,
-        ?Exception $previous=null,
-    ) {
-        $this->appId            = $appId;
-        $this->configKey        = $configKey;
-        $this->resolvedValue    = $resolvedValue;
-        $this->schemaIdentifier = $schemaIdentifier;
+	/**
+	 * Construct the not-found exception with diagnostic context.
+	 *
+	 * @param string $appId Consumer app id.
+	 * @param string $configKey Config key that resolved.
+	 * @param string $resolvedValue Slug/UUID/name the lookup attempted.
+	 * @param string $schemaIdentifier Schema slug/UUID the lookup targeted.
+	 * @param Exception|null $previous Previous exception in the chain.
+	 */
+	public function __construct(
+		string $appId,
+		string $configKey,
+		string $resolvedValue,
+		string $schemaIdentifier,
+		?Exception $previous = null,
+	) {
+		$this->appId = $appId;
+		$this->configKey = $configKey;
+		$this->resolvedValue = $resolvedValue;
+		$this->schemaIdentifier = $schemaIdentifier;
 
-        parent::__construct(
-            message: sprintf(
-                'Property "%s" (from config key "%s" on app "%s") not found on schema "%s".',
-                $resolvedValue,
-                $configKey,
-                $appId,
-                $schemaIdentifier
-            ),
-            code: 404,
-            previous: $previous
-        );
+		parent::__construct(
+			message: sprintf(
+				'Property "%s" (from config key "%s" on app "%s") not found on schema "%s".',
+				$resolvedValue,
+				$configKey,
+				$appId,
+				$schemaIdentifier
+			),
+			code: 404,
+			previous: $previous
+		);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the app id the resolver was working against.
-     *
-     * @return string The consumer app id.
-     */
-    public function getAppId(): string
-    {
-        return $this->appId;
+	/**
+	 * Get the app id the resolver was working against.
+	 *
+	 * @return string The consumer app id.
+	 */
+	public function getAppId(): string {
+		return $this->appId;
+	}//end getAppId()
 
-    }//end getAppId()
+	/**
+	 * Get the config key that was read.
+	 *
+	 * @return string The config key.
+	 */
+	public function getConfigKey(): string {
+		return $this->configKey;
+	}//end getConfigKey()
 
-    /**
-     * Get the config key that was read.
-     *
-     * @return string The config key.
-     */
-    public function getConfigKey(): string
-    {
-        return $this->configKey;
+	/**
+	 * Get the resolved value that could not be hydrated.
+	 *
+	 * @return string The slug/UUID/name the lookup attempted.
+	 */
+	public function getResolvedValue(): string {
+		return $this->resolvedValue;
+	}//end getResolvedValue()
 
-    }//end getConfigKey()
-
-    /**
-     * Get the resolved value that could not be hydrated.
-     *
-     * @return string The slug/UUID/name the lookup attempted.
-     */
-    public function getResolvedValue(): string
-    {
-        return $this->resolvedValue;
-
-    }//end getResolvedValue()
-
-    /**
-     * Get the schema identifier the property lookup targeted.
-     *
-     * @return string The schema slug or UUID.
-     */
-    public function getSchemaIdentifier(): string
-    {
-        return $this->schemaIdentifier;
-
-    }//end getSchemaIdentifier()
+	/**
+	 * Get the schema identifier the property lookup targeted.
+	 *
+	 * @return string The schema slug or UUID.
+	 */
+	public function getSchemaIdentifier(): string {
+		return $this->schemaIdentifier;
+	}//end getSchemaIdentifier()
 }//end class

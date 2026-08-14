@@ -50,45 +50,43 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.8
  */
-class GenericMetricsController extends Controller
-{
-    /**
-     * Constructor.
-     *
-     * The controller's `$appName` is the calling (leaf) app id, set by the
-     * leaf app's alias registration in its own Application.php. For OpenRegister
-     * self-dogfooding it is `openregister`.
-     *
-     * @param string         $appName        Calling app id.
-     * @param IRequest       $request        HTTP request.
-     * @param ManifestLoader $manifestLoader Loads the app's observability config.
-     * @param MetricsEngine  $engine         Renders the metrics.
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly ManifestLoader $manifestLoader,
-        private readonly MetricsEngine $engine
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class GenericMetricsController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * The controller's `$appName` is the calling (leaf) app id, set by the
+	 * leaf app's alias registration in its own Application.php. For OpenRegister
+	 * self-dogfooding it is `openregister`.
+	 *
+	 * @param string $appName Calling app id.
+	 * @param IRequest $request HTTP request.
+	 * @param ManifestLoader $manifestLoader Loads the app's observability config.
+	 * @param MetricsEngine $engine Renders the metrics.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ManifestLoader $manifestLoader,
+		private readonly MetricsEngine $engine,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * GET /api/metrics — declarative Prometheus metrics (admin-only, ADR-006).
-     *
-     * @return TextPlainResponse Prometheus text exposition 0.0.4.
-     *
-     * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Metrics Execution
-     */
-    #[NoCSRFRequired]
-    public function index(): TextPlainResponse
-    {
-        $appId    = $this->appName;
-        $manifest = $this->manifestLoader->load(appId: $appId);
-        $body     = $this->engine->render(manifest: $manifest);
+	/**
+	 * GET /api/metrics — declarative Prometheus metrics (admin-only, ADR-006).
+	 *
+	 * @return TextPlainResponse Prometheus text exposition 0.0.4.
+	 *
+	 * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Metrics Execution
+	 */
+	#[NoCSRFRequired]
+	public function index(): TextPlainResponse {
+		$appId = $this->appName;
+		$manifest = $this->manifestLoader->load(appId: $appId);
+		$body = $this->engine->render(manifest: $manifest);
 
-        $response = new TextPlainResponse($body);
-        $response->addHeader('Content-Type', PrometheusRenderer::CONTENT_TYPE);
-        return $response;
-    }//end index()
+		$response = new TextPlainResponse($body);
+		$response->addHeader('Content-Type', PrometheusRenderer::CONTENT_TYPE);
+		return $response;
+	}//end index()
 }//end class

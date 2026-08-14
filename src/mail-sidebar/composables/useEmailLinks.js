@@ -81,7 +81,11 @@ export function useEmailLinks() {
 			const signal = currentAbortController.signal
 
 			// Fetch linked objects
-			const linkedResult = await fetchLinkedObjects(accountId, messageId, signal)
+			const linkedResult = await fetchLinkedObjects(
+				accountId,
+				messageId,
+				signal,
+			)
 			linkedObjects.value = linkedResult.results || []
 			total.value = linkedResult.total || 0
 
@@ -110,9 +114,12 @@ export function useEmailLinks() {
 			if (err.name === 'AbortError' || err.name === 'CanceledError') {
 				return
 			}
-			error.value = err.response?.status >= 500
-				? 'server'
-				: (err.code === 'ECONNABORTED' ? 'timeout' : 'network')
+			error.value =
+				err.response?.status >= 500
+					? 'server'
+					: err.code === 'ECONNABORTED'
+						? 'timeout'
+						: 'network'
 			linkedObjects.value = []
 			suggestedObjects.value = []
 		} finally {

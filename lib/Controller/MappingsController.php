@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use InvalidArgumentException;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\MappingService;
@@ -59,338 +58,329 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class MappingsController extends Controller
-{
-    /**
-     * Constructor
-     *
-     * Initializes controller with required dependencies for mapping operations.
-     *
-     * @param string              $appName             Application name
-     * @param IRequest            $request             HTTP request object
-     * @param IAppConfig          $config              App configuration
-     * @param MappingMapper       $mappingMapper       Mapping mapper for database operations
-     * @param MappingService      $mappingService      Mapping service for executing mappings
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param LoggerInterface     $logger              Logger for error tracking
-     *
-     * @return void
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly IAppConfig $config,
-        private readonly MappingMapper $mappingMapper,
-        private readonly MappingService $mappingService,
-        private readonly OrganisationService $organisationService,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class MappingsController extends Controller {
+	/**
+	 * Constructor
+	 *
+	 * Initializes controller with required dependencies for mapping operations.
+	 *
+	 * @param string $appName Application name
+	 * @param IRequest $request HTTP request object
+	 * @param IAppConfig $config App configuration
+	 * @param MappingMapper $mappingMapper Mapping mapper for database operations
+	 * @param MappingService $mappingService Mapping service for executing mappings
+	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param LoggerInterface $logger Logger for error tracking
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly IAppConfig $config,
+		private readonly MappingMapper $mappingMapper,
+		private readonly MappingService $mappingService,
+		private readonly OrganisationService $organisationService,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * Retrieves a list of all mappings
-     *
-     * Returns a JSON response containing an array of all mappings.
-     * Supports pagination and filtering.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with array of mappings
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function index(): JSONResponse
-    {
-        // Get request parameters.
-        $params = $this->request->getParams();
+	/**
+	 * Retrieves a list of all mappings
+	 *
+	 * Returns a JSON response containing an array of all mappings.
+	 * Supports pagination and filtering.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with array of mappings
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function index(): JSONResponse {
+		// Get request parameters.
+		$params = $this->request->getParams();
 
-        // Extract pagination parameters.
-        $limit = null;
-        if (isset($params['_limit']) === true) {
-            $limit = (int) $params['_limit'];
-        }
+		// Extract pagination parameters.
+		$limit = null;
+		if (isset($params['_limit']) === true) {
+			$limit = (int)$params['_limit'];
+		}
 
-        $offset = null;
-        if (isset($params['_offset']) === true) {
-            $offset = (int) $params['_offset'];
-        }
+		$offset = null;
+		if (isset($params['_offset']) === true) {
+			$offset = (int)$params['_offset'];
+		}
 
-        $page = null;
-        if (isset($params['_page']) === true) {
-            $page = (int) $params['_page'];
-        }
+		$page = null;
+		if (isset($params['_page']) === true) {
+			$page = (int)$params['_page'];
+		}
 
-        // Convert page to offset if provided.
-        if ($page !== null && $limit !== null) {
-            $offset = ($page - 1) * $limit;
-        }
+		// Convert page to offset if provided.
+		if ($page !== null && $limit !== null) {
+			$offset = ($page - 1) * $limit;
+		}
 
-        // Retrieve mappings using mapper.
-        $mappings = $this->mappingMapper->findAll(
-            limit: $limit,
-            offset: $offset
-        );
+		// Retrieve mappings using mapper.
+		$mappings = $this->mappingMapper->findAll(
+			limit: $limit,
+			offset: $offset
+		);
 
-        // Serialize mappings to arrays.
-        $mappingsArr = array_map(
-            function (Mapping $mapping): array {
-                return $mapping->jsonSerialize();
-            },
-            $mappings
-        );
+		// Serialize mappings to arrays.
+		$mappingsArr = array_map(
+			function (Mapping $mapping): array {
+				return $mapping->jsonSerialize();
+			},
+			$mappings
+		);
 
-        return new JSONResponse(data: ['results' => $mappingsArr]);
-    }//end index()
+		return new JSONResponse(data: ['results' => $mappingsArr]);
+	}//end index()
 
-    /**
-     * Retrieves a single mapping by ID
-     *
-     * @param int|string $id The ID, UUID, or slug of the mapping
-     *
-     * @return JSONResponse JSON response with mapping data
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function show(int|string $id): JSONResponse
-    {
-        try {
-            $mapping = $this->mappingMapper->find(id: $id);
-            return new JSONResponse(data: $mapping->jsonSerialize());
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end show()
+	/**
+	 * Retrieves a single mapping by ID
+	 *
+	 * @param int|string $id The ID, UUID, or slug of the mapping
+	 *
+	 * @return JSONResponse JSON response with mapping data
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function show(int|string $id): JSONResponse {
+		try {
+			$mapping = $this->mappingMapper->find(id: $id);
+			return new JSONResponse(data: $mapping->jsonSerialize());
+		} catch (DoesNotExistException $exception) {
+			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end show()
 
-    /**
-     * Creates a new mapping
-     *
-     * Creates a new mapping based on POST data.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with created mapping
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function create(): JSONResponse
-    {
-        // Get request parameters.
-        $data = $this->request->getParams();
+	/**
+	 * Creates a new mapping
+	 *
+	 * Creates a new mapping based on POST data.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with created mapping
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function create(): JSONResponse {
+		// Get request parameters.
+		$data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_').
-        foreach (array_keys($data) as $key) {
-            if (str_starts_with($key, '_') === true) {
-                unset($data[$key]);
-            }
-        }
+		// Remove internal parameters (starting with '_').
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
 
-        // Remove ID if present to ensure a new record is created.
-        if (isset($data['id']) === true) {
-            unset($data['id']);
-        }
+		// Remove ID if present to ensure a new record is created.
+		if (isset($data['id']) === true) {
+			unset($data['id']);
+		}
 
-        try {
-            // Create a new mapping from the data.
-            $mapping = $this->mappingMapper->createFromArray(data: $data);
+		try {
+			// Create a new mapping from the data.
+			$mapping = $this->mappingMapper->createFromArray(data: $data);
 
-            return new JSONResponse(data: $mapping->jsonSerialize(), statusCode: 201);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MappingsController] Mapping creation failed',
-                context: [
-                    'file'          => __FILE__,
-                    'line'          => __LINE__,
-                    'error_message' => $e->getMessage(),
-                    'error_code'    => $e->getCode(),
-                ]
-            );
+			return new JSONResponse(data: $mapping->jsonSerialize(), statusCode: 201);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[MappingsController] Mapping creation failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error_message' => $e->getMessage(),
+					'error_code' => $e->getCode(),
+				]
+			);
 
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end create()
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end create()
 
-    /**
-     * Updates an existing mapping
-     *
-     * Updates a mapping based on its ID.
-     *
-     * @param int $id The ID of the mapping to update
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated mapping
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function update(int $id): JSONResponse
-    {
-        // Get request parameters.
-        $data = $this->request->getParams();
+	/**
+	 * Updates an existing mapping
+	 *
+	 * Updates a mapping based on its ID.
+	 *
+	 * @param int $id The ID of the mapping to update
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with updated mapping
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function update(int $id): JSONResponse {
+		// Get request parameters.
+		$data = $this->request->getParams();
 
-        // Remove internal parameters (starting with '_').
-        foreach (array_keys($data) as $key) {
-            if (str_starts_with($key, '_') === true) {
-                unset($data[$key]);
-            }
-        }
+		// Remove internal parameters (starting with '_').
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
 
-        // Remove immutable fields.
-        unset($data['id']);
-        unset($data['organisation']);
-        unset($data['created']);
+		// Remove immutable fields.
+		unset($data['id']);
+		unset($data['organisation']);
+		unset($data['created']);
 
-        try {
-            // Update the mapping with the provided data.
-            $updatedMapping = $this->mappingMapper->updateFromArray(id: $id, data: $data);
+		try {
+			// Update the mapping with the provided data.
+			$updatedMapping = $this->mappingMapper->updateFromArray(id: $id, data: $data);
 
-            return new JSONResponse(data: $updatedMapping->jsonSerialize());
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MappingsController] Mapping update failed',
-                context: [
-                    'file'          => __FILE__,
-                    'line'          => __LINE__,
-                    'mapping_id'    => $id,
-                    'error_message' => $e->getMessage(),
-                    'error_code'    => $e->getCode(),
-                ]
-            );
+			return new JSONResponse(data: $updatedMapping->jsonSerialize());
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[MappingsController] Mapping update failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'mapping_id' => $id,
+					'error_message' => $e->getMessage(),
+					'error_code' => $e->getCode(),
+				]
+			);
 
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end update()
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}//end try
+	}//end update()
 
-    /**
-     * Deletes a mapping
-     *
-     * Deletes a mapping based on its ID.
-     *
-     * Partially update a mapping by ID.
-     *
-     * The route `mappings#patch` (`PATCH /api/mappings/{id}`) delegates to
-     * the same body as `update()` because Nextcloud routes PATCH and PUT to
-     * separate methods even when the handler is identical. Mirrors the same
-     * shape used on `ApplicationsController::patch`.
-     *
-     * @param int $id The ID of the mapping to patch.
-     *
-     * @return JSONResponse JSON response containing patched mapping.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function patch(int $id): JSONResponse
-    {
-        return $this->update(id: $id);
+	/**
+	 * Deletes a mapping
+	 *
+	 * Deletes a mapping based on its ID.
+	 *
+	 * Partially update a mapping by ID.
+	 *
+	 * The route `mappings#patch` (`PATCH /api/mappings/{id}`) delegates to
+	 * the same body as `update()` because Nextcloud routes PATCH and PUT to
+	 * separate methods even when the handler is identical. Mirrors the same
+	 * shape used on `ApplicationsController::patch`.
+	 *
+	 * @param int $id The ID of the mapping to patch.
+	 *
+	 * @return JSONResponse JSON response containing patched mapping.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function patch(int $id): JSONResponse {
+		return $this->update(id: $id);
+	}//end patch()
 
-    }//end patch()
+	/**
+	 * Delete a mapping by ID.
+	 *
+	 * @param int $id The ID of the mapping to delete
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse Empty JSON response on success
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 */
+	public function destroy(int $id): JSONResponse {
+		try {
+			$mapping = $this->mappingMapper->find(id: $id);
+			$this->mappingMapper->delete(entity: $mapping);
 
-    /**
-     * Delete a mapping by ID.
-     *
-     * @param int $id The ID of the mapping to delete
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Empty JSON response on success
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        try {
-            $mapping = $this->mappingMapper->find(id: $id);
-            $this->mappingMapper->delete(entity: $mapping);
+			return new JSONResponse(data: []);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end destroy()
 
-            return new JSONResponse(data: []);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end destroy()
+	/**
+	 * Tests a mapping with provided input data
+	 *
+	 * Tests a mapping configuration with sample input data to verify
+	 * the mapping produces expected output.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt No per-object resource: stateless evaluation of a caller-supplied transient mapping over caller-supplied input;
+	 *   nothing is loaded by id.
+	 *
+	 * @return JSONResponse JSON response with test results
+	 *
+	 * @suppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
+	 */
+	public function test(): JSONResponse {
+		// Get all parameters from the request.
+		$data = $this->request->getParams();
 
-    /**
-     * Tests a mapping with provided input data
-     *
-     * Tests a mapping configuration with sample input data to verify
-     * the mapping produces expected output.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     * @no-admin-idor-exempt No per-object resource: stateless evaluation of a caller-supplied transient mapping over caller-supplied input;
-     *   nothing is loaded by id.
-     *
-     * @return JSONResponse JSON response with test results
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
-     */
-    public function test(): JSONResponse
-    {
-        // Get all parameters from the request.
-        $data = $this->request->getParams();
+		// Validate required parameters.
+		if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Both `inputObject` and `mapping` are required'],
+				statusCode: 400
+			);
+		}
 
-        // Validate required parameters.
-        if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
-            return new JSONResponse(
-                data: ['error' => 'Both `inputObject` and `mapping` are required'],
-                statusCode: 400
-            );
-        }
+		// Get input object and mapping configuration.
+		$inputObject = $data['inputObject'];
+		$mappingConfig = $data['mapping'];
 
-        // Get input object and mapping configuration.
-        $inputObject   = $data['inputObject'];
-        $mappingConfig = $data['mapping'];
+		// Create a new Mapping object and hydrate it with the provided mapping.
+		$mappingObject = new Mapping();
+		$mappingObject->hydrate(object: $mappingConfig);
 
-        // Create a new Mapping object and hydrate it with the provided mapping.
-        $mappingObject = new Mapping();
-        $mappingObject->hydrate(object: $mappingConfig);
+		try {
+			// Perform the mapping operation.
+			$resultObject = $this->mappingService->executeMapping(
+				mapping: $mappingObject,
+				input: $inputObject
+			);
 
-        try {
-            // Perform the mapping operation.
-            $resultObject = $this->mappingService->executeMapping(
-                mapping: $mappingObject,
-                input: $inputObject
-            );
-
-            // Return the result.
-            return new JSONResponse(
-                data: [
-                    'resultObject' => $resultObject,
-                    'success'      => true,
-                ]
-            );
-        } catch (Exception $e) {
-            // If mapping fails, return an error response.
-            return new JSONResponse(
-                data: [
-                    'error'   => 'Mapping error',
-                    'message' => $e->getMessage(),
-                ],
-                statusCode: 400
-            );
-        }//end try
-    }//end test()
+			// Return the result.
+			return new JSONResponse(
+				data: [
+					'resultObject' => $resultObject,
+					'success' => true,
+				]
+			);
+		} catch (Exception $e) {
+			// If mapping fails, return an error response.
+			return new JSONResponse(
+				data: [
+					'error' => 'Mapping error',
+					'message' => $e->getMessage(),
+				],
+				statusCode: 400
+			);
+		}//end try
+	}//end test()
 }//end class

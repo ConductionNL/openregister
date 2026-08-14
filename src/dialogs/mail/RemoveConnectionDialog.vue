@@ -6,26 +6,29 @@
 		class="or-remove-connection-dialog"
 		@closing="$emit('cancel')">
 		<p>
-			{{ t('openregister', 'Remove the connection between this email and {name}?', { name }) }}
+			{{
+				t(
+					'openregister',
+					'Remove the connection between this email and {name}?',
+					{ name },
+				)
+			}}
 		</p>
 		<p class="or-remove-connection-dialog__warning">
-			<AlertOutline :size="18" class="or-remove-connection-dialog__warning-icon" />
+			<AlertOutline
+				:size="18"
+				class="or-remove-connection-dialog__warning-icon" />
 			<span>{{ t('openregister', 'This cannot be undone.') }}</span>
 		</p>
 
 		<template #actions>
-			<NcButton
-				:disabled="removing"
-				@click="$emit('cancel')">
+			<NcButton :disabled="removing" @click="$emit('cancel')">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				:disabled="removing"
-				variant="error"
-				@click="$emit('confirm')">
+			<NcButton :disabled="removing" variant="error" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />
 					<LinkVariantOff v-else :size="20" />

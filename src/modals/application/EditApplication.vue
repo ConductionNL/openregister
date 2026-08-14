@@ -1,16 +1,31 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { applicationStore, organisationStore, navigationStore } from '../../store/store.js'
+import {
+	applicationStore,
+	organisationStore,
+	navigationStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="applicationStore.applicationItem?.uuid ? t('openregister', 'Edit Application') : t('openregister', 'Create Application')"
+	<NcDialog
+		:name="
+			applicationStore.applicationItem?.uuid
+				? t('openregister', 'Edit Application')
+				: t('openregister', 'Create Application')
+		"
 		:open="true"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
-			<p>{{ applicationStore.applicationItem?.uuid ? t('openregister', 'Application successfully updated') : t('openregister', 'Application successfully created') }}</p>
+			<p>
+				{{
+					applicationStore.applicationItem?.uuid
+						? t('openregister', 'Application successfully updated')
+						: t('openregister', 'Application successfully created')
+				}}
+			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -30,13 +45,20 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								:label="t('openregister', 'Name *')"
 								v-model="applicationItem.name"
 								:error="!applicationItem.name.trim()"
-								:placeholder="t('openregister', 'Enter application name')" />
+								:placeholder="
+									t('openregister', 'Enter application name')
+								" />
 
 							<NcTextArea
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
 								v-model="applicationItem.description"
-								:placeholder="t('openregister', 'Enter application description (optional)')"
+								:placeholder="
+									t(
+										'openregister',
+										'Enter application description (optional)',
+									)
+								"
 								:rows="4" />
 
 							<!-- Organisation is automatically set to active organisation by backend -->
@@ -53,21 +75,33 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 									:multiple="true"
 									:label-outside="true"
 									:filterable="false"
-									:placeholder="t('openregister', 'Search groups...')"
+									:placeholder="
+										t('openregister', 'Search groups...')
+									"
 									@search-change="searchGroups"
 									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
+											<span class="group-name">{{
+												name
+											}}</span>
 										</div>
 									</template>
 									<template #no-options>
-										<span v-if="loadingGroups">{{ t('openregister', 'Loading groups...') }}</span>
-										<span v-else>{{ t('openregister', 'No groups found. Try a different search.') }}</span>
+										<span v-if="loadingGroups">{{
+											t('openregister', 'Loading groups...')
+										}}</span>
+										<span v-else>{{
+											t(
+												'openregister',
+												'No groups found. Try a different search.',
+											)
+										}}</span>
 									</template>
 								</NcSelect>
 								<p class="field-hint">
-									Only members of selected groups can access this application
+									Only members of selected groups can access this
+									application
 								</p>
 							</div>
 						</div>
@@ -130,16 +164,21 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<div class="rbac-container">
 								<div class="rbac-section">
 									<p class="rbac-description">
-										Configure CRUD permissions for this application.
-										Empty permissions = open access for all application groups.
-										The 'admin' group always has full access.
+										Configure CRUD permissions for this
+										application. Empty permissions = open access
+										for all application groups. The 'admin' group
+										always has full access.
 									</p>
 
 									<RbacTable
 										entity-type="application"
-										:authorization="applicationItem.authorization"
+										:authorization="
+											applicationItem.authorization
+										"
 										:available-groups="availableGroups"
-										:organisation-groups="applicationItem.groups || []"
+										:organisation-groups="
+											applicationItem.groups || []
+										"
 										@update="updateApplicationPermission" />
 								</div>
 							</div>
@@ -156,14 +195,19 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 				</template>
 				{{ success ? 'Close' : 'Cancel' }}
 			</NcButton>
-			<NcButton v-if="!success"
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
 				variant="primary"
 				@click="saveApplication()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && applicationStore.applicationItem?.uuid" :size="20" />
-					<Plus v-if="!loading && !applicationStore.applicationItem?.uuid" :size="20" />
+					<ContentSaveOutline
+						v-if="!loading && applicationStore.applicationItem?.uuid"
+						:size="20" />
+					<Plus
+						v-if="!loading && !applicationStore.applicationItem?.uuid"
+						:size="20" />
 				</template>
 				{{ applicationStore.applicationItem?.uuid ? 'Save' : 'Create' }}
 			</NcButton>
@@ -265,11 +309,16 @@ export default {
 		 * @spec exclude UI display helper — filters available groups to those assigned to the application.
 		 */
 		filteredAvailableGroups() {
-		// Filter available groups to only show groups assigned to the application
-			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
+			// Filter available groups to only show groups assigned to the application
+			if (
+				!this.applicationItem.groups
+				|| this.applicationItem.groups.length === 0
+			) {
 				return this.availableGroups
 			}
-			return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
+			return this.availableGroups.filter((group) =>
+				this.applicationItem.groups.includes(group.id),
+			)
 		},
 	},
 	/**
@@ -302,22 +351,28 @@ export default {
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
-			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
+			if (
+				applicationStore.nextcloudGroups
+				&& applicationStore.nextcloudGroups.length > 0
+			) {
 				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
 				this.loadingGroups = true
-				applicationStore.loadNextcloudGroups().then(() => {
-					this.availableGroups = applicationStore.nextcloudGroups
-					this.loadingGroups = false
-					// Re-initialize to map groups now that they're loaded
-					this.initializeApplicationItem()
-				}).catch(error => {
-					console.error('Error loading Nextcloud groups:', error)
-					this.error = 'Failed to load Nextcloud groups'
-					this.loadingGroups = false
-				})
+				applicationStore
+					.loadNextcloudGroups()
+					.then(() => {
+						this.availableGroups = applicationStore.nextcloudGroups
+						this.loadingGroups = false
+						// Re-initialize to map groups now that they're loaded
+						this.initializeApplicationItem()
+					})
+					.catch((error) => {
+						console.error('Error loading Nextcloud groups:', error)
+						this.error = 'Failed to load Nextcloud groups'
+						this.loadingGroups = false
+					})
 			}
 		},
 
@@ -345,27 +400,36 @@ export default {
 				this.loadingGroups = true
 				try {
 					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`, {
-						headers: {
-							'OCS-APIRequest': 'true',
+					const response = await fetch(
+						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
+						{
+							headers: {
+								'OCS-APIRequest': 'true',
+							},
 						},
-					})
+					)
 
 					if (response.ok) {
 						const data = await response.json()
 						if (data.ocs?.data?.groups) {
 							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(groupId => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0,
-							}))
+							const searchResults = data.ocs.data.groups.map(
+								(groupId) => ({
+									id: groupId,
+									name: groupId,
+									userCount: 0,
+								}),
+							)
 
 							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(g => g.id)
+							const selectedGroupIds = this.selectedGroups.map(
+								(g) => g.id,
+							)
 							const mergedGroups = [
 								...this.selectedGroups,
-								...searchResults.filter(g => !selectedGroupIds.includes(g.id)),
+								...searchResults.filter(
+									(g) => !selectedGroupIds.includes(g.id),
+								),
 							]
 
 							this.availableGroups = mergedGroups
@@ -396,11 +460,16 @@ export default {
 
 				// Load existing groups selection
 				// Groups are stored as an array of IDs, we need to map them to objects for the select component
-				if (Array.isArray(this.applicationItem.groups) && this.applicationItem.groups.length > 0) {
+				if (
+					Array.isArray(this.applicationItem.groups)
+					&& this.applicationItem.groups.length > 0
+				) {
 					this.selectedGroups = this.applicationItem.groups
-						.map(groupId => {
+						.map((groupId) => {
 							// Find the group in availableGroups
-							const group = this.availableGroups.find(g => g.id === groupId)
+							const group = this.availableGroups.find(
+								(g) => g.id === groupId,
+							)
 							if (group) {
 								return group
 							}
@@ -412,7 +481,7 @@ export default {
 								userCount: 0,
 							}
 						})
-						.filter(g => g !== null)
+						.filter((g) => g !== null)
 				}
 			}
 		},
@@ -427,7 +496,9 @@ export default {
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
 			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
+			this.applicationItem.groups = this.selectedGroups.map(
+				(group) => group.id,
+			)
 		},
 
 		/**
@@ -438,9 +509,13 @@ export default {
 		 * @spec exclude Form-field binding — removes a group from the selection.
 		 */
 		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
+			this.selectedGroups = this.selectedGroups.filter(
+				(g) => g.id !== groupToRemove.id,
+			)
 			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
+			this.applicationItem.groups = this.selectedGroups.map(
+				(group) => group.id,
+			)
 		},
 
 		/**
@@ -469,17 +544,20 @@ export default {
 			}
 
 			// Update the permission
-			const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
+			const groupIndex =
+				this.applicationItem.authorization[action].indexOf(groupId)
 			if (hasPermission && groupIndex === -1) {
-			// Add the group
+				// Add the group
 				this.applicationItem.authorization[action].push(groupId)
 			} else if (!hasPermission && groupIndex !== -1) {
-			// Remove the group
+				// Remove the group
 				this.applicationItem.authorization[action].splice(groupIndex, 1)
 			}
 
 			// Force Vue to detect the change
-			this.applicationItem.authorization = { ...this.applicationItem.authorization }
+			this.applicationItem.authorization = {
+				...this.applicationItem.authorization,
+			}
 		},
 
 		/**
@@ -490,10 +568,16 @@ export default {
 		 * @spec exclude Form-field binding — sets storage quota (MB→bytes) in local state.
 		 */
 		updateStorageQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+				this.applicationItem.quota = {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				}
 			}
 			this.applicationItem.quota.storage = mbValue * 1024 * 1024
 		},
@@ -506,10 +590,16 @@ export default {
 		 * @spec exclude Form-field binding — sets bandwidth quota (MB→bytes) in local state.
 		 */
 		updateBandwidthQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+				this.applicationItem.quota = {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				}
 			}
 			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
 		},
@@ -524,7 +614,13 @@ export default {
 		updateRequestQuota(value) {
 			// 0 = unlimited
 			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+				this.applicationItem.quota = {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				}
 			}
 			this.applicationItem.quota.requests = value ? parseInt(value) : 0
 		},
@@ -537,9 +633,15 @@ export default {
 		 * @spec exclude Form-field binding — sets user quota in local state.
 		 */
 		updateUserQuota(value) {
-		// 0 = unlimited (not applicable for applications, but kept for consistency)
+			// 0 = unlimited (not applicable for applications, but kept for consistency)
 			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+				this.applicationItem.quota = {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				}
 			}
 			this.applicationItem.quota.users = value ? parseInt(value) : 0
 		},
@@ -552,9 +654,15 @@ export default {
 		 * @spec exclude Form-field binding — sets group quota in local state.
 		 */
 		updateGroupQuota(value) {
-		// 0 = unlimited
+			// 0 = unlimited
 			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+				this.applicationItem.quota = {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				}
 			}
 			this.applicationItem.quota.groups = value ? parseInt(value) : 0
 		},
@@ -603,10 +711,10 @@ export default {
 				if (response.ok) {
 					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				}
-
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while saving the application'
+				this.error =
+					error.message || 'An error occurred while saving the application'
 			} finally {
 				this.loading = false
 			}

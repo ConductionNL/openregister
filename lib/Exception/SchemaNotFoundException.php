@@ -41,30 +41,28 @@ use Exception;
  *
  * @phpstan-consistent-constructor
  */
-class SchemaNotFoundException extends Exception
-{
-    /**
-     * SchemaNotFoundException constructor
-     *
-     * Initializes exception with schema identifier that was not found.
-     * Creates user-friendly error message including the schema slug or ID.
-     *
-     * @param string         $schemaSlugOrId The schema slug or ID that was not found
-     * @param int            $code           The exception code (default: 404 Not Found)
-     * @param Exception|null $previous       The previous exception that caused this one
-     *
-     * @return void
-     *
-     * @phpstan-param string $schemaSlugOrId
-     * @phpstan-param int $code
-     * @phpstan-param Exception|null $previous
-     */
-    public function __construct(string $schemaSlugOrId, int $code=404, ?Exception $previous=null)
-    {
-        // Build error message with schema identifier.
-        $message = "Schema not found: '".$schemaSlugOrId."'";
+class SchemaNotFoundException extends Exception {
+	/**
+	 * SchemaNotFoundException constructor
+	 *
+	 * Initializes exception with schema identifier that was not found.
+	 * Creates user-friendly error message including the schema slug or ID.
+	 *
+	 * @param string $schemaSlugOrId The schema slug or ID that was not found
+	 * @param int $code The exception code (default: 404 Not Found)
+	 * @param Exception|null $previous The previous exception that caused this one
+	 *
+	 * @return void
+	 *
+	 * @phpstan-param string $schemaSlugOrId
+	 * @phpstan-param int $code
+	 * @phpstan-param Exception|null $previous
+	 */
+	public function __construct(string $schemaSlugOrId, int $code = 404, ?Exception $previous = null) {
+		// Build error message with schema identifier.
+		$message = "Schema not found: '" . $schemaSlugOrId . "'";
 
-        // Call parent constructor to initialize base exception properties.
-        parent::__construct(message: $message, code: $code, previous: $previous);
-    }//end __construct()
+		// Call parent constructor to initialize base exception properties.
+		parent::__construct(message: $message, code: $code, previous: $previous);
+	}//end __construct()
 }//end class

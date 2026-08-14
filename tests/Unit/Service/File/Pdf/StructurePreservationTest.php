@@ -31,85 +31,81 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for {@see StructurePreservation}.
  */
-class StructurePreservationTest extends TestCase
-{
+class StructurePreservationTest extends TestCase {
 
-    /**
-     * `jsonSerialize()` emits exactly the five contracted keys, with the
-     * documented types, and no additional or renamed field (REQ-ORTPR-003).
-     *
-     * @return void
-     */
-    public function testJsonSerializeFieldSet(): void
-    {
-        $preservation = new StructurePreservation(
-            requested: true,
-            preserved: false,
-            tagCountBefore: 42,
-            tagCountAfter: 42,
-            lossReasons: [StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN]
-        );
+	/**
+	 * `jsonSerialize()` emits exactly the five contracted keys, with the
+	 * documented types, and no additional or renamed field (REQ-ORTPR-003).
+	 *
+	 * @return void
+	 */
+	public function testJsonSerializeFieldSet(): void {
+		$preservation = new StructurePreservation(
+			requested: true,
+			preserved: false,
+			tagCountBefore: 42,
+			tagCountAfter: 42,
+			lossReasons: [StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN]
+		);
 
-        $serialised = $preservation->jsonSerialize();
+		$serialised = $preservation->jsonSerialize();
 
-        self::assertSame(
-            expected: ['requested', 'preserved', 'tagCountBefore', 'tagCountAfter', 'lossReasons'],
-            actual: array_keys($serialised)
-        );
+		self::assertSame(
+			expected: ['requested', 'preserved', 'tagCountBefore', 'tagCountAfter', 'lossReasons'],
+			actual: array_keys($serialised)
+		);
 
-        self::assertIsBool($serialised['requested']);
-        self::assertIsBool($serialised['preserved']);
-        self::assertIsInt($serialised['tagCountBefore']);
-        self::assertIsInt($serialised['tagCountAfter']);
-        self::assertIsArray($serialised['lossReasons']);
+		self::assertIsBool($serialised['requested']);
+		self::assertIsBool($serialised['preserved']);
+		self::assertIsInt($serialised['tagCountBefore']);
+		self::assertIsInt($serialised['tagCountAfter']);
+		self::assertIsArray($serialised['lossReasons']);
 
-        self::assertSame(
-            expected: [
-                'requested'      => true,
-                'preserved'      => false,
-                'tagCountBefore' => 42,
-                'tagCountAfter'  => 42,
-                'lossReasons'    => ['marked-content-correspondence-broken'],
-            ],
-            actual: $serialised
-        );
-    }//end testJsonSerializeFieldSet()
+		self::assertSame(
+			expected: [
+				'requested' => true,
+				'preserved' => false,
+				'tagCountBefore' => 42,
+				'tagCountAfter' => 42,
+				'lossReasons' => ['marked-content-correspondence-broken'],
+			],
+			actual: $serialised
+		);
+	}//end testJsonSerializeFieldSet()
 
-    /**
-     * `lossReasons` is empty by default (no fifth positional arg required).
-     *
-     * @return void
-     */
-    public function testLossReasonsDefaultsToEmptyArray(): void
-    {
-        $preservation = new StructurePreservation(
-            requested: true,
-            preserved: true,
-            tagCountBefore: 10,
-            tagCountAfter: 10
-        );
+	/**
+	 * `lossReasons` is empty by default (no fifth positional arg required).
+	 *
+	 * @return void
+	 */
+	public function testLossReasonsDefaultsToEmptyArray(): void {
+		$preservation = new StructurePreservation(
+			requested: true,
+			preserved: true,
+			tagCountBefore: 10,
+			tagCountAfter: 10
+		);
 
-        self::assertSame(expected: [], actual: $preservation->lossReasons);
-        self::assertSame(expected: [], actual: $preservation->jsonSerialize()['lossReasons']);
-    }//end testLossReasonsDefaultsToEmptyArray()
+		self::assertSame(expected: [], actual: $preservation->lossReasons);
+		self::assertSame(expected: [], actual: $preservation->jsonSerialize()['lossReasons']);
+	}//end testLossReasonsDefaultsToEmptyArray()
 
-    /**
-     * The enumerated loss-reason set (design.md D2) is stable and contains
-     * exactly the five documented reason strings.
-     *
-     * @return void
-     */
-    public function testEnumeratedLossReasonsMatchDesignDocument(): void
-    {
-        self::assertSame(
-            expected: [
-                'engine-cannot-reauthor-structtree',
-                'marked-content-correspondence-broken',
-                'structtreeroot-dropped-on-rebuild',
-                'input-not-tagged',
-                'page-structure-not-preservable',
-            ],
-            actual: StructurePreservation::LOSS_REASONS
-        );
-    }//end testEnumeratedLossReasonsMatchDesignDocument()
+	/**
+	 * The enumerated loss-reason set (design.md D2) is stable and contains
+	 * exactly the five documented reason strings.
+	 *
+	 * @return void
+	 */
+	public function testEnumeratedLossReasonsMatchDesignDocument(): void {
+		self::assertSame(
+			expected: [
+				'engine-cannot-reauthor-structtree',
+				'marked-content-correspondence-broken',
+				'structtreeroot-dropped-on-rebuild',
+				'input-not-tagged',
+				'page-structure-not-preservable',
+			],
+			actual: StructurePreservation::LOSS_REASONS
+		);
+	}//end testEnumeratedLossReasonsMatchDesignDocument()
 }//end class

@@ -29,59 +29,55 @@ use OCP\EventDispatcher\Event;
 /**
  * Event dispatched when an application is updated.
  */
-class ApplicationUpdatedEvent extends Event
-{
+class ApplicationUpdatedEvent extends Event {
 
-    /**
-     * The updated application state.
-     *
-     * @var Application The application after update.
-     */
-    private Application $newApplication;
+	/**
+	 * The updated application state.
+	 *
+	 * @var Application The application after update.
+	 */
+	private Application $newApplication;
 
-    /**
-     * The previous application state.
-     *
-     * @var Application The application before update.
-     */
-    private Application $oldApplication;
+	/**
+	 * The previous application state.
+	 *
+	 * @var Application The application before update.
+	 */
+	private Application $oldApplication;
 
-    /**
-     * Constructor for ApplicationUpdatedEvent.
-     *
-     * @param Application $newApplication The application after update.
-     * @param Application $oldApplication The application before update.
-     *
-     * @return void
-     */
-    public function __construct(Application $newApplication, Application $oldApplication)
-    {
-        parent::__construct();
-        $this->newApplication = $newApplication;
-        $this->oldApplication = $oldApplication;
-    }//end __construct()
+	/**
+	 * Constructor for ApplicationUpdatedEvent.
+	 *
+	 * @param Application $newApplication The application after update.
+	 * @param Application $oldApplication The application before update.
+	 *
+	 * @return void
+	 */
+	public function __construct(Application $newApplication, Application $oldApplication) {
+		parent::__construct();
+		$this->newApplication = $newApplication;
+		$this->oldApplication = $oldApplication;
+	}//end __construct()
 
-    /**
-     * Get the updated application
-     *
-     * @return Application The application after update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getNewApplication(): Application
-    {
-        return $this->newApplication;
-    }//end getNewApplication()
+	/**
+	 * Get the updated application
+	 *
+	 * @return Application The application after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewApplication(): Application {
+		return $this->newApplication;
+	}//end getNewApplication()
 
-    /**
-     * Get the original application
-     *
-     * @return Application The application before update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getOldApplication(): Application
-    {
-        return $this->oldApplication;
-    }//end getOldApplication()
+	/**
+	 * Get the original application
+	 *
+	 * @return Application The application before update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldApplication(): Application {
+		return $this->oldApplication;
+	}//end getOldApplication()
 }//end class

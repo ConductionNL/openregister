@@ -28,61 +28,57 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Migration step for fixing register column name in audit trails table
  */
-class Version1Date20241022135300 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241022135300 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Rename the register column to regsiter.
-        $table = $schema->getTable('openregister_audit_trails');
-        if ($table->hasColumn('register') === false) {
-            $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
-        }
+		// Rename the register column to regsiter.
+		$table = $schema->getTable('openregister_audit_trails');
+		if ($table->hasColumn('register') === false) {
+			$table->addColumn('register', Types::INTEGER, ['notnull' => false]);
+		}
 
-        if ($table->hasColumn('regsiter') === true) {
-            $table->dropColumn('regsiter');
-        }
+		if ($table->hasColumn('regsiter') === true) {
+			$table->dropColumn('regsiter');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Execute actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Execute actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

@@ -39,53 +39,51 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 /**
  * Helper + constants for the query-time storage-strategy contract.
  */
-final class QueryTimeContract
-{
+final class QueryTimeContract {
 
-    /**
-     * Maximum render-time the registry allows a query-time provider
-     * to spend on `list()` before the surface SHALL render the
-     * documented degraded-surface signal (AD-22).
-     *
-     * @var float
-     */
-    public const RENDER_TIMEOUT_SECONDS = 2.0;
+	/**
+	 * Maximum render-time the registry allows a query-time provider
+	 * to spend on `list()` before the surface SHALL render the
+	 * documented degraded-surface signal (AD-22).
+	 *
+	 * @var float
+	 */
+	public const RENDER_TIMEOUT_SECONDS = 2.0;
 
-    /**
-     * HTTP status code returned by `ObjectsController` when a query-time
-     * provider throws `NotImplementedException` for create/update/delete.
-     *
-     * @var int
-     */
-    public const HTTP_NOT_IMPLEMENTED = 501;
+	/**
+	 * HTTP status code returned by `ObjectsController` when a query-time
+	 * provider throws `NotImplementedException` for create/update/delete.
+	 *
+	 * @var int
+	 */
+	public const HTTP_NOT_IMPLEMENTED = 501;
 
-    /**
-     * Translate a NotImplementedException into the standard HTTP body
-     * shape used across OpenRegister's API.
-     *
-     * Shape mirrors the error envelope used elsewhere by the
-     * controller layer (`{message, code, details}`) so consuming apps
-     * have a single error-decoding path regardless of which provider
-     * surfaced the failure.
-     *
-     * @param NotImplementedException $exception     The exception thrown
-     *                                               by the provider.
-     * @param string                  $integrationId The provider id
-     *                                               (for the details payload).
-     *
-     * @return array{message: string, code: int, details: array<string,string>}
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-6
-     */
-    public static function buildHttpBody(NotImplementedException $exception, string $integrationId): array
-    {
-        return [
-            'message' => $exception->getMessage(),
-            'code'    => self::HTTP_NOT_IMPLEMENTED,
-            'details' => [
-                'integration' => $integrationId,
-                'reason'      => 'query-time-storage-no-mutation',
-            ],
-        ];
-    }//end buildHttpBody()
+	/**
+	 * Translate a NotImplementedException into the standard HTTP body
+	 * shape used across OpenRegister's API.
+	 *
+	 * Shape mirrors the error envelope used elsewhere by the
+	 * controller layer (`{message, code, details}`) so consuming apps
+	 * have a single error-decoding path regardless of which provider
+	 * surfaced the failure.
+	 *
+	 * @param NotImplementedException $exception The exception thrown
+	 *                                           by the provider.
+	 * @param string $integrationId The provider id
+	 *                              (for the details payload).
+	 *
+	 * @return array{message: string, code: int, details: array<string,string>}
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-6
+	 */
+	public static function buildHttpBody(NotImplementedException $exception, string $integrationId): array {
+		return [
+			'message' => $exception->getMessage(),
+			'code' => self::HTTP_NOT_IMPLEMENTED,
+			'details' => [
+				'integration' => $integrationId,
+				'reason' => 'query-time-storage-no-mutation',
+			],
+		];
+	}//end buildHttpBody()
 }//end class

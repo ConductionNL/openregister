@@ -83,253 +83,246 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class Verwerkingsactiviteit extends Entity implements JsonSerializable
-{
+class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 
-    /**
-     * Article 6 GDPR legal-basis vocabulary.
-     *
-     * @var array<int, string>
-     */
-    public const RECHTSGROND_VOCABULARY = [
-        'toestemming',
-        'overeenkomst',
-        'wettelijke_verplichting',
-        'vitaal_belang',
-        'publieke_taak',
-        'gerechtvaardigd_belang',
-    ];
+	/**
+	 * Article 6 GDPR legal-basis vocabulary.
+	 *
+	 * @var array<int, string>
+	 */
+	public const RECHTSGROND_VOCABULARY = [
+		'toestemming',
+		'overeenkomst',
+		'wettelijke_verplichting',
+		'vitaal_belang',
+		'publieke_taak',
+		'gerechtvaardigd_belang',
+	];
 
-    /**
-     * Lifecycle status vocabulary.
-     *
-     * @var array<int, string>
-     */
-    public const STATUS_VOCABULARY = ['concept', 'published', 'archived'];
+	/**
+	 * Lifecycle status vocabulary.
+	 *
+	 * @var array<int, string>
+	 */
+	public const STATUS_VOCABULARY = ['concept', 'published', 'archived'];
 
-    /**
-     * Natural key used as the soft FK target on audit rows.
-     *
-     * @var string|null
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Natural key used as the soft FK target on audit rows.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Optional short readable identifier (e.g. `v-2026-001`).
-     *
-     * @var string|null
-     */
-    protected ?string $code = null;
+	/**
+	 * Optional short readable identifier (e.g. `v-2026-001`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $code = null;
 
-    /**
-     * Human-readable name (Art 30 §1(a)).
-     *
-     * @var string|null
-     */
-    protected ?string $naam = null;
+	/**
+	 * Human-readable name (Art 30 §1(a)).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $naam = null;
 
-    /**
-     * Free-form description of the processing activity.
-     *
-     * @var string|null
-     */
-    protected ?string $beschrijving = null;
+	/**
+	 * Free-form description of the processing activity.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $beschrijving = null;
 
-    /**
-     * Purpose-limitation statement (Art 5(1)(b)).
-     *
-     * @var string|null
-     */
-    protected ?string $doelbinding = null;
+	/**
+	 * Purpose-limitation statement (Art 5(1)(b)).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $doelbinding = null;
 
-    /**
-     * Article 6 GDPR legal basis identifier (vocabulary above).
-     *
-     * @var string|null
-     */
-    protected ?string $rechtsgrond = null;
+	/**
+	 * Article 6 GDPR legal basis identifier (vocabulary above).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rechtsgrond = null;
 
-    /**
-     * Categories of data subjects (Art 30 §1(c)).
-     *
-     * @var array<int, mixed>|null
-     */
-    protected ?array $categorieenBetrokkenen = null;
+	/**
+	 * Categories of data subjects (Art 30 §1(c)).
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	protected ?array $categorieenBetrokkenen = null;
 
-    /**
-     * Categories of personal data (Art 30 §1(c)).
-     *
-     * @var array<int, mixed>|null
-     */
-    protected ?array $categorieenPersoonsgegevens = null;
+	/**
+	 * Categories of personal data (Art 30 §1(c)).
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	protected ?array $categorieenPersoonsgegevens = null;
 
-    /**
-     * Retention rule expressed as an ISO-8601 duration (e.g. `P10Y`).
-     *
-     * @var string|null
-     */
-    protected ?string $bewaartermijn = null;
+	/**
+	 * Retention rule expressed as an ISO-8601 duration (e.g. `P10Y`).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $bewaartermijn = null;
 
-    /**
-     * Recipients (Art 30 §1(d)).
-     *
-     * @var array<int, mixed>|null
-     */
-    protected ?array $ontvangers = null;
+	/**
+	 * Recipients (Art 30 §1(d)).
+	 *
+	 * @var array<int, mixed>|null
+	 */
+	protected ?array $ontvangers = null;
 
-    /**
-     * Third-country transfer details (Art 30 §1(e), Art 44).
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $doorgifteBuitenEu = null;
+	/**
+	 * Third-country transfer details (Art 30 §1(e), Art 44).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $doorgifteBuitenEu = null;
 
-    /**
-     * Technical security measures (Art 30 §1(g), Art 32).
-     *
-     * @var string|null
-     */
-    protected ?string $technischeMaatregelen = null;
+	/**
+	 * Technical security measures (Art 30 §1(g), Art 32).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $technischeMaatregelen = null;
 
-    /**
-     * Organisational security measures (Art 30 §1(g), Art 32).
-     *
-     * @var string|null
-     */
-    protected ?string $organisatorischeMaatregelen = null;
+	/**
+	 * Organisational security measures (Art 30 §1(g), Art 32).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisatorischeMaatregelen = null;
 
-    /**
-     * Controller details (Art 30 §1(a)).
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $verwerkingsverantwoordelijke = null;
+	/**
+	 * Controller details (Art 30 §1(a)).
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $verwerkingsverantwoordelijke = null;
 
-    /**
-     * Data Protection Officer contact details.
-     *
-     * @var array<string, mixed>|null
-     */
-    protected ?array $contactgegevensFg = null;
+	/**
+	 * Data Protection Officer contact details.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $contactgegevensFg = null;
 
-    /**
-     * Tenant identifier for multi-tenant isolation.
-     *
-     * @var string|null
-     */
-    protected ?string $organisationId = null;
+	/**
+	 * Tenant identifier for multi-tenant isolation.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $organisationId = null;
 
-    /**
-     * Lifecycle status (concept | published | archived).
-     *
-     * @var string|null
-     */
-    protected ?string $status = 'concept';
+	/**
+	 * Lifecycle status (concept | published | archived).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = 'concept';
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Last-update timestamp.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last-update timestamp.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Register the entity's typed columns.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'code', type: 'string');
-        $this->addType(fieldName: 'naam', type: 'string');
-        $this->addType(fieldName: 'beschrijving', type: 'string');
-        $this->addType(fieldName: 'doelbinding', type: 'string');
-        $this->addType(fieldName: 'rechtsgrond', type: 'string');
-        $this->addType(fieldName: 'categorieenBetrokkenen', type: 'json');
-        $this->addType(fieldName: 'categorieenPersoonsgegevens', type: 'json');
-        $this->addType(fieldName: 'bewaartermijn', type: 'string');
-        $this->addType(fieldName: 'ontvangers', type: 'json');
-        $this->addType(fieldName: 'doorgifteBuitenEu', type: 'json');
-        $this->addType(fieldName: 'technischeMaatregelen', type: 'string');
-        $this->addType(fieldName: 'organisatorischeMaatregelen', type: 'string');
-        $this->addType(fieldName: 'verwerkingsverantwoordelijke', type: 'json');
-        $this->addType(fieldName: 'contactgegevensFg', type: 'json');
-        $this->addType(fieldName: 'organisationId', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+	/**
+	 * Register the entity's typed columns.
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'code', type: 'string');
+		$this->addType(fieldName: 'naam', type: 'string');
+		$this->addType(fieldName: 'beschrijving', type: 'string');
+		$this->addType(fieldName: 'doelbinding', type: 'string');
+		$this->addType(fieldName: 'rechtsgrond', type: 'string');
+		$this->addType(fieldName: 'categorieenBetrokkenen', type: 'json');
+		$this->addType(fieldName: 'categorieenPersoonsgegevens', type: 'json');
+		$this->addType(fieldName: 'bewaartermijn', type: 'string');
+		$this->addType(fieldName: 'ontvangers', type: 'json');
+		$this->addType(fieldName: 'doorgifteBuitenEu', type: 'json');
+		$this->addType(fieldName: 'technischeMaatregelen', type: 'string');
+		$this->addType(fieldName: 'organisatorischeMaatregelen', type: 'string');
+		$this->addType(fieldName: 'verwerkingsverantwoordelijke', type: 'json');
+		$this->addType(fieldName: 'contactgegevensFg', type: 'json');
+		$this->addType(fieldName: 'organisationId', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Whether the supplied legal-basis string is in the Art 6 vocabulary.
-     *
-     * @param string|null $rechtsgrond Candidate legal-basis string.
-     *
-     * @return bool
-     */
-    public static function isValidRechtsgrond(?string $rechtsgrond): bool
-    {
-        if ($rechtsgrond === null || $rechtsgrond === '') {
-            return false;
-        }
+	/**
+	 * Whether the supplied legal-basis string is in the Art 6 vocabulary.
+	 *
+	 * @param string|null $rechtsgrond Candidate legal-basis string.
+	 *
+	 * @return bool
+	 */
+	public static function isValidRechtsgrond(?string $rechtsgrond): bool {
+		if ($rechtsgrond === null || $rechtsgrond === '') {
+			return false;
+		}
 
-        return in_array(needle: $rechtsgrond, haystack: self::RECHTSGROND_VOCABULARY, strict: true);
+		return in_array(needle: $rechtsgrond, haystack: self::RECHTSGROND_VOCABULARY, strict: true);
+	}//end isValidRechtsgrond()
 
-    }//end isValidRechtsgrond()
+	/**
+	 * Whether the supplied status string is in the lifecycle vocabulary.
+	 *
+	 * @param string|null $status Candidate status string.
+	 *
+	 * @return bool
+	 */
+	public static function isValidStatus(?string $status): bool {
+		if ($status === null || $status === '') {
+			return false;
+		}
 
-    /**
-     * Whether the supplied status string is in the lifecycle vocabulary.
-     *
-     * @param string|null $status Candidate status string.
-     *
-     * @return bool
-     */
-    public static function isValidStatus(?string $status): bool
-    {
-        if ($status === null || $status === '') {
-            return false;
-        }
+		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
+	}//end isValidStatus()
 
-        return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
+	/**
+	 * Render the entity as the canonical AVG Art 30 JSON shape.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'code' => $this->code,
+			'naam' => $this->naam,
+			'beschrijving' => $this->beschrijving,
+			'doelbinding' => $this->doelbinding,
+			'rechtsgrond' => $this->rechtsgrond,
+			'categorieenBetrokkenen' => $this->categorieenBetrokkenen,
+			'categorieenPersoonsgegevens' => $this->categorieenPersoonsgegevens,
+			'bewaartermijn' => $this->bewaartermijn,
+			'ontvangers' => $this->ontvangers,
+			'doorgifteBuitenEu' => $this->doorgifteBuitenEu,
+			'technischeMaatregelen' => $this->technischeMaatregelen,
+			'organisatorischeMaatregelen' => $this->organisatorischeMaatregelen,
+			'verwerkingsverantwoordelijke' => $this->verwerkingsverantwoordelijke,
+			'contactgegevensFg' => $this->contactgegevensFg,
+			'organisationId' => $this->organisationId,
+			'status' => $this->status,
+			'created' => $this->created?->format('c'),
+			'updated' => $this->updated?->format('c'),
+		];
 
-    }//end isValidStatus()
-
-    /**
-     * Render the entity as the canonical AVG Art 30 JSON shape.
-     *
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'                           => $this->id,
-            'uuid'                         => $this->uuid,
-            'code'                         => $this->code,
-            'naam'                         => $this->naam,
-            'beschrijving'                 => $this->beschrijving,
-            'doelbinding'                  => $this->doelbinding,
-            'rechtsgrond'                  => $this->rechtsgrond,
-            'categorieenBetrokkenen'       => $this->categorieenBetrokkenen,
-            'categorieenPersoonsgegevens'  => $this->categorieenPersoonsgegevens,
-            'bewaartermijn'                => $this->bewaartermijn,
-            'ontvangers'                   => $this->ontvangers,
-            'doorgifteBuitenEu'            => $this->doorgifteBuitenEu,
-            'technischeMaatregelen'        => $this->technischeMaatregelen,
-            'organisatorischeMaatregelen'  => $this->organisatorischeMaatregelen,
-            'verwerkingsverantwoordelijke' => $this->verwerkingsverantwoordelijke,
-            'contactgegevensFg'            => $this->contactgegevensFg,
-            'organisationId'               => $this->organisationId,
-            'status'                       => $this->status,
-            'created'                      => $this->created?->format('c'),
-            'updated'                      => $this->updated?->format('c'),
-        ];
-
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

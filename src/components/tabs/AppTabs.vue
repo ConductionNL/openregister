@@ -91,7 +91,10 @@ export default {
 				unregister: this.unregisterTab,
 				isActive: (uid) => {
 					const tab = this.tabs.find((entry) => entry.uid === uid)
-					return tab !== undefined && this.tabs.indexOf(tab) === this.activeIndex
+					return (
+						tab !== undefined
+						&& this.tabs.indexOf(tab) === this.activeIndex
+					)
 				},
 			},
 		}
@@ -105,7 +108,11 @@ export default {
 		 */
 		registerTab(tab) {
 			this.tabs.push(tab)
-			if (tab.active === true && tab.disabled !== true && this.modelValue === null) {
+			if (
+				tab.active === true
+				&& tab.disabled !== true
+				&& this.modelValue === null
+			) {
 				this.internalIndex = this.tabs.length - 1
 			}
 			this.registrationTick += 1
@@ -181,28 +188,32 @@ export default {
 					role: 'tablist',
 					onKeydown: this.onKeydown,
 				},
-				this.tabs.map((tab, index) => h(
-					'button',
-					{
-						key: tab.uid,
-						type: 'button',
-						role: 'tab',
-						id: `app-tab-${tab.uid}`,
-						class: [
-							'app-tabs__tab',
-							{
-								'app-tabs__tab--active': index === this.activeIndex,
-								'app-tabs__tab--disabled': tab.disabled === true,
-							},
-						],
-						disabled: tab.disabled === true,
-						'aria-selected': index === this.activeIndex ? 'true' : 'false',
-						'aria-controls': `app-tabpanel-${tab.uid}`,
-						tabindex: index === this.activeIndex ? 0 : -1,
-						onClick: () => this.select(index),
-					},
-					tab.titleSlot ? tab.titleSlot() : tab.title,
-				)),
+				this.tabs.map((tab, index) =>
+					h(
+						'button',
+						{
+							key: tab.uid,
+							type: 'button',
+							role: 'tab',
+							id: `app-tab-${tab.uid}`,
+							class: [
+								'app-tabs__tab',
+								{
+									'app-tabs__tab--active':
+										index === this.activeIndex,
+									'app-tabs__tab--disabled': tab.disabled === true,
+								},
+							],
+							disabled: tab.disabled === true,
+							'aria-selected':
+								index === this.activeIndex ? 'true' : 'false',
+							'aria-controls': `app-tabpanel-${tab.uid}`,
+							tabindex: index === this.activeIndex ? 0 : -1,
+							onClick: () => this.select(index),
+						},
+						tab.titleSlot ? tab.titleSlot() : tab.title,
+					),
+				),
 			)
 		},
 	},
@@ -217,7 +228,11 @@ export default {
 		this.registrationTick
 		return h('div', { class: 'app-tabs' }, [
 			this.renderTabList(),
-			h('div', { class: ['app-tabs__content', this.contentClass] }, this.$slots.default?.()),
+			h(
+				'div',
+				{ class: ['app-tabs__content', this.contentClass] },
+				this.$slots.default?.(),
+			),
 		])
 	},
 }

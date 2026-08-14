@@ -72,11 +72,13 @@ export const useTranslationsStore = defineStore('translations', {
 		/**
 		 * @param {object} state
 		 */
-		getSlotsForObject: (state) => (uuid) => state.byObject[uuid]?.translations ?? [],
+		getSlotsForObject: (state) => (uuid) =>
+			state.byObject[uuid]?.translations ?? [],
 		/**
 		 * @param {object} state
 		 */
-		getCompletenessForObject: (state) => (uuid) => state.byObject[uuid]?.completeness ?? {},
+		getCompletenessForObject: (state) => (uuid) =>
+			state.byObject[uuid]?.completeness ?? {},
 		isLoading: (state) => state.loading,
 		getError: (state) => state.error,
 	},
@@ -94,7 +96,10 @@ export const useTranslationsStore = defineStore('translations', {
 			this.error = null
 			try {
 				const params = schema ? { schema } : {}
-				const response = await axios.get(`${API_BASE}/object/${encodeURIComponent(uuid)}`, { params })
+				const response = await axios.get(
+					`${API_BASE}/object/${encodeURIComponent(uuid)}`,
+					{ params },
+				)
 				this.byObject = {
 					...this.byObject,
 					[uuid]: {
@@ -135,7 +140,10 @@ export const useTranslationsStore = defineStore('translations', {
 				const cached = this.byObject[uuid]
 				if (cached?.translations) {
 					cached.translations = cached.translations.map((slot) => {
-						if (slot.property === property && slot.language === language) {
+						if (
+							slot.property === property
+							&& slot.language === language
+						) {
 							return { ...slot, status }
 						}
 						return slot

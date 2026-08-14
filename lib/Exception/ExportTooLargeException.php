@@ -48,71 +48,65 @@ use Exception;
  *
  * @link https://OpenRegister.app
  */
-class ExportTooLargeException extends Exception
-{
+class ExportTooLargeException extends Exception {
 
-    /**
-     * The HTTP status code controllers MUST map this exception to.
-     *
-     * @var int
-     */
-    public const HTTP_STATUS = 400;
+	/**
+	 * The HTTP status code controllers MUST map this exception to.
+	 *
+	 * @var int
+	 */
+	public const HTTP_STATUS = 400;
 
-    /**
-     * The actual number of objects the export attempted to render.
-     *
-     * @var integer
-     */
-    private int $rowCount;
+	/**
+	 * The actual number of objects the export attempted to render.
+	 *
+	 * @var integer
+	 */
+	private int $rowCount;
 
-    /**
-     * The configured row-count limit that was exceeded.
-     *
-     * @var integer
-     */
-    private int $maxRows;
+	/**
+	 * The configured row-count limit that was exceeded.
+	 *
+	 * @var integer
+	 */
+	private int $maxRows;
 
-    /**
-     * ExportTooLargeException constructor.
-     *
-     * @param int            $rowCount The actual number of objects the export attempted to render.
-     * @param int            $maxRows  The configured row-count limit that was exceeded.
-     * @param Exception|null $previous The previous exception that caused this one, if any.
-     */
-    public function __construct(int $rowCount, int $maxRows, ?Exception $previous=null)
-    {
-        $this->rowCount = $rowCount;
-        $this->maxRows  = $maxRows;
+	/**
+	 * ExportTooLargeException constructor.
+	 *
+	 * @param int $rowCount The actual number of objects the export attempted to render.
+	 * @param int $maxRows The configured row-count limit that was exceeded.
+	 * @param Exception|null $previous The previous exception that caused this one, if any.
+	 */
+	public function __construct(int $rowCount, int $maxRows, ?Exception $previous = null) {
+		$this->rowCount = $rowCount;
+		$this->maxRows = $maxRows;
 
-        $message = sprintf(
-            'PDF export row count (%d) exceeds the maximum allowed (%d). '
-            .'Narrow the export with filters or use CSV/Excel export instead.',
-            $rowCount,
-            $maxRows
-        );
-        parent::__construct(message: $message, code: 0, previous: $previous);
+		$message = sprintf(
+			'PDF export row count (%d) exceeds the maximum allowed (%d). '
+			. 'Narrow the export with filters or use CSV/Excel export instead.',
+			$rowCount,
+			$maxRows
+		);
+		parent::__construct(message: $message, code: 0, previous: $previous);
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the actual number of objects the export attempted to render.
-     *
-     * @return int
-     */
-    public function getRowCount(): int
-    {
-        return $this->rowCount;
+	/**
+	 * Get the actual number of objects the export attempted to render.
+	 *
+	 * @return int
+	 */
+	public function getRowCount(): int {
+		return $this->rowCount;
+	}//end getRowCount()
 
-    }//end getRowCount()
-
-    /**
-     * Get the configured row-count limit that was exceeded.
-     *
-     * @return int
-     */
-    public function getMaxRows(): int
-    {
-        return $this->maxRows;
-
-    }//end getMaxRows()
+	/**
+	 * Get the configured row-count limit that was exceeded.
+	 *
+	 * @return int
+	 */
+	public function getMaxRows(): int {
+		return $this->maxRows;
+	}//end getMaxRows()
 }//end class

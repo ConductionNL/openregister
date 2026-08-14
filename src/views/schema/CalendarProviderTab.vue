@@ -6,7 +6,12 @@ import { translate as t } from '@nextcloud/l10n'
 	<div class="calendarProviderTab">
 		<h3>{{ t('openregister', 'Calendar Provider Configuration') }}</h3>
 		<p class="description">
-			{{ t('openregister', 'Configure this schema to surface objects as events in the Nextcloud Calendar app.') }}
+			{{
+				t(
+					'openregister',
+					'Configure this schema to surface objects as events in the Nextcloud Calendar app.',
+				)
+			}}
 		</p>
 
 		<!-- Enable toggle -->
@@ -22,11 +27,15 @@ import { translate as t } from '@nextcloud/l10n'
 		<template v-if="localConfig.enabled">
 			<!-- Display name -->
 			<div class="fieldRow">
-				<label for="cal-displayName">{{ t('openregister', 'Display Name') }}</label>
+				<label for="cal-displayName">{{
+					t('openregister', 'Display Name')
+				}}</label>
 				<NcTextField
 					id="cal-displayName"
 					v-model="localConfig.displayName"
-					:placeholder="schema?.title || t('openregister', 'Calendar name')"
+					:placeholder="
+						schema?.title || t('openregister', 'Calendar name')
+					"
 					:label-outside="true" />
 			</div>
 
@@ -36,7 +45,9 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcColorPicker v-model="localConfig.color">
 					<NcButton>
 						<template #icon>
-							<CircleIcon :size="20" :fill-color="localConfig.color || '#0082C9'" />
+							<CircleIcon
+								:size="20"
+								:fill-color="localConfig.color || '#0082C9'" />
 						</template>
 						{{ localConfig.color || '#0082C9' }}
 					</NcButton>
@@ -45,7 +56,9 @@ import { translate as t } from '@nextcloud/l10n'
 
 			<!-- DTSTART field -->
 			<div class="fieldRow">
-				<label for="cal-dtstart">{{ t('openregister', 'Start Date Field') }} *</label>
+				<label for="cal-dtstart"
+					>{{ t('openregister', 'Start Date Field') }} *</label
+				>
 				<NcSelect
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
@@ -56,7 +69,9 @@ import { translate as t } from '@nextcloud/l10n'
 
 			<!-- DTEND field -->
 			<div class="fieldRow">
-				<label for="cal-dtend">{{ t('openregister', 'End Date Field') }}</label>
+				<label for="cal-dtend">{{
+					t('openregister', 'End Date Field')
+				}}</label>
 				<NcSelect
 					id="cal-dtend"
 					v-model="localConfig.dtend"
@@ -67,14 +82,19 @@ import { translate as t } from '@nextcloud/l10n'
 
 			<!-- Title template -->
 			<div class="fieldRow">
-				<label for="cal-title">{{ t('openregister', 'Title Template') }} *</label>
+				<label for="cal-title"
+					>{{ t('openregister', 'Title Template') }} *</label
+				>
 				<NcTextField
 					id="cal-title"
 					v-model="localConfig.titleTemplate"
 					:placeholder="t('openregister', '{property} - {other}')" />
 				<small class="hint">
 					{{ t('openregister', 'Available placeholders:') }}
-					<span v-for="prop in propertyNames" :key="prop" class="placeholder">
+					<span
+						v-for="prop in propertyNames"
+						:key="prop"
+						class="placeholder">
 						{{ '{' + prop + '}' }}
 					</span>
 				</small>
@@ -82,18 +102,24 @@ import { translate as t } from '@nextcloud/l10n'
 
 			<!-- Description template -->
 			<div class="fieldRow">
-				<label for="cal-desc">{{ t('openregister', 'Description Template') }}</label>
+				<label for="cal-desc">{{
+					t('openregister', 'Description Template')
+				}}</label>
 				<textarea
 					id="cal-desc"
 					v-model="localConfig.descriptionTemplate"
 					class="ncTextarea"
 					rows="3"
-					:placeholder="t('openregister', 'Optional event description template')" />
+					:placeholder="
+						t('openregister', 'Optional event description template')
+					" />
 			</div>
 
 			<!-- Location field -->
 			<div class="fieldRow">
-				<label for="cal-location">{{ t('openregister', 'Location Field') }}</label>
+				<label for="cal-location">{{
+					t('openregister', 'Location Field')
+				}}</label>
 				<NcSelect
 					id="cal-location"
 					v-model="localConfig.locationField"
@@ -106,13 +132,21 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="fieldRow">
 				<NcCheckboxRadioSwitch
 					:model-value="localConfig.allDay"
-					:indeterminate="localConfig.allDay === null || localConfig.allDay === undefined"
+					:indeterminate="
+						localConfig.allDay === null
+						|| localConfig.allDay === undefined
+					"
 					type="switch"
 					@update:modelValue="localConfig.allDay = $event">
 					{{ t('openregister', 'All-day events') }}
 				</NcCheckboxRadioSwitch>
 				<small class="hint">
-					{{ t('openregister', 'Leave off for auto-detection from property format.') }}
+					{{
+						t(
+							'openregister',
+							'Leave off for auto-detection from property format.',
+						)
+					}}
 				</small>
 			</div>
 
@@ -205,7 +239,11 @@ export default {
 				.filter(([, def]) => {
 					const format = def?.format || ''
 					const type = def?.type || ''
-					return format === 'date' || format === 'date-time' || type === 'date'
+					return (
+						format === 'date'
+						|| format === 'date-time'
+						|| type === 'date'
+					)
 				})
 				.map(([key]) => key)
 		},

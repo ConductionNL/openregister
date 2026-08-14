@@ -48,351 +48,329 @@ namespace OCA\OpenRegister\Service\Object;
  * Mutable, in-memory aggregation of per-row outcomes for a streaming
  * bulk-upsert batch.
  */
-class BatchOperationStatus
-{
+class BatchOperationStatus {
 
-    /**
-     * Wall-clock start timestamp in seconds (nullable until `start()`).
-     *
-     * @var float|null
-     */
-    private ?float $startedAt = null;
+	/**
+	 * Wall-clock start timestamp in seconds (nullable until `start()`).
+	 *
+	 * @var float|null
+	 */
+	private ?float $startedAt = null;
 
-    /**
-     * Wall-clock completion timestamp in seconds (nullable until `complete()`).
-     *
-     * @var float|null
-     */
-    private ?float $completedAt = null;
+	/**
+	 * Wall-clock completion timestamp in seconds (nullable until `complete()`).
+	 *
+	 * @var float|null
+	 */
+	private ?float $completedAt = null;
 
-    /**
-     * UUIDs of rows that were newly created during the batch.
-     *
-     * @var list<string>
-     */
-    private array $created = [];
+	/**
+	 * UUIDs of rows that were newly created during the batch.
+	 *
+	 * @var list<string>
+	 */
+	private array $created = [];
 
-    /**
-     * UUIDs of rows that were updated during the batch.
-     *
-     * @var list<string>
-     */
-    private array $updated = [];
+	/**
+	 * UUIDs of rows that were updated during the batch.
+	 *
+	 * @var list<string>
+	 */
+	private array $updated = [];
 
-    /**
-     * UUIDs of rows whose payload was identical to stored state.
-     *
-     * @var list<string>
-     */
-    private array $unchanged = [];
+	/**
+	 * UUIDs of rows whose payload was identical to stored state.
+	 *
+	 * @var list<string>
+	 */
+	private array $unchanged = [];
 
-    /**
-     * Failed-row records, each with optional UUID + failure metadata.
-     *
-     * @var list<array{uuid: string|null, message: string, exceptionClass: string}>
-     */
-    private array $failed = [];
+	/**
+	 * Failed-row records, each with optional UUID + failure metadata.
+	 *
+	 * @var list<array{uuid: string|null, message: string, exceptionClass: string}>
+	 */
+	private array $failed = [];
 
-    /**
-     * Reference-cache hit counter.
-     *
-     * @var integer
-     */
-    private int $referenceCacheHits = 0;
+	/**
+	 * Reference-cache hit counter.
+	 *
+	 * @var integer
+	 */
+	private int $referenceCacheHits = 0;
 
-    /**
-     * Reference-cache miss counter.
-     *
-     * @var integer
-     */
-    private int $referenceCacheMisses = 0;
+	/**
+	 * Reference-cache miss counter.
+	 *
+	 * @var integer
+	 */
+	private int $referenceCacheMisses = 0;
 
-    /**
-     * Mark the start of the batch. Idempotent — re-calling does not
-     * reset; use a fresh instance for a fresh run.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function start(): void
-    {
-        if ($this->startedAt === null) {
-            $this->startedAt = microtime(true);
-        }
-    }//end start()
+	/**
+	 * Mark the start of the batch. Idempotent — re-calling does not
+	 * reset; use a fresh instance for a fresh run.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function start(): void {
+		if ($this->startedAt === null) {
+			$this->startedAt = microtime(true);
+		}
+	}//end start()
 
-    /**
-     * Mark the end of the batch.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function complete(): void
-    {
-        if ($this->completedAt === null) {
-            $this->completedAt = microtime(true);
-        }
-    }//end complete()
+	/**
+	 * Mark the end of the batch.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object timing setter; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function complete(): void {
+		if ($this->completedAt === null) {
+			$this->completedAt = microtime(true);
+		}
+	}//end complete()
 
-    /**
-     * Append a created-row outcome.
-     *
-     * @param string $uuid UUID of the newly created row.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordCreated(string $uuid): void
-    {
-        $this->created[] = $uuid;
-    }//end recordCreated()
+	/**
+	 * Append a created-row outcome.
+	 *
+	 * @param string $uuid UUID of the newly created row.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordCreated(string $uuid): void {
+		$this->created[] = $uuid;
+	}//end recordCreated()
 
-    /**
-     * Append an updated-row outcome.
-     *
-     * @param string $uuid UUID of the updated row.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordUpdated(string $uuid): void
-    {
-        $this->updated[] = $uuid;
-    }//end recordUpdated()
+	/**
+	 * Append an updated-row outcome.
+	 *
+	 * @param string $uuid UUID of the updated row.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordUpdated(string $uuid): void {
+		$this->updated[] = $uuid;
+	}//end recordUpdated()
 
-    /**
-     * Append an unchanged-row outcome (input matched stored data).
-     *
-     * @param string $uuid UUID of the unchanged row.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordUnchanged(string $uuid): void
-    {
-        $this->unchanged[] = $uuid;
-    }//end recordUnchanged()
+	/**
+	 * Append an unchanged-row outcome (input matched stored data).
+	 *
+	 * @param string $uuid UUID of the unchanged row.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordUnchanged(string $uuid): void {
+		$this->unchanged[] = $uuid;
+	}//end recordUnchanged()
 
-    /**
-     * Append a failed-row outcome.
-     *
-     * @param string|null $uuid           UUID of the input row, or null when not yet assigned.
-     * @param string      $message        Human-readable failure message.
-     * @param string      $exceptionClass Fully-qualified class name of the exception.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordFailed(?string $uuid, string $message, string $exceptionClass): void
-    {
-        $this->failed[] = [
-            'uuid'           => $uuid,
-            'message'        => $message,
-            'exceptionClass' => $exceptionClass,
-        ];
-    }//end recordFailed()
+	/**
+	 * Append a failed-row outcome.
+	 *
+	 * @param string|null $uuid UUID of the input row, or null when not yet assigned.
+	 * @param string $message Human-readable failure message.
+	 * @param string $exceptionClass Fully-qualified class name of the exception.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object outcome recorder; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordFailed(?string $uuid, string $message, string $exceptionClass): void {
+		$this->failed[] = [
+			'uuid' => $uuid,
+			'message' => $message,
+			'exceptionClass' => $exceptionClass,
+		];
+	}//end recordFailed()
 
-    /**
-     * Increment the reference-cache-hit counter. Called by the
-     * streaming primitive each time a referenced UUID resolves
-     * via the request-scoped cache instead of a fresh DB lookup.
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordReferenceCacheHit(): void
-    {
-        $this->referenceCacheHits++;
-    }//end recordReferenceCacheHit()
+	/**
+	 * Increment the reference-cache-hit counter. Called by the
+	 * streaming primitive each time a referenced UUID resolves
+	 * via the request-scoped cache instead of a fresh DB lookup.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordReferenceCacheHit(): void {
+		$this->referenceCacheHits++;
+	}//end recordReferenceCacheHit()
 
-    /**
-     * Increment the reference-cache-miss counter (fresh DB lookup).
-     *
-     * @return void
-     *
-     * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function recordReferenceCacheMiss(): void
-    {
-        $this->referenceCacheMisses++;
-    }//end recordReferenceCacheMiss()
+	/**
+	 * Increment the reference-cache-miss counter (fresh DB lookup).
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Boilerplate value-object counter; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function recordReferenceCacheMiss(): void {
+		$this->referenceCacheMisses++;
+	}//end recordReferenceCacheMiss()
 
-    /**
-     * Get the UUIDs of created rows.
-     *
-     * @return list<string>
-     */
-    public function getCreated(): array
-    {
-        return $this->created;
-    }//end getCreated()
+	/**
+	 * Get the UUIDs of created rows.
+	 *
+	 * @return list<string>
+	 */
+	public function getCreated(): array {
+		return $this->created;
+	}//end getCreated()
 
-    /**
-     * Get the UUIDs of updated rows.
-     *
-     * @return list<string>
-     */
-    public function getUpdated(): array
-    {
-        return $this->updated;
-    }//end getUpdated()
+	/**
+	 * Get the UUIDs of updated rows.
+	 *
+	 * @return list<string>
+	 */
+	public function getUpdated(): array {
+		return $this->updated;
+	}//end getUpdated()
 
-    /**
-     * Get the UUIDs of unchanged rows.
-     *
-     * @return list<string>
-     */
-    public function getUnchanged(): array
-    {
-        return $this->unchanged;
-    }//end getUnchanged()
+	/**
+	 * Get the UUIDs of unchanged rows.
+	 *
+	 * @return list<string>
+	 */
+	public function getUnchanged(): array {
+		return $this->unchanged;
+	}//end getUnchanged()
 
-    /**
-     * Get the failed-row records.
-     *
-     * @return list<array{uuid: string|null, message: string, exceptionClass: string}>
-     */
-    public function getFailed(): array
-    {
-        return $this->failed;
-    }//end getFailed()
+	/**
+	 * Get the failed-row records.
+	 *
+	 * @return list<array{uuid: string|null, message: string, exceptionClass: string}>
+	 */
+	public function getFailed(): array {
+		return $this->failed;
+	}//end getFailed()
 
-    /**
-     * Number of rows recorded as created.
-     *
-     * @return int
-     */
-    public function getCreatedCount(): int
-    {
-        return count($this->created);
-    }//end getCreatedCount()
+	/**
+	 * Number of rows recorded as created.
+	 *
+	 * @return int
+	 */
+	public function getCreatedCount(): int {
+		return count($this->created);
+	}//end getCreatedCount()
 
-    /**
-     * Number of rows recorded as updated.
-     *
-     * @return int
-     */
-    public function getUpdatedCount(): int
-    {
-        return count($this->updated);
-    }//end getUpdatedCount()
+	/**
+	 * Number of rows recorded as updated.
+	 *
+	 * @return int
+	 */
+	public function getUpdatedCount(): int {
+		return count($this->updated);
+	}//end getUpdatedCount()
 
-    /**
-     * Number of rows recorded as unchanged.
-     *
-     * @return int
-     */
-    public function getUnchangedCount(): int
-    {
-        return count($this->unchanged);
-    }//end getUnchangedCount()
+	/**
+	 * Number of rows recorded as unchanged.
+	 *
+	 * @return int
+	 */
+	public function getUnchangedCount(): int {
+		return count($this->unchanged);
+	}//end getUnchangedCount()
 
-    /**
-     * Number of rows recorded as failed.
-     *
-     * @return int
-     */
-    public function getFailedCount(): int
-    {
-        return count($this->failed);
-    }//end getFailedCount()
+	/**
+	 * Number of rows recorded as failed.
+	 *
+	 * @return int
+	 */
+	public function getFailedCount(): int {
+		return count($this->failed);
+	}//end getFailedCount()
 
-    /**
-     * Total number of rows processed (created + updated + unchanged + failed).
-     *
-     * @return int
-     *
-     * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function getProcessedCount(): int
-    {
-        $total  = $this->getCreatedCount();
-        $total += $this->getUpdatedCount();
-        $total += $this->getUnchangedCount();
-        $total += $this->getFailedCount();
-        return $total;
-    }//end getProcessedCount()
+	/**
+	 * Total number of rows processed (created + updated + unchanged + failed).
+	 *
+	 * @return int
+	 *
+	 * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function getProcessedCount(): int {
+		$total = $this->getCreatedCount();
+		$total += $this->getUpdatedCount();
+		$total += $this->getUnchangedCount();
+		$total += $this->getFailedCount();
+		return $total;
+	}//end getProcessedCount()
 
-    /**
-     * Number of reference-cache hits during the batch.
-     *
-     * @return int
-     */
-    public function getReferenceCacheHits(): int
-    {
-        return $this->referenceCacheHits;
-    }//end getReferenceCacheHits()
+	/**
+	 * Number of reference-cache hits during the batch.
+	 *
+	 * @return int
+	 */
+	public function getReferenceCacheHits(): int {
+		return $this->referenceCacheHits;
+	}//end getReferenceCacheHits()
 
-    /**
-     * Number of reference-cache misses during the batch.
-     *
-     * @return int
-     */
-    public function getReferenceCacheMisses(): int
-    {
-        return $this->referenceCacheMisses;
-    }//end getReferenceCacheMisses()
+	/**
+	 * Number of reference-cache misses during the batch.
+	 *
+	 * @return int
+	 */
+	public function getReferenceCacheMisses(): int {
+		return $this->referenceCacheMisses;
+	}//end getReferenceCacheMisses()
 
-    /**
-     * Wall-clock duration in seconds, or null when the batch has not
-     * been completed yet.
-     *
-     * @return float|null
-     *
-     * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function getDurationSeconds(): ?float
-    {
-        if ($this->startedAt === null || $this->completedAt === null) {
-            return null;
-        }
+	/**
+	 * Wall-clock duration in seconds, or null when the batch has not
+	 * been completed yet.
+	 *
+	 * @return float|null
+	 *
+	 * @spec exclude Boilerplate value-object derived accessor; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function getDurationSeconds(): ?float {
+		if ($this->startedAt === null || $this->completedAt === null) {
+			return null;
+		}
 
-        return ($this->completedAt - $this->startedAt);
-    }//end getDurationSeconds()
+		return ($this->completedAt - $this->startedAt);
+	}//end getDurationSeconds()
 
-    /**
-     * Serialise the status as a flat array suitable for JSON
-     * responses, log lines, or persistence.
-     *
-     * @return array<string, mixed>
-     *
-     * @spec exclude Boilerplate value-object serialization; the batch outcome aggregator is anchored
-     *              to reference-existence-validation at class level.
-     */
-    public function toArray(): array
-    {
-        return [
-            'startedAt'            => $this->startedAt,
-            'completedAt'          => $this->completedAt,
-            'durationSeconds'      => $this->getDurationSeconds(),
-            'processedCount'       => $this->getProcessedCount(),
-            'createdCount'         => $this->getCreatedCount(),
-            'updatedCount'         => $this->getUpdatedCount(),
-            'unchangedCount'       => $this->getUnchangedCount(),
-            'failedCount'          => $this->getFailedCount(),
-            'created'              => $this->created,
-            'updated'              => $this->updated,
-            'unchanged'            => $this->unchanged,
-            'failed'               => $this->failed,
-            'referenceCacheHits'   => $this->referenceCacheHits,
-            'referenceCacheMisses' => $this->referenceCacheMisses,
-        ];
-    }//end toArray()
+	/**
+	 * Serialise the status as a flat array suitable for JSON
+	 * responses, log lines, or persistence.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec exclude Boilerplate value-object serialization; the batch outcome aggregator is anchored
+	 *              to reference-existence-validation at class level.
+	 */
+	public function toArray(): array {
+		return [
+			'startedAt' => $this->startedAt,
+			'completedAt' => $this->completedAt,
+			'durationSeconds' => $this->getDurationSeconds(),
+			'processedCount' => $this->getProcessedCount(),
+			'createdCount' => $this->getCreatedCount(),
+			'updatedCount' => $this->getUpdatedCount(),
+			'unchangedCount' => $this->getUnchangedCount(),
+			'failedCount' => $this->getFailedCount(),
+			'created' => $this->created,
+			'updated' => $this->updated,
+			'unchanged' => $this->unchanged,
+			'failed' => $this->failed,
+			'referenceCacheHits' => $this->referenceCacheHits,
+			'referenceCacheMisses' => $this->referenceCacheMisses,
+		];
+	}//end toArray()
 }//end class

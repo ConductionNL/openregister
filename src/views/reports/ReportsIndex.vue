@@ -8,14 +8,23 @@
 					</h1>
 				</div>
 				<p>
-					{{ t('openregister', 'Operator-defined dashboards and scheduled reports. Each dashboard is a first-class object in the `reports` register; widgets are declared in the dashboard\'s `widgets` array and rendered live from aggregations / GraphQL.') }}
+					{{
+						t(
+							'openregister',
+							"Operator-defined dashboards and scheduled reports. Each dashboard is a first-class object in the `reports` register; widgets are declared in the dashboard's `widgets` array and rendered live from aggregations / GraphQL.",
+						)
+					}}
 				</p>
 			</div>
 
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span v-if="dashboards.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {count} dashboard(s)', { count: dashboards.length }) }}
+						{{
+							t('openregister', 'Showing {count} dashboard(s)', {
+								count: dashboards.length,
+							})
+						}}
 					</span>
 				</div>
 				<div class="viewActions">
@@ -33,7 +42,12 @@
 				<NcEmptyContent
 					v-if="!dashboards.length && !loading"
 					:name="t('openregister', 'No dashboards yet')"
-					:description="t('openregister', 'Import the report-bundle.json template to get the `reports` register, then create your first dashboard via the standard object UI. Dashboards declare their widgets in JSON and the renderer feeds each widget live aggregation data.')">
+					:description="
+						t(
+							'openregister',
+							'Import the report-bundle.json template to get the `reports` register, then create your first dashboard via the standard object UI. Dashboards declare their widgets in JSON and the renderer feeds each widget live aggregation data.',
+						)
+					">
 					<template #icon>
 						<ChartLine :size="64" />
 					</template>
@@ -50,11 +64,20 @@
 								card mouse-clickable without turning the <article> into a role="button",
 								which would hide the heading and the widget-count footer from AT. -->
 							<h3>
-								<button type="button" class="reportCardActivator" @click="openDashboard(dashboard)">
-									{{ dashboard.titel || dashboard['@self']?.name || t('openregister', 'Untitled') }}
+								<button
+									type="button"
+									class="reportCardActivator"
+									@click="openDashboard(dashboard)">
+									{{
+										dashboard.titel
+										|| dashboard['@self']?.name
+										|| t('openregister', 'Untitled')
+									}}
 								</button>
 							</h3>
-							<span class="badge">{{ dashboard.category || 'operational' }}</span>
+							<span class="badge">{{
+								dashboard.category || 'operational'
+							}}</span>
 						</div>
 					</div>
 					<p v-if="dashboard.beschrijving" class="reportCardBody">
@@ -62,9 +85,15 @@
 					</p>
 					<footer class="reportCardFooter">
 						<span class="reportCardWidgetCount">
-							{{ t('openregister', '{count} widget(s)', { count: (dashboard.widgets || []).length }) }}
+							{{
+								t('openregister', '{count} widget(s)', {
+									count: (dashboard.widgets || []).length,
+								})
+							}}
 						</span>
-						<span v-if="dashboard.schedule?.active" class="badge badge-status-published">
+						<span
+							v-if="dashboard.schedule?.active"
+							class="badge badge-status-published">
 							<ClockOutline :size="14" />
 							{{ t('openregister', 'Scheduled') }}
 						</span>
@@ -76,7 +105,12 @@
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcAppContent,
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
@@ -166,26 +200,32 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 }
+
 .viewHeader {
 	border-bottom: 1px solid var(--color-border);
 	padding-bottom: 12px;
 }
+
 .viewHeaderTitleIndented {
 	margin: 0;
 }
+
 .viewActionsBar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
+
 .viewInfo {
 	color: var(--color-text-maxcontrast);
 }
+
 .reportsGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 	gap: 16px;
 }
+
 .reportCard {
 	position: relative;
 	background: var(--color-main-background);
@@ -193,7 +233,9 @@ export default {
 	border-radius: var(--border-radius-large);
 	padding: 16px;
 	cursor: pointer;
-	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+	transition:
+		box-shadow 0.15s ease,
+		border-color 0.15s ease;
 }
 /* Real button carrying the card's action; the ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
@@ -208,40 +250,48 @@ export default {
 	text-align: left;
 	cursor: pointer;
 }
+
 .reportCardActivator::after {
 	content: '';
 	position: absolute;
 	inset: 0;
 	border-radius: var(--border-radius-large);
 }
+
 .reportCardActivator:focus-visible::after {
 	outline: 2px solid var(--color-primary-element);
 	outline-offset: -2px;
 }
+
 .reportCard:hover {
 	border-color: var(--color-primary);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
+
 .reportCardHeader {
 	display: flex;
 	align-items: flex-start;
 	gap: 12px;
 	margin-bottom: 8px;
 }
+
 .reportCardIcon {
 	color: var(--color-primary);
 	flex-shrink: 0;
 }
+
 .reportCardHeader h3 {
 	margin: 0 0 4px 0;
 	font-size: 16px;
 }
+
 .reportCardBody {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0 0 12px 0;
 	line-height: 1.4;
 }
+
 .reportCardFooter {
 	display: flex;
 	justify-content: space-between;
@@ -249,6 +299,7 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .badge {
 	display: inline-flex;
 	align-items: center;
@@ -260,6 +311,7 @@ export default {
 	font-weight: 600;
 	text-transform: uppercase;
 }
+
 .badge-status-published {
 	background: var(--color-success);
 	color: var(--color-primary-text);

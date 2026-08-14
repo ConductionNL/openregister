@@ -66,192 +66,187 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class ActionLog extends Entity implements JsonSerializable
-{
+class ActionLog extends Entity implements JsonSerializable {
 
-    /**
-     * The action id.
-     *
-     * @var integer
-     */
-    protected int $actionId = 0;
+	/**
+	 * The action id.
+	 *
+	 * @var integer
+	 */
+	protected int $actionId = 0;
 
-    /**
-     * The action uuid.
-     *
-     * @var string
-     */
-    protected string $actionUuid = '';
+	/**
+	 * The action uuid.
+	 *
+	 * @var string
+	 */
+	protected string $actionUuid = '';
 
-    /**
-     * The event type.
-     *
-     * @var string
-     */
-    protected string $eventType = '';
+	/**
+	 * The event type.
+	 *
+	 * @var string
+	 */
+	protected string $eventType = '';
 
-    /**
-     * The object uuid.
-     *
-     * @var string|null
-     */
-    protected ?string $objectUuid = null;
+	/**
+	 * The object uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $objectUuid = null;
 
-    /**
-     * The schema id.
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+	/**
+	 * The schema id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $schemaId = null;
 
-    /**
-     * The register id.
-     *
-     * @var integer|null
-     */
-    protected ?int $registerId = null;
+	/**
+	 * The register id.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $registerId = null;
 
-    /**
-     * The engine.
-     *
-     * @var string
-     */
-    protected string $engine = '';
+	/**
+	 * The engine.
+	 *
+	 * @var string
+	 */
+	protected string $engine = '';
 
-    /**
-     * The workflow id.
-     *
-     * @var string
-     */
-    protected string $workflowId = '';
+	/**
+	 * The workflow id.
+	 *
+	 * @var string
+	 */
+	protected string $workflowId = '';
 
-    /**
-     * The status.
-     *
-     * @var string
-     */
-    protected string $status = '';
+	/**
+	 * The status.
+	 *
+	 * @var string
+	 */
+	protected string $status = '';
 
-    /**
-     * The duration ms.
-     *
-     * @var integer|null
-     */
-    protected ?int $durationMs = null;
+	/**
+	 * The duration ms.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $durationMs = null;
 
-    /**
-     * The request payload.
-     *
-     * @var string|null
-     */
-    protected ?string $requestPayload = null;
+	/**
+	 * The request payload.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $requestPayload = null;
 
-    /**
-     * The response payload.
-     *
-     * @var string|null
-     */
-    protected ?string $responsePayload = null;
+	/**
+	 * The response payload.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $responsePayload = null;
 
-    /**
-     * The error message.
-     *
-     * @var string|null
-     */
-    protected ?string $errorMessage = null;
+	/**
+	 * The error message.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $errorMessage = null;
 
-    /**
-     * The attempt.
-     *
-     * @var integer
-     */
-    protected int $attempt = 1;
+	/**
+	 * The attempt.
+	 *
+	 * @var integer
+	 */
+	protected int $attempt = 1;
 
-    /**
-     * The created.
-     *
-     * @var DateTime
-     */
-    protected DateTime $created;
+	/**
+	 * The created.
+	 *
+	 * @var DateTime
+	 */
+	protected DateTime $created;
 
-    /**
-     * Constructor
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'actionId', type: 'integer');
-        $this->addType(fieldName: 'actionUuid', type: 'string');
-        $this->addType(fieldName: 'eventType', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'engine', type: 'string');
-        $this->addType(fieldName: 'workflowId', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'durationMs', type: 'integer');
-        $this->addType(fieldName: 'requestPayload', type: 'string');
-        $this->addType(fieldName: 'responsePayload', type: 'string');
-        $this->addType(fieldName: 'errorMessage', type: 'string');
-        $this->addType(fieldName: 'attempt', type: 'integer');
-        $this->addType(fieldName: 'created', type: 'datetime');
+	/**
+	 * Constructor
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'actionId', type: 'integer');
+		$this->addType(fieldName: 'actionUuid', type: 'string');
+		$this->addType(fieldName: 'eventType', type: 'string');
+		$this->addType(fieldName: 'objectUuid', type: 'string');
+		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addType(fieldName: 'registerId', type: 'integer');
+		$this->addType(fieldName: 'engine', type: 'string');
+		$this->addType(fieldName: 'workflowId', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'durationMs', type: 'integer');
+		$this->addType(fieldName: 'requestPayload', type: 'string');
+		$this->addType(fieldName: 'responsePayload', type: 'string');
+		$this->addType(fieldName: 'errorMessage', type: 'string');
+		$this->addType(fieldName: 'attempt', type: 'integer');
+		$this->addType(fieldName: 'created', type: 'datetime');
 
-        $this->created = new DateTime();
-    }//end __construct()
+		$this->created = new DateTime();
+	}//end __construct()
 
-    /**
-     * Get request payload as array
-     *
-     * @return array
-     */
-    public function getRequestPayloadArray(): array
-    {
-        if ($this->requestPayload === null) {
-            return [];
-        }
+	/**
+	 * Get request payload as array
+	 *
+	 * @return array
+	 */
+	public function getRequestPayloadArray(): array {
+		if ($this->requestPayload === null) {
+			return [];
+		}
 
-        return json_decode($this->requestPayload, true) ?? [];
-    }//end getRequestPayloadArray()
+		return json_decode($this->requestPayload, true) ?? [];
+	}//end getRequestPayloadArray()
 
-    /**
-     * Get response payload as array
-     *
-     * @return array
-     */
-    public function getResponsePayloadArray(): array
-    {
-        if ($this->responsePayload === null) {
-            return [];
-        }
+	/**
+	 * Get response payload as array
+	 *
+	 * @return array
+	 */
+	public function getResponsePayloadArray(): array {
+		if ($this->responsePayload === null) {
+			return [];
+		}
 
-        return json_decode($this->responsePayload, true) ?? [];
-    }//end getResponsePayloadArray()
+		return json_decode($this->responsePayload, true) ?? [];
+	}//end getResponsePayloadArray()
 
-    /**
-     * JSON serialize the entity
-     *
-     * @return array
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'              => $this->id,
-            'actionId'        => $this->actionId,
-            'actionUuid'      => $this->actionUuid,
-            'eventType'       => $this->eventType,
-            'objectUuid'      => $this->objectUuid,
-            'schemaId'        => $this->schemaId,
-            'registerId'      => $this->registerId,
-            'engine'          => $this->engine,
-            'workflowId'      => $this->workflowId,
-            'status'          => $this->status,
-            'durationMs'      => $this->durationMs,
-            'requestPayload'  => $this->getRequestPayloadArray(),
-            'responsePayload' => $this->getResponsePayloadArray(),
-            'errorMessage'    => $this->errorMessage,
-            'attempt'         => $this->attempt,
-            'created'         => $this->created->format('c'),
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialize the entity
+	 *
+	 * @return array
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'actionId' => $this->actionId,
+			'actionUuid' => $this->actionUuid,
+			'eventType' => $this->eventType,
+			'objectUuid' => $this->objectUuid,
+			'schemaId' => $this->schemaId,
+			'registerId' => $this->registerId,
+			'engine' => $this->engine,
+			'workflowId' => $this->workflowId,
+			'status' => $this->status,
+			'durationMs' => $this->durationMs,
+			'requestPayload' => $this->getRequestPayloadArray(),
+			'responsePayload' => $this->getResponsePayloadArray(),
+			'errorMessage' => $this->errorMessage,
+			'attempt' => $this->attempt,
+			'created' => $this->created->format('c'),
+		];
+	}//end jsonSerialize()
 }//end class

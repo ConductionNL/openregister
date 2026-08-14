@@ -58,48 +58,45 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-the-engine-preserves-graph-annotations-and-never-executes-them
  */
-class Version1Date20260810120000 extends SimpleMigrationStep
-{
-    /**
-     * Add the column.
-     *
-     * @param IOutput $output        Migration output.
-     * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
-     * @param array   $options       Migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema, or null when unchanged.
-     *
-     * @spec openspec/specs/flow-engine/spec.md#requirement-the-engine-preserves-graph-annotations-and-never-executes-them
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260810120000 extends SimpleMigrationStep {
+	/**
+	 * Add the column.
+	 *
+	 * @param IOutput $output Migration output.
+	 * @param Closure $schemaClosure Schema closure returning an ISchemaWrapper.
+	 * @param array $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-the-engine-preserves-graph-annotations-and-never-executes-them
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_flows') === false) {
-            $output->info('openregister_flows does not exist yet; nothing to alter.');
-            return null;
-        }
+		if ($schema->hasTable('openregister_flows') === false) {
+			$output->info('openregister_flows does not exist yet; nothing to alter.');
+			return null;
+		}
 
-        $table = $schema->getTable('openregister_flows');
+		$table = $schema->getTable('openregister_flows');
 
-        if ($table->hasColumn('annotations') === true) {
-            return null;
-        }
+		if ($table->hasColumn('annotations') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            'annotations',
-            Types::JSON,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
+		$table->addColumn(
+			'annotations',
+			Types::JSON,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

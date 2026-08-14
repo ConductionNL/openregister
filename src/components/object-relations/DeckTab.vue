@@ -20,7 +20,8 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<NcEmptyContent
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load Deck cards')"
 			:description="errorMessage">
 			<template #icon>
@@ -29,18 +30,30 @@ SPDX-License-Identifier: EUPL-1.2
 		</NcEmptyContent>
 
 		<!-- Deck app missing (HTTP 501 graceful degradation) -->
-		<NcEmptyContent v-else-if="deckUnavailable"
+		<NcEmptyContent
+			v-else-if="deckUnavailable"
 			:name="t('openregister', 'Deck integration is not available')"
-			:description="t('openregister', 'The Nextcloud Deck app is not installed or enabled on this server.')">
+			:description="
+				t(
+					'openregister',
+					'The Nextcloud Deck app is not installed or enabled on this server.',
+				)
+			">
 			<template #icon>
 				<TableRemove :size="44" />
 			</template>
 		</NcEmptyContent>
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="cards.length === 0"
+		<NcEmptyContent
+			v-else-if="cards.length === 0"
 			:name="t('openregister', 'No Deck cards linked to this object')"
-			:description="t('openregister', 'Create or link a Deck card to track work on this object.')">
+			:description="
+				t(
+					'openregister',
+					'Create or link a Deck card to track work on this object.',
+				)
+			">
 			<template #icon>
 				<TableLarge :size="44" />
 			</template>
@@ -48,7 +61,8 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Linked cards list -->
 		<ul v-else class="deck-tab__list">
-			<li v-for="card in cards"
+			<li
+				v-for="card in cards"
 				:key="card.ref || card.deckRef || card.id"
 				class="deck-tab__item">
 				<div class="deck-tab__icon">
@@ -56,17 +70,32 @@ SPDX-License-Identifier: EUPL-1.2
 				</div>
 				<div class="deck-tab__content">
 					<div class="deck-tab__title">
-						{{ card.title || card.summary || t('openregister', '(untitled card)') }}
+						{{
+							card.title
+							|| card.summary
+							|| t('openregister', '(untitled card)')
+						}}
 					</div>
 					<div class="deck-tab__meta">
-						<span v-if="card.boardTitle" class="deck-tab__board">{{ card.boardTitle }}</span>
-						<span v-if="card.stackTitle" class="deck-tab__separator">&middot;</span>
-						<span v-if="card.stackTitle" class="deck-tab__stack">{{ card.stackTitle }}</span>
-						<span v-if="card.dueDate" class="deck-tab__separator">&middot;</span>
-						<span v-if="card.dueDate" class="deck-tab__date">{{ formatDate(card.dueDate) }}</span>
+						<span v-if="card.boardTitle" class="deck-tab__board">{{
+							card.boardTitle
+						}}</span>
+						<span v-if="card.stackTitle" class="deck-tab__separator"
+							>&middot;</span
+						>
+						<span v-if="card.stackTitle" class="deck-tab__stack">{{
+							card.stackTitle
+						}}</span>
+						<span v-if="card.dueDate" class="deck-tab__separator"
+							>&middot;</span
+						>
+						<span v-if="card.dueDate" class="deck-tab__date">{{
+							formatDate(card.dueDate)
+						}}</span>
 					</div>
 				</div>
-				<NcButton variant="tertiary"
+				<NcButton
+					variant="tertiary"
 					:aria-label="t('openregister', 'Remove Deck card')"
 					@click="unlinkCard(card)">
 					<template #icon>
@@ -205,7 +234,12 @@ export default {
 		async unlinkCard(card) {
 			const ref = card.ref || card.deckRef || card.id
 			try {
-				await this.store.unlink(this.register, this.schema, this.objectId, ref)
+				await this.store.unlink(
+					this.register,
+					this.schema,
+					this.objectId,
+					ref,
+				)
 				this.$emit('deck-changed', this.cards.length)
 			} catch (err) {
 				this.error = true

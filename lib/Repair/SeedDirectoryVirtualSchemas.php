@@ -50,160 +50,155 @@ use Throwable;
 /**
  * Seeds the virtual `directory` register with the core NC-entity schemas.
  */
-class SeedDirectoryVirtualSchemas implements IRepairStep
-{
+class SeedDirectoryVirtualSchemas implements IRepairStep {
 
-    /**
-     * Read-only minimal property sets per virtual schema slug.
-     *
-     * @var array<string, array<string, mixed>>
-     */
-    private const SCHEMA_PROPERTIES = [
-        'nc-user'  => [
-            'id'          => ['type' => 'string', 'title' => 'User ID', 'description' => 'The Nextcloud user id (uid).'],
-            'displayName' => ['type' => 'string', 'title' => 'Display name', 'description' => 'The user display name.'],
-            'email'       => ['type' => 'string', 'title' => 'Email', 'description' => 'The user email address.'],
-        ],
-        'nc-group' => [
-            'id'          => ['type' => 'string', 'title' => 'Group ID', 'description' => 'The Nextcloud group id (gid).'],
-            'displayName' => ['type' => 'string', 'title' => 'Display name', 'description' => 'The group display name.'],
-        ],
-    ];
+	/**
+	 * Read-only minimal property sets per virtual schema slug.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private const SCHEMA_PROPERTIES = [
+		'nc-user' => [
+			'id' => ['type' => 'string', 'title' => 'User ID', 'description' => 'The Nextcloud user id (uid).'],
+			'displayName' => ['type' => 'string', 'title' => 'Display name', 'description' => 'The user display name.'],
+			'email' => ['type' => 'string', 'title' => 'Email', 'description' => 'The user email address.'],
+		],
+		'nc-group' => [
+			'id' => ['type' => 'string', 'title' => 'Group ID', 'description' => 'The Nextcloud group id (gid).'],
+			'displayName' => ['type' => 'string', 'title' => 'Display name', 'description' => 'The group display name.'],
+		],
+	];
 
-    /**
-     * Constructor.
-     *
-     * @param RegisterMapper  $registerMapper Register data mapper.
-     * @param SchemaMapper    $schemaMapper   Schema data mapper.
-     * @param LoggerInterface $logger         Logger for seed diagnostics.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param RegisterMapper $registerMapper Register data mapper.
+	 * @param SchemaMapper $schemaMapper Schema data mapper.
+	 * @param LoggerInterface $logger Logger for seed diagnostics.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string The step name.
-     *
-     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
-     */
-    public function getName(): string
-    {
-        return 'Seed OpenRegister directory virtual schemas (nc-user, nc-group)';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string The step name.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	public function getName(): string {
+		return 'Seed OpenRegister directory virtual schemas (nc-user, nc-group)';
+	}//end getName()
 
-    /**
-     * Run the repair step, seeding the directory register + core schemas.
-     *
-     * Never throws: a seed failure logs a warning and leaves the instance
-     * otherwise healthy (the providers simply have no bound schema to serve).
-     *
-     * @param IOutput $output Output interface for status messages.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
-     */
-    public function run(IOutput $output): void
-    {
-        try {
-            $register  = $this->ensureRegister();
-            $schemaIds = $register->getSchemas();
-            $changed   = false;
+	/**
+	 * Run the repair step, seeding the directory register + core schemas.
+	 *
+	 * Never throws: a seed failure logs a warning and leaves the instance
+	 * otherwise healthy (the providers simply have no bound schema to serve).
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	public function run(IOutput $output): void {
+		try {
+			$register = $this->ensureRegister();
+			$schemaIds = $register->getSchemas();
+			$changed = false;
 
-            foreach (NcEntitySemanticMap::ENTITIES as $row) {
-                // This step only owns the core rows that live on the always-available
-                // `directory` register (all of which are Nextcloud-core, requiredApp
-                // null); app-gated rows on their own app-named registers are seeded by
-                // SeedAppVirtualSchemas.
-                if ($row['register'] !== NcEntitySemanticMap::DIRECTORY_REGISTER) {
-                    continue;
-                }
+			foreach (NcEntitySemanticMap::ENTITIES as $row) {
+				// This step only owns the core rows that live on the always-available
+				// `directory` register (all of which are Nextcloud-core, requiredApp
+				// null); app-gated rows on their own app-named registers are seeded by
+				// SeedAppVirtualSchemas.
+				if ($row['register'] !== NcEntitySemanticMap::DIRECTORY_REGISTER) {
+					continue;
+				}
 
-                $schema = $this->ensureSchema(row: $row);
-                if (in_array($schema->getId(), $schemaIds, false) === false) {
-                    $schemaIds[] = $schema->getId();
-                    $changed     = true;
-                }
+				$schema = $this->ensureSchema(row: $row);
+				if (in_array($schema->getId(), $schemaIds, false) === false) {
+					$schemaIds[] = $schema->getId();
+					$changed = true;
+				}
 
-                $output->info(sprintf('Directory schema "%s" (id %s) ready', $row['schema'], (string) $schema->getId()));
-            }//end foreach
+				$output->info(sprintf('Directory schema "%s" (id %s) ready', $row['schema'], (string)$schema->getId()));
+			}//end foreach
 
-            if ($changed === true) {
-                $register->setSchemas($schemaIds);
-                $this->registerMapper->update($register);
-            }
+			if ($changed === true) {
+				$register->setSchemas($schemaIds);
+				$this->registerMapper->update($register);
+			}
 
-            $output->info('Directory virtual register seeded');
-        } catch (Throwable $e) {
-            $this->logger->warning('[SeedDirectoryVirtualSchemas] seed failed: '.$e->getMessage());
-            $output->warning('Directory virtual schema seed skipped: '.$e->getMessage());
-        }//end try
-    }//end run()
+			$output->info('Directory virtual register seeded');
+		} catch (Throwable $e) {
+			$this->logger->warning('[SeedDirectoryVirtualSchemas] seed failed: ' . $e->getMessage());
+			$output->warning('Directory virtual schema seed skipped: ' . $e->getMessage());
+		}//end try
+	}//end run()
 
-    /**
-     * Find or create the `directory` virtual register (application: openregister).
-     *
-     * @return Register The existing or newly created register.
-     *
-     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
-     */
-    private function ensureRegister(): Register
-    {
-        try {
-            return $this->registerMapper->find(NcEntitySemanticMap::DIRECTORY_REGISTER, _rbac: false, _multitenancy: false);
-        } catch (Throwable $e) {
-            // Not found — create it.
-            return $this->registerMapper->createFromArray(
-                object: [
-                    'title'       => 'Directory',
-                    'slug'        => NcEntitySemanticMap::DIRECTORY_REGISTER,
-                    'description' => 'Read-only virtual register projecting Nextcloud directory entities (users, groups) as OpenRegister objects.',
-                    'application' => 'openregister',
-                    'schemas'     => [],
-                ]
-            );
-        }//end try
-    }//end ensureRegister()
+	/**
+	 * Find or create the `directory` virtual register (application: openregister).
+	 *
+	 * @return Register The existing or newly created register.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private function ensureRegister(): Register {
+		try {
+			return $this->registerMapper->find(NcEntitySemanticMap::DIRECTORY_REGISTER, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			// Not found — create it.
+			return $this->registerMapper->createFromArray(
+				object: [
+					'title' => 'Directory',
+					'slug' => NcEntitySemanticMap::DIRECTORY_REGISTER,
+					'description' => 'Read-only virtual register projecting Nextcloud directory entities (users, groups) as OpenRegister objects.',
+					'application' => 'openregister',
+					'schemas' => [],
+				]
+			);
+		}//end try
+	}//end ensureRegister()
 
-    /**
-     * Find or create one virtual schema for a semantic-map row.
-     *
-     * @param array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null} $row The semantic-map row.
-     *
-     * @return Schema The existing or newly created schema.
-     *
-     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
-     */
-    private function ensureSchema(array $row): Schema
-    {
-        try {
-            return $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
-        } catch (Throwable $e) {
-            // Not found — create it as a read-only object-source-backed schema.
-            $properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
+	/**
+	 * Find or create one virtual schema for a semantic-map row.
+	 *
+	 * @param array{register: string, schema: string, schemaOrg: string, provider: string, requiredApp: string|null} $row The semantic-map row.
+	 *
+	 * @return Schema The existing or newly created schema.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private function ensureSchema(array $row): Schema {
+		try {
+			return $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			// Not found — create it as a read-only object-source-backed schema.
+			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
 
-            return $this->schemaMapper->createFromArray(
-                object: [
-                    'title'         => $row['schema'],
-                    'slug'          => $row['schema'],
-                    'description'   => sprintf('Read-only virtual schema for Nextcloud %s (%s).', $row['schema'], $row['schemaOrg']),
-                    'properties'    => $properties,
-                    'configuration' => [
-                        'x-schema-org'                 => $row['schemaOrg'],
-                        'x-openregister-object-source' => [
-                            'provider' => $row['provider'],
-                            'readOnly' => true,
-                        ],
-                    ],
-                ]
-            );
-        }//end try
-    }//end ensureSchema()
+			return $this->schemaMapper->createFromArray(
+				object: [
+					'title' => $row['schema'],
+					'slug' => $row['schema'],
+					'description' => sprintf('Read-only virtual schema for Nextcloud %s (%s).', $row['schema'], $row['schemaOrg']),
+					'properties' => $properties,
+					'configuration' => [
+						'x-schema-org' => $row['schemaOrg'],
+						'x-openregister-object-source' => [
+							'provider' => $row['provider'],
+							'readOnly' => true,
+						],
+					],
+				]
+			);
+		}//end try
+	}//end ensureSchema()
 }//end class

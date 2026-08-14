@@ -48,87 +48,83 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  */
-class AppendOnlyException extends \Exception
-{
+class AppendOnlyException extends \Exception {
 
-    /**
-     * The schema slug or identifier that triggered this exception.
-     *
-     * @var string
-     */
-    private readonly string $schemaIdentifier;
+	/**
+	 * The schema slug or identifier that triggered this exception.
+	 *
+	 * @var string
+	 */
+	private readonly string $schemaIdentifier;
 
-    /**
-     * The mutating operation that was rejected ('update' or 'delete').
-     *
-     * @var string
-     */
-    private readonly string $operation;
+	/**
+	 * The mutating operation that was rejected ('update' or 'delete').
+	 *
+	 * @var string
+	 */
+	private readonly string $operation;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $schemaIdentifier The schema slug, UUID, or ID
-     * @param string         $operation        The rejected operation ('update' or 'delete')
-     * @param Throwable|null $previous         Previous exception
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
-     */
-    public function __construct(
-        string $schemaIdentifier,
-        string $operation='update',
-        ?Throwable $previous=null
-    ) {
-        $this->schemaIdentifier = $schemaIdentifier;
-        $this->operation        = $operation;
+	/**
+	 * Constructor.
+	 *
+	 * @param string $schemaIdentifier The schema slug, UUID, or ID
+	 * @param string $operation The rejected operation ('update' or 'delete')
+	 * @param Throwable|null $previous Previous exception
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
+	 */
+	public function __construct(
+		string $schemaIdentifier,
+		string $operation = 'update',
+		?Throwable $previous = null,
+	) {
+		$this->schemaIdentifier = $schemaIdentifier;
+		$this->operation = $operation;
 
-        $message = sprintf(
-            'SCHEMA_APPEND_ONLY: Schema "%s" is append-only; %s operations are not permitted.',
-            $schemaIdentifier,
-            $operation
-        );
+		$message = sprintf(
+			'SCHEMA_APPEND_ONLY: Schema "%s" is append-only; %s operations are not permitted.',
+			$schemaIdentifier,
+			$operation
+		);
 
-        parent::__construct(message: $message, code: 405, previous: $previous);
-    }//end __construct()
+		parent::__construct(message: $message, code: 405, previous: $previous);
+	}//end __construct()
 
-    /**
-     * Get the schema identifier that triggered this exception.
-     *
-     * @return string The schema slug, UUID, or ID
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
-     */
-    public function getSchemaIdentifier(): string
-    {
-        return $this->schemaIdentifier;
-    }//end getSchemaIdentifier()
+	/**
+	 * Get the schema identifier that triggered this exception.
+	 *
+	 * @return string The schema slug, UUID, or ID
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
+	 */
+	public function getSchemaIdentifier(): string {
+		return $this->schemaIdentifier;
+	}//end getSchemaIdentifier()
 
-    /**
-     * Get the mutating operation that was rejected.
-     *
-     * @return string 'update' or 'delete'
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
-     */
-    public function getOperation(): string
-    {
-        return $this->operation;
-    }//end getOperation()
+	/**
+	 * Get the mutating operation that was rejected.
+	 *
+	 * @return string 'update' or 'delete'
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
+	 */
+	public function getOperation(): string {
+		return $this->operation;
+	}//end getOperation()
 
-    /**
-     * Build the structured JSON error body for HTTP 405 responses.
-     *
-     * @return array{error: string, message: string, schema: string, operation: string}
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
-     */
-    public function toResponseBody(): array
-    {
-        return [
-            'error'     => 'SCHEMA_APPEND_ONLY',
-            'message'   => $this->getMessage(),
-            'schema'    => $this->schemaIdentifier,
-            'operation' => $this->operation,
-        ];
-    }//end toResponseBody()
+	/**
+	 * Build the structured JSON error body for HTTP 405 responses.
+	 *
+	 * @return array{error: string, message: string, schema: string, operation: string}
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
+	 */
+	public function toResponseBody(): array {
+		return [
+			'error' => 'SCHEMA_APPEND_ONLY',
+			'message' => $this->getMessage(),
+			'schema' => $this->schemaIdentifier,
+			'operation' => $this->operation,
+		];
+	}//end toResponseBody()
 }//end class

@@ -44,92 +44,88 @@ use Throwable;
 /**
  * Seeds/reconciles the `tables` virtual register on install/upgrade.
  */
-class SeedTablesVirtualSchemas implements IRepairStep
-{
-    /**
-     * Constructor.
-     *
-     * @param TablesTableReader       $reader       Guarded gateway to Tables services.
-     * @param TablesSchemaSyncService $syncService  Schema reconcile logic.
-     * @param IGroupManager           $groupManager Admin-user enumeration.
-     * @param LoggerInterface         $logger       Logger for seed diagnostics.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly TablesTableReader $reader,
-        private readonly TablesSchemaSyncService $syncService,
-        private readonly IGroupManager $groupManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class SeedTablesVirtualSchemas implements IRepairStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param TablesTableReader $reader Guarded gateway to Tables services.
+	 * @param TablesSchemaSyncService $syncService Schema reconcile logic.
+	 * @param IGroupManager $groupManager Admin-user enumeration.
+	 * @param LoggerInterface $logger Logger for seed diagnostics.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly TablesTableReader $reader,
+		private readonly TablesSchemaSyncService $syncService,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string The step name.
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    public function getName(): string
-    {
-        return 'Seed OpenRegister Tables virtual schemas (one per Nextcloud Tables table)';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string The step name.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function getName(): string {
+		return 'Seed OpenRegister Tables virtual schemas (one per Nextcloud Tables table)';
+	}//end getName()
 
-    /**
-     * Run the repair step, reconciling the `tables` register.
-     *
-     * @param IOutput $output Output interface for status messages.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    public function run(IOutput $output): void
-    {
-        try {
-            if ($this->reader->isAvailable() === false) {
-                $output->info('Tables app not enabled — skipping Tables virtual schema seed');
-                return;
-            }
+	/**
+	 * Run the repair step, reconciling the `tables` register.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function run(IOutput $output): void {
+		try {
+			if ($this->reader->isAvailable() === false) {
+				$output->info('Tables app not enabled — skipping Tables virtual schema seed');
+				return;
+			}
 
-            $adminIds = $this->adminUserIds();
-            $tables   = $this->reader->collectTableDescriptors(userIds: $adminIds);
-            $stats    = $this->syncService->reconcile(tables: $tables);
+			$adminIds = $this->adminUserIds();
+			$tables = $this->reader->collectTableDescriptors(userIds: $adminIds);
+			$stats = $this->syncService->reconcile(tables: $tables);
 
-            $output->info(
-                sprintf(
-                    'Tables virtual schemas reconciled: seeded=%d, retired=%d, skipped=%d',
-                    $stats['seeded'],
-                    $stats['retired'],
-                    $stats['skipped']
-                )
-            );
-        } catch (Throwable $e) {
-            $this->logger->warning('[SeedTablesVirtualSchemas] seed failed: '.$e->getMessage());
-            $output->warning('Tables virtual schema seed skipped: '.$e->getMessage());
-        }//end try
-    }//end run()
+			$output->info(
+				sprintf(
+					'Tables virtual schemas reconciled: seeded=%d, retired=%d, skipped=%d',
+					$stats['seeded'],
+					$stats['retired'],
+					$stats['skipped']
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('[SeedTablesVirtualSchemas] seed failed: ' . $e->getMessage());
+			$output->warning('Tables virtual schema seed skipped: ' . $e->getMessage());
+		}//end try
+	}//end run()
 
-    /**
-     * Resolve the instance's admin user ids for table enumeration.
-     *
-     * @return array<int, string> The admin user ids (may be empty).
-     *
-     * @spec openspec/specs/tables-virtual-register/spec.md
-     */
-    private function adminUserIds(): array
-    {
-        $admins = $this->groupManager->get('admin');
-        if ($admins === null) {
-            return [];
-        }
+	/**
+	 * Resolve the instance's admin user ids for table enumeration.
+	 *
+	 * @return array<int, string> The admin user ids (may be empty).
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function adminUserIds(): array {
+		$admins = $this->groupManager->get('admin');
+		if ($admins === null) {
+			return [];
+		}
 
-        $ids = [];
-        foreach ($admins->getUsers() as $user) {
-            $ids[] = $user->getUID();
-        }
+		$ids = [];
+		foreach ($admins->getUsers() as $user) {
+			$ids[] = $user->getUID();
+		}
 
-        return $ids;
-    }//end adminUserIds()
+		return $ids;
+	}//end adminUserIds()
 }//end class

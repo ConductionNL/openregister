@@ -75,195 +75,192 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Scenario: No provider installed, queue mode)
  */
-class HandoffQueueEntry extends Entity implements JsonSerializable
-{
+class HandoffQueueEntry extends Entity implements JsonSerializable {
 
-    /**
-     * Entry is waiting for a providing schema to be installed.
-     *
-     * @var string
-     */
-    public const STATUS_PARKED = 'parked';
+	/**
+	 * Entry is waiting for a providing schema to be installed.
+	 *
+	 * @var string
+	 */
+	public const STATUS_PARKED = 'parked';
 
-    /**
-     * Entry was drained successfully (target object created).
-     *
-     * @var string
-     */
-    public const STATUS_EXECUTED = 'executed';
+	/**
+	 * Entry was drained successfully (target object created).
+	 *
+	 * @var string
+	 */
+	public const STATUS_EXECUTED = 'executed';
 
-    /**
-     * Requester lost create permission at drain time (no escalation).
-     *
-     * @var string
-     */
-    public const STATUS_FAILED_PERMISSION = 'failed-permission';
+	/**
+	 * Requester lost create permission at drain time (no escalation).
+	 *
+	 * @var string
+	 */
+	public const STATUS_FAILED_PERMISSION = 'failed-permission';
 
-    /**
-     * The mapped object was rejected by the resolved target schema.
-     *
-     * @var string
-     */
-    public const STATUS_FAILED_VALIDATION = 'failed-validation';
+	/**
+	 * The mapped object was rejected by the resolved target schema.
+	 *
+	 * @var string
+	 */
+	public const STATUS_FAILED_VALIDATION = 'failed-validation';
 
-    /**
-     * Entry withdrawn before a provider appeared.
-     *
-     * @var string
-     */
-    public const STATUS_CANCELLED = 'cancelled';
+	/**
+	 * Entry withdrawn before a provider appeared.
+	 *
+	 * @var string
+	 */
+	public const STATUS_CANCELLED = 'cancelled';
 
-    /**
-     * UUID of the source object whose handoff was parked.
-     *
-     * @var string
-     */
-    protected string $sourceObjectUuid = '';
+	/**
+	 * UUID of the source object whose handoff was parked.
+	 *
+	 * @var string
+	 */
+	protected string $sourceObjectUuid = '';
 
-    /**
-     * Register id of the source object.
-     *
-     * @var integer
-     */
-    protected int $sourceRegister = 0;
+	/**
+	 * Register id of the source object.
+	 *
+	 * @var integer
+	 */
+	protected int $sourceRegister = 0;
 
-    /**
-     * Schema id of the source object.
-     *
-     * @var integer
-     */
-    protected int $sourceSchema = 0;
+	/**
+	 * Schema id of the source object.
+	 *
+	 * @var integer
+	 */
+	protected int $sourceSchema = 0;
 
-    /**
-     * The declared handoff entry id (dialect `id`).
-     *
-     * @var string
-     */
-    protected string $handoffId = '';
+	/**
+	 * The declared handoff entry id (dialect `id`).
+	 *
+	 * @var string
+	 */
+	protected string $handoffId = '';
 
-    /**
-     * The target kind URI the handoff waits on.
-     *
-     * @var string
-     */
-    protected string $targetKind = '';
+	/**
+	 * The target kind URI the handoff waits on.
+	 *
+	 * @var string
+	 */
+	protected string $targetKind = '';
 
-    /**
-     * The user who requested the handoff; drain re-evaluates RBAC as this
-     * user (never a privilege-escalation time capsule).
-     *
-     * @var string
-     */
-    protected string $requestingUser = '';
+	/**
+	 * The user who requested the handoff; drain re-evaluates RBAC as this
+	 * user (never a privilege-escalation time capsule).
+	 *
+	 * @var string
+	 */
+	protected string $requestingUser = '';
 
-    /**
-     * Correlation id minted at park time, echoed on audit rows + the event.
-     *
-     * @var string
-     */
-    protected string $correlationId = '';
+	/**
+	 * Correlation id minted at park time, echoed on audit rows + the event.
+	 *
+	 * @var string
+	 */
+	protected string $correlationId = '';
 
-    /**
-     * Hash of the mapping snapshot at park time (drift observability).
-     *
-     * @var string|null
-     */
-    protected ?string $mappingHash = null;
+	/**
+	 * Hash of the mapping snapshot at park time (drift observability).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $mappingHash = null;
 
-    /**
-     * Entry status (see STATUS_* constants).
-     *
-     * @var string
-     */
-    protected string $status = self::STATUS_PARKED;
+	/**
+	 * Entry status (see STATUS_* constants).
+	 *
+	 * @var string
+	 */
+	protected string $status = self::STATUS_PARKED;
 
-    /**
-     * Drain attempt counter (append-only semantics per the WebhookLog pattern).
-     *
-     * @var integer
-     */
-    protected int $attempt = 0;
+	/**
+	 * Drain attempt counter (append-only semantics per the WebhookLog pattern).
+	 *
+	 * @var integer
+	 */
+	protected int $attempt = 0;
 
-    /**
-     * Last drain error, when a drain attempt failed.
-     *
-     * @var string|null
-     */
-    protected ?string $lastError = null;
+	/**
+	 * Last drain error, when a drain attempt failed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $lastError = null;
 
-    /**
-     * Park timestamp.
-     *
-     * @var DateTime
-     */
-    protected DateTime $created;
+	/**
+	 * Park timestamp.
+	 *
+	 * @var DateTime
+	 */
+	protected DateTime $created;
 
-    /**
-     * Timestamp of the most recent drain attempt.
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $lastAttemptAt = null;
+	/**
+	 * Timestamp of the most recent drain attempt.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastAttemptAt = null;
 
-    /**
-     * Timestamp of successful execution (drain).
-     *
-     * @var DateTime|null
-     */
-    protected ?DateTime $executedAt = null;
+	/**
+	 * Timestamp of successful execution (drain).
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $executedAt = null;
 
-    /**
-     * Constructor — declares column types and stamps the park timestamp.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'sourceObjectUuid', type: 'string');
-        $this->addType(fieldName: 'sourceRegister', type: 'integer');
-        $this->addType(fieldName: 'sourceSchema', type: 'integer');
-        $this->addType(fieldName: 'handoffId', type: 'string');
-        $this->addType(fieldName: 'targetKind', type: 'string');
-        $this->addType(fieldName: 'requestingUser', type: 'string');
-        $this->addType(fieldName: 'correlationId', type: 'string');
-        $this->addType(fieldName: 'mappingHash', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'attempt', type: 'integer');
-        $this->addType(fieldName: 'lastError', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'lastAttemptAt', type: 'datetime');
-        $this->addType(fieldName: 'executedAt', type: 'datetime');
+	/**
+	 * Constructor — declares column types and stamps the park timestamp.
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'sourceObjectUuid', type: 'string');
+		$this->addType(fieldName: 'sourceRegister', type: 'integer');
+		$this->addType(fieldName: 'sourceSchema', type: 'integer');
+		$this->addType(fieldName: 'handoffId', type: 'string');
+		$this->addType(fieldName: 'targetKind', type: 'string');
+		$this->addType(fieldName: 'requestingUser', type: 'string');
+		$this->addType(fieldName: 'correlationId', type: 'string');
+		$this->addType(fieldName: 'mappingHash', type: 'string');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'attempt', type: 'integer');
+		$this->addType(fieldName: 'lastError', type: 'string');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'lastAttemptAt', type: 'datetime');
+		$this->addType(fieldName: 'executedAt', type: 'datetime');
 
-        $this->created = new DateTime();
+		$this->created = new DateTime();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * JSON serialize the entry (availability endpoint `queued` state).
-     *
-     * @return array<string, mixed> The serialized entry.
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Requirement: Handoff REST surface)
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'               => $this->id,
-            'sourceObjectUuid' => $this->sourceObjectUuid,
-            'sourceRegister'   => $this->sourceRegister,
-            'sourceSchema'     => $this->sourceSchema,
-            'handoffId'        => $this->handoffId,
-            'targetKind'       => $this->targetKind,
-            'requestingUser'   => $this->requestingUser,
-            'correlationId'    => $this->correlationId,
-            'status'           => $this->status,
-            'attempt'          => $this->attempt,
-            'lastError'        => $this->lastError,
-            'created'          => $this->created->format('c'),
-            'lastAttemptAt'    => $this->lastAttemptAt?->format('c'),
-            'executedAt'       => $this->executedAt?->format('c'),
-        ];
+	/**
+	 * JSON serialize the entry (availability endpoint `queued` state).
+	 *
+	 * @return array<string, mixed> The serialized entry.
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Requirement: Handoff REST surface)
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'id' => $this->id,
+			'sourceObjectUuid' => $this->sourceObjectUuid,
+			'sourceRegister' => $this->sourceRegister,
+			'sourceSchema' => $this->sourceSchema,
+			'handoffId' => $this->handoffId,
+			'targetKind' => $this->targetKind,
+			'requestingUser' => $this->requestingUser,
+			'correlationId' => $this->correlationId,
+			'status' => $this->status,
+			'attempt' => $this->attempt,
+			'lastError' => $this->lastError,
+			'created' => $this->created->format('c'),
+			'lastAttemptAt' => $this->lastAttemptAt?->format('c'),
+			'executedAt' => $this->executedAt?->format('c'),
+		];
 
-    }//end jsonSerialize()
+	}//end jsonSerialize()
 }//end class

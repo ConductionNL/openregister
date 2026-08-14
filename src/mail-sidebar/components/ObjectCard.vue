@@ -1,8 +1,5 @@
 <template>
-	<div
-		class="or-mail-object-card"
-		role="article"
-		:aria-label="cardAriaLabel">
+	<div class="or-mail-object-card" role="article" :aria-label="cardAriaLabel">
 		<div class="or-mail-object-card__header">
 			<h4 class="or-mail-object-card__title">
 				<a
@@ -16,7 +13,11 @@
 			<button
 				v-if="showUnlink"
 				class="or-mail-object-card__unlink"
-				:aria-label="t('openregister', 'Remove link to {title}', { title: objectTitle })"
+				:aria-label="
+					t('openregister', 'Remove link to {title}', {
+						title: objectTitle,
+					})
+				"
 				:title="t('openregister', 'Remove link')"
 				@click="$emit('unlink', object)">
 				&times;
@@ -30,12 +31,22 @@
 				{{ object.registerTitle }}
 			</span>
 			<span v-if="object.linkedEmailCount" class="or-mail-object-card__badge">
-				{{ n('openregister', '{count} email', '{count} emails', object.linkedEmailCount, { count: object.linkedEmailCount }) }}
+				{{
+					n(
+						'openregister',
+						'{count} email',
+						'{count} emails',
+						object.linkedEmailCount,
+						{ count: object.linkedEmailCount },
+					)
+				}}
 			</span>
 		</div>
 		<div v-if="object.linkedBy" class="or-mail-object-card__footer">
 			<span class="or-mail-object-card__linked-by">
-				{{ t('openregister', 'Linked by {user}', { user: object.linkedBy }) }}
+				{{
+					t('openregister', 'Linked by {user}', { user: object.linkedBy })
+				}}
 			</span>
 		</div>
 	</div>
@@ -69,7 +80,9 @@ export default {
 			if (typeof raw === 'string' && raw.startsWith('{')) {
 				try {
 					const parsed = JSON.parse(raw)
-					const values = Object.values(parsed).filter((v) => typeof v === 'string')
+					const values = Object.values(parsed).filter(
+						(v) => typeof v === 'string',
+					)
 					if (values.length > 0) return values[0]
 				} catch (e) {
 					// not JSON — fall through to the raw value
@@ -95,7 +108,11 @@ export default {
 				parts.push(this.object.schemaTitle)
 			}
 			if (this.object.registerTitle) {
-				parts.push(t('openregister', 'in {register}', { register: this.object.registerTitle }))
+				parts.push(
+					t('openregister', 'in {register}', {
+						register: this.object.registerTitle,
+					}),
+				)
 			}
 			return parts.join(', ')
 		},

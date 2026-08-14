@@ -46,73 +46,70 @@ use OCP\Migration\SimpleMigrationStep;
  * @link      https://www.OpenRegister.app
  */
 
-class Version1Date20251222000000 extends SimpleMigrationStep
-{
+class Version1Date20251222000000 extends SimpleMigrationStep {
 
-    /**
-     * Database connection
-     *
-     * @var IDBConnection The database connection.
-     */
-    private IDBConnection $connection;
+	/**
+	 * Database connection
+	 *
+	 * @var IDBConnection The database connection.
+	 */
+	private IDBConnection $connection;
 
-    /**
-     * Constructor
-     *
-     * @param IDBConnection $connection The database connection.
-     */
-    public function __construct(IDBConnection $connection)
-    {
-        $this->connection = $connection;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param IDBConnection $connection The database connection.
+	 */
+	public function __construct(IDBConnection $connection) {
+		$this->connection = $connection;
+	}//end __construct()
 
-    /**
-     * Execute data migration after schema changes
-     *
-     * This method fixes all schemas where the 'required' field is NULL by setting
-     * it to an empty JSON array '[]'. This ensures schema validation works correctly
-     * during object creation.
-     *
-     * @param IOutput                 $output        Migration output interface for messages.
-     * @param Closure                 $schemaClosure Schema closure that returns ISchemaWrapper.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // @var ISchemaWrapper $schema
-        $schema = $schemaClosure();
+	/**
+	 * Execute data migration after schema changes
+	 *
+	 * This method fixes all schemas where the 'required' field is NULL by setting
+	 * it to an empty JSON array '[]'. This ensures schema validation works correctly
+	 * during object creation.
+	 *
+	 * @param IOutput $output Migration output interface for messages.
+	 * @param Closure $schemaClosure Schema closure that returns ISchemaWrapper.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
 
-        // Check if the table exists before attempting migration.
-        if ($schema->hasTable('openregister_schemas') === false) {
-            $output->info(message: '   ℹ️  Table openregister_schemas does not exist, skipping migration');
-            return;
-        }
+		// Check if the table exists before attempting migration.
+		if ($schema->hasTable('openregister_schemas') === false) {
+			$output->info(message: '   ℹ️  Table openregister_schemas does not exist, skipping migration');
+			return;
+		}
 
-        $output->info(message: '📋 Fixing NULL required fields in schemas...');
+		$output->info(message: '📋 Fixing NULL required fields in schemas...');
 
-        try {
-            // Update all schemas where required is NULL to set it to an empty array.
-            // This fixes a bug where schemas created without an explicit required field
-            // were stored with NULL instead of [], causing validation errors.
-            // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query clarity.
-            $sql = "UPDATE `*PREFIX*openregister_schemas` SET `required` = '[]' WHERE `required` IS NULL";
+		try {
+			// Update all schemas where required is NULL to set it to an empty array.
+			// This fixes a bug where schemas created without an explicit required field
+			// were stored with NULL instead of [], causing validation errors.
+			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query clarity.
+			$sql = "UPDATE `*PREFIX*openregister_schemas` SET `required` = '[]' WHERE `required` IS NULL";
 
-            $result = $this->connection->executeUpdate($sql);
+			$result = $this->connection->executeUpdate($sql);
 
-            if ($result > 0) {
-                $output->info(message: "   ✓ Fixed required field for {$result} schemas");
-            }
+			if ($result > 0) {
+				$output->info(message: "   ✓ Fixed required field for {$result} schemas");
+			}
 
-            if ($result === 0) {
-                $output->info(message: '   ℹ️  No schemas needed fixing (all had valid required fields)');
-            }
+			if ($result === 0) {
+				$output->info(message: '   ℹ️  No schemas needed fixing (all had valid required fields)');
+			}
 
-            $output->info(message: '✅ Migration completed successfully - all schemas now have valid required fields');
-        } catch (\Exception $e) {
-            $output->warning(message: '   ⚠️  Error during migration: '.$e->getMessage());
-            $output->warning(message: '   ⚠️  This may cause validation errors during object creation');
-        }//end try
-    }//end postSchemaChange()
+			$output->info(message: '✅ Migration completed successfully - all schemas now have valid required fields');
+		} catch (\Exception $e) {
+			$output->warning(message: '   ⚠️  Error during migration: ' . $e->getMessage());
+			$output->warning(message: '   ⚠️  This may cause validation errors during object creation');
+		}//end try
+	}//end postSchemaChange()
 }//end class

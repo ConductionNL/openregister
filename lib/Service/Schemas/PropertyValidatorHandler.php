@@ -35,416 +35,412 @@ use Exception;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class PropertyValidatorHandler
-{
+class PropertyValidatorHandler {
 
-    /**
-     * Valid JSON Schema types
-     *
-     * @var array<string> List of valid JSON Schema types
-     */
-    private array $validTypes = [
-        'string',
-        'number',
-        'integer',
-        'boolean',
-        'array',
-        'object',
-        'null',
-        'file',
-        'geo',
-        // Extended field types (see extended-field-types spec).
-        'color',
-        'recurrence',
-        'NcFile',
-        'NcMail',
-        'NcContact',
-        'NcNote',
-        'NcTodo',
-        'NcCalendarEvent',
-        'NcTalk',
-        'NcDeck',
-    ];
+	/**
+	 * Valid JSON Schema types
+	 *
+	 * @var array<string> List of valid JSON Schema types
+	 */
+	private array $validTypes = [
+		'string',
+		'number',
+		'integer',
+		'boolean',
+		'array',
+		'object',
+		'null',
+		'file',
+		'geo',
+		// Extended field types (see extended-field-types spec).
+		'color',
+		'recurrence',
+		'NcFile',
+		'NcMail',
+		'NcContact',
+		'NcNote',
+		'NcTodo',
+		'NcCalendarEvent',
+		'NcTalk',
+		'NcDeck',
+	];
 
-    /**
-     * Valid string formats for JSON Schema
-     *
-     * @var array<string> List of valid string formats
-     */
-    private array $validStringFormats = [
-        '',
-        // Text content formats.
-        'text',
-        'markdown',
-        'html',
-        // Standard JSON Schema formats.
-        'date-time',
-        'date',
-        'time',
-        'duration',
-        'email',
-        'idn-email',
-        'hostname',
-        'idn-hostname',
-        'ipv4',
-        'ipv6',
-        'uri',
-        'uri-reference',
-        'iri',
-        'iri-reference',
-        'uuid',
-        'uri-template',
-        'json-pointer',
-        'relative-json-pointer',
-        'regex',
-        'url',
-        // Additional type.
-        'color',
-        // Additional type.
-        'color-hex',
-        // Additional type.
-        'color-hex-alpha',
-        // Additional type.
-        'color-rgb',
-        // Additional type.
-        'color-rgba',
-        // Additional type.
-        'color-hsl',
-        // Additional type.
-        'color-hsla',
-        // Semantic versioning format.
-        'semver',
-        // Dutch burgerservicenummer, checked with the 11-proef.
-        //
-        // BsnFormat has existed and been REGISTERED with the value validator all
-        // along (ValidateObject::registerCustomFormat), so OpenRegister could
-        // already checksum a BSN — it simply refused to accept a schema that
-        // said so, because this allowlist never got the entry. procest declares
-        // `format: bsn` on a burgerservicenummer, and that one missing word
-        // failed its schema import, then schema creation, then its "Load default
-        // ZGW API mapping configurations" repair step. A built and wired feature
-        // was unreachable because two lists disagreed.
-        'bsn',
-        // Nextcloud user id, checked against the user backend — the referenced
-        // user must exist. See UserFormat.
-        'user',
-    ];
+	/**
+	 * Valid string formats for JSON Schema
+	 *
+	 * @var array<string> List of valid string formats
+	 */
+	private array $validStringFormats = [
+		'',
+		// Text content formats.
+		'text',
+		'markdown',
+		'html',
+		// Standard JSON Schema formats.
+		'date-time',
+		'date',
+		'time',
+		'duration',
+		'email',
+		'idn-email',
+		'hostname',
+		'idn-hostname',
+		'ipv4',
+		'ipv6',
+		'uri',
+		'uri-reference',
+		'iri',
+		'iri-reference',
+		'uuid',
+		'uri-template',
+		'json-pointer',
+		'relative-json-pointer',
+		'regex',
+		'url',
+		// Additional type.
+		'color',
+		// Additional type.
+		'color-hex',
+		// Additional type.
+		'color-hex-alpha',
+		// Additional type.
+		'color-rgb',
+		// Additional type.
+		'color-rgba',
+		// Additional type.
+		'color-hsl',
+		// Additional type.
+		'color-hsla',
+		// Semantic versioning format.
+		'semver',
+		// Dutch burgerservicenummer, checked with the 11-proef.
+		//
+		// BsnFormat has existed and been REGISTERED with the value validator all
+		// along (ValidateObject::registerCustomFormat), so OpenRegister could
+		// already checksum a BSN — it simply refused to accept a schema that
+		// said so, because this allowlist never got the entry. procest declares
+		// `format: bsn` on a burgerservicenummer, and that one missing word
+		// failed its schema import, then schema creation, then its "Load default
+		// ZGW API mapping configurations" repair step. A built and wired feature
+		// was unreachable because two lists disagreed.
+		'bsn',
+		// Nextcloud user id, checked against the user backend — the referenced
+		// user must exist. See UserFormat.
+		'user',
+	];
 
-    /**
-     * Validate a property definition against JSON Schema rules
-     *
-     * @param array  $property The property definition to validate
-     * @param string $path     The current path in the schema (for error messages)
-     *
-     * @throws Exception If the property definition is invalid
-     *
-     * @return true True if the property is valid
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
-     *
-     * @spec openspec/specs/runtime-schema-api/spec.md
-     */
-    public function validateProperty(array $property, string $path=''): bool
-    {
-        // If property has oneOf, treat the contents as separate properties and return the result of those checks.
-        if (($property['oneOf'] ?? null) !== null) {
-            return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
-        }
+	/**
+	 * Validate a property definition against JSON Schema rules
+	 *
+	 * @param array $property The property definition to validate
+	 * @param string $path The current path in the schema (for error messages)
+	 *
+	 * @throws Exception If the property definition is invalid
+	 *
+	 * @return true True if the property is valid
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public function validateProperty(array $property, string $path = ''): bool {
+		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
+		if (($property['oneOf'] ?? null) !== null) {
+			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
+		}
 
-        // Type is required at the TOP level, and optional below it.
-        //
-        // JSON Schema treats a schema with no `type` as "any type", and that is
-        // a real thing authors need. procest's CMMN sentry declares
-        // `ifPart: {field, operator, value}` where `value` is compared with
-        // loose equality against bool/string/int, must be an ARRAY for the
-        // in/notIn operators, and numeric for gt/lt. No single type is honest
-        // there, so requiring one forced a lie — and refusing the omission
-        // failed the whole schema import instead.
-        //
-        // It stays required at the top level because those properties become
-        // COLUMNS: mapColumnTypeToSQL() takes a `string $type` and is handed
-        // $column['type'] directly, so a typeless top-level property is a
-        // TypeError during table creation rather than a permissive read. Nested
-        // properties are stored inside a JSON column and derive nothing.
-        //
-        // Depth is the discriminator: validateProperties() builds '/name' for a
-        // top-level property and appends for every level under it.
-        $isTopLevel = (substr_count($path, '/') <= 1);
-        if (isset($property['type']) === false) {
-            if ($isTopLevel === true) {
-                throw new Exception("Property at '$path' must have a 'type' field");
-            }
+		// Type is required at the TOP level, and optional below it.
+		//
+		// JSON Schema treats a schema with no `type` as "any type", and that is
+		// a real thing authors need. procest's CMMN sentry declares
+		// `ifPart: {field, operator, value}` where `value` is compared with
+		// loose equality against bool/string/int, must be an ARRAY for the
+		// in/notIn operators, and numeric for gt/lt. No single type is honest
+		// there, so requiring one forced a lie — and refusing the omission
+		// failed the whole schema import instead.
+		//
+		// It stays required at the top level because those properties become
+		// COLUMNS: mapColumnTypeToSQL() takes a `string $type` and is handed
+		// $column['type'] directly, so a typeless top-level property is a
+		// TypeError during table creation rather than a permissive read. Nested
+		// properties are stored inside a JSON column and derive nothing.
+		//
+		// Depth is the discriminator: validateProperties() builds '/name' for a
+		// top-level property and appends for every level under it.
+		$isTopLevel = (substr_count($path, '/') <= 1);
+		if (isset($property['type']) === false) {
+			if ($isTopLevel === true) {
+				throw new Exception("Property at '$path' must have a 'type' field");
+			}
 
-            // Untyped nested schema: nothing further here is type-dependent.
-            return true;
-        }
+			// Untyped nested schema: nothing further here is type-dependent.
+			return true;
+		}
 
-        // Validate type. Union types arrive as arrays — render them as JSON in
-        // the message instead of letting string interpolation emit a PHP
-        // "Array to string conversion" warning.
-        if (in_array($property['type'], $this->validTypes) === false) {
-            $typeLabel = $property['type'];
-            if (is_string($typeLabel) === false) {
-                $typeLabel = (string) json_encode($typeLabel);
-            }
+		// Validate type. Union types arrive as arrays — render them as JSON in
+		// the message instead of letting string interpolation emit a PHP
+		// "Array to string conversion" warning.
+		if (in_array($property['type'], $this->validTypes) === false) {
+			$typeLabel = $property['type'];
+			if (is_string($typeLabel) === false) {
+				$typeLabel = (string)json_encode($typeLabel);
+			}
 
-            throw new Exception(
-                "Invalid type '{$typeLabel}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
-            );
-        }
+			throw new Exception(
+				"Invalid type '{$typeLabel}' at '$path'. Must be one of: " . implode(', ', $this->validTypes)
+			);
+		}
 
-        // Validate string format if present. An unrecognised format is still
-        // rejected: a format this allowlist accepts is one ValidateObject can
-        // actually enforce, so the two lists must agree. See `bsn` and `user`
-        // in $validStringFormats for what that costs when they drift apart.
-        if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
-            if (in_array($property['format'], $this->validStringFormats) === false) {
-                $formatLabel = $property['format'];
-                if (is_string($formatLabel) === false) {
-                    $formatLabel = (string) json_encode($formatLabel);
-                }
+		// Validate string format if present. An unrecognised format is still
+		// rejected: a format this allowlist accepts is one ValidateObject can
+		// actually enforce, so the two lists must agree. See `bsn` and `user`
+		// in $validStringFormats for what that costs when they drift apart.
+		if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
+			if (in_array($property['format'], $this->validStringFormats) === false) {
+				$formatLabel = $property['format'];
+				if (is_string($formatLabel) === false) {
+					$formatLabel = (string)json_encode($formatLabel);
+				}
 
-                $validFormats = implode(', ', $this->validStringFormats);
-                $message      = "Invalid string format '{$formatLabel}' at '$path'. Must be one of: $validFormats";
-                throw new Exception($message);
-            }
-        }
+				$validFormats = implode(', ', $this->validStringFormats);
+				$message = "Invalid string format '{$formatLabel}' at '$path'. Must be one of: $validFormats";
+				throw new Exception($message);
+			}
+		}
 
-        // Validate array items if type is array.
-        $hasItems = ($property['items'] ?? null) !== null;
-        if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
-            $this->validateProperty(property: $property['items'], path: $path.'/items');
-        }
+		// Validate array items if type is array.
+		$hasItems = ($property['items'] ?? null) !== null;
+		if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
+			$this->validateProperty(property: $property['items'], path: $path . '/items');
+		}
 
-        // Validate nested properties if type is object.
-        if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
-            $this->validateProperties(properties: $property['properties'], path: $path.'/properties');
-        }
+		// Validate nested properties if type is object.
+		if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
+			$this->validateProperties(properties: $property['properties'], path: $path . '/properties');
+		}
 
-        // Validate minimum/maximum for numeric types.
-        if (in_array($property['type'], ['number', 'integer'], true) === true) {
-            if (($property['minimum'] ?? null) !== null && is_numeric($property['minimum']) === false) {
-                throw new Exception("'minimum' at '$path' must be numeric");
-            }
+		// Validate minimum/maximum for numeric types.
+		if (in_array($property['type'], ['number', 'integer'], true) === true) {
+			if (($property['minimum'] ?? null) !== null && is_numeric($property['minimum']) === false) {
+				throw new Exception("'minimum' at '$path' must be numeric");
+			}
 
-            if (($property['maximum'] ?? null) !== null && is_numeric($property['maximum']) === false) {
-                throw new Exception("'maximum' at '$path' must be numeric");
-            }
+			if (($property['maximum'] ?? null) !== null && is_numeric($property['maximum']) === false) {
+				throw new Exception("'maximum' at '$path' must be numeric");
+			}
 
-            if (($property['minimum'] ?? null) !== null
-                && ($property['maximum'] ?? null) !== null
-                && ($property['minimum'] > $property['maximum']) === true
-            ) {
-                throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
-            }
-        }
+			if (($property['minimum'] ?? null) !== null
+				&& ($property['maximum'] ?? null) !== null
+				&& ($property['minimum'] > $property['maximum']) === true
+			) {
+				throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
+			}
+		}
 
-        // Validate file properties if type is file.
-        if ($property['type'] === 'file') {
-            $this->validateFileProperty(property: $property, path: $path);
-        }
+		// Validate file properties if type is file.
+		if ($property['type'] === 'file') {
+			$this->validateFileProperty(property: $property, path: $path);
+		}
 
-        // Validate enum values if present.
-        if (($property['enum'] ?? null) !== null) {
-            if (is_array($property['enum']) === false || empty($property['enum']) === true) {
-                throw new Exception("'enum' at '$path' must be a non-empty array");
-            }
-        }
+		// Validate enum values if present.
+		if (($property['enum'] ?? null) !== null) {
+			if (is_array($property['enum']) === false || empty($property['enum']) === true) {
+				throw new Exception("'enum' at '$path' must be a non-empty array");
+			}
+		}
 
-        // Validate visible property if present.
-        if (($property['visible'] ?? null) !== null && is_bool($property['visible']) === false) {
-            throw new Exception("'visible' at '$path' must be a boolean");
-        }
+		// Validate visible property if present.
+		if (($property['visible'] ?? null) !== null && is_bool($property['visible']) === false) {
+			throw new Exception("'visible' at '$path' must be a boolean");
+		}
 
-        // Validate hideOnCollection property if present.
-        if (($property['hideOnCollection'] ?? null) !== null && is_bool($property['hideOnCollection']) === false) {
-            throw new Exception("'hideOnCollection' at '$path' must be a boolean");
-        }
+		// Validate hideOnCollection property if present.
+		if (($property['hideOnCollection'] ?? null) !== null && is_bool($property['hideOnCollection']) === false) {
+			throw new Exception("'hideOnCollection' at '$path' must be a boolean");
+		}
 
-        // Validate hideOnForm property if present.
-        if (($property['hideOnForm'] ?? null) !== null && is_bool($property['hideOnForm']) === false) {
-            throw new Exception("'hideOnForm' at '$path' must be a boolean");
-        }
+		// Validate hideOnForm property if present.
+		if (($property['hideOnForm'] ?? null) !== null && is_bool($property['hideOnForm']) === false) {
+			throw new Exception("'hideOnForm' at '$path' must be a boolean");
+		}
 
-        // Validate sourceLanguage modifier (i18n-source-of-truth).
-        // Only allowed on translatable properties; rejects on non-translatable.
-        if (array_key_exists('sourceLanguage', $property) === true) {
-            if (($property['translatable'] ?? false) !== true) {
-                $msg = "'sourceLanguage' at '$path' requires translatable: true";
-                throw new Exception($msg);
-            }
+		// Validate sourceLanguage modifier (i18n-source-of-truth).
+		// Only allowed on translatable properties; rejects on non-translatable.
+		if (array_key_exists('sourceLanguage', $property) === true) {
+			if (($property['translatable'] ?? false) !== true) {
+				$msg = "'sourceLanguage' at '$path' requires translatable: true";
+				throw new Exception($msg);
+			}
 
-            $sourceLanguage = $property['sourceLanguage'];
-            if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
-                throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
-            }
+			$sourceLanguage = $property['sourceLanguage'];
+			if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
+				throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
+			}
 
-            // Basic BCP-47 syntax check: 2-3 lowercase letters, optional
-            // region/subtag suffix.
-            if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
-                throw new Exception(
-                    "'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
-                );
-            }
-        }
+			// Basic BCP-47 syntax check: 2-3 lowercase letters, optional
+			// region/subtag suffix.
+			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
+				throw new Exception(
+					"'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
+				);
+			}
+		}
 
-        // Validate onDelete property if present.
-        if (($property['onDelete'] ?? null) !== null) {
-            // OnDelete is only valid on relation properties (those with $ref).
-            $hasRef = isset($property['$ref']) === true
-                || (isset($property['items']['$ref']) === true);
-            if ($hasRef === false) {
-                throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
-            }
+		// Validate onDelete property if present.
+		if (($property['onDelete'] ?? null) !== null) {
+			// OnDelete is only valid on relation properties (those with $ref).
+			$hasRef = isset($property['$ref']) === true
+				|| (isset($property['items']['$ref']) === true);
+			if ($hasRef === false) {
+				throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
+			}
 
-            $validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
-            $upperValue   = strtoupper((string) $property['onDelete']);
-            if (in_array($upperValue, $validActions, true) === false) {
-                $validList = implode(', ', $validActions);
-                throw new Exception(
-                    "Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
-                );
-            }
-        }
+			$validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
+			$upperValue = strtoupper((string)$property['onDelete']);
+			if (in_array($upperValue, $validActions, true) === false) {
+				$validList = implode(', ', $validActions);
+				throw new Exception(
+					"Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
+				);
+			}
+		}
 
-        return true;
-    }//end validateProperty()
+		return true;
+	}//end validateProperty()
 
-    /**
-     * Validate an entire properties object
-     *
-     * @param array  $properties The properties object to validate
-     * @param string $path       The current path in the schema
-     *
-     * @throws Exception If any property definition is invalid
-     *
-     * @return true True if all properties are valid
-     *
-     * @spec openspec/specs/runtime-schema-api/spec.md
-     */
-    public function validateProperties(array $properties, string $path=''): bool
-    {
-        foreach ($properties as $propertyName => $property) {
-            if (is_array($property) === false) {
-                throw new Exception("Property '$propertyName' at '$path' must be an object");
-            }
+	/**
+	 * Validate an entire properties object
+	 *
+	 * @param array $properties The properties object to validate
+	 * @param string $path The current path in the schema
+	 *
+	 * @throws Exception If any property definition is invalid
+	 *
+	 * @return true True if all properties are valid
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public function validateProperties(array $properties, string $path = ''): bool {
+		foreach ($properties as $propertyName => $property) {
+			if (is_array($property) === false) {
+				throw new Exception("Property '$propertyName' at '$path' must be an object");
+			}
 
-            $this->validateProperty(property: $property, path: $path.'/'.$propertyName);
-        }
+			$this->validateProperty(property: $property, path: $path . '/' . $propertyName);
+		}
 
-        return true;
-    }//end validateProperties()
+		return true;
+	}//end validateProperties()
 
-    /**
-     * Validate file-specific properties
-     *
-     * Validates file property configuration options including allowedTypes,
-     * maxSize, allowedTags, and autoTags
-     *
-     * @param array  $property The file property definition to validate
-     * @param string $path     The current path in the schema (for error messages)
-     *
-     * @throws Exception If the file property configuration is invalid
-     *
-     * @return true
-     *
-     * @psalm-param array<string, mixed> $property
-     *
-     * @phpstan-param array<string, mixed> $property
-     *
-     * @psalm-return   bool
-     * @phpstan-return bool
-     *
-     * @psalm-suppress UnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
-     */
-    private function validateFileProperty(array $property, string $path): bool
-    {
-        // Validate allowedTypes if present.
-        if (($property['allowedTypes'] ?? null) !== null) {
-            if (is_array($property['allowedTypes']) === false) {
-                throw new Exception("'allowedTypes' at '$path' must be an array");
-            }
+	/**
+	 * Validate file-specific properties
+	 *
+	 * Validates file property configuration options including allowedTypes,
+	 * maxSize, allowedTags, and autoTags
+	 *
+	 * @param array $property The file property definition to validate
+	 * @param string $path The current path in the schema (for error messages)
+	 *
+	 * @throws Exception If the file property configuration is invalid
+	 *
+	 * @return true
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-return   bool
+	 * @phpstan-return bool
+	 *
+	 * @psalm-suppress UnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
+	 */
+	private function validateFileProperty(array $property, string $path): bool {
+		// Validate allowedTypes if present.
+		if (($property['allowedTypes'] ?? null) !== null) {
+			if (is_array($property['allowedTypes']) === false) {
+				throw new Exception("'allowedTypes' at '$path' must be an array");
+			}
 
-            // Validate each MIME type.
-            foreach ($property['allowedTypes'] as $index => $mimeType) {
-                if (is_string($mimeType) === false) {
-                    throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
-                }
+			// Validate each MIME type.
+			foreach ($property['allowedTypes'] as $index => $mimeType) {
+				if (is_string($mimeType) === false) {
+					throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
+				}
 
-                // Basic MIME type validation (type/subtype).
-                if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
-                    throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
-                }
-            }
-        }
+				// Basic MIME type validation (type/subtype).
+				if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
+					throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
+				}
+			}
+		}
 
-        // Validate maxSize if present.
-        if (($property['maxSize'] ?? null) !== null) {
-            if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
-                throw new Exception("'maxSize' at '$path' must be a numeric value");
-            }
+		// Validate maxSize if present.
+		if (($property['maxSize'] ?? null) !== null) {
+			if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
+				throw new Exception("'maxSize' at '$path' must be a numeric value");
+			}
 
-            $maxSize = (int) $property['maxSize'];
-            if ($maxSize < 0) {
-                throw new Exception("'maxSize' at '$path' must be a positive number");
-            }
+			$maxSize = (int)$property['maxSize'];
+			if ($maxSize < 0) {
+				throw new Exception("'maxSize' at '$path' must be a positive number");
+			}
 
-            // Reasonable upper limit (100MB).
-            if ($maxSize > 104857600) {
-                throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
-            }
-        }
+			// Reasonable upper limit (100MB).
+			if ($maxSize > 104857600) {
+				throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
+			}
+		}
 
-        // Validate allowedTags if present.
-        if (($property['allowedTags'] ?? null) !== null) {
-            if (is_array($property['allowedTags']) === false) {
-                throw new Exception("'allowedTags' at '$path' must be an array");
-            }
+		// Validate allowedTags if present.
+		if (($property['allowedTags'] ?? null) !== null) {
+			if (is_array($property['allowedTags']) === false) {
+				throw new Exception("'allowedTags' at '$path' must be an array");
+			}
 
-            foreach ($property['allowedTags'] as $index => $tag) {
-                if (is_string($tag) === false) {
-                    throw new Exception("'allowedTags[$index]' at '$path' must be a string");
-                }
+			foreach ($property['allowedTags'] as $index => $tag) {
+				if (is_string($tag) === false) {
+					throw new Exception("'allowedTags[$index]' at '$path' must be a string");
+				}
 
-                // Basic tag validation (no empty strings, reasonable length).
-                if (trim($tag) === '') {
-                    throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
-                }
+				// Basic tag validation (no empty strings, reasonable length).
+				if (trim($tag) === '') {
+					throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
+				}
 
-                if (strlen($tag) > 50) {
-                    throw new Exception("'allowedTags[$index]' at '$path' exceeds maximum length (50 characters)");
-                }
-            }
-        }
+				if (strlen($tag) > 50) {
+					throw new Exception("'allowedTags[$index]' at '$path' exceeds maximum length (50 characters)");
+				}
+			}
+		}
 
-        // Validate autoTags if present.
-        if (($property['autoTags'] ?? null) !== null) {
-            if (is_array($property['autoTags']) === false) {
-                throw new Exception("'autoTags' at '$path' must be an array");
-            }
+		// Validate autoTags if present.
+		if (($property['autoTags'] ?? null) !== null) {
+			if (is_array($property['autoTags']) === false) {
+				throw new Exception("'autoTags' at '$path' must be an array");
+			}
 
-            foreach ($property['autoTags'] as $index => $tag) {
-                if (is_string($tag) === false) {
-                    throw new Exception("'autoTags[$index]' at '$path' must be a string");
-                }
+			foreach ($property['autoTags'] as $index => $tag) {
+				if (is_string($tag) === false) {
+					throw new Exception("'autoTags[$index]' at '$path' must be a string");
+				}
 
-                // Basic tag validation (no empty strings, reasonable length).
-                if (trim($tag) === '') {
-                    throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
-                }
+				// Basic tag validation (no empty strings, reasonable length).
+				if (trim($tag) === '') {
+					throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
+				}
 
-                if (strlen($tag) > 50) {
-                    throw new Exception("'autoTags[$index]' at '$path' exceeds maximum length (50 characters)");
-                }
-            }
-        }
+				if (strlen($tag) > 50) {
+					throw new Exception("'autoTags[$index]' at '$path' exceeds maximum length (50 characters)");
+				}
+			}
+		}
 
-        return true;
-    }//end validateFileProperty()
+		return true;
+	}//end validateFileProperty()
 }//end class

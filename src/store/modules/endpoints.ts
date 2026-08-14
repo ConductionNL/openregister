@@ -77,7 +77,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * Fetch the list of endpoints from the API
 	 */
 	const refreshEndpointList = () => {
-
 		fetch(apiEndpoint, {
 			method: 'GET',
 		})
@@ -96,7 +95,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * @param item - The endpoint item to create
 	 */
 	const createEndpoint = (item) => {
-
 		return fetch(apiEndpoint, {
 			method: 'POST',
 			headers: {
@@ -202,7 +200,9 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			.then((response) => {
 				return response.json().then((data) => {
 					if (!response.ok) {
-						throw new Error(data.error || data.message || 'Failed to test endpoint')
+						throw new Error(
+							data.error || data.message || 'Failed to test endpoint',
+						)
 					}
 					return data
 				})

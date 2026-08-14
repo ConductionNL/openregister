@@ -30,58 +30,54 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
  */
-class Version1Date20241227153853 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241227153853 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Update the openregister_schemas table.
-        $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('max_depth') === false) {
-            $column = $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true]);
-            $column->setDefault(default: 0);
-        }
+		// Update the openregister_schemas table.
+		$table = $schema->getTable('openregister_schemas');
+		if ($table->hasColumn('max_depth') === false) {
+			$column = $table->addColumn(name: 'max_depth', typeName: Types::INTEGER, options: ['notnull' => true]);
+			$column->setDefault(default: 0);
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Execute actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Execute actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

@@ -37,36 +37,35 @@ namespace OCA\OpenRegister\Push;
  *   - `or-object-{uuid}`                            — single-object updates
  *   - `or-collection-{register-slug}-{schema-slug}` — collection-level invalidation (create/delete)
  */
-class PushEvents
-{
+class PushEvents {
 
-    /**
-     * Base event string for single-object updates.
-     *
-     * Append `-{uuid}` when pushing to specific listeners:
-     * ```
-     * $eventString = PushEvents::OR_OBJECT . '-' . $uuid;
-     * ```
-     *
-     * Fired on every object lifecycle action (create, update, delete).
-     *
-     * @var string
-     */
-    public const OR_OBJECT = 'or-object';
+	/**
+	 * Base event string for single-object updates.
+	 *
+	 * Append `-{uuid}` when pushing to specific listeners:
+	 * ```
+	 * $eventString = PushEvents::OR_OBJECT . '-' . $uuid;
+	 * ```
+	 *
+	 * Fired on every object lifecycle action (create, update, delete).
+	 *
+	 * @var string
+	 */
+	public const OR_OBJECT = 'or-object';
 
-    /**
-     * Base event string for collection-level invalidation.
-     *
-     * Append `-{register-slug}-{schema-slug}` when pushing to collection listeners:
-     * ```
-     * $eventString = PushEvents::OR_COLLECTION . '-' . $registerSlug . '-' . $schemaSlug;
-     * ```
-     *
-     * Fired on create and delete only (not on update, to avoid redundant
-     * collection refreshes when only content changes).
-     *
-     * @var string
-     */
-    public const OR_COLLECTION = 'or-collection';
+	/**
+	 * Base event string for collection-level invalidation.
+	 *
+	 * Append `-{register-slug}-{schema-slug}` when pushing to collection listeners:
+	 * ```
+	 * $eventString = PushEvents::OR_COLLECTION . '-' . $registerSlug . '-' . $schemaSlug;
+	 * ```
+	 *
+	 * Fired on create and delete only (not on update, to avoid redundant
+	 * collection refreshes when only content changes).
+	 *
+	 * @var string
+	 */
+	public const OR_COLLECTION = 'or-collection';
 
 }//end class

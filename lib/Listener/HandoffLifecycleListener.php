@@ -48,91 +48,89 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: `x-openregister-handoff` declarative dialect)
  */
-class HandoffLifecycleListener implements IEventListener
-{
-    /**
-     * Constructor.
-     *
-     * @param HandoffService  $handoffService The handoff engine.
-     * @param SchemaMapper    $schemaMapper   Loads the transitioned object's schema.
-     * @param LoggerInterface $logger         Structured logging.
-     */
-    public function __construct(
-        private readonly HandoffService $handoffService,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger,
-    ) {
+class HandoffLifecycleListener implements IEventListener {
+	/**
+	 * Constructor.
+	 *
+	 * @param HandoffService $handoffService The handoff engine.
+	 * @param SchemaMapper $schemaMapper Loads the transitioned object's schema.
+	 * @param LoggerInterface $logger Structured logging.
+	 */
+	public function __construct(
+		private readonly HandoffService $handoffService,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly LoggerInterface $logger,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Execute every handoff the schema declares for `lifecycle:<to-state>`.
-     *
-     * A hide-mode provider-unavailable outcome is silent (the transition must
-     * never fail because a peer app is absent); queue mode parks through the
-     * engine's normal degradation path. Any other handoff failure is logged
-     * and swallowed — the state transition itself has already happened.
-     *
-     * @param Event $event The dispatched event.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-     *   (Requirement: `x-openregister-handoff` declarative dialect)
-     */
-    public function handle(Event $event): void
-    {
-        if (($event instanceof ObjectTransitionedEvent) === false) {
-            return;
-        }
+	/**
+	 * Execute every handoff the schema declares for `lifecycle:<to-state>`.
+	 *
+	 * A hide-mode provider-unavailable outcome is silent (the transition must
+	 * never fail because a peer app is absent); queue mode parks through the
+	 * engine's normal degradation path. Any other handoff failure is logged
+	 * and swallowed — the state transition itself has already happened.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
+	 *   (Requirement: `x-openregister-handoff` declarative dialect)
+	 */
+	public function handle(Event $event): void {
+		if (($event instanceof ObjectTransitionedEvent) === false) {
+			return;
+		}
 
-        // V1: only transitions performed by a real actor fire handoffs.
-        if ($event->getUserId() === null) {
-            return;
-        }
+		// V1: only transitions performed by a real actor fire handoffs.
+		if ($event->getUserId() === null) {
+			return;
+		}
 
-        $object = $event->getObject();
+		$object = $event->getObject();
 
-        try {
-            $schema = $this->schemaMapper->find(id: (string) $object->getSchema());
-        } catch (\Throwable $e) {
-            return;
-        }
+		try {
+			$schema = $this->schemaMapper->find(id: (string)$object->getSchema());
+		} catch (\Throwable $e) {
+			return;
+		}
 
-        $wantedTrigger = 'lifecycle:'.$event->getTo();
-        foreach ($this->handoffService->declaredHandoffs(schema: $schema) as $entry) {
-            if (($entry['trigger'] ?? 'manual') !== $wantedTrigger) {
-                continue;
-            }
+		$wantedTrigger = 'lifecycle:' . $event->getTo();
+		foreach ($this->handoffService->declaredHandoffs(schema: $schema) as $entry) {
+			if (($entry['trigger'] ?? 'manual') !== $wantedTrigger) {
+				continue;
+			}
 
-            $handoffId = (string) ($entry['id'] ?? '');
+			$handoffId = (string)($entry['id'] ?? '');
 
-            try {
-                $this->handoffService->execute(
-                    register: (string) $object->getRegister(),
-                    schema: (string) $object->getSchema(),
-                    id: (string) $object->getUuid(),
-                    handoffId: $handoffId
-                );
-            } catch (HandoffException $e) {
-                // Hide-mode degradation: the transition stays intact and the
-                // object keeps working standalone; nothing to surface here.
-                $this->logger->debug(
-                    message: '[HandoffLifecycleListener] Lifecycle handoff degraded: '.$e->getMessage(),
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'handoffId' => $handoffId]
-                );
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    message: '[HandoffLifecycleListener] Lifecycle handoff failed: '.$e->getMessage(),
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'handoffId' => $handoffId,
-                        'object'    => (string) $object->getUuid(),
-                    ]
-                );
-            }//end try
-        }//end foreach
+			try {
+				$this->handoffService->execute(
+					register: (string)$object->getRegister(),
+					schema: (string)$object->getSchema(),
+					id: (string)$object->getUuid(),
+					handoffId: $handoffId
+				);
+			} catch (HandoffException $e) {
+				// Hide-mode degradation: the transition stays intact and the
+				// object keeps working standalone; nothing to surface here.
+				$this->logger->debug(
+					message: '[HandoffLifecycleListener] Lifecycle handoff degraded: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'handoffId' => $handoffId]
+				);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[HandoffLifecycleListener] Lifecycle handoff failed: ' . $e->getMessage(),
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'handoffId' => $handoffId,
+						'object' => (string)$object->getUuid(),
+					]
+				);
+			}//end try
+		}//end foreach
 
-    }//end handle()
+	}//end handle()
 }//end class

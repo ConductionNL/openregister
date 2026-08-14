@@ -47,195 +47,183 @@ use Throwable;
 /**
  * Deck (Kanban cards) integration provider.
  */
-class DeckProvider extends AbstractIntegrationProvider
-{
+class DeckProvider extends AbstractIntegrationProvider {
 
-    /**
-     * NC app id required for this integration.
-     *
-     * @var string
-     */
-    private const REQUIRED_APP = 'deck';
+	/**
+	 * NC app id required for this integration.
+	 *
+	 * @var string
+	 */
+	private const REQUIRED_APP = 'deck';
 
-    /**
-     * Constructor.
-     *
-     * @param DeckLinkService $deckLinkService Tier-2 backing service.
-     * @param IAppManager     $appManager      NC app manager.
-     * @param IL10N           $l10n            Localisation.
-     */
-    public function __construct(
-        private DeckLinkService $deckLinkService,
-        private IAppManager $appManager,
-        private IL10N $l10n,
-    ) {
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param DeckLinkService $deckLinkService Tier-2 backing service.
+	 * @param IAppManager $appManager NC app manager.
+	 * @param IL10N $l10n Localisation.
+	 */
+	public function __construct(
+		private DeckLinkService $deckLinkService,
+		private IAppManager $appManager,
+		private IL10N $l10n,
+	) {
+	}//end __construct()
 
-    public function getId(): string
-    {
-        return 'deck';
-    }//end getId()
+	public function getId(): string {
+		return 'deck';
+	}//end getId()
 
-    public function getLabel(): string
-    {
-        return $this->l10n->t('Cards');
-    }//end getLabel()
+	public function getLabel(): string {
+		return $this->l10n->t('Cards');
+	}//end getLabel()
 
-    public function getIcon(): string
-    {
-        return 'ViewColumnOutline';
-    }//end getIcon()
+	public function getIcon(): string {
+		return 'ViewColumnOutline';
+	}//end getIcon()
 
-    public function getGroup(): ?string
-    {
-        return 'workflow';
-    }//end getGroup()
+	public function getGroup(): ?string {
+		return 'workflow';
+	}//end getGroup()
 
-    public function getRequiredApp(): ?string
-    {
-        return self::REQUIRED_APP;
-    }//end getRequiredApp()
+	public function getRequiredApp(): ?string {
+		return self::REQUIRED_APP;
+	}//end getRequiredApp()
 
-    public function getStorageStrategy(): string
-    {
-        return 'link-table';
-    }//end getStorageStrategy()
+	public function getStorageStrategy(): string {
+		return 'link-table';
+	}//end getStorageStrategy()
 
-    public function isEnabled(): bool
-    {
-        return $this->deckLinkService->isDeckAvailable();
-    }//end isEnabled()
+	public function isEnabled(): bool {
+		return $this->deckLinkService->isDeckAvailable();
+	}//end isEnabled()
 
-    /**
-     * List deck cards linked to an OR object.
-     *
-     * @param string              $register Register slug or numeric id (unused — link rows resolve scope).
-     * @param string              $schema   Schema slug or numeric id (unused).
-     * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $filters  Optional filters (currently ignored).
-     *
-     * @return array<int,array<string,mixed>>
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
-     *
-     * @spec openspec/specs/integration-deck/spec.md
-     */
-    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
-    {
-        try {
-            return $this->deckLinkService->getLinkedCards($objectId);
-        } catch (Throwable $e) {
-            return [];
-        }
-    }//end list()
+	/**
+	 * List deck cards linked to an OR object.
+	 *
+	 * @param string $register Register slug or numeric id (unused — link rows resolve scope).
+	 * @param string $schema Schema slug or numeric id (unused).
+	 * @param string $objectId Object uuid.
+	 * @param array<string,mixed> $filters Optional filters (currently ignored).
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+	 *
+	 * @spec openspec/specs/integration-deck/spec.md
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		try {
+			return $this->deckLinkService->getLinkedCards($objectId);
+		} catch (Throwable $e) {
+			return [];
+		}
+	}//end list()
 
-    /**
-     * Create or link a Deck card.
-     *
-     * Payload variants:
-     *   - link existing — `{ cardId, registerId?, schemaId? }`
-     *   - create new    — `{ boardId, stackId, title, description?, duedate?, registerId?, schemaId? }`
-     *
-     * @param string              $register Register slug or numeric id.
-     * @param string              $schema   Schema slug or numeric id.
-     * @param string              $objectId Object uuid.
-     * @param array<string,mixed> $payload  Card data (see method docblock).
-     *
-     * @return array<string,mixed>
-     *
-     * @throws Exception When payload is missing required fields.
-     *
-     * @spec openspec/specs/integration-deck/spec.md
-     */
-    public function create(string $register, string $schema, string $objectId, array $payload): array
-    {
-        $registerId = (int) ($payload['registerId'] ?? $register);
-        $schemaId   = (int) ($payload['schemaId'] ?? $schema);
+	/**
+	 * Create or link a Deck card.
+	 *
+	 * Payload variants:
+	 *   - link existing — `{ cardId, registerId?, schemaId? }`
+	 *   - create new    — `{ boardId, stackId, title, description?, duedate?, registerId?, schemaId? }`
+	 *
+	 * @param string $register Register slug or numeric id.
+	 * @param string $schema Schema slug or numeric id.
+	 * @param string $objectId Object uuid.
+	 * @param array<string,mixed> $payload Card data (see method docblock).
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws Exception When payload is missing required fields.
+	 *
+	 * @spec openspec/specs/integration-deck/spec.md
+	 */
+	public function create(string $register, string $schema, string $objectId, array $payload): array {
+		$registerId = (int)($payload['registerId'] ?? $register);
+		$schemaId = (int)($payload['schemaId'] ?? $schema);
 
-        $hasCardId    = (empty($payload['cardId']) === false);
-        $hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
+		$hasCardId = (empty($payload['cardId']) === false);
+		$hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
 
-        if ($hasCardId === true) {
-            $link = $this->deckLinkService->linkCard(
-                $objectId,
-                $registerId,
-                $schemaId,
-                (int) $payload['cardId']
-            );
+		if ($hasCardId === true) {
+			$link = $this->deckLinkService->linkCard(
+				$objectId,
+				$registerId,
+				$schemaId,
+				(int)$payload['cardId']
+			);
 
-            return $link->jsonSerialize();
-        }
+			return $link->jsonSerialize();
+		}
 
-        if ($hasBoardData === true) {
-            $description = null;
-            if (isset($payload['description']) === true) {
-                $description = (string) $payload['description'];
-            }
+		if ($hasBoardData === true) {
+			$description = null;
+			if (isset($payload['description']) === true) {
+				$description = (string)$payload['description'];
+			}
 
-            $duedate = null;
-            if (isset($payload['duedate']) === true) {
-                $duedate = (string) $payload['duedate'];
-            }
+			$duedate = null;
+			if (isset($payload['duedate']) === true) {
+				$duedate = (string)$payload['duedate'];
+			}
 
-            $link = $this->deckLinkService->createAndLinkCard(
-                $objectId,
-                $registerId,
-                $schemaId,
-                (int) $payload['boardId'],
-                (int) $payload['stackId'],
-                (string) ($payload['title'] ?? 'Untitled'),
-                $description,
-                $duedate
-            );
+			$link = $this->deckLinkService->createAndLinkCard(
+				$objectId,
+				$registerId,
+				$schemaId,
+				(int)$payload['boardId'],
+				(int)$payload['stackId'],
+				(string)($payload['title'] ?? 'Untitled'),
+				$description,
+				$duedate
+			);
 
-            return $link->jsonSerialize();
-        }//end if
+			return $link->jsonSerialize();
+		}//end if
 
-        throw new Exception('Either cardId or boardId+stackId is required', 400);
-    }//end create()
+		throw new Exception('Either cardId or boardId+stackId is required', 400);
+	}//end create()
 
-    /**
-     * Unlink a Deck card. The card itself stays in Deck.
-     *
-     * @param string $register Register slug or numeric id (unused).
-     * @param string $schema   Schema slug or numeric id (unused).
-     * @param string $objectId Object uuid.
-     * @param string $entityId Deck card id (numeric).
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
-     *
-     * @spec openspec/specs/integration-deck/spec.md
-     */
-    public function delete(string $register, string $schema, string $objectId, string $entityId): void
-    {
-        $this->deckLinkService->unlinkCard($objectId, (int) $entityId);
-    }//end delete()
+	/**
+	 * Unlink a Deck card. The card itself stays in Deck.
+	 *
+	 * @param string $register Register slug or numeric id (unused).
+	 * @param string $schema Schema slug or numeric id (unused).
+	 * @param string $objectId Object uuid.
+	 * @param string $entityId Deck card id (numeric).
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+	 *
+	 * @spec openspec/specs/integration-deck/spec.md
+	 */
+	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->deckLinkService->unlinkCard($objectId, (int)$entityId);
+	}//end delete()
 
-    /**
-     * Provider health descriptor (enabled/disabled echo).
-     *
-     * @return array<string,mixed>
-     *
-     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
-     *       the health/OCS contract is owned by pluggable-integration-registry task-2.
-     */
-    public function health(): array
-    {
-        $available = $this->deckLinkService->isDeckAvailable();
+	/**
+	 * Provider health descriptor (enabled/disabled echo).
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+	 *       the health/OCS contract is owned by pluggable-integration-registry task-2.
+	 */
+	public function health(): array {
+		$available = $this->deckLinkService->isDeckAvailable();
 
-        $status  = 'unavailable';
-        $message = 'NC Deck app is not installed';
-        if ($available === true) {
-            $status  = 'ok';
-            $message = null;
-        }
+		$status = 'unavailable';
+		$message = 'NC Deck app is not installed';
+		if ($available === true) {
+			$status = 'ok';
+			$message = null;
+		}
 
-        return [
-            'status'     => $status,
-            'authStatus' => 'configured',
-            'message'    => $message,
-        ];
-    }//end health()
+		return [
+			'status' => $status,
+			'authStatus' => 'configured',
+			'message' => $message,
+		];
+	}//end health()
 }//end class

@@ -50,119 +50,115 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Tier-2 photo-links table — create-or-extend.
  */
-class Version1Date20260525170000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260525170000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema  = $schemaClosure();
-        $changed = false;
+		$schema = $schemaClosure();
+		$changed = false;
 
-        if ($schema->hasTable('openregister_photo_links') === false) {
-            $this->createPhotoLinksTable(schema: $schema, output: $output);
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_photo_links') === false) {
+			$this->createPhotoLinksTable(schema: $schema, output: $output);
+			$changed = true;
+		}
 
-        if ($schema->hasTable('openregister_photo_links') === true
-            && $this->extendPhotoLinksTable(schema: $schema, output: $output) === true
-        ) {
-            $changed = true;
-        }
+		if ($schema->hasTable('openregister_photo_links') === true
+			&& $this->extendPhotoLinksTable(schema: $schema, output: $output) === true
+		) {
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Create the openregister_photo_links table at the Tier-2 shape.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createPhotoLinksTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $table = $schema->createTable('openregister_photo_links');
+	/**
+	 * Create the openregister_photo_links table at the Tier-2 shape.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return void
+	 */
+	private function createPhotoLinksTable(ISchemaWrapper $schema, IOutput $output): void {
+		$table = $schema->createTable('openregister_photo_links');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('album_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-        $table->addColumn('album_name', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('cover_photo_url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
-        $table->addColumn('photo_count', Types::INTEGER, ['notnull' => false, 'default' => null]);
-        $table->addColumn('last_edited', Types::DATETIME, ['notnull' => false, 'default' => null]);
-        $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('album_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('album_name', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('cover_photo_url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
+		$table->addColumn('photo_count', Types::INTEGER, ['notnull' => false, 'default' => null]);
+		$table->addColumn('last_edited', Types::DATETIME, ['notnull' => false, 'default' => null]);
+		$table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['object_uuid', 'album_id'], 'idx_photo_object_album');
-        $table->addIndex(['object_uuid'], 'idx_photo_object');
-        $table->addIndex(['register_id'], 'idx_photo_register');
-        $table->addIndex(['schema_id'], 'idx_photo_schema');
+		$table->setPrimaryKey(['id']);
+		$table->addUniqueIndex(['object_uuid', 'album_id'], 'idx_photo_object_album');
+		$table->addIndex(['object_uuid'], 'idx_photo_object');
+		$table->addIndex(['register_id'], 'idx_photo_register');
+		$table->addIndex(['schema_id'], 'idx_photo_schema');
 
-        $output->info('Created openregister_photo_links table (Tier-2 schema)');
-    }//end createPhotoLinksTable()
+		$output->info('Created openregister_photo_links table (Tier-2 schema)');
+	}//end createPhotoLinksTable()
 
-    /**
-     * Add any missing Tier-2 columns to an existing photo_links table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return bool True when a column was added.
-     */
-    private function extendPhotoLinksTable(ISchemaWrapper $schema, IOutput $output): bool
-    {
-        $table   = $schema->getTable('openregister_photo_links');
-        $changed = false;
+	/**
+	 * Add any missing Tier-2 columns to an existing photo_links table.
+	 *
+	 * @param ISchemaWrapper $schema The schema wrapper
+	 * @param IOutput $output Migration output
+	 *
+	 * @return bool True when a column was added.
+	 */
+	private function extendPhotoLinksTable(ISchemaWrapper $schema, IOutput $output): bool {
+		$table = $schema->getTable('openregister_photo_links');
+		$changed = false;
 
-        if ($table->hasColumn('schema_id') === false) {
-            $table->addColumn(
-                'schema_id',
-                Types::BIGINT,
-                ['notnull' => false, 'unsigned' => true, 'default' => null]
-            );
-            $table->addIndex(['schema_id'], 'idx_photo_schema');
-            $output->info('Added schema_id column to openregister_photo_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('schema_id') === false) {
+			$table->addColumn(
+				'schema_id',
+				Types::BIGINT,
+				['notnull' => false, 'unsigned' => true, 'default' => null]
+			);
+			$table->addIndex(['schema_id'], 'idx_photo_schema');
+			$output->info('Added schema_id column to openregister_photo_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('cover_photo_url') === false) {
-            $table->addColumn('cover_photo_url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
-            $output->info('Added cover_photo_url column to openregister_photo_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('cover_photo_url') === false) {
+			$table->addColumn('cover_photo_url', Types::STRING, ['notnull' => false, 'length' => 512, 'default' => null]);
+			$output->info('Added cover_photo_url column to openregister_photo_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('photo_count') === false) {
-            $table->addColumn('photo_count', Types::INTEGER, ['notnull' => false, 'default' => null]);
-            $output->info('Added photo_count column to openregister_photo_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('photo_count') === false) {
+			$table->addColumn('photo_count', Types::INTEGER, ['notnull' => false, 'default' => null]);
+			$output->info('Added photo_count column to openregister_photo_links');
+			$changed = true;
+		}
 
-        if ($table->hasColumn('last_edited') === false) {
-            $table->addColumn('last_edited', Types::DATETIME, ['notnull' => false, 'default' => null]);
-            $output->info('Added last_edited column to openregister_photo_links');
-            $changed = true;
-        }
+		if ($table->hasColumn('last_edited') === false) {
+			$table->addColumn('last_edited', Types::DATETIME, ['notnull' => false, 'default' => null]);
+			$output->info('Added last_edited column to openregister_photo_links');
+			$changed = true;
+		}
 
-        return $changed;
-    }//end extendPhotoLinksTable()
+		return $changed;
+	}//end extendPhotoLinksTable()
 }//end class

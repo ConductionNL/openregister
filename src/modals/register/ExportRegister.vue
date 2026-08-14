@@ -6,7 +6,8 @@ import axios from '@nextcloud/axios'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
+	<NcDialog
+		v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
 		:title="t('openregister', 'Export Objects')"
 		size="small"
@@ -16,7 +17,15 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>{{ t('openregister', 'Export "{schema}" objects from "{register}"', { schema: schemaTitle, register: registerTitle }) }}</p>
+			<p>
+				{{
+					t(
+						'openregister',
+						'Export "{schema}" objects from "{register}"',
+						{ schema: schemaTitle, register: registerTitle },
+					)
+				}}
+			</p>
 
 			<div class="formGroup">
 				<label>{{ t('openregister', 'Export Format:') }}</label>
@@ -26,7 +35,7 @@ import axios from '@nextcloud/axios'
 					:options="exportFormats"
 					option-label="label"
 					option-value="value"
-					:reduce="option => option.value" />
+					:reduce="(option) => option.value" />
 			</div>
 		</div>
 
@@ -37,10 +46,7 @@ import axios from '@nextcloud/axios'
 				</template>
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				:disabled="loading"
-				variant="primary"
-				@click="exportObjects">
+			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Export v-else :size="20" />
@@ -130,7 +136,9 @@ export default {
 			try {
 				const registerSlug = register.slug || register.id
 				const schemaSlug = schema.slug || schema.id
-				const url = generateUrl(`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`)
+				const url = generateUrl(
+					`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`,
+				)
 				const params = {
 					type: this.exportFormat,
 				}
@@ -142,7 +150,9 @@ export default {
 					responseType: 'blob',
 				})
 
-				const blob = new Blob([response.data], { type: response.headers['content-type'] })
+				const blob = new Blob([response.data], {
+					type: response.headers['content-type'],
+				})
 				const downloadUrl = window.URL.createObjectURL(blob)
 				const link = document.createElement('a')
 
@@ -160,7 +170,10 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || t('openregister', 'Failed to export objects')
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| t('openregister', 'Failed to export objects')
 			} finally {
 				this.loading = false
 			}

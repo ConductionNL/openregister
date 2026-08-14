@@ -35,132 +35,128 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class WorkflowExecutionController extends Controller
-{
-    /**
-     * Constructor for WorkflowExecutionController.
-     *
-     * @param string                  $appName         App name
-     * @param IRequest                $request         Request
-     * @param WorkflowExecutionMapper $executionMapper Execution mapper
-     * @param LoggerInterface         $logger          Logger
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly WorkflowExecutionMapper $executionMapper,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-    }//end __construct()
+class WorkflowExecutionController extends Controller {
+	/**
+	 * Constructor for WorkflowExecutionController.
+	 *
+	 * @param string $appName App name
+	 * @param IRequest $request Request
+	 * @param WorkflowExecutionMapper $executionMapper Execution mapper
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly WorkflowExecutionMapper $executionMapper,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
 
-    /**
-     * List workflow executions with filters and pagination.
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
-     */
-    public function index(): JSONResponse
-    {
-        $filters = [];
+	/**
+	 * List workflow executions with filters and pagination.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
+	 */
+	public function index(): JSONResponse {
+		$filters = [];
 
-        $objectUuid = $this->request->getParam('objectUuid');
-        if ($objectUuid !== null) {
-            $filters['objectUuid'] = $objectUuid;
-        }
+		$objectUuid = $this->request->getParam('objectUuid');
+		if ($objectUuid !== null) {
+			$filters['objectUuid'] = $objectUuid;
+		}
 
-        $schemaId = $this->request->getParam('schemaId');
-        if ($schemaId !== null) {
-            $filters['schemaId'] = (int) $schemaId;
-        }
+		$schemaId = $this->request->getParam('schemaId');
+		if ($schemaId !== null) {
+			$filters['schemaId'] = (int)$schemaId;
+		}
 
-        $hookId = $this->request->getParam('hookId');
-        if ($hookId !== null) {
-            $filters['hookId'] = $hookId;
-        }
+		$hookId = $this->request->getParam('hookId');
+		if ($hookId !== null) {
+			$filters['hookId'] = $hookId;
+		}
 
-        $status = $this->request->getParam('status');
-        if ($status !== null) {
-            $filters['status'] = $status;
-        }
+		$status = $this->request->getParam('status');
+		if ($status !== null) {
+			$filters['status'] = $status;
+		}
 
-        $engine = $this->request->getParam('engine');
-        if ($engine !== null) {
-            $filters['engine'] = $engine;
-        }
+		$engine = $this->request->getParam('engine');
+		if ($engine !== null) {
+			$filters['engine'] = $engine;
+		}
 
-        $since = $this->request->getParam('since');
-        if ($since !== null) {
-            $filters['since'] = $since;
-        }
+		$since = $this->request->getParam('since');
+		if ($since !== null) {
+			$filters['since'] = $since;
+		}
 
-        $limit  = (int) ($this->request->getParam('limit', '50'));
-        $offset = (int) ($this->request->getParam('offset', '0'));
+		$limit = (int)($this->request->getParam('limit', '50'));
+		$offset = (int)($this->request->getParam('offset', '0'));
 
-        $limit  = min(max($limit, 1), 500);
-        $offset = max($offset, 0);
+		$limit = min(max($limit, 1), 500);
+		$offset = max($offset, 0);
 
-        $results = $this->executionMapper->findAll($filters, $limit, $offset);
-        $total   = $this->executionMapper->countAll($filters);
+		$results = $this->executionMapper->findAll($filters, $limit, $offset);
+		$total = $this->executionMapper->countAll($filters);
 
-        return new JSONResponse(
-                [
-                    'results' => array_map(fn ($e) => $e->jsonSerialize(), $results),
-                    'total'   => $total,
-                    'limit'   => $limit,
-                    'offset'  => $offset,
-                ]
-                );
-    }//end index()
+		return new JSONResponse(
+			[
+				'results' => array_map(fn ($e) => $e->jsonSerialize(), $results),
+				'total' => $total,
+				'limit' => $limit,
+				'offset' => $offset,
+			]
+		);
+	}//end index()
 
-    /**
-     * Get a single execution detail.
-     *
-     * @param int $id Execution ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
-     */
-    public function show(int $id): JSONResponse
-    {
-        try {
-            $execution = $this->executionMapper->find($id);
+	/**
+	 * Get a single execution detail.
+	 *
+	 * @param int $id Execution ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
+	 */
+	public function show(int $id): JSONResponse {
+		try {
+			$execution = $this->executionMapper->find($id);
 
-            return new JSONResponse($execution->jsonSerialize());
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Execution not found'], 404);
-        }
-    }//end show()
+			return new JSONResponse($execution->jsonSerialize());
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Execution not found'], 404);
+		}
+	}//end show()
 
-    /**
-     * Delete an execution record (admin only).
-     *
-     * @param int $id Execution ID
-     *
-     * @auth admin-only Execution rows are the audit trail of what this instance sent to an external
-     *       engine and what came back. Deleting audit history is an administrative act, and the
-     *       prose above already said "admin only" without anything enforcing or declaring it —
-     *       WorkflowExecution has no owner column, so no per-object guard is expressible either.
-     *
-     * @return JSONResponse
-     *
-     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        try {
-            $execution = $this->executionMapper->find($id);
-            $this->executionMapper->delete($execution);
+	/**
+	 * Delete an execution record (admin only).
+	 *
+	 * @param int $id Execution ID
+	 *
+	 * @auth admin-only Execution rows are the audit trail of what this instance sent to an external
+	 *       engine and what came back. Deleting audit history is an administrative act, and the
+	 *       prose above already said "admin only" without anything enforcing or declaring it —
+	 *       WorkflowExecution has no owner column, so no per-object guard is expressible either.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
+	 */
+	public function destroy(int $id): JSONResponse {
+		try {
+			$execution = $this->executionMapper->find($id);
+			$this->executionMapper->delete($execution);
 
-            return new JSONResponse(['message' => 'Execution deleted']);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Execution not found'], 404);
-        }
-    }//end destroy()
+			return new JSONResponse(['message' => 'Execution deleted']);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Execution not found'], 404);
+		}
+	}//end destroy()
 }//end class

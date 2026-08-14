@@ -42,49 +42,47 @@ use JsonSerializable;
 /**
  * One MIME-part attachment of a parsed EML message.
  */
-final class EmlAttachment implements JsonSerializable
-{
-    /**
-     * Constructor.
-     *
-     * @param string            $filename  Resolved filename (always non-empty).
-     * @param string            $mimeType  MIME type from `Content-Type`.
-     * @param string            $content   Decoded binary bytes of the attachment.
-     * @param bool              $isInline  True when the part has `Content-Disposition: inline`.
-     * @param string|null       $contentId `Content-ID` header value with angle brackets stripped, or null.
-     * @param EmlStructure|null $nestedEml Recursively parsed nested EML, or null beyond the depth cap.
-     */
-    public function __construct(
-        public readonly string $filename,
-        public readonly string $mimeType,
-        public readonly string $content,
-        public readonly bool $isInline,
-        public readonly ?string $contentId,
-        public readonly ?EmlStructure $nestedEml,
-    ) {
-    }//end __construct()
+final class EmlAttachment implements JsonSerializable {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $filename Resolved filename (always non-empty).
+	 * @param string $mimeType MIME type from `Content-Type`.
+	 * @param string $content Decoded binary bytes of the attachment.
+	 * @param bool $isInline True when the part has `Content-Disposition: inline`.
+	 * @param string|null $contentId `Content-ID` header value with angle brackets stripped, or null.
+	 * @param EmlStructure|null $nestedEml Recursively parsed nested EML, or null beyond the depth cap.
+	 */
+	public function __construct(
+		public readonly string $filename,
+		public readonly string $mimeType,
+		public readonly string $content,
+		public readonly bool $isInline,
+		public readonly ?string $contentId,
+		public readonly ?EmlStructure $nestedEml,
+	) {
+	}//end __construct()
 
-    /**
-     * JSON serialisation.
-     *
-     * `content` is base64-encoded for transport so the JSON shape is
-     * still safe-to-print binary bytes. Consumers consuming the PHP
-     * value object directly receive raw bytes via `$attachment->content`.
-     *
-     * @return array<string, mixed>
-     *
-     * @spec exclude Value-object serialiser: maps public readonly properties to an array (content base64-encoded);
-     *              field shape specified by text-extraction-eml.
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'filename'  => $this->filename,
-            'mimeType'  => $this->mimeType,
-            'content'   => base64_encode($this->content),
-            'isInline'  => $this->isInline,
-            'contentId' => $this->contentId,
-            'nestedEml' => $this->nestedEml,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialisation.
+	 *
+	 * `content` is base64-encoded for transport so the JSON shape is
+	 * still safe-to-print binary bytes. Consumers consuming the PHP
+	 * value object directly receive raw bytes via `$attachment->content`.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec exclude Value-object serialiser: maps public readonly properties to an array (content base64-encoded);
+	 *              field shape specified by text-extraction-eml.
+	 */
+	public function jsonSerialize(): array {
+		return [
+			'filename' => $this->filename,
+			'mimeType' => $this->mimeType,
+			'content' => base64_encode($this->content),
+			'isInline' => $this->isInline,
+			'contentId' => $this->contentId,
+			'nestedEml' => $this->nestedEml,
+		];
+	}//end jsonSerialize()
 }//end class

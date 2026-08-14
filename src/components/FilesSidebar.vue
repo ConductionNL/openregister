@@ -108,9 +108,7 @@
 
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
-			<NcButton
-				variant="secondary"
-				@click="clearFilters">
+			<NcButton variant="secondary" @click="clearFilters">
 				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
 		</div>
@@ -172,7 +170,11 @@ export default {
 		 * @return {boolean} True if filters are active
 		 */
 		hasActiveFilters() {
-			return this.selectedStatus !== null || this.localSearch !== '' || this.selectedRiskLevel !== null
+			return (
+				this.selectedStatus !== null
+				|| this.localSearch !== ''
+				|| this.selectedRiskLevel !== null
+			)
 		},
 	},
 

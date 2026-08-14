@@ -6,7 +6,12 @@
 			<section class="tab-section">
 				<HookList
 					:hooks="hooks"
-					@add="showHookForm = true; editingHookIndex = null"
+					@add="
+						() => {
+							showHookForm = true
+							editingHookIndex = null
+						}
+					"
 					@edit="editHook"
 					@delete="deleteHook"
 					@test="openTestDialog" />
@@ -133,6 +138,11 @@ export default {
 </script>
 
 <style scoped>
-.schema-workflow-tab { padding: 20px; }
-.tab-section { margin-bottom: 24px; }
+.schema-workflow-tab {
+	padding: 20px;
+}
+
+.tab-section {
+	margin-bottom: 24px;
+}
 </style>

@@ -43,162 +43,143 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\AppHost\Service\GenericActionAuthService
  */
-class ActionAuthEveryoneTest extends TestCase
-{
+class ActionAuthEveryoneTest extends TestCase {
 
+	/**
+	 * A service whose matrix is the given map, for a non-admin in no groups.
+	 *
+	 * @param array $matrix The action matrix.
+	 * @param array $groups The user's groups.
+	 * @param bool $admin Whether the user is an admin.
+	 *
+	 * @return array{0: GenericActionAuthService, 1: IUser}
+	 */
+	private function serviceWith(array $matrix, array $groups = [], bool $admin = false): array {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn(json_encode($matrix));
 
-    /**
-     * A service whose matrix is the given map, for a non-admin in no groups.
-     *
-     * @param array $matrix The action matrix.
-     * @param array $groups The user's groups.
-     * @param bool  $admin  Whether the user is an admin.
-     *
-     * @return array{0: GenericActionAuthService, 1: IUser}
-     */
-    private function serviceWith(array $matrix, array $groups=[], bool $admin=false): array
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn(json_encode($matrix));
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($admin);
+		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
-        $groupManager = $this->createMock(IGroupManager::class);
-        $groupManager->method('isAdmin')->willReturn($admin);
-        $groupManager->method('getUserGroupIds')->willReturn($groups);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
 
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
+		return [new GenericActionAuthService('openregister', $appConfig, $groupManager), $user];
+	}//end serviceWith()
 
-        return [new GenericActionAuthService('openregister', $appConfig, $groupManager), $user];
+	/**
+	 * An explicit everyone-grant lets a non-admin through.
+	 *
+	 * @return void
+	 */
+	public function testEveryoneGrantAdmitsANonAdmin(): void {
+		[$service, $user] = $this->serviceWith(['flow.create' => ['@authenticated']]);
 
-    }//end serviceWith()
+		$this->assertTrue($service->can(user: $user, action: 'flow.create'));
 
+	}//end testEveryoneGrantAdmitsANonAdmin()
 
-    /**
-     * An explicit everyone-grant lets a non-admin through.
-     *
-     * @return void
-     */
-    public function testEveryoneGrantAdmitsANonAdmin(): void
-    {
-        [$service, $user] = $this->serviceWith(['flow.create' => ['@authenticated']]);
+	/**
+	 * THE PROPERTY THAT MATTERS: absence still denies.
+	 *
+	 * An "everyone" value is only safe while it has to be written down. If a
+	 * missing entry started meaning "open", every action anyone forgot to seed
+	 * would be world-writable — the matrix would have gone from fail-closed to
+	 * fail-open on the strength of a convenience.
+	 *
+	 * @return void
+	 */
+	public function testAnUnlistedActionStillDenies(): void {
+		[$service, $user] = $this->serviceWith(['flow.create' => ['@authenticated']]);
 
-        $this->assertTrue($service->can(user: $user, action: 'flow.create'));
+		$this->assertFalse($service->can(user: $user, action: 'flow.delete'));
+		$this->assertFalse($service->can(user: $user, action: 'something.nobody.seeded'));
 
-    }//end testEveryoneGrantAdmitsANonAdmin()
+	}//end testAnUnlistedActionStillDenies()
 
+	/**
+	 * An empty list and an admin-only list still deny, as they always did.
+	 *
+	 * @return void
+	 */
+	public function testEmptyAndAdminOnlyStillDeny(): void {
+		[$service, $user] = $this->serviceWith(
+			[
+				'flow.run' => [],
+				'flow.update' => ['admin'],
+			]
+		);
 
-    /**
-     * THE PROPERTY THAT MATTERS: absence still denies.
-     *
-     * An "everyone" value is only safe while it has to be written down. If a
-     * missing entry started meaning "open", every action anyone forgot to seed
-     * would be world-writable — the matrix would have gone from fail-closed to
-     * fail-open on the strength of a convenience.
-     *
-     * @return void
-     */
-    public function testAnUnlistedActionStillDenies(): void
-    {
-        [$service, $user] = $this->serviceWith(['flow.create' => ['@authenticated']]);
+		$this->assertFalse($service->can(user: $user, action: 'flow.run'));
+		$this->assertFalse($service->can(user: $user, action: 'flow.update'));
 
-        $this->assertFalse($service->can(user: $user, action: 'flow.delete'));
-        $this->assertFalse($service->can(user: $user, action: 'something.nobody.seeded'));
+	}//end testEmptyAndAdminOnlyStillDeny()
 
-    }//end testAnUnlistedActionStillDenies()
+	/**
+	 * Group grants are unaffected by the new value.
+	 *
+	 * @return void
+	 */
+	public function testGroupGrantsStillWork(): void {
+		[$service, $user] = $this->serviceWith(['flow.run' => ['flow-authors']], groups: ['flow-authors']);
+		$this->assertTrue($service->can(user: $user, action: 'flow.run'));
 
+		[$other, $otherUser] = $this->serviceWith(['flow.run' => ['flow-authors']], groups: ['everyone-else']);
+		$this->assertFalse($other->can(user: $otherUser, action: 'flow.run'));
 
-    /**
-     * An empty list and an admin-only list still deny, as they always did.
-     *
-     * @return void
-     */
-    public function testEmptyAndAdminOnlyStillDeny(): void
-    {
-        [$service, $user] = $this->serviceWith(
-            [
-                'flow.run'    => [],
-                'flow.update' => ['admin'],
-            ]
-        );
+	}//end testGroupGrantsStillWork()
 
-        $this->assertFalse($service->can(user: $user, action: 'flow.run'));
-        $this->assertFalse($service->can(user: $user, action: 'flow.update'));
+	/**
+	 * An admin passes regardless, as before.
+	 *
+	 * @return void
+	 */
+	public function testAdminAlwaysPasses(): void {
+		[$service, $user] = $this->serviceWith(['flow.create' => []], admin: true);
 
-    }//end testEmptyAndAdminOnlyStillDeny()
+		$this->assertTrue($service->can(user: $user, action: 'flow.create'));
 
+	}//end testAdminAlwaysPasses()
 
-    /**
-     * Group grants are unaffected by the new value.
-     *
-     * @return void
-     */
-    public function testGroupGrantsStillWork(): void
-    {
-        [$service, $user] = $this->serviceWith(['flow.run' => ['flow-authors']], groups: ['flow-authors']);
-        $this->assertTrue($service->can(user: $user, action: 'flow.run'));
+	/**
+	 * `requireAction` throws where `can` is false, so a controller that forgets
+	 * to check still refuses.
+	 *
+	 * @return void
+	 */
+	public function testRequireActionThrowsWhenDenied(): void {
+		[$service, $user] = $this->serviceWith(['flow.create' => ['admin']]);
 
-        [$other, $otherUser] = $this->serviceWith(['flow.run' => ['flow-authors']], groups: ['everyone-else']);
-        $this->assertFalse($other->can(user: $otherUser, action: 'flow.run'));
+		$this->expectException(OCSForbiddenException::class);
+		$service->requireAction(user: $user, action: 'flow.create');
 
-    }//end testGroupGrantsStillWork()
+	}//end testRequireActionThrowsWhenDenied()
 
+	/**
+	 * THE SEED PRESERVES TODAY'S ACCESS.
+	 *
+	 * The four flow rights are seeded `@authenticated` precisely because the
+	 * endpoints were already open to any signed-in member of an organisation.
+	 * A seed that defaulted to admin-only would lock out every non-admin flow
+	 * author on every instance on upgrade — a breaking change wearing a
+	 * feature's clothes.
+	 *
+	 * @return void
+	 */
+	public function testTheShippedSeedDoesNotLockOutExistingAuthors(): void {
+		$seed = json_decode(file_get_contents(__DIR__ . '/../../../lib/actions.seed.json'), true);
+		$this->assertIsArray($seed['actions'] ?? null, 'the seed must carry an actions map');
 
-    /**
-     * An admin passes regardless, as before.
-     *
-     * @return void
-     */
-    public function testAdminAlwaysPasses(): void
-    {
-        [$service, $user] = $this->serviceWith(['flow.create' => []], admin: true);
+		[$service, $user] = $this->serviceWith($seed['actions']);
 
-        $this->assertTrue($service->can(user: $user, action: 'flow.create'));
+		foreach (['flow.create', 'flow.update', 'flow.delete', 'flow.run'] as $action) {
+			$this->assertTrue(
+				$service->can(user: $user, action: $action),
+				sprintf('seeding "%s" locked out a non-admin who could do it before', $action)
+			);
+		}
 
-    }//end testAdminAlwaysPasses()
-
-
-    /**
-     * `requireAction` throws where `can` is false, so a controller that forgets
-     * to check still refuses.
-     *
-     * @return void
-     */
-    public function testRequireActionThrowsWhenDenied(): void
-    {
-        [$service, $user] = $this->serviceWith(['flow.create' => ['admin']]);
-
-        $this->expectException(OCSForbiddenException::class);
-        $service->requireAction(user: $user, action: 'flow.create');
-
-    }//end testRequireActionThrowsWhenDenied()
-
-
-    /**
-     * THE SEED PRESERVES TODAY'S ACCESS.
-     *
-     * The four flow rights are seeded `@authenticated` precisely because the
-     * endpoints were already open to any signed-in member of an organisation.
-     * A seed that defaulted to admin-only would lock out every non-admin flow
-     * author on every instance on upgrade — a breaking change wearing a
-     * feature's clothes.
-     *
-     * @return void
-     */
-    public function testTheShippedSeedDoesNotLockOutExistingAuthors(): void
-    {
-        $seed = json_decode(file_get_contents(__DIR__.'/../../../lib/actions.seed.json'), true);
-        $this->assertIsArray($seed['actions'] ?? null, 'the seed must carry an actions map');
-
-        [$service, $user] = $this->serviceWith($seed['actions']);
-
-        foreach (['flow.create', 'flow.update', 'flow.delete', 'flow.run'] as $action) {
-            $this->assertTrue(
-                $service->can(user: $user, action: $action),
-                sprintf('seeding "%s" locked out a non-admin who could do it before', $action)
-            );
-        }
-
-    }//end testTheShippedSeedDoesNotLockOutExistingAuthors()
-
+	}//end testTheShippedSeedDoesNotLockOutExistingAuthors()
 
 }//end class

@@ -73,19 +73,25 @@ if (!isDev) {
 	// are content-hashed and change per build, so they cannot be hardcoded).
 	webpackConfig.plugins.push({
 		apply(compiler) {
-			compiler.hooks.afterEmit.tap('OpenRegisterEntrypointsManifest', (compilation) => {
-				const manifest = {}
-				for (const [name, entrypoint] of compilation.entrypoints) {
-					manifest[name] = entrypoint
-						.getFiles()
-						.map((file) => file.split('?')[0])
-						.filter((file) => file.endsWith('.js'))
-				}
-				fs.writeFileSync(
-					path.join(compiler.options.output.path, 'openregister-entrypoints.json'),
-					JSON.stringify(manifest, null, '\t') + '\n',
-				)
-			})
+			compiler.hooks.afterEmit.tap(
+				'OpenRegisterEntrypointsManifest',
+				(compilation) => {
+					const manifest = {}
+					for (const [name, entrypoint] of compilation.entrypoints) {
+						manifest[name] = entrypoint
+							.getFiles()
+							.map((file) => file.split('?')[0])
+							.filter((file) => file.endsWith('.js'))
+					}
+					fs.writeFileSync(
+						path.join(
+							compiler.options.output.path,
+							'openregister-entrypoints.json',
+						),
+						JSON.stringify(manifest, null, '\t') + '\n',
+					)
+				},
+			)
 		},
 	})
 }
@@ -154,7 +160,8 @@ webpackConfig.resolve.extensions = [
 // present, so a local build can reproduce what CI and production build — they have
 // no sibling, so they always resolve the npm dist.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-let useLocalLib = fs.existsSync(localLib)
+let useLocalLib =
+	fs.existsSync(localLib)
 	&& !process.env.OR_SKIP_LOCAL_NCVUE
 	&& process.env.USE_LOCAL_LIB !== 'false'
 
@@ -176,8 +183,8 @@ if (useLocalLib) {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[openregister/webpack] Ignoring the sibling @conduction/nextcloud-vue checkout: '
-			+ `version ${siblingVersion ?? 'unknown'} is not on the Vue 3 (2.x) line. `
-			+ 'Building against the installed npm package instead.',
+				+ `version ${siblingVersion ?? 'unknown'} is not on the Vue 3 (2.x) line. `
+				+ 'Building against the installed npm package instead.',
 		)
 		useLocalLib = false
 	}
@@ -197,17 +204,29 @@ webpackConfig.resolve.alias = {
 	// `Can't resolve '@nextcloud/vue'`. Alias the absolute FILE for those.
 	// `vue`, `pinia` and `vue-router` still carry `main`/`module`, but pinning
 	// the file keeps every consumer on one copy regardless.
-	vue$: path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
+	vue$: path.resolve(
+		__dirname,
+		'node_modules/vue/dist/vue.runtime.esm-bundler.js',
+	),
 	pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.mjs'),
 	// `dist/vue-router.js` — NOT `.mjs`, which does not exist. This is the file
 	// the package's own `exports['.'].import` (and `module`) names, so the alias
 	// reproduces default resolution exactly while still guaranteeing that
 	// @nextcloud/vue's chunks and this app share ONE router copy.
-	'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.js'),
-	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
+	'vue-router$': path.resolve(
+		__dirname,
+		'node_modules/vue-router/dist/vue-router.js',
+	),
+	'@nextcloud/vue$': path.resolve(
+		__dirname,
+		'node_modules/@nextcloud/vue/dist/index.mjs',
+	),
 	// Shim for floating-vue compatibility: adds getScrollParents (0.x API) as alias for getOverflowAncestors (1.x API)
 	'@floating-ui/dom$': path.resolve(__dirname, 'src/shims/floating-ui-dom.js'),
-	'@floating-ui/dom-actual': path.resolve(__dirname, 'node_modules/@floating-ui/dom'),
+	'@floating-ui/dom-actual': path.resolve(
+		__dirname,
+		'node_modules/@floating-ui/dom',
+	),
 }
 // @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist subpaths)
 webpackConfig.resolve.extensionAlias = {
@@ -261,13 +280,18 @@ webpackConfig.entry = {
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)
-const otherPlugins = (webpackConfig.plugins || []).filter((p) => p.constructor.name !== 'VueLoaderPlugin')
+const otherPlugins = (webpackConfig.plugins || []).filter(
+	(p) => p.constructor.name !== 'VueLoaderPlugin',
+)
 webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 
 // Force @nextcloud/dialogs to resolve from this app's node_modules, preventing
 // a nested copy from a sibling checkout leaking in. v7 is exports-map-only, so
 // this must name the absolute FILE (see the alias block above).
-webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs')
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/dialogs/dist/index.mjs',
+)
 
 // The base config sets `output.clean: true`, which wipes js/ on every build.
 // Some assets under js/ are hand-written static files served as-is — NOT
@@ -292,10 +316,7 @@ webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'no
 // This predicate previously matched only `openregister-push-`, so every build
 // deleted the flow-operator script. It was picked up as a deletion and shipped
 // in a PR at least once (#2381) before being caught.
-const KEPT_STATIC_ASSETS = [
-	'openregister-push-',
-	'openregister-flow-operator',
-]
+const KEPT_STATIC_ASSETS = ['openregister-push-', 'openregister-flow-operator']
 webpackConfig.output.clean = {
 	keep: (asset) => KEPT_STATIC_ASSETS.some((name) => asset.includes(name)),
 }

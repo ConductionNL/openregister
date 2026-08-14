@@ -38,91 +38,85 @@ use OCP\EventDispatcher\Event;
 /**
  * Telemetry event fired after a custom-scope evaluation completes.
  */
-class CustomScopeEvaluatedEvent extends Event
-{
-    /**
-     * Constructor.
-     *
-     * @param Schema      $schema       Schema that was evaluated.
-     * @param string      $action       Custom action verb that was evaluated.
-     * @param string|null $userId       User ID under evaluation.
-     * @param bool        $verdict      Final verdict returned to the caller.
-     * @param bool        $fromListener True when the verdict came from a
-     *                                  listener vote on the evaluating
-     *                                  event; false when the standard
-     *                                  rule chain produced the verdict.
-     */
-    public function __construct(
-        private readonly Schema $schema,
-        private readonly string $action,
-        private readonly ?string $userId,
-        private readonly bool $verdict,
-        private readonly bool $fromListener
-    ) {
-        parent::__construct();
+class CustomScopeEvaluatedEvent extends Event {
+	/**
+	 * Constructor.
+	 *
+	 * @param Schema $schema Schema that was evaluated.
+	 * @param string $action Custom action verb that was evaluated.
+	 * @param string|null $userId User ID under evaluation.
+	 * @param bool $verdict Final verdict returned to the caller.
+	 * @param bool $fromListener True when the verdict came from a
+	 *                           listener vote on the evaluating
+	 *                           event; false when the standard
+	 *                           rule chain produced the verdict.
+	 */
+	public function __construct(
+		private readonly Schema $schema,
+		private readonly string $action,
+		private readonly ?string $userId,
+		private readonly bool $verdict,
+		private readonly bool $fromListener,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Schema that was evaluated.
-     *
-     * @return Schema The schema involved in the evaluation.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-     */
-    public function getSchema(): Schema
-    {
-        return $this->schema;
-    }//end getSchema()
+	/**
+	 * Schema that was evaluated.
+	 *
+	 * @return Schema The schema involved in the evaluation.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
+	 */
+	public function getSchema(): Schema {
+		return $this->schema;
+	}//end getSchema()
 
-    /**
-     * Custom action verb that was evaluated.
-     *
-     * @return string The custom action verb.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-     */
-    public function getAction(): string
-    {
-        return $this->action;
-    }//end getAction()
+	/**
+	 * Custom action verb that was evaluated.
+	 *
+	 * @return string The custom action verb.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
+	 */
+	public function getAction(): string {
+		return $this->action;
+	}//end getAction()
 
-    /**
-     * User ID under evaluation (null for anonymous requests).
-     *
-     * @return string|null The user ID, or null when anonymous.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-     */
-    public function getUserId(): ?string
-    {
-        return $this->userId;
-    }//end getUserId()
+	/**
+	 * User ID under evaluation (null for anonymous requests).
+	 *
+	 * @return string|null The user ID, or null when anonymous.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
+	 */
+	public function getUserId(): ?string {
+		return $this->userId;
+	}//end getUserId()
 
-    /**
-     * Final verdict the caller received.
-     *
-     * @return bool The boolean verdict that the caller received.
-     *
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName)
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-     */
-    public function getVerdict(): bool
-    {
-        return $this->verdict;
-    }//end getVerdict()
+	/**
+	 * Final verdict the caller received.
+	 *
+	 * @return bool The boolean verdict that the caller received.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanGetMethodName)
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
+	 */
+	public function getVerdict(): bool {
+		return $this->verdict;
+	}//end getVerdict()
 
-    /**
-     * Whether the verdict was decided by a listener (true) or by the
-     * standard rule chain after no listener voted (false).
-     *
-     * @return bool True when a listener decided the verdict.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
-     */
-    public function isFromListener(): bool
-    {
-        return $this->fromListener;
-    }//end isFromListener()
+	/**
+	 * Whether the verdict was decided by a listener (true) or by the
+	 * standard rule chain after no listener voted (false).
+	 *
+	 * @return bool True when a listener decided the verdict.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
+	 */
+	public function isFromListener(): bool {
+		return $this->fromListener;
+	}//end isFromListener()
 }//end class

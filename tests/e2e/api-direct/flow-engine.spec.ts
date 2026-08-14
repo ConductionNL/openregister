@@ -17,23 +17,41 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 
 const API = '/index.php/apps/openregister/api'
-const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
 const runId = `e2e-flow-${Date.now()}`
 
 /** Find a shipped register/schema id by slug (the flow store is shipped, not seeded here). */
-async function idBySlug(request: APIRequestContext, kind: 'registers' | 'schemas', slug: string): Promise<number> {
+async function idBySlug(
+	request: APIRequestContext,
+	kind: 'registers' | 'schemas',
+	slug: string,
+): Promise<number> {
 	const resp = await request.get(`${API}/${kind}?limit=1000`)
 	expect(resp.ok(), `list ${kind}`).toBeTruthy()
 	const body = await resp.json()
 	const rows: any[] = body.results ?? body ?? []
 	const match = rows.find((r) => (r.slug ?? r['@self']?.slug) === slug)
-	expect(match, `${kind} slug=${slug} exists (shipped by ImportFlowRegister)`).toBeTruthy()
+	expect(
+		match,
+		`${kind} slug=${slug} exists (shipped by ImportFlowRegister)`,
+	).toBeTruthy()
 	return match.id ?? match['@self']?.id
 }
 
 /** Author a flow object in the flow store, returning its uuid. */
-async function createFlow(request: APIRequestContext, reg: number, sch: number, flow: Record<string, unknown>): Promise<string> {
-	const resp = await request.post(`${API}/objects/${reg}/${sch}`, { headers: JSON_HEADERS, data: flow })
+async function createFlow(
+	request: APIRequestContext,
+	reg: number,
+	sch: number,
+	flow: Record<string, unknown>,
+): Promise<string> {
+	const resp = await request.post(`${API}/objects/${reg}/${sch}`, {
+		headers: JSON_HEADERS,
+		data: flow,
+	})
 	expect(resp.status(), 'create flow object').toBeLessThanOrEqual(201)
 	const body = await resp.json()
 	const id = body?.['@self']?.id ?? body?.id
@@ -42,8 +60,14 @@ async function createFlow(request: APIRequestContext, reg: number, sch: number, 
 }
 
 /** Run a flow synchronously via the test endpoint. */
-async function testRun(request: APIRequestContext, payload: Record<string, unknown>) {
-	const resp = await request.post(`${API}/flow-runs/test`, { headers: JSON_HEADERS, data: payload })
+async function testRun(
+	request: APIRequestContext,
+	payload: Record<string, unknown>,
+) {
+	const resp = await request.post(`${API}/flow-runs/test`, {
+		headers: JSON_HEADERS,
+		data: payload,
+	})
 	expect(resp.status(), `test run (${JSON.stringify(payload)})`).toBe(200)
 	return resp.json()
 }
@@ -60,7 +84,9 @@ test.describe('Flow engine — end to end', () => {
 
 	test.afterAll(async ({ request }) => {
 		for (const id of created) {
-			await request.delete(`${API}/objects/${reg}/${sch}/${id}`).catch(() => {})
+			await request
+				.delete(`${API}/objects/${reg}/${sch}/${id}`)
+				.catch(() => {})
 		}
 	})
 
@@ -76,8 +102,20 @@ test.describe('Flow engine — end to end', () => {
 			trigger: 'manual',
 			nodes: [{ id: 'start' }, { id: 'greet' }, { id: 'done' }],
 			edges: [
-				{ id: 's1', from: 'start', to: 'greet', type: 'openregister.set-fields', config: { set: { greeting: 'hi', step: 1 } } },
-				{ id: 's2', from: 'greet', to: 'done', type: 'openregister.set-fields', config: { set: { step: 2, finished: true } } },
+				{
+					id: 's1',
+					from: 'start',
+					to: 'greet',
+					type: 'openregister.set-fields',
+					config: { set: { greeting: 'hi', step: 1 } },
+				},
+				{
+					id: 's2',
+					from: 'greet',
+					to: 'done',
+					type: 'openregister.set-fields',
+					config: { set: { step: 2, finished: true } },
+				},
 			],
 		})
 		created.push(uuid)
@@ -90,20 +128,38 @@ test.describe('Flow engine — end to end', () => {
 		expect(item.finished).toBe(true)
 	})
 
-	test('run-from-here skips the steps before the chosen node', async ({ request }) => {
+	test('run-from-here skips the steps before the chosen node', async ({
+		request,
+	}) => {
 		const uuid = await createFlow(request, reg, sch, {
 			name: `${runId} startAt`,
 			enabled: true,
 			trigger: 'manual',
 			nodes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
 			edges: [
-				{ id: 's1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { ran_first: true } } },
-				{ id: 's2', from: 'b', to: 'c', type: 'openregister.set-fields', config: { set: { ran_second: true } } },
+				{
+					id: 's1',
+					from: 'a',
+					to: 'b',
+					type: 'openregister.set-fields',
+					config: { set: { ran_first: true } },
+				},
+				{
+					id: 's2',
+					from: 'b',
+					to: 'c',
+					type: 'openregister.set-fields',
+					config: { set: { ran_second: true } },
+				},
 			],
 		})
 		created.push(uuid)
 
-		const run = await testRun(request, { flowId: uuid, startAt: 'b', seedItems: [{ json: { seeded: true } }] })
+		const run = await testRun(request, {
+			flowId: uuid,
+			startAt: 'b',
+			seedItems: [{ json: { seeded: true } }],
+		})
 		expect(run.status).toBe('completed')
 		// Only s2 ran; the log records exactly one step, and s1's field is absent.
 		const steps = (run.log ?? []).map((l: any) => l.transition)
@@ -114,20 +170,37 @@ test.describe('Flow engine — end to end', () => {
 		expect(item.seeded).toBe(true)
 	})
 
-	test('a pinned step is skipped and its stored output used', async ({ request }) => {
+	test('a pinned step is skipped and its stored output used', async ({
+		request,
+	}) => {
 		const uuid = await createFlow(request, reg, sch, {
 			name: `${runId} pin`,
 			enabled: true,
 			trigger: 'manual',
 			nodes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
 			edges: [
-				{ id: 's1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { real: true } } },
-				{ id: 's2', from: 'b', to: 'c', type: 'openregister.set-fields', config: { set: { downstream: true } } },
+				{
+					id: 's1',
+					from: 'a',
+					to: 'b',
+					type: 'openregister.set-fields',
+					config: { set: { real: true } },
+				},
+				{
+					id: 's2',
+					from: 'b',
+					to: 'c',
+					type: 'openregister.set-fields',
+					config: { set: { downstream: true } },
+				},
 			],
 		})
 		created.push(uuid)
 
-		const run = await testRun(request, { flowId: uuid, pins: { s1: [{ json: { pinned: 'yes' } }] } })
+		const run = await testRun(request, {
+			flowId: uuid,
+			pins: { s1: [{ json: { pinned: 'yes' } }] },
+		})
 		expect(run.status).toBe('completed')
 		const s1 = (run.log ?? []).find((l: any) => l.transition === 's1')
 		expect(s1?.status, 's1 was served from the pin').toBe('pinned')
@@ -143,14 +216,43 @@ test.describe('Flow engine — end to end', () => {
 			name: `${runId} route`,
 			enabled: true,
 			trigger: 'manual',
-			nodes: [{ id: 'start' }, { id: 'high' }, { id: 'low' }, { id: 'hEnd' }, { id: 'lEnd' }],
+			nodes: [
+				{ id: 'start' },
+				{ id: 'high' },
+				{ id: 'low' },
+				{ id: 'hEnd' },
+				{ id: 'lEnd' },
+			],
 			edges: [
 				{
-					id: 'route', from: 'start', to: ['high', 'low'], type: 'openregister.route',
-					config: { rules: [{ condition: { '>': [{ var: 'json.n' }, 5] }, output: 'high' }], default: 'low' },
+					id: 'route',
+					from: 'start',
+					to: ['high', 'low'],
+					type: 'openregister.route',
+					config: {
+						rules: [
+							{
+								condition: { '>': [{ var: 'json.n' }, 5] },
+								output: 'high',
+							},
+						],
+						default: 'low',
+					},
 				},
-				{ id: 'doHigh', from: 'high', to: 'hEnd', type: 'openregister.set-fields', config: { set: { branch: 'high' } } },
-				{ id: 'doLow', from: 'low', to: 'lEnd', type: 'openregister.set-fields', config: { set: { branch: 'low' } } },
+				{
+					id: 'doHigh',
+					from: 'high',
+					to: 'hEnd',
+					type: 'openregister.set-fields',
+					config: { set: { branch: 'high' } },
+				},
+				{
+					id: 'doLow',
+					from: 'low',
+					to: 'lEnd',
+					type: 'openregister.set-fields',
+					config: { set: { branch: 'low' } },
+				},
 			],
 		})
 		created.push(uuid)
@@ -181,7 +283,15 @@ test.describe('Flow engine — end to end', () => {
 			enabled: true,
 			trigger: 'manual',
 			nodes: [{ id: 'a' }, { id: 'b' }],
-			edges: [{ id: 's1', from: 'a', to: 'b', type: 'openregister.set-fields', config: { set: { done: true } } }],
+			edges: [
+				{
+					id: 's1',
+					from: 'a',
+					to: 'b',
+					type: 'openregister.set-fields',
+					config: { set: { done: true } },
+				},
+			],
 		})
 		created.push(uuid)
 
@@ -190,7 +300,10 @@ test.describe('Flow engine — end to end', () => {
 		const hist = await request.get(`${API}/flow-runs?flowId=${uuid}`)
 		expect(hist.status()).toBe(200)
 		const body = await hist.json()
-		expect(body.results.length, 'the test run shows in history').toBeGreaterThanOrEqual(1)
+		expect(
+			body.results.length,
+			'the test run shows in history',
+		).toBeGreaterThanOrEqual(1)
 		expect(body.results[0].trigger).toBe('test')
 	})
 })

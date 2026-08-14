@@ -25,12 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Db\FileMapper;
-use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\BackgroundJob\IJob;
+use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,279 +46,276 @@ use Psr\Log\LoggerInterface;
  * - Automatic retry for failed files
  */
 
-class CronFileTextExtractionJob extends TimedJob
-{
-    /**
-     * Default interval: 15 minutes
-     */
-    private const DEFAULT_INTERVAL = 15 * 60;
+class CronFileTextExtractionJob extends TimedJob {
+	/**
+	 * Default interval: 15 minutes
+	 */
+	private const DEFAULT_INTERVAL = 15 * 60;
 
-    /**
-     * Default batch size for processing files
-     */
-    private const DEFAULT_BATCH_SIZE = 10;
+	/**
+	 * Default batch size for processing files
+	 */
+	private const DEFAULT_BATCH_SIZE = 10;
 
-    /**
-     * Constructor
-     *
-     * Initializes the timed job with the time factory and sets the interval.
-     *
-     * @param ITimeFactory $time Time factory for parent class
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function __construct(ITimeFactory $time)
-    {
-        parent::__construct(time: $time);
-        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * Initializes the timed job with the time factory and sets the interval.
+	 *
+	 * @param ITimeFactory $time Time factory for parent class
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(ITimeFactory $time) {
+		parent::__construct(time: $time);
+		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
+	}//end __construct()
 
-    /**
-     * Execute the cron file text extraction job
-     *
-     * @param mixed $argument Job arguments (unused for recurring jobs)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    protected function run($argument): void
-    {
-        $startTime = microtime(true);
+	/**
+	 * Execute the cron file text extraction job
+	 *
+	 * @param mixed $argument Job arguments (unused for recurring jobs)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	protected function run($argument): void {
+		$startTime = microtime(true);
 
-        /*
-         * @var LoggerInterface $logger
-         */
+		/*
+		 * @var LoggerInterface $logger
+		 */
 
-        $logger = \OC::$server->get(LoggerInterface::class);
+		$logger = \OC::$server->get(LoggerInterface::class);
 
-        $logger->info(
-            message: '[CronFileTextExtractionJob] 🔄 Cron File Text Extraction Job Started',
-            context: [
-                'file'           => __FILE__,
-                'line'           => __LINE__,
-                'job_id'         => $this->getId(),
-                'scheduled_time' => date('Y-m-d H:i:s'),
-            ]
-        );
+		$logger->info(
+			message: '[CronFileTextExtractionJob] 🔄 Cron File Text Extraction Job Started',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job_id' => $this->getId(),
+				'scheduled_time' => date('Y-m-d H:i:s'),
+			]
+		);
 
-        try {
-            /*
-             * Get required services.
-             *
-             * @var SettingsService $settingsService
-             */
+		try {
+			/*
+			 * Get required services.
+			 *
+			 * @var SettingsService $settingsService
+			 */
 
-            $settingsService = \OC::$server->get(SettingsService::class);
+			$settingsService = \OC::$server->get(SettingsService::class);
 
-            /*
-             * @var TextExtractionService $textExtractor
-             */
+			/*
+			 * @var TextExtractionService $textExtractor
+			 */
 
-            $textExtractor = \OC::$server->get(TextExtractionService::class);
+			$textExtractor = \OC::$server->get(TextExtractionService::class);
 
-            /*
-             * @var FileMapper $fileMapper
-             */
+			/*
+			 * @var FileMapper $fileMapper
+			 */
 
-            $fileMapper = \OC::$server->get(FileMapper::class);
+			$fileMapper = \OC::$server->get(FileMapper::class);
 
-            // Check if extraction mode is set to 'cron'.
-            $fileSettings   = $settingsService->getFileSettingsOnly();
-            $extractionMode = $fileSettings['extractionMode'] ?? 'background';
+			// Check if extraction mode is set to 'cron'.
+			$fileSettings = $settingsService->getFileSettingsOnly();
+			$extractionMode = $fileSettings['extractionMode'] ?? 'background';
 
-            if ($extractionMode !== 'cron') {
-                $logger->debug(
-                    message: '[CronFileTextExtractionJob] Skipped - mode is not cron',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
-                );
-                return;
-            }
+			if ($extractionMode !== 'cron') {
+				$logger->debug(
+					message: '[CronFileTextExtractionJob] Skipped - mode is not cron',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
+				);
+				return;
+			}
 
-            // Get batch size from settings.
-            $batchSize       = $fileSettings['batchSize'] ?? self::DEFAULT_BATCH_SIZE;
-            $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
+			// Get batch size from settings.
+			$batchSize = $fileSettings['batchSize'] ?? self::DEFAULT_BATCH_SIZE;
+			$extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
-            $logger->info(
-                message: '[CronFileTextExtractionJob] Starting cron file text extraction',
-                context: [
-                    'file'             => __FILE__,
-                    'line'             => __LINE__,
-                    'batch_size'       => $batchSize,
-                    'extraction_scope' => $extractionScope,
-                ]
-            );
+			$logger->info(
+				message: '[CronFileTextExtractionJob] Starting cron file text extraction',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'batch_size' => $batchSize,
+					'extraction_scope' => $extractionScope,
+				]
+			);
 
-            // Get pending files based on extraction scope.
-            $pendingFiles = $this->getPendingFiles(
-                fileMapper: $fileMapper,
-                extractionScope: $extractionScope,
-                batchSize: $batchSize,
-                logger: $logger
-            );
+			// Get pending files based on extraction scope.
+			$pendingFiles = $this->getPendingFiles(
+				fileMapper: $fileMapper,
+				extractionScope: $extractionScope,
+				batchSize: $batchSize,
+				logger: $logger
+			);
 
-            if (empty($pendingFiles) === true) {
-                // phpcs:ignore Generic.Files.LineLength.MaxExceeded
-                $logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
-                return;
-            }
+			if (empty($pendingFiles) === true) {
+				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
+				$logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
+				return;
+			}
 
-            $logger->info(
-                message: '[CronFileTextExtractionJob] Processing files in cron job',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'files_count' => count($pendingFiles),
-                    'batch_size'  => $batchSize,
-                ]
-            );
+			$logger->info(
+				message: '[CronFileTextExtractionJob] Processing files in cron job',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'files_count' => count($pendingFiles),
+					'batch_size' => $batchSize,
+				]
+			);
 
-            // Process each file.
-            $processed = 0;
-            $failed    = 0;
+			// Process each file.
+			$processed = 0;
+			$failed = 0;
 
-            foreach ($pendingFiles as $file) {
-                try {
-                    $fileId = (int) ($file['fileid'] ?? 0);
+			foreach ($pendingFiles as $file) {
+				try {
+					$fileId = (int)($file['fileid'] ?? 0);
 
-                    if ($fileId === 0) {
-                        continue;
-                    }
+					if ($fileId === 0) {
+						continue;
+					}
 
-                    $logger->debug(
-                        message: '[CronFileTextExtractionJob] Processing file in cron job',
-                        context: [
-                            'file'      => __FILE__,
-                            'line'      => __LINE__,
-                            'file_id'   => $fileId,
-                            'file_name' => $file['name'] ?? 'unknown',
-                        ]
-                    );
+					$logger->debug(
+						message: '[CronFileTextExtractionJob] Processing file in cron job',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'file_id' => $fileId,
+							'file_name' => $file['name'] ?? 'unknown',
+						]
+					);
 
-                    $textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
-                    $processed++;
+					$textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
+					$processed++;
 
-                    $logger->debug(
-                        message: '[CronFileTextExtractionJob] File processed successfully in cron job',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
-                    );
-                } catch (\Exception $e) {
-                    $failed++;
-                    $logger->error(
-                        message: '[CronFileTextExtractionJob] Failed to process file in cron job',
-                        context: [
-                            'file'    => __FILE__,
-                            'line'    => __LINE__,
-                            'file_id' => $fileId ?? 0,
-                            'error'   => $e->getMessage(),
-                        ]
-                    );
-                }//end try
-            }//end foreach
+					$logger->debug(
+						message: '[CronFileTextExtractionJob] File processed successfully in cron job',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+					);
+				} catch (\Exception $e) {
+					$failed++;
+					$logger->error(
+						message: '[CronFileTextExtractionJob] Failed to process file in cron job',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'file_id' => $fileId ?? 0,
+							'error' => $e->getMessage(),
+						]
+					);
+				}//end try
+			}//end foreach
 
-            $executionTime = microtime(true) - $startTime;
+			$executionTime = microtime(true) - $startTime;
 
-            $logger->info(
-                message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
-                context: [
-                    'file'                   => __FILE__,
-                    'line'                   => __LINE__,
-                    'job_id'                 => $this->getId(),
-                    'execution_time_seconds' => round($executionTime, 2),
-                    'files_processed'        => $processed,
-                    'files_failed'           => $failed,
-                    'next_run'               => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-                ]
-            );
-        } catch (\Exception $e) {
-            $executionTime = microtime(true) - $startTime;
+			$logger->info(
+				message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'job_id' => $this->getId(),
+					'execution_time_seconds' => round($executionTime, 2),
+					'files_processed' => $processed,
+					'files_failed' => $failed,
+					'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+				]
+			);
+		} catch (\Exception $e) {
+			$executionTime = microtime(true) - $startTime;
 
-            $logger->error(
-                message: '[CronFileTextExtractionJob] 🚨 Cron File Text Extraction Job Exception',
-                context: [
-                    'file'                   => __FILE__,
-                    'line'                   => __LINE__,
-                    'job_id'                 => $this->getId(),
-                    'execution_time_seconds' => round($executionTime, 2),
-                    'exception'              => $e->getMessage(),
-                    'exception_file'         => $e->getFile(),
-                    'exception_line'         => $e->getLine(),
-                    'trace'                  => $e->getTraceAsString(),
-                ]
-            );
+			$logger->error(
+				message: '[CronFileTextExtractionJob] 🚨 Cron File Text Extraction Job Exception',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'job_id' => $this->getId(),
+					'execution_time_seconds' => round($executionTime, 2),
+					'exception' => $e->getMessage(),
+					'exception_file' => $e->getFile(),
+					'exception_line' => $e->getLine(),
+					'trace' => $e->getTraceAsString(),
+				]
+			);
 
-            // Don't re-throw for recurring jobs - let them retry next time.
-        }//end try
-    }//end run()
+			// Don't re-throw for recurring jobs - let them retry next time.
+		}//end try
+	}//end run()
 
-    /**
-     * Get pending files for text extraction based on scope and batch size.
-     *
-     * Retrieves files that need text extraction based on the configured extraction scope.
-     * Files are returned in batches to prevent overwhelming the system.
-     *
-     * @param FileMapper      $fileMapper      File mapper for database queries
-     * @param string          $extractionScope Extraction scope (objects, all, etc.)
-     * @param int             $batchSize       Maximum number of files to retrieve
-     * @param LoggerInterface $logger          Logger for debug messages
-     *
-     * @return array<int, array<string, mixed>> List of pending files with metadata.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function getPendingFiles(
-        FileMapper $fileMapper,
-        string $extractionScope,
-        int $batchSize,
-        LoggerInterface $logger
-    ): array {
-        // Log query parameters for debugging.
-        $logger->debug(
-            message: '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
-            context: [
-                'file'             => __FILE__,
-                'line'             => __LINE__,
-                'extraction_scope' => $extractionScope,
-                'batch_size'       => $batchSize,
-            ]
-        );
+	/**
+	 * Get pending files for text extraction based on scope and batch size.
+	 *
+	 * Retrieves files that need text extraction based on the configured extraction scope.
+	 * Files are returned in batches to prevent overwhelming the system.
+	 *
+	 * @param FileMapper $fileMapper File mapper for database queries
+	 * @param string $extractionScope Extraction scope (objects, all, etc.)
+	 * @param int $batchSize Maximum number of files to retrieve
+	 * @param LoggerInterface $logger Logger for debug messages
+	 *
+	 * @return array<int, array<string, mixed>> List of pending files with metadata.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function getPendingFiles(
+		FileMapper $fileMapper,
+		string $extractionScope,
+		int $batchSize,
+		LoggerInterface $logger,
+	): array {
+		// Log query parameters for debugging.
+		$logger->debug(
+			message: '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'extraction_scope' => $extractionScope,
+				'batch_size' => $batchSize,
+			]
+		);
 
-        try {
-            // Get pending files based on extraction scope.
-            // Files are considered "pending" if they have no extracted text or if extraction failed previously.
-            $pendingFiles = $fileMapper->findUntrackedFiles(
-                limit: $batchSize
-            );
+		try {
+			// Get pending files based on extraction scope.
+			// Files are considered "pending" if they have no extracted text or if extraction failed previously.
+			$pendingFiles = $fileMapper->findUntrackedFiles(
+				limit: $batchSize
+			);
 
-            $logger->debug(
-                message: '[CronFileTextExtractionJob] Retrieved pending files',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'count'      => count($pendingFiles),
-                    'batch_size' => $batchSize,
-                    'scope'      => $extractionScope,
-                ]
-            );
+			$logger->debug(
+				message: '[CronFileTextExtractionJob] Retrieved pending files',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'count' => count($pendingFiles),
+					'batch_size' => $batchSize,
+					'scope' => $extractionScope,
+				]
+			);
 
-            return $pendingFiles;
-        } catch (\Exception $e) {
-            // Log error but don't throw - return empty array to continue gracefully.
-            $logger->error(
-                message: '[CronFileTextExtractionJob] Failed to retrieve pending files',
-                context: [
-                    'file'             => __FILE__,
-                    'line'             => __LINE__,
-                    'error'            => $e->getMessage(),
-                    'extraction_scope' => $extractionScope,
-                    'batch_size'       => $batchSize,
-                ]
-            );
+			return $pendingFiles;
+		} catch (\Exception $e) {
+			// Log error but don't throw - return empty array to continue gracefully.
+			$logger->error(
+				message: '[CronFileTextExtractionJob] Failed to retrieve pending files',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $e->getMessage(),
+					'extraction_scope' => $extractionScope,
+					'batch_size' => $batchSize,
+				]
+			);
 
-            return [];
-        }//end try
-    }//end getPendingFiles()
+			return [];
+		}//end try
+	}//end getPendingFiles()
 }//end class

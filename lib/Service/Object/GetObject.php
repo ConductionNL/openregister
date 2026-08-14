@@ -123,7 +123,8 @@ class GetObject
     /**
      * Gets an object by its ID with optional extensions.
      *
-     * This method also creates an audit trail entry for the 'read' action.
+     * This method also creates an audit trail entry for the 'read' action,
+     * unless `$_audit` says otherwise.
      *
      * @param string   $id            The ID of the object to get.
      * @param Register $register      The register containing the object.
@@ -132,6 +133,9 @@ class GetObject
      * @param bool     $files         Include file information.
      * @param bool     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool     $_audit        Whether this read is worth an audit-trail row (default: true).
+     *                                Pass false for machine-to-machine reads inside one
+     *                                operation - the instance setting is all-or-nothing.
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -149,7 +153,8 @@ class GetObject
         ?array $_extend=[],
         bool $files=false,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_audit=true
     ): ObjectEntity {
         // Object-source delegation: for a schema served from an external source
         // (x-openregister-object-source) the object is fetched live from the
@@ -181,7 +186,15 @@ class GetObject
         }
 
         // Create an audit trail for the 'read' action if audit trails are enabled.
-        if ($this->isAuditTrailsEnabled() === true) {
+        //
+        // `$_audit` is the PER-CALL opt-out. The instance setting is all or
+        // nothing, so a bulk synchronisation reading thousands of objects had no
+        // way to skip audit without disabling it for user-facing reads too — and
+        // read logging is 91% of this instance's audit table (2,864,555 of
+        // 3,153,490 rows, in a table carrying 1,596MB of indexes over 1,089MB of
+        // data). Machine-to-machine reads inside one operation are not the thing
+        // an audit trail exists to record; a person opening an object is.
+        if ($_audit === true && $this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $object, action: 'read');
             $object->setLastLog($log->jsonSerialize());
         }

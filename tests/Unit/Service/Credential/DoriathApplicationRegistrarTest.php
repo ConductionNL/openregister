@@ -39,189 +39,177 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class DoriathApplicationRegistrarTest extends TestCase
-{
-    private const APP_ID = 'openbuild-spectr';
+class DoriathApplicationRegistrarTest extends TestCase {
+	private const APP_ID = 'openbuild-spectr';
 
-    private FakeApplicationService $applicationService;
+	private FakeApplicationService $applicationService;
 
-    protected function setUp(): void
-    {
-        $this->applicationService = new FakeApplicationService();
-    }
+	protected function setUp(): void {
+		$this->applicationService = new FakeApplicationService();
+	}
 
-    /**
-     * Happy path (first onboarding): register a pending, identity-only, per-app
-     * Doriath application (name = appId, csr null, isAdmin false) and persist the
-     * assigned UUID under the per-app key.
-     */
-    public function testRegistersPendingIdentityOnlyApplicationOnFirstOnboarding(): void
-    {
-        $persisted = [];
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn('');
-        $appConfig->method('setValueString')->willReturnCallback(
-            static function (string $app, string $key, string $value) use (&$persisted): bool {
-                $persisted[$app.'|'.$key] = $value;
-                return true;
-            }
-        );
+	/**
+	 * Happy path (first onboarding): register a pending, identity-only, per-app
+	 * Doriath application (name = appId, csr null, isAdmin false) and persist the
+	 * assigned UUID under the per-app key.
+	 */
+	public function testRegistersPendingIdentityOnlyApplicationOnFirstOnboarding(): void {
+		$persisted = [];
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('');
+		$appConfig->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$persisted): bool {
+				$persisted[$app . '|' . $key] = $value;
+				return true;
+			}
+		);
 
-        $registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
+		$registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
 
-        $registrar->registerApplication(self::APP_ID, 'Spectr tender intelligence');
+		$registrar->registerApplication(self::APP_ID, 'Spectr tender intelligence');
 
-        // Exactly one register call with the identity-only shape.
-        $this->assertCount(1, $this->applicationService->registerCalls);
-        [$name, $description, $type, $csr, $userId, $isAdmin] = $this->applicationService->registerCalls[0];
-        $this->assertSame(self::APP_ID, $name, 'Application name = consuming appId');
-        $this->assertSame('Spectr tender intelligence', $description, 'Description from the manifest');
-        $this->assertSame('internal', $type);
-        $this->assertNull($csr, 'Identity-only: NO CSR, so no EncryptionSuite');
-        $this->assertNull($userId, 'Runs without a session');
-        $this->assertFalse($isAdmin, 'Non-admin path → pending row (admin approves)');
+		// Exactly one register call with the identity-only shape.
+		$this->assertCount(1, $this->applicationService->registerCalls);
+		[$name, $description, $type, $csr, $userId, $isAdmin] = $this->applicationService->registerCalls[0];
+		$this->assertSame(self::APP_ID, $name, 'Application name = consuming appId');
+		$this->assertSame('Spectr tender intelligence', $description, 'Description from the manifest');
+		$this->assertSame('internal', $type);
+		$this->assertNull($csr, 'Identity-only: NO CSR, so no EncryptionSuite');
+		$this->assertNull($userId, 'Runs without a session');
+		$this->assertFalse($isAdmin, 'Non-admin path → pending row (admin approves)');
 
-        // The Doriath-assigned UUID is persisted under the per-app key ONLY.
-        $expectedKey = 'openregister|'.DoriathApplicationRegistrar::appConfigKey(self::APP_ID);
-        $this->assertArrayHasKey($expectedKey, $persisted);
-        $this->assertSame($this->applicationService->assignedId, $persisted[$expectedKey]);
+		// The Doriath-assigned UUID is persisted under the per-app key ONLY.
+		$expectedKey = 'openregister|' . DoriathApplicationRegistrar::appConfigKey(self::APP_ID);
+		$this->assertArrayHasKey($expectedKey, $persisted);
+		$this->assertSame($this->applicationService->assignedId, $persisted[$expectedKey]);
 
-        // Custody stays put: OR's OWN application-id key is never written here.
-        $ownKey = 'openregister|'.DoriathCredentialStore::APP_CONFIG_APPLICATION_ID;
-        $this->assertArrayNotHasKey($ownKey, $persisted, "OR's own Doriath application UUID untouched (identity-only)");
-    }
+		// Custody stays put: OR's OWN application-id key is never written here.
+		$ownKey = 'openregister|' . DoriathCredentialStore::APP_CONFIG_APPLICATION_ID;
+		$this->assertArrayNotHasKey($ownKey, $persisted, "OR's own Doriath application UUID untouched (identity-only)");
+	}
 
-    /**
-     * Per-app key is namespaced by appId and distinct from OR's custody-vault key.
-     */
-    public function testPerAppKeyIsDistinctFromOrOwnKey(): void
-    {
-        $this->assertNotSame(
-            DoriathCredentialStore::APP_CONFIG_APPLICATION_ID,
-            DoriathApplicationRegistrar::appConfigKey(self::APP_ID),
-            'Per-app key must not collide with OR own application-id key'
-        );
-        $this->assertStringContainsString(self::APP_ID, DoriathApplicationRegistrar::appConfigKey(self::APP_ID));
-    }
+	/**
+	 * Per-app key is namespaced by appId and distinct from OR's custody-vault key.
+	 */
+	public function testPerAppKeyIsDistinctFromOrOwnKey(): void {
+		$this->assertNotSame(
+			DoriathCredentialStore::APP_CONFIG_APPLICATION_ID,
+			DoriathApplicationRegistrar::appConfigKey(self::APP_ID),
+			'Per-app key must not collide with OR own application-id key'
+		);
+		$this->assertStringContainsString(self::APP_ID, DoriathApplicationRegistrar::appConfigKey(self::APP_ID));
+	}
 
-    /**
-     * Idempotency: a persisted UUID whose Doriath row is still live is a no-op —
-     * no new registration, no rotation, no re-persist.
-     */
-    public function testIdempotentWhenLiveRow(): void
-    {
-        $existingId = 'a1b2c3d4-0000-0000-0000-000000000000';
-        $this->applicationService->liveApplicationIds = [$existingId];
+	/**
+	 * Idempotency: a persisted UUID whose Doriath row is still live is a no-op —
+	 * no new registration, no rotation, no re-persist.
+	 */
+	public function testIdempotentWhenLiveRow(): void {
+		$existingId = 'a1b2c3d4-0000-0000-0000-000000000000';
+		$this->applicationService->liveApplicationIds = [$existingId];
 
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn($existingId);
-        $appConfig->expects($this->never())->method('setValueString');
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn($existingId);
+		$appConfig->expects($this->never())->method('setValueString');
 
-        $registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
+		$registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
 
-        $registrar->registerApplication(self::APP_ID, 'Spectr');
+		$registrar->registerApplication(self::APP_ID, 'Spectr');
 
-        $this->assertSame([], $this->applicationService->registerCalls, 'Live row → never re-register/rotate');
-    }
+		$this->assertSame([], $this->applicationService->registerCalls, 'Live row → never re-register/rotate');
+	}
 
-    /**
-     * A stale persisted UUID (row removed in Doriath) re-registers exactly once.
-     */
-    public function testStaleRowReRegisters(): void
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn('dead-beef-0000-0000-0000-000000000000');
-        $appConfig->expects($this->once())->method('setValueString');
+	/**
+	 * A stale persisted UUID (row removed in Doriath) re-registers exactly once.
+	 */
+	public function testStaleRowReRegisters(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('dead-beef-0000-0000-0000-000000000000');
+		$appConfig->expects($this->once())->method('setValueString');
 
-        $registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
+		$registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
 
-        $registrar->registerApplication(self::APP_ID, null);
+		$registrar->registerApplication(self::APP_ID, null);
 
-        $this->assertCount(1, $this->applicationService->registerCalls, 'Stale UUID re-registers');
-    }
+		$this->assertCount(1, $this->applicationService->registerCalls, 'Stale UUID re-registers');
+	}
 
-    /**
-     * Description falls back to the appId when the manifest supplies none.
-     */
-    public function testDescriptionFallsBackToAppId(): void
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueString')->willReturn('');
+	/**
+	 * Description falls back to the appId when the manifest supplies none.
+	 */
+	public function testDescriptionFallsBackToAppId(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('');
 
-        $registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
+		$registrar = $this->makeRegistrar(doriathEnabled: true, appConfig: $appConfig);
 
-        $registrar->registerApplication(self::APP_ID, null);
+		$registrar->registerApplication(self::APP_ID, null);
 
-        [, $description] = $this->applicationService->registerCalls[0];
-        $this->assertSame(self::APP_ID, $description, 'Missing description falls back to appId');
-    }
+		[, $description] = $this->applicationService->registerCalls[0];
+		$this->assertSame(self::APP_ID, $description, 'Missing description falls back to appId');
+	}
 
-    /**
-     * Degrade: Doriath disabled → warn/skip, no register call, no writes, no throw.
-     */
-    public function testDegradesWhenDoriathDisabled(): void
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->expects($this->never())->method('setValueString');
+	/**
+	 * Degrade: Doriath disabled → warn/skip, no register call, no writes, no throw.
+	 */
+	public function testDegradesWhenDoriathDisabled(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->expects($this->never())->method('setValueString');
 
-        $registrar = $this->makeRegistrar(doriathEnabled: false, appConfig: $appConfig);
+		$registrar = $this->makeRegistrar(doriathEnabled: false, appConfig: $appConfig);
 
-        $registrar->registerApplication(self::APP_ID, 'Spectr');
+		$registrar->registerApplication(self::APP_ID, 'Spectr');
 
-        $this->assertSame([], $this->applicationService->registerCalls, 'Doriath disabled → no registration');
-    }
+		$this->assertSame([], $this->applicationService->registerCalls, 'Doriath disabled → no registration');
+	}
 
-    /**
-     * Degrade: Doriath enabled but its ApplicationService is unloadable → no-op, no throw.
-     */
-    public function testDegradesWhenServiceUnavailable(): void
-    {
-        $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->expects($this->never())->method('setValueString');
+	/**
+	 * Degrade: Doriath enabled but its ApplicationService is unloadable → no-op, no throw.
+	 */
+	public function testDegradesWhenServiceUnavailable(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->expects($this->never())->method('setValueString');
 
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForUser')->with('doriath')->willReturn(true);
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->with('doriath')->willReturn(true);
 
-        $registrar = new class ($appConfig, $appManager, $this->createMock(LoggerInterface::class)) extends DoriathApplicationRegistrar {
-            protected function resolveApplicationService(): ?object
-            {
-                return null;
-            }
-        };
+		$registrar = new class($appConfig, $appManager, $this->createMock(LoggerInterface::class)) extends DoriathApplicationRegistrar {
+			protected function resolveApplicationService(): ?object {
+				return null;
+			}
+		};
 
-        $registrar->registerApplication(self::APP_ID, 'Spectr');
+		$registrar->registerApplication(self::APP_ID, 'Spectr');
 
-        // No throw is the assertion; getValueString/setValueString never touched.
-        $this->addToAssertionCount(1);
-    }
+		// No throw is the assertion; getValueString/setValueString never touched.
+		$this->addToAssertionCount(1);
+	}
 
-    /**
-     * Build the registrar with the fixture ApplicationService injected.
-     *
-     * @param bool       $doriathEnabled Whether IAppManager reports doriath enabled.
-     * @param IAppConfig $appConfig      IAppConfig mock.
-     */
-    private function makeRegistrar(bool $doriathEnabled, IAppConfig $appConfig): DoriathApplicationRegistrar
-    {
-        $appManager = $this->createMock(IAppManager::class);
-        $appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
+	/**
+	 * Build the registrar with the fixture ApplicationService injected.
+	 *
+	 * @param bool $doriathEnabled Whether IAppManager reports doriath enabled.
+	 * @param IAppConfig $appConfig IAppConfig mock.
+	 */
+	private function makeRegistrar(bool $doriathEnabled, IAppConfig $appConfig): DoriathApplicationRegistrar {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->with('doriath')->willReturn($doriathEnabled);
 
-        $applicationService = $this->applicationService;
+		$applicationService = $this->applicationService;
 
-        return new class ($appConfig, $appManager, $this->createMock(LoggerInterface::class), $applicationService) extends DoriathApplicationRegistrar {
-            public function __construct(
-                IAppConfig $appConfig,
-                IAppManager $appManager,
-                LoggerInterface $logger,
-                private readonly object $fixtureApplicationService,
-            ) {
-                parent::__construct($appConfig, $appManager, $logger);
-            }
+		return new class($appConfig, $appManager, $this->createMock(LoggerInterface::class), $applicationService) extends DoriathApplicationRegistrar {
+			public function __construct(
+				IAppConfig $appConfig,
+				IAppManager $appManager,
+				LoggerInterface $logger,
+				private readonly object $fixtureApplicationService,
+			) {
+				parent::__construct($appConfig, $appManager, $logger);
+			}
 
-            protected function resolveApplicationService(): ?object
-            {
-                return $this->fixtureApplicationService;
-            }
-        };
-    }
+			protected function resolveApplicationService(): ?object {
+				return $this->fixtureApplicationService;
+			}
+		};
+	}
 }

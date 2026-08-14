@@ -39,79 +39,77 @@ use OCP\Migration\SimpleMigrationStep;
  * Adds nullable `tool_id`, `params_digest`, `result_summary` columns to the
  * `openregister_audit_trails` table.
  */
-class Version1Date20260712130000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return null|ISchemaWrapper
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260712130000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return null|ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_audit_trails') === false) {
+			return null;
+		}
 
-        $table   = $schema->getTable(tableName: 'openregister_audit_trails');
-        $changed = false;
+		$table = $schema->getTable(tableName: 'openregister_audit_trails');
+		$changed = false;
 
-        if ($table->hasColumn(name: 'tool_id') === false) {
-            $table->addColumn(
-                name: 'tool_id',
-                typeName: Types::STRING,
-                options: [
-                    'notnull' => false,
-                    'length'  => 190,
-                ]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn(name: 'tool_id') === false) {
+			$table->addColumn(
+				name: 'tool_id',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => false,
+					'length' => 190,
+				]
+			);
+			$changed = true;
+		}
 
-        if ($table->hasColumn(name: 'params_digest') === false) {
-            $table->addColumn(
-                name: 'params_digest',
-                typeName: Types::STRING,
-                options: [
-                    'notnull' => false,
-                    'length'  => 64,
-                ]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn(name: 'params_digest') === false) {
+			$table->addColumn(
+				name: 'params_digest',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => false,
+					'length' => 64,
+				]
+			);
+			$changed = true;
+		}
 
-        if ($table->hasColumn(name: 'result_summary') === false) {
-            $table->addColumn(
-                name: 'result_summary',
-                typeName: Types::JSON,
-                options: ['notnull' => false]
-            );
-            $changed = true;
-        }
+		if ($table->hasColumn(name: 'result_summary') === false) {
+			$table->addColumn(
+				name: 'result_summary',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			);
+			$changed = true;
+		}
 
-        if ($table->hasIndex(name: 'idx_audit_trails_tool_id') === false) {
-            $table->addIndex(
-                columnNames: ['tool_id'],
-                indexName: 'idx_audit_trails_tool_id'
-            );
-            $changed = true;
-        }
+		if ($table->hasIndex(name: 'idx_audit_trails_tool_id') === false) {
+			$table->addIndex(
+				columnNames: ['tool_id'],
+				indexName: 'idx_audit_trails_tool_id'
+			);
+			$changed = true;
+		}
 
-        if ($changed === false) {
-            return null;
-        }
+		if ($changed === false) {
+			return null;
+		}
 
-        $output->info('Added tool_id/params_digest/result_summary to openregister_audit_trails');
+		$output->info('Added tool_id/params_digest/result_summary to openregister_audit_trails');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

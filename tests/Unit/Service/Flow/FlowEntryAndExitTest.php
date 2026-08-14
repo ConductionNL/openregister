@@ -43,240 +43,216 @@ use PHPUnit\Framework\TestCase;
 /**
  * Covers the missing-trigger and missing-end findings.
  */
-class FlowEntryAndExitTest extends TestCase
-{
+class FlowEntryAndExitTest extends TestCase {
 
+	/**
+	 * Connectivity over a registry that answers from two fixed lists.
+	 *
+	 * @param array<int, string> $triggers Types that can start a run.
+	 * @param array<int, string> $ends Types that end one.
+	 *
+	 * @return FlowConnectivity
+	 */
+	private function connectivity(array $triggers = [], array $ends = []): FlowConnectivity {
+		$registry = $this->createMock(FlowNodeRegistry::class);
+		$registry->method('isTrigger')->willReturnCallback(
+			static fn (string $type): bool => in_array($type, $triggers, true)
+		);
+		$registry->method('isEnd')->willReturnCallback(
+			static fn (string $type): bool => in_array($type, $ends, true)
+		);
 
-    /**
-     * Connectivity over a registry that answers from two fixed lists.
-     *
-     * @param array<int, string> $triggers Types that can start a run.
-     * @param array<int, string> $ends     Types that end one.
-     *
-     * @return FlowConnectivity
-     */
-    private function connectivity(array $triggers=[], array $ends=[]): FlowConnectivity
-    {
-        $registry = $this->createMock(FlowNodeRegistry::class);
-        $registry->method('isTrigger')->willReturnCallback(
-            static fn (string $type): bool => in_array($type, $triggers, true)
-        );
-        $registry->method('isEnd')->willReturnCallback(
-            static fn (string $type): bool => in_array($type, $ends, true)
-        );
+		return new FlowConnectivity($registry);
+	}//end connectivity()
 
-        return new FlowConnectivity($registry);
+	/**
+	 * The reasons reported for a document.
+	 *
+	 * @param array $findings The findings.
+	 *
+	 * @return array<int, string> The reasons.
+	 */
+	private function reasons(array $findings): array {
+		return array_column($findings, 'reason');
+	}//end reasons()
 
-    }//end connectivity()
+	/**
+	 * A flow with both says nothing.
+	 *
+	 * The positive control. Without it the tests below prove only that the
+	 * check returns findings, which a check hardcoded to complain also does.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithBothIsSilent(): void {
+		$findings = $this->connectivity(
+			triggers: ['openregister.trigger-object'],
+			ends: ['openregister.end']
+		)->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 't', 'type' => 'openregister.trigger-object'],
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'e', 'type' => 'openregister.end'],
+				],
+			]
+		);
 
+		$this->assertSame([], $this->reasons($findings));
 
-    /**
-     * The reasons reported for a document.
-     *
-     * @param array $findings The findings.
-     *
-     * @return array<int, string> The reasons.
-     */
-    private function reasons(array $findings): array
-    {
-        return array_column($findings, 'reason');
+	}//end testAFlowWithBothIsSilent()
 
-    }//end reasons()
+	/**
+	 * No trigger is reported, by reason.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithNoTriggerIsReported(): void {
+		$findings = $this->connectivity(ends: ['openregister.end'])->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'e', 'type' => 'openregister.end'],
+				],
+			]
+		);
 
+		$this->assertSame([FlowNodePreflight::REASON_NO_TRIGGER], $this->reasons($findings));
+		$this->assertStringContainsString('nothing can ever start it', $findings[0]['detail']);
 
-    /**
-     * A flow with both says nothing.
-     *
-     * The positive control. Without it the tests below prove only that the
-     * check returns findings, which a check hardcoded to complain also does.
-     *
-     * @return void
-     */
-    public function testAFlowWithBothIsSilent(): void
-    {
-        $findings = $this->connectivity(
-            triggers: ['openregister.trigger-object'],
-            ends: ['openregister.end']
-        )->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 't', 'type' => 'openregister.trigger-object'],
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'e', 'type' => 'openregister.end'],
-                ],
-            ]
-        );
+	}//end testAFlowWithNoTriggerIsReported()
 
-        $this->assertSame([], $this->reasons($findings));
+	/**
+	 * No end is reported, by reason.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithNoEndIsReported(): void {
+		$findings = $this->connectivity(triggers: ['openregister.trigger-manual'])->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 't', 'type' => 'openregister.trigger-manual'],
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+				],
+			]
+		);
 
-    }//end testAFlowWithBothIsSilent()
+		$this->assertSame([FlowNodePreflight::REASON_NO_END], $this->reasons($findings));
 
+	}//end testAFlowWithNoEndIsReported()
 
-    /**
-     * No trigger is reported, by reason.
-     *
-     * @return void
-     */
-    public function testAFlowWithNoTriggerIsReported(): void
-    {
-        $findings = $this->connectivity(ends: ['openregister.end'])->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'e', 'type' => 'openregister.end'],
-                ],
-            ]
-        );
+	/**
+	 * Missing BOTH reports both, not one.
+	 *
+	 * An author who is told about one, fixes it and is then told about the
+	 * other has been made to do the work twice.
+	 *
+	 * @return void
+	 */
+	public function testAFlowMissingBothIsToldAboutBoth(): void {
+		$findings = $this->connectivity()->entryAndExit(
+			flow: ['nodes' => [['id' => 'a', 'type' => 'openregister.set-fields']]]
+		);
 
-        $this->assertSame([FlowNodePreflight::REASON_NO_TRIGGER], $this->reasons($findings));
-        $this->assertStringContainsString('nothing can ever start it', $findings[0]['detail']);
+		$this->assertSame(
+			[FlowNodePreflight::REASON_NO_TRIGGER, FlowNodePreflight::REASON_NO_END],
+			$this->reasons($findings)
+		);
 
-    }//end testAFlowWithNoTriggerIsReported()
+	}//end testAFlowMissingBothIsToldAboutBoth()
 
+	/**
+	 * A flow that ends in ERROR has still ended deliberately.
+	 *
+	 * `openregister.end` carries an `error` flag. Failing is an outcome, not
+	 * the absence of one, and a flow whose only exit is a failure exit must not
+	 * be told it has no end.
+	 *
+	 * @return void
+	 */
+	public function testAnEndThatFailsStillCounts(): void {
+		$findings = $this->connectivity(
+			triggers: ['openregister.trigger-manual'],
+			ends: ['openregister.end']
+		)->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 't', 'type' => 'openregister.trigger-manual'],
+					['id' => 'e', 'type' => 'openregister.end', 'config' => ['error' => true]],
+				],
+			]
+		);
 
-    /**
-     * No end is reported, by reason.
-     *
-     * @return void
-     */
-    public function testAFlowWithNoEndIsReported(): void
-    {
-        $findings = $this->connectivity(triggers: ['openregister.trigger-manual'])->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 't', 'type' => 'openregister.trigger-manual'],
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                ],
-            ]
-        );
+		$this->assertSame([], $this->reasons($findings));
 
-        $this->assertSame([FlowNodePreflight::REASON_NO_END], $this->reasons($findings));
+	}//end testAnEndThatFailsStillCounts()
 
-    }//end testAFlowWithNoEndIsReported()
+	/**
+	 * THE TYPOLOGY RULE: role comes from the TYPE, never from the graph.
+	 *
+	 * This document is topologically perfect — `a` has nothing pointing at it
+	 * so it "looks like" a start, `b` has no outgoing edge so it "looks like"
+	 * an end. Both are ordinary steps, and the flow has neither a trigger nor
+	 * an end. A check reading the drawing would report nothing here.
+	 *
+	 * @return void
+	 */
+	public function testGraphPositionIsNotARole(): void {
+		$findings = $this->connectivity()->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 'a', 'type' => 'openregister.set-fields'],
+					['id' => 'b', 'type' => 'openregister.set-fields'],
+				],
+				'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
+			]
+		);
 
+		$this->assertSame(
+			[FlowNodePreflight::REASON_NO_TRIGGER, FlowNodePreflight::REASON_NO_END],
+			$this->reasons($findings),
+			'the check read the graph shape instead of the node types'
+		);
 
-    /**
-     * Missing BOTH reports both, not one.
-     *
-     * An author who is told about one, fixes it and is then told about the
-     * other has been made to do the work twice.
-     *
-     * @return void
-     */
-    public function testAFlowMissingBothIsToldAboutBoth(): void
-    {
-        $findings = $this->connectivity()->entryAndExit(
-            flow: ['nodes' => [['id' => 'a', 'type' => 'openregister.set-fields']]]
-        );
+	}//end testGraphPositionIsNotARole()
 
-        $this->assertSame(
-            [FlowNodePreflight::REASON_NO_TRIGGER, FlowNodePreflight::REASON_NO_END],
-            $this->reasons($findings)
-        );
+	/**
+	 * `exit: true` does not substitute for an end NODE.
+	 *
+	 * The flag is a per-instance escape for migrated documents — it stops the
+	 * dead-end warning for one node. It does not make the flow's exit
+	 * deliberate, so a flow whose only exit is a flag is still told it has no
+	 * end.
+	 *
+	 * @return void
+	 */
+	public function testTheExitFlagIsNotAnEndNode(): void {
+		$findings = $this->connectivity(triggers: ['openregister.trigger-manual'])->entryAndExit(
+			flow: [
+				'nodes' => [
+					['id' => 't', 'type' => 'openregister.trigger-manual'],
+					['id' => 'a', 'type' => 'openregister.set-fields', 'exit' => true],
+				],
+			]
+		);
 
-    }//end testAFlowMissingBothIsToldAboutBoth()
+		$this->assertSame([FlowNodePreflight::REASON_NO_END], $this->reasons($findings));
 
+	}//end testTheExitFlagIsNotAnEndNode()
 
-    /**
-     * A flow that ends in ERROR has still ended deliberately.
-     *
-     * `openregister.end` carries an `error` flag. Failing is an outcome, not
-     * the absence of one, and a flow whose only exit is a failure exit must not
-     * be told it has no end.
-     *
-     * @return void
-     */
-    public function testAnEndThatFailsStillCounts(): void
-    {
-        $findings = $this->connectivity(
-            triggers: ['openregister.trigger-manual'],
-            ends: ['openregister.end']
-        )->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 't', 'type' => 'openregister.trigger-manual'],
-                    ['id' => 'e', 'type' => 'openregister.end', 'config' => ['error' => true]],
-                ],
-            ]
-        );
+	/**
+	 * An EMPTY document is not nagged.
+	 *
+	 * A flow with nothing in it is missing both by definition, and the author
+	 * can see that. Two findings on a blank canvas is how a warning list
+	 * becomes noise.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyDocumentIsNotReported(): void {
+		$this->assertSame([], $this->connectivity()->entryAndExit(flow: ['nodes' => []]));
+		$this->assertSame([], $this->connectivity()->entryAndExit(flow: []));
 
-        $this->assertSame([], $this->reasons($findings));
-
-    }//end testAnEndThatFailsStillCounts()
-
-
-    /**
-     * THE TYPOLOGY RULE: role comes from the TYPE, never from the graph.
-     *
-     * This document is topologically perfect — `a` has nothing pointing at it
-     * so it "looks like" a start, `b` has no outgoing edge so it "looks like"
-     * an end. Both are ordinary steps, and the flow has neither a trigger nor
-     * an end. A check reading the drawing would report nothing here.
-     *
-     * @return void
-     */
-    public function testGraphPositionIsNotARole(): void
-    {
-        $findings = $this->connectivity()->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 'a', 'type' => 'openregister.set-fields'],
-                    ['id' => 'b', 'type' => 'openregister.set-fields'],
-                ],
-                'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
-            ]
-        );
-
-        $this->assertSame(
-            [FlowNodePreflight::REASON_NO_TRIGGER, FlowNodePreflight::REASON_NO_END],
-            $this->reasons($findings),
-            'the check read the graph shape instead of the node types'
-        );
-
-    }//end testGraphPositionIsNotARole()
-
-
-    /**
-     * `exit: true` does not substitute for an end NODE.
-     *
-     * The flag is a per-instance escape for migrated documents — it stops the
-     * dead-end warning for one node. It does not make the flow's exit
-     * deliberate, so a flow whose only exit is a flag is still told it has no
-     * end.
-     *
-     * @return void
-     */
-    public function testTheExitFlagIsNotAnEndNode(): void
-    {
-        $findings = $this->connectivity(triggers: ['openregister.trigger-manual'])->entryAndExit(
-            flow: [
-                'nodes' => [
-                    ['id' => 't', 'type' => 'openregister.trigger-manual'],
-                    ['id' => 'a', 'type' => 'openregister.set-fields', 'exit' => true],
-                ],
-            ]
-        );
-
-        $this->assertSame([FlowNodePreflight::REASON_NO_END], $this->reasons($findings));
-
-    }//end testTheExitFlagIsNotAnEndNode()
-
-
-    /**
-     * An EMPTY document is not nagged.
-     *
-     * A flow with nothing in it is missing both by definition, and the author
-     * can see that. Two findings on a blank canvas is how a warning list
-     * becomes noise.
-     *
-     * @return void
-     */
-    public function testAnEmptyDocumentIsNotReported(): void
-    {
-        $this->assertSame([], $this->connectivity()->entryAndExit(flow: ['nodes' => []]));
-        $this->assertSame([], $this->connectivity()->entryAndExit(flow: []));
-
-    }//end testAnEmptyDocumentIsNotReported()
-
+	}//end testAnEmptyDocumentIsNotReported()
 
 }//end class

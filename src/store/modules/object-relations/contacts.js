@@ -37,11 +37,15 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/contacts' + suffix, {
-				register,
-				schema,
-				id,
-			})
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/contacts'
+					+ suffix,
+				{
+					register,
+					schema,
+					id,
+				},
+			)
 		},
 
 		/**
@@ -74,7 +78,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 					return []
 				}
 
-				this.errors = { ...this.errors, [k]: err.response?.data?.error || err.message || '' }
+				this.errors = {
+					...this.errors,
+					[k]: err.response?.data?.error || err.message || '',
+				}
 				throw err
 			} finally {
 				this.loading = { ...this.loading, [k]: false }
@@ -89,7 +96,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
-			const response = await axios.post(this._url(register, schema, id), payload)
+			const response = await axios.post(
+				this._url(register, schema, id),
+				payload,
+			)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
@@ -102,9 +112,18 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async unlink(register, schema, id, contactUid) {
-			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(contactUid)))
+			await axios.delete(
+				this._url(
+					register,
+					schema,
+					id,
+					'/' + encodeURIComponent(contactUid),
+				),
+			)
 			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter(c => (c.uid || c.contactUid || c.id) !== contactUid)
+			const next = (this.byObject[k] || []).filter(
+				(c) => (c.uid || c.contactUid || c.id) !== contactUid,
+			)
 			this.byObject = { ...this.byObject, [k]: next }
 			return next
 		},

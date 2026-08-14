@@ -46,182 +46,174 @@ use DateTimeImmutable;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
  *   (Requirement: DPIA pattern detection over DSAR cases)
  */
-class DpiaPatternDetectionService
-{
+class DpiaPatternDetectionService {
 
-    /**
-     * Default threshold, matching pipelinq's `DpiaDetectionService::DEFAULT_THRESHOLD`.
-     *
-     * @var int
-     */
-    public const DEFAULT_THRESHOLD = 10;
+	/**
+	 * Default threshold, matching pipelinq's `DpiaDetectionService::DEFAULT_THRESHOLD`.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_THRESHOLD = 10;
 
-    /**
-     * Default rolling window, matching pipelinq's `DpiaDetectionService::WINDOW_DAYS`.
-     *
-     * @var int
-     */
-    public const DEFAULT_WINDOW_DAYS = 30;
+	/**
+	 * Default rolling window, matching pipelinq's `DpiaDetectionService::WINDOW_DAYS`.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_WINDOW_DAYS = 30;
 
-    /**
-     * Default grouping characteristics (request type + normalised scope).
-     *
-     * @var array<int, string>
-     */
-    public const DEFAULT_GROUP_BY = ['type', 'scope'];
+	/**
+	 * Default grouping characteristics (request type + normalised scope).
+	 *
+	 * @var array<int, string>
+	 */
+	public const DEFAULT_GROUP_BY = ['type', 'scope'];
 
-    /**
-     * Detect the case groups that require a DPIA flag.
-     *
-     * Groups every case whose `receivedAt` lies inside the rolling window by
-     * the configured characteristics (values normalised: trim, lowercase,
-     * collapse whitespace — deliberately dumb v1 parity with pipelinq's raw
-     * equality) and returns each group whose member count reaches the
-     * threshold. Already-flagged cases COUNT toward their group (detection
-     * reflects real volume) but are listed separately so the caller never
-     * re-writes them (idempotency).
-     *
-     * @param array<int, mixed>    $cases  Case payloads (each element is validated as an array at
-     *                                     runtime); each needs `receivedAt` + the group-by fields +
-     *                                     optionally `dpiaRequired` and a caller-supplied `@uuid`.
-     * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
-     * @param DateTimeImmutable    $now    The evaluation clock.
-     *
-     * @return array<int, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}> Triggering groups.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
-     *   (Scenario: Threshold crossing flags the group)
-     */
-    public function detect(array $cases, array $config, DateTimeImmutable $now): array
-    {
-        $threshold  = (int) ($config['threshold'] ?? 0);
-        $windowDays = (int) ($config['windowDays'] ?? 0);
-        $groupBy    = ($config['groupBy'] ?? null);
+	/**
+	 * Detect the case groups that require a DPIA flag.
+	 *
+	 * Groups every case whose `receivedAt` lies inside the rolling window by
+	 * the configured characteristics (values normalised: trim, lowercase,
+	 * collapse whitespace — deliberately dumb v1 parity with pipelinq's raw
+	 * equality) and returns each group whose member count reaches the
+	 * threshold. Already-flagged cases COUNT toward their group (detection
+	 * reflects real volume) but are listed separately so the caller never
+	 * re-writes them (idempotency).
+	 *
+	 * @param array<int, mixed> $cases Case payloads (each element is validated as an array at
+	 *                                 runtime); each needs `receivedAt` + the group-by fields +
+	 *                                 optionally `dpiaRequired` and a caller-supplied `@uuid`.
+	 * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
+	 * @param DateTimeImmutable $now The evaluation clock.
+	 *
+	 * @return array<int, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}> Triggering groups.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
+	 *   (Scenario: Threshold crossing flags the group)
+	 */
+	public function detect(array $cases, array $config, DateTimeImmutable $now): array {
+		$threshold = (int)($config['threshold'] ?? 0);
+		$windowDays = (int)($config['windowDays'] ?? 0);
+		$groupBy = ($config['groupBy'] ?? null);
 
-        // Fail-safe: an unusable configuration produces no groups — never a
-        // false DPIA flag (no-pack / no-block callers pass an empty config).
-        if ($threshold < 1 || $windowDays < 1) {
-            return [];
-        }
+		// Fail-safe: an unusable configuration produces no groups — never a
+		// false DPIA flag (no-pack / no-block callers pass an empty config).
+		if ($threshold < 1 || $windowDays < 1) {
+			return [];
+		}
 
-        if (is_array($groupBy) === false || $groupBy === []) {
-            $groupBy = self::DEFAULT_GROUP_BY;
-        }
+		if (is_array($groupBy) === false || $groupBy === []) {
+			$groupBy = self::DEFAULT_GROUP_BY;
+		}
 
-        $windowStart = $now->modify(sprintf('-%d days', $windowDays));
+		$windowStart = $now->modify(sprintf('-%d days', $windowDays));
 
-        $groups = [];
-        foreach ($cases as $case) {
-            if (is_array($case) === false) {
-                continue;
-            }
+		$groups = [];
+		foreach ($cases as $case) {
+			if (is_array($case) === false) {
+				continue;
+			}
 
-            $receivedAt = $this->parseDate(value: ($case['receivedAt'] ?? null));
-            if ($receivedAt === null || $receivedAt < $windowStart || $receivedAt > $now) {
-                continue;
-            }
+			$receivedAt = $this->parseDate(value: ($case['receivedAt'] ?? null));
+			if ($receivedAt === null || $receivedAt < $windowStart || $receivedAt > $now) {
+				continue;
+			}
 
-            $key = $this->groupKey(case: $case, groupBy: $groupBy);
+			$key = $this->groupKey(case: $case, groupBy: $groupBy);
 
-            if (isset($groups[$key]) === false) {
-                $groups[$key] = [
-                    'key'            => $key,
-                    'count'          => 0,
-                    'caseUuids'      => [],
-                    'unflaggedUuids' => [],
-                ];
-            }
+			if (isset($groups[$key]) === false) {
+				$groups[$key] = [
+					'key' => $key,
+					'count' => 0,
+					'caseUuids' => [],
+					'unflaggedUuids' => [],
+				];
+			}
 
-            $groups[$key]['count']++;
+			$groups[$key]['count']++;
 
-            $uuid = (string) ($case['@uuid'] ?? ($case['id'] ?? ''));
-            if ($uuid === '') {
-                continue;
-            }
+			$uuid = (string)($case['@uuid'] ?? ($case['id'] ?? ''));
+			if ($uuid === '') {
+				continue;
+			}
 
-            $groups[$key]['caseUuids'][] = $uuid;
-            if (($case['dpiaRequired'] ?? false) !== true) {
-                $groups[$key]['unflaggedUuids'][] = $uuid;
-            }
-        }//end foreach
+			$groups[$key]['caseUuids'][] = $uuid;
+			if (($case['dpiaRequired'] ?? false) !== true) {
+				$groups[$key]['unflaggedUuids'][] = $uuid;
+			}
+		}//end foreach
 
-        $triggering = [];
-        foreach ($groups as $group) {
-            if ($group['count'] >= $threshold) {
-                $triggering[] = $group;
-            }
-        }
+		$triggering = [];
+		foreach ($groups as $group) {
+			if ($group['count'] >= $threshold) {
+				$triggering[] = $group;
+			}
+		}
 
-        return $triggering;
+		return $triggering;
+	}//end detect()
 
-    }//end detect()
+	/**
+	 * Build a group key from the configured characteristics, each value
+	 * normalised (trim / lowercase / collapse whitespace).
+	 *
+	 * @param array<string, mixed> $case The case payload.
+	 * @param array<int, mixed> $groupBy The grouping field names.
+	 *
+	 * @return string The composite group key (`field=value|field=value`).
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
+	 *   (Requirement: DPIA pattern detection over DSAR cases)
+	 */
+	public function groupKey(array $case, array $groupBy): string {
+		$parts = [];
+		foreach ($groupBy as $field) {
+			$field = (string)$field;
+			$value = ($case[$field] ?? '');
+			$parts[] = $field . '=' . $this->normalise(value: $value);
+		}
 
-    /**
-     * Build a group key from the configured characteristics, each value
-     * normalised (trim / lowercase / collapse whitespace).
-     *
-     * @param array<string, mixed> $case    The case payload.
-     * @param array<int, mixed>    $groupBy The grouping field names.
-     *
-     * @return string The composite group key (`field=value|field=value`).
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
-     *   (Requirement: DPIA pattern detection over DSAR cases)
-     */
-    public function groupKey(array $case, array $groupBy): string
-    {
-        $parts = [];
-        foreach ($groupBy as $field) {
-            $field   = (string) $field;
-            $value   = ($case[$field] ?? '');
-            $parts[] = $field.'='.$this->normalise(value: $value);
-        }
+		return implode('|', $parts);
+	}//end groupKey()
 
-        return implode('|', $parts);
+	/**
+	 * Normalise a grouping value: trim, lowercase, collapse whitespace.
+	 * Non-scalar values normalise to '' (they group together, never crash).
+	 *
+	 * @param mixed $value The raw field value.
+	 *
+	 * @return string The normalised value.
+	 *
+	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
+	 *   (Requirement: DPIA pattern detection over DSAR cases)
+	 */
+	public function normalise(mixed $value): string {
+		if (is_scalar($value) === false) {
+			return '';
+		}
 
-    }//end groupKey()
+		$normalised = mb_strtolower(trim((string)$value));
 
-    /**
-     * Normalise a grouping value: trim, lowercase, collapse whitespace.
-     * Non-scalar values normalise to '' (they group together, never crash).
-     *
-     * @param mixed $value The raw field value.
-     *
-     * @return string The normalised value.
-     *
-     * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
-     *   (Requirement: DPIA pattern detection over DSAR cases)
-     */
-    public function normalise(mixed $value): string
-    {
-        if (is_scalar($value) === false) {
-            return '';
-        }
+		return (string)preg_replace('/\s+/', ' ', $normalised);
+	}//end normalise()
 
-        $normalised = mb_strtolower(trim((string) $value));
+	/**
+	 * Parse a date-time value defensively, null on anything unusable.
+	 *
+	 * @param mixed $value The raw `receivedAt` value.
+	 *
+	 * @return DateTimeImmutable|null The parsed instant, or null.
+	 */
+	private function parseDate(mixed $value): ?DateTimeImmutable {
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
 
-        return (string) preg_replace('/\s+/', ' ', $normalised);
+		try {
+			return new DateTimeImmutable($value);
+		} catch (\Exception $e) {
+			return null;
+		}
 
-    }//end normalise()
-
-    /**
-     * Parse a date-time value defensively, null on anything unusable.
-     *
-     * @param mixed $value The raw `receivedAt` value.
-     *
-     * @return DateTimeImmutable|null The parsed instant, or null.
-     */
-    private function parseDate(mixed $value): ?DateTimeImmutable
-    {
-        if (is_string($value) === false || $value === '') {
-            return null;
-        }
-
-        try {
-            return new DateTimeImmutable($value);
-        } catch (\Exception $e) {
-            return null;
-        }
-
-    }//end parseDate()
+	}//end parseDate()
 }//end class

@@ -32,66 +32,57 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Readonly value object pairing a resolved register and schema.
  */
-final class RegisterSchemaPair
-{
-    /**
-     * Constructor; capture every field as readonly.
-     *
-     * @param string   $registerId The raw register slug/UUID string from app config.
-     * @param string   $schemaId   The raw schema slug/UUID string from app config.
-     * @param Register $register   The hydrated Register entity.
-     * @param Schema   $schema     The hydrated Schema entity.
-     */
-    public function __construct(
-        private readonly string $registerId,
-        private readonly string $schemaId,
-        private readonly Register $register,
-        private readonly Schema $schema,
-    ) {
+final class RegisterSchemaPair {
+	/**
+	 * Constructor; capture every field as readonly.
+	 *
+	 * @param string $registerId The raw register slug/UUID string from app config.
+	 * @param string $schemaId The raw schema slug/UUID string from app config.
+	 * @param Register $register The hydrated Register entity.
+	 * @param Schema $schema The hydrated Schema entity.
+	 */
+	public function __construct(
+		private readonly string $registerId,
+		private readonly string $schemaId,
+		private readonly Register $register,
+		private readonly Schema $schema,
+	) {
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Get the raw register slug/UUID the resolver started from.
-     *
-     * @return string The register identifier.
-     */
-    public function getRegisterId(): string
-    {
-        return $this->registerId;
+	/**
+	 * Get the raw register slug/UUID the resolver started from.
+	 *
+	 * @return string The register identifier.
+	 */
+	public function getRegisterId(): string {
+		return $this->registerId;
+	}//end getRegisterId()
 
-    }//end getRegisterId()
+	/**
+	 * Get the raw schema slug/UUID the resolver started from.
+	 *
+	 * @return string The schema identifier.
+	 */
+	public function getSchemaId(): string {
+		return $this->schemaId;
+	}//end getSchemaId()
 
-    /**
-     * Get the raw schema slug/UUID the resolver started from.
-     *
-     * @return string The schema identifier.
-     */
-    public function getSchemaId(): string
-    {
-        return $this->schemaId;
+	/**
+	 * Get the hydrated Register entity.
+	 *
+	 * @return Register The Register entity.
+	 */
+	public function getRegister(): Register {
+		return $this->register;
+	}//end getRegister()
 
-    }//end getSchemaId()
-
-    /**
-     * Get the hydrated Register entity.
-     *
-     * @return Register The Register entity.
-     */
-    public function getRegister(): Register
-    {
-        return $this->register;
-
-    }//end getRegister()
-
-    /**
-     * Get the hydrated Schema entity.
-     *
-     * @return Schema The Schema entity.
-     */
-    public function getSchema(): Schema
-    {
-        return $this->schema;
-
-    }//end getSchema()
+	/**
+	 * Get the hydrated Schema entity.
+	 *
+	 * @return Schema The Schema entity.
+	 */
+	public function getSchema(): Schema {
+		return $this->schema;
+	}//end getSchema()
 }//end class

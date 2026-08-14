@@ -1,8 +1,14 @@
 // See TranslationStatusChip.spec.js for why these are mocked.
 import TranslationFieldEditor from './TranslationFieldEditor.vue'
 
-jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }))
-jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: jest.fn((p) => p) }))
+jest.mock('@nextcloud/axios', () => ({
+	__esModule: true,
+	default: { get: jest.fn(), post: jest.fn() },
+}))
+jest.mock('@nextcloud/router', () => ({
+	__esModule: true,
+	generateUrl: jest.fn((p) => p),
+}))
 
 /**
  * See TranslationStatusChip.spec.js for why we exercise the component
@@ -11,7 +17,8 @@ jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: jest.fn((
  * @param ctx
  */
 const callComputed = (key, ctx) => TranslationFieldEditor.computed[key].call(ctx)
-const callMethod = (key, ctx, ...args) => TranslationFieldEditor.methods[key].apply(ctx, args)
+const callMethod = (key, ctx, ...args) =>
+	TranslationFieldEditor.methods[key].apply(ctx, args)
 
 describe('TranslationFieldEditor', () => {
 	describe('orderedLanguages', () => {
@@ -20,7 +27,9 @@ describe('TranslationFieldEditor', () => {
 				hideEmpty: false,
 				languages: ['nl', 'en'],
 				value: { nl: 'Hallo' },
-				getValue(lang) { return this.value?.[lang] ?? '' },
+				getValue(lang) {
+					return this.value?.[lang] ?? ''
+				},
 			}
 			expect(callComputed('orderedLanguages', ctx)).toEqual(['nl', 'en'])
 		})
@@ -30,7 +39,11 @@ describe('TranslationFieldEditor', () => {
 				hideEmpty: true,
 				languages: ['nl', 'en'],
 				value: { nl: 'Hallo' },
-				getValue(lang) { return typeof this.value?.[lang] === 'string' ? this.value[lang] : '' },
+				getValue(lang) {
+					return typeof this.value?.[lang] === 'string'
+						? this.value[lang]
+						: ''
+				},
 			}
 			expect(callComputed('orderedLanguages', ctx)).toEqual(['nl'])
 		})
@@ -74,7 +87,9 @@ describe('TranslationFieldEditor', () => {
 	describe('placeholderFor', () => {
 		it('renders an upper-cased BCP 47 hint', () => {
 			expect(callMethod('placeholderFor', {}, 'nl')).toBe('Translation in NL')
-			expect(callMethod('placeholderFor', {}, 'en-GB')).toBe('Translation in EN-GB')
+			expect(callMethod('placeholderFor', {}, 'en-GB')).toBe(
+				'Translation in EN-GB',
+			)
 		})
 	})
 
@@ -83,7 +98,9 @@ describe('TranslationFieldEditor', () => {
 			const emitted = []
 			const ctx = {
 				value: { nl: 'Hallo' },
-				$emit(name, payload) { emitted.push([name, payload]) },
+				$emit(name, payload) {
+					emitted.push([name, payload])
+				},
 			}
 			callMethod('onInput', ctx, 'en', 'Hello')
 			expect(emitted).toEqual([['input', { nl: 'Hallo', en: 'Hello' }]])
@@ -93,7 +110,9 @@ describe('TranslationFieldEditor', () => {
 			const emitted = []
 			const ctx = {
 				value: { nl: 'Hallo', en: 'Hello' },
-				$emit(name, payload) { emitted.push([name, payload]) },
+				$emit(name, payload) {
+					emitted.push([name, payload])
+				},
 			}
 			callMethod('onInput', ctx, 'en', '')
 			expect(emitted[0][1]).toEqual({ nl: 'Hallo' })
@@ -104,7 +123,9 @@ describe('TranslationFieldEditor', () => {
 			const emitted = []
 			const ctx = {
 				value: undefined,
-				$emit(name, payload) { emitted.push([name, payload]) },
+				$emit(name, payload) {
+					emitted.push([name, payload])
+				},
 			}
 			callMethod('onInput', ctx, 'nl', 'Hallo')
 			expect(emitted[0][1]).toEqual({ nl: 'Hallo' })

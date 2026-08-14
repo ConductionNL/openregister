@@ -5,7 +5,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'uploadFiles'"
+	<NcModal
+		v-if="navigationStore.modal === 'uploadFiles'"
 		ref="modalRef"
 		label-id="AddAttachmentModal"
 		@close="closeModal()">
@@ -22,7 +23,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					:taggable="true"
 					:multiple="true"
 					:selectable="(option) => isSelectable(option)" />
-				<NcCheckboxRadioSwitch v-model="share"
+				<NcCheckboxRadioSwitch
+					v-model="share"
 					:disabled="loading"
 					:label="t('openregister', 'Auto share')"
 					type="switch">
@@ -31,29 +33,60 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			</div>
 
 			<div class="container">
-				<div v-if="!labelOptions.value?.length || loading" class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
+				<div
+					v-if="!labelOptions.value?.length || loading"
+					class="filesListDragDropNotice"
+					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>{{ t('openregister', 'Select or create labels, or select "No label" to add files') }}</p>
+							<p>
+								{{
+									t(
+										'openregister',
+										'Select or create labels, or select "No label" to add files',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="success !== null || error">
 						<NcNoteCard v-if="success" type="success">
-							<p>{{ t('openregister', 'Files added successfully') }}</p>
+							<p>
+								{{ t('openregister', 'Files added successfully') }}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ t('openregister', 'Something went wrong while adding files') }}</p>
+							<p>
+								{{
+									t(
+										'openregister',
+										'Something went wrong while adding files',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
 							<p>{{ error }}</p>
 						</NcNoteCard>
 						<div v-if="false">
 							<NcNoteCard type="error">
-								<p>{{ t('openregister', 'Select files with the correct extension') }}</p>
+								<p>
+									{{
+										t(
+											'openregister',
+											'Select files with the correct extension',
+										)
+									}}
+								</p>
 							</NcNoteCard>
 						</div>
 					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length || loading }">
+					<div
+						class="filesListDragDropNoticeWrapper"
+						:class="{
+							'filesListDragDropNoticeWrapper--disabled':
+								!labelOptions.value?.length || loading,
+						}">
 						<div class="filesListDragDropNoticeWrapperIcon">
 							<TrayArrowDown :size="48" />
 							<h3 class="filesListDragDropNoticeTitle">
@@ -78,23 +111,42 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						</div>
 					</div>
 				</div>
-				<div v-if="labelOptions.value?.length && !loading"
+				<div
+					v-if="labelOptions.value?.length && !loading"
 					ref="dropzone"
 					class="filesListDragDropNotice"
 					:class="'tabPanelFileUpload'">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>{{ t('openregister', 'Select or create labels, or select "No label" to add files') }}</p>
+							<p>
+								{{
+									t(
+										'openregister',
+										'Select or create labels, or select "No label" to add files',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 					</div>
 					<div v-if="checkForTooBigFiles(filesComputed)">
 						<NcNoteCard type="warning">
 							<p class="folderLink">
-								{{ t('openregister', 'To add files larger than or equal to 512MB, go to the') }}
-								<NcButton variant="secondary"
+								{{
+									t(
+										'openregister',
+										'To add files larger than or equal to 512MB, go to the',
+									)
+								}}
+								<NcButton
+									variant="secondary"
 									class="folderLinkButton"
 									:aria-label="t('openregister', 'Open folder')"
-									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
+									@click="
+										openFolder(
+											objectStore.objectItem?.['@self']
+												?.folder,
+										)
+									">
 									<template #icon>
 										<FolderOutline :size="20" />
 									</template>
@@ -106,21 +158,42 @@ import { navigationStore, objectStore } from '../../store/store.js'
 					</div>
 					<div v-if="success !== null || error">
 						<NcNoteCard v-if="success" type="success">
-							<p>{{ t('openregister', 'Files added successfully') }}</p>
+							<p>
+								{{ t('openregister', 'Files added successfully') }}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ t('openregister', 'Something went wrong while adding files') }}</p>
+							<p>
+								{{
+									t(
+										'openregister',
+										'Something went wrong while adding files',
+									)
+								}}
+							</p>
 						</NcNoteCard>
 						<NcNoteCard v-if="error && !success" type="error">
 							<p>{{ error }}</p>
 						</NcNoteCard>
 						<div v-if="false">
 							<NcNoteCard type="error">
-								<p>{{ t('openregister', 'Select files with the correct extension') }}</p>
+								<p>
+									{{
+										t(
+											'openregister',
+											'Select files with the correct extension',
+										)
+									}}
+								</p>
 							</NcNoteCard>
 						</div>
 					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length }">
+					<div
+						class="filesListDragDropNoticeWrapper"
+						:class="{
+							'filesListDragDropNoticeWrapper--disabled':
+								!labelOptions.value?.length,
+						}">
 						<div class="filesListDragDropNoticeWrapperIcon">
 							<TrayArrowDown :size="48" />
 							<h3 class="filesListDragDropNoticeTitle">
@@ -165,32 +238,69 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file of filesComputed" :key="file.name" class="files-table-tr">
+						<tr
+							v-for="file of filesComputed"
+							:key="file.name"
+							class="files-table-tr">
 							<td>
-								<CheckCircle v-if="file.status === 'uploaded'" class="success" :size="20" />
-								<NcLoadingIcon v-if="file.status === 'uploading'" :size="20" />
-								<AlphaXCircle v-if="file.status === 'failed'" class="failed" :size="20" />
-								<Exclamation v-if="file.status === 'too_large'" class="failed" :size="20" />
+								<CheckCircle
+									v-if="file.status === 'uploaded'"
+									class="success"
+									:size="20" />
+								<NcLoadingIcon
+									v-if="file.status === 'uploading'"
+									:size="20" />
+								<AlphaXCircle
+									v-if="file.status === 'failed'"
+									class="failed"
+									:size="20" />
+								<Exclamation
+									v-if="file.status === 'too_large'"
+									class="failed"
+									:size="20" />
 							</td>
-							<td class="files-table-td-name" :class="{ 'files-table-name-wrong': getTooBigFiles(file.size) }">
-								<span class="files-table-name">{{ getFileNameAndExtension(file.name).name }}</span>
-								<span class="files-table-extension">.{{ getFileNameAndExtension(file.name).extension }}</span>
+							<td
+								class="files-table-td-name"
+								:class="{
+									'files-table-name-wrong': getTooBigFiles(
+										file.size,
+									),
+								}">
+								<span class="files-table-name">{{
+									getFileNameAndExtension(file.name).name
+								}}</span>
+								<span class="files-table-extension"
+									>.{{
+										getFileNameAndExtension(file.name).extension
+									}}</span
+								>
 							</td>
 							<td>
 								{{ bytesToSize(file.size) }}
 							</td>
 							<td class="files-table-td-labels">
-								<span v-if="editingTags !== file.name"
+								<span
+									v-if="editingTags !== file.name"
 									class="files-list__row-action--inline files-list__row-action-system-tags">
-									<ul v-if="file.tags && file.tags.length > 0" class="files-list__system-tags" :aria-label="t('openregister', 'Assigned collaborative tags')">
-										<li v-for="label of file.tags"
+									<ul
+										v-if="file.tags && file.tags.length > 0"
+										class="files-list__system-tags"
+										:aria-label="
+											t(
+												'openregister',
+												'Assigned collaborative tags',
+											)
+										">
+										<li
+											v-for="label of file.tags"
 											:key="label"
 											class="files-list__system-tag"
 											:title="label">
 											{{ label }}
 										</li>
 									</ul>
-									<span v-if="!file.tags || file.tags.length === 0">
+									<span
+										v-if="!file.tags || file.tags.length === 0">
 										{{ t('openregister', 'No labels') }}
 									</span>
 								</span>
@@ -201,7 +311,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									:loading="tagsLoading"
 									:taggable="true"
 									:multiple="true"
-									:aria-label-combobox="labelOptionsEdit.inputLabel"
+									:aria-label-combobox="
+										labelOptionsEdit.inputLabel
+									"
 									:options="labelOptionsEdit.options" />
 
 								<span class="buttonContainer">
@@ -209,11 +321,26 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									<NcButton
 										v-if="editingTags !== file.name"
 										:title="t('openregister', 'Edit labels')"
-										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
-										:aria-label="t('openregister', 'Edit tags for {name}', { name: file.name })"
+										:disabled="
+											(editingTags
+												&& editingTags !== file.name)
+											|| loading
+											|| file.status === 'too_large'
+											|| tagsLoading
+										"
+										:aria-label="
+											t(
+												'openregister',
+												'Edit tags for {name}',
+												{ name: file.name },
+											)
+										"
 										variant="secondary"
 										class="editTagsButton"
-										@click="editingTags = file.name, editedTags = file.tags">
+										@click="
+											((editingTags = file.name),
+											(editedTags = file.tags))
+										">
 										<template #icon>
 											<TagEdit :size="20" />
 										</template>
@@ -222,7 +349,13 @@ import { navigationStore, objectStore } from '../../store/store.js'
 										v-if="editingTags === file.name"
 										:title="t('openregister', 'Save labels')"
 										variant="primary"
-										:aria-label="t('openregister', 'Save tags for {name}', { name: file.name })"
+										:aria-label="
+											t(
+												'openregister',
+												'Save tags for {name}',
+												{ name: file.name },
+											)
+										"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
 										<template #icon>
@@ -231,7 +364,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 
 									<!-- File Actions -->
-									<NcButton v-if="file.status === 'failed'"
+									<NcButton
+										v-if="file.status === 'failed'"
 										:title="t('openregister', 'Retry upload')"
 										variant="primary"
 										@click="addAttachments(file)">
@@ -241,7 +375,9 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										:title="t('openregister', 'Remove from list')"
+										:title="
+											t('openregister', 'Remove from list')
+										"
 										variant="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
@@ -260,7 +396,14 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 <script>
 import { ref } from 'vue'
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
@@ -331,7 +474,9 @@ export default {
 		 */
 		registerId() {
 			const register = this.objectItem?.['@self']?.register
-			return typeof register === 'object' && register !== null ? register.id : register
+			return typeof register === 'object' && register !== null
+				? register.id
+				: register
 		},
 		/**
 		 * @spec exclude Computed schema-id extraction from the object's @self metadata; UI state helper.
@@ -420,11 +565,11 @@ export default {
 		 */
 		checkForTooBigFiles(files) {
 			if (!files) return false
-			const wrongFiles = files.filter(file => {
+			const wrongFiles = files.filter((file) => {
 				return this.getTooBigFiles(file.size)
 			})
 
-			wrongFiles.forEach(file => {
+			wrongFiles.forEach((file) => {
 				file.status = 'too_large'
 			})
 
@@ -440,10 +585,17 @@ export default {
 		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
 		 */
 		isSelectable(option) {
-			if (this.labelOptions.value?.includes(t('openregister', 'No label')) && option !== t('openregister', 'No label')) {
+			if (
+				this.labelOptions.value?.includes(t('openregister', 'No label'))
+				&& option !== t('openregister', 'No label')
+			) {
 				return false
 			}
-			if (this.labelOptions.value?.length >= 1 && !this.labelOptions.value?.includes(t('openregister', 'No label')) && option === t('openregister', 'No label')) {
+			if (
+				this.labelOptions.value?.length >= 1
+				&& !this.labelOptions.value?.includes(t('openregister', 'No label'))
+				&& option === t('openregister', 'No label')
+			) {
 				return false
 			}
 			return true
@@ -468,22 +620,25 @@ export default {
 			// @TODO - this functionality always calls and therefore always has to wait.
 			// split this up into a computed value and action, the computed value can dervive tags from `objectStore.getTags` (getter) or `objectStore.tags` (state)
 			// this avoids the waiting time in later calls
-			objectStore.fetchTags().then((tags) => {
-				const newLabelOptions = new Set()
-				const newLabelOptionsEdit = new Set()
+			objectStore
+				.fetchTags()
+				.then((tags) => {
+					const newLabelOptions = new Set()
+					const newLabelOptionsEdit = new Set()
 
-				// add labels to set
-				newLabelOptions.add(t('openregister', 'No label'))
+					// add labels to set
+					newLabelOptions.add(t('openregister', 'No label'))
 
-				tags.map(tag => newLabelOptions.add(tag))
-				tags.map(tag => newLabelOptionsEdit.add(tag))
+					tags.map((tag) => newLabelOptions.add(tag))
+					tags.map((tag) => newLabelOptionsEdit.add(tag))
 
-				// convert set to array
-				this.labelOptions.options = Array.from(newLabelOptions)
-				this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
-			}).finally(() => {
-				this.tagsLoading = false
-			})
+					// convert set to array
+					this.labelOptions.options = Array.from(newLabelOptions)
+					this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
+				})
+				.finally(() => {
+					this.tagsLoading = false
+				})
 		},
 
 		/**
@@ -491,12 +646,14 @@ export default {
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
 		 * @spec exclude Opens the Files app at the object's folder in a new tab; UI navigation helper.
 		 */
-		 openFolder(url) {
+		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
 			const decodedUrl = url.replace(/\\\//g, '/')
 
 			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
+			const normalizedUrl = decodedUrl.startsWith('/')
+				? decodedUrl
+				: '/' + decodedUrl
 
 			// Construct the proper Nextcloud Files app URL with the normalized path
 			// Use window.location.origin to get the current domain instead of hardcoding
@@ -534,7 +691,11 @@ export default {
 		 * @spec exclude Computed-style enablement guard for the upload action; UI state helper.
 		 */
 		checkIfDisabled() {
-			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
+			if (
+				this.objectStore.objectItem.downloadUrl
+				|| this.objectStore.objectItem.title
+			)
+				return true
 			return false
 		},
 
@@ -558,10 +719,16 @@ export default {
 					filesToUpload = [specificFile]
 				} else {
 					// filter out successful and pending files
-					filesToUpload = this.filesComputed.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
+					filesToUpload = this.filesComputed.filter(
+						(file) =>
+							file.status !== 'uploaded'
+							&& file.status !== 'uploading',
+					)
 
 					// filter out files too large
-					filesToUpload = filesToUpload.filter(file => !this.getTooBigFiles(file.size))
+					filesToUpload = filesToUpload.filter(
+						(file) => !this.getTooBigFiles(file.size),
+					)
 				}
 
 				if (filesToUpload.length === 0) {
@@ -572,40 +739,52 @@ export default {
 				// Build and register the type
 				const type = `${this.registerId}-${this.schemaId}`
 				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(type, this.schemaId, this.registerId)
+					objectStore.registerObjectType(
+						type,
+						this.schemaId,
+						this.registerId,
+					)
 				}
 
 				// file calls
-				const calls = await Promise.all(filesToUpload.map(async (file) => {
-					file.status = 'uploading'
+				const calls = await Promise.all(
+					filesToUpload.map(async (file) => {
+						file.status = 'uploading'
 
-					try {
-						const formData = new FormData()
-						formData.append('files[]', file)
-						if (Array.isArray(file.tags)) {
-							file.tags.forEach(tag => formData.append('tags[]', tag))
+						try {
+							const formData = new FormData()
+							formData.append('files[]', file)
+							if (Array.isArray(file.tags)) {
+								file.tags.forEach((tag) =>
+									formData.append('tags[]', tag),
+								)
+							}
+							if (this.share) {
+								formData.append('share', '1')
+							}
+
+							const responseJson = await objectStore.uploadFiles(
+								type,
+								this.objectId,
+								formData,
+							)
+
+							file.status = 'uploaded'
+
+							return [true, responseJson]
+						} catch (error) {
+							file.status = 'failed'
+							return [false, error]
 						}
-						if (this.share) {
-							formData.append('share', '1')
-						}
-
-						const responseJson = await objectStore.uploadFiles(type, this.objectId, formData)
-
-						file.status = 'uploaded'
-
-						return [true, responseJson]
-					} catch (error) {
-						file.status = 'failed'
-						return [false, error]
-					}
-				}))
+					}),
+				)
 
 				this.getAllTags()
 
 				// Refresh files for the object
 				await objectStore.fetchFiles(type, this.objectId)
 
-				const failed = calls.filter(result => result[0] === false)
+				const failed = calls.filter((result) => result[0] === false)
 
 				if (failed.length > 0) {
 					this.error = failed[0][1].message
@@ -641,12 +820,8 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	margin-inline-end: var(--OC-margin-20);
 }
 
-.filesListDragDropNoticeWrapper--disabled{
+.filesListDragDropNoticeWrapper--disabled {
 	opacity: 0.4;
-}
-
-.success {
-	color: green;
 }
 
 .folderLink {
@@ -677,7 +852,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	border-collapse: collapse;
 }
 
-.files-table-td-name{
+.files-table-td-name {
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -746,7 +921,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	min-width: calc(var(--min-size)* 2);
+	min-width: calc(var(--min-size) * 2);
 	max-width: 300px;
 }
 
@@ -783,7 +958,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	box-sizing: border-box;
 }
 
-.labelAndShareContainer{
+.labelAndShareContainer {
 	display: flex;
 	justify-content: center;
 	align-items: end;

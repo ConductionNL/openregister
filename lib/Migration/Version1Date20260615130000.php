@@ -53,48 +53,45 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
  */
-class Version1Date20260615130000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260615130000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_push_subscriptions') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_push_subscriptions') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_push_subscriptions');
+		$table = $schema->createTable('openregister_push_subscriptions');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('user_id', Types::STRING, ['notnull' => true, 'length' => 64]);
-        $table->addColumn('endpoint', Types::STRING, ['notnull' => true, 'length' => 1024]);
-        $table->addColumn('p256dh', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('auth', Types::STRING, ['notnull' => true, 'length' => 255]);
-        $table->addColumn('user_agent', Types::STRING, ['notnull' => false, 'length' => 512]);
-        $table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('user_id', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('endpoint', Types::STRING, ['notnull' => true, 'length' => 1024]);
+		$table->addColumn('p256dh', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('auth', Types::STRING, ['notnull' => true, 'length' => 255]);
+		$table->addColumn('user_agent', Types::STRING, ['notnull' => false, 'length' => 512]);
+		$table->addColumn('created_at', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['user_id'], 'idx_or_push_sub_user');
-        $table->addIndex(['endpoint'], 'idx_or_push_sub_endpoint');
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['user_id'], 'idx_or_push_sub_user');
+		$table->addIndex(['endpoint'], 'idx_or_push_sub_endpoint');
 
-        $output->info('Created openregister_push_subscriptions table');
+		$output->info('Created openregister_push_subscriptions table');
 
-        return $schema;
-
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

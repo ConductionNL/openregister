@@ -57,6 +57,5 @@ namespace OCA\OpenRegister\Service\Flow;
  * is what the palette, the connectivity check and an author reading the canvas
  * each need to know.
  */
-interface IFlowTriggerNode
-{
+interface IFlowTriggerNode {
 }//end interface

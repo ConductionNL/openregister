@@ -1,24 +1,25 @@
 <template>
-	<NcDialog :open="open"
+	<NcDialog
+		:open="open"
 		name="Confirm Clear Blob Objects"
 		@closing="$emit('closing')">
 		<div class="clear-dialog-content">
 			<h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
 			<p>
-				This operation will permanently delete all objects stored in blob storage mode from the database.
-				Magic Mapper objects will NOT be affected.
+				This operation will permanently delete all objects stored in blob
+				storage mode from the database. Magic Mapper objects will NOT be
+				affected.
 			</p>
-			<p><strong>Current blob storage objects: {{ totalBlobObjects }}</strong></p>
-			<p class="warning-text">
-				⚠️ This action cannot be undone!
+			<p>
+				<strong>Current blob storage objects: {{ totalBlobObjects }}</strong>
 			</p>
+			<p class="warning-text">⚠️ This action cannot be undone!</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 
 			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')">
-					Cancel
-				</NcButton>
-				<NcButton variant="error"
+				<NcButton @click="$emit('closing')"> Cancel </NcButton>
+				<NcButton
+					variant="error"
 					:disabled="clearing"
 					@click="$emit('confirm')">
 					<template #icon>

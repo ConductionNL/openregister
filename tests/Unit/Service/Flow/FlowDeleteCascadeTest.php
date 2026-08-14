@@ -52,200 +52,191 @@ use RuntimeException;
 /**
  * Cascade behaviour of FlowService::delete().
  */
-final class FlowDeleteCascadeTest extends TestCase
-{
+final class FlowDeleteCascadeTest extends TestCase {
 
-    /**
-     * Build a FlowService whose collaborators are all doubles.
-     *
-     * @param FlowMapper        $mapper The flow mapper double.
-     * @param FlowRunMapper     $runs   The run mapper double.
-     * @param FlowRunStepMapper $steps  The step mapper double.
-     * @param FlowStateMapper   $state  The state mapper double.
-     *
-     * @return FlowService The service under test.
-     */
-    private function serviceWith(
-        FlowMapper $mapper,
-        FlowRunMapper $runs,
-        FlowRunStepMapper $steps,
-        FlowStateMapper $state
-    ): FlowService {
-        // `find()` refuses any flow that does not belong to the ACTIVE
-        // organisation, and `belongsTo()` returns false when either side is
-        // empty — so a bare container double makes every delete throw
-        // DoesNotExistException before the cascade is ever reached, and all
-        // three tests would pass for the wrong reason. Resolve a real uuid.
-        $organisation = new class {
+	/**
+	 * Build a FlowService whose collaborators are all doubles.
+	 *
+	 * @param FlowMapper $mapper The flow mapper double.
+	 * @param FlowRunMapper $runs The run mapper double.
+	 * @param FlowRunStepMapper $steps The step mapper double.
+	 * @param FlowStateMapper $state The state mapper double.
+	 *
+	 * @return FlowService The service under test.
+	 */
+	private function serviceWith(
+		FlowMapper $mapper,
+		FlowRunMapper $runs,
+		FlowRunStepMapper $steps,
+		FlowStateMapper $state,
+	): FlowService {
+		// `find()` refuses any flow that does not belong to the ACTIVE
+		// organisation, and `belongsTo()` returns false when either side is
+		// empty — so a bare container double makes every delete throw
+		// DoesNotExistException before the cascade is ever reached, and all
+		// three tests would pass for the wrong reason. Resolve a real uuid.
+		$organisation = new class {
 
-            /**
-             * The active organisation's uuid.
-             *
-             * @return string The uuid.
-             */
-            public function getUuid(): string
-            {
-                return self::ORGANISATION;
-            }
+			/**
+			 * The active organisation's uuid.
+			 *
+			 * @return string The uuid.
+			 */
+			public function getUuid(): string {
+				return self::ORGANISATION;
+			}
 
-            public const ORGANISATION = 'org-under-test';
+			public const ORGANISATION = 'org-under-test';
 
-        };
+		};
 
-        $organisationService = new class($organisation)
-        {
+		$organisationService = new class($organisation) {
 
-            /**
-             * @param object $organisation The active organisation stub.
-             */
-            public function __construct(private readonly object $organisation)
-            {
+			/**
+			 * @param object $organisation The active organisation stub.
+			 */
+			public function __construct(
+				private readonly object $organisation,
+			) {
 
-            }
+			}
 
-            /**
-             * The active organisation.
-             *
-             * @return object The organisation stub.
-             */
-            public function getActiveOrganisation(): object
-            {
-                return $this->organisation;
+			/**
+			 * The active organisation.
+			 *
+			 * @return object The organisation stub.
+			 */
+			public function getActiveOrganisation(): object {
+				return $this->organisation;
+			}
 
-            }
+		};
 
-        };
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($organisationService);
 
-        $container = $this->createMock(ContainerInterface::class);
-        $container->method('get')->willReturn($organisationService);
+		return new FlowService(
+			$mapper,
+			$this->createMock(FlowTriggerIndex::class),
+			$this->createMock(FlowRunService::class),
+			$this->createMock(FlowRunAdvancer::class),
+			$runs,
+			$steps,
+			$state,
+			$this->createMock(IUserSession::class),
+			$this->createMock(LoggerInterface::class),
+			$container
+		);
 
-        return new FlowService(
-            $mapper,
-            $this->createMock(FlowTriggerIndex::class),
-            $this->createMock(FlowRunService::class),
-            $this->createMock(FlowRunAdvancer::class),
-            $runs,
-            $steps,
-            $state,
-            $this->createMock(IUserSession::class),
-            $this->createMock(LoggerInterface::class),
-            $container
-        );
+	}//end serviceWith()
 
-    }//end serviceWith()
+	/**
+	 * A flow mapper double that resolves one uuid and records the delete.
+	 *
+	 * @param string $uuid The flow uuid to resolve.
+	 *
+	 * @return FlowMapper The configured double.
+	 */
+	private function flowMapperFor(string $uuid): FlowMapper {
+		$flow = new Flow();
+		$flow->setUuid($uuid);
+		$flow->setOrganisation('org-under-test');
 
-    /**
-     * A flow mapper double that resolves one uuid and records the delete.
-     *
-     * @param string $uuid The flow uuid to resolve.
-     *
-     * @return FlowMapper The configured double.
-     */
-    private function flowMapperFor(string $uuid): FlowMapper
-    {
-        $flow = new Flow();
-        $flow->setUuid($uuid);
-        $flow->setOrganisation('org-under-test');
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findByUuid')->willReturn($flow);
+		$mapper->expects($this->once())->method('delete')->willReturn($flow);
 
-        $mapper = $this->createMock(FlowMapper::class);
-        $mapper->method('findByUuid')->willReturn($flow);
-        $mapper->expects($this->once())->method('delete')->willReturn($flow);
+		return $mapper;
+	}//end flowMapperFor()
 
-        return $mapper;
+	/**
+	 * Deleting a flow sweeps its runs, each run's steps, and its state.
+	 *
+	 * @return void
+	 */
+	public function testDeleteSweepsRunsStepsAndState(): void {
+		$uuid = 'flow-uuid-1';
 
-    }//end flowMapperFor()
+		$runs = $this->createMock(FlowRunMapper::class);
+		$runs->expects($this->once())
+			->method('deleteByFlow')
+			->with($uuid)
+			->willReturn(['run-a', 'run-b']);
 
-    /**
-     * Deleting a flow sweeps its runs, each run's steps, and its state.
-     *
-     * @return void
-     */
-    public function testDeleteSweepsRunsStepsAndState(): void
-    {
-        $uuid = 'flow-uuid-1';
+		// One call per run uuid — steps key on the RUN, not the flow.
+		$swept = [];
+		$steps = $this->createMock(FlowRunStepMapper::class);
+		$steps->expects($this->exactly(2))
+			->method('deleteByRun')
+			->willReturnCallback(
+				function (string $runUuid) use (&$swept): int {
+					$swept[] = $runUuid;
+					return 1;
+				}
+			);
 
-        $runs = $this->createMock(FlowRunMapper::class);
-        $runs->expects($this->once())
-            ->method('deleteByFlow')
-            ->with($uuid)
-            ->willReturn(['run-a', 'run-b']);
+		$state = $this->createMock(FlowStateMapper::class);
+		$state->expects($this->once())->method('deleteByFlow')->with($uuid);
 
-        // One call per run uuid — steps key on the RUN, not the flow.
-        $swept = [];
-        $steps = $this->createMock(FlowRunStepMapper::class);
-        $steps->expects($this->exactly(2))
-            ->method('deleteByRun')
-            ->willReturnCallback(
-                function (string $runUuid) use (&$swept): int {
-                    $swept[] = $runUuid;
-                    return 1;
-                }
-            );
+		$this->serviceWith($this->flowMapperFor($uuid), $runs, $steps, $state)->delete(uuid: $uuid);
 
-        $state = $this->createMock(FlowStateMapper::class);
-        $state->expects($this->once())->method('deleteByFlow')->with($uuid);
+		$this->assertSame(['run-a', 'run-b'], $swept, 'every run of the flow should have had its steps swept');
 
-        $this->serviceWith($this->flowMapperFor($uuid), $runs, $steps, $state)->delete(uuid: $uuid);
+	}//end testDeleteSweepsRunsStepsAndState()
 
-        $this->assertSame(['run-a', 'run-b'], $swept, 'every run of the flow should have had its steps swept');
+	/**
+	 * A flow with no runs still sweeps its state and touches no step row.
+	 *
+	 * Without this, an early return on "no runs" would skip `flow_state` and
+	 * leave exactly the orphan the cascade exists to prevent — a flow can carry
+	 * state without ever having completed a run.
+	 *
+	 * @return void
+	 */
+	public function testDeleteWithNoRunsStillSweepsState(): void {
+		$uuid = 'flow-uuid-2';
 
-    }//end testDeleteSweepsRunsStepsAndState()
+		$runs = $this->createMock(FlowRunMapper::class);
+		$runs->method('deleteByFlow')->willReturn([]);
 
-    /**
-     * A flow with no runs still sweeps its state and touches no step row.
-     *
-     * Without this, an early return on "no runs" would skip `flow_state` and
-     * leave exactly the orphan the cascade exists to prevent — a flow can carry
-     * state without ever having completed a run.
-     *
-     * @return void
-     */
-    public function testDeleteWithNoRunsStillSweepsState(): void
-    {
-        $uuid = 'flow-uuid-2';
+		$steps = $this->createMock(FlowRunStepMapper::class);
+		$steps->expects($this->never())->method('deleteByRun');
 
-        $runs = $this->createMock(FlowRunMapper::class);
-        $runs->method('deleteByFlow')->willReturn([]);
+		$state = $this->createMock(FlowStateMapper::class);
+		$state->expects($this->once())->method('deleteByFlow')->with($uuid);
 
-        $steps = $this->createMock(FlowRunStepMapper::class);
-        $steps->expects($this->never())->method('deleteByRun');
+		$this->serviceWith($this->flowMapperFor($uuid), $runs, $steps, $state)->delete(uuid: $uuid);
 
-        $state = $this->createMock(FlowStateMapper::class);
-        $state->expects($this->once())->method('deleteByFlow')->with($uuid);
+	}//end testDeleteWithNoRunsStillSweepsState()
 
-        $this->serviceWith($this->flowMapperFor($uuid), $runs, $steps, $state)->delete(uuid: $uuid);
+	/**
+	 * A sweep that throws does NOT fail the delete.
+	 *
+	 * The flow row is already gone by then. Surfacing the error would tell the
+	 * caller to retry a delete that can only 404 from here on, and the retry
+	 * would never reach the cascade anyway — so the history would stay orphaned
+	 * AND the caller would believe nothing was deleted.
+	 *
+	 * @return void
+	 */
+	public function testSweepFailureDoesNotFailTheDelete(): void {
+		$uuid = 'flow-uuid-3';
 
-    }//end testDeleteWithNoRunsStillSweepsState()
+		$runs = $this->createMock(FlowRunMapper::class);
+		$runs->method('deleteByFlow')->willThrowException(new RuntimeException('db gone'));
 
-    /**
-     * A sweep that throws does NOT fail the delete.
-     *
-     * The flow row is already gone by then. Surfacing the error would tell the
-     * caller to retry a delete that can only 404 from here on, and the retry
-     * would never reach the cascade anyway — so the history would stay orphaned
-     * AND the caller would believe nothing was deleted.
-     *
-     * @return void
-     */
-    public function testSweepFailureDoesNotFailTheDelete(): void
-    {
-        $uuid = 'flow-uuid-3';
+		$service = $this->serviceWith(
+			$this->flowMapperFor($uuid),
+			$runs,
+			$this->createMock(FlowRunStepMapper::class),
+			$this->createMock(FlowStateMapper::class)
+		);
 
-        $runs = $this->createMock(FlowRunMapper::class);
-        $runs->method('deleteByFlow')->willThrowException(new RuntimeException('db gone'));
+		$service->delete(uuid: $uuid);
 
-        $service = $this->serviceWith(
-            $this->flowMapperFor($uuid),
-            $runs,
-            $this->createMock(FlowRunStepMapper::class),
-            $this->createMock(FlowStateMapper::class)
-        );
+		// Reaching here IS the assertion: delete() swallowed the sweep failure.
+		$this->addToAssertionCount(1);
 
-        $service->delete(uuid: $uuid);
-
-        // Reaching here IS the assertion: delete() swallowed the sweep failure.
-        $this->addToAssertionCount(1);
-
-    }//end testSweepFailureDoesNotFailTheDelete()
+	}//end testSweepFailureDoesNotFailTheDelete()
 
 }//end class

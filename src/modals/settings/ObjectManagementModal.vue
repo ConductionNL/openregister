@@ -1,5 +1,6 @@
 <template>
-	<NcDialog v-if="show"
+	<NcDialog
+		v-if="show"
 		:name="t('openregister', 'Object Vectorization')"
 		size="large"
 		@closing="$emit('closing')">
@@ -8,7 +9,12 @@
 			<div class="info-box">
 				<InformationOutline :size="20" />
 				<p>
-					{{ t('openregister', 'Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.') }}
+					{{
+						t(
+							'openregister',
+							'Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.',
+						)
+					}}
 				</p>
 			</div>
 
@@ -17,10 +23,31 @@
 				<AlertCircle :size="20" />
 				<div>
 					<strong>{{ t('openregister', 'Prerequisites') }}</strong>
-					<p>{{ t('openregister', 'Before object vectorization can work:') }}</p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'Before object vectorization can work:',
+							)
+						}}
+					</p>
 					<ul>
-						<li>{{ t('openregister', 'LLM must be enabled with an embedding provider configured') }}</li>
-						<li>{{ t('openregister', 'Objects will be serialized as JSON text before vectorization') }}</li>
+						<li>
+							{{
+								t(
+									'openregister',
+									'LLM must be enabled with an embedding provider configured',
+								)
+							}}
+						</li>
+						<li>
+							{{
+								t(
+									'openregister',
+									'Objects will be serialized as JSON text before vectorization',
+								)
+							}}
+						</li>
 					</ul>
 				</div>
 			</div>
@@ -33,9 +60,19 @@
 					<NcCheckboxRadioSwitch
 						v-model="config.vectorizationEnabled"
 						type="switch">
-						{{ t('openregister', 'Enable automatic object vectorization') }}
+						{{
+							t(
+								'openregister',
+								'Enable automatic object vectorization',
+							)
+						}}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Automatically generate vector embeddings when objects are created or updated') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Automatically generate vector embeddings when objects are created or updated',
+						)
+					}}</small>
 				</div>
 
 				<div v-if="config.vectorizationEnabled" class="trigger-settings">
@@ -46,7 +83,12 @@
 							type="switch">
 							{{ t('openregister', 'Vectorize on object creation') }}
 						</NcCheckboxRadioSwitch>
-						<small>{{ t('openregister', 'Generate vectors immediately when new objects are created') }}</small>
+						<small>{{
+							t(
+								'openregister',
+								'Generate vectors immediately when new objects are created',
+							)
+						}}</small>
 					</div>
 
 					<div class="form-group">
@@ -55,16 +97,28 @@
 							type="switch">
 							{{ t('openregister', 'Re-vectorize on object update') }}
 						</NcCheckboxRadioSwitch>
-						<small>{{ t('openregister', 'Update vectors when object data changes (recommended for accurate search)') }}</small>
+						<small>{{
+							t(
+								'openregister',
+								'Update vectors when object data changes (recommended for accurate search)',
+							)
+						}}</small>
 					</div>
 				</div>
 			</div>
 
 			<!-- View-Specific Settings (Cost Optimization) -->
 			<div v-if="config.vectorizationEnabled" class="config-section">
-				<h3>{{ t('openregister', '💰 View Selection (Cost Optimization)') }}</h3>
+				<h3>
+					{{ t('openregister', '💰 View Selection (Cost Optimization)') }}
+				</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.') }}
+					{{
+						t(
+							'openregister',
+							'Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.',
+						)
+					}}
 				</p>
 
 				<div class="form-group">
@@ -73,14 +127,24 @@
 						type="switch">
 						{{ t('openregister', 'Vectorize all views') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Enable vectorization for all existing and future views (may increase costs)') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Enable vectorization for all existing and future views (may increase costs)',
+						)
+					}}</small>
 				</div>
 
 				<div v-if="!config.vectorizeAllViews" class="view-selection">
 					<div class="selection-header">
-						<label>{{ t('openregister', 'Select views to vectorize:') }}</label>
+						<label>{{
+							t('openregister', 'Select views to vectorize:')
+						}}</label>
 						<div class="selection-stats">
-							<span class="stat-badge">{{ selectedViewsCount }} / {{ views.length }} {{ t('openregister', 'views selected') }}</span>
+							<span class="stat-badge"
+								>{{ selectedViewsCount }} / {{ views.length }}
+								{{ t('openregister', 'views selected') }}</span
+							>
 							<NcButton
 								v-if="config.enabledViews.length > 0"
 								variant="tertiary"
@@ -98,18 +162,32 @@
 								type="checkbox">
 								<span class="view-name">{{ view.name }}</span>
 							</NcCheckboxRadioSwitch>
-							<span v-if="view.description" class="view-description">{{ view.description }}</span>
+							<span v-if="view.description" class="view-description">{{
+								view.description
+							}}</span>
 						</div>
 					</div>
 
 					<div v-else class="no-views">
 						<AlertCircle :size="24" />
-						<p>{{ t('openregister', 'No views found. Create views first before configuring vectorization.') }}</p>
+						<p>
+							{{
+								t(
+									'openregister',
+									'No views found. Create views first before configuring vectorization.',
+								)
+							}}
+						</p>
 					</div>
 
 					<div class="cost-note">
 						<InformationOutline :size="16" />
-						<small>{{ t('openregister', 'Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.') }}</small>
+						<small>{{
+							t(
+								'openregister',
+								'Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.',
+							)
+						}}</small>
 					</div>
 				</div>
 			</div>
@@ -118,28 +196,47 @@
 			<div v-if="config.vectorizationEnabled" class="config-section">
 				<h3>{{ t('openregister', '📄 Object Serialization') }}</h3>
 				<p class="section-description">
-					{{ t('openregister', 'Configure how objects are converted to text before vectorization. These settings affect search quality and context.') }}
+					{{
+						t(
+							'openregister',
+							'Configure how objects are converted to text before vectorization. These settings affect search quality and context.',
+						)
+					}}
 				</p>
 
 				<div class="form-group">
 					<NcCheckboxRadioSwitch
 						v-model="config.includeMetadata"
 						type="switch">
-						{{ t('openregister', 'Include schema and register metadata') }}
+						{{
+							t('openregister', 'Include schema and register metadata')
+						}}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Add schema titles, descriptions, and register information to provide richer context for search') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Add schema titles, descriptions, and register information to provide richer context for search',
+						)
+					}}</small>
 				</div>
 
 				<div class="form-group">
-					<label for="max-depth">{{ t('openregister', 'Maximum Nesting Depth') }}</label>
+					<label for="max-depth">{{
+						t('openregister', 'Maximum Nesting Depth')
+					}}</label>
 					<input
 						id="max-depth"
 						v-model.number="config.maxNestingDepth"
 						type="number"
 						min="1"
 						max="20"
-						class="input-field">
-					<small>{{ t('openregister', 'How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.') }}</small>
+						class="input-field" />
+					<small>{{
+						t(
+							'openregister',
+							'How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.',
+						)
+					}}</small>
 				</div>
 
 				<div class="form-group">
@@ -148,7 +245,12 @@
 						type="switch">
 						{{ t('openregister', 'Include related object references') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Include ids and names of related objects for better contextual search') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Include ids and names of related objects for better contextual search',
+						)
+					}}</small>
 				</div>
 			</div>
 
@@ -157,7 +259,9 @@
 				<h3>{{ t('openregister', '⚡ Batch Processing') }}</h3>
 
 				<div class="form-group">
-					<label for="batch-size">{{ t('openregister', 'Batch Size') }}</label>
+					<label for="batch-size">{{
+						t('openregister', 'Batch Size')
+					}}</label>
 					<input
 						id="batch-size"
 						v-model.number="config.batchSize"
@@ -165,17 +269,25 @@
 						min="1"
 						max="100"
 						step="1"
-						class="input-field">
-					<small>{{ t('openregister', 'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.') }}</small>
+						class="input-field" />
+					<small>{{
+						t(
+							'openregister',
+							'Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
+						)
+					}}</small>
 				</div>
 
 				<div class="form-group">
-					<NcCheckboxRadioSwitch
-						v-model="config.autoRetry"
-						type="switch">
+					<NcCheckboxRadioSwitch v-model="config.autoRetry" type="switch">
 						{{ t('openregister', 'Auto-retry failed vectorizations') }}
 					</NcCheckboxRadioSwitch>
-					<small>{{ t('openregister', 'Automatically retry failed vectorization attempts (max 3 retries)') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'Automatically retry failed vectorization attempts (max 3 retries)',
+						)
+					}}</small>
 				</div>
 			</div>
 
@@ -185,21 +297,32 @@
 
 				<div class="info-grid">
 					<div class="info-item">
-						<span class="info-label">{{ t('openregister', 'Embedding Provider') }}</span>
+						<span class="info-label">{{
+							t('openregister', 'Embedding Provider')
+						}}</span>
 						<span class="info-value">{{ embeddingProviderName }}</span>
 					</div>
 					<div class="info-item">
-						<span class="info-label">{{ t('openregister', 'Embedding Model') }}</span>
+						<span class="info-label">{{
+							t('openregister', 'Embedding Model')
+						}}</span>
 						<span class="info-value">{{ embeddingModelName }}</span>
 					</div>
 					<div class="info-item">
-						<span class="info-label">{{ t('openregister', 'Vector Dimensions') }}</span>
+						<span class="info-label">{{
+							t('openregister', 'Vector Dimensions')
+						}}</span>
 						<span class="info-value">{{ vectorDimensions }}</span>
 					</div>
 				</div>
 
 				<div class="info-note">
-					<small>{{ t('openregister', 'To change the embedding provider or model, go to LLM configuration.') }}</small>
+					<small>{{
+						t(
+							'openregister',
+							'To change the embedding provider or model, go to LLM configuration.',
+						)
+					}}</small>
 				</div>
 			</div>
 		</div>
@@ -217,14 +340,23 @@
 					<NcLoadingIcon v-if="saving" :size="20" />
 					<ContentSave v-else :size="20" />
 				</template>
-				{{ saving ? t('openregister', 'Saving...') : t('openregister', 'Save Configuration') }}
+				{{
+					saving
+						? t('openregister', 'Saving...')
+						: t('openregister', 'Save Configuration')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcDialog, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import {
+	NcDialog,
+	NcButton,
+	NcLoadingIcon,
+	NcCheckboxRadioSwitch,
+} from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -301,7 +433,9 @@ export default {
 		 */
 		async loadConfiguration() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/objects/vectorize'),
+				)
 				if (response.data.success) {
 					this.config = {
 						...this.config,
@@ -320,7 +454,9 @@ export default {
 		 */
 		async loadViews() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/views'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/views'),
+				)
 				this.views = response.data.results || []
 			} catch (error) {
 				console.error('Failed to load views:', error)
@@ -334,10 +470,13 @@ export default {
 		async loadEmbeddingProviderInfo() {
 			try {
 				// Load current LLM configuration to show embedding provider info
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/llm'),
+				)
 				const data = response.data
 
-				this.embeddingProviderName = data.embeddingProvider || 'Not configured'
+				this.embeddingProviderName =
+					data.embeddingProvider || 'Not configured'
 				this.embeddingModelName = data.embeddingModel || 'Not configured'
 				this.vectorDimensions = data.vectorDimensions || 'N/A'
 			} catch (error) {
@@ -352,11 +491,23 @@ export default {
 			this.saving = true
 
 			try {
-				await axios.patch(generateUrl('/apps/openregister/api/settings/objects/vectorize'), this.config)
-				showSuccess(this.t('openregister', 'Object vectorization configuration saved successfully'))
+				await axios.patch(
+					generateUrl('/apps/openregister/api/settings/objects/vectorize'),
+					this.config,
+				)
+				showSuccess(
+					this.t(
+						'openregister',
+						'Object vectorization configuration saved successfully',
+					),
+				)
 				this.$emit('closing')
 			} catch (error) {
-				showError(this.t('openregister', 'Failed to save configuration: {error}', { error: error.response?.data?.error || error.message }))
+				showError(
+					this.t('openregister', 'Failed to save configuration: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+				)
 			} finally {
 				this.saving = false
 			}

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Occ command to reconcile magic-table columns against schema definitions.
  *
@@ -42,183 +43,179 @@ use Symfony\Component\Console\Output\OutputInterface;
  * sync the import path uses, creating the missing columns. It is the
  * remediation for instances that already drifted before #2086/#2075 shipped.
  */
-class ReconcileMagicTablesCommand extends Command
-{
-    /**
-     * Constructor.
-     *
-     * @param RegisterMapper $registerMapper Register lookups.
-     * @param MagicMapper    $magicMapper    Magic-table sync + introspection.
-     */
-    public function __construct(
-        private readonly RegisterMapper $registerMapper,
-        private readonly MagicMapper $magicMapper
-    ) {
-        parent::__construct();
+class ReconcileMagicTablesCommand extends Command {
+	/**
+	 * Constructor.
+	 *
+	 * @param RegisterMapper $registerMapper Register lookups.
+	 * @param MagicMapper $magicMapper Magic-table sync + introspection.
+	 */
+	public function __construct(
+		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapper $magicMapper,
+	) {
+		parent::__construct();
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Configure the command name, description and options.
-     *
-     * @return void
-     */
-    protected function configure(): void
-    {
-        $this->setName(name: 'openregister:tables:reconcile')
-            ->setDescription(
-                'Detect and repair magic-table column drift — physical columns missing for schema '
-                .'properties that were added to an existing schema without a subsequent write.'
-            )
-            ->addOption(
-                'apply',
-                null,
-                InputOption::VALUE_NONE,
-                'Create the missing columns. Without this flag the command runs in dry-run mode and '
-                .'only reports the drift it would repair.'
-            )
-            ->addOption(
-                'register',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Limit to a single register id (default: every register).'
-            );
+	/**
+	 * Configure the command name, description and options.
+	 *
+	 * @return void
+	 */
+	protected function configure(): void {
+		$this->setName(name: 'openregister:tables:reconcile')
+			->setDescription(
+				'Detect and repair magic-table column drift — physical columns missing for schema '
+				. 'properties that were added to an existing schema without a subsequent write.'
+			)
+			->addOption(
+				'apply',
+				null,
+				InputOption::VALUE_NONE,
+				'Create the missing columns. Without this flag the command runs in dry-run mode and '
+				. 'only reports the drift it would repair.'
+			)
+			->addOption(
+				'register',
+				null,
+				InputOption::VALUE_REQUIRED,
+				'Limit to a single register id (default: every register).'
+			);
 
-    }//end configure()
+	}//end configure()
 
-    /**
-     * Execute the reconciliation.
-     *
-     * @param InputInterface  $input  Console input.
-     * @param OutputInterface $output Console output.
-     *
-     * @return int 0 on success (including "nothing to do"); 1 when a repair failed.
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $apply          = (bool) $input->getOption('apply');
-        $registerFilter = $input->getOption('register');
+	/**
+	 * Execute the reconciliation.
+	 *
+	 * @param InputInterface $input Console input.
+	 * @param OutputInterface $output Console output.
+	 *
+	 * @return int 0 on success (including "nothing to do"); 1 when a repair failed.
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$apply = (bool)$input->getOption('apply');
+		$registerFilter = $input->getOption('register');
 
-        $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
-        $driftTables  = 0;
-        $driftColumns = 0;
-        $repaired     = 0;
-        $failed       = 0;
+		$driftTables = 0;
+		$driftColumns = 0;
+		$repaired = 0;
+		$failed = 0;
 
-        foreach ($registers as $register) {
-            if ($register instanceof Register === false) {
-                continue;
-            }
+		foreach ($registers as $register) {
+			if ($register instanceof Register === false) {
+				continue;
+			}
 
-            if ($registerFilter !== null && (int) $register->getId() !== (int) $registerFilter) {
-                continue;
-            }
+			if ($registerFilter !== null && (int)$register->getId() !== (int)$registerFilter) {
+				continue;
+			}
 
-            $schemas = $this->registerMapper->getSchemasByRegisterId(
-                registerId: (int) $register->getId(),
-                _rbac: false,
-                _multitenancy: false
-            );
+			$schemas = $this->registerMapper->getSchemasByRegisterId(
+				registerId: (int)$register->getId(),
+				_rbac: false,
+				_multitenancy: false
+			);
 
-            foreach ($schemas as $schema) {
-                if ($schema instanceof Schema === false) {
-                    continue;
-                }
+			foreach ($schemas as $schema) {
+				if ($schema instanceof Schema === false) {
+					continue;
+				}
 
-                try {
-                    $tableName = $this->magicMapper->getTableNameForRegisterSchema(
-                        register: $register,
-                        schema: $schema
-                    );
+				try {
+					$tableName = $this->magicMapper->getTableNameForRegisterSchema(
+						register: $register,
+						schema: $schema
+					);
 
-                    // Table not materialised yet — ensureTable will create it on apply.
-                    $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-                    $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
-                    $missing         = $this->magicMapper->findMissingColumns(
-                        currentColumns: $currentColumns,
-                        requiredColumns: $requiredColumns
-                    );
-                } catch (\Throwable $e) {
-                    $output->writeln(
-                        sprintf(
-                            '<comment>skip r%d/%s (%s): %s</comment>',
-                            $register->getId(),
-                            $schema->getSlug(),
-                            $schema->getId(),
-                            $e->getMessage()
-                        )
-                    );
-                    continue;
-                }//end try
+					// Table not materialised yet — ensureTable will create it on apply.
+					$currentColumns = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+					$requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+					$missing = $this->magicMapper->findMissingColumns(
+						currentColumns: $currentColumns,
+						requiredColumns: $requiredColumns
+					);
+				} catch (\Throwable $e) {
+					$output->writeln(
+						sprintf(
+							'<comment>skip r%d/%s (%s): %s</comment>',
+							$register->getId(),
+							$schema->getSlug(),
+							$schema->getId(),
+							$e->getMessage()
+						)
+					);
+					continue;
+				}//end try
 
-                if (empty($missing) === true) {
-                    continue;
-                }
+				if (empty($missing) === true) {
+					continue;
+				}
 
-                $driftTables++;
-                $driftColumns += count($missing);
+				$driftTables++;
+				$driftColumns += count($missing);
 
-                $output->writeln(
-                    sprintf(
-                        'r%d schema=%s(#%d) missing %d: %s',
-                        $register->getId(),
-                        $schema->getSlug(),
-                        $schema->getId(),
-                        count($missing),
-                        implode(', ', array_keys($missing))
-                    )
-                );
+				$output->writeln(
+					sprintf(
+						'r%d schema=%s(#%d) missing %d: %s',
+						$register->getId(),
+						$schema->getSlug(),
+						$schema->getId(),
+						count($missing),
+						implode(', ', array_keys($missing))
+					)
+				);
 
-                if ($apply === false) {
-                    continue;
-                }
+				if ($apply === false) {
+					continue;
+				}
 
-                try {
-                    $this->magicMapper->ensureTableForRegisterSchema(
-                        register: $register,
-                        schema: $schema
-                    );
-                    $repaired++;
-                } catch (\Throwable $e) {
-                    $failed++;
-                    $output->writeln(
-                        sprintf('  <error>repair failed: %s</error>', $e->getMessage())
-                    );
-                }
-            }//end foreach
-        }//end foreach
+				try {
+					$this->magicMapper->ensureTableForRegisterSchema(
+						register: $register,
+						schema: $schema
+					);
+					$repaired++;
+				} catch (\Throwable $e) {
+					$failed++;
+					$output->writeln(
+						sprintf('  <error>repair failed: %s</error>', $e->getMessage())
+					);
+				}
+			}//end foreach
+		}//end foreach
 
-        if ($driftTables === 0) {
-            $output->writeln('<info>No magic-table column drift found.</info>');
-            return 0;
-        }
+		if ($driftTables === 0) {
+			$output->writeln('<info>No magic-table column drift found.</info>');
+			return 0;
+		}
 
-        if ($apply === false) {
-            $output->writeln(
-                sprintf(
-                    '<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
-                    $driftTables,
-                    $driftColumns
-                )
-            );
-            return 0;
-        }
+		if ($apply === false) {
+			$output->writeln(
+				sprintf(
+					'<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
+					$driftTables,
+					$driftColumns
+				)
+			);
+			return 0;
+		}
 
-        $output->writeln(
-            sprintf(
-                '<info>Repaired %d/%d table(s); %d failed.</info>',
-                $repaired,
-                $driftTables,
-                $failed
-            )
-        );
+		$output->writeln(
+			sprintf(
+				'<info>Repaired %d/%d table(s); %d failed.</info>',
+				$repaired,
+				$driftTables,
+				$failed
+			)
+		);
 
-        if ($failed === 0) {
-            return 0;
-        }
+		if ($failed === 0) {
+			return 0;
+		}
 
-        return 1;
-
-    }//end execute()
+		return 1;
+	}//end execute()
 }//end class

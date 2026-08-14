@@ -17,10 +17,11 @@
 		</div>
 		<div class="form-group">
 			<label for="hook-form-workflow-id">Workflow ID</label>
-			<input id="hook-form-workflow-id"
+			<input
+				id="hook-form-workflow-id"
 				v-model="form.workflowId"
 				type="text"
-				class="input-field">
+				class="input-field" />
 		</div>
 		<div class="form-group">
 			<label>Mode</label>
@@ -31,17 +32,19 @@
 		</div>
 		<div class="form-group">
 			<label for="hook-form-order">Order</label>
-			<input id="hook-form-order"
+			<input
+				id="hook-form-order"
 				v-model.number="form.order"
 				type="number"
-				class="input-field">
+				class="input-field" />
 		</div>
 		<div class="form-group">
 			<label for="hook-form-timeout">Timeout (seconds)</label>
-			<input id="hook-form-timeout"
+			<input
+				id="hook-form-timeout"
 				v-model.number="form.timeout"
 				type="number"
-				class="input-field">
+				class="input-field" />
 		</div>
 		<div class="form-group">
 			<label>On Failure</label>
@@ -70,9 +73,7 @@
 			</NcCheckboxRadioSwitch>
 		</div>
 		<div class="form-actions">
-			<NcButton @click="$emit('cancel')">
-				Cancel
-			</NcButton>
+			<NcButton @click="$emit('cancel')"> Cancel </NcButton>
 			<NcButton variant="primary" @click="save">
 				{{ isEdit ? 'Update' : 'Create' }}
 			</NcButton>
@@ -105,7 +106,14 @@ export default {
 				onEngineDown: this.hook?.onEngineDown || 'allow',
 				enabled: this.hook?.enabled !== false,
 			},
-			eventTypes: ['creating', 'updating', 'deleting', 'created', 'updated', 'deleted'],
+			eventTypes: [
+				'creating',
+				'updating',
+				'deleting',
+				'created',
+				'updated',
+				'deleted',
+			],
 			failureModes: ['reject', 'allow', 'flag', 'queue'],
 		}
 	},
@@ -117,7 +125,7 @@ export default {
 		 * @spec exclude computed select-option mapping from engines prop, UI plumbing
 		 */
 		engineOptions() {
-			return this.engines.map(e => e.engineType || e.name || e)
+			return this.engines.map((e) => e.engineType || e.name || e)
 		},
 	},
 	methods: {
@@ -132,9 +140,28 @@ export default {
 </script>
 
 <style scoped>
-.hook-form { padding: 16px; }
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; margin-bottom: 4px; font-weight: bold; }
-.input-field { width: 100%; padding: 8px; }
-.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.hook-form {
+	padding: 16px;
+}
+
+.form-group {
+	margin-bottom: 12px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: bold;
+}
+
+.input-field {
+	width: 100%;
+	padding: 8px;
+}
+
+.form-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
 </style>

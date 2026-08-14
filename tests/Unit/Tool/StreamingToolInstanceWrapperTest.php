@@ -28,152 +28,140 @@ use RuntimeException;
  * Fake tool with a couple of methods LLPhant would invoke as
  * `$instance->{$funcName}(...$args)`.
  */
-class FakeMcpTool
-{
+class FakeMcpTool {
 
-    /** @var array<int, array{name: string, args: array}> */
-    public array $invocations = [];
+	/** @var array<int, array{name: string, args: array}> */
+	public array $invocations = [];
 
-    public function helloWorld(array $args): array
-    {
-        $this->invocations[] = ['name' => 'helloWorld', 'args' => $args];
-        return ['ok' => true, 'echoed' => $args];
-    }//end helloWorld()
+	public function helloWorld(array $args): array {
+		$this->invocations[] = ['name' => 'helloWorld', 'args' => $args];
+		return ['ok' => true, 'echoed' => $args];
+	}//end helloWorld()
 
-    public function softFail(array $args): array
-    {
-        $this->invocations[] = ['name' => 'softFail', 'args' => $args];
-        return ['isError' => true, 'error' => 'forbidden', 'message' => 'no'];
-    }//end softFail()
+	public function softFail(array $args): array {
+		$this->invocations[] = ['name' => 'softFail', 'args' => $args];
+		return ['isError' => true, 'error' => 'forbidden', 'message' => 'no'];
+	}//end softFail()
 
-    public function hardFail(array $args): never
-    {
-        $this->invocations[] = ['name' => 'hardFail', 'args' => $args];
-        throw new RuntimeException(message: 'boom in hardFail');
-    }//end hardFail()
+	public function hardFail(array $args): never {
+		$this->invocations[] = ['name' => 'hardFail', 'args' => $args];
+		throw new RuntimeException(message: 'boom in hardFail');
+	}//end hardFail()
 
-    public function returnScalar(int $value): int
-    {
-        $this->invocations[] = ['name' => 'returnScalar', 'args' => ['value' => $value]];
-        return $value * 2;
-    }//end returnScalar()
+	public function returnScalar(int $value): int {
+		$this->invocations[] = ['name' => 'returnScalar', 'args' => ['value' => $value]];
+		return $value * 2;
+	}//end returnScalar()
 }//end class
 
-class StreamingToolInstanceWrapperTest extends TestCase
-{
+class StreamingToolInstanceWrapperTest extends TestCase {
 
-    /** @var array<int, array{kind: string, toolId: string, payload: mixed, isError?: bool}> */
-    private array $captured;
+	/** @var array<int, array{kind: string, toolId: string, payload: mixed, isError?: bool}> */
+	private array $captured;
 
-    private StreamYieldChannel $channel;
+	private StreamYieldChannel $channel;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->captured = [];
-        $this->channel  = new StreamYieldChannel();
-        $this->channel->onToolCall(
-            function (array $payload): void {
-                $this->captured[] = ['kind' => 'tool_call'] + $payload;
-            }
-        );
-        $this->channel->onToolResult(
-            function (array $payload): void {
-                $this->captured[] = ['kind' => 'tool_result'] + $payload;
-            }
-        );
+	protected function setUp(): void {
+		parent::setUp();
+		$this->captured = [];
+		$this->channel = new StreamYieldChannel();
+		$this->channel->onToolCall(
+			function (array $payload): void {
+				$this->captured[] = ['kind' => 'tool_call'] + $payload;
+			}
+		);
+		$this->channel->onToolResult(
+			function (array $payload): void {
+				$this->captured[] = ['kind' => 'tool_result'] + $payload;
+			}
+		);
 
-    }//end setUp()
+	}//end setUp()
 
-    public function testSuccessfulCallEmitsToolCallThenToolResultThenReturns(): void
-    {
-        $tool    = new FakeMcpTool();
-        $wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
+	public function testSuccessfulCallEmitsToolCallThenToolResultThenReturns(): void {
+		$tool = new FakeMcpTool();
+		$wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
 
-        // LLPhant invokes `$instance->helloWorld($args)` with a single
-        // array as the positional arg. The wrapper serialises the tool
-        // return to JSON before forwarding to LLPhant — its
-        // CalledFunction::__construct enforces ?string on the value.
-        $result = $wrapper->helloWorld(['greet' => 'world']);
+		// LLPhant invokes `$instance->helloWorld($args)` with a single
+		// array as the positional arg. The wrapper serialises the tool
+		// return to JSON before forwarding to LLPhant — its
+		// CalledFunction::__construct enforces ?string on the value.
+		$result = $wrapper->helloWorld(['greet' => 'world']);
 
-        $this->assertIsString($result);
-        $decoded = json_decode($result, associative: true);
-        $this->assertSame(['ok' => true, 'echoed' => ['greet' => 'world']], $decoded);
-        $this->assertCount(1, $tool->invocations);
+		$this->assertIsString($result);
+		$decoded = json_decode($result, associative: true);
+		$this->assertSame(['ok' => true, 'echoed' => ['greet' => 'world']], $decoded);
+		$this->assertCount(1, $tool->invocations);
 
-        // tool_call must be emitted BEFORE tool_result.
-        $this->assertCount(2, $this->captured);
-        $this->assertSame('tool_call', $this->captured[0]['kind']);
-        $this->assertSame('helloWorld', $this->captured[0]['toolId']);
-        $this->assertSame(['greet' => 'world'], $this->captured[0]['arguments']);
+		// tool_call must be emitted BEFORE tool_result.
+		$this->assertCount(2, $this->captured);
+		$this->assertSame('tool_call', $this->captured[0]['kind']);
+		$this->assertSame('helloWorld', $this->captured[0]['toolId']);
+		$this->assertSame(['greet' => 'world'], $this->captured[0]['arguments']);
 
-        $this->assertSame('tool_result', $this->captured[1]['kind']);
-        $this->assertSame('helloWorld', $this->captured[1]['toolId']);
-        $this->assertSame(['ok' => true, 'echoed' => ['greet' => 'world']], $this->captured[1]['result']);
-        $this->assertFalse($this->captured[1]['isError']);
+		$this->assertSame('tool_result', $this->captured[1]['kind']);
+		$this->assertSame('helloWorld', $this->captured[1]['toolId']);
+		$this->assertSame(['ok' => true, 'echoed' => ['greet' => 'world']], $this->captured[1]['result']);
+		$this->assertFalse($this->captured[1]['isError']);
 
-    }//end testSuccessfulCallEmitsToolCallThenToolResultThenReturns()
+	}//end testSuccessfulCallEmitsToolCallThenToolResultThenReturns()
 
-    public function testSoftFailureSurfacesIsErrorOnToolResult(): void
-    {
-        $tool    = new FakeMcpTool();
-        $wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
+	public function testSoftFailureSurfacesIsErrorOnToolResult(): void {
+		$tool = new FakeMcpTool();
+		$wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
 
-        $result = $wrapper->softFail([]);
+		$result = $wrapper->softFail([]);
 
-        $this->assertIsString($result);
-        $decoded = json_decode($result, associative: true);
-        $this->assertTrue($decoded['isError']);
-        $this->assertSame('tool_result', $this->captured[1]['kind']);
-        $this->assertTrue($this->captured[1]['isError'], 'isError envelope must propagate to the SSE frame');
+		$this->assertIsString($result);
+		$decoded = json_decode($result, associative: true);
+		$this->assertTrue($decoded['isError']);
+		$this->assertSame('tool_result', $this->captured[1]['kind']);
+		$this->assertTrue($this->captured[1]['isError'], 'isError envelope must propagate to the SSE frame');
 
-    }//end testSoftFailureSurfacesIsErrorOnToolResult()
+	}//end testSoftFailureSurfacesIsErrorOnToolResult()
 
-    public function testHardThrowEmitsErrorToolResultAndReraises(): void
-    {
-        $tool    = new FakeMcpTool();
-        $wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
+	public function testHardThrowEmitsErrorToolResultAndReraises(): void {
+		$tool = new FakeMcpTool();
+		$wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
 
-        try {
-            $wrapper->hardFail([]);
-            $this->fail('Expected RuntimeException to propagate');
-        } catch (RuntimeException $e) {
-            $this->assertSame('boom in hardFail', $e->getMessage());
-        }
+		try {
+			$wrapper->hardFail([]);
+			$this->fail('Expected RuntimeException to propagate');
+		} catch (RuntimeException $e) {
+			$this->assertSame('boom in hardFail', $e->getMessage());
+		}
 
-        // Both frames must be captured even when the wrapped call throws.
-        $this->assertCount(2, $this->captured);
-        $this->assertSame('tool_call', $this->captured[0]['kind']);
-        $this->assertSame('tool_result', $this->captured[1]['kind']);
-        $this->assertTrue($this->captured[1]['isError']);
-        $this->assertSame(['error' => 'boom in hardFail'], $this->captured[1]['result']);
+		// Both frames must be captured even when the wrapped call throws.
+		$this->assertCount(2, $this->captured);
+		$this->assertSame('tool_call', $this->captured[0]['kind']);
+		$this->assertSame('tool_result', $this->captured[1]['kind']);
+		$this->assertTrue($this->captured[1]['isError']);
+		$this->assertSame(['error' => 'boom in hardFail'], $this->captured[1]['result']);
 
-    }//end testHardThrowEmitsErrorToolResultAndReraises()
+	}//end testHardThrowEmitsErrorToolResultAndReraises()
 
-    public function testScalarReturnIsWrappedForSseConsumers(): void
-    {
-        $tool    = new FakeMcpTool();
-        $wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
+	public function testScalarReturnIsWrappedForSseConsumers(): void {
+		$tool = new FakeMcpTool();
+		$wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
 
-        $result = $wrapper->returnScalar(21);
+		$result = $wrapper->returnScalar(21);
 
-        $this->assertSame(42, $result, 'wrapper must preserve scalar return verbatim to the caller');
+		$this->assertSame(42, $result, 'wrapper must preserve scalar return verbatim to the caller');
 
-        // SSE frame, by contrast, normalises the scalar into {value: 42}
-        // so downstream consumers always see an object.
-        $this->assertSame(['value' => 42], $this->captured[1]['result']);
-        $this->assertFalse($this->captured[1]['isError']);
+		// SSE frame, by contrast, normalises the scalar into {value: 42}
+		// so downstream consumers always see an object.
+		$this->assertSame(['value' => 42], $this->captured[1]['result']);
+		$this->assertFalse($this->captured[1]['isError']);
 
-    }//end testScalarReturnIsWrappedForSseConsumers()
+	}//end testScalarReturnIsWrappedForSseConsumers()
 
-    public function testPositionalArgumentsArePreservedInToolCallPayload(): void
-    {
-        $tool    = new FakeMcpTool();
-        $wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
+	public function testPositionalArgumentsArePreservedInToolCallPayload(): void {
+		$tool = new FakeMcpTool();
+		$wrapper = new StreamingToolInstanceWrapper(wrapped: $tool, channel: $this->channel);
 
-        $wrapper->returnScalar(7);
+		$wrapper->returnScalar(7);
 
-        $this->assertSame([7], $this->captured[0]['arguments'], 'positional ints must pass through unflattened');
+		$this->assertSame([7], $this->captured[0]['arguments'], 'positional ints must pass through unflattened');
 
-    }//end testPositionalArgumentsArePreservedInToolCallPayload()
+	}//end testPositionalArgumentsArePreservedInToolCallPayload()
 }//end class

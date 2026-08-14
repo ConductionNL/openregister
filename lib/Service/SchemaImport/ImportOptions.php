@@ -32,66 +32,63 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-final class ImportOptions
-{
-    /**
-     * Constructor.
-     *
-     * @param array<int, string> $propertySubset   Explicit property names to import; empty = all direct properties.
-     * @param bool               $includeAncestors When true, inherited (ancestor) properties are also imported.
-     * @param int|null           $targetRegister   Register id the resulting schema should be associated with, or null.
-     */
-    public function __construct(
-        public readonly array $propertySubset=[],
-        public readonly bool $includeAncestors=false,
-        public readonly ?int $targetRegister=null
-    ) {
-    }//end __construct()
+final class ImportOptions {
+	/**
+	 * Constructor.
+	 *
+	 * @param array<int, string> $propertySubset Explicit property names to import; empty = all direct properties.
+	 * @param bool $includeAncestors When true, inherited (ancestor) properties are also imported.
+	 * @param int|null $targetRegister Register id the resulting schema should be associated with, or null.
+	 */
+	public function __construct(
+		public readonly array $propertySubset = [],
+		public readonly bool $includeAncestors = false,
+		public readonly ?int $targetRegister = null,
+	) {
+	}//end __construct()
 
-    /**
-     * Build options from a loosely-typed request payload.
-     *
-     * @param array<string, mixed> $payload The request body / parameters.
-     *
-     * @return self The constructed options.
-     *
-     * @spec openspec/specs/schema-import/spec.md
-     */
-    public static function fromArray(array $payload): self
-    {
-        $subset = [];
-        if (isset($payload['propertySubset']) === true && is_array($payload['propertySubset']) === true) {
-            foreach ($payload['propertySubset'] as $name) {
-                if (is_string($name) === true && $name !== '') {
-                    $subset[] = $name;
-                }
-            }
-        }
+	/**
+	 * Build options from a loosely-typed request payload.
+	 *
+	 * @param array<string, mixed> $payload The request body / parameters.
+	 *
+	 * @return self The constructed options.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public static function fromArray(array $payload): self {
+		$subset = [];
+		if (isset($payload['propertySubset']) === true && is_array($payload['propertySubset']) === true) {
+			foreach ($payload['propertySubset'] as $name) {
+				if (is_string($name) === true && $name !== '') {
+					$subset[] = $name;
+				}
+			}
+		}
 
-        $includeAncestors = false;
-        if (isset($payload['includeAncestors']) === true) {
-            $includeAncestors = filter_var($payload['includeAncestors'], FILTER_VALIDATE_BOOLEAN);
-        }
+		$includeAncestors = false;
+		if (isset($payload['includeAncestors']) === true) {
+			$includeAncestors = filter_var($payload['includeAncestors'], FILTER_VALIDATE_BOOLEAN);
+		}
 
-        $targetRegister = null;
-        if (isset($payload['targetRegister']) === true && is_numeric($payload['targetRegister']) === true) {
-            $targetRegister = (int) $payload['targetRegister'];
-        }
+		$targetRegister = null;
+		if (isset($payload['targetRegister']) === true && is_numeric($payload['targetRegister']) === true) {
+			$targetRegister = (int)$payload['targetRegister'];
+		}
 
-        return new self(
-            propertySubset: $subset,
-            includeAncestors: $includeAncestors,
-            targetRegister: $targetRegister
-        );
-    }//end fromArray()
+		return new self(
+			propertySubset: $subset,
+			includeAncestors: $includeAncestors,
+			targetRegister: $targetRegister
+		);
+	}//end fromArray()
 
-    /**
-     * Whether an explicit property subset was requested.
-     *
-     * @return bool True when a non-empty subset is set.
-     */
-    public function hasSubset(): bool
-    {
-        return $this->propertySubset !== [];
-    }//end hasSubset()
+	/**
+	 * Whether an explicit property subset was requested.
+	 *
+	 * @return bool True when a non-empty subset is set.
+	 */
+	public function hasSubset(): bool {
+		return $this->propertySubset !== [];
+	}//end hasSubset()
 }//end class

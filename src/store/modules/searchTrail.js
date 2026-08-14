@@ -78,7 +78,9 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		setSearchTrailList(searchTrailList) {
 			// Ensure we have a clean array without reactive references
-			this.searchTrailList = Array.isArray(searchTrailList) ? [...searchTrailList] : []
+			this.searchTrailList = Array.isArray(searchTrailList)
+				? [...searchTrailList]
+				: []
 		},
 
 		/**
@@ -116,7 +118,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				totalResults: stats.total_results || 0,
 				averageResultsPerSearch: stats.avg_results_per_search || 0,
 				averageExecutionTime: stats.avg_response_time || 0,
-				successRate: stats.success_rate ? (stats.success_rate / 100) : 0,
+				successRate: stats.success_rate ? stats.success_rate / 100 : 0,
 				uniqueSearchTerms: stats.unique_search_terms || 0,
 				uniqueUsers: stats.unique_users || 0,
 				uniqueOrganizations: stats.unique_organizations || 0,
@@ -156,7 +158,7 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				const activityData = response?.activity || response
 				if (Array.isArray(activityData)) {
 					// Map the activity data to match expected format
-					this.activity[period] = activityData.map(item => ({
+					this.activity[period] = activityData.map((item) => ({
 						period: item.period,
 						searches: item.count || item.searches || 0,
 						avgResults: item.avg_results || 0,
@@ -269,7 +271,9 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				}
 
 				// Update store state - ensure we pass clean data
-				this.setSearchTrailList(data.results ? JSON.parse(JSON.stringify(data.results)) : [])
+				this.setSearchTrailList(
+					data.results ? JSON.parse(JSON.stringify(data.results)) : [],
+				)
 				this.setSearchTrailPagination({
 					total: data.total || 0,
 					page: data.page || 1,
@@ -302,13 +306,16 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 				if (options.from) query.append('from', options.from)
 				if (options.to) query.append('to', options.to)
 				const suffix = query.toString() ? `?${query.toString()}` : ''
-				const response = await fetch(`${apiUrl}/search-trails/statistics${suffix}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/statistics${suffix}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
 
@@ -337,13 +344,16 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.popularTermsLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/popular-terms?limit=${limit}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/popular-terms?limit=${limit}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
 
@@ -372,13 +382,16 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 			this.activityLoading = true
 
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/activity?interval=${period}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/activity?interval=${period}`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
 
@@ -404,18 +417,23 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchRegisterSchemaStats() {
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/register-schema-stats`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/register-schema-stats`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch register schema statistics')
+					throw new Error(
+						data.error || 'Failed to fetch register schema statistics',
+					)
 				}
 
 				this.setRegisterSchemaStats(data)
@@ -434,18 +452,23 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		 */
 		async fetchUserAgentStats() {
 			try {
-				const response = await fetch(`${apiUrl}/search-trails/user-agent-stats`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
+				const response = await fetch(
+					`${apiUrl}/search-trails/user-agent-stats`,
+					{
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							requesttoken: OC.requestToken,
+						},
 					},
-				})
+				)
 
 				const data = await response.json()
 
 				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch user agent statistics')
+					throw new Error(
+						data.error || 'Failed to fetch user agent statistics',
+					)
 				}
 
 				this.setUserAgentStats(data)

@@ -119,7 +119,10 @@ async function forceLoadSchemas() {
  * @return {Promise<void>}
  */
 async function loadOrganisations() {
-	if (!organisationStore.organisationList || organisationStore.organisationList.length === 0) {
+	if (
+		!organisationStore.organisationList
+		|| organisationStore.organisationList.length === 0
+	) {
 		await organisationStore.refreshOrganisationList()
 	}
 
@@ -148,7 +151,10 @@ async function forceLoadOrganisations() {
  * @return {Promise<void>}
  */
 async function loadApplications() {
-	if (!applicationStore.applicationList || applicationStore.applicationList.length === 0) {
+	if (
+		!applicationStore.applicationList
+		|| applicationStore.applicationList.length === 0
+	) {
 		await applicationStore.refreshApplicationList()
 	}
 }
@@ -220,7 +226,7 @@ export function isAppDataLoaded() {
 		registerStore.registerList.length > 0
 		&& schemaStore.schemaList.length > 0
 		&& organisationStore.organisationList?.length >= 0 // Allow 0 organisations
-		&& applicationStore.applicationList?.length >= 0 // Allow 0 applications
+		&& applicationStore.applicationList?.length >= 0, // Allow 0 applications
 	)
 }
 

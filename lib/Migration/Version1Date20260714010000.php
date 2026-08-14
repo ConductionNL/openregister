@@ -48,48 +48,46 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/approval-workflow/spec.md
  */
-class Version1Date20260714010000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process.
-     * @param Closure                 $schemaClosure The schema closure.
-     * @param array<array-key, mixed> $options       Migration options.
-     *
-     * @return ISchemaWrapper|null
-     *
-     * @spec openspec/specs/approval-workflow/spec.md
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260714010000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process.
+	 * @param Closure $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options Migration options.
+	 *
+	 * @return ISchemaWrapper|null
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable(tableName: 'openregister_approval_steps') === false) {
-            return null;
-        }
+		if ($schema->hasTable(tableName: 'openregister_approval_steps') === false) {
+			return null;
+		}
 
-        $table = $schema->getTable(tableName: 'openregister_approval_steps');
+		$table = $schema->getTable(tableName: 'openregister_approval_steps');
 
-        if ($table->hasColumn(name: 'requester_id') === true) {
-            return null;
-        }
+		if ($table->hasColumn(name: 'requester_id') === true) {
+			return null;
+		}
 
-        $table->addColumn(
-            name: 'requester_id',
-            typeName: Types::STRING,
-            options: [
-                'notnull' => false,
-                'length'  => 255,
-            ]
-        );
+		$table->addColumn(
+			name: 'requester_id',
+			typeName: Types::STRING,
+			options: [
+				'notnull' => false,
+				'length' => 255,
+			]
+		);
 
-        $output->info('Added requester_id to openregister_approval_steps');
+		$output->info('Added requester_id to openregister_approval_steps');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

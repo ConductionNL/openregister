@@ -32,86 +32,77 @@ use PHPUnit\Framework\TestCase;
 /**
  * HandoffKindContractsTest.
  */
-class HandoffKindContractsTest extends TestCase
-{
+class HandoffKindContractsTest extends TestCase {
 
-    private const NS = 'https://openregister.app/ns#';
+	private const NS = 'https://openregister.app/ns#';
 
+	/**
+	 * The four seed kinds are registered — and nothing else.
+	 *
+	 * @return void
+	 */
+	public function testSeedKindsAreRegistered(): void {
+		$this->assertEqualsCanonicalizing(
+			[self::NS . 'Case', self::NS . 'Quote', self::NS . 'Contract', self::NS . 'Invoice'],
+			HandoffKindContracts::kinds()
+		);
+		$this->assertTrue(HandoffKindContracts::isContractKind(self::NS . 'Case'));
+		$this->assertFalse(HandoffKindContracts::isContractKind(self::NS . 'Vendor'));
+		$this->assertFalse(HandoffKindContracts::isContractKind(''));
 
-    /**
-     * The four seed kinds are registered — and nothing else.
-     *
-     * @return void
-     */
-    public function testSeedKindsAreRegistered(): void
-    {
-        $this->assertEqualsCanonicalizing(
-            [self::NS.'Case', self::NS.'Quote', self::NS.'Contract', self::NS.'Invoice'],
-            HandoffKindContracts::kinds()
-        );
-        $this->assertTrue(HandoffKindContracts::isContractKind(self::NS.'Case'));
-        $this->assertFalse(HandoffKindContracts::isContractKind(self::NS.'Vendor'));
-        $this->assertFalse(HandoffKindContracts::isContractKind(''));
+	}//end testSeedKindsAreRegistered()
 
-    }//end testSeedKindsAreRegistered()
+	/**
+	 * ns#Case mandatory/optional fields match the hydra contract spec.
+	 *
+	 * @return void
+	 */
+	public function testCaseContractFields(): void {
+		$this->assertEqualsCanonicalizing(
+			['title', 'summary', 'channel', 'source'],
+			HandoffKindContracts::mandatoryFields(self::NS . 'Case')
+		);
+		$this->assertEqualsCanonicalizing(
+			['title', 'summary', 'channel', 'source', 'requester', 'priority'],
+			HandoffKindContracts::allFields(self::NS . 'Case')
+		);
 
+	}//end testCaseContractFields()
 
-    /**
-     * ns#Case mandatory/optional fields match the hydra contract spec.
-     *
-     * @return void
-     */
-    public function testCaseContractFields(): void
-    {
-        $this->assertEqualsCanonicalizing(
-            ['title', 'summary', 'channel', 'source'],
-            HandoffKindContracts::mandatoryFields(self::NS.'Case')
-        );
-        $this->assertEqualsCanonicalizing(
-            ['title', 'summary', 'channel', 'source', 'requester', 'priority'],
-            HandoffKindContracts::allFields(self::NS.'Case')
-        );
+	/**
+	 * Order-chain kinds match the hydra contract spec field sets.
+	 *
+	 * @return void
+	 */
+	public function testOrderChainContractFields(): void {
+		$this->assertEqualsCanonicalizing(
+			['title', 'counterparty', 'currency', 'totalAmount', 'source'],
+			HandoffKindContracts::mandatoryFields(self::NS . 'Quote')
+		);
+		$this->assertEqualsCanonicalizing(
+			['title', 'counterparty', 'currency', 'totalAmount', 'startDate', 'source'],
+			HandoffKindContracts::mandatoryFields(self::NS . 'Contract')
+		);
+		// Invoice numbering / VAT / ledger are explicitly NOT contract fields.
+		$this->assertEqualsCanonicalizing(
+			['counterparty', 'currency', 'totalAmount', 'source'],
+			HandoffKindContracts::mandatoryFields(self::NS . 'Invoice')
+		);
+		$this->assertEqualsCanonicalizing(
+			['counterparty', 'currency', 'totalAmount', 'source', 'lines', 'dueDate'],
+			HandoffKindContracts::allFields(self::NS . 'Invoice')
+		);
 
-    }//end testCaseContractFields()
+	}//end testOrderChainContractFields()
 
+	/**
+	 * Unknown kinds yield empty field sets (never raise).
+	 *
+	 * @return void
+	 */
+	public function testUnknownKindYieldsEmptySets(): void {
+		$this->assertSame([], HandoffKindContracts::mandatoryFields('https://example.org/ns#Nope'));
+		$this->assertSame([], HandoffKindContracts::allFields('https://example.org/ns#Nope'));
 
-    /**
-     * Order-chain kinds match the hydra contract spec field sets.
-     *
-     * @return void
-     */
-    public function testOrderChainContractFields(): void
-    {
-        $this->assertEqualsCanonicalizing(
-            ['title', 'counterparty', 'currency', 'totalAmount', 'source'],
-            HandoffKindContracts::mandatoryFields(self::NS.'Quote')
-        );
-        $this->assertEqualsCanonicalizing(
-            ['title', 'counterparty', 'currency', 'totalAmount', 'startDate', 'source'],
-            HandoffKindContracts::mandatoryFields(self::NS.'Contract')
-        );
-        // Invoice numbering / VAT / ledger are explicitly NOT contract fields.
-        $this->assertEqualsCanonicalizing(
-            ['counterparty', 'currency', 'totalAmount', 'source'],
-            HandoffKindContracts::mandatoryFields(self::NS.'Invoice')
-        );
-        $this->assertEqualsCanonicalizing(
-            ['counterparty', 'currency', 'totalAmount', 'source', 'lines', 'dueDate'],
-            HandoffKindContracts::allFields(self::NS.'Invoice')
-        );
-
-    }//end testOrderChainContractFields()
-
-
-    /**
-     * Unknown kinds yield empty field sets (never raise).
-     *
-     * @return void
-     */
-    public function testUnknownKindYieldsEmptySets(): void
-    {
-        $this->assertSame([], HandoffKindContracts::mandatoryFields('https://example.org/ns#Nope'));
-        $this->assertSame([], HandoffKindContracts::allFields('https://example.org/ns#Nope'));
-
-    }//end testUnknownKindYieldsEmptySets()
+	}//end testUnknownKindYieldsEmptySets()
 }//end class

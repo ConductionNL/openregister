@@ -37,21 +37,25 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setOrganisationItem(organisationItem) {
-			this.organisationItem = organisationItem && new Organisation(organisationItem)
+			this.organisationItem =
+				organisationItem && new Organisation(organisationItem)
 		},
 		/**
 		 * @param organisations
 		 * @spec exclude Client state mutator — maps the organisation list to entities. No backend contract.
 		 */
 		setOrganisationList(organisations) {
-			this.organisationList = organisations.map(organisation => new Organisation(organisation))
+			this.organisationList = organisations.map(
+				(organisation) => new Organisation(organisation),
+			)
 		},
 		/**
 		 * @param activeOrganisation
 		 * @spec exclude Client state mutator — wraps the active organisation in an entity. No backend contract.
 		 */
 		setActiveOrganisation(activeOrganisation) {
-			this.activeOrganisation = activeOrganisation && new Organisation(activeOrganisation)
+			this.activeOrganisation =
+				activeOrganisation && new Organisation(activeOrganisation)
 		},
 		/**
 		 * @param stats
@@ -61,7 +65,7 @@ export const useOrganisationStore = defineStore('organisation', {
 			this.userStats = {
 				total: stats.total || 0,
 				active: stats.active ? new Organisation(stats.active) : null,
-				list: (stats.results || []).map(org => new Organisation(org)),
+				list: (stats.results || []).map((org) => new Organisation(org)),
 			}
 		},
 		/**
@@ -177,7 +181,9 @@ export const useOrganisationStore = defineStore('organisation', {
 				return { response, data }
 			} catch (error) {
 				console.error('Error setting active organisation:', error)
-				throw new Error(`Failed to set active organisation: ${error.message}`)
+				throw new Error(
+					`Failed to set active organisation: ${error.message}`,
+				)
 			}
 		},
 		/**
@@ -289,7 +295,10 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						errorData.message
+							|| `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				const data = await response.json()
@@ -336,22 +345,32 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				if (!response.ok) {
 					const errorData = await response.json()
-					throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+					throw new Error(
+						errorData.message
+							|| `HTTP error! status: ${response.status}`,
+					)
 				}
 
 				const data = await response.json()
 				const savedOrganisation = data.organisation || data
 
 				// Update existing in list
-				const index = this.organisationList.findIndex(org =>
-					org.uuid === organisationId || org.id === organisationId,
+				const index = this.organisationList.findIndex(
+					(org) =>
+						org.uuid === organisationId || org.id === organisationId,
 				)
 				if (index !== -1) {
-					this.organisationList[index] = new Organisation(savedOrganisation)
+					this.organisationList[index] = new Organisation(
+						savedOrganisation,
+					)
 				}
 
 				// Update current item if it's the same organisation
-				if (this.organisationItem && (this.organisationItem.uuid === organisationId || this.organisationItem.id === organisationId)) {
+				if (
+					this.organisationItem
+					&& (this.organisationItem.uuid === organisationId
+						|| this.organisationItem.id === organisationId)
+				) {
 					this.setOrganisationItem(savedOrganisation)
 				}
 
@@ -408,7 +427,8 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			// Ensure boolean fields are actually booleans, not empty strings
 			if (cleaned.active !== undefined) {
-				cleaned.active = cleaned.active === '' ? true : Boolean(cleaned.active)
+				cleaned.active =
+					cleaned.active === '' ? true : Boolean(cleaned.active)
 			}
 
 			return cleaned
@@ -456,7 +476,8 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations/clear-cache; observable contract owned by tenant-lifecycle.
 		 */
 		async clearCache() {
-			const endpoint = '/index.php/apps/openregister/api/organisations/clear-cache'
+			const endpoint =
+				'/index.php/apps/openregister/api/organisations/clear-cache'
 			try {
 				const response = await fetch(endpoint, {
 					method: 'POST',
@@ -484,21 +505,26 @@ export const useOrganisationStore = defineStore('organisation', {
 		async loadNextcloudGroups() {
 			try {
 				// Fetch groups from Nextcloud OCS API (using v1 for compatibility)
-				const response = await fetch('/ocs/v1.php/cloud/groups?format=json', {
-					headers: {
-						'OCS-APIRequest': 'true',
+				const response = await fetch(
+					'/ocs/v1.php/cloud/groups?format=json',
+					{
+						headers: {
+							'OCS-APIRequest': 'true',
+						},
 					},
-				})
+				)
 
 				if (response.ok) {
 					const data = await response.json()
 					if (data.ocs?.data?.groups) {
 						// Transform group IDs into objects with additional info
-						this.nextcloudGroups = data.ocs.data.groups.map(groupId => ({
-							id: groupId,
-							name: groupId,
-							userCount: 0, // Could be fetched separately if needed
-						}))
+						this.nextcloudGroups = data.ocs.data.groups.map(
+							(groupId) => ({
+								id: groupId,
+								name: groupId,
+								userCount: 0, // Could be fetched separately if needed
+							}),
+						)
 					}
 				}
 			} catch (error) {

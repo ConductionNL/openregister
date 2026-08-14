@@ -47,95 +47,92 @@ use Symfony\Component\Console\Output\OutputInterface;
  * from the link table without aggregating across N entries at render
  * time (per the spec's "Denormalized Object Total" requirement).
  */
-class TimeReconcileCommand extends Command
-{
-    /**
-     * Wire the time-tracker link service used by the command.
-     *
-     * @param TimeTrackerLinkService $service Tier-2 link-service facade.
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly TimeTrackerLinkService $service
-    ) {
-        parent::__construct();
-    }//end __construct()
+class TimeReconcileCommand extends Command {
+	/**
+	 * Wire the time-tracker link service used by the command.
+	 *
+	 * @param TimeTrackerLinkService $service Tier-2 link-service facade.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly TimeTrackerLinkService $service,
+	) {
+		parent::__construct();
+	}//end __construct()
 
-    /**
-     * Define command name, description, and options.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/integration-time-tracker/spec.md
-     */
-    protected function configure(): void
-    {
-        $this->setName(name: 'openregister:time:reconcile')
-            ->setDescription(
-                'Reconcile denormalised time-tracker link metadata (name, duration, billable, started_at) '
-                .'against the authoritative NC TimeManager source so per-object totals stay correct.'
-            )
-            ->addOption(
-                'object',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Optionally restrict the scan to a single object uuid; default is every link row.'
-            )
-            ->addOption(
-                'dry-run',
-                null,
-                InputOption::VALUE_NONE,
-                'Report drift without writing the link table.'
-            );
-    }//end configure()
+	/**
+	 * Define command name, description, and options.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 */
+	protected function configure(): void {
+		$this->setName(name: 'openregister:time:reconcile')
+			->setDescription(
+				'Reconcile denormalised time-tracker link metadata (name, duration, billable, started_at) '
+				. 'against the authoritative NC TimeManager source so per-object totals stay correct.'
+			)
+			->addOption(
+				'object',
+				null,
+				InputOption::VALUE_REQUIRED,
+				'Optionally restrict the scan to a single object uuid; default is every link row.'
+			)
+			->addOption(
+				'dry-run',
+				null,
+				InputOption::VALUE_NONE,
+				'Report drift without writing the link table.'
+			);
+	}//end configure()
 
-    /**
-     * Run the reconcile walk and report the summary stats.
-     *
-     * @param InputInterface  $input  Console input.
-     * @param OutputInterface $output Console output stream.
-     *
-     * @return int Symfony command exit code.
-     *
-     * @spec openspec/specs/integration-time-tracker/spec.md
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $objectUuid = $input->getOption('object');
-        if (is_string($objectUuid) === false || $objectUuid === '') {
-            $objectUuid = null;
-        }
+	/**
+	 * Run the reconcile walk and report the summary stats.
+	 *
+	 * @param InputInterface $input Console input.
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int Symfony command exit code.
+	 *
+	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$objectUuid = $input->getOption('object');
+		if (is_string($objectUuid) === false || $objectUuid === '') {
+			$objectUuid = null;
+		}
 
-        $dryRun      = (bool) $input->getOption('dry-run');
-        $dryRunLabel = '';
-        if ($dryRun === true) {
-            $dryRunLabel = ' (dry run)';
-        }
+		$dryRun = (bool)$input->getOption('dry-run');
+		$dryRunLabel = '';
+		if ($dryRun === true) {
+			$dryRunLabel = ' (dry run)';
+		}
 
-        $scope = 'all link rows';
-        if ($objectUuid !== null) {
-            $scope = 'object='.$objectUuid;
-        }
+		$scope = 'all link rows';
+		if ($objectUuid !== null) {
+			$scope = 'object=' . $objectUuid;
+		}
 
-        $output->writeln(sprintf('<info>Reconciling %s%s</info>', $scope, $dryRunLabel));
+		$output->writeln(sprintf('<info>Reconciling %s%s</info>', $scope, $dryRunLabel));
 
-        $stats = $this->service->reconcileAllLinks(objectUuid: $objectUuid, dryRun: $dryRun);
+		$stats = $this->service->reconcileAllLinks(objectUuid: $objectUuid, dryRun: $dryRun);
 
-        $output->writeln(
-            sprintf(
-                ' walked=%d refreshed=%d missing=%d errors=%d',
-                $stats['walked'],
-                $stats['refreshed'],
-                $stats['missing'],
-                $stats['errors']
-            )
-        );
+		$output->writeln(
+			sprintf(
+				' walked=%d refreshed=%d missing=%d errors=%d',
+				$stats['walked'],
+				$stats['refreshed'],
+				$stats['missing'],
+				$stats['errors']
+			)
+		);
 
-        if ($stats['errors'] > 0) {
-            return Command::FAILURE;
-        }
+		if ($stats['errors'] > 0) {
+			return Command::FAILURE;
+		}
 
-        return Command::SUCCESS;
-    }//end execute()
+		return Command::SUCCESS;
+	}//end execute()
 }//end class

@@ -28,13 +28,19 @@ describe('notificationSubscriptions API helpers', () => {
 		it('GETs the index endpoint and returns the results array', async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve({ results: [{ id: 1, registerId: 5, schemaId: null }], total: 1 }),
+				json: () =>
+					Promise.resolve({
+						results: [{ id: 1, registerId: 5, schemaId: null }],
+						total: 1,
+					}),
 			})
 
 			const result = await listSubscriptions()
 
 			expect(fetchMock).toHaveBeenCalledTimes(1)
-			expect(fetchMock.mock.calls[0][0]).toBe('/index.php/apps/openregister/api/notification-subscriptions')
+			expect(fetchMock.mock.calls[0][0]).toBe(
+				'/index.php/apps/openregister/api/notification-subscriptions',
+			)
 			expect(fetchMock.mock.calls[0][1].method).toBe('GET')
 			expect(result).toEqual([{ id: 1, registerId: 5, schemaId: null }])
 		})
@@ -64,7 +70,8 @@ describe('notificationSubscriptions API helpers', () => {
 		it('defaults missing fields to null', async () => {
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve({ id: 8, registerId: 5, schemaId: null }),
+				json: () =>
+					Promise.resolve({ id: 8, registerId: 5, schemaId: null }),
 			})
 
 			await subscribe({ registerId: 5 })
@@ -113,14 +120,24 @@ describe('notificationSubscriptions API helpers', () => {
 
 		it('matches exact tuples', () => {
 			expect(hasSubscription(subs, { registerId: 5, schemaId: 28 })).toBe(true)
-			expect(hasSubscription(subs, { registerId: 5, schemaId: null })).toBe(true)
-			expect(hasSubscription(subs, { registerId: null, schemaId: 99 })).toBe(true)
+			expect(hasSubscription(subs, { registerId: 5, schemaId: null })).toBe(
+				true,
+			)
+			expect(hasSubscription(subs, { registerId: null, schemaId: 99 })).toBe(
+				true,
+			)
 		})
 
 		it('non-matching tuples return false', () => {
-			expect(hasSubscription(subs, { registerId: 5, schemaId: 100 })).toBe(false)
-			expect(hasSubscription(subs, { registerId: 999, schemaId: 28 })).toBe(false)
-			expect(hasSubscription(subs, { registerId: null, schemaId: null })).toBe(false)
+			expect(hasSubscription(subs, { registerId: 5, schemaId: 100 })).toBe(
+				false,
+			)
+			expect(hasSubscription(subs, { registerId: 999, schemaId: 28 })).toBe(
+				false,
+			)
+			expect(hasSubscription(subs, { registerId: null, schemaId: null })).toBe(
+				false,
+			)
 		})
 
 		it('handles empty/non-array input', () => {

@@ -45,284 +45,271 @@ use Throwable;
  *   Coupling to NC's IAppManager + the DI container is required to
  *   detect and lazily resolve the OpenConnector CallService.
  */
-class PdokGeocoder
-{
+class PdokGeocoder {
 
-    /**
-     * PDOK Locatieserver v3.1 base URL (REQ-GEO-005).
-     */
-    public const LOCATIESERVER_BASE = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1';
+	/**
+	 * PDOK Locatieserver v3.1 base URL (REQ-GEO-005).
+	 */
+	public const LOCATIESERVER_BASE = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1';
 
-    /**
-     * Optional transport override: `fn(string $url, array $params): ?array`.
-     *
-     * Injected in tests so response shaping is exercised without a live
-     * OpenConnector. Null in production — the OpenConnector CallService
-     * is resolved lazily.
-     *
-     * @var callable|null
-     */
-    private $transport;
+	/**
+	 * Optional transport override: `fn(string $url, array $params): ?array`.
+	 *
+	 * Injected in tests so response shaping is exercised without a live
+	 * OpenConnector. Null in production — the OpenConnector CallService
+	 * is resolved lazily.
+	 *
+	 * @var callable|null
+	 */
+	private $transport;
 
-    /**
-     * Constructor.
-     *
-     * @param IAppManager        $appManager NC app manager — detects whether
-     *                                       OpenConnector is enabled.
-     * @param ContainerInterface $container  DI container — lazily resolves
-     *                                       OpenConnector's CallService.
-     * @param LoggerInterface    $logger     Logger for graceful-degrade traces.
-     * @param callable|null      $transport  Optional transport override (tests).
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IAppManager $appManager,
-        private readonly ContainerInterface $container,
-        private readonly LoggerInterface $logger,
-        ?callable $transport=null
-    ) {
-        $this->transport = $transport;
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppManager $appManager NC app manager — detects whether
+	 *                                OpenConnector is enabled.
+	 * @param ContainerInterface $container DI container — lazily resolves
+	 *                                      OpenConnector's CallService.
+	 * @param LoggerInterface $logger Logger for graceful-degrade traces.
+	 * @param callable|null $transport Optional transport override (tests).
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IAppManager $appManager,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
+		?callable $transport = null,
+	) {
+		$this->transport = $transport;
 
-    }//end __construct()
+	}//end __construct()
 
-    /**
-     * Whether geocoding is currently available (OpenConnector enabled).
-     *
-     * @return bool
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    public function isAvailable(): bool
-    {
-        if ($this->transport !== null) {
-            return true;
-        }
+	/**
+	 * Whether geocoding is currently available (OpenConnector enabled).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	public function isAvailable(): bool {
+		if ($this->transport !== null) {
+			return true;
+		}
 
-        try {
-            return $this->appManager->isInstalled('openconnector');
-        } catch (Throwable $e) {
-            return false;
-        }
+		try {
+			return $this->appManager->isInstalled('openconnector');
+		} catch (Throwable $e) {
+			return false;
+		}
 
-    }//end isAvailable()
+	}//end isAvailable()
 
-    /**
-     * Forward geocoding: free-text address query -> up to N suggestions.
-     *
-     * Each suggestion is `{ display, type, lon, lat, bagId }`. On any
-     * failure (OpenConnector down, upstream error, malformed payload)
-     * an empty list is returned — geocoding is non-blocking (REQ-GEO-005).
-     *
-     * @param string $query    The free-text address.
-     * @param int    $maxItems Maximum suggestions to return.
-     * @param bool   $bagOnly  Restrict to BAG `type:adres` results.
-     *
-     * @return array<int, array<string, mixed>> Suggestions (possibly empty).
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
-     */
-    public function geocodeFree(string $query, int $maxItems=5, bool $bagOnly=false): array
-    {
-        $query = trim($query);
-        if ($query === '') {
-            return [];
-        }
+	/**
+	 * Forward geocoding: free-text address query -> up to N suggestions.
+	 *
+	 * Each suggestion is `{ display, type, lon, lat, bagId }`. On any
+	 * failure (OpenConnector down, upstream error, malformed payload)
+	 * an empty list is returned — geocoding is non-blocking (REQ-GEO-005).
+	 *
+	 * @param string $query The free-text address.
+	 * @param int $maxItems Maximum suggestions to return.
+	 * @param bool $bagOnly Restrict to BAG `type:adres` results.
+	 *
+	 * @return array<int, array<string, mixed>> Suggestions (possibly empty).
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
+	 */
+	public function geocodeFree(string $query, int $maxItems = 5, bool $bagOnly = false): array {
+		$query = trim($query);
+		if ($query === '') {
+			return [];
+		}
 
-        $params = [
-            'q'    => $query,
-            'rows' => max(1, $maxItems),
-        ];
-        if ($bagOnly === true) {
-            $params['fq'] = 'type:adres';
-        }
+		$params = [
+			'q' => $query,
+			'rows' => max(1, $maxItems),
+		];
+		if ($bagOnly === true) {
+			$params['fq'] = 'type:adres';
+		}
 
-        $payload = $this->request(endpoint: 'free', params: $params);
-        if ($payload === null) {
-            return [];
-        }
+		$payload = $this->request(endpoint: 'free', params: $params);
+		if ($payload === null) {
+			return [];
+		}
 
-        return $this->shapeSuggestions(payload: $payload, maxItems: $maxItems);
+		return $this->shapeSuggestions(payload: $payload, maxItems: $maxItems);
+	}//end geocodeFree()
 
-    }//end geocodeFree()
+	/**
+	 * Reverse geocoding: coordinates -> nearest address (or null).
+	 *
+	 * @param float $longitude WGS84 longitude.
+	 * @param float $latitude WGS84 latitude.
+	 *
+	 * @return array<string, mixed>|null The nearest address, or null.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	public function reverseGeocode(float $longitude, float $latitude): ?array {
+		$payload = $this->request(
+			endpoint: 'reverse',
+			params: [
+				'lon' => $longitude,
+				'lat' => $latitude,
+				'rows' => 1,
+			]
+		);
+		if ($payload === null) {
+			return null;
+		}
 
-    /**
-     * Reverse geocoding: coordinates -> nearest address (or null).
-     *
-     * @param float $longitude WGS84 longitude.
-     * @param float $latitude  WGS84 latitude.
-     *
-     * @return array<string, mixed>|null The nearest address, or null.
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    public function reverseGeocode(float $longitude, float $latitude): ?array
-    {
-        $payload = $this->request(
-            endpoint: 'reverse',
-            params: [
-                'lon'  => $longitude,
-                'lat'  => $latitude,
-                'rows' => 1,
-            ]
-        );
-        if ($payload === null) {
-            return null;
-        }
+		$suggestions = $this->shapeSuggestions(payload: $payload, maxItems: 1);
+		return ($suggestions[0] ?? null);
+	}//end reverseGeocode()
 
-        $suggestions = $this->shapeSuggestions(payload: $payload, maxItems: 1);
-        return ($suggestions[0] ?? null);
+	/**
+	 * Shape a raw Locatieserver payload into a suggestion list.
+	 *
+	 * Pure: tolerant of the Solr-style `response.docs` envelope PDOK
+	 * returns. Missing/garbled docs yield an empty list.
+	 *
+	 * @param array $payload The decoded Locatieserver payload.
+	 * @param int $maxItems Maximum suggestions.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	public function shapeSuggestions(array $payload, int $maxItems): array {
+		$docs = ($payload['response']['docs'] ?? ($payload['docs'] ?? null));
+		if (is_array($docs) === false) {
+			return [];
+		}
 
-    }//end reverseGeocode()
+		$suggestions = [];
+		foreach ($docs as $doc) {
+			if (is_array($doc) === false) {
+				continue;
+			}
 
-    /**
-     * Shape a raw Locatieserver payload into a suggestion list.
-     *
-     * Pure: tolerant of the Solr-style `response.docs` envelope PDOK
-     * returns. Missing/garbled docs yield an empty list.
-     *
-     * @param array $payload  The decoded Locatieserver payload.
-     * @param int   $maxItems Maximum suggestions.
-     *
-     * @return array<int, array<string, mixed>>
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    public function shapeSuggestions(array $payload, int $maxItems): array
-    {
-        $docs = ($payload['response']['docs'] ?? ($payload['docs'] ?? null));
-        if (is_array($docs) === false) {
-            return [];
-        }
+			$coords = $this->parseCentroid(point: ($doc['centroide_ll'] ?? null));
 
-        $suggestions = [];
-        foreach ($docs as $doc) {
-            if (is_array($doc) === false) {
-                continue;
-            }
+			$suggestions[] = [
+				'display' => (string)($doc['weergavenaam'] ?? ''),
+				'type' => (string)($doc['type'] ?? ''),
+				'lon' => $coords[0],
+				'lat' => $coords[1],
+				'bagId' => ($doc['nummeraanduiding_id'] ?? null),
+			];
 
-            $coords = $this->parseCentroid(point: ($doc['centroide_ll'] ?? null));
+			if (count($suggestions) >= $maxItems) {
+				break;
+			}
+		}//end foreach
 
-            $suggestions[] = [
-                'display' => (string) ($doc['weergavenaam'] ?? ''),
-                'type'    => (string) ($doc['type'] ?? ''),
-                'lon'     => $coords[0],
-                'lat'     => $coords[1],
-                'bagId'   => ($doc['nummeraanduiding_id'] ?? null),
-            ];
+		return $suggestions;
+	}//end shapeSuggestions()
 
-            if (count($suggestions) >= $maxItems) {
-                break;
-            }
-        }//end foreach
+	/**
+	 * Parse a PDOK `POINT(lon lat)` WKT centroid into `[lon, lat]`.
+	 *
+	 * @param mixed $point The `centroide_ll` value.
+	 *
+	 * @return array{0: ?float, 1: ?float}
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	private function parseCentroid(mixed $point): array {
+		if (is_string($point) === false) {
+			return [null, null];
+		}
 
-        return $suggestions;
+		if (preg_match('/POINT\(([-0-9.]+)\s+([-0-9.]+)\)/i', $point, $m) === 1) {
+			return [(float)$m[1], (float)$m[2]];
+		}
 
-    }//end shapeSuggestions()
+		return [null, null];
+	}//end parseCentroid()
 
-    /**
-     * Parse a PDOK `POINT(lon lat)` WKT centroid into `[lon, lat]`.
-     *
-     * @param mixed $point The `centroide_ll` value.
-     *
-     * @return array{0: ?float, 1: ?float}
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    private function parseCentroid(mixed $point): array
-    {
-        if (is_string($point) === false) {
-            return [null, null];
-        }
+	/**
+	 * Perform a Locatieserver request, degrading gracefully to null.
+	 *
+	 * @param string $endpoint The Locatieserver endpoint (`free`/`reverse`).
+	 * @param array $params Query parameters.
+	 *
+	 * @return array|null The decoded payload, or null on any failure.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	private function request(string $endpoint, array $params): ?array {
+		$url = (self::LOCATIESERVER_BASE . '/' . $endpoint);
 
-        if (preg_match('/POINT\(([-0-9.]+)\s+([-0-9.]+)\)/i', $point, $m) === 1) {
-            return [(float) $m[1], (float) $m[2]];
-        }
+		if ($this->transport !== null) {
+			try {
+				$result = ($this->transport)($url, $params);
+				if (is_array($result) === true) {
+					return $result;
+				}
 
-        return [null, null];
+				return null;
+			} catch (Throwable $e) {
+				$this->logger->warning('PDOK geocoding transport failed: ' . $e->getMessage());
+				return null;
+			}
+		}
 
-    }//end parseCentroid()
+		if ($this->isAvailable() === false) {
+			$this->logger->info('PDOK geocoding skipped: OpenConnector not available');
+			return null;
+		}
 
-    /**
-     * Perform a Locatieserver request, degrading gracefully to null.
-     *
-     * @param string $endpoint The Locatieserver endpoint (`free`/`reverse`).
-     * @param array  $params   Query parameters.
-     *
-     * @return array|null The decoded payload, or null on any failure.
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    private function request(string $endpoint, array $params): ?array
-    {
-        $url = (self::LOCATIESERVER_BASE.'/'.$endpoint);
+		try {
+			$callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
+			$response = $callService->call(null, $url, 'GET', ['query' => $params]);
+			return $this->decode(response: $response);
+		} catch (Throwable $e) {
+			$this->logger->warning('PDOK geocoding via OpenConnector failed: ' . $e->getMessage());
+			return null;
+		}
 
-        if ($this->transport !== null) {
-            try {
-                $result = ($this->transport)($url, $params);
-                if (is_array($result) === true) {
-                    return $result;
-                }
+	}//end request()
 
-                return null;
-            } catch (Throwable $e) {
-                $this->logger->warning('PDOK geocoding transport failed: '.$e->getMessage());
-                return null;
-            }
-        }
+	/**
+	 * Decode an OpenConnector CallService response into an array.
+	 *
+	 * @param mixed $response The CallService return value.
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 */
+	private function decode(mixed $response): ?array {
+		if (is_array($response) === true) {
+			return $response;
+		}
 
-        if ($this->isAvailable() === false) {
-            $this->logger->info('PDOK geocoding skipped: OpenConnector not available');
-            return null;
-        }
+		$body = null;
+		if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
+			$resp = $response->getResponse();
+			$body = ($resp['body'] ?? null);
+		}
 
-        try {
-            $callService = $this->container->get('OCA\\OpenConnector\\Service\\CallService');
-            $response    = $callService->call(null, $url, 'GET', ['query' => $params]);
-            return $this->decode(response: $response);
-        } catch (Throwable $e) {
-            $this->logger->warning('PDOK geocoding via OpenConnector failed: '.$e->getMessage());
-            return null;
-        }
+		if (is_string($response) === true) {
+			$body = $response;
+		}
 
-    }//end request()
+		if (is_string($body) === false) {
+			return null;
+		}
 
-    /**
-     * Decode an OpenConnector CallService response into an array.
-     *
-     * @param mixed $response The CallService return value.
-     *
-     * @return array|null
-     *
-     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     */
-    private function decode(mixed $response): ?array
-    {
-        if (is_array($response) === true) {
-            return $response;
-        }
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
 
-        $body = null;
-        if (is_object($response) === true && method_exists($response, 'getResponse') === true) {
-            $resp = $response->getResponse();
-            $body = ($resp['body'] ?? null);
-        }
-
-        if (is_string($response) === true) {
-            $body = $response;
-        }
-
-        if (is_string($body) === false) {
-            return null;
-        }
-
-        $decoded = json_decode($body, true);
-        if (is_array($decoded) === true) {
-            return $decoded;
-        }
-
-        return null;
-
-    }//end decode()
+		return null;
+	}//end decode()
 }//end class

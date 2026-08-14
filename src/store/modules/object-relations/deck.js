@@ -42,11 +42,15 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec exclude private URL-builder helper (no client state)
 		 */
 		_url(register, schema, id, suffix = '') {
-			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/deck' + suffix, {
-				register,
-				schema,
-				id,
-			})
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/deck'
+					+ suffix,
+				{
+					register,
+					schema,
+					id,
+				},
+			)
 		},
 
 		/**
@@ -80,7 +84,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 					return []
 				}
 
-				this.errors = { ...this.errors, [k]: err.response?.data?.error || err.message || '' }
+				this.errors = {
+					...this.errors,
+					[k]: err.response?.data?.error || err.message || '',
+				}
 				throw err
 			} finally {
 				this.loading = { ...this.loading, [k]: false }
@@ -98,7 +105,10 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
-			const response = await axios.post(this._url(register, schema, id), payload)
+			const response = await axios.post(
+				this._url(register, schema, id),
+				payload,
+			)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
@@ -114,9 +124,13 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async unlink(register, schema, id, deckRef) {
-			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(deckRef)))
+			await axios.delete(
+				this._url(register, schema, id, '/' + encodeURIComponent(deckRef)),
+			)
 			const k = `${register}:${schema}:${id}`
-			const next = (this.byObject[k] || []).filter(c => (c.ref || c.deckRef || c.id) !== deckRef)
+			const next = (this.byObject[k] || []).filter(
+				(c) => (c.ref || c.deckRef || c.id) !== deckRef,
+			)
 			this.byObject = { ...this.byObject, [k]: next }
 			return next
 		},

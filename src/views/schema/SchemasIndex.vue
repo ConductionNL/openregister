@@ -1,6 +1,10 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore, configurationStore } from '../../store/store.js'
+import {
+	schemaStore,
+	navigationStore,
+	configurationStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -8,7 +12,9 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 		<CnIndexPage
 			ref="indexPage"
 			:title="t('openregister', 'Schemas')"
-			:description="t('openregister', 'Manage your data schemas and their properties')"
+			:description="
+				t('openregister', 'Manage your data schemas and their properties')
+			"
 			:show-title="true"
 			:objects="paginatedSchemas"
 			:columns="tableColumns"
@@ -29,7 +35,12 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:empty-text="emptyContentName"
 			:row-class="getRowClass"
 			:refreshing="isRefreshing"
-			@add="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')"
+			@add="
+				() => {
+					schemaStore.setSchemaItem(null)
+					navigationStore.setModal('editSchema')
+				}
+			"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -39,7 +50,10 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<RegisterSchemaCard :item="object" type="schema" @refresh="handleRefresh" />
+				<RegisterSchemaCard
+					:item="object"
+					type="schema"
+					@refresh="handleRefresh" />
 			</template>
 
 			<!-- Custom column: title with badges -->
@@ -50,19 +64,29 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						<span v-if="row.extend" class="statusPill statusPill--alert">
 							{{ t('openregister', 'Extended') }}
 						</span>
-						<span v-if="hasObjects(row)" class="statusPill statusPill--success">
+						<span
+							v-if="hasObjects(row)"
+							class="statusPill statusPill--success">
 							{{ t('openregister', 'In use') }}
 						</span>
-						<span v-if="isManagedByExternalConfig(row)" class="managedBadge managedBadge--external">
+						<span
+							v-if="isManagedByExternalConfig(row)"
+							class="managedBadge managedBadge--external">
 							<CogOutline :size="16" />
 							{{ t('openregister', 'Managed') }}
 						</span>
-						<span v-else-if="isManagedByLocalConfig(row)" class="managedBadge managedBadge--local">
+						<span
+							v-else-if="isManagedByLocalConfig(row)"
+							class="managedBadge managedBadge--local">
 							<CogOutline :size="16" />
 							{{ t('openregister', 'Local') }}
 						</span>
 					</div>
-					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+					<span
+						v-if="row.description"
+						class="textDescription textEllipsis"
+						>{{ row.description }}</span
+					>
 				</div>
 			</template>
 
@@ -73,12 +97,40 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{ row.created ? new Date(row.created).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.created).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.created
+						? new Date(row.created).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.created).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom column: updated date -->
 			<template #column-updated="{ row }">
-				{{ row.updated ? new Date(row.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
+				{{
+					row.updated
+						? new Date(row.updated).toLocaleDateString({
+								day: '2-digit',
+								month: '2-digit',
+								year: 'numeric',
+							})
+							+ ', '
+							+ new Date(row.updated).toLocaleTimeString({
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '-'
+				}}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -88,19 +140,39 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						:title="isManagedByExternalConfig(row) ? 'Cannot edit: This schema is managed by external configuration ' + (getManagingConfiguration(row)?.title || '') : ''"
+						:title="
+							isManagedByExternalConfig(row)
+								? 'Cannot edit: This schema is managed by external configuration '
+									+ (getManagingConfiguration(row)?.title || '')
+								: ''
+						"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
-						@click="schemaStore.setSchemaItem(row); navigationStore.setModal('editSchema')">
+						@click="
+							() => {
+								schemaStore.setSchemaItem(row)
+								navigationStore.setModal('editSchema')
+							}
+						">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton :title="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+					<NcActionButton
+						:title="
+							row.stats?.objects?.total > 0
+								? 'Cannot delete: objects are still attached'
+								: ''
+						"
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
-						@click="schemaStore.setSchemaItem(row); navigationStore.setDialog('deleteSchema')">
+						@click="
+							() => {
+								schemaStore.setSchemaItem(row)
+								navigationStore.setDialog('deleteSchema')
+							}
+						">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -151,8 +223,16 @@ export default {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
 				{ key: 'properties', label: t('openregister', 'Properties') },
-				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
-				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
+				{
+					key: 'created',
+					label: t('openregister', 'Created'),
+					sortable: true,
+				},
+				{
+					key: 'updated',
+					label: t('openregister', 'Updated'),
+					sortable: true,
+				},
 			]
 		},
 		/**
@@ -266,7 +346,8 @@ export default {
 		 * @return {string}
 		 */
 		getRowClass(schema) {
-			if (this.isManagedByExternalConfig(schema)) return 'viewTableRow--managed'
+			if (this.isManagedByExternalConfig(schema))
+				return 'viewTableRow--managed'
 			if (this.isManagedByLocalConfig(schema)) return 'viewTableRow--local'
 			if (this.hasObjects(schema)) return 'viewTableRow--in-use'
 			return ''
@@ -292,9 +373,13 @@ export default {
 		 */
 		getManagingConfiguration(schema) {
 			if (!schema || !schema.id) return null
-			return configurationStore.configurationList.find(
-				config => config.schemas && config.schemas.some(s => s.id === schema.id),
-			) || null
+			return (
+				configurationStore.configurationList.find(
+					(config) =>
+						config.schemas
+						&& config.schemas.some((s) => s.id === schema.id),
+				) || null
+			)
 		},
 
 		/**
@@ -307,7 +392,11 @@ export default {
 		isManagedByExternalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
-			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
+			return (
+				(config.sourceType
+					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
+				|| config.isLocal === false
+			)
 		},
 
 		/**
@@ -320,9 +409,12 @@ export default {
 		isManagedByLocalConfig(schema) {
 			const config = this.getManagingConfiguration(schema)
 			if (!config) return false
-			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
+			return (
+				config.sourceType === 'local'
+				|| config.sourceType === 'manual'
+				|| config.isLocal === true
+			)
 		},
-
 	},
 }
 </script>

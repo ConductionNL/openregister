@@ -32,156 +32,146 @@ use Psr\EventDispatcher\StoppableEventInterface;
  *
  * Implements StoppableEventInterface so hooks can reject updates.
  */
-class ObjectUpdatingEvent extends Event implements StoppableEventInterface
-{
+class ObjectUpdatingEvent extends Event implements StoppableEventInterface {
 
-    /**
-     * The updated object entity state
-     *
-     * @var ObjectEntity The object entity after update
-     */
-    private ObjectEntity $newObject;
+	/**
+	 * The updated object entity state
+	 *
+	 * @var ObjectEntity The object entity after update
+	 */
+	private ObjectEntity $newObject;
 
-    /**
-     * The previous object entity state
-     *
-     * @var ObjectEntity|null The object entity before update (null if not available)
-     */
-    private ?ObjectEntity $oldObject;
+	/**
+	 * The previous object entity state
+	 *
+	 * @var ObjectEntity|null The object entity before update (null if not available)
+	 */
+	private ?ObjectEntity $oldObject;
 
-    /**
-     * Whether event propagation has been stopped
-     *
-     * @var boolean
-     */
-    private bool $propagationStopped = false;
+	/**
+	 * Whether event propagation has been stopped
+	 *
+	 * @var boolean
+	 */
+	private bool $propagationStopped = false;
 
-    /**
-     * Errors from hooks that stopped propagation
-     *
-     * @var array<string, mixed>
-     */
-    private array $errors = [];
+	/**
+	 * Errors from hooks that stopped propagation
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $errors = [];
 
-    /**
-     * Modified data from hooks
-     *
-     * @var array<string, mixed>
-     */
-    private array $modifiedData = [];
+	/**
+	 * Modified data from hooks
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $modifiedData = [];
 
-    /**
-     * Constructor for ObjectUpdatingEvent
-     *
-     * @param ObjectEntity      $newObject The object entity after update
-     * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
-     *
-     * @return void
-     */
-    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
-    {
-        parent::__construct();
-        $this->newObject = $newObject;
-        $this->oldObject = $oldObject;
-    }//end __construct()
+	/**
+	 * Constructor for ObjectUpdatingEvent
+	 *
+	 * @param ObjectEntity $newObject The object entity after update
+	 * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
+	 *
+	 * @return void
+	 */
+	public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject = null) {
+		parent::__construct();
+		$this->newObject = $newObject;
+		$this->oldObject = $oldObject;
+	}//end __construct()
 
-    /**
-     * Get the updated object entity
-     *
-     * @return ObjectEntity The object entity after update
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getNewObject(): ObjectEntity
-    {
-        return $this->newObject;
-    }//end getNewObject()
+	/**
+	 * Get the updated object entity
+	 *
+	 * @return ObjectEntity The object entity after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewObject(): ObjectEntity {
+		return $this->newObject;
+	}//end getNewObject()
 
-    /**
-     * Get the original object entity
-     *
-     * @return ObjectEntity|null The object entity before update (null if not available)
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-     */
-    public function getOldObject(): ?ObjectEntity
-    {
-        return $this->oldObject;
-    }//end getOldObject()
+	/**
+	 * Get the original object entity
+	 *
+	 * @return ObjectEntity|null The object entity before update (null if not available)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getOldObject(): ?ObjectEntity {
+		return $this->oldObject;
+	}//end getOldObject()
 
-    /**
-     * Check if propagation has been stopped by a hook
-     *
-     * @return bool True if propagation is stopped
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function isPropagationStopped(): bool
-    {
-        return $this->propagationStopped;
-    }//end isPropagationStopped()
+	/**
+	 * Check if propagation has been stopped by a hook
+	 *
+	 * @return bool True if propagation is stopped
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function isPropagationStopped(): bool {
+		return $this->propagationStopped;
+	}//end isPropagationStopped()
 
-    /**
-     * Stop event propagation (used by hooks to reject update)
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function stopPropagation(): void
-    {
-        $this->propagationStopped = true;
-    }//end stopPropagation()
+	/**
+	 * Stop event propagation (used by hooks to reject update)
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function stopPropagation(): void {
+		$this->propagationStopped = true;
+	}//end stopPropagation()
 
-    /**
-     * Set errors from hooks
-     *
-     * @param array<string, mixed> $errors The error details
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function setErrors(array $errors): void
-    {
-        $this->errors = $errors;
-    }//end setErrors()
+	/**
+	 * Set errors from hooks
+	 *
+	 * @param array<string, mixed> $errors The error details
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function setErrors(array $errors): void {
+		$this->errors = $errors;
+	}//end setErrors()
 
-    /**
-     * Get errors from hooks
-     *
-     * @return array<string, mixed> The error details
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }//end getErrors()
+	/**
+	 * Get errors from hooks
+	 *
+	 * @return array<string, mixed> The error details
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function getErrors(): array {
+		return $this->errors;
+	}//end getErrors()
 
-    /**
-     * Set modified data from hooks
-     *
-     * @param array<string, mixed> $data The modified data
-     *
-     * @return void
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function setModifiedData(array $data): void
-    {
-        $this->modifiedData = $data;
-    }//end setModifiedData()
+	/**
+	 * Set modified data from hooks
+	 *
+	 * @param array<string, mixed> $data The modified data
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function setModifiedData(array $data): void {
+		$this->modifiedData = $data;
+	}//end setModifiedData()
 
-    /**
-     * Get modified data from hooks
-     *
-     * @return array<string, mixed> The modified data
-     *
-     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
-     */
-    public function getModifiedData(): array
-    {
-        return $this->modifiedData;
-    }//end getModifiedData()
+	/**
+	 * Get modified data from hooks
+	 *
+	 * @return array<string, mixed> The modified data
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
+	 */
+	public function getModifiedData(): array {
+		return $this->modifiedData;
+	}//end getModifiedData()
 }//end class

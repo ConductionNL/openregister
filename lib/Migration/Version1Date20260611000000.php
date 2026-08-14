@@ -57,54 +57,52 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the openregister_anonymisation_log table.
  */
-class Version1Date20260611000000 extends SimpleMigrationStep
-{
-    /**
-     * Change the database schema.
-     *
-     * @param IOutput                 $output        Output for the migration process
-     * @param Closure                 $schemaClosure The schema closure
-     * @param array<array-key, mixed> $options       Migration options
-     *
-     * @return ISchemaWrapper|null
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20260611000000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Output for the migration process
+	 * @param Closure $schemaClosure The schema closure
+	 * @param array<array-key, mixed> $options Migration options
+	 *
+	 * @return ISchemaWrapper|null
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_anonymisation_log') === true) {
-            return null;
-        }
+		if ($schema->hasTable('openregister_anonymisation_log') === true) {
+			return null;
+		}
 
-        $table = $schema->createTable('openregister_anonymisation_log');
+		$table = $schema->createTable('openregister_anonymisation_log');
 
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-        $table->addColumn('file_id', Types::BIGINT, ['notnull' => true]);
-        $table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36, 'default' => null]);
-        $table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
-        $table->addColumn('mime_type', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
-        $table->addColumn('engine', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
-        $table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'success']);
-        $table->addColumn('reason', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
-        $table->addColumn('sanitization', Types::TEXT, ['notnull' => false, 'default' => null]);
-        $table->addColumn('replacements', Types::INTEGER, ['notnull' => true, 'default' => 0]);
-        $table->addColumn('duration_ms', Types::INTEGER, ['notnull' => false, 'default' => null]);
-        $table->addColumn('created', Types::DATETIME, ['notnull' => true]);
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('file_id', Types::BIGINT, ['notnull' => true]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 36, 'default' => null]);
+		$table->addColumn('register_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('schema_id', Types::BIGINT, ['notnull' => false, 'unsigned' => true, 'default' => null]);
+		$table->addColumn('mime_type', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('engine', Types::STRING, ['notnull' => true, 'length' => 64, 'default' => '']);
+		$table->addColumn('status', Types::STRING, ['notnull' => true, 'length' => 32, 'default' => 'success']);
+		$table->addColumn('reason', Types::STRING, ['notnull' => false, 'length' => 64, 'default' => null]);
+		$table->addColumn('sanitization', Types::TEXT, ['notnull' => false, 'default' => null]);
+		$table->addColumn('replacements', Types::INTEGER, ['notnull' => true, 'default' => 0]);
+		$table->addColumn('duration_ms', Types::INTEGER, ['notnull' => false, 'default' => null]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['file_id'], 'idx_anonlog_file');
-        $table->addIndex(['object_uuid'], 'idx_anonlog_object');
-        $table->addIndex(['register_id'], 'idx_anonlog_register');
-        $table->addIndex(['schema_id'], 'idx_anonlog_schema');
-        $table->addIndex(['created'], 'idx_anonlog_created');
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['file_id'], 'idx_anonlog_file');
+		$table->addIndex(['object_uuid'], 'idx_anonlog_object');
+		$table->addIndex(['register_id'], 'idx_anonlog_register');
+		$table->addIndex(['schema_id'], 'idx_anonlog_schema');
+		$table->addIndex(['created'], 'idx_anonlog_created');
 
-        $output->info('Created openregister_anonymisation_log table');
+		$output->info('Created openregister_anonymisation_log table');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class
