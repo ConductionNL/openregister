@@ -18,6 +18,9 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\FileLock;
+use OCA\OpenRegister\Db\FileLockMapper;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -26,7 +29,9 @@ use Psr\Log\LoggerInterface;
  * Handles file locking operations.
  *
  * Provides advisory file-level locking with TTL expiry and admin force-unlock.
- * Lock metadata is stored as in-memory state (to be backed by DB columns in FileMapper).
+ * Lock metadata is persisted via FileLockMapper (table `openregister_file_locks`)
+ * so a lock survives past the PHP request/worker that created it, rather than
+ * living only in a per-request in-memory array.
  *
  * @category Service
  * @package  OCA\OpenRegister
@@ -46,23 +51,18 @@ class FileLockHandler
     private const DEFAULT_TTL_MINUTES = 30;
 
     /**
-     * In-memory lock storage keyed by file ID.
-     *
-     * @var array<int, array{lockedBy: string, lockedAt: DateTime, expiresAt: DateTime}>
-     */
-    private array $locks = [];
-
-    /**
      * Constructor for FileLockHandler.
      *
-     * @param IUserSession    $userSession  User session for current user context.
-     * @param IGroupManager   $groupManager Group manager for admin checks.
-     * @param LoggerInterface $logger       Logger for logging operations.
+     * @param IUserSession    $userSession    User session for current user context.
+     * @param IGroupManager   $groupManager   Group manager for admin checks.
+     * @param LoggerInterface $logger         Logger for logging operations.
+     * @param FileLockMapper  $fileLockMapper Mapper for persisting lock state.
      */
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FileLockMapper $fileLockMapper
     ) {
     }//end __construct()
 
@@ -125,7 +125,7 @@ class FileLockHandler
             throw new Exception('Only administrators can force-unlock files');
         }
 
-        unset($this->locks[$fileId]);
+        $this->fileLockMapper->deleteByFileId(fileId: $fileId);
 
         $this->logger->info(
             message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''),
@@ -156,20 +156,30 @@ class FileLockHandler
      *
      * @param int $fileId The file ID.
      *
-     * @return array|null Lock metadata or null.
+     * @return array{lockedBy: string, lockedAt: DateTime, expiresAt: DateTime}|null Lock metadata or null.
      */
     public function getLockInfo(int $fileId): ?array
     {
-        if (isset($this->locks[$fileId]) === false) {
+        try {
+            $lock = $this->fileLockMapper->findByFileId(fileId: $fileId);
+        } catch (MultipleObjectsReturnedException $e) {
+            // Should not happen given the unique index on file_id, but do not
+            // let a data inconsistency hard-fail every lock check.
+            $this->logger->warning(
+                message: "[FileLockHandler] Multiple lock rows found for file {$fileId}",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }
 
-        $lock = $this->locks[$fileId];
+        if ($lock === null) {
+            return null;
+        }
 
         // Check TTL expiry.
         $now = new DateTime();
-        if ($lock['expiresAt'] <= $now) {
-            unset($this->locks[$fileId]);
+        if ($lock->getLockExpires() <= $now) {
+            $this->fileLockMapper->deleteByFileId(fileId: $fileId);
             $this->logger->info(
                 message: "[FileLockHandler] Lock on file {$fileId} expired, auto-cleared",
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -177,7 +187,11 @@ class FileLockHandler
             return null;
         }
 
-        return $lock;
+        return [
+            'lockedBy'  => $lock->getLockedBy(),
+            'lockedAt'  => $lock->getLockedAt(),
+            'expiresAt' => $lock->getLockExpires(),
+        ];
     }//end getLockInfo()
 
     /**
@@ -205,7 +219,7 @@ class FileLockHandler
     }//end assertCanModify()
 
     /**
-     * Set a lock on a file.
+     * Set a lock on a file, creating or refreshing its lock row.
      *
      * @param int    $fileId     The file ID.
      * @param string $userId     The user ID.
@@ -218,11 +232,21 @@ class FileLockHandler
         $now     = new DateTime();
         $expires = (clone $now)->modify("+{$ttlMinutes} minutes");
 
-        $this->locks[$fileId] = [
-            'lockedBy'  => $userId,
-            'lockedAt'  => $now,
-            'expiresAt' => $expires,
-        ];
+        $lock = $this->fileLockMapper->findByFileId(fileId: $fileId);
+        if ($lock === null) {
+            $lock = new FileLock();
+            $lock->setFileId($fileId);
+        }
+
+        $lock->setLockedBy($userId);
+        $lock->setLockedAt($now);
+        $lock->setLockExpires($expires);
+
+        if ($lock->getId() === null) {
+            $this->fileLockMapper->insert($lock);
+        } else {
+            $this->fileLockMapper->update($lock);
+        }
 
         $this->logger->info(
             message: "[FileLockHandler] File {$fileId} locked by {$userId} until {$expires->format('c')}",
