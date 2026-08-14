@@ -35,6 +35,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -93,6 +94,7 @@ class ManifestController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	#[PublicPage]
+	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(string $appId): JSONResponse {
 		// Sanitise: appId must be a valid NC app slug (alphanumeric + underscore/hyphen).
 		if (preg_match('/^[a-z0-9_-]+$/i', $appId) !== 1) {

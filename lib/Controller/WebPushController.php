@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\WebPush\WebPushService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
@@ -177,6 +178,8 @@ class WebPushController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// Notification icons — fetched per-notification by the browser.
+	#[AnonRateLimit(limit: 240, period: 60)]
 	public function hexIcon(string $app): DataDisplayResponse {
 		$icon = $this->hexIconService->getIcon($app);
 		$response = new DataDisplayResponse($icon['body'], Http::STATUS_OK, ['Content-Type' => $icon['mime']]);
@@ -195,6 +198,7 @@ class WebPushController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 240, period: 60)]
 	public function hexBadge(string $app): DataDisplayResponse {
 		$badge = $this->hexIconService->getBadge($app);
 		$response = new DataDisplayResponse($badge['body'], Http::STATUS_OK, ['Content-Type' => $badge['mime']]);
