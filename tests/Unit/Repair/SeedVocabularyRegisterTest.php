@@ -216,12 +216,12 @@ class SeedVocabularyRegisterTest extends TestCase {
 	}//end testRegisterImportFailureDoesNotAbortFixtureSeeding()
 
 	/**
-	 * @param array<string, mixed> $draftNode A parsed skos:Concept node.
+	 * @param array<string, mixed> $conceptNode A parsed skos:Concept node.
 	 *
 	 * @return array<string, string>
 	 */
-	private function firstPrefLabel(array $draftNode): array {
-		$raw = ($draftNode['skos:prefLabel'] ?? []);
+	private function firstPrefLabel(array $conceptNode): array {
+		$raw = ($conceptNode['skos:prefLabel'] ?? []);
 		$map = [];
 		foreach ($raw as $literal) {
 			$map[($literal['@language'] ?? 'nl')] = $literal['@value'];

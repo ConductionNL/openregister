@@ -14,8 +14,8 @@
   </file>
   <file src="lib/BackgroundJob/DestructionCheckJob.php">
     <UnusedParam>
-      <code><![CDATA[$actieDate]]></code>
-      <code><![CDATA[$classificatie]]></code>
+      <code><![CDATA[$actionDate]]></code>
+      <code><![CDATA[$classification]]></code>
       <code><![CDATA[$listUuid]]></code>
       <code><![CDATA[$logger]]></code>
       <code><![CDATA[$logger]]></code>
