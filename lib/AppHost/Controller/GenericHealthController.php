@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\AppHost\Controller;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -75,6 +76,10 @@ class GenericHealthController extends Controller {
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
+	// Generous: a health endpoint is polled by monitoring on a short interval,
+	// and a ceiling that trips on a normal probe cadence turns the check itself
+	// into the outage it was meant to detect.
+	#[AnonRateLimit(limit: 240, period: 60)]
 	public function index(): JSONResponse {
 		$appId = $this->appName;
 		$manifest = $this->manifestLoader->load(appId: $appId);

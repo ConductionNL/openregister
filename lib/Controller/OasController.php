@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputer;
 use OCA\OpenRegister\Service\OasService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -88,6 +89,7 @@ class OasController extends Controller {
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function generateAll(): JSONResponse {
 		return $this->generateInternal(registerId: null);
 	}//end generateAll()
@@ -109,6 +111,7 @@ class OasController extends Controller {
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
 	public function generate(string $id): JSONResponse {
 		return $this->generateInternal(registerId: $id);
 	}//end generate()

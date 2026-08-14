@@ -33,6 +33,8 @@ use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -89,6 +91,8 @@ class GraphQLController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
 	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: 240, period: 60)]
 	public function execute(): JSONResponse {
 		$body = file_get_contents('php://input');
 		$data = json_decode($body, true);
