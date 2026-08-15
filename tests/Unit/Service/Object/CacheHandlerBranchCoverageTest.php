@@ -81,7 +81,8 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		?string $deleted = null,
 	): ObjectEntity&MockObject {
 		$mock = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getId', 'getUuid', 'getRegister', 'getSchema', 'getOrganisation', 'getName', 'getDeleted'])
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOrganisation'])
+			->addMethods(['getId', 'getName', 'getDeleted'])
 			->getMock();
 		$mock->method('getId')->willReturn($id);
 		$mock->method('getUuid')->willReturn($uuid);

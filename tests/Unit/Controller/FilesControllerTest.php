@@ -181,7 +181,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFileNotFoundReturns404(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner'])
+			->onlyMethods(['getOwner'])
 			->getMock();
 		$object->method('getOwner')->willReturn(null);
 		$this->setupObjectServiceMocks($object);
@@ -199,7 +199,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFileNotFoundFallbackViaOwner(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner', 'getUuid'])
+			->onlyMethods(['getOwner', 'getUuid'])
 			->getMock();
 		$object->method('getOwner')->willReturn('testuser');
 		$object->method('getUuid')->willReturn('object-uuid-1');
@@ -255,7 +255,7 @@ class FilesControllerTest extends TestCase {
 	 */
 	public function testShowFallbackRejectsSiblingObjectFile(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner', 'getUuid'])
+			->onlyMethods(['getOwner', 'getUuid'])
 			->getMock();
 		$object->method('getOwner')->willReturn('testuser');
 		$object->method('getUuid')->willReturn('object-uuid-A');
@@ -287,7 +287,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFileNotFoundFallbackViaSystemUser(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner', 'getUuid'])
+			->onlyMethods(['getOwner', 'getUuid'])
 			->getMock();
 		$object->method('getOwner')->willReturn(null);
 		$object->method('getUuid')->willReturn('sysobj-uuid');
@@ -333,7 +333,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFallbackUserFolderThrowsException(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner'])
+			->onlyMethods(['getOwner'])
 			->getMock();
 		$object->method('getOwner')->willReturn('baduser');
 		$this->setupObjectServiceMocks($object);
@@ -363,7 +363,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFallbackEmptyNodesReturnsNotFound(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner'])
+			->onlyMethods(['getOwner'])
 			->getMock();
 		$object->method('getOwner')->willReturn('testuser');
 		$this->setupObjectServiceMocks($object);
@@ -405,7 +405,7 @@ class FilesControllerTest extends TestCase {
 
 	public function testShowFallbackNodeNotFileInstance(): void {
 		$object = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getOwner'])
+			->onlyMethods(['getOwner'])
 			->getMock();
 		$object->method('getOwner')->willReturn('testuser');
 		$this->setupObjectServiceMocks($object);

@@ -159,16 +159,16 @@ class CacheHandlerCoverageTest extends TestCase {
 		$obj = $this->getMockBuilder(ObjectEntity::class)
 			->addMethods([
 				'getId',
-				'getUuid',
-				'getRegister',
-				'getSchema',
-				'getOrganisation',
 				'getName',
 				'getSlug',
 				'getUri',
 			])
 			->onlyMethods([
 				'getObject',
+				'getUuid',
+				'getRegister',
+				'getSchema',
+				'getOrganisation',
 			])
 			->getMock();
 

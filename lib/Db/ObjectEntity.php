@@ -57,6 +57,7 @@ use OCP\IUserSession;
  *
  * Adding fields? Check if they should trigger change detection or be database-managed.
  *
+ * @method string|null getUuid()
  * @method void setUuid(?string $uuid)
  * @method string|null getSlug()
  * @method void setSlug(?string $slug)
@@ -64,8 +65,11 @@ use OCP\IUserSession;
  * @method void setUri(?string $uri)
  * @method string|null getVersion()
  * @method void setVersion(?string $version)
+ * @method string|null getRegister()
  * @method void setRegister(?string $register)
+ * @method string|null getSchema()
  * @method void setSchema(?string $schema)
+ * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
  * @method void setFiles(?array $files)
@@ -73,6 +77,7 @@ use OCP\IUserSession;
  * @method void setRelations(?array $relations)
  * @method array|null getLocked()
  * @method void setLocked(?array $locked)
+ * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
@@ -80,6 +85,7 @@ use OCP\IUserSession;
  * @method void setFolder(?string $folder)
  * @method string|null getApplication()
  * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
  * @method array|null getValidation()
  * @method void setValidation(?array $validation)
@@ -779,8 +785,13 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * fatal error with the annotations alone. The same blind spot has bitten
 	 * this fleet before — `method_exists()` is false for every magic method.
 	 *
-	 * Declaring them also makes the entity honest to static analysis and to
-	 * readers, which the annotations only approximated.
+	 * Their `@method` annotations are deliberately LEFT IN PLACE above, even
+	 * though a declared method makes them redundant. Removing them is correct
+	 * and was tried here: it surfaces **214 phpstan findings** across the app,
+	 * because the annotations had been hiding the real return types from static
+	 * analysis. That is genuine debt and it deserves its own change with its own
+	 * baseline — openregister#2288 already set that precedent for lib/Db — not a
+	 * silent passenger on a PR about publishing a contract.
 	 *
 	 * @return string|null
 	 */

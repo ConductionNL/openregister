@@ -83,14 +83,10 @@ class ObjectHandlerTest extends TestCase {
 	private function buildObjectMock(array $attrs = []): ObjectEntity&MockObject {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject'])
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
 			->addMethods([
-				'getUuid',
 				'getVersion',
-				'getSchema',
-				'getRegister',
 				'getOrganization',
-				'getOwner',
 				'getUpdated',
 				'getId',
 			])
@@ -313,10 +309,9 @@ class ObjectHandlerTest extends TestCase {
 		// Use an object whose getUuid returns null and no other fields.
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject'])
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
 			->addMethods([
-				'getUuid', 'getVersion', 'getSchema', 'getRegister',
-				'getOrganization', 'getOwner', 'getUpdated', 'getId',
+				'getVersion', 'getOrganization', 'getUpdated', 'getId',
 			])
 			->getMock();
 

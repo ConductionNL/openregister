@@ -1768,7 +1768,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$existingObject = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['isLocked', 'getLockedBy'])
-			->addMethods(['getRegister', 'getSchema'])
+			->onlyMethods(['getRegister', 'getSchema'])
 			->getMock();
 		$existingObject->method('isLocked')->willReturn(true);
 		$existingObject->method('getLockedBy')->willReturn('other-user');
@@ -4515,7 +4515,7 @@ class ObjectsControllerTest extends TestCase {
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])
-			->addMethods(['getSchema', 'getRegister', 'getUuid'])
+			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
 			->getMock();
 		$objectEntity->method('getUuid')->willReturn('uuid-123');
 		$objectEntity->method('getRegister')->willReturn('1');
@@ -4593,7 +4593,7 @@ class ObjectsControllerTest extends TestCase {
 		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])
-			->addMethods(['getSchema', 'getRegister', 'getUuid'])
+			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
 			->getMock();
 		$objectEntity->method('getUuid')->willReturn('uuid-123');
 		$objectEntity->method('getRegister')->willReturn('1');
@@ -4626,7 +4626,7 @@ class ObjectsControllerTest extends TestCase {
 		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])
-			->addMethods(['getSchema', 'getRegister', 'getUuid'])
+			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
 			->getMock();
 		$objectEntity->method('getUuid')->willReturn('uuid-123');
 		$objectEntity->method('getRegister')->willReturn('1');
@@ -4656,7 +4656,7 @@ class ObjectsControllerTest extends TestCase {
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])
-			->addMethods(['getSchema', 'getRegister', 'getUuid'])
+			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
 			->getMock();
 		$objectEntity->method('getUuid')->willReturn('uuid-123');
 		$objectEntity->method('getRegister')->willReturn('1');

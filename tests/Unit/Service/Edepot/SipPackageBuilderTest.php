@@ -74,7 +74,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('obj-uuid-1');
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
@@ -106,7 +106,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('obj-uuid-1');
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
@@ -153,7 +153,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('obj-uuid-1');
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
@@ -219,7 +219,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('obj-uuid-1');
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
@@ -278,7 +278,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('obj-uuid-1');
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
@@ -303,7 +303,7 @@ class SipPackageBuilderTest extends TestCase {
 			$obj = $this->getMockBuilder(ObjectEntity::class)
 				->disableOriginalConstructor()
 				->onlyMethods(['jsonSerialize'])
-				->addMethods(['getUuid'])
+				->onlyMethods(['getUuid'])
 				->getMock();
 			$obj->method('getUuid')->willReturn("obj-uuid-{$i}");
 			$obj->method('jsonSerialize')->willReturn(['uuid' => "obj-uuid-{$i}"]);

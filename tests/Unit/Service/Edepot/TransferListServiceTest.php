@@ -228,7 +228,7 @@ class TransferListServiceTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid', 'getSchema', 'getRegister'])
+			->onlyMethods(['getUuid', 'getSchema', 'getRegister'])
 			->getMock();
 		$object->method('getUuid')->willReturn($uuid);
 		$object->method('getSchema')->willReturn($schema);

@@ -211,7 +211,8 @@ class ManifestServiceTest extends TestCase {
 		$profile = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['getObject'])
-			->addMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner', 'getCreated', 'getUpdated'])
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner'])
+			->addMethods(['getCreated', 'getUpdated'])
 			->getMock();
 		$profile->method('getObject')->willReturn([
 			'ncUserId' => 'charlie',
@@ -300,7 +301,8 @@ class ManifestServiceTest extends TestCase {
 		$profile = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['getObject'])
-			->addMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner', 'getCreated', 'getUpdated'])
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOwner'])
+			->addMethods(['getCreated', 'getUpdated'])
 			->getMock();
 		$profile->method('getObject')->willReturn(['ncUserId' => 'dave']);
 		$profile->method('getUuid')->willReturn('prof-uuid-2');
