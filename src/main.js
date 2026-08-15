@@ -79,9 +79,7 @@ const GENERIC_INTEGRATION_DESCRIPTORS = [
 try {
 	const registry = window?.OCA?.OpenRegister?.integrations
 	const pending = registry?.register
-		? GENERIC_INTEGRATION_DESCRIPTORS.filter(
-			(d) => !registry.has?.(d.id),
-		)
+		? GENERIC_INTEGRATION_DESCRIPTORS.filter((d) => !registry.has?.(d.id))
 		: []
 	if (pending.length > 0) {
 		import('@conduction/nextcloud-vue')
