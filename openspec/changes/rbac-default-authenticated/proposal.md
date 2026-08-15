@@ -29,24 +29,38 @@ and `userQualifiesForGroup()` returns `true` unconditionally for the group
 `public`. So "nobody said anything" and "everybody may read this" are the same
 state, and they are reached by writing nothing at all.
 
-**Measured across the fleet on 2026-08-15 — 321 of 368 declared schemas (87%)
-carry no authorization block:**
+**Measured across the fleet on 2026-08-15 — 504 of 571 declared schemas (88%)
+carry no authorization block, across 15 apps:**
 
-| app | schemas | with authorization | none |
-| --- | --- | --- | --- |
-| scholiq | 118 | 0 | **118** |
-| shillinq | 114 | 0 | **114** |
-| decidesk | 39 | 5 | **34** |
-| pipelinq | 27 | 1 | **26** |
-| docudesk | 21 | 1 | **20** |
-| portaliq | 9 | 0 | **9** |
-| opencatalogi | 10 | 10 | 0 |
-| softwarecatalog | 21 | 21 | 0 |
-| procest | 6 | 6 | 0 |
-| openregister | 3 | 3 | 0 |
+| app | marked | UNMARKED |
+| --- | --- | --- |
+| scholiq | 0 | **118** |
+| shillinq | 0 | **114** |
+| procest | 6 | **85** |
+| openconnector | 0 | **39** |
+| decidesk | 5 | **34** |
+| hermiq | 1 | **28** |
+| pipelinq | 1 | **26** |
+| docudesk | 1 | **20** |
+| openregister | 15 | **16** |
+| larpingapp | 1 | **9** |
+| portaliq | 0 | **9** |
+| petstore | 0 | **3** |
+| doriath · launchpad · nextcloud-app-template | 0 | **3** |
+| openbuild · opencatalogi · softwarecatalog | 37 | 0 |
+| **total** | **67** | **504** |
 
-Four apps did the work. Six did not — not out of carelessness, but because
-omission has never had a consequence.
+Three apps did the work. Fifteen did not — not out of carelessness, but
+because omission has never had a consequence.
+
+> **An earlier draft of this proposal said 321 of 368, across six apps.** That
+> survey globbed `lib/Settings/*register*.json | head -1` and read ONE register
+> file per app; openregister alone ships 14 and procest ships 2. The undercount
+> hid 183 schemas and nine entire apps, including openconnector (39) and hermiq
+> (28), which had appeared to have none at all. Corrected here and in
+> `docs/rbac-unmarked-schema-audit.md`. The error made the case look smaller,
+> never safer — but it is exactly the shape of mistake this change exists to
+> stop being invisible.
 
 This is not currently an open door on every surface: the HTTP object API was
 measured refusing anonymous callers outright (`total=0` anonymous vs `total=8`
@@ -58,8 +72,10 @@ authorization block.
 
 **And that path is about to get much wider.** `portal-public-search` puts
 anonymous full-text search over OR objects. Under today's default it would
-make those 321 unmarked schemas searchable by anyone, and the first sign would
-be a citizen finding somebody's payslip.
+make those 504 unmarked schemas searchable by anyone, and the first sign would
+be a citizen finding somebody's payslip. The audit's own first pass proposes
+**68 of them as restricted** — sessions, accounts, tokens, audit records,
+invoices, submissions — on keyword evidence alone.
 
 ## Decision
 
@@ -78,7 +94,7 @@ authorization → the new authenticated default. Only the final rung changes.
 - [ ] `openregister` — the default in the RBAC handlers, and the tests that
       pin it.
 - [ ] Every app with unmarked schemas — **no code change**, but a behaviour
-      change to audit. The six apps above are the population.
+      change to audit. The 15 apps above are the population.
 
 ## Design notes
 
@@ -90,7 +106,7 @@ is the entire argument.
 **It cannot be shipped silently.** An app whose public surface depends on an
 unmarked schema will go blank, and the operator needs to know why. The change
 logs, once per schema, the fact that it refused on the default — so the audit
-is a log grep rather than a survey of 368 schemas.
+is a log grep rather than a survey of 571 schemas.
 
 **A migration flag is deliberately NOT offered.** An `or.rbac.legacy_open=true`
 escape hatch would be set once, during an upgrade, by an operator who wanted
@@ -99,7 +115,7 @@ practice and the fleet would keep the fail-open semantics with extra steps.
 
 ## Risks
 
-- **Six apps have unmarked schemas and some serve public content from them.**
+- **Fifteen apps have unmarked schemas and some serve public content from them.**
   Auditing them is part of this change, not a follow-up. A count is not an
   audit: each app has to say which schemas it *intends* to be public.
 - **Anything reading OR anonymously in-process will change behaviour.** That

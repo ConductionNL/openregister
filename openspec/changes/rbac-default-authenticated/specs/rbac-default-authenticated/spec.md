@@ -80,7 +80,7 @@ whether it is intended to be public. The audit SHALL be recorded in the repo.
 
 #### Scenario: Every unmarked schema has a stated intent
 
-- **GIVEN** the 321 schemas measured on 2026-08-15 across six apps
+- **GIVEN** the 504 unmarked schemas measured on 2026-08-15 across 15 apps
 - **THEN** each is recorded as intended-public, intended-authenticated, or
   intended-restricted, with the intended-public ones given an explicit
   `public` rule BEFORE the default changes

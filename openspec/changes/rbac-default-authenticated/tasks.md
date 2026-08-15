@@ -6,7 +6,7 @@
 >
 > ORDER IS LOAD-BEARING. Task 1 audits, Task 2 marks the intended-public
 > schemas, and only then does Task 3 flip the default. Flipping first turns
-> six apps' public surfaces blank and calls it a security fix.
+> fifteen apps' public surfaces blank and calls it a security fix.
 
 ## Implementation Tasks
 
@@ -14,7 +14,7 @@
 - **spec_ref**: `openspec/changes/rbac-default-authenticated/specs/rbac-default-authenticated/spec.md#requirement-the-fleets-unmarked-schemas-must-be-audited-before-the-default-flips`
 - **files**: `docs/rbac-unmarked-schema-audit.md`
 - **acceptance_criteria**:
-  - Every schema with no authorization is LISTED BY NAME with an intent: public, authenticated, or restricted. 321 of them at the 2026-08-15 measurement, across scholiq (118), shillinq (114), decidesk (34), pipelinq (26), docudesk (20), portaliq (9)
+  - Every schema with no authorization is LISTED BY NAME with an intent: public, authenticated, or restricted. 504 of them at the 2026-08-15 measurement across 15 apps — scholiq 118, shillinq 114, procest 85, openconnector 39, decidesk 34, hermiq 28, pipelinq 26, docudesk 20, openregister 16, larpingapp 9, portaliq 9, and four more
   - The survey is re-run at review time rather than quoted — the number moves as apps ship schemas, and a stale denominator makes the audit read as complete when it is not
   - Each app's own maintainers state the intent for their schemas; this task collects and records, it does not decide on their behalf
 - [ ] Implement
