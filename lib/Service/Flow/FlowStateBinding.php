@@ -48,6 +48,8 @@ class FlowStateBinding {
 	 *
 	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
 	 * @param LoggerInterface $logger Records a state write that could not be saved.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(
 		private readonly FlowStateMapper $stateMapper,

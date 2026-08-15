@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -164,7 +165,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ObjectService
+class ObjectService implements ObjectServiceInterface
 {
 
     /**

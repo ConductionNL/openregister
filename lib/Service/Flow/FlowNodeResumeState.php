@@ -54,6 +54,8 @@ final class FlowNodeResumeState {
 	 *
 	 * @param FlowResumeState $parent The state holding every node's slot.
 	 * @param string $nodeId The node this view is scoped to.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(
 		private readonly FlowResumeState $parent,
@@ -71,6 +73,8 @@ final class FlowNodeResumeState {
 	 * continue from, which is the thing worth branching on.
 	 *
 	 * @return boolean True when a slot is held.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function isResuming(): bool {
 		return ($this->parent->read(nodeId: $this->nodeId) !== []);
@@ -83,6 +87,8 @@ final class FlowNodeResumeState {
 	 * @param mixed $default Returned when the key is not held.
 	 *
 	 * @return mixed The held value, or the default.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function get(string $key, mixed $default = null): mixed {
 		$values = $this->parent->read(nodeId: $this->nodeId);
@@ -96,6 +102,8 @@ final class FlowNodeResumeState {
 	 * @param string $key The value's key.
 	 *
 	 * @return boolean Whether the key is held.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function has(string $key): bool {
 		return array_key_exists($key, $this->parent->read(nodeId: $this->nodeId));
@@ -110,6 +118,8 @@ final class FlowNodeResumeState {
 	 *                     so an object handed in here comes back as an array.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function set(string $key, mixed $value): void {
 		$values = $this->parent->read(nodeId: $this->nodeId);
@@ -124,6 +134,8 @@ final class FlowNodeResumeState {
 	 * @param array<string, mixed> $values The values to merge in.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function merge(array $values): void {
 		$this->parent->write(
@@ -137,6 +149,8 @@ final class FlowNodeResumeState {
 	 * Everything this node holds.
 	 *
 	 * @return array<string, mixed> The stored values.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function all(): array {
 		return $this->parent->read(nodeId: $this->nodeId);
@@ -151,6 +165,8 @@ final class FlowNodeResumeState {
 	 * restarting a crawl whose cursor the source has invalidated, say.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function clear(): void {
 		$this->parent->forget(nodeId: $this->nodeId);

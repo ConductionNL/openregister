@@ -49,7 +49,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-resume-state/specs/flow-resume-state/spec.md
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
  */
 
 declare(strict_types=1);
@@ -102,6 +102,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
@@ -114,6 +116,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * The step type.
 	 *
 	 * @return string The id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function getId(): string {
 		return 'openregister.await-signal';
@@ -123,6 +127,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Palette name.
 	 *
 	 * @return string The display name.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Wait for an answer');
@@ -132,6 +138,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Palette description.
 	 *
 	 * @return string The description.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t('Pause until someone approves, rejects, or another system reports back.');
@@ -141,6 +149,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Palette icon.
 	 *
 	 * @return string The icon URL.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/confirm.svg');
@@ -152,6 +162,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param int $scope The scope constant.
 	 *
 	 * @return boolean Whether it is available.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -161,6 +173,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * The config vocabulary of an await step.
 	 *
 	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function configKeys(): array {
 		return ['question', 'assignee', 'signalKey', 'heartbeatMinutes', 'failOnReject'];
@@ -170,6 +184,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * The fields this node is edited through.
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function configForm(): array {
 		return [
@@ -215,6 +231,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When no question is set.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['question'] ?? '')) === '') {
@@ -236,6 +254,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @throws FlowSuspension While no decision has arrived.
 	 * @throws FlowStop When rejected and the step asked to fail on rejection.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		$signal = $this->decisionFrom(context: $context);
@@ -298,6 +318,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $context Run-level metadata.
 	 *
 	 * @return array<string, mixed>|null The decision payload, or null while unanswered.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function decisionFrom(array $context): ?array {
 		$signal = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
@@ -328,6 +350,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $context Run-level metadata.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function recordRequest(array $config, array $context): void {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
@@ -355,6 +379,8 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $config The step configuration.
 	 *
 	 * @return DateTime The next heartbeat.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function heartbeatAt(array $config): DateTime {
 		$minutes = (int)($config['heartbeatMinutes'] ?? self::DEFAULT_HEARTBEAT_MINUTES);

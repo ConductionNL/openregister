@@ -27,6 +27,7 @@ use DateInterval;
 use DateTime;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OC\Files\Node\File;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
@@ -143,7 +144,7 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class ObjectEntity extends Entity implements JsonSerializable {
+class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
 
 	/**
 	 * Unique identifier for the object.
@@ -772,6 +773,75 @@ class ObjectEntity extends Entity implements JsonSerializable {
 
 		return $objectData;
 	}//end getObject()
+
+	/**
+	 * The object's UUID.
+	 *
+	 * 🔑 EXPLICIT ON PURPOSE — an interface cannot be satisfied by `__call`.
+	 *
+	 * These five getters were magic (`@method` annotations over Nextcloud's
+	 * Entity `__call`). Magic methods do not implement an interface: PHP checks
+	 * DECLARED methods, so `implements ObjectEntityInterface` would have been a
+	 * fatal error with the annotations alone. The same blind spot has bitten
+	 * this fleet before — `method_exists()` is false for every magic method.
+	 *
+	 * Their `@method` annotations are deliberately LEFT IN PLACE above, even
+	 * though a declared method makes them redundant. Removing them is correct
+	 * and was tried here: it surfaces **214 phpstan findings** across the app,
+	 * because the annotations had been hiding the real return types from static
+	 * analysis. That is genuine debt and it deserves its own change with its own
+	 * baseline — openregister#2288 already set that precedent for lib/Db — not a
+	 * silent passenger on a PR about publishing a contract.
+	 *
+	 * `@method array|null getObject()` in particular reads like an obvious
+	 * deletion — the method has been explicitly declared for a long time, and
+	 * psalm reports it as LessSpecificImplementedReturnType. Deleting it was
+	 * tried, and it is a trap twice over: psalm's finding is ALREADY in the
+	 * baseline, so removing the line trades a suppressed warning for an
+	 * `UnusedBaselineEntry` error, and it re-opens the same phpstan array-shape
+	 * findings the other five shadows are keeping closed. Leave it.
+	 *
+	 * @return string|null
+	 */
+	public function getUuid(): ?string {
+		return $this->uuid;
+	}//end getUuid()
+
+	/**
+	 * The register this object belongs to.
+	 *
+	 * @return string|null
+	 */
+	public function getRegister(): ?string {
+		return $this->register;
+	}//end getRegister()
+
+	/**
+	 * The schema this object conforms to.
+	 *
+	 * @return string|null
+	 */
+	public function getSchema(): ?string {
+		return $this->schema;
+	}//end getSchema()
+
+	/**
+	 * The owning organisation.
+	 *
+	 * @return string|null
+	 */
+	public function getOrganisation(): ?string {
+		return $this->organisation;
+	}//end getOrganisation()
+
+	/**
+	 * The owner's user id.
+	 *
+	 * @return string|null
+	 */
+	public function getOwner(): ?string {
+		return $this->owner;
+	}//end getOwner()
 
 	/**
 	 * Get array of field names that are JSON type
