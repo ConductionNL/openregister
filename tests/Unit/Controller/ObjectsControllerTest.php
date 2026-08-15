@@ -4562,6 +4562,40 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}
 
+	/**
+	 * logs() returns 200 when the schema matches, on a REAL entity.
+	 *
+	 * The four schema-shape tests above are skipped because they reach `logs()`
+	 * through a mock returning an array or a stdClass, which `ObjectEntity` — a
+	 * `?string` field — can never produce (openregister#2501). Their 404
+	 * siblings already use a real entity; this is the matching 200 case, so the
+	 * REACHABLE branch of the same comparison is covered by something that
+	 * cannot go stale the way an impossible mock did.
+	 *
+	 * @return void
+	 */
+	public function testLogsReturns200WhenSchemaMatchesAsString(): void {
+		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$objectEntity->setUuid('uuid-123');
+		$objectEntity->setRegister('1');
+		$objectEntity->setSchema('2');
+		$objectEntity->setObject(['title' => 'Test']);
+
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
+
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('getSchema')->willReturn(1);
+		$this->objectService->method('getRegister')->willReturn(1);
+		$this->objectService->method('find')->willReturn($objectEntity);
+		$this->objectService->method('getLogs')->willReturn([]);
+
+		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
+
+		$this->assertSame(200, $result->getStatus());
+	}//end testLogsReturns200WhenSchemaMatchesAsString()
+
 	public function testLogsReturns404WhenSchemaDoesNotMatch(): void {
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
