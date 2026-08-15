@@ -112,6 +112,22 @@ use OCP\IUser;
  *
  * Widening the contract is a deliberate act and should follow a measurement,
  * not a convenience. Narrowing it is a BC break for every consuming app.
+ *
+ * ## Suppressions
+ *
+ * The same three PHPMD rules `ObjectService` itself already suppresses, for the
+ * same reasons, because THIS FILE CANNOT DIFFER FROM THE SIGNATURES IT
+ * DESCRIBES. Splitting `saveObject()` into flag-free methods here would simply
+ * make the interface no longer implementable.
+ *
+ * `$_rbac` and `$_multitenancy` in particular are not incidental flags: ADR-022
+ * makes them the authorisation boundary, and gate-7 reads `_rbac: false` as a
+ * consumer declaring it has taken that responsibility on. They belong in the
+ * contract precisely because they are load-bearing.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   RBAC and multitenancy flags — see above.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors ObjectService::saveObject().
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)  25 methods, measured — see Scope above.
  */
 interface ObjectServiceInterface {
 

@@ -69,7 +69,6 @@ use OCP\IUserSession;
  * @method void setRegister(?string $register)
  * @method string|null getSchema()
  * @method void setSchema(?string $schema)
- * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
  * @method void setFiles(?array $files)

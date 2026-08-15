@@ -46,7 +46,13 @@ interface ObjectEntityInterface extends JsonSerializable {
 	/**
 	 * The stored object payload.
 	 *
-	 * @return array<string,mixed>
+	 * `array-key`, not `string`. The implementation returns
+	 * `array{id: …, ...<array-key, mixed>}` — the payload's own keys come from
+	 * stored JSON and are not guaranteed to be strings. Declaring `string` here
+	 * makes the interface MORE specific than the class implementing it, which
+	 * psalm rejects (LessSpecificImplementedReturnType).
+	 *
+	 * @return array<array-key, mixed>
 	 */
 	public function getObject(): array;
 
