@@ -63,6 +63,18 @@ use Symfony\Component\Uid\Uuid;
 class AuditTrailMapper extends QBMapper {
 
 	/**
+	 * Largest a single `changed` property value may be, in bytes.
+	 *
+	 * 64 KB is far above any real field-level change and far below the 62 MB
+	 * single entry measured on the dev instance. An audit trail records THAT a
+	 * property changed and by whom; storing a multi-megabyte copy of the value
+	 * is a backup of the object filed under a different name.
+	 *
+	 * @var integer
+	 */
+	private const MAX_CHANGED_VALUE_BYTES = 65536;
+
+	/**
 	 * Request-scoped import-job tag.
 	 *
 	 * Set by `ImportService` at the start of a bulk import via
@@ -526,7 +538,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setObject($objectEntity->getId());
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
-		$auditTrail->setChanged($changed);
+		$auditTrail->setChanged($this->capChangedPayload(changed: $changed));
 
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
@@ -1741,6 +1753,50 @@ class AuditTrailMapper extends QBMapper {
 	 * @psalm-return   bool
 	 * @phpstan-return bool
 	 */
+	/**
+	 * Bound what a single audit entry's `changed` payload may hold.
+	 *
+	 * MEASURED 2026-08-14: `oc_openregister_audit_trails` was 3,404 MB — 28% of
+	 * a 12 GB database — and ONE row's `changed` payload was **61,910,691 bytes**.
+	 * A 62 MB audit entry is a copy of an object, not a record of a change, and
+	 * it is charged to every backup, every replica and every TOAST read.
+	 *
+	 * A per-property value over the threshold is replaced by a descriptor
+	 * recording what was elided and how large it was, so the entry still says
+	 * THAT the property changed and roughly how much — only the bytes go. The
+	 * property list, the action, the actor and the hash chain are untouched,
+	 * which is what an audit trail is actually for.
+	 *
+	 * ⚠️ Retention alone does not solve this: {@see clearLogs()} only prunes rows
+	 * that have EXPIRED, so an unexpired 62 MB row sits there for its full
+	 * retention period regardless.
+	 *
+	 * @param array|null $changed The changed-properties map.
+	 *
+	 * @return array|null The map with oversized values replaced by descriptors.
+	 */
+	private function capChangedPayload(?array $changed): ?array {
+		if ($changed === null) {
+			return null;
+		}
+
+		foreach ($changed as $property => $value) {
+			$encoded = json_encode($value);
+			if ($encoded === false || strlen($encoded) <= self::MAX_CHANGED_VALUE_BYTES) {
+				continue;
+			}
+
+			$changed[$property] = [
+				'elided' => true,
+				'reason' => 'value exceeded the ' . self::MAX_CHANGED_VALUE_BYTES
+					. '-byte audit payload ceiling',
+				'bytes' => strlen($encoded),
+			];
+		}
+
+		return $changed;
+	}//end capChangedPayload()
+
 	public function clearLogs(): bool {
 		try {
 			// Get the query builder for database operations.
