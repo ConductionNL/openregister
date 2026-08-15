@@ -168,12 +168,17 @@ let useLocalLib =
 	&& process.env.USE_LOCAL_LIB === 'true'
 
 // The sibling checkout is validated against THIS app's own declared range.
-// The previous test was `/^2\./` on the comment's premise that "the Vue 3 line is
-// 2.x; the Vue 2 line is 1.0.0-beta.*". That premise expired: the Vue 2 line is
-// now 2.0.5 and the Vue 3 line is 2.2.0-vue3.16 — BOTH major 2 — so the test
-// matched the Vue 2 checkout and passed it straight through, which is precisely
-// what it existed to prevent. Compiling those sources into this Vue 3 app yields
-// a bundle that builds cleanly and renders nothing.
+// The previous test was `/^2\./`, on the comment's premise that a bad sibling
+// would be `1.0.0-beta.*`. The sibling today is 2.0.5 while this app declares
+// 2.2.0-vue3.16 — both match `/^2\./` — so the test waved through a version the
+// app never asked for.
+//
+// The failure that skew produces is not obvious from the version alone. Building
+// against the sibling also pulls packages out of the SIBLING's node_modules, and
+// a stale vue-demi shim there (its postinstall picks v2/v2.7/v3 and does not
+// re-run on `npm install`) yields errors of the form
+//   export 'default' (imported as 'Vue') was not found in 'vue'
+// — a Vue-2-shaped failure from a library that is itself Vue 3.
 //
 // Fail CLOSED: if the check cannot run, the sibling is refused. A guard that
 // degrades to "allow" is not a guard.
