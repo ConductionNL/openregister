@@ -40,6 +40,28 @@ use Psr\Log\LoggerInterface;
  * @package Unit\Controller
  */
 class ObjectsControllerTest extends TestCase {
+
+	/**
+	 * Why the four logs() schema-shape tests are skipped.
+	 *
+	 * They mock `ObjectEntity::getSchema()` returning an array or a stdClass, to
+	 * cover the `is_array()` / `is_object()` branches in ObjectsController::logs().
+	 * `schema` is an `addType(…, 'string')` field backed by a `?string` property,
+	 * so a real entity CANNOT return either shape — the tests' own comments said
+	 * as much ("real entity is typed ?string") while still asserting it.
+	 *
+	 * That was possible only while the getter was magic and therefore untyped.
+	 * Declaring it for ObjectEntityInterface (ADR-084) makes PHPUnit enforce the
+	 * return type, and the mock becomes impossible to build.
+	 *
+	 * Which means those production branches are UNREACHABLE, and these tests
+	 * were covering dead code — coverage that read as safety. Removing the
+	 * branches is a behavioural change and belongs in its own PR with its own
+	 * reasoning, so the tests are skipped rather than deleted, and the finding
+	 * is recorded here where whoever picks it up will find it. openregister#2501
+	 */
+	private const SCHEMA_SHAPE_SKIP = 'logs() array/object schema branches are unreachable: ObjectEntity::getSchema() is ?string. Tracked in openregister#2501.';
+
 	private ObjectsController $controller;
 	private IRequest&MockObject $request;
 	private IAppConfig&MockObject $config;
@@ -1772,8 +1794,10 @@ class ObjectsControllerTest extends TestCase {
 			->getMock();
 		$existingObject->method('isLocked')->willReturn(true);
 		$existingObject->method('getLockedBy')->willReturn('other-user');
-		$existingObject->method('getRegister')->willReturn(1);
-		$existingObject->method('getSchema')->willReturn(2);
+		// STRINGS: `register` and `schema` are `addType(…, 'string')` fields
+		// backed by `?string` properties.
+		$existingObject->method('getRegister')->willReturn('1');
+		$existingObject->method('getSchema')->willReturn('2');
 
 		$this->request->method('getParams')->willReturn(['title' => 'Updated']);
 		$this->request->method('getHeader')->willReturn('application/json');
@@ -4512,6 +4536,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaBySlug(): void {
+		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])
@@ -4586,6 +4611,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObject(): void {
+		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
 		$schemaObj->slug = 'test-schema';
@@ -4620,6 +4646,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObjectById(): void {
+		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
 
@@ -4653,6 +4680,7 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsArrayById(): void {
+		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
 			->onlyMethods(['getObject'])

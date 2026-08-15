@@ -174,9 +174,14 @@ class CacheHandlerCoverageTest extends TestCase {
 
 		$obj->method('getId')->willReturn($id);
 		$obj->method('getUuid')->willReturn($uuid);
-		$obj->method('getRegister')->willReturn(1);
-		$obj->method('getSchema')->willReturn(2);
-		$obj->method('getOrganisation')->willReturn(1);
+		// STRINGS, not ints. `register`, `schema` and `organisation` are
+		// `addType(…, 'string')` fields backed by `?string` properties, so an
+		// int is a value the entity cannot hold. The ints went unnoticed while
+		// these getters were magic and therefore untyped; declaring them for
+		// ObjectEntityInterface (ADR-084) is what surfaced it.
+		$obj->method('getRegister')->willReturn('1');
+		$obj->method('getSchema')->willReturn('2');
+		$obj->method('getOrganisation')->willReturn('1');
 		$obj->method('getName')->willReturn('Test Object');
 		$obj->method('getObject')->willReturn(['name' => 'Test']);
 		$obj->method('getSlug')->willReturn('test-object');

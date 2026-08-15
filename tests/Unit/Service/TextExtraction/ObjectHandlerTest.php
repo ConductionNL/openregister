@@ -94,8 +94,13 @@ class ObjectHandlerTest extends TestCase {
 
 		$object->method('getUuid')->willReturn($attrs['uuid'] ?? 'test-uuid');
 		$object->method('getVersion')->willReturn($attrs['version'] ?? '1.0.0');
-		$object->method('getSchema')->willReturn($attrs['schema'] ?? null);
-		$object->method('getRegister')->willReturn($attrs['register'] ?? null);
+		// Cast to string: `schema` and `register` are `addType(…, 'string')`
+		// fields backed by `?string` properties, so the int literals these
+		// tests pass are values the entity cannot hold. Casting here keeps the
+		// call sites readable while making the double honest — the mismatch was
+		// invisible for as long as these getters were magic and untyped.
+		$object->method('getSchema')->willReturn(isset($attrs['schema']) ? (string)$attrs['schema'] : null);
+		$object->method('getRegister')->willReturn(isset($attrs['register']) ? (string)$attrs['register'] : null);
 		$object->method('getObject')->willReturn($attrs['object'] ?? ['name' => 'Test Object']);
 		$object->method('getOrganization')->willReturn($attrs['organization'] ?? null);
 		$object->method('getOwner')->willReturn($attrs['owner'] ?? null);
