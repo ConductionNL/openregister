@@ -120,6 +120,42 @@ That is the shape the other nine are being asked to reach.
   rather than assumed — an unexplained gap between two instruments is where
   one of them is wrong.
 
+### `#[PublicPage]` DOES NOT MEAN "intended anonymous" — there is a THIRD population
+
+Reading the endpoints behind the 24 rows splits them into two opposite kinds,
+and the split does not follow the attribute:
+
+**Genuinely anonymous — decidesk (8).** `OriController` serves ORI 1.4
+JSON-LD at `/api/ori/v1/{resource}` for *council information transparency*.
+`Meeting`, `AgendaItem`, `Decision`, `Minutes`, `Vote` and `Report` are the
+standard's published entities — the same open-government family as the WOO
+publication schemas. `Person` and `Membership` are council members and their
+party membership, which ORI also publishes; they still deserve an explicit
+maintainer nod, because "public by standard" and "public by accident" look
+identical in a register file.
+
+**NOT anonymous — procest (8).** Its public controllers are the ZGW statutory
+APIs: ZRC (Zaken), BRC (Besluiten), AC (Autorisaties), Subsidieregister. Every
+method opens with `$this->zgwService->validateJwtAuth($this->request)`. They
+are `#[PublicPage]` because they carry **no Nextcloud session**, not because
+they are open — they authenticate themselves, per the standard, with a JWT.
+
+That distinction is load-bearing in both directions:
+
+* Marking `case`, `decision`, `document`, `result` and friends `public` would
+  hand statutory case data to genuinely anonymous callers. It is the WRONG fix
+  and it would be filed as a security improvement.
+* **The flip breaks them anyway.** A JWT-authenticated request has no NC user,
+  so an unmarked schema resolved as "authenticated" refuses it. The endpoint
+  is authorized and still gets nothing.
+
+So Task 2's population is not two-valued. There is a third kind — *an endpoint
+that authenticates itself and then reads OpenRegister with no Nextcloud
+identity* — and neither `public` nor `authenticated` describes it. Task 3
+cannot land safely until that kind has an answer (a service/machine identity
+that OR's RBAC recognises, or an explicit rule those schemas can carry).
+Deciding it per-app, twelve times, is how twelve different answers happen.
+
 ## Before the default flips
 
 Every row marked public must carry an explicit `"group": "public"` read rule
