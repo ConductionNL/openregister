@@ -75,7 +75,8 @@ class LegalHoldServiceTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getRetention', 'setRetention', 'getUuid'])
+			->onlyMethods(['getUuid'])
+			->addMethods(['getRetention', 'setRetention'])
 			->getMock();
 		$object->method('getRetention')->willReturn($retention);
 		$object->method('getUuid')->willReturn('test-uuid-123');

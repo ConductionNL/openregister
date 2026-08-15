@@ -83,14 +83,10 @@ class ObjectHandlerTest extends TestCase {
 	private function buildObjectMock(array $attrs = []): ObjectEntity&MockObject {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject'])
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
 			->addMethods([
-				'getUuid',
 				'getVersion',
-				'getSchema',
-				'getRegister',
 				'getOrganization',
-				'getOwner',
 				'getUpdated',
 				'getId',
 			])
@@ -98,8 +94,13 @@ class ObjectHandlerTest extends TestCase {
 
 		$object->method('getUuid')->willReturn($attrs['uuid'] ?? 'test-uuid');
 		$object->method('getVersion')->willReturn($attrs['version'] ?? '1.0.0');
-		$object->method('getSchema')->willReturn($attrs['schema'] ?? null);
-		$object->method('getRegister')->willReturn($attrs['register'] ?? null);
+		// Cast to string: `schema` and `register` are `addType(…, 'string')`
+		// fields backed by `?string` properties, so the int literals these
+		// tests pass are values the entity cannot hold. Casting here keeps the
+		// call sites readable while making the double honest — the mismatch was
+		// invisible for as long as these getters were magic and untyped.
+		$object->method('getSchema')->willReturn(isset($attrs['schema']) ? (string)$attrs['schema'] : null);
+		$object->method('getRegister')->willReturn(isset($attrs['register']) ? (string)$attrs['register'] : null);
 		$object->method('getObject')->willReturn($attrs['object'] ?? ['name' => 'Test Object']);
 		$object->method('getOrganization')->willReturn($attrs['organization'] ?? null);
 		$object->method('getOwner')->willReturn($attrs['owner'] ?? null);
@@ -301,8 +302,12 @@ class ObjectHandlerTest extends TestCase {
 		$result = $this->handler->extractText(1, []);
 
 		$this->assertSame('meta-uuid', $result['metadata']['uuid']);
-		$this->assertSame(5, $result['metadata']['schema_id']);
-		$this->assertSame(3, $result['metadata']['register_id']);
+		// STRINGS. The handler passes getSchema()/getRegister() straight through
+		// and both are `?string`, so a string is what production actually emits
+		// here. The int expectation was only ever satisfiable because the mock
+		// returned an int the entity could not have held.
+		$this->assertSame('5', $result['metadata']['schema_id']);
+		$this->assertSame('3', $result['metadata']['register_id']);
 		$this->assertSame('1.2.3', $result['metadata']['version']);
 	}//end testExtractTextMetadataContainsObjectFields()
 
@@ -313,10 +318,9 @@ class ObjectHandlerTest extends TestCase {
 		// Use an object whose getUuid returns null and no other fields.
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['getObject'])
+			->onlyMethods(['getObject', 'getUuid', 'getSchema', 'getRegister', 'getOwner'])
 			->addMethods([
-				'getUuid', 'getVersion', 'getSchema', 'getRegister',
-				'getOrganization', 'getOwner', 'getUpdated', 'getId',
+				'getVersion', 'getOrganization', 'getUpdated', 'getId',
 			])
 			->getMock();
 
@@ -429,8 +433,10 @@ class ObjectHandlerTest extends TestCase {
 		}
 
 		$this->assertSame('source-uuid', $meta['uuid']);
-		$this->assertSame(2, $meta['schema']);
-		$this->assertSame(1, $meta['register']);
+		// STRINGS, for the same reason as above: `schema` and `register` are
+		// `?string` on the entity and the handler does not cast them.
+		$this->assertSame('2', $meta['schema']);
+		$this->assertSame('1', $meta['register']);
 		$this->assertSame('1.0.0', $meta['version']);
 		$this->assertSame('user1', $meta['owner']);
 		$this->assertSame($updated, $meta['updated']);

@@ -24,6 +24,11 @@
         <exclude>
             <directory>lib/Migration/</directory>
             <file>lib/AppInfo/Application.php</file>
+            <!-- Published contracts (ADR-084) — no executable body, so no test
+                 can cover them. Kept in step with phpunit.xml; a coverage scope
+                 that differs between the two configs measures two things and
+                 reports one number. -->
+            <directory>lib/Contract/</directory>
         </exclude>
     </source>
 

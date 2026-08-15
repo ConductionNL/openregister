@@ -657,8 +657,6 @@ class CacheHandler {
 				$schemaId = (int)$object->getSchema();
 			}
 
-			$object->getOrganisation();
-			// Track organization for future use.
 			// Clear individual object from cache.
 			$this->clearObjectFromCache(object: $object);
 

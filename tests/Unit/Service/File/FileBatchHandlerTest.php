@@ -46,7 +46,7 @@ class FileBatchHandlerTest extends TestCase {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid'])
+			->onlyMethods(['getUuid'])
 			->getMock();
 		$object->method('getUuid')->willReturn('abc-123');
 		return $object;

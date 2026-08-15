@@ -74,14 +74,19 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	private function createObjectMock(
 		int $id,
 		string $uuid,
-		?int $register = null,
-		?int $schema = null,
+		// STRING, not int: `register` and `schema` are `addType(…, 'string')`
+		// fields backed by `?string` properties, so an int is a value the
+		// entity cannot hold. It went unnoticed while these getters were magic
+		// and therefore untyped.
+		?string $register = null,
+		?string $schema = null,
 		?string $organisation = null,
 		?string $name = null,
 		?string $deleted = null,
 	): ObjectEntity&MockObject {
 		$mock = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getId', 'getUuid', 'getRegister', 'getSchema', 'getOrganisation', 'getName', 'getDeleted'])
+			->onlyMethods(['getUuid', 'getRegister', 'getSchema', 'getOrganisation'])
+			->addMethods(['getId', 'getName', 'getDeleted'])
 			->getMock();
 		$mock->method('getId')->willReturn($id);
 		$mock->method('getUuid')->willReturn($uuid);
@@ -265,13 +270,13 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testInvalidateForObjectChangeCreate(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', 'Test Object');
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', 'Test Object');
 		$this->handler->invalidateForObjectChange($object, 'create');
 		$this->assertTrue(true);
 	}
 
 	public function testInvalidateForObjectChangeDelete(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', 10, 20, 'org-1', null);
+		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', null);
 		$this->nameDistCache->method('remove')
 			->willThrowException(new \Exception('Remove failed'));
 

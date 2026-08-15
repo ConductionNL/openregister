@@ -259,7 +259,8 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testBulkLoadRelationshipsBatchedIndexesByUuidAndId(): void {
 		$obj = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getUuid', 'getId'])
+			->onlyMethods(['getUuid'])
+			->addMethods(['getId'])
 			->onlyMethods(['getObject'])
 			->getMock();
 		$obj->method('getUuid')->willReturn('test-uuid-123');

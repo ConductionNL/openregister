@@ -1794,7 +1794,8 @@ class RelationHandlerTest extends TestCase {
 	public function testGetUsesHandlesNullRelations(): void {
 		// getRelations/getUuid are magic methods on ObjectEntity -- use addMethods.
 		$entity = $this->getMockBuilder(ObjectEntity::class)
-			->addMethods(['getRelations', 'getUuid'])
+			->onlyMethods(['getUuid'])
+			->addMethods(['getRelations'])
 			->getMock();
 		$entity->method('getRelations')->willReturn(null);
 		$entity->method('getUuid')->willReturn('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');

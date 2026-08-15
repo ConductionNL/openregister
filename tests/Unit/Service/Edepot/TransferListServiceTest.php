@@ -70,8 +70,8 @@ class TransferListServiceTest extends TestCase {
 	 */
 	public function testCreateTransferList(): void {
 		$objects = [
-			$this->createObjectEntity('uuid-1', 1, 1),
-			$this->createObjectEntity('uuid-2', 1, 1),
+			$this->createObjectEntity('uuid-1', '1', '1'),
+			$this->createObjectEntity('uuid-2', '1', '1'),
 		];
 
 		$result = $this->service->createTransferList($objects);
@@ -224,11 +224,14 @@ class TransferListServiceTest extends TestCase {
 	 *
 	 * @return ObjectEntity&MockObject The mock object.
 	 */
-	private function createObjectEntity(string $uuid, ?int $schema = null, ?int $register = null): ObjectEntity&MockObject {
+	// STRING, not int: `schema` and `register` are `addType(…, 'string')` fields
+	// backed by `?string` properties, so an int is a value the entity cannot
+	// hold. It went unnoticed while these getters were magic and untyped.
+	private function createObjectEntity(string $uuid, ?string $schema = null, ?string $register = null): ObjectEntity&MockObject {
 		$object = $this->getMockBuilder(ObjectEntity::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['jsonSerialize'])
-			->addMethods(['getUuid', 'getSchema', 'getRegister'])
+			->onlyMethods(['getUuid', 'getSchema', 'getRegister'])
 			->getMock();
 		$object->method('getUuid')->willReturn($uuid);
 		$object->method('getSchema')->willReturn($schema);
