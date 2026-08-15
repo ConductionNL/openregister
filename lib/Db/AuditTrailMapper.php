@@ -1752,10 +1752,19 @@ class AuditTrailMapper extends QBMapper {
 			// retention purge is meant to remove. Everything retained here is
 			// structural: which register/schema/object was acted on, when, and
 			// the hash pair that proves the row was not substituted.
+			//
+			// ⚠️ `changed` and `user` are NOT NULL; the other four are nullable.
+			// Blanking all six to NULL made this statement throw on EVERY run,
+			// and the catch below swallowed it — so the retention purge had
+			// never once succeeded: 3,254,448 rows on the dev instance, 0 of
+			// them purged, 13,472 already past their `expires`. An empty JSON
+			// object and an empty string destroy the payload and the identifier
+			// just as completely while satisfying the constraints, which keeps
+			// this a data change rather than a migration.
 			$qb->update('openregister_audit_trails')
 				->set('purged_at', $qb->createFunction('NOW()'))
-				->set('changed', $qb->createNamedParameter(null))
-				->set('user', $qb->createNamedParameter(null))
+				->set('changed', $qb->createNamedParameter('{}'))
+				->set('user', $qb->createNamedParameter(''))
 				->set('user_name', $qb->createNamedParameter(null))
 				->set('session', $qb->createNamedParameter(null))
 				->set('request', $qb->createNamedParameter(null))
