@@ -152,9 +152,32 @@ That distinction is load-bearing in both directions:
 So Task 2's population is not two-valued. There is a third kind — *an endpoint
 that authenticates itself and then reads OpenRegister with no Nextcloud
 identity* — and neither `public` nor `authenticated` describes it. Task 3
-cannot land safely until that kind has an answer (a service/machine identity
-that OR's RBAC recognises, or an explicit rule those schemas can carry).
-Deciding it per-app, twelve times, is how twelve different answers happen.
+cannot land safely until that kind has an answer, and deciding it per-app,
+twelve times, is how twelve different answers happen.
+
+### That answer now exists: ADR-085
+
+**hydra ADR-085 — "Externally-Authenticated API Surface Belongs to
+OpenConnector"** (amends ADR-081 §2) resolves this, and it resolves it by
+removing the population rather than by giving it an RBAC value:
+
+> An HTTP surface that authenticates its caller by any scheme other than a
+> Nextcloud session belongs to OpenConnector. The logic behind it becomes an
+> OpenRegister flow the endpoint triggers; what stays in the app is a
+> register, a schema and configuration — no controller.
+
+Under it, an OpenConnector endpoint resolves a real identity *before* touching
+OpenRegister. Every schema is then `public` or `authenticated` and nothing
+falls between them, which is exactly the precondition Task 3 needs.
+
+The deciding argument in that ADR is not code duplication — it is that ZGW,
+StUF, DSO, Notificaties, iWmo/iJw and Berichtenbox are **national** standards.
+A leaf app that implements one only works in one country.
+
+⚠️ **Sequencing, therefore:** Task 3 waits on ADR-085's population having a
+migration path, not merely on ADR-085 being accepted. The fleet-wide census
+behind it — 44 controllers, 210 public methods across 10 apps — is in
+`hydra/scripts/adr-085-self-auth-endpoint-census.py`.
 
 ## Before the default flips
 
