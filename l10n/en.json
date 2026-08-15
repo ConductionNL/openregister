@@ -2687,7 +2687,9 @@
         "_%n entry has no hash yet_::_%n entries have no hash yet_": [
             "%n entry has no hash yet",
             "%n entries have no hash yet"
-        ]
+        ],
+        "KvK Company Register": "KvK Company Register",
+        "OpenCorporates": "OpenCorporates"
     },
     "plurals": {
         "{count} email": [
