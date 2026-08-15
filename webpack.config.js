@@ -160,30 +160,45 @@ webpackConfig.resolve.extensions = [
 // present, so a local build can reproduce what CI and production build — they have
 // no sibling, so they always resolve the npm dist.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
+// ⚠️ USE_LOCAL_LIB is opt-IN (ADR-090). Building against a developer's working
+// checkout is the wrong default for a build that can ship.
 let useLocalLib =
 	fs.existsSync(localLib)
 	&& !process.env.OR_SKIP_LOCAL_NCVUE
-	&& process.env.USE_LOCAL_LIB !== 'false'
+	&& process.env.USE_LOCAL_LIB === 'true'
 
-// ⚠️ USE_LOCAL_LIB is opt-OUT, and the shared `apps-extra/nextcloud-vue`
-// checkout sits on the Vue 2 (`beta.*`) line. Silently compiling Vue 2 library
-// sources into this Vue 3 app produces a bundle that builds cleanly and renders
-// nothing, so refuse rather than trust the default: read the sibling checkout's
-// own package.json and abort when its major does not match ours.
+// The sibling checkout is validated against THIS app's own declared range.
+// The previous test was `/^2\./` on the comment's premise that "the Vue 3 line is
+// 2.x; the Vue 2 line is 1.0.0-beta.*". That premise expired: the Vue 2 line is
+// now 2.0.5 and the Vue 3 line is 2.2.0-vue3.16 — BOTH major 2 — so the test
+// matched the Vue 2 checkout and passed it straight through, which is precisely
+// what it existed to prevent. Compiling those sources into this Vue 3 app yields
+// a bundle that builds cleanly and renders nothing.
+//
+// Fail CLOSED: if the check cannot run, the sibling is refused. A guard that
+// degrades to "allow" is not a guard.
 if (useLocalLib) {
 	const siblingPkgPath = path.resolve(__dirname, '../nextcloud-vue/package.json')
-	let siblingVersion = null
+	let siblingVersion = 'unreadable'
+	let satisfied = false
 	try {
+		// eslint-disable-next-line n/no-extraneous-require
+		const semver = require('semver')
+		const required =
+			require('./package.json').dependencies['@conduction/nextcloud-vue']
 		siblingVersion = JSON.parse(fs.readFileSync(siblingPkgPath, 'utf8')).version
+		satisfied = semver.satisfies(siblingVersion, required, {
+			includePrerelease: true,
+		})
 	} catch (e) {
-		siblingVersion = null
+		satisfied = false
 	}
-	// The Vue 3 line is `2.x`; the Vue 2 line is `1.0.0-beta.*`.
-	if (siblingVersion === null || !/^2\./.test(siblingVersion)) {
+
+	if (!satisfied) {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[openregister/webpack] Ignoring the sibling @conduction/nextcloud-vue checkout: '
-				+ `version ${siblingVersion ?? 'unknown'} is not on the Vue 3 (2.x) line. `
+				+ `version ${siblingVersion} does not satisfy this app's declared range. `
 				+ 'Building against the installed npm package instead.',
 		)
 		useLocalLib = false
