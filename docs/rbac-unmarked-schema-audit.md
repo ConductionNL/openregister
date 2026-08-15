@@ -70,12 +70,126 @@ Note that `ContactDetail` and `contact` were flagged only because their names
 begin with "contact"; both plainly hold personal data and are the clearest
 example of why this column needs a human.
 
+## A second instrument: which schemas does a PUBLIC endpoint actually name?
+
+The keyword pass above proposes four public candidates out of 504. That number
+is not trustworthy on its own, because it asks what a schema is *called*
+rather than who *reads* it. So this asks the other question: for each app,
+which schema names appear in a controller file that declares `#[PublicPage]`
+or `@PublicPage`?
+
+**Measured 2026-08-15: 24 unmarked schemas across 9 apps are named by a public
+endpoint.** These — not the four keyword hits — are the rows that go blank the
+moment the default flips.
+
+| app | unmarked schemas named by a public endpoint |
+| --- | --- |
+| decidesk | `AgendaItem` `Decision` `Meeting` `Membership` `Minutes` `Person` `Report` `Vote` |
+| procest | `case` `caseType` `decision` `document` `location` `result` `resultType` `statusType` |
+| scholiq | `Credential` `Order` |
+| openconnector | `endpoint` `notificaties_abonnement` |
+| hermiq | `Message` |
+| shillinq | `Location` |
+| petstore | `pet` |
+| launchpad | `Dashboard` |
+
+Note what this does NOT say. It does not say these 24 *should* be public — it
+says a public endpoint mentions them, so each one is either an intended public
+surface or an existing hole, and both readings demand a decision. `Person` and
+`Credential` are on the list; if those are genuinely reachable anonymously
+today, the flip is a fix rather than an outage, and that is worth knowing
+before rather than after.
+
+Three apps whose public surfaces are already fully declared — opencatalogi
+(`catalog`, `page`), softwarecatalog (`module`, `service`, `usage`) and
+pipelinq (`lead`) — appear in the measurement with **zero** unmarked hits.
+That is the shape the other nine are being asked to reach.
+
+### This number is a FLOOR, and here is exactly where it is blind
+
+* **It sees one file.** A controller that reaches a schema through a service
+  two frames down, or names it in a variable, is invisible. procest is the
+  proof that cross-register reads are real: its public endpoints name
+  `agendapunt`, `raadsdocument` and `vergadering`, which live in
+  `ori_register.json`, not in `procest_register.json`.
+* **An app can read a register it does not ship.** Only registers found under
+  each app's own `lib/Settings/` were considered.
+* **It matches case-insensitively but not by plural.** shillinq's public
+  controllers quote `'slots'`, `'services'` and `'appointment'`; its register
+  declares no such schemas, so those strings are something else. Checked
+  rather than assumed — an unexplained gap between two instruments is where
+  one of them is wrong.
+
+### `#[PublicPage]` DOES NOT MEAN "intended anonymous" — there is a THIRD population
+
+Reading the endpoints behind the 24 rows splits them into two opposite kinds,
+and the split does not follow the attribute:
+
+**Genuinely anonymous — decidesk (8).** `OriController` serves ORI 1.4
+JSON-LD at `/api/ori/v1/{resource}` for *council information transparency*.
+`Meeting`, `AgendaItem`, `Decision`, `Minutes`, `Vote` and `Report` are the
+standard's published entities — the same open-government family as the WOO
+publication schemas. `Person` and `Membership` are council members and their
+party membership, which ORI also publishes; they still deserve an explicit
+maintainer nod, because "public by standard" and "public by accident" look
+identical in a register file.
+
+**NOT anonymous — procest (8).** Its public controllers are the ZGW statutory
+APIs: ZRC (Zaken), BRC (Besluiten), AC (Autorisaties), Subsidieregister. Every
+method opens with `$this->zgwService->validateJwtAuth($this->request)`. They
+are `#[PublicPage]` because they carry **no Nextcloud session**, not because
+they are open — they authenticate themselves, per the standard, with a JWT.
+
+That distinction is load-bearing in both directions:
+
+* Marking `case`, `decision`, `document`, `result` and friends `public` would
+  hand statutory case data to genuinely anonymous callers. It is the WRONG fix
+  and it would be filed as a security improvement.
+* **The flip breaks them anyway.** A JWT-authenticated request has no NC user,
+  so an unmarked schema resolved as "authenticated" refuses it. The endpoint
+  is authorized and still gets nothing.
+
+So Task 2's population is not two-valued. There is a third kind — *an endpoint
+that authenticates itself and then reads OpenRegister with no Nextcloud
+identity* — and neither `public` nor `authenticated` describes it. Task 3
+cannot land safely until that kind has an answer, and deciding it per-app,
+twelve times, is how twelve different answers happen.
+
+### That answer now exists: ADR-085
+
+**hydra ADR-085 — "Externally-Authenticated API Surface Belongs to
+OpenConnector"** (amends ADR-081 §2) resolves this, and it resolves it by
+removing the population rather than by giving it an RBAC value:
+
+> An HTTP surface that authenticates its caller by any scheme other than a
+> Nextcloud session belongs to OpenConnector. The logic behind it becomes an
+> OpenRegister flow the endpoint triggers; what stays in the app is a
+> register, a schema and configuration — no controller.
+
+Under it, an OpenConnector endpoint resolves a real identity *before* touching
+OpenRegister. Every schema is then `public` or `authenticated` and nothing
+falls between them, which is exactly the precondition Task 3 needs.
+
+The deciding argument in that ADR is not code duplication — it is that ZGW,
+StUF, DSO, Notificaties, iWmo/iJw and Berichtenbox are **national** standards.
+A leaf app that implements one only works in one country.
+
+⚠️ **Sequencing, therefore:** Task 3 waits on ADR-085's population having a
+migration path, not merely on ADR-085 being accepted. The fleet-wide census
+behind it — 44 controllers, 210 public methods across 10 apps — is in
+`hydra/scripts/adr-085-self-auth-endpoint-census.py`.
+
 ## Before the default flips
 
 Every row marked public must carry an explicit `"group": "public"` read rule
 **first**. Flipping the default before that turns those surfaces blank — which
 is the safe direction, but it is an outage, and calling an outage a security
 fix is how the next one gets reverted.
+
+The 24 rows above are the concrete work-list for that "first". Task 2 is not
+done when 504 rows have an opinion typed next to them; it is done when those
+24 have either an explicit `public` rule or a maintainer saying the endpoint
+was never meant to reach them.
 
 ---
 
