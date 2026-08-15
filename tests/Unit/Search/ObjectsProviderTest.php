@@ -639,4 +639,98 @@ class ObjectsProviderTest extends TestCase {
 		$result = $this->provider->search($user, $query);
 		$this->assertSame('uuid-fallback', $result->jsonSerialize()['entries'][0]->jsonSerialize()['title']);
 	}
+
+	/**
+	 * The change itself: the provider must ASK for file text.
+	 *
+	 * Without `_content_search` the pipeline searches object metadata only, so
+	 * a term living solely inside an attached PDF finds nothing while
+	 * OpenRegister holds it indexed. Asserted on the flag reaching the
+	 * pipeline, because that is the whole of the change — the fan-out itself
+	 * is ContentSearchHandler's tested behaviour, not the provider's.
+	 */
+	public function testSearchAsksThePipelineForAttachedFileText(): void {
+		$user = $this->createMock(IUser::class);
+		$query = $this->mockQuery(['term' => 'aanbesteding']);
+
+		$this->objectService->expects($this->once())
+			->method('searchObjectsPaginated')
+			->with(
+				$this->callback(function (array $q) {
+					return ($q['_content_search'] ?? null) === true;
+				}),
+				$this->isTrue(),
+				$this->isTrue()
+			)
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->provider->search($user, $query);
+	}
+
+	/**
+	 * Widening the MATCH must not widen the ENTITLEMENT.
+	 *
+	 * `_content_search` is only safe because the chunk fan-out receives the
+	 * same `_rbac` / `_multitenancy` flags as the metadata arm — a chunk hit
+	 * on an object the caller may not read is filtered by the same pipeline.
+	 * If a later edit ever turned content search on while relaxing either
+	 * flag, file text would become a side channel around object visibility.
+	 * That is the one way this change could become a disclosure, so it is
+	 * pinned rather than reasoned about.
+	 */
+	public function testContentSearchNeverTravelsWithRelaxedGuards(): void {
+		$user = $this->createMock(IUser::class);
+		$query = $this->mockQuery(['term' => 'aanbesteding']);
+
+		$seen = [];
+		$this->objectService->method('searchObjectsPaginated')
+			->willReturnCallback(
+				function (array $q, bool $rbac = true, bool $multitenancy = true) use (&$seen) {
+					$seen = ['content' => ($q['_content_search'] ?? null), 'rbac' => $rbac, 'mt' => $multitenancy];
+					return ['results' => [], 'total' => 0];
+				}
+			);
+
+		$this->provider->search($user, $query);
+
+		$this->assertTrue($seen['content'], 'content search must be on');
+		$this->assertTrue($seen['rbac'], 'and RBAC must still be on alongside it');
+		$this->assertTrue($seen['mt'], 'and so must multitenancy');
+	}
+
+	/**
+	 * A schema opted out of search stays opted out with content search on.
+	 *
+	 * The provider narrows by `searchable = true`. Content search widens the
+	 * match, and must not reach around that narrowing — otherwise a schema
+	 * excluded from search would still surface through the text of its
+	 * attached files.
+	 */
+	public function testAnOptedOutSchemaIsNotReachableViaFileText(): void {
+		// A provider of its own, because setUp() stubs findNonSearchableIds()
+		// to [] and a second stub on the same mock does not replace the first.
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findNonSearchableIds')->willReturn([42]);
+		$schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->never())->method('searchObjectsPaginated');
+
+		$provider = new ObjectsProvider(
+			$this->l10n,
+			$this->urlGenerator,
+			$objectService,
+			$this->logger,
+			$this->deepLinkRegistry,
+			$schemaMapper,
+			$this->createMock(RegisterMapper::class)
+		);
+
+		$result = $provider->search(
+			$this->createMock(IUser::class),
+			$this->mockQuery(['term' => 'aanbesteding', 'schema' => '42'])
+		);
+
+		$this->assertSame([], $result->jsonSerialize()['entries']);
+	}
 }
