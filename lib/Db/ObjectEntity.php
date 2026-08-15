@@ -906,7 +906,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		// Hydrate the entity with the metadata fields.
 		$this->hydrate(object: $metaDataFields);
-		$this->setObject(object: $object);
+		$this->setObject($object);
 
 		// Return the hydrated entity.
 		return $this;
@@ -1133,7 +1133,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			$newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
 
 			$this->setLocked(
-				locked: [
+				[
 					'user' => $userId,
 					'process' => ($process ?? $lock['process']),
 					'created' => $lock['created'],
@@ -1149,7 +1149,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$expiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
 
 		$this->setLocked(
-			locked: [
+			[
 				'user' => $userId,
 				'process' => $process,
 				'created' => $now->format('c'),
@@ -1193,7 +1193,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			throw new Exception('Object is locked by another user');
 		}
 
-		$this->setLocked(locked: null);
+		$this->setLocked(null);
 		return true;
 	}//end unlock()
 
@@ -1284,7 +1284,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$purgeDate->add(new DateInterval('P31D'));
 
 		$this->setDeleted(
-			deleted: [
+			[
 				'deleted' => $now->format('c'),
 				'deletedBy' => $userId,
 				'deletedReason' => $deletedReason,
