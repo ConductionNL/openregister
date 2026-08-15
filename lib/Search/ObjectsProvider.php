@@ -54,11 +54,17 @@ use Psr\Log\LoggerInterface;
  * RBAC scoping, tenant isolation, the published predicate, and row/field
  * level security are enforced inside the OR search pipeline, by always
  * delegating to ObjectService::searchObjectsPaginated(query, _rbac: true,
- * _multitenancy: true). The provider only narrows the result set further
- * (never widens it): it constrains the query to schemas flagged
- * `searchable = true`. Excerpts are derived exclusively from the rendered
- * object the user is allowed to read, so field-level redaction applies to
- * excerpt content for free. See
+ * _multitenancy: true). The provider narrows the result set by schema
+ * (`searchable = true`), and widens the MATCH — never the entitlement — with
+ * `_content_search: true`, which brings in objects whose attached-file chunk
+ * text matches. That fan-out receives the same `_rbac`/`_multitenancy` flags,
+ * so a chunk hit is filtered exactly like a metadata hit.
+ *
+ * Excerpts are derived exclusively from the rendered object the user is
+ * allowed to read, so field-level redaction applies to excerpt content for
+ * free. THIS IS LOAD-BEARING NOW THAT FILE TEXT IS IN SCOPE: an excerpt built
+ * from chunk text could surface a value the reader is redacted out of, while
+ * the object itself stayed correctly filtered. See
  * openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -428,6 +434,26 @@ class ObjectsProvider implements IFilteringProvider {
 				'has_search' => empty($search) === false,
 			]
 		);
+
+		// Widen the match to text OpenRegister has already extracted from
+		// attached files (ZKN-CONTENT-001). Without this the provider searches
+		// object METADATA only, so a term that appears solely inside an
+		// attached PDF finds nothing — while OR holds that text indexed in
+		// `openregister_chunks` and `ChunkMapper::searchByKeyword()` can find
+		// it. That gap was measured 2026-08-15: this file contained zero chunk
+		// references.
+		//
+		// It is safe to turn on HERE, and only because the fan-out is not a
+		// second query path around the guard rails: `QueryHandler` forwards
+		// `_rbac` and `_multitenancy` into `augmentWithChunkMatches()`, so a
+		// chunk hit on an object the caller may not read is filtered by the
+		// same pipeline that filters a metadata hit. The provider still
+		// applies no second access filter of its own.
+		//
+		// A chunk is a fragment of a file; the row appended is the OWNING
+		// OBJECT, which is the thing with a deep-link URL, an icon and a
+		// title. A bare chunk would not be navigable.
+		$searchQuery['_content_search'] = true;
 
 		// Delegate to the OR search pipeline. RBAC, tenant isolation, the
 		// published predicate, and soft-delete exclusion are ALL enforced
