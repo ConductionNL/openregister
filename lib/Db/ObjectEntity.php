@@ -69,6 +69,7 @@ use OCP\IUserSession;
  * @method void setRegister(?string $register)
  * @method string|null getSchema()
  * @method void setSchema(?string $schema)
+ * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
  * @method void setFiles(?array $files)
@@ -791,6 +792,14 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * analysis. That is genuine debt and it deserves its own change with its own
 	 * baseline — openregister#2288 already set that precedent for lib/Db — not a
 	 * silent passenger on a PR about publishing a contract.
+	 *
+	 * `@method array|null getObject()` in particular reads like an obvious
+	 * deletion — the method has been explicitly declared for a long time, and
+	 * psalm reports it as LessSpecificImplementedReturnType. Deleting it was
+	 * tried, and it is a trap twice over: psalm's finding is ALREADY in the
+	 * baseline, so removing the line trades a suppressed warning for an
+	 * `UnusedBaselineEntry` error, and it re-opens the same phpstan array-shape
+	 * findings the other five shadows are keeping closed. Leave it.
 	 *
 	 * @return string|null
 	 */
