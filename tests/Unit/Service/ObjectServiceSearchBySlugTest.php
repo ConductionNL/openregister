@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
@@ -153,6 +154,11 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		$register = new Register();
 		$register->setId(7);
 		$register->setSlug('openbuild');
+		// The register MUST carry the schema. This used to be left unset, and the
+		// test passed only because resolution fell through to the global
+		// SchemaMapper::find() — i.e. the assertion was green *because of* the
+		// defect. openspec/changes/register-scoped-slug-resolution.
+		$register->setSchemas([42]);
 
 		$schema = new Schema();
 		$schema->setId(42);
@@ -166,9 +172,12 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 
 		$this->schemaMapper
 			->expects($this->once())
-			->method('find')
-			->with($this->equalTo('application'))
+			->method('findBySlugInIds')
+			->with($this->equalTo('application'), $this->equalTo([42]))
 			->willReturn($schema);
+
+		// The global resolver MUST NOT be reached: the caller named a register.
+		$this->schemaMapper->expects($this->never())->method('find');
 
 		$this->queryHandler
 			->expects($this->once())
@@ -224,15 +233,18 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 	}//end testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown()
 
 	/**
-	 * REQ: Unknown schema slug (with valid register) throws DoesNotExistException
-	 * identifying the schema slug — proves the exception chain rewraps the
-	 * underlying mapper exception so the caller can distinguish register-side
-	 * vs schema-side resolution failures.
+	 * REQ: A schema slug the named register does not carry is REFUSED — never
+	 * resolved globally.
+	 *
+	 * This test previously asserted the opposite: that resolution fell through to
+	 * `SchemaMapper::find()`, whose failure was rewrapped. That fallback is the
+	 * defect. openspec/changes/register-scoped-slug-resolution.
 	 */
-	public function testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown(): void {
+	public function testSearchObjectsBySlugRefusesSchemaSlugOutsideTheRegister(): void {
 		$register = new Register();
 		$register->setId(7);
 		$register->setSlug('openbuild');
+		$register->setSchemas([42]);
 
 		$this->registerMapper
 			->expects($this->once())
@@ -241,15 +253,25 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 
 		$this->schemaMapper
 			->expects($this->once())
-			->method('find')
-			->with($this->equalTo('ghost-schema'))
-			->willThrowException(new DoesNotExistException('not found'));
+			->method('findBySlugInIds')
+			->with($this->equalTo('ghost-schema'), $this->equalTo([42]))
+			->willReturn(null);
 
+		// Three same-slug schemas exist elsewhere. The count reaches the message so
+		// the operator is not told "your slug is wrong" when copies demonstrably exist.
+		$this->schemaMapper
+			->expects($this->once())
+			->method('countBySlug')
+			->with($this->equalTo('ghost-schema'))
+			->willReturn(3);
+
+		// The global resolver MUST NOT be consulted.
+		$this->schemaMapper->expects($this->never())->method('find');
 		$this->queryHandler->expects($this->never())->method('searchObjects');
 
-		$this->expectException(DoesNotExistException::class);
+		$this->expectException(SchemaNotInRegisterException::class);
 		$this->expectExceptionMessageMatches(
-			'/searchObjectsBySlug: schema slug not found.*ghost-schema/'
+			'/"ghost-schema" is not carried by register "openbuild" \(id 7\).*3 schema\(s\) elsewhere/s'
 		);
 
 		$this->service->searchObjectsBySlug(
@@ -258,6 +280,53 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 			[]
 		);
 
-	}//end testSearchObjectsBySlugThrowsWhenSchemaSlugUnknown()
+	}//end testSearchObjectsBySlugRefusesSchemaSlugOutsideTheRegister()
+
+	/**
+	 * REQ: A register carrying NO schemas refuses every slug, with a message that
+	 * names the repair command.
+	 *
+	 * This is the shape that bit DocuDesk: register `document` (id 6) had an empty
+	 * schemas list while nine same-slug schemas existed, so the old fallback
+	 * resolved to a schema with no table under that register — returning an EMPTY
+	 * result set indistinguishable from "this register holds no objects".
+	 */
+	public function testSearchObjectsBySlugRefusesWhenRegisterCarriesNoSchemas(): void {
+		$register = new Register();
+		$register->setId(6);
+		$register->setSlug('document');
+		$register->setSchemas([]);
+
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($register);
+
+		$this->schemaMapper
+			->expects($this->once())
+			->method('findBySlugInIds')
+			->with($this->equalTo('anonymizationLink'), $this->equalTo([]))
+			->willReturn(null);
+
+		$this->schemaMapper
+			->expects($this->once())
+			->method('countBySlug')
+			->willReturn(9);
+
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->queryHandler->expects($this->never())->method('searchObjects');
+
+		$this->expectException(SchemaNotInRegisterException::class);
+		$this->expectExceptionMessageMatches(
+			'/carries no schemas at all.*9 schema\(s\) elsewhere.*relink-schemas/s'
+		);
+
+		$this->service->searchObjectsBySlug(
+			'document',
+			'anonymizationLink',
+			[]
+		);
+
+	}//end testSearchObjectsBySlugRefusesWhenRegisterCarriesNoSchemas()
 
 }//end class

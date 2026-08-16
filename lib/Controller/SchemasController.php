@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -322,26 +323,46 @@ class SchemasController extends Controller {
 	private function resolveSchema(int|string $id): Schema {
 		$registerParam = $this->request->getParam(key: 'register', default: null);
 
-		// Register-scoped first. findBySlugInIds() returns null for a numeric id, a
-		// uuid, or a slug the register does not carry, so every one of those cases
-		// falls through to the global lookup untouched.
+		// Register-scoped resolution. A numeric id is resolved globally below;
+		// scoping applies to slugs only.
+		//
+		// The two failures below are deliberately NOT handled together, and the
+		// separation is load-bearing. An *unresolvable register parameter* is not a
+		// reason to fail the schema read — the caller gets what they would have got
+		// without the parameter. But a register that resolves and does not carry the
+		// slug is a refusal, because naming a register makes it a boundary.
+		//
+		// Both used to sit inside one try/catch. Throwing the refusal from in there
+		// would have been caught by that same catch and logged as "scope could not
+		// be applied", restoring the exact fallback this change removes — a silent
+		// no-op that looks like a fix.
 		if ($registerParam !== null && $registerParam !== '' && is_string($id) === true && is_numeric($id) === false) {
+			$register = null;
 			try {
 				$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
-				$scoped = $this->schemaMapper->findBySlugInIds(
+			} catch (Exception $e) {
+				$this->logger->debug(
+					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
+					['register' => $registerParam, 'schema' => $id]
+				);
+			}
+
+			if ($register !== null) {
+				$registerSchemaIds = ($register->getSchemas() ?? []);
+				$scoped            = $this->schemaMapper->findBySlugInIds(
 					slug: $id,
-					schemaIds: ($register->getSchemas() ?? [])
+					schemaIds: $registerSchemaIds
 				);
 				if ($scoped !== null) {
 					return $scoped;
 				}
-			} catch (Exception $e) {
-				// An unresolvable register is not a reason to fail the schema read —
-				// fall through to the global lookup, which is what the caller would
-				// have got without the parameter at all.
-				$this->logger->debug(
-					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
-					['register' => $registerParam, 'schema' => $id]
+
+				throw new SchemaNotInRegisterException(
+					schemaSlug: $id,
+					registerId: $register->getId(),
+					registerSlug: $register->getSlug(),
+					candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $id),
+					registerListEmpty: ($registerSchemaIds === [])
 				);
 			}
 		}
