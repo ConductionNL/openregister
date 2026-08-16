@@ -116,8 +116,12 @@ class RegisterSchemaLinkageRepairService {
 
 		$report = [];
 		foreach ($this->registerMapper->findAll() as $register) {
+			// No null check on the id: Entity declares `@method int getId()`, and
+			// findAll() only ever yields persisted rows, so phpstan is right that
+			// `$id === null` can never be true here. The scope filter is the part
+			// that does work.
 			$id = $register->getId();
-			if ($id === null || ($registerId !== null && $id !== $registerId)) {
+			if ($registerId !== null && $id !== $registerId) {
 				continue;
 			}
 

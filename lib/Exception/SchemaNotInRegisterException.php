@@ -94,6 +94,14 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $registerListEmpty selects
+	 * between two operator-facing sentences — "this register has no schemas at
+	 * all" versus "this register has schemas but not this slug" — and the
+	 * caller is the only place that can tell those apart. The alternatives are
+	 * worse: two named constructors for one exception, or composing the message
+	 * at every throw site, which is how the two sentences drift apart. The flag
+	 * reaches exactly one call, composeMessage(), and never changes state.
+	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function __construct(
