@@ -165,6 +165,35 @@ export default defineConfig({
 		'crud/register-crud.spec.ts',
 		'crud/schema-crud.spec.ts',
 		'crud/object-crud.spec.ts',
+		// Admitted 2026-08-16, in a SEPARATE commit so the three files above keep
+		// an isolated CI verdict.
+		//
+		// ⚠️ THIS FILE WAS FIRST REFUSED ON THE STRENGTH OF ITS OWN HEADER, AND
+		// THE HEADER IS STALE. The refusal read: "it carries `test.fixme` blocks
+		// for real defects — see its BUG LIST". The file contains **zero**
+		// `test.fixme` calls (`grep -cE '^\s*test\.fixme\(' -> 0`). Its BUG LIST
+		// describes three defects — soft-deleted objects never appearing in
+		// GET /api/deleted, restore returning 200 while restoring nothing, and
+		// `_includeDeleted=true` returning 500 — that are each annotated
+		// `// BUG-N (FIXED)` in the code beside the test, with the root cause
+		// (DeletedController.index() searching without a register/schema context,
+		// so it never reached the per-register/schema magic tables). The three
+		// tests are LIVE REGRESSION LOCKS on that fix, not disabled reports of it.
+		//
+		// Reading the prose instead of the code is the failure mode this repo has
+		// paid for repeatedly: an explanation of a pattern matches the pattern.
+		// The correction is recorded here rather than quietly applied.
+		//
+		// Against the four criteria: hermetic and self-seeding through
+		// `_fixtures.ts` (register + schema + object per describe block);
+		// self-cleaning, including a hard `DELETE /api/deleted/{uuid}` in
+		// `afterAll` so a soft-deleted fixture cannot survive the run; zero
+		// conditional-assert guards. Its single `test.skip` —
+		// `test.skip(trails.length === 0, 'no audit trail entries to render')` —
+		// sits downstream of two tests in the same file that assert the "create"
+		// and "update" audit entries EXIST unconditionally, so a broken audit
+		// trail fails loudly before this skip is ever reachable.
+		'workflows/object-lifecycle-workflows.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
