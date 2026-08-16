@@ -130,6 +130,12 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // Collect the app's manifest.d/*.json fragments — require.context is resolved
 // by this app's own webpack build, so it stays app-local — then hand the base
 // manifest, fragments, and menu-layout to the shared pipeline.
+// `require.context` is a WEBPACK build-time API, not CommonJS `require`: the
+// bundler rewrites this call at compile time and no `require` exists at
+// runtime. eslint's browser globals therefore report `no-undef` correctly —
+// the code is right and the linter is right. Scoped to this one identifier so
+// a genuinely undefined name elsewhere in the file still fails.
+/* global require */
 const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
 const fragments = fragmentCtx
 	.keys()
