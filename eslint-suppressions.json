@@ -1653,9 +1653,6 @@
     }
   },
   "src/views/organisation/OrganisationDetails.vue": {
-    "jsdoc/require-param-type": {
-      "count": 4
-    },
     "no-console": {
       "count": 1
     },

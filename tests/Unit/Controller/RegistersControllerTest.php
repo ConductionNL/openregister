@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Controller;
 
 use Exception;
@@ -1989,6 +1992,116 @@ class RegistersControllerTest extends TestCase {
 		$result = $method->invoke($this->controller, 7, null);
 
 		$this->assertSame(42, $result['total']);
+	}
+
+	/**
+	 * Stub the request params from a simple map.
+	 *
+	 * @param array<string,mixed> $params The params the request should answer.
+	 *
+	 * @return void
+	 */
+	private function stubParams(array $params): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($params): mixed {
+				return ($params[$key] ?? $default);
+			}
+		);
+	}
+
+	public function testImportTemplateRejectsAnUnsupportedFormat(): void {
+		$this->stubParams(['format' => 'pdf']);
+		$this->exportService->expects($this->never())->method('buildTemplateCsv');
+
+		$result = $this->controller->importTemplate(1, 'zaak');
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString('Unsupported template format', $result->getData()['error']);
+	}
+
+	public function testImportTemplateStreamsAHeaderOnlyCsv(): void {
+		$this->stubParams(['format' => 'csv']);
+
+		// A real Schema: the slug is reached through the Entity magic accessor,
+		// which a generated double does not implement.
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setSlug('zaak');
+
+		$this->registerMapper->method('find')->willReturn($this->createMock(Register::class));
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->exportService->expects($this->once())
+			->method('buildTemplateCsv')
+			->willReturn("titel,status\n");
+
+		$result = $this->controller->importTemplate(1, 'zaak');
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame("titel,status\n", $result->render());
+	}
+
+	public function testImportTemplateReturns404ForAnUnknownRegister(): void {
+		$this->stubParams(['format' => 'csv']);
+		$this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+
+		$result = $this->controller->importTemplate('nope', 'zaak');
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(404, $result->getStatus());
+	}
+
+	public function testRollbackImportRequiresAnImportJobId(): void {
+		$this->stubParams([]);
+		$this->importService->expects($this->never())->method('softDeleteByImportJobId');
+
+		$result = $this->controller->rollbackImport();
+
+		$this->assertSame(422, $result->getStatus());
+		$this->assertSame('importJobId is required', $result->getData()['error']);
+	}
+
+	public function testRollbackImportReturns404WhenTheImportJobHasNoAuditRows(): void {
+		$this->stubParams(['importJobId' => 'job-1']);
+		$this->auditTrailMapper->method('findByImportJobId')->willReturn([]);
+		$this->importService->expects($this->never())->method('softDeleteByImportJobId');
+
+		$result = $this->controller->rollbackImport();
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame('job-1', $result->getData()['importJobId']);
+	}
+
+	public function testRollbackImportSoftDeletesTheJobsObjectsForAnAdmin(): void {
+		$this->stubParams(['importJobId' => 'job-1']);
+
+		$auditRow = $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
+		$this->auditTrailMapper->method('findByImportJobId')->willReturn([$auditRow]);
+
+		$this->importService->expects($this->once())
+			->method('softDeleteByImportJobId')
+			->with('job-1')
+			->willReturn(['importJobId' => 'job-1', 'candidates' => 3, 'deleted' => 3]);
+
+		$result = $this->controller->rollbackImport();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(3, $result->getData()['deleted']);
+	}
+
+	public function testRollbackImportRejectsAnAnonymousCallerBeforeTouchingTheAuditTrail(): void {
+		$this->stubParams(['importJobId' => 'job-1']);
+
+		// Rollback wipes every object an import created; an unauthenticated
+		// caller must be stopped before the audit lookup even runs.
+		$this->currentUser = null;
+		$this->auditTrailMapper->expects($this->never())->method('findByImportJobId');
+		$this->importService->expects($this->never())->method('softDeleteByImportJobId');
+
+		$result = $this->controller->rollbackImport();
+
+		$this->assertSame(401, $result->getStatus());
+		$this->assertSame('Authentication required', $result->getData()['error']);
 	}
 
 }

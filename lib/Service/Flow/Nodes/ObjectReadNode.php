@@ -78,6 +78,7 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
@@ -529,14 +530,29 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys {
 	private function resolveSchema(array $config, Register $register): Schema {
 		$identifier = trim((string)($config['schema'] ?? ''));
 
+		// Refusing beats resolving globally on the READ side too, and for a reason
+		// that is easy to miss: a global match here does not usually return foreign
+		// data, it returns NOTHING — the wrongly-resolved schema has no table under
+		// this register. An empty result set is indistinguishable from "this
+		// register holds no objects", so the flow would report success over a
+		// silently unreachable dataset.
 		if (is_numeric($identifier) === false) {
-			$scoped = $this->schemas->findBySlugInIds(
+			$registerSchemaIds = (array)($register->getSchemas() ?? []);
+			$scoped            = $this->schemas->findBySlugInIds(
 				slug: $identifier,
-				schemaIds: (array)($register->getSchemas() ?? [])
+				schemaIds: $registerSchemaIds
 			);
 			if ($scoped !== null) {
 				return $scoped;
 			}
+
+			throw new SchemaNotInRegisterException(
+				schemaSlug: $identifier,
+				registerId: $register->getId(),
+				registerSlug: $register->getSlug(),
+				candidatesElsewhere: $this->schemas->countBySlug(slug: $identifier),
+				registerSchemaCount: count($registerSchemaIds)
+			);
 		}
 
 		try {

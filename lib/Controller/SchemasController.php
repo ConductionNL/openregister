@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -103,6 +104,7 @@ class SchemasController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param IAppConfig $config App configuration for settings
 	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
+	 * @param RegisterMapper $registerMapper Register mapper for register lookups and schema linkage
 	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
 	 * @param UploadService $uploadService Upload service for file uploads
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
@@ -322,26 +324,46 @@ class SchemasController extends Controller {
 	private function resolveSchema(int|string $id): Schema {
 		$registerParam = $this->request->getParam(key: 'register', default: null);
 
-		// Register-scoped first. findBySlugInIds() returns null for a numeric id, a
-		// uuid, or a slug the register does not carry, so every one of those cases
-		// falls through to the global lookup untouched.
+		// Register-scoped resolution. A numeric id is resolved globally below;
+		// scoping applies to slugs only.
+		//
+		// The two failures below are deliberately NOT handled together, and the
+		// separation is load-bearing. An *unresolvable register parameter* is not a
+		// reason to fail the schema read — the caller gets what they would have got
+		// without the parameter. But a register that resolves and does not carry the
+		// slug is a refusal, because naming a register makes it a boundary.
+		//
+		// Both used to sit inside one try/catch. Throwing the refusal from in there
+		// would have been caught by that same catch and logged as "scope could not
+		// be applied", restoring the exact fallback this change removes — a silent
+		// no-op that looks like a fix.
 		if ($registerParam !== null && $registerParam !== '' && is_string($id) === true && is_numeric($id) === false) {
+			$register = null;
 			try {
 				$register = $this->registerMapper->find(id: $registerParam, _rbac: false, _multitenancy: false);
-				$scoped = $this->schemaMapper->findBySlugInIds(
+			} catch (Exception $e) {
+				$this->logger->debug(
+					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
+					['register' => $registerParam, 'schema' => $id]
+				);
+			}
+
+			if ($register !== null) {
+				$registerSchemaIds = ($register->getSchemas() ?? []);
+				$scoped            = $this->schemaMapper->findBySlugInIds(
 					slug: $id,
-					schemaIds: ($register->getSchemas() ?? [])
+					schemaIds: $registerSchemaIds
 				);
 				if ($scoped !== null) {
 					return $scoped;
 				}
-			} catch (Exception $e) {
-				// An unresolvable register is not a reason to fail the schema read —
-				// fall through to the global lookup, which is what the caller would
-				// have got without the parameter at all.
-				$this->logger->debug(
-					'[SchemasController] register scope could not be applied: ' . $e->getMessage(),
-					['register' => $registerParam, 'schema' => $id]
+
+				throw new SchemaNotInRegisterException(
+					schemaSlug: $id,
+					registerId: $register->getId(),
+					registerSlug: $register->getSlug(),
+					candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $id),
+					registerSchemaCount: count($registerSchemaIds)
 				);
 			}
 		}
@@ -563,6 +585,13 @@ class SchemasController extends Controller {
 		// Get request parameters.
 		$data = $this->request->getParams();
 
+		// REGISTER CONTEXT. `POST /api/schemas?register=<id|uuid|slug>` states which
+		// register the new schema belongs to. It is consumed here, never hydrated
+		// onto the Schema entity — a schema row carries no register column; the
+		// linkage lives in `openregister_registers.schemas`.
+		$registerParam = ($data['register'] ?? null);
+		unset($data['register']);
+
 		// DEBUG: Log incoming request to track duplicate creation.
 		$this->logger->info(
 			message: '[SchemasController::create] Starting schema creation',
@@ -593,9 +622,71 @@ class SchemasController extends Controller {
 			return $jsonLdError;
 		}
 
+		// Refuse a register context that does not resolve BEFORE writing the schema.
+		// Creating a free-floating schema and reporting 201 is what made the old
+		// behaviour invisible: the caller believed it had a schema in that register.
+		$register = null;
+		if ($registerParam !== null && $registerParam !== '') {
+			try {
+				// `_multitenancy: false` on the LOOKUP only, matching
+				// RegisterMapper::updateFromArray(): resolve the register by id
+				// regardless of which organisation is active, and let the
+				// RegisterMapper::update() below carry the access check. RBAC is left
+				// at its default (on); this is not an authorization opt-out.
+				$register = $this->registerMapper->find(id: $registerParam, _multitenancy: false);
+			} catch (Exception $e) {
+				return new JSONResponse(
+					data: [
+						'error' => sprintf(
+							'The register "%s" named by ?register= does not exist or is not accessible, '
+							. 'so the schema was not created. Omit the parameter to create a '
+							. 'register-less schema.',
+							(string)$registerParam
+						),
+					],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
+		}
+
 		try {
 			// Create a new schema from the data.
 			$schema = $this->schemaMapper->createFromArray(object: $data);
+
+			// Establish the register linkage the caller asked for. Without this the
+			// register's `schemas` list never learns about the schema, and every
+			// register-scoped slug read of it is refused by
+			// SchemaNotInRegisterException — while writes addressed by numeric id
+			// still land, producing rows the API cannot read back. ImportHandler,
+			// TablesSchemaSyncService and DatabaseIntrospectionService all maintain
+			// this list already; this endpoint was the one register-context schema
+			// creation path that did not.
+			//
+			// A refused linkage (cross-tenant register, RBAC) is logged, not fatal:
+			// the schema itself was created, and answering 500 would hide a
+			// successful write behind an error. The log line is the record and
+			// `occ openregister:registers:relink-schemas` is the repair.
+			if ($register !== null && $register->addSchemaId(schemaId: $schema->getId()) === true) {
+				try {
+					$this->registerMapper->update(entity: $register);
+
+					// Register lookups are cached per request; drop the pre-update
+					// copy so a follow-up read in this same PHP worker observes
+					// the new linkage.
+					$this->registerMapper->clearFindCache(registerId: $register->getId());
+				} catch (Exception $linkError) {
+					$this->logger->error(
+						message: '[SchemasController] Schema created but could not be linked to its register',
+						context: [
+							'file'          => __FILE__,
+							'line'          => __LINE__,
+							'schemaId'      => $schema->getId(),
+							'registerId'    => $register->getId(),
+							'error_message' => $linkError->getMessage(),
+						]
+					);
+				}
+			}
 
 			/*
 			 * NOTE: Organization should already be set from the request data.

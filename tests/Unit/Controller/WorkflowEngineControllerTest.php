@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WorkflowEngineController;
@@ -14,9 +17,32 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class WorkflowEngineControllerTest extends TestCase {
+	/**
+	 * Controller under test.
+	 *
+	 * @var WorkflowEngineController
+	 */
 	private WorkflowEngineController $controller;
+
+	/**
+	 * HTTP request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+
+	/**
+	 * Engine registry mock.
+	 *
+	 * @var WorkflowEngineRegistry&MockObject
+	 */
 	private WorkflowEngineRegistry&MockObject $registry;
+
+	/**
+	 * Logger mock.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -225,5 +251,123 @@ class WorkflowEngineControllerTest extends TestCase {
 
 		$this->assertEquals(200, $result->getStatus());
 		$this->assertEquals($engines, $result->getData());
+	}
+
+	/**
+	 * Stub the request params from a simple map.
+	 *
+	 * @param array<string,mixed> $params The params the request should answer.
+	 *
+	 * @return void
+	 */
+	private function stubParams(array $params): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($params): mixed {
+				return ($params[$key] ?? $default);
+			}
+		);
+	}
+
+	public function testTestHookRequiresAWorkflowId(): void {
+		$this->stubParams([]);
+		$this->registry->expects($this->never())->method('resolveAdapterById');
+
+		$result = $this->controller->testHook(3);
+
+		$this->assertEquals(400, $result->getStatus());
+		$this->assertSame('workflowId is required', $result->getData()['error']);
+	}
+
+	public function testTestHookExecutesTheWorkflowAndFlagsTheResponseAsADryRun(): void {
+		$this->stubParams(['workflowId' => 'wf-1', 'sampleData' => ['title' => 'x'], 'timeout' => 12]);
+
+		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+		$adapter->expects($this->once())
+			->method('executeWorkflow')
+			->with('wf-1', ['title' => 'x'], 12)
+			->willReturn(
+				new \OCA\OpenRegister\WorkflowEngine\WorkflowResult(
+					\OCA\OpenRegister\WorkflowEngine\WorkflowResult::STATUS_APPROVED,
+					['title' => 'x']
+				)
+			);
+
+		$this->registry->expects($this->once())
+			->method('resolveAdapterById')
+			->with(3)
+			->willReturn($adapter);
+
+		$result = $this->controller->testHook(3);
+
+		$this->assertEquals(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertTrue($data['dryRun']);
+		$this->assertSame('approved', $data['status']);
+	}
+
+	public function testTestHookDecodesAJsonEncodedSampleDataPayload(): void {
+		$this->stubParams(['workflowId' => 'wf-1', 'sampleData' => '{"title":"x"}']);
+
+		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+		$adapter->expects($this->once())
+			->method('executeWorkflow')
+			->with('wf-1', ['title' => 'x'], 30)
+			->willReturn(
+				new \OCA\OpenRegister\WorkflowEngine\WorkflowResult(
+					\OCA\OpenRegister\WorkflowEngine\WorkflowResult::STATUS_MODIFIED,
+					['title' => 'y']
+				)
+			);
+
+		$this->registry->method('resolveAdapterById')->willReturn($adapter);
+
+		$result = $this->controller->testHook(3);
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame('modified', $result->getData()['status']);
+	}
+
+	public function testTestHookReturns404ForAnUnknownEngine(): void {
+		$this->stubParams(['workflowId' => 'wf-1']);
+		$this->registry->method('resolveAdapterById')
+			->willThrowException(new DoesNotExistException('no such engine'));
+
+		$result = $this->controller->testHook(99);
+
+		$this->assertEquals(404, $result->getStatus());
+	}
+
+	public function testTestHookMapsAConnectivityFailureTo502(): void {
+		$this->stubParams(['workflowId' => 'wf-1']);
+
+		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+		$adapter->method('executeWorkflow')
+			->willThrowException(new \RuntimeException('Connection refused by engine host'));
+
+		$this->registry->method('resolveAdapterById')->willReturn($adapter);
+
+		$result = $this->controller->testHook(3);
+
+		$this->assertEquals(502, $result->getStatus());
+		$this->assertTrue($result->getData()['dryRun']);
+		$this->assertSame('error', $result->getData()['status']);
+	}
+
+	public function testTestHookMapsAWorkflowFailureTo422(): void {
+		$this->stubParams(['workflowId' => 'wf-1']);
+
+		$adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+		$adapter->method('executeWorkflow')
+			->willThrowException(new \RuntimeException('Workflow wf-1 has no active trigger'));
+
+		$this->registry->method('resolveAdapterById')->willReturn($adapter);
+
+		$result = $this->controller->testHook(3);
+
+		$this->assertEquals(422, $result->getStatus());
+		$this->assertSame(
+			'Workflow wf-1 has no active trigger',
+			$result->getData()['errors'][0]['message']
+		);
 	}
 }

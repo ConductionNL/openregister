@@ -24,6 +24,10 @@
 
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import * as path from 'path'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import { DeletedIndex } from '../_page-routes'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
@@ -306,7 +310,7 @@ test.describe('entity-management-modals — initialize-purge-selection-from-stor
 	test('deleted-items page renders and the purge dialog shows checked items', async ({
 		page,
 	}) => {
-		await gotoApp(page, '/deleted')
+		await gotoApp(page, DeletedIndex)
 		await expect(
 			page.locator('#app-content-vue, .app-content').first(),
 		).toBeVisible({ timeout: 20_000 })

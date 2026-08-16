@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SourcesController;
@@ -812,5 +815,188 @@ class SourcesControllerTest extends TestCase {
 		$result = $this->controller->introspect(5);
 
 		$this->assertSame(503, $result->getStatus());
+	}
+
+	/**
+	 * Build the controller with the sync collaborators under test control.
+	 *
+	 * @param bool $isAdmin Whether the acting user is an admin.
+	 * @param SourceFetcherRegistry $fetcherRegistry Resolves the transport for a source type.
+	 * @param HarvestPipelineService $pipeline Harvest pipeline orchestrator.
+	 *
+	 * @return SourcesController The controller under test.
+	 */
+	private function buildSyncController(
+		bool $isAdmin,
+		SourceFetcherRegistry $fetcherRegistry,
+		HarvestPipelineService $pipeline,
+	): SourcesController {
+		$this->request = $this->createMock(IRequest::class);
+		$this->config = $this->createMock(IAppConfig::class);
+		$this->sourceMapper = $this->createMock(SourceMapper::class);
+		$this->introspectionService = $this->createMock(DatabaseIntrospectionService::class);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($isAdmin);
+
+		$credentialStore = $this->createMock(CredentialStore::class);
+		$credentialStore->method('get')->willReturn(null);
+
+		return new SourcesController(
+			'openregister',
+			$this->request,
+			$this->config,
+			$this->sourceMapper,
+			$l10n,
+			$userSession,
+			$groupManager,
+			$this->createMock(\OCP\Security\ICrypto::class),
+			$fetcherRegistry,
+			$pipeline,
+			new DbalConnectionFactory(credentialStore: $credentialStore, logger: new NullLogger()),
+			$this->introspectionService,
+			new NullLogger()
+		);
+	}
+
+	public function testSyncNowIsRefusedForANonAdmin(): void {
+		$pipeline = $this->createMock(HarvestPipelineService::class);
+		$pipeline->expects($this->never())->method('run');
+
+		$controller = $this->buildSyncController(
+			isAdmin: false,
+			fetcherRegistry: $this->createMock(SourceFetcherRegistry::class),
+			pipeline: $pipeline
+		);
+
+		$result = $controller->syncNow(5);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('Admin privileges required', $result->getData()['error']);
+	}
+
+	public function testSyncNowReturns404ForASourceOutsideTheOrganisation(): void {
+		$pipeline = $this->createMock(HarvestPipelineService::class);
+		$pipeline->expects($this->never())->method('run');
+
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $this->createMock(SourceFetcherRegistry::class),
+			pipeline: $pipeline
+		);
+
+		// SourceMapper::find() applies the active-organisation filter, so a
+		// foreign tenant's id is indistinguishable from a missing one.
+		$this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+
+		$result = $controller->syncNow(5);
+
+		$this->assertSame(404, $result->getStatus());
+	}
+
+	public function testSyncNowReturns422WhenNoTransportSupportsTheSourceType(): void {
+		$registry = $this->createMock(SourceFetcherRegistry::class);
+		$registry->method('get')->willReturn(null);
+
+		$pipeline = $this->createMock(HarvestPipelineService::class);
+		$pipeline->expects($this->never())->method('run');
+
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $registry,
+			pipeline: $pipeline
+		);
+
+		$source = new Source();
+		$source->setId(5);
+		$source->setType('exotic');
+		$this->sourceMapper->method('find')->willReturn($source);
+
+		$result = $controller->syncNow(5);
+
+		$this->assertSame(422, $result->getStatus());
+		$this->assertSame('No sync transport available for this source type', $result->getData()['error']);
+	}
+
+	public function testSyncNowRunsThePipelineAndRecordsTheOutcome(): void {
+		$fetcher = $this->createMock(\OCA\OpenRegister\Service\Sync\SourceFetcherInterface::class);
+
+		$registry = $this->createMock(SourceFetcherRegistry::class);
+		$registry->method('get')->with('api')->willReturn($fetcher);
+
+		$pipeline = $this->createMock(HarvestPipelineService::class);
+		$pipeline->expects($this->once())
+			->method('run')
+			->willReturn(['status' => 'success', 'imported' => 12]);
+
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $registry,
+			pipeline: $pipeline
+		);
+
+		$source = new Source();
+		$source->setId(5);
+		$source->setType('api');
+		$this->sourceMapper->method('find')->willReturn($source);
+
+		// The run outcome is persisted back onto the source.
+		$this->sourceMapper->expects($this->once())->method('update')->with($source);
+
+		$result = $controller->syncNow(5);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(12, $result->getData()['imported']);
+		$this->assertSame('success', $source->getLastSyncStatus());
+	}
+
+	public function testSyncStatusReportsNeverForASourceThatHasNotRun(): void {
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $this->createMock(SourceFetcherRegistry::class),
+			pipeline: $this->createMock(HarvestPipelineService::class)
+		);
+
+		$source = new Source();
+		$source->setId(5);
+		$source->setUuid('src-uuid');
+		$source->setSyncEnabled(true);
+		$source->setSyncInterval(3600);
+		$this->sourceMapper->method('find')->willReturn($source);
+
+		$result = $controller->syncStatus(5);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(200, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('src-uuid', $data['uuid']);
+		$this->assertSame('never', $data['status']);
+		$this->assertNull($data['lastSyncDate']);
+		$this->assertSame(3600, $data['syncInterval']);
+		// No credentials are ever exposed on this read.
+		$this->assertArrayNotHasKey('authConfig', $data);
+		$this->assertArrayNotHasKey('databaseUrl', $data);
+	}
+
+	public function testSyncStatusReturns404ForASourceOutsideTheOrganisation(): void {
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $this->createMock(SourceFetcherRegistry::class),
+			pipeline: $this->createMock(HarvestPipelineService::class)
+		);
+
+		$this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
+
+		$result = $controller->syncStatus(5);
+
+		$this->assertSame(404, $result->getStatus());
 	}
 }

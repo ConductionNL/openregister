@@ -18,6 +18,9 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  */
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\DsarCaseController;
@@ -26,6 +29,7 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
+use OCA\OpenRegister\Service\Gdpr\Export\SignedBundle;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
 use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
@@ -35,6 +39,7 @@ use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUser;
@@ -399,4 +404,244 @@ class DsarCaseControllerTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 		return $userSession;
 	}//end userSessionWith()
+
+	/**
+	 * Build a controller for the redaction / export-bundle surface.
+	 *
+	 * The case guard is satisfied by default (a loaded case the handler may act
+	 * on) so the tests below assert the endpoint's own contract rather than the
+	 * guard, which is already covered above.
+	 *
+	 * @param IRequest $request The request carrying the body params.
+	 * @param RedactionWriteService $redaction Redaction write path.
+	 * @param ExportBundleService $bundles Export-bundle service.
+	 * @param bool $mayAct Whether case-level access control allows the caller.
+	 *
+	 * @return DsarCaseController
+	 */
+	private function buildForBundleSurface(
+		IRequest $request,
+		RedactionWriteService $redaction,
+		ExportBundleService $bundles,
+		bool $mayAct = true,
+	): DsarCaseController {
+		$case = new ObjectEntity();
+		$case->setObject(['handler' => 'handler1']);
+
+		$accessor = $this->createMock(CaseObjectAccessor::class);
+		$accessor->method('load')->willReturn($case);
+
+		$access = $this->createMock(CaseAccessControl::class);
+		$access->method('mayAct')->willReturn($mayAct);
+
+		return new DsarCaseController(
+			'openregister',
+			$request,
+			$this->createMock(ObjectService::class),
+			$accessor,
+			$access,
+			$this->createMock(TransitionEngine::class),
+			$this->createMock(EvidenceHarvestService::class),
+			$redaction,
+			$bundles,
+			$this->userSessionWith('handler1'),
+			$this->createMock(DsarPolicyPackResolver::class),
+			$this->createMock(IdentityVerifyRegistry::class),
+			$this->createMock(RegulatorEscalateRegistry::class)
+		);
+	}//end buildForBundleSurface()
+
+	/**
+	 * A request whose body params come from a simple map.
+	 *
+	 * @param array<string,mixed> $params The body params.
+	 *
+	 * @return IRequest
+	 */
+	private function requestWith(array $params): IRequest {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($params): mixed {
+				return ($params[$key] ?? $default);
+			}
+		);
+		return $request;
+	}//end requestWith()
+
+	/**
+	 * redact() forwards the field, replacement and legal ground to the write
+	 * service and returns its result.
+	 *
+	 * @return void
+	 */
+	public function testRedactAppliesTheFieldLevelRedaction(): void {
+		$redaction = $this->createMock(RedactionWriteService::class);
+		$redaction->expects($this->once())
+			->method('applyRedaction')
+			->with('case-1', 'evidence.0.bsn', '[REDACTED]', 'art-15-4')
+			->willReturn(['field' => 'evidence.0.bsn', 'ground' => 'art-15-4', 'applied' => true]);
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith(
+				['field' => 'evidence.0.bsn', 'after' => '[REDACTED]', 'ground' => 'art-15-4']
+			),
+			$redaction,
+			$this->createMock(ExportBundleService::class)
+		);
+
+		$response = $controller->redact('case-1');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($response->getData()['applied']);
+	}//end testRedactAppliesTheFieldLevelRedaction()
+
+	/**
+	 * A redaction without a legal ground is refused with 400 — the ground is
+	 * what makes the redaction defensible, so it is never optional.
+	 *
+	 * @return void
+	 */
+	public function testRedactRequiresAFieldAndAGround(): void {
+		$redaction = $this->createMock(RedactionWriteService::class);
+		$redaction->expects($this->never())->method('applyRedaction');
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith(['field' => 'evidence.0.bsn']),
+			$redaction,
+			$this->createMock(ExportBundleService::class)
+		);
+
+		$response = $controller->redact('case-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('required', $response->getData()['error']);
+	}//end testRedactRequiresAFieldAndAGround()
+
+	/**
+	 * generateBundle() answers 201 with the bundle metadata + one-time token —
+	 * never the bytes.
+	 *
+	 * @return void
+	 */
+	public function testGenerateBundleReturns201WithTheDownloadToken(): void {
+		$bundles = $this->createMock(ExportBundleService::class);
+		$bundles->expects($this->once())
+			->method('generate')
+			->with('case-1')
+			->willReturn(
+				[
+					'contentHash' => 'sha256:abc',
+					'signatureState' => 'unsigned',
+					'downloadToken' => 'tok-1',
+				]
+			);
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith([]),
+			$this->createMock(RedactionWriteService::class),
+			$bundles
+		);
+
+		$response = $controller->generateBundle('case-1');
+
+		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+		$this->assertSame('tok-1', $response->getData()['downloadToken']);
+		$this->assertArrayNotHasKey('bytes', $response->getData());
+	}//end testGenerateBundleReturns201WithTheDownloadToken()
+
+	/**
+	 * A refusal from the bundle service is a 400 carrying the reason, not a
+	 * fatal.
+	 *
+	 * @return void
+	 */
+	public function testGenerateBundleReports400WhenTheServiceRefuses(): void {
+		$bundles = $this->createMock(ExportBundleService::class);
+		$bundles->method('generate')
+			->willThrowException(new \RuntimeException('Case "case-1" is not in a releasable state.'));
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith([]),
+			$this->createMock(RedactionWriteService::class),
+			$bundles
+		);
+
+		$response = $controller->generateBundle('case-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('releasable', $response->getData()['error']);
+	}//end testGenerateBundleReports400WhenTheServiceRefuses()
+
+	/**
+	 * downloadBundle() streams the signed bytes once the one-time token is
+	 * redeemed.
+	 *
+	 * @return void
+	 */
+	public function testDownloadBundleReturnsTheSignedBytes(): void {
+		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned', 'application/pdf');
+
+		$bundles = $this->createMock(ExportBundleService::class);
+		$bundles->expects($this->once())
+			->method('download')
+			->with('case-1', 'tok-1')
+			->willReturn($bundle);
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith(['token' => 'tok-1']),
+			$this->createMock(RedactionWriteService::class),
+			$bundles
+		);
+
+		$response = $controller->downloadBundle('case-1');
+
+		$this->assertInstanceOf(DataDownloadResponse::class, $response);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('%PDF-1.7 bytes', $response->render());
+	}//end testDownloadBundleReturnsTheSignedBytes()
+
+	/**
+	 * A replayed / expired / unknown token is refused with 403 and no bytes.
+	 *
+	 * @return void
+	 */
+	public function testDownloadBundleRefusesAnUnredeemableToken(): void {
+		$bundles = $this->createMock(ExportBundleService::class);
+		$bundles->method('download')->willReturn(null);
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith(['token' => 'already-used']),
+			$this->createMock(RedactionWriteService::class),
+			$bundles
+		);
+
+		$response = $controller->downloadBundle('case-1');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testDownloadBundleRefusesAnUnredeemableToken()
+
+	/**
+	 * The download is case-scoped: a caller the case-level access control
+	 * refuses gets 404, and the token is never even looked at.
+	 *
+	 * @return void
+	 */
+	public function testDownloadBundleReturns404WhenCaseAccessIsDenied(): void {
+		$bundles = $this->createMock(ExportBundleService::class);
+		$bundles->expects($this->never())->method('download');
+
+		$controller = $this->buildForBundleSurface(
+			$this->requestWith(['token' => 'tok-1']),
+			$this->createMock(RedactionWriteService::class),
+			$bundles,
+			false
+		);
+
+		$response = $controller->downloadBundle('case-1');
+
+		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testDownloadBundleReturns404WhenCaseAccessIsDenied()
 }//end class

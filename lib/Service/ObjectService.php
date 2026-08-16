@@ -85,6 +85,7 @@ use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -472,27 +473,47 @@ class ObjectService implements ObjectServiceInterface
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // REGISTER-SCOPED SLUG RESOLUTION (cross-app collision fix).
+            // REGISTER-SCOPED SLUG RESOLUTION.
             // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
-            // every app on the instance and returns the FIRST row it fetches. On
-            // the shared instance that lets a generic slug (e.g. 'conversation',
-            // 'order', 'task') resolve to another app's schema that shares the
-            // lower(slug). When a register context is present, the slug must
-            // resolve to the schema THAT REGISTER references. Try that first; it
-            // is a no-op (null) for numeric ids, uuids, or slugs the register
-            // does not carry, so we transparently fall back to the global find
-            // for every legacy / register-less caller.
+            // every register and every app on the instance, returning whichever row
+            // its tie-break orders first. Naming a register makes it a BOUNDARY: a
+            // caller that supplied one must never be served a schema from outside
+            // it, so a scoped miss throws here instead of falling through.
+            //
+            // This used to fall back, and the comment called that "transparent". It
+            // was not. Measured 2026-08-16: register `document` (id 6) carried an
+            // empty schemas list while nine docudesk-owned schemas shared the slug
+            // `anonymizationLink`; the fallback resolved to id 5084, which has no
+            // table under register 6 at all, so slug reads returned EMPTY while four
+            // real rows sat in oc_openregister_table_6_9177. An empty result set is
+            // indistinguishable from "this register has no objects", which is how
+            // the defect survived unnoticed.
+            //
+            // Scoping applies to SLUGS only. Numeric ids and uuids are resolved
+            // directly below, and callers with no register keep global resolution.
             if (is_string($schema) === true
                 && is_numeric($schema) === false
                 && $this->currentRegister !== null
             ) {
-                $scoped = $this->schemaMapper->findBySlugInIds(
+                $registerSchemaIds = ($this->currentRegister->getSchemas() ?? []);
+                $scoped            = $this->schemaMapper->findBySlugInIds(
                     slug: $schema,
-                    schemaIds: ($this->currentRegister->getSchemas() ?? [])
+                    schemaIds: $registerSchemaIds
                 );
                 if ($scoped !== null) {
                     $this->currentSchema = $scoped;
                     return $this;
+                }
+
+                // A uuid is not a slug and must still reach the global resolver.
+                if ($this->isUuidFormat(value: $schema) === false) {
+                    throw new SchemaNotInRegisterException(
+                        schemaSlug: $schema,
+                        registerId: $this->currentRegister->getId(),
+                        registerSlug: $this->currentRegister->getSlug(),
+                        candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schema),
+                        registerSchemaCount: count($registerSchemaIds)
+                    );
                 }
             }
 
@@ -2358,29 +2379,27 @@ class ObjectService implements ObjectServiceInterface
             );
         }
 
-        // Resolve schema slug → numeric ID. REGISTER-SCOPED first (cross-app
-        // collision fix): a generic slug must resolve to the schema THIS
-        // register references, not to whichever same-slug row find() fetches
-        // first across the shared instance. Fall back to the multi-tenancy
-        // scoped global find when the register does not carry the slug — a
-        // schema in another organisation MUST then throw, not return the
-        // foreign-org entity (principle of least surprise).
-        $schema = $this->schemaMapper->findBySlugInIds(
+        // Resolve schema slug → numeric ID, REGISTER-SCOPED and nothing else. The
+        // caller named a register, so the register is the boundary.
+        //
+        // This previously fell back to an organisation-scoped global find(). That
+        // guard is not sufficient: the nine same-slug `anonymizationLink` schemas
+        // measured on 2026-08-16 are owned by the SAME application, so an
+        // organisation filter still selects the wrong one. Only the register
+        // disambiguates them.
+        $registerSchemaIds = ($register->getSchemas() ?? []);
+        $schema            = $this->schemaMapper->findBySlugInIds(
             slug: $schemaSlug,
-            schemaIds: ($register->getSchemas() ?? [])
+            schemaIds: $registerSchemaIds
         );
         if ($schema === null) {
-            try {
-                $schema = $this->schemaMapper->find(
-                    id: $schemaSlug,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
-                );
-            } catch (OcpDoesNotExistException $e) {
-                throw new OcpDoesNotExistException(
-                    'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
-                );
-            }
+            throw new SchemaNotInRegisterException(
+                schemaSlug: $schemaSlug,
+                registerId: $register->getId(),
+                registerSlug: $register->getSlug(),
+                candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schemaSlug),
+                registerSchemaCount: count($registerSchemaIds)
+            );
         }
 
         // Merge resolved numeric IDs into the @self block of the filters.

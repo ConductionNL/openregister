@@ -21,6 +21,10 @@
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import * as path from 'path'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import { FlowsIndex, FlowDetailPage } from './_page-routes'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 
@@ -246,7 +250,7 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4) — the
 		// readiness signal is the row/name assertion that follows each goto.
-		await page.goto('/apps/openregister/#/flows', {
+		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -254,7 +258,7 @@ test.describe('the Flows page', () => {
 			timeout: 15000,
 		})
 
-		await page.goto(`/apps/openregister/#/flows/${flow.id}`, {
+		await page.goto(`/apps/openregister/#${FlowDetailPage(flow.id)}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -290,7 +294,7 @@ test.describe('the Flows page', () => {
 
 		// `networkidle` never settles on Nextcloud (ADR-074 rule 4); the row
 		// assertion below is the real wait.
-		await page.goto('/apps/openregister/#/flows', {
+		await page.goto(`/apps/openregister/#${FlowsIndex}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
