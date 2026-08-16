@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowRunController;
@@ -24,20 +27,60 @@ use PHPUnit\Framework\TestCase;
 
 class FlowRunControllerTest extends TestCase {
 
+	/**
+	 * HTTP request mock.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
 
+	/**
+	 * Run mapper mock.
+	 *
+	 * @var FlowRunMapper&MockObject
+	 */
 	private FlowRunMapper&MockObject $mapper;
 
+	/**
+	 * Run execution service mock.
+	 *
+	 * @var FlowRunService&MockObject
+	 */
 	private FlowRunService&MockObject $runner;
 
+	/**
+	 * Flow subject resolver mock.
+	 *
+	 * @var FlowLocator&MockObject
+	 */
 	private FlowLocator&MockObject $resolvers;
 
+	/**
+	 * Organisation service mock.
+	 *
+	 * @var OrganisationService&MockObject
+	 */
 	private OrganisationService&MockObject $organisations;
 
+	/**
+	 * Flow CRUD surface mock.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowService&MockObject
+	 */
 	private \OCA\OpenRegister\Service\Flow\FlowService&MockObject $flows;
 
+	/**
+	 * User session mock.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
 
+	/**
+	 * Controller under test.
+	 *
+	 * @var FlowRunController
+	 */
 	private FlowRunController $controller;
 
 	protected function setUp(): void {
@@ -77,6 +120,10 @@ class FlowRunControllerTest extends TestCase {
 
 	/**
 	 * Make getActiveOrganisation() answer with an organisation of this uuid.
+	 *
+	 * @param string|null $uuid The organisation uuid, or null for "no active organisation".
+	 *
+	 * @return void
 	 */
 	private function activeOrganisation(?string $uuid): void {
 		if ($uuid === null) {
@@ -91,6 +138,10 @@ class FlowRunControllerTest extends TestCase {
 
 	/**
 	 * Map a params array onto the request mock's getParam(name, default).
+	 *
+	 * @param array<string,mixed> $values The params the request should answer.
+	 *
+	 * @return void
 	 */
 	private function params(array $values): void {
 		$this->request->method('getParam')->willReturnCallback(
@@ -245,7 +296,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->params(['flowId' => 'f1', 'pins' => $pins]);
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'f1']);
 
-		// queue() must receive the pins on the context so the engine can read them.
+		// Queue() must receive the pins on the context so the engine can read them.
 		$this->runner->expects($this->once())->method('queue')
 			->with(
 				'f1',
@@ -270,6 +321,8 @@ class FlowRunControllerTest extends TestCase {
 	 * The assertion is on the ARGUMENTS reaching the mapper, because that is
 	 * the only place the difference is observable: an unscoped query and a
 	 * scoped one that happens to match everything return the same rows.
+	 *
+	 * @return void
 	 */
 	public function testTheHistoryReadIsScopedToTheCaller(): void {
 		$this->params([]);
@@ -293,6 +346,8 @@ class FlowRunControllerTest extends TestCase {
 	/**
 	 * Positive control for the guard above: with no session there is no caller
 	 * to scope to, so nothing comes back rather than everything.
+	 *
+	 * @return void
 	 */
 	public function testTheHistoryReadReturnsNothingWithoutASession(): void {
 		$this->params([]);
@@ -315,4 +370,77 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->assertSame([], $controller->index()->getData()['results']);
 	}//end testTheHistoryReadReturnsNothingWithoutASession()
+
+	public function testResumeSignalsTheSuspendedRunWithTheRequestBody(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$signalled = new FlowRun();
+		$signalled->setUuid('run-1');
+		$signalled->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
+		$this->flows->method('find')->with('flow-1');
+
+		// The routing artefacts must not reach the run as signal payload.
+		$this->request->method('getParams')->willReturn(
+			['uuid' => 'run-1', '_route' => 'openregister.flowRun.resume', 'approved' => true]
+		);
+
+		$this->runner->expects($this->once())
+			->method('signal')
+			->with($run, ['approved' => true])
+			->willReturn($signalled);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('run-1', $response->getData()['uuid']);
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $response->getData()['status']);
+	}//end testResumeSignalsTheSuspendedRunWithTheRequestBody()
+
+	public function testResumeIsNotFoundForAnUnknownRun(): void {
+		$this->mapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no such run'));
+		$this->runner->expects($this->never())->method('signal');
+
+		$response = $this->controller->resume('nope');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('No such run', $response->getData()['error']);
+	}//end testResumeIsNotFoundForAnUnknownRun()
+
+	public function testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('someone-elses-flow');
+		$run->setStatus(FlowRun::STATUS_SUSPENDED);
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->flows->method('find')->willThrowException(new \RuntimeException('not visible'));
+		$this->runner->expects($this->never())->method('signal');
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringContainsString('No such flow', $response->getData()['error']);
+	}//end testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow()
+
+	public function testResumeConflictsWhenTheRunIsNotSuspended(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('flow-1');
+		$run->setStatus('running');
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->request->method('getParams')->willReturn([]);
+		$this->runner->method('signal')->willReturn(null);
+
+		$response = $this->controller->resume('run-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertStringContainsString('running', $response->getData()['error']);
+	}//end testResumeConflictsWhenTheRunIsNotSuspended()
 }//end class

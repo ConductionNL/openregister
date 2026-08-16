@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use OCA\OpenRegister\Controller\UserController;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -18,13 +22,60 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class UserControllerTest extends TestCase {
+	/**
+	 * The controller under test.
+	 *
+	 * @var UserController
+	 */
 	private UserController $controller;
+
+	/**
+	 * The mocked HTTP request.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+
+	/**
+	 * The mocked user service.
+	 *
+	 * @var UserService&MockObject
+	 */
 	private UserService&MockObject $userService;
+
+	/**
+	 * The mocked security-header service.
+	 *
+	 * @var SecurityService&MockObject
+	 */
 	private SecurityService&MockObject $securityService;
+
+	/**
+	 * The mocked user manager.
+	 *
+	 * @var IUserManager&MockObject
+	 */
 	private IUserManager&MockObject $userManager;
+
+	/**
+	 * The mocked user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+
+	/**
+	 * The mocked logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
+
+	/**
+	 * The mocked translation layer.
+	 *
+	 * @var IL10N&MockObject
+	 */
 	private IL10N&MockObject $l10n;
 
 	protected function setUp(): void {
@@ -254,6 +305,11 @@ class UserControllerTest extends TestCase {
 
 	// ── updateMe() exception path ──
 
+	/**
+	 * A failure while updating the profile must become a 500.
+	 *
+	 * @return void
+	 */
 	public function testUpdateMeException(): void {
 		$user = $this->createMock(IUser::class);
 
@@ -271,6 +327,11 @@ class UserControllerTest extends TestCase {
 
 	// ── login() — rate limit with delay ──
 
+	/**
+	 * A throttled login must be delayed and refused.
+	 *
+	 * @return void
+	 */
 	public function testLoginRateLimitedWithDelay(): void {
 		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
 		$this->securityService->method('addSecurityHeaders')->willReturnArgument(0);
@@ -298,6 +359,11 @@ class UserControllerTest extends TestCase {
 
 	// ── login() — exception path ──
 
+	/**
+	 * An unexpected failure during login must become a 500.
+	 *
+	 * @return void
+	 */
 	public function testLoginException(): void {
 		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
 		$this->securityService->method('addSecurityHeaders')->willReturnArgument(0);
@@ -313,6 +379,11 @@ class UserControllerTest extends TestCase {
 
 	// ── login() — failed auth records attempt ──
 
+	/**
+	 * Invalid credentials must be recorded so the throttle can see them.
+	 *
+	 * @return void
+	 */
 	public function testLoginRecordsFailedAttemptOnInvalidCredentials(): void {
 		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
 		$this->securityService->method('addSecurityHeaders')->willReturnArgument(0);
@@ -335,6 +406,11 @@ class UserControllerTest extends TestCase {
 
 	// ── login() — disabled account records attempt ──
 
+	/**
+	 * A disabled account is a failed attempt too, and must be recorded.
+	 *
+	 * @return void
+	 */
 	public function testLoginRecordsFailedAttemptForDisabledAccount(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('isEnabled')->willReturn(false);
@@ -361,6 +437,11 @@ class UserControllerTest extends TestCase {
 
 	// ── login() — success records successful login ──
 
+	/**
+	 * A successful login must clear the failure counter.
+	 *
+	 * @return void
+	 */
 	public function testLoginSuccessCallsRecordSuccessfulLogin(): void {
 		$user = $this->createMock(IUser::class);
 		$user->method('isEnabled')->willReturn(true);
@@ -388,6 +469,11 @@ class UserControllerTest extends TestCase {
 
 	// ── Profile Action: changePassword() ──
 
+	/**
+	 * Changing a password requires a session.
+	 *
+	 * @return void
+	 */
 	public function testChangePasswordNotAuthenticated(): void {
 		$this->userService->method('getCurrentUser')->willReturn(null);
 		$result = $this->controller->changePassword();
@@ -453,6 +539,11 @@ class UserControllerTest extends TestCase {
 
 	// ── Profile Action: Notification Preferences ──
 
+	/**
+	 * Reading notification preferences requires a session.
+	 *
+	 * @return void
+	 */
 	public function testGetNotificationPreferencesNotAuthenticated(): void {
 		$this->userService->method('getCurrentUser')->willReturn(null);
 		$result = $this->controller->getNotificationPreferences();
@@ -499,6 +590,11 @@ class UserControllerTest extends TestCase {
 
 	// ── Profile Action: Activity ──
 
+	/**
+	 * Reading the activity feed requires a session.
+	 *
+	 * @return void
+	 */
 	public function testGetActivityNotAuthenticated(): void {
 		$this->userService->method('getCurrentUser')->willReturn(null);
 		$result = $this->controller->getActivity();
@@ -528,6 +624,11 @@ class UserControllerTest extends TestCase {
 
 	// ── Profile Action: Tokens ──
 
+	/**
+	 * Listing app tokens requires a session.
+	 *
+	 * @return void
+	 */
 	public function testListTokensNotAuthenticated(): void {
 		$this->userService->method('getCurrentUser')->willReturn(null);
 		$result = $this->controller->listTokens();
@@ -597,6 +698,11 @@ class UserControllerTest extends TestCase {
 
 	// ── Profile Action: Deactivation ──
 
+	/**
+	 * Requesting account deactivation requires a session.
+	 *
+	 * @return void
+	 */
 	public function testRequestDeactivationNotAuthenticated(): void {
 		$this->userService->method('getCurrentUser')->willReturn(null);
 		$result = $this->controller->requestDeactivation();
@@ -652,5 +758,135 @@ class UserControllerTest extends TestCase {
 
 		$result = $this->controller->cancelDeactivation();
 		$this->assertEquals(404, $result->getStatus());
+	}
+
+	// ── GET /api/user/me/export — GDPR personal-data export ────────────────
+
+	/**
+	 * The export is a FILE download, not a JSON envelope: the browser must be
+	 * handed an attachment whose name carries the exporting uid and the export
+	 * date, and whose body is the pretty-printed personal-data document.
+	 *
+	 * @return void
+	 */
+	public function testExportDataReturnsADownloadableJsonDocument(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+		$exportData = [
+			'profile' => ['uid' => 'testuser', 'displayName' => 'Test User'],
+			'objects' => [],
+		];
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService
+			->expects($this->once())
+			->method('exportPersonalData')
+			->with($user)
+			->willReturn($exportData);
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(DataDownloadResponse::class, $result);
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame($exportData, json_decode($result->render(), true));
+		$this->assertStringContainsString(
+			'openregister-export-testuser-' . date('Y-m-d') . '.json',
+			$result->getHeaders()['Content-Disposition']
+		);
+	}
+
+	/**
+	 * Unicode must survive the export unescaped — an export that mangles a
+	 * name is not a lawful copy of the subject's data.
+	 *
+	 * @return void
+	 */
+	public function testExportDataPreservesUnicodeUnescaped(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willReturn(['displayName' => 'Renée Müller']);
+
+		$result = $this->controller->exportData();
+
+		$this->assertStringContainsString('Renée Müller', $result->render());
+	}
+
+	/**
+	 * No session, no export — the endpoint must never fall back to exporting
+	 * "some" user's data.
+	 *
+	 * @return void
+	 */
+	public function testExportDataRejectsAnonymousSession(): void {
+		$this->userService->method('getCurrentUser')->willReturn(null);
+		$this->userService->expects($this->never())->method('exportPersonalData');
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(401, $result->getStatus());
+		$this->assertEquals('Not authenticated', $result->getData()['error']);
+	}
+
+	/**
+	 * The export is rate-limited. A throttled caller must get a 429 carrying
+	 * the service's own structured payload, not a flattened 500.
+	 *
+	 * @return void
+	 */
+	public function testExportDataSurfacesTheThrottlePayloadAs429(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(
+				new \RuntimeException(json_encode(['error' => 'Too many exports', 'retryAfter' => 3600]), 429)
+			);
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(429, $result->getStatus());
+		$this->assertEquals(3600, $result->getData()['retryAfter']);
+	}
+
+	public function testExportDataMapsARuntimeExceptionCodeToTheStatus(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(new \RuntimeException('Export not permitted', 403));
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(403, $result->getStatus());
+	}
+
+	/**
+	 * An unexpected failure must become a generic 500 — the raw exception text
+	 * can name internal storage paths and must not reach the wire.
+	 *
+	 * @return void
+	 */
+	public function testExportDataHidesUnexpectedFailuresBehindA500(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+
+		$this->userService->method('getCurrentUser')->willReturn($user);
+		$this->userService->method('exportPersonalData')
+			->willThrowException(new \Exception('/var/www/html/data/testuser is unreadable'));
+
+		$result = $this->controller->exportData();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(500, $result->getStatus());
+		$this->assertEquals('Failed to export data', $result->getData()['error']);
+		$this->assertStringNotContainsString('/var/www', $result->getData()['error']);
 	}
 }

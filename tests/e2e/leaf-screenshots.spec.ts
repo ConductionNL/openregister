@@ -17,6 +17,12 @@
 import { test, expect } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
+// The route is COMPOSED from the component binding (tests/e2e/_page-routes.ts)
+// rather than repeated as a template string here. The spec already drove this
+// page; what it could not say in executable code was WHICH page host it drove.
+// Importing the builder makes that binding load-bearing: change the manifest
+// route and this line changes with it.
+import { IntegrationsView } from './_page-routes'
 
 const REGISTER = '21'
 const SCHEMA = '166'
@@ -43,7 +49,11 @@ test.describe('Per-leaf screenshot harness', () => {
 		await page.goto(
 			// HASH form — the router runs in hash mode (src/main.js); the
 			// path-form URL renders the dashboard instead of the integrations view.
-			`${baseURL}/index.php/apps/openregister/#/integrations/${REGISTER}/${SCHEMA}/${OBJECT_ID}`,
+			`${baseURL}/index.php/apps/openregister/#${IntegrationsView(
+				REGISTER,
+				SCHEMA,
+				OBJECT_ID,
+			)}`,
 			// `networkidle` never settles on Nextcloud — its long-poll and
 			// notification channels keep at least one request in flight for
 			// the life of the page, so waiting for idle waits for the

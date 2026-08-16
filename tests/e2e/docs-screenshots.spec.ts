@@ -40,6 +40,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
+// Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
+// binding records which page host each route mounts, which a bare path string
+// cannot say. Also what makes this suite legible to gate-26.
+import { AuditTrailIndex } from './_page-routes'
 
 const SHOT_ROOT = path.resolve(
 	__dirname,
@@ -384,7 +388,7 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '06-view-audit-trail-01.png')
 		await shoot(page, 'user', '06-view-audit-trail-02.png')
 		await shoot(page, 'user', '06-view-audit-trail-03.png')
-		await go(page, '/audit-trails')
+		await go(page, AuditTrailIndex)
 		await shoot(page, 'user', '06-view-audit-trail-04.png')
 		await shoot(page, 'user', '06-view-audit-trail-05.png')
 	})
