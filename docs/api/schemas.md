@@ -1,3 +1,31 @@
+## Creating a Schema Inside a Register
+
+**Endpoint:** `POST /api/schemas?register={id|uuid|slug}`
+
+The optional `register` parameter states which register the new schema belongs to.
+When it is supplied, the schema is recorded in that register's `schemas` list as
+part of the create.
+
+This matters because a register's `schemas` list is a **boundary**, not a hint: a
+request that names a register (`/api/objects/{register}/{schema}`,
+`/api/schemas/{id}?register=`) resolves the schema slug **only** within that
+register, and a slug the register does not carry is refused with 404. A schema
+created in a register without being recorded in it is therefore unreachable by
+slug through that register, even though writes addressed by numeric schema id
+still succeed.
+
+- `register` omitted — a register-less schema is created, exactly as before.
+- `register` names a register that does not exist or is not accessible — the
+  request is refused with **400** and **no schema is created**. Creating a
+  free-floating schema and answering 201 would tell the caller it has something it
+  does not have.
+- The parameter is never stored on the schema itself; a schema row has no register
+  column. The linkage lives on the register.
+
+If the linkage of an existing register was lost, `occ
+openregister:registers:relink-schemas` inspects and repairs it from the physical
+object tables.
+
 ## Error Handling for Missing Register or Schema
 
 If you request a schema or register by slug or ID that does not exist, the API will return a 404 Not Found response with a clear error message. This applies to all endpoints that use register or schema slugs/IDs, including object listing, creation, update, and detail endpoints.

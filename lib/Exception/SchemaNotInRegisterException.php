@@ -84,13 +84,27 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	private int $candidatesElsewhere;
 
 	/**
+	 * How many schemas the named register carries in total.
+	 *
+	 * @var int
+	 */
+	private int $registerSchemaCount;
+
+	/**
 	 * Constructor.
+	 *
+	 * `$registerSchemaCount` is a COUNT and not a "list is empty" boolean on
+	 * purpose. A flag argument only tells the message which sentence to print;
+	 * the number also tells the operator how far off the register is — "carries
+	 * no schemas at all" and "carries 14 schemas, none of them this slug" are
+	 * different diagnoses with different repairs, and the second is not
+	 * expressible with a boolean.
 	 *
 	 * @param string      $schemaSlug          The slug that did not resolve.
 	 * @param int|null    $registerId          The named register's id, when known.
 	 * @param string|null $registerSlug        The named register's slug, when known.
 	 * @param int         $candidatesElsewhere Count of same-slug schemas outside the register.
-	 * @param bool        $registerListEmpty   Whether the register carries no schemas at all.
+	 * @param int         $registerSchemaCount How many schemas the named register carries.
 	 *
 	 * @return void
 	 *
@@ -101,16 +115,15 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 		?int $registerId=null,
 		?string $registerSlug=null,
 		int $candidatesElsewhere=0,
-		bool $registerListEmpty=false,
+		int $registerSchemaCount=0,
 	) {
 		$this->schemaSlug          = $schemaSlug;
 		$this->registerId          = $registerId;
 		$this->registerSlug        = $registerSlug;
 		$this->candidatesElsewhere = $candidatesElsewhere;
+		$this->registerSchemaCount = $registerSchemaCount;
 
-		parent::__construct(
-			msg: $this->composeMessage(registerListEmpty: $registerListEmpty)
-		);
+		parent::__construct(msg: $this->composeMessage());
 	}//end __construct()
 
 	/**
@@ -120,11 +133,9 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	 * gets a different sentence from one that simply lacks this slug, because the
 	 * two have different remedies and conflating them is what hid the defect.
 	 *
-	 * @param bool $registerListEmpty Whether the register carries no schemas at all.
-	 *
 	 * @return string The composed message.
 	 */
-	private function composeMessage(bool $registerListEmpty): string {
+	private function composeMessage(): string {
 		$register = 'the named register';
 		if ($this->registerId !== null) {
 			$register = sprintf(
@@ -134,7 +145,7 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 			);
 		}
 
-		if ($registerListEmpty === true) {
+		if ($this->registerSchemaCount === 0) {
 			return sprintf(
 				'Schema slug "%s" cannot resolve because %s carries no schemas at all. '
 				. '%d schema(s) elsewhere on this instance carry this slug, and resolving to one of '
@@ -147,11 +158,13 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 		}
 
 		return sprintf(
-			'Schema slug "%s" is not carried by %s. %d schema(s) elsewhere on this instance '
-			. 'carry this slug; none of them is served here, because naming a register makes it a boundary. '
-			. 'If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it.',
+			'Schema slug "%s" is not carried by %s, which carries %d schema(s). %d schema(s) elsewhere '
+			. 'on this instance carry this slug; none of them is served here, because naming a register '
+			. 'makes it a boundary. If the linkage was lost, run '
+			. '`occ openregister:registers:relink-schemas` to inspect and repair it.',
 			$this->schemaSlug,
 			$register,
+			$this->registerSchemaCount,
 			$this->candidatesElsewhere
 		);
 	}//end composeMessage()
@@ -199,4 +212,18 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	public function getCandidatesElsewhere(): int {
 		return $this->candidatesElsewhere;
 	}//end getCandidatesElsewhere()
+
+	/**
+	 * Get how many schemas the named register carries.
+	 *
+	 * Zero means the register's linkage list is empty — the shape
+	 * `occ openregister:registers:relink-schemas` exists to repair.
+	 *
+	 * @return int The register's schema count.
+	 *
+	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 */
+	public function getRegisterSchemaCount(): int {
+		return $this->registerSchemaCount;
+	}//end getRegisterSchemaCount()
 }//end class

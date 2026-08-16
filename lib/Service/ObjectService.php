@@ -512,7 +512,7 @@ class ObjectService implements ObjectServiceInterface
                         registerId: $this->currentRegister->getId(),
                         registerSlug: $this->currentRegister->getSlug(),
                         candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schema),
-                        registerListEmpty: ($registerSchemaIds === [])
+                        registerSchemaCount: count($registerSchemaIds)
                     );
                 }
             }
@@ -2398,7 +2398,7 @@ class ObjectService implements ObjectServiceInterface
                 registerId: $register->getId(),
                 registerSlug: $register->getSlug(),
                 candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schemaSlug),
-                registerListEmpty: ($registerSchemaIds === [])
+                registerSchemaCount: count($registerSchemaIds)
             );
         }
 

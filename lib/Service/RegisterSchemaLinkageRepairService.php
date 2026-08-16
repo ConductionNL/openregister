@@ -116,8 +116,13 @@ class RegisterSchemaLinkageRepairService {
 
 		$report = [];
 		foreach ($this->registerMapper->findAll() as $register) {
+			// `OCP\AppFramework\Db\Entity` declares `@method int getId()`, and
+			// RegisterMapper::findAll() only ever returns persisted rows, so there
+			// is no unpersisted (id-less) register to guard against here. The
+			// `$id === null` arm this used to carry was unreachable, which is
+			// exactly what phpstan reported.
 			$id = $register->getId();
-			if ($id === null || ($registerId !== null && $id !== $registerId)) {
+			if ($registerId !== null && $id !== $registerId) {
 				continue;
 			}
 
