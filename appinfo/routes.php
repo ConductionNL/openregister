@@ -327,12 +327,14 @@ return [
         ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
         ['name' => 'translation#setStatus',     'url' => '/api/translations/object/{uuid}/{property}/{language}/status',      'verb' => 'POST'],
         ['name' => 'translation#bulkTranslate', 'url' => '/api/translations/object/{uuid}/bulk-translate',                    'verb' => 'POST'],
-        // Names - Ultra-fast object name lookup endpoints (specific routes first).
-        ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
-        ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
+        // Names - object name lookup. Both remaining routes require a session and
+        // return 401 without one. The single-object route `/api/names/{id}` and the
+        // `/stats` + `/warmup` routes were REMOVED (SEC-CTRL-2): all three were
+        // #[PublicPage], and `{id}` resolved any object's name through
+        // findAcrossAllSources(_rbac: false, _multitenancy: false). Manual warmup
+        // still exists, admin-only, at POST /api/settings/cache/warmup-names.
         ['name' => 'names#index', 'url' => '/api/names', 'verb' => 'GET'],
         ['name' => 'names#create', 'url' => '/api/names', 'verb' => 'POST'],
-        ['name' => 'names#show', 'url' => '/api/names/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Dashbaord.
         ['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
         ['name' => 'dashboard#calculate', 'url' => '/api/dashboard/calculate/{registerId}', 'verb' => 'POST', 'requirements' => ['registerId' => '\d+']],

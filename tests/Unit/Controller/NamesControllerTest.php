@@ -7,12 +7,14 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\NamesController;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 /**
  * Unit tests for NamesController
@@ -202,78 +204,69 @@ class NamesControllerTest extends TestCase {
 		$this->assertSame(500, $result->getStatus());
 	}
 
-	public function testShowReturnsNameForExistingId(): void {
-		$this->cacheHandler->method('getSingleObjectName')->willReturn('Test Name');
+	/**
+	 * show() / stats() / warmup() were REMOVED and must not return.
+	 *
+	 * These replace the seven tests that used to exercise them. Deleting those
+	 * tests alone would have left nothing to notice a revert: the endpoints could
+	 * be reinstated and every remaining test would still pass.
+	 *
+	 * All three were `#[PublicPage]`. `show($id)` was the serious one — it
+	 * resolved ANY object's name via
+	 * `CacheHandler::getSingleObjectName()`, which calls
+	 * `findAcrossAllSources(_rbac: false, _multitenancy: false)` and tries
+	 * organisations first, so an anonymous caller holding a UUID could read names
+	 * across every register, schema and tenant. `warmup()` let an anonymous caller
+	 * make the server rebuild the entire name cache; `stats()` exposed cache
+	 * internals.
+	 *
+	 * @return void
+	 */
+	public function testRemovedPublicNameEndpointsStayRemoved(): void {
+		foreach (['show', 'stats', 'warmup'] as $removed) {
+			$this->assertFalse(
+				method_exists($this->controller, $removed),
+				sprintf(
+					'NamesController::%s() was removed under SEC-CTRL-2 because it was #[PublicPage] over an '
+					. 'unscoped resolver. Re-adding it re-opens anonymous cross-tenant name disclosure. If it '
+					. 'must come back, it needs the caller\'s read permissions and active organisation applied '
+					. 'BEFORE the cache lookup — a "no user -> 401" preamble is NOT the fix (.github#365).',
+					$removed
+				)
+			);
+		}
 
-		$result = $this->controller->show('uuid-123');
+	}//end testRemovedPublicNameEndpointsStayRemoved()
 
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame('uuid-123', $data['id']);
-		$this->assertSame('Test Name', $data['name']);
-		$this->assertTrue($data['found']);
-	}
+	/**
+	 * The two surviving endpoints must never be reachable anonymously.
+	 *
+	 * `method_exists()` above cannot catch the other half of the regression:
+	 * leaving index()/create() in place but re-decorating them `#[PublicPage]`.
+	 * Assert the attribute's ABSENCE directly.
+	 *
+	 * @return void
+	 */
+	public function testSurvivingEndpointsAreNotPublicPages(): void {
+		$reflection = new ReflectionClass(NamesController::class);
 
-	public function testShowReturns404WhenNameNotFound(): void {
-		$this->cacheHandler->method('getSingleObjectName')->willReturn(null);
+		foreach (['index', 'create'] as $method) {
+			$attributes = array_map(
+				static fn ($attribute): string => $attribute->getName(),
+				$reflection->getMethod($method)->getAttributes()
+			);
 
-		$result = $this->controller->show('nonexistent');
+			$this->assertNotContains(
+				PublicPage::class,
+				$attributes,
+				sprintf(
+					'NamesController::%s() must not be #[PublicPage]. Name resolution is not RBAC- or '
+					. 'tenant-aware (see the TODO in index()), so anonymous access leaks names across '
+					. 'organisations.',
+					$method
+				)
+			);
+		}
 
-		$this->assertSame(404, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['found']);
-	}
-
-	public function testShowReturns500OnException(): void {
-		$this->cacheHandler->method('getSingleObjectName')
-			->willThrowException(new Exception('Error'));
-
-		$result = $this->controller->show('uuid-123');
-
-		$this->assertSame(500, $result->getStatus());
-	}
-
-	public function testStatsReturnsStatistics(): void {
-		$stats = ['hits' => 100, 'misses' => 5];
-		$this->cacheHandler->method('getStats')->willReturn($stats);
-
-		$result = $this->controller->stats();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame($stats, $data['cache_statistics']);
-		$this->assertArrayHasKey('performance_metrics', $data);
-	}
-
-	public function testStatsReturns500OnException(): void {
-		$this->cacheHandler->method('getStats')
-			->willThrowException(new Exception('Stats error'));
-
-		$result = $this->controller->stats();
-
-		$this->assertSame(500, $result->getStatus());
-	}
-
-	public function testWarmupReturnsSuccess(): void {
-		$this->cacheHandler->method('getStats')->willReturn(['name_cache_size' => 50]);
-		$this->cacheHandler->method('warmupNameCache')->willReturn(100);
-
-		$result = $this->controller->warmup();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(100, $data['loaded_names']);
-	}
-
-	public function testWarmupReturns500OnException(): void {
-		$this->cacheHandler->method('getStats')
-			->willThrowException(new Exception('Warmup failed'));
-
-		$result = $this->controller->warmup();
-
-		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-	}
+	}//end testSurvivingEndpointsAreNotPublicPages()
 }
