@@ -116,11 +116,10 @@ class RegisterSchemaLinkageRepairService {
 
 		$report = [];
 		foreach ($this->registerMapper->findAll() as $register) {
-			// `OCP\AppFramework\Db\Entity` declares `@method int getId()`, and
-			// RegisterMapper::findAll() only ever returns persisted rows, so there
-			// is no unpersisted (id-less) register to guard against here. The
-			// `$id === null` arm this used to carry was unreachable, which is
-			// exactly what phpstan reported.
+			// No null check on the id: Entity declares `@method int getId()`, and
+			// findAll() only ever yields persisted rows, so phpstan is right that
+			// `$id === null` can never be true here. The scope filter is the part
+			// that does work.
 			$id = $register->getId();
 			if ($registerId !== null && $id !== $registerId) {
 				continue;

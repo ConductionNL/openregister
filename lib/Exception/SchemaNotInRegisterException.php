@@ -108,6 +108,14 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	 *
 	 * @return void
 	 *
+	 * NOTE. `development` carried a `@SuppressWarnings(PHPMD.BooleanArgumentFlag)`
+	 * here (#2533), arguing the flag was needed to pick between two
+	 * operator-facing sentences. It is removed rather than kept, because the
+	 * third option its reasoning did not consider is strictly better than both
+	 * alternatives it rejected: the caller already knows the COUNT, and passing
+	 * the count satisfies the rule instead of silencing it while making the
+	 * message more useful.
+	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function __construct(
