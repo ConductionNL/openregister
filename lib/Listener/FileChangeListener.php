@@ -1,0 +1,275 @@
+<?php
+
+/**
+ * OpenRegister File Change Listener
+ *
+ * Listens for file creation and update events to queue asynchronous text extraction.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Listener;
+
+use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
+use OCA\OpenRegister\Service\SettingsService;
+use OCP\BackgroundJob\IJobList;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\Files\Events\Node\NodeWrittenEvent;
+use OCP\Files\File;
+use Psr\Log\LoggerInterface;
+
+/**
+ * FileChangeListener
+ *
+ * Listens for file creation and update events to queue asynchronous text extraction.
+ * Instead of processing files synchronously (which would block user requests),
+ * this listener queues a background job for each file that needs processing.
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ * @author   OpenRegister Team
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent>
+ */
+class FileChangeListener implements IEventListener {
+
+	/**
+	 * Cached extraction scope to avoid repeated DB reads within the same request.
+	 *
+	 * @var string|null
+	 */
+	private static ?string $cachedExtractScope = null;
+
+	/**
+	 * Cached extraction mode.
+	 *
+	 * @var string|null
+	 */
+	private static ?string $cachedExtractionMode = null;
+
+	/**
+	 * Constructor
+	 *
+	 * @param SettingsService $settingsService Settings service
+	 * @param IJobList $jobList Job list for queuing background jobs
+	 * @param LoggerInterface $logger Logger
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly SettingsService $settingsService,
+		private readonly IJobList $jobList,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
+
+	/**
+	 * Handle file events
+	 *
+	 * @param Event $event File event
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File event handling requires many conditional checks
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) File event handling requires comprehensive case coverage
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       File event handling requires many conditional checks
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		// Only handle NodeCreatedEvent and NodeWrittenEvent.
+		if (($event instanceof NodeCreatedEvent) === false
+			&& ($event instanceof NodeWrittenEvent) === false
+		) {
+			return;
+		}
+
+		$node = $event->getNode();
+
+		// Only process files, not folders.
+		if (($node instanceof File) === false) {
+			return;
+		}
+
+		$filePath = $node->getPath();
+
+		// Fast path: check if file is in OpenRegister directories BEFORE loading settings.
+		// This avoids DB reads for the vast majority of files (e.g., skeleton files on user creation).
+		$isOpenRegisterFile = strpos($filePath, 'OpenRegister/files') !== false
+			|| strpos($filePath, '/Open Registers/') !== false;
+
+		// Load extraction scope once per request (cached).
+		if (self::$cachedExtractScope === null) {
+			try {
+				$fileSettings = $this->settingsService->getFileSettingsOnly();
+				self::$cachedExtractScope = $fileSettings['extractionScope'] ?? 'objects';
+				self::$cachedExtractionMode = $fileSettings['extractionMode'] ?? 'background';
+			} catch (\Exception $e) {
+				self::$cachedExtractScope = 'objects';
+				self::$cachedExtractionMode = 'background';
+			}
+		}
+
+		$extractionScope = self::$cachedExtractScope;
+
+		// Skip early based on scope — no DB reads needed for these checks.
+		if ($extractionScope === 'none') {
+			return;
+		}
+
+		if ($extractionScope === 'objects' && $isOpenRegisterFile === false) {
+			return;
+		}
+
+		$fileId = $node->getId();
+		$fileName = $node->getName();
+
+		// Skip anonymized files.
+		if (strpos($fileName, '_anonymized') !== false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[FileChangeListener] File event detected - processing',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'event_type' => get_class($event),
+				'file_id' => $fileId,
+				'file_name' => $fileName,
+				'file_path' => $filePath,
+				'extraction_scope' => $extractionScope,
+			]
+		);
+
+		// Get extraction mode from cached settings.
+		try {
+			$extractionMode = self::$cachedExtractionMode ?? 'background';
+
+			// Handle different extraction modes.
+			switch ($extractionMode) {
+				case 'immediate':
+					// Previously extracted synchronously on the instance-wide NodeWritten hot
+					// path, blocking every file write. Enqueue the extraction job instead so
+					// the write returns immediately; the queued job runs on the next cron tick
+					// (OPS-14). Behaviour for legitimate callers is unchanged — text still gets
+					// extracted — only the timing moves off the request path.
+					$this->logger->debug(
+						message: '[FileChangeListener] Immediate mode - queueing extraction job',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'file_id' => $fileId,
+							'file_name' => $fileName,
+						]
+					);
+					try {
+						$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+						$this->logger->debug(
+							message: '[FileChangeListener] Immediate-mode extraction job queued',
+							context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+						);
+					} catch (\Exception $e) {
+						$this->logger->error(
+							message: '[FileChangeListener] Failed to queue immediate-mode extraction job',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'file_id' => $fileId,
+								'error' => $e->getMessage(),
+							]
+						);
+					}
+					break;
+
+				case 'background':
+					// Queue background job for delayed extraction on job stack.
+					$this->logger->debug(
+						message: '[FileChangeListener] Background mode - queueing extraction job',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'file_id' => $fileId,
+							'file_name' => $fileName,
+						]
+					);
+					try {
+						$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+						$this->logger->debug(
+							message: '[FileChangeListener] Background extraction job queued',
+							context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+						);
+					} catch (\Exception $e) {
+						$this->logger->error(
+							message: '[FileChangeListener] Failed to queue background job',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'file_id' => $fileId,
+								'error' => $e->getMessage(),
+							]
+						);
+					}
+					break;
+
+				case 'cron':
+					// Skip - cron job will handle periodic batch processing.
+					$this->logger->debug(
+						message: '[FileChangeListener] Cron mode - skipping, will be processed by scheduled job',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+					);
+					break;
+
+				case 'manual':
+					// Skip - only manual triggers will process.
+					$this->logger->debug(
+						message: '[FileChangeListener] Manual mode - skipping, requires manual trigger',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
+					);
+					break;
+
+				default:
+					// Fallback to background mode for unknown modes.
+					$this->logger->warning(
+						message: '[FileChangeListener] Unknown extraction mode, defaulting to background',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'file_id' => $fileId,
+							'extraction_mode' => $extractionMode,
+						]
+					);
+					$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+					break;
+			}//end switch
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[FileChangeListener] Error determining extraction mode',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'file_id' => $fileId,
+					'error' => $e->getMessage(),
+					'trace' => $e->getTraceAsString(),
+				]
+			);
+		}//end try
+	}//end handle()
+}//end class

@@ -1,0 +1,124 @@
+import type { SafeParseReturnType } from 'zod'
+import type { TObject } from './object.types'
+
+import { z } from 'zod'
+
+/**
+ * Entity class representing an Object with validation
+ */
+export class ObjectEntity implements TObject {
+	'@self': {
+		id: string
+		name: string | null
+		description: string | null
+		uuid: string
+		uri: string
+		version: string | null
+		register: string
+		schema: string
+		schemaVersion: string | null
+		relations: string | Array<unknown> | null
+		files: string | Array<unknown> | null
+		folder: string | null
+		textRepresentation: string | null
+		locked: Array<unknown> | null
+		owner: string | null
+		authorization: Array<unknown> | null
+		application: string | null
+		organisation: string | null
+		groups: Array<unknown> | null
+		validation: Array<unknown> | null
+		deleted: Array<unknown> | null
+		geo: Array<unknown> | null
+		retention: Array<unknown> | null
+		size: string | null
+		updated: string
+		created: string
+	};
+
+	[key: string]: unknown
+
+	/**
+	 * @param object
+	 * @spec exclude Entity model field-copy boilerplate: copies typed @self fields off the input with || defaults plus an extra-key passthrough; no standalone behavioural contract (validate() carries the schema contract).
+	 */
+	constructor(object: TObject) {
+		this['@self'] = {
+			id: object['@self']?.id || '',
+			name: object['@self']?.name || null,
+			description: object['@self']?.description || null,
+			uuid: object['@self']?.uuid || '',
+			uri: object['@self']?.uri || '',
+			version: object['@self']?.version || null,
+			register: object['@self']?.register || '',
+			schema: object['@self']?.schema || '',
+			schemaVersion: object['@self']?.schemaVersion || null,
+			relations: object['@self']?.relations || null,
+			files: object['@self']?.files || null,
+			folder: object['@self']?.folder || null,
+			textRepresentation: object['@self']?.textRepresentation || null,
+			locked: object['@self']?.locked || null,
+			owner: object['@self']?.owner || null,
+			authorization: object['@self']?.authorization || null,
+			application: object['@self']?.application || null,
+			organisation: object['@self']?.organisation || null,
+			groups: object['@self']?.groups || null,
+			validation: object['@self']?.validation || null,
+			deleted: object['@self']?.deleted || null,
+			geo: object['@self']?.geo || null,
+			retention: object['@self']?.retention || null,
+			size: object['@self']?.size || null,
+			updated: object['@self']?.updated || '',
+			created: object['@self']?.created || '',
+		}
+
+		// Copy any additional properties
+		Object.keys(object).forEach((key) => {
+			if (key !== '@self') {
+				this[key] = object[key]
+			}
+		})
+	}
+
+	/**
+	 * Validates the object against a schema
+	 */
+	public validate(): SafeParseReturnType<TObject, unknown> {
+		const schema = z
+			.object({
+				'@self': z.object({
+					id: z.string().min(1),
+					name: z.string().nullable(),
+					description: z.string().nullable(),
+					uuid: z.string().min(1),
+					uri: z.string().min(1),
+					version: z.string().nullable(),
+					register: z.string().min(1),
+					schema: z.string().min(1),
+					schemaVersion: z.string().nullable(),
+					relations: z
+						.union([z.string(), z.array(z.unknown())])
+						.nullable(),
+					files: z.union([z.string(), z.array(z.unknown())]).nullable(),
+					folder: z.string().nullable(),
+					textRepresentation: z.string().nullable(),
+					locked: z.array(z.unknown()).nullable(),
+					owner: z.string().nullable(),
+					authorization: z.array(z.unknown()).nullable(),
+					application: z.string().nullable(),
+					organisation: z.string().nullable(),
+					groups: z.array(z.unknown()).nullable(),
+					validation: z.array(z.unknown()).nullable(),
+					deleted: z.array(z.unknown()).nullable(),
+					geo: z.array(z.unknown()).nullable(),
+					retention: z.array(z.unknown()).nullable(),
+					size: z.string().nullable(),
+					updated: z.string().min(1),
+					created: z.string().min(1),
+				}),
+			})
+			.passthrough()
+
+		return schema.safeParse(this)
+	}
+}

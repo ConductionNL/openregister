@@ -1,0 +1,220 @@
+<template>
+	<div class="webhooks-sidebar">
+		<div class="sidebar-header">
+			<h3>{{ t('openregister', 'Search Webhooks') }}</h3>
+		</div>
+
+		<!-- Search Field -->
+		<div class="search-section">
+			<NcTextField
+				v-model="localSearch"
+				:aria-label="t('openregister', 'Search by name or URL')"
+				:placeholder="t('openregister', 'Search by name or URL')"
+				@update:modelValue="handleSearchInput">
+				<Magnify :size="20" />
+			</NcTextField>
+		</div>
+
+		<!-- Filter by Status -->
+		<div class="filter-section">
+			<h4>{{ t('openregister', 'Status') }}</h4>
+			<div class="filter-options">
+				<NcCheckboxRadioSwitch
+					:modelValue="selectedEnabled === null"
+					type="radio"
+					value="all"
+					@update:modelValue="updateEnabled(null)">
+					{{ t('openregister', 'All Webhooks') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:modelValue="selectedEnabled === true"
+					type="radio"
+					value="enabled"
+					@update:modelValue="updateEnabled(true)">
+					{{ t('openregister', 'Enabled') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:modelValue="selectedEnabled === false"
+					type="radio"
+					value="disabled"
+					@update:modelValue="updateEnabled(false)">
+					{{ t('openregister', 'Disabled') }}
+				</NcCheckboxRadioSwitch>
+			</div>
+		</div>
+
+		<!-- Clear Filters Button -->
+		<div v-if="hasActiveFilters" class="clear-filters">
+			<NcButton variant="secondary" @click="clearFilters">
+				{{ t('openregister', 'Clear filters') }}
+			</NcButton>
+		</div>
+	</div>
+</template>
+
+<script>
+import { t } from '@nextcloud/l10n'
+import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+
+export default {
+	name: 'WebhooksSidebar',
+
+	components: {
+		NcTextField,
+		NcCheckboxRadioSwitch,
+		NcButton,
+		Magnify,
+	},
+
+	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
+		search: {
+			type: String,
+			default: '',
+		},
+
+		/**
+		 * @spec exclude two-way-bound enabled-status filter prop, UI plumbing
+		 */
+		enabled: {
+			type: Boolean,
+			default: null,
+		},
+	},
+
+	data() {
+		return {
+			localSearch: this.search,
+			selectedEnabled: this.enabled,
+			searchTimeout: null,
+		}
+	},
+
+	computed: {
+		/**
+		 * Check if there are active filters
+		 *
+		 * @return {boolean} True if filters are active
+		 */
+		hasActiveFilters() {
+			return this.selectedEnabled !== null || this.localSearch !== ''
+		},
+	},
+
+	watch: {
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
+		search(newVal) {
+			this.localSearch = newVal
+		},
+
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
+		enabled(newVal) {
+			this.selectedEnabled = newVal
+		},
+	},
+
+	methods: {
+		t,
+
+		/**
+		 * Handle search input with debouncing
+		 *
+		 * @param {string} value - The search value
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
+		 */
+		handleSearchInput(value) {
+			clearTimeout(this.searchTimeout)
+			this.searchTimeout = setTimeout(() => {
+				this.$emit('update:search', value)
+			}, 500)
+		},
+
+		/**
+		 * Update the selected enabled filter
+		 *
+		 * @param {boolean|null} enabled - The enabled status to filter by
+		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:enabled, UI plumbing
+		 */
+		updateEnabled(enabled) {
+			this.selectedEnabled = enabled
+			this.$emit('update:enabled', enabled)
+		},
+
+		/**
+		 * Clear all filters
+		 *
+		 * @return {void}
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
+		 */
+		clearFilters() {
+			this.localSearch = ''
+			this.selectedEnabled = null
+			this.$emit('update:search', '')
+			this.$emit('update:enabled', null)
+		},
+	},
+}
+</script>
+
+<style scoped>
+.webhooks-sidebar {
+	padding: 16px;
+	background: var(--color-main-background);
+	border-left: 1px solid var(--color-border);
+	height: 100%;
+	overflow-y: auto;
+	min-width: 280px;
+	max-width: 350px;
+}
+
+.sidebar-header {
+	margin-bottom: 20px;
+}
+
+.sidebar-header h3 {
+	font-size: 18px;
+	font-weight: 600;
+	margin: 0;
+	color: var(--color-main-text);
+}
+
+.search-section {
+	margin-bottom: 24px;
+}
+
+.filter-section {
+	margin-bottom: 24px;
+}
+
+.filter-section h4 {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-main-text);
+	margin: 0 0 12px 0;
+}
+
+.filter-options {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.clear-filters {
+	margin-top: 20px;
+}
+
+.clear-filters button {
+	width: 100%;
+}
+</style>

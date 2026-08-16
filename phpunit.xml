@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="false"
+         failOnDeprecation="false">
+    
+    <testsuites>
+        <testsuite name="Unit Tests">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration Tests">
+            <directory>tests/integration</directory>
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Database Tests">
+            <directory>tests/Db</directory>
+        </testsuite>
+        <testsuite name="Service Tests">
+            <directory>tests/Service</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">lib/</directory>
+        </include>
+        <exclude>
+            <directory>lib/Migration/</directory>
+            <file>lib/AppInfo/Application.php</file>
+            <!--
+                Published contracts (ADR-084). Interfaces declare signatures and
+                have no executable body, so no test can ever cover them. Leaving
+                them in the denominator means every method added to a contract
+                is an unavoidable coverage drop, and the ratchet would be
+                punishing the act of publishing an interface rather than
+                measuring untested code.
+
+                This is a scope correction, not a way around the guard: the
+                implementations in lib/Db and lib/Service stay fully in scope.
+            -->
+            <directory>lib/Contract/</directory>
+        </exclude>
+    </source>
+
+    <coverage>
+        <report>
+            <clover outputFile="coverage/clover.xml"/>
+            <html outputDirectory="coverage/html"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
+
+    <php>
+        <env name="PHPUNIT_RUN" value="1"/>
+    </php>
+</phpunit>

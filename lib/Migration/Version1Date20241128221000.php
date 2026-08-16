@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * OpenRegister Migration
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Migration;
+
+use Closure;
+use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
+use OCP\Migration\IOutput;
+use OCP\Migration\SimpleMigrationStep;
+
+/**
+ * Migration step for database schema updates
+ *
+ * FIXME Auto-generated migration step: Please modify to your needs!
+ */
+class Version1Date20241128221000 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
+
+	/**
+	 * Apply schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
+
+		$schema = $schemaClosure();
+
+		// Update the openregister_objects table.
+		$table = $schema->getTable('openregister_objects');
+		if ($table->hasColumn('uri') === false) {
+			$table->addColumn(
+				name: 'uri',
+				typeName: Types::STRING,
+				options: [
+					'notnull' => true,
+					'length' => 255,
+				]
+			)->setDefault('');
+		}
+
+		if ($table->hasColumn('files') === false) {
+			$table->addColumn(
+				name: 'files',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			)->setDefault('{}');
+		}
+
+		if ($table->hasColumn('relations') === false) {
+			$table->addColumn(
+				name: 'relations',
+				typeName: Types::JSON,
+				options: ['notnull' => false]
+			)->setDefault('{}');
+		}
+
+		return $schema;
+	}//end changeSchema()
+
+	/**
+	 * Execute actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
+}//end class

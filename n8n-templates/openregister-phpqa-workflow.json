@@ -1,0 +1,64 @@
+{
+  "name": "OpenRegister PHPQA Code Quality Check",
+  "description": "Runs composer phpqa in the OpenRegister app to perform code quality analysis (PHPCS, PHPMD, PHPStan, Psalm, etc.) and returns results as JSON. Requires the PHPQA API server running on the host (scripts/phpqa-api.py). Response time: ~60 seconds.",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-phpqa",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "openregister-phpqa-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9090/phpqa",
+        "options": {
+          "timeout": 360000
+        }
+      },
+      "id": "call-phpqa-api",
+      "name": "Call PHPQA API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call PHPQA API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "tags": []
+}

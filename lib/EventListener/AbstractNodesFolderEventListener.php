@@ -1,0 +1,115 @@
+<?php
+
+/**
+ * OpenRegister AbstractNodesFolderEventListener
+ *
+ * This file contains the event listener for node folder events
+ * in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category EventListener
+ * @package  OCA\OpenRegister\EventListener
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\EventListener;
+
+use InvalidArgumentException;
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectService;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+use OCP\Files\Events\Node\AbstractNodesEvent;
+use OCP\Files\Events\Node\NodeCopiedEvent;
+use OCP\Files\Events\Node\NodeRenamedEvent;
+use OCP\Files\FileInfo;
+
+/**
+ * Event listener for node folder events.
+ *
+ * @template-implements IEventListener<Event>
+ */
+class AbstractNodesFolderEventListener implements IEventListener {
+	/**
+	 * Constructor for AbstractNodesFolderEventListener
+	 *
+	 * @param ObjectService $objectService Service for handling object operations
+	 * @param FileService $fileService Service for handling file operations
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly ObjectService $objectService,
+		private readonly FileService $fileService,
+	) {
+	}//end __construct()
+
+	/**
+	 * Handle incoming events.
+	 *
+	 * @param Event $event The event to be handled
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof AbstractNodesEvent === false) {
+			return;
+		}
+
+		$sourceNode = $event->getSource();
+		if ($sourceNode->getType() === FileInfo::TYPE_FOLDER) {
+			return;
+		}
+
+		match (true) {
+			$event instanceof NodeCopiedEvent => $this->handleNodeCopied(_event: $event),
+			$event instanceof NodeRenamedEvent => $this->handleNodeRenamed(_event: $event),
+			default => throw new InvalidArgumentException(
+				'Unsupported event type: ' . get_class($event)
+			),
+		};
+	}//end handle()
+
+	/**
+	 * Handle when a node is copied.
+	 *
+	 * @param NodeCopiedEvent $_event The node copied event
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function handleNodeCopied(NodeCopiedEvent $_event): void {
+		// $this->objectService->nodeCopiedEventFunction();
+	}//end handleNodeCopied()
+
+	/**
+	 * Handle when a node is renamed.
+	 *
+	 * @param NodeRenamedEvent $_event The node renamed event
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function handleNodeRenamed(NodeRenamedEvent $_event): void {
+		// $this->objectService->nodeRenamedEventFunction();
+	}//end handleNodeRenamed()
+}//end class

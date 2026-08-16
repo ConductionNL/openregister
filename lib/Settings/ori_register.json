@@ -1,0 +1,2107 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ORI Mock Register",
+    "description": "Mock ORI (Open Raadsinformatie) register with fictional council data for the municipality of Voorbeeldstad. Based on the VNG ODS-Open-Raadsinformatie specification and Open State Foundation data model.",
+    "version": "1.0.0"
+  },
+  "x-wire-standard": {
+    "standard": "ORI — VNG ODS-Open-Raadsinformatie specification (Open State Foundation data model)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "vergadering, agendapunt, raadsdocument, stemming, raadslid and fractie are the ODS specification's own object types. ⚠️ procest declares the same six slugs in its own operational ori_register.json, and $ref slug resolution is instance-global — the two must be resolved together at fleet level, not renamed on one side. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "ORI mock register for development and testing of council information integrations"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "ori": {
+        "slug": "ori",
+        "title": "ORI (Open Raadsinformatie)",
+        "version": "1.0.0",
+        "description": "Mock ORI register containing council information for the fictional municipality of Voorbeeldstad. Includes meetings, agenda items, documents, votes, council members, and parties based on the VNG ODS-Open-Raadsinformatie specification.",
+        "published": "2025-01-01T00:00:00+00:00",
+        "schemas": [
+          "vergadering",
+          "agendapunt",
+          "raadsdocument",
+          "stemming",
+          "raadslid",
+          "fractie"
+        ],
+        "folder": "Open Registers/ORI"
+      }
+    },
+    "schemas": {
+      "vergadering": {
+        "slug": "vergadering",
+        "title": "Vergadering",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:Event",
+        "summary": "A council meeting or committee session",
+        "description": "Represents a meeting of the municipal council or one of its committees. Contains scheduling information, location, and organizational references aligned with the VNG ODS-Open-Raadsinformatie specification.",
+        "required": [
+          "naam",
+          "type",
+          "startDate"
+        ],
+        "properties": {
+          "naam": {
+            "type": "string",
+            "description": "Name or title of the meeting",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Meeting Name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of meeting",
+            "enum": [
+              "raadsvergadering",
+              "commissievergadering",
+              "informatiebijeenkomst",
+              "hoorzitting"
+            ],
+            "facetable": true,
+            "title": "Meeting Type"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the meeting",
+            "enum": [
+              "gepland",
+              "bevestigd",
+              "afgelast"
+            ],
+            "facetable": true,
+            "title": "Status"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start date and time of the meeting",
+            "title": "Start Date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End date and time of the meeting",
+            "title": "End Date"
+          },
+          "locatie": {
+            "type": "string",
+            "description": "Location where the meeting takes place",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Location"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "Organization reference (municipality or body)",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Organisation"
+          },
+          "commissie": {
+            "type": "string",
+            "description": "Committee name if this is a committee meeting",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Committee"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "agendapunt": {
+        "slug": "agendapunt",
+        "title": "Agendapunt",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:Thing",
+        "summary": "An agenda item within a council meeting",
+        "description": "Represents a single item on the agenda of a meeting. Contains the subject, description, ordering position, and references to the parent meeting and any related documents.",
+        "required": [
+          "onderwerp",
+          "volgorde",
+          "vergadering"
+        ],
+        "properties": {
+          "onderwerp": {
+            "type": "string",
+            "description": "Subject or title of the agenda item",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Subject"
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "Detailed description of the agenda item",
+            "maxLength": 2000,
+            "title": "Description"
+          },
+          "volgorde": {
+            "type": "integer",
+            "description": "Position/order on the agenda",
+            "minimum": 1,
+            "title": "Order"
+          },
+          "vergadering": {
+            "type": "string",
+            "description": "Reference (slug) to the parent vergadering",
+            "facetable": true,
+            "title": "Meeting"
+          },
+          "parentAgendaItem": {
+            "type": "string",
+            "description": "Reference to a parent agenda item for sub-items",
+            "title": "Parent Agenda Item"
+          },
+          "bijlagen": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "References to related raadsdocumenten",
+            "title": "Attachments"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "raadsdocument": {
+        "slug": "raadsdocument",
+        "title": "Raadsdocument",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:DigitalDocument",
+        "summary": "A document related to council proceedings",
+        "description": "Represents a document within the council information system, such as motions, amendments, decisions, letters, reports, or minutes.",
+        "required": [
+          "titel",
+          "type"
+        ],
+        "properties": {
+          "titel": {
+            "type": "string",
+            "description": "Title of the document",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Title"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of council document",
+            "enum": [
+              "motie",
+              "amendement",
+              "besluit",
+              "brief",
+              "rapport",
+              "notulen"
+            ],
+            "facetable": true,
+            "title": "Document Type"
+          },
+          "classification": {
+            "type": "string",
+            "description": "Category or classification of the document",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Classification"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL where the document can be accessed",
+            "format": "uri",
+            "maxLength": 500,
+            "title": "Document URL"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "File name of the document",
+            "maxLength": 255,
+            "title": "File Name"
+          },
+          "fileSize": {
+            "type": "integer",
+            "description": "File size in bytes",
+            "minimum": 0,
+            "title": "File Size"
+          },
+          "inhoudType": {
+            "type": "string",
+            "description": "MIME type of the document",
+            "maxLength": 100,
+            "title": "Content Type"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "stemming": {
+        "slug": "stemming",
+        "title": "Stemming",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:VoteAction",
+        "summary": "A vote on a council proposal",
+        "description": "Represents a formal vote taken during a council meeting. Contains the subject, result, vote counts, and per-party breakdown of the voting results.",
+        "required": [
+          "onderwerp",
+          "result",
+          "votesFor",
+          "votesAgainst"
+        ],
+        "properties": {
+          "onderwerp": {
+            "type": "string",
+            "description": "Subject that was voted on",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Vote Subject"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of vote (e.g. voorstel, motie, amendement)",
+            "maxLength": 100,
+            "facetable": true,
+            "title": "Vote Type"
+          },
+          "result": {
+            "type": "string",
+            "description": "Outcome of the vote",
+            "enum": [
+              "aangenomen",
+              "verworpen"
+            ],
+            "facetable": true,
+            "title": "Result"
+          },
+          "agendapunt": {
+            "type": "string",
+            "description": "Reference (slug) to the agenda item this vote belongs to",
+            "facetable": true,
+            "title": "Agenda Item"
+          },
+          "votesFor": {
+            "type": "integer",
+            "description": "Number of votes in favor",
+            "minimum": 0,
+            "title": "Votes In Favour"
+          },
+          "votesAgainst": {
+            "type": "integer",
+            "description": "Number of votes against",
+            "minimum": 0,
+            "title": "Votes Against"
+          },
+          "abstentions": {
+            "type": "integer",
+            "description": "Number of abstentions",
+            "minimum": 0,
+            "title": "Abstentions"
+          },
+          "politicalGroupResults": {
+            "type": "array",
+            "description": "Per-party voting results",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fractie": {
+                  "type": "string",
+                  "description": "Party name",
+                  "title": "Party Name"
+                },
+                "vote": {
+                  "type": "string",
+                  "description": "Vote cast by this party",
+                  "enum": [
+                    "voor",
+                    "tegen",
+                    "onthouding"
+                  ],
+                  "title": "Vote Cast"
+                },
+                "zetels": {
+                  "type": "integer",
+                  "description": "Number of seats this party holds",
+                  "title": "Seats"
+                }
+              }
+            },
+            "title": "Party Results"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "raadslid": {
+        "slug": "raadslid",
+        "title": "Raadslid",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:Person",
+        "summary": "A member of the municipal council or executive board",
+        "description": "Represents a person serving in the municipal council, college, or council administration. Includes council members, aldermen, the mayor, and the clerk. A raadslid IS a Person playing a council role: identity should be sourced from a canonical Person provider via the `person` reference, while this schema only overlays the role (fractie, functie, actief).",
+        "required": [
+          "naam",
+          "fractie",
+          "role"
+        ],
+        "properties": {
+          "person": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Person",
+            "description": "The person who holds this council seat. Cross-app reference (ADR-048) to a schema.org/Person provider (e.g. a contact/addressbook person) when available.",
+            "referenceSemanticType": "https://schema.org/Person",
+            "referenceSemanticApp": "contacts"
+          },
+          "naam": {
+            "type": "string",
+            "description": "Denormalised display copy of the referenced person's full name, sourced from the `person` reference. Kept for display and backward compatibility with existing objects; the canonical identity lives on the referenced Person.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Full Name"
+          },
+          "fractie": {
+            "type": "string",
+            "description": "Reference (slug) to the party/faction this member belongs to",
+            "facetable": true,
+            "title": "Party"
+          },
+          "role": {
+            "type": "string",
+            "description": "Function or role of this person",
+            "enum": [
+              "raadslid",
+              "wethouder",
+              "burgemeester",
+              "griffier"
+            ],
+            "facetable": true,
+            "title": "Function"
+          },
+          "actief": {
+            "type": "boolean",
+            "description": "Whether this member is currently active",
+            "facetable": true,
+            "title": "Active"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "fractie": {
+        "slug": "fractie",
+        "title": "Fractie",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "x-schema-org": "schema:Organization",
+        "summary": "A political party or faction in the municipal council",
+        "description": "Represents a political party or faction with seats in the municipal council. Contains the party name, number of seats, and coalition/opposition classification.",
+        "required": [
+          "naam",
+          "zetels"
+        ],
+        "properties": {
+          "naam": {
+            "type": "string",
+            "description": "Name of the party or faction",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Party Name"
+          },
+          "zetels": {
+            "type": "integer",
+            "description": "Number of seats in the council",
+            "minimum": 0,
+            "title": "Seats"
+          },
+          "classification": {
+            "type": "string",
+            "description": "Role of the party in the council",
+            "enum": [
+              "coalitiepartij",
+              "oppositiepartij"
+            ],
+            "facetable": true,
+            "title": "Council Role"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "voorbeeldstad-vooruit"
+        },
+        "naam": "Voorbeeldstad Vooruit",
+        "zetels": 8,
+        "classification": "coalitiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "groen-links-voorbeeldstad"
+        },
+        "naam": "Groen Links Voorbeeldstad",
+        "zetels": 6,
+        "classification": "coalitiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "democraten-voorbeeldstad"
+        },
+        "naam": "Democraten Voorbeeldstad",
+        "zetels": 5,
+        "classification": "coalitiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "lokaal-belang"
+        },
+        "naam": "Lokaal Belang",
+        "zetels": 5,
+        "classification": "oppositiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "pvda-voorbeeldstad"
+        },
+        "naam": "PvdA Voorbeeldstad",
+        "zetels": 4,
+        "classification": "oppositiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "vvd-voorbeeldstad"
+        },
+        "naam": "VVD Voorbeeldstad",
+        "zetels": 3,
+        "classification": "oppositiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "sp-voorbeeldstad"
+        },
+        "naam": "SP Voorbeeldstad",
+        "zetels": 2,
+        "classification": "oppositiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "fractie",
+          "slug": "forum-voorbeeldstad"
+        },
+        "naam": "Forum Voorbeeldstad",
+        "zetels": 2,
+        "classification": "oppositiepartij"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "jan-willem-van-doesburg"
+        },
+        "naam": "Jan-Willem van Doesburg",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "burgemeester",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "maria-bakker-de-wit"
+        },
+        "naam": "Maria Bakker-de Wit",
+        "fractie": "groen-links-voorbeeldstad",
+        "role": "wethouder",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "ahmed-el-mansouri"
+        },
+        "naam": "Ahmed El-Mansouri",
+        "fractie": "democraten-voorbeeldstad",
+        "role": "wethouder",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "petra-koopmans"
+        },
+        "naam": "Petra Koopmans",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "wethouder",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "henk-van-der-berg"
+        },
+        "naam": "Henk van der Berg",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "griffier",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "klaas-de-vries"
+        },
+        "naam": "Klaas de Vries",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "sandra-jansen"
+        },
+        "naam": "Sandra Jansen",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "tom-willems"
+        },
+        "naam": "Tom Willems",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "annemiek-van-rijn"
+        },
+        "naam": "Annemiek van Rijn",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "bas-vermeulen"
+        },
+        "naam": "Bas Vermeulen",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "lisa-de-groot"
+        },
+        "naam": "Lisa de Groot",
+        "fractie": "groen-links-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "robin-smit"
+        },
+        "naam": "Robin Smit",
+        "fractie": "groen-links-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "fatima-bouazza"
+        },
+        "naam": "Fatima Bouazza",
+        "fractie": "groen-links-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "jeroen-bos"
+        },
+        "naam": "Jeroen Bos",
+        "fractie": "groen-links-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "marieke-scholten"
+        },
+        "naam": "Marieke Scholten",
+        "fractie": "democraten-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "pieter-van-dijk"
+        },
+        "naam": "Pieter van Dijk",
+        "fractie": "democraten-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "eva-mulder"
+        },
+        "naam": "Eva Mulder",
+        "fractie": "democraten-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "dirk-van-leeuwen"
+        },
+        "naam": "Dirk van Leeuwen",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "ria-ter-horst"
+        },
+        "naam": "Ria ter Horst",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "jan-kramer"
+        },
+        "naam": "Jan Kramer",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "nienke-brouwer"
+        },
+        "naam": "Nienke Brouwer",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "gerard-visser"
+        },
+        "naam": "Gerard Visser",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "monique-peters"
+        },
+        "naam": "Monique Peters",
+        "fractie": "pvda-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "willem-hendriks"
+        },
+        "naam": "Willem Hendriks",
+        "fractie": "pvda-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "denise-van-dam"
+        },
+        "naam": "Denise van Dam",
+        "fractie": "pvda-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "frank-de-boer"
+        },
+        "naam": "Frank de Boer",
+        "fractie": "pvda-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "caroline-van-den-heuvel"
+        },
+        "naam": "Caroline van den Heuvel",
+        "fractie": "vvd-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "robert-dekker"
+        },
+        "naam": "Robert Dekker",
+        "fractie": "vvd-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "els-van-der-linden"
+        },
+        "naam": "Els van der Linden",
+        "fractie": "vvd-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "marco-kuijpers"
+        },
+        "naam": "Marco Kuijpers",
+        "fractie": "sp-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "ingrid-wolf"
+        },
+        "naam": "Ingrid Wolf",
+        "fractie": "sp-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "hans-van-beek"
+        },
+        "naam": "Hans van Beek",
+        "fractie": "forum-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "tineke-groen"
+        },
+        "naam": "Tineke Groen",
+        "fractie": "forum-voorbeeldstad",
+        "role": "raadslid",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "wim-van-houten"
+        },
+        "naam": "Wim van Houten",
+        "fractie": "voorbeeldstad-vooruit",
+        "role": "raadslid",
+        "actief": false
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadslid",
+          "slug": "joke-meijer"
+        },
+        "naam": "Joke Meijer",
+        "fractie": "lokaal-belang",
+        "role": "raadslid",
+        "actief": false
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-09-02"
+        },
+        "naam": "Raadsvergadering 2 september 2025",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-09-02T19:00:00+02:00",
+        "endDate": "2025-09-02T22:30:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "commissie-mens-samenleving-2025-09-11"
+        },
+        "naam": "Commissie Mens & Samenleving 11 september 2025",
+        "type": "commissievergadering",
+        "status": "bevestigd",
+        "startDate": "2025-09-11T20:00:00+02:00",
+        "endDate": "2025-09-11T22:00:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad",
+        "commissie": "Commissie Mens & Samenleving"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-09-16"
+        },
+        "naam": "Raadsvergadering 16 september 2025",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-09-16T19:00:00+02:00",
+        "endDate": "2025-09-16T22:00:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-10-07"
+        },
+        "naam": "Raadsvergadering 7 oktober 2025",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-10-07T19:00:00+02:00",
+        "endDate": "2025-10-07T22:00:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "commissie-ruimte-economie-2025-10-09"
+        },
+        "naam": "Commissie Ruimte & Economie 9 oktober 2025",
+        "type": "commissievergadering",
+        "status": "bevestigd",
+        "startDate": "2025-10-09T20:00:00+02:00",
+        "endDate": "2025-10-09T22:00:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad",
+        "commissie": "Commissie Ruimte & Economie"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-10-21"
+        },
+        "naam": "Raadsvergadering 21 oktober 2025 (Begrotingsbehandeling)",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-10-21T19:00:00+02:00",
+        "endDate": "2025-10-21T23:00:00+02:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-11-04"
+        },
+        "naam": "Raadsvergadering 4 november 2025",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-11-04T19:00:00+01:00",
+        "endDate": "2025-11-04T22:00:00+01:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "commissie-bestuur-financien-2025-11-13"
+        },
+        "naam": "Commissie Bestuur & Financien 13 november 2025",
+        "type": "commissievergadering",
+        "status": "bevestigd",
+        "startDate": "2025-11-13T20:00:00+01:00",
+        "endDate": "2025-11-13T22:00:00+01:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad",
+        "commissie": "Commissie Bestuur & Financien"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2025-12-02"
+        },
+        "naam": "Raadsvergadering 2 december 2025",
+        "type": "raadsvergadering",
+        "status": "bevestigd",
+        "startDate": "2025-12-02T19:00:00+01:00",
+        "endDate": "2025-12-02T22:00:00+01:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "vergadering",
+          "slug": "raadsvergadering-2026-01-14"
+        },
+        "naam": "Raadsvergadering 14 januari 2026 (Nieuwjaar)",
+        "type": "raadsvergadering",
+        "status": "gepland",
+        "startDate": "2026-01-14T19:00:00+01:00",
+        "endDate": "2026-01-14T22:00:00+01:00",
+        "locatie": "Raadzaal, Gemeentehuis Voorbeeldstad",
+        "organisation": "Gemeente Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-01-opening"
+        },
+        "onderwerp": "Opening en mededelingen",
+        "omschrijving": "De voorzitter opent de vergadering en deelt de mededelingen.",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-09-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-02-agenda"
+        },
+        "onderwerp": "Vaststelling agenda",
+        "omschrijving": "De raad stelt de agenda voor deze vergadering vast.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-09-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-03-vragenuur"
+        },
+        "onderwerp": "Vragenuur",
+        "omschrijving": "Raadsleden kunnen mondeling vragen stellen aan het college van burgemeester en wethouders.",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-09-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-04-herinrichting-marktplein"
+        },
+        "onderwerp": "Voorstel: Herinrichting marktplein",
+        "omschrijving": "Het college stelt voor om het marktplein in het centrum van Voorbeeldstad opnieuw in te richten met meer groen, autoluwe zones en nieuwe terrassen. Het totale budget bedraagt 2,3 miljoen euro. De oppositie heeft een amendement ingediend om het ontwerp aan te passen.",
+        "volgorde": 4,
+        "vergadering": "raadsvergadering-2025-09-02",
+        "bijlagen": [
+          "besluit-herinrichting-marktplein",
+          "amendement-herinrichting-marktplein",
+          "brief-inwoners-marktplein"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-05-subsidie-duurzame-energie"
+        },
+        "onderwerp": "Voorstel: Subsidieregeling duurzame energie",
+        "omschrijving": "Voorstel tot vaststelling van een gemeentelijke subsidieregeling voor woningeigenaren die zonnepanelen, warmtepompen of isolatie willen aanschaffen. Totaal beschikbaar budget: 500.000 euro voor 2025-2026.",
+        "volgorde": 5,
+        "vergadering": "raadsvergadering-2025-09-02",
+        "bijlagen": [
+          "besluit-subsidieregeling-duurzame-energie"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-06-bestemmingsplan"
+        },
+        "onderwerp": "Voorstel: Bestemmingsplan buitengebied",
+        "omschrijving": "Vaststelling van het gewijzigde bestemmingsplan voor het buitengebied van Voorbeeldstad. Het plan maakt beperkte woningbouw mogelijk op drie locaties aan de dorpsrand, met behoud van het groene karakter.",
+        "volgorde": 6,
+        "vergadering": "raadsvergadering-2025-09-02",
+        "bijlagen": [
+          "besluit-bestemmingsplan-buitengebied",
+          "brief-provincie-buitengebied"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-07-ingekomen-stukken"
+        },
+        "onderwerp": "Ingekomen stukken",
+        "omschrijving": "Behandeling van de ingekomen brieven en stukken van het college, inwoners en externe partijen.",
+        "volgorde": 7,
+        "vergadering": "raadsvergadering-2025-09-02",
+        "bijlagen": [
+          "brief-college-jeugdzorg"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250902-08-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "omschrijving": "De voorzitter sluit de vergadering.",
+        "volgorde": 8,
+        "vergadering": "raadsvergadering-2025-09-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-ms-20250911-01-opening"
+        },
+        "onderwerp": "Opening",
+        "omschrijving": "De voorzitter opent de commissievergadering.",
+        "volgorde": 1,
+        "vergadering": "commissie-mens-samenleving-2025-09-11"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-ms-20250911-02-jeugdzorg"
+        },
+        "onderwerp": "Bespreking: Stand van zaken jeugdzorg",
+        "omschrijving": "Bespreking van de brief van het college over de ontwikkelingen in de jeugdzorg. De wachtlijsten zijn opgelopen en het college wordt gevraagd maatregelen te treffen.",
+        "volgorde": 2,
+        "vergadering": "commissie-mens-samenleving-2025-09-11",
+        "bijlagen": [
+          "brief-college-jeugdzorg"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-ms-20250911-03-wmo"
+        },
+        "onderwerp": "Bespreking: Evaluatie Wmo-beleid 2024",
+        "omschrijving": "Evaluatie van het Wmo-beleid over het afgelopen jaar. Aandachtspunten zijn de toegankelijkheid van voorzieningen en de eigen bijdrage.",
+        "volgorde": 3,
+        "vergadering": "commissie-mens-samenleving-2025-09-11"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-ms-20250911-04-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "omschrijving": "De voorzitter sluit de commissievergadering.",
+        "volgorde": 4,
+        "vergadering": "commissie-mens-samenleving-2025-09-11"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250916-01-opening"
+        },
+        "onderwerp": "Opening en mededelingen",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-09-16"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250916-02-notulen"
+        },
+        "onderwerp": "Vaststelling notulen raadsvergadering 2 september 2025",
+        "omschrijving": "De raad stelt de notulen van de vorige vergadering vast.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-09-16",
+        "bijlagen": [
+          "notulen-raad-2025-09-02"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250916-03-vuurwerkverbod"
+        },
+        "onderwerp": "Motie: Vuurwerkverbod jaarwisseling",
+        "omschrijving": "Groen Links Voorbeeldstad dient een motie in om een gemeentelijk vuurwerkverbod in te stellen voor de komende jaarwisseling. De motie vraagt het college om een verbod voor te bereiden en alternatief entertainment te organiseren.",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-09-16",
+        "bijlagen": [
+          "motie-vuurwerkverbod"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20250916-04-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 4,
+        "vergadering": "raadsvergadering-2025-09-16"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251007-01-opening"
+        },
+        "onderwerp": "Opening en mededelingen",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-10-07"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251007-02-jaarrekening"
+        },
+        "onderwerp": "Vaststelling jaarrekening 2024",
+        "omschrijving": "De raad behandelt de jaarrekening over het boekjaar 2024. De accountant heeft een goedkeurende verklaring afgegeven.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-10-07",
+        "bijlagen": [
+          "rapport-jaarrekening-2024"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251007-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-10-07"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-re-20251009-01-opening"
+        },
+        "onderwerp": "Opening",
+        "volgorde": 1,
+        "vergadering": "commissie-ruimte-economie-2025-10-09"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-re-20251009-02-woningbouw"
+        },
+        "onderwerp": "Bespreking: Woningbouwmonitor Voorbeeldstad",
+        "omschrijving": "Bespreking van de halfjaarlijkse woningbouwmonitor. Er is een tekort van 1.200 woningen. Het college wordt gevraagd om versnellingsmaatregelen.",
+        "volgorde": 2,
+        "vergadering": "commissie-ruimte-economie-2025-10-09",
+        "bijlagen": [
+          "rapport-woningbouwmonitor"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-re-20251009-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "commissie-ruimte-economie-2025-10-09"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-01-opening"
+        },
+        "onderwerp": "Opening",
+        "omschrijving": "De voorzitter opent de begrotingsvergadering.",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-10-21"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-02-algemene-beschouwingen"
+        },
+        "onderwerp": "Algemene beschouwingen",
+        "omschrijving": "Alle fracties geven hun visie op de begroting en het beleid van het college voor het komende jaar.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-10-21"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-03-programmabegroting"
+        },
+        "onderwerp": "Programmabegroting 2026",
+        "omschrijving": "Behandeling en vaststelling van de programmabegroting 2026 van de gemeente Voorbeeldstad. Totale begroting: 89 miljoen euro.",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-10-21"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-04-motie-jeugdzorg"
+        },
+        "onderwerp": "Motie: Extra budget jeugdzorg",
+        "omschrijving": "Voorbeeldstad Vooruit en Groen Links Voorbeeldstad dienen een motie in om 750.000 euro extra budget vrij te maken voor jeugdzorg om de wachtlijsten terug te dringen.",
+        "volgorde": 4,
+        "vergadering": "raadsvergadering-2025-10-21",
+        "bijlagen": [
+          "motie-extra-budget-jeugdzorg"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-05-amendement-ozb"
+        },
+        "onderwerp": "Amendement: Verlaging OZB",
+        "omschrijving": "Lokaal Belang en VVD Voorbeeldstad dienen een amendement in om de OZB-verhoging van 5% terug te brengen naar 2%, conform het inflatieniveau.",
+        "volgorde": 5,
+        "vergadering": "raadsvergadering-2025-10-21",
+        "bijlagen": [
+          "amendement-verlaging-ozb"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-06-motie-woningbouw"
+        },
+        "onderwerp": "Motie: Onderzoek woningbouw",
+        "omschrijving": "PvdA Voorbeeldstad dient een motie in om een extern onderzoek te laten uitvoeren naar mogelijkheden voor versnelling van de woningbouwopgave in Voorbeeldstad.",
+        "volgorde": 6,
+        "vergadering": "raadsvergadering-2025-10-21",
+        "bijlagen": [
+          "motie-onderzoek-woningbouw"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251021-07-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 7,
+        "vergadering": "raadsvergadering-2025-10-21"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251104-01-opening"
+        },
+        "onderwerp": "Opening en mededelingen",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-11-04"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251104-02-notulen"
+        },
+        "onderwerp": "Vaststelling notulen begrotingsbehandeling 21 oktober 2025",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-11-04",
+        "bijlagen": [
+          "notulen-raad-2025-10-21"
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251104-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-11-04"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-bf-20251113-01-opening"
+        },
+        "onderwerp": "Opening",
+        "volgorde": 1,
+        "vergadering": "commissie-bestuur-financien-2025-11-13"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-bf-20251113-02-ict-aanbesteding"
+        },
+        "onderwerp": "Bespreking: ICT-aanbesteding gemeentelijke dienstverlening",
+        "omschrijving": "Het college informeert de commissie over de voortgang van de ICT-aanbesteding voor de modernisering van de gemeentelijke dienstverlening. Het betreft een meerjarig contract van 1,2 miljoen euro.",
+        "volgorde": 2,
+        "vergadering": "commissie-bestuur-financien-2025-11-13"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "cie-bf-20251113-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "commissie-bestuur-financien-2025-11-13"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251202-01-opening"
+        },
+        "onderwerp": "Opening en mededelingen",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2025-12-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251202-02-decembercirculaire"
+        },
+        "onderwerp": "Bespreking: Decembercirculaire gemeentefonds",
+        "omschrijving": "Bespreking van de gevolgen van de decembercirculaire van het gemeentefonds voor de begroting van Voorbeeldstad.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2025-12-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20251202-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2025-12-02"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20260114-01-opening"
+        },
+        "onderwerp": "Opening en nieuwjaarstoespraak",
+        "omschrijving": "De burgemeester opent het nieuwe raadsjaar met een nieuwjaarstoespraak.",
+        "volgorde": 1,
+        "vergadering": "raadsvergadering-2026-01-14"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20260114-02-werkprogramma"
+        },
+        "onderwerp": "Vaststelling werkprogramma raad 2026",
+        "omschrijving": "De raad stelt het werkprogramma vast voor het kalenderjaar 2026, inclusief de vergaderplanning en de aandachtspunten per commissie.",
+        "volgorde": 2,
+        "vergadering": "raadsvergadering-2026-01-14"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "agendapunt",
+          "slug": "raad-20260114-03-sluiting"
+        },
+        "onderwerp": "Sluiting",
+        "volgorde": 3,
+        "vergadering": "raadsvergadering-2026-01-14"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "motie-extra-budget-jeugdzorg"
+        },
+        "titel": "Motie: Extra budget jeugdzorg",
+        "type": "motie",
+        "classification": "jeugdzorg",
+        "url": "https://voorbeeldstad.nl/raad/documenten/motie-extra-budget-jeugdzorg.pdf",
+        "fileName": "motie-extra-budget-jeugdzorg.pdf",
+        "fileSize": 124500,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "motie-onderzoek-woningbouw"
+        },
+        "titel": "Motie: Onderzoek versnelling woningbouw",
+        "type": "motie",
+        "classification": "woningbouw",
+        "url": "https://voorbeeldstad.nl/raad/documenten/motie-onderzoek-woningbouw.pdf",
+        "fileName": "motie-onderzoek-woningbouw.pdf",
+        "fileSize": 98200,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "motie-vuurwerkverbod"
+        },
+        "titel": "Motie: Gemeentelijk vuurwerkverbod jaarwisseling 2025-2026",
+        "type": "motie",
+        "classification": "openbare orde",
+        "url": "https://voorbeeldstad.nl/raad/documenten/motie-vuurwerkverbod.pdf",
+        "fileName": "motie-vuurwerkverbod.pdf",
+        "fileSize": 87300,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "amendement-verlaging-ozb"
+        },
+        "titel": "Amendement: Verlaging OZB-verhoging van 5% naar 2%",
+        "type": "amendement",
+        "classification": "financien",
+        "url": "https://voorbeeldstad.nl/raad/documenten/amendement-verlaging-ozb.pdf",
+        "fileName": "amendement-verlaging-ozb.pdf",
+        "fileSize": 76800,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "amendement-herinrichting-marktplein"
+        },
+        "titel": "Amendement: Aanpassing ontwerp herinrichting marktplein",
+        "type": "amendement",
+        "classification": "ruimtelijke ordening",
+        "url": "https://voorbeeldstad.nl/raad/documenten/amendement-herinrichting-marktplein.pdf",
+        "fileName": "amendement-herinrichting-marktplein.pdf",
+        "fileSize": 134200,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "besluit-herinrichting-marktplein"
+        },
+        "titel": "Besluit: Herinrichting marktplein Voorbeeldstad",
+        "type": "besluit",
+        "classification": "ruimtelijke ordening",
+        "url": "https://voorbeeldstad.nl/raad/documenten/besluit-herinrichting-marktplein.pdf",
+        "fileName": "besluit-herinrichting-marktplein.pdf",
+        "fileSize": 215600,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "besluit-subsidieregeling-duurzame-energie"
+        },
+        "titel": "Besluit: Vaststelling subsidieregeling duurzame energie 2025-2026",
+        "type": "besluit",
+        "classification": "duurzaamheid",
+        "url": "https://voorbeeldstad.nl/raad/documenten/besluit-subsidieregeling-duurzame-energie.pdf",
+        "fileName": "besluit-subsidieregeling-duurzame-energie.pdf",
+        "fileSize": 189400,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "besluit-bestemmingsplan-buitengebied"
+        },
+        "titel": "Besluit: Vaststelling bestemmingsplan buitengebied Voorbeeldstad",
+        "type": "besluit",
+        "classification": "ruimtelijke ordening",
+        "url": "https://voorbeeldstad.nl/raad/documenten/besluit-bestemmingsplan-buitengebied.pdf",
+        "fileName": "besluit-bestemmingsplan-buitengebied.pdf",
+        "fileSize": 456700,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "brief-college-jeugdzorg"
+        },
+        "titel": "Brief college: Stand van zaken jeugdzorg en wachtlijsten",
+        "type": "brief",
+        "classification": "jeugdzorg",
+        "url": "https://voorbeeldstad.nl/raad/documenten/brief-college-jeugdzorg.pdf",
+        "fileName": "brief-college-jeugdzorg.pdf",
+        "fileSize": 67800,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "brief-inwoners-marktplein"
+        },
+        "titel": "Brief inwoners: Bezwaren herinrichting marktplein",
+        "type": "brief",
+        "classification": "ruimtelijke ordening",
+        "url": "https://voorbeeldstad.nl/raad/documenten/brief-inwoners-marktplein.pdf",
+        "fileName": "brief-inwoners-marktplein.pdf",
+        "fileSize": 34500,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "brief-provincie-buitengebied"
+        },
+        "titel": "Brief Provincie: Reactie op bestemmingsplan buitengebied",
+        "type": "brief",
+        "classification": "ruimtelijke ordening",
+        "url": "https://voorbeeldstad.nl/raad/documenten/brief-provincie-buitengebied.pdf",
+        "fileName": "brief-provincie-buitengebied.pdf",
+        "fileSize": 52100,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "rapport-jaarrekening-2024"
+        },
+        "titel": "Rapport: Jaarrekening 2024 gemeente Voorbeeldstad",
+        "type": "rapport",
+        "classification": "financien",
+        "url": "https://voorbeeldstad.nl/raad/documenten/rapport-jaarrekening-2024.pdf",
+        "fileName": "rapport-jaarrekening-2024.pdf",
+        "fileSize": 1245000,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "rapport-woningbouwmonitor"
+        },
+        "titel": "Rapport: Woningbouwmonitor Voorbeeldstad 2025",
+        "type": "rapport",
+        "classification": "woningbouw",
+        "url": "https://voorbeeldstad.nl/raad/documenten/rapport-woningbouwmonitor.pdf",
+        "fileName": "rapport-woningbouwmonitor.pdf",
+        "fileSize": 876500,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "notulen-raad-2025-09-02"
+        },
+        "titel": "Notulen raadsvergadering 2 september 2025",
+        "type": "notulen",
+        "classification": "verslaglegging",
+        "url": "https://voorbeeldstad.nl/raad/documenten/notulen-raad-2025-09-02.pdf",
+        "fileName": "notulen-raad-2025-09-02.pdf",
+        "fileSize": 345600,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "raadsdocument",
+          "slug": "notulen-raad-2025-10-21"
+        },
+        "titel": "Notulen raadsvergadering 21 oktober 2025 (Begrotingsbehandeling)",
+        "type": "notulen",
+        "classification": "verslaglegging",
+        "url": "https://voorbeeldstad.nl/raad/documenten/notulen-raad-2025-10-21.pdf",
+        "fileName": "notulen-raad-2025-10-21.pdf",
+        "fileSize": 567800,
+        "inhoudType": "application/pdf"
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-herinrichting-marktplein"
+        },
+        "onderwerp": "Voorstel: Herinrichting marktplein Voorbeeldstad",
+        "type": "voorstel",
+        "result": "aangenomen",
+        "agendapunt": "raad-20250902-04-herinrichting-marktplein",
+        "votesFor": 19,
+        "votesAgainst": 16,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-subsidieregeling-duurzame-energie"
+        },
+        "onderwerp": "Voorstel: Subsidieregeling duurzame energie 2025-2026",
+        "type": "voorstel",
+        "result": "aangenomen",
+        "agendapunt": "raad-20250902-05-subsidie-duurzame-energie",
+        "votesFor": 25,
+        "votesAgainst": 10,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-motie-extra-budget-jeugdzorg"
+        },
+        "onderwerp": "Motie: Extra budget jeugdzorg",
+        "type": "motie",
+        "result": "aangenomen",
+        "agendapunt": "raad-20251021-04-motie-jeugdzorg",
+        "votesFor": 23,
+        "votesAgainst": 12,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-amendement-verlaging-ozb"
+        },
+        "onderwerp": "Amendement: Verlaging OZB-verhoging van 5% naar 2%",
+        "type": "amendement",
+        "result": "verworpen",
+        "agendapunt": "raad-20251021-05-amendement-ozb",
+        "votesFor": 10,
+        "votesAgainst": 25,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "tegen",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 2
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-motie-onderzoek-woningbouw"
+        },
+        "onderwerp": "Motie: Onderzoek versnelling woningbouw",
+        "type": "motie",
+        "result": "aangenomen",
+        "agendapunt": "raad-20251021-06-motie-woningbouw",
+        "votesFor": 35,
+        "votesAgainst": 0,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 2
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "ori",
+          "schema": "stemming",
+          "slug": "stemming-bestemmingsplan-buitengebied"
+        },
+        "onderwerp": "Voorstel: Bestemmingsplan buitengebied Voorbeeldstad",
+        "type": "voorstel",
+        "result": "aangenomen",
+        "agendapunt": "raad-20250902-06-bestemmingsplan",
+        "votesFor": 27,
+        "votesAgainst": 8,
+        "abstentions": 0,
+        "politicalGroupResults": [
+          {
+            "fractie": "Voorbeeldstad Vooruit",
+            "vote": "voor",
+            "zetels": 8
+          },
+          {
+            "fractie": "Groen Links Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 6
+          },
+          {
+            "fractie": "Democraten Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 5
+          },
+          {
+            "fractie": "Lokaal Belang",
+            "vote": "tegen",
+            "zetels": 5
+          },
+          {
+            "fractie": "PvdA Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 4
+          },
+          {
+            "fractie": "VVD Voorbeeldstad",
+            "vote": "voor",
+            "zetels": 3
+          },
+          {
+            "fractie": "SP Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 2
+          },
+          {
+            "fractie": "Forum Voorbeeldstad",
+            "vote": "tegen",
+            "zetels": 1
+          }
+        ]
+      }
+    ]
+  }
+}

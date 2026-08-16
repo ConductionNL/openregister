@@ -1,0 +1,59 @@
+# OpenRegister — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
+includes:
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
+    - phpstan-baseline.neon
+    # Five JSONResponse generic-invariance mismatches surfaced by removing the
+    # stale `@method` shadows from lib/Db. Kept in their own file so the reason
+    # (written at the top of it) cannot get detached from the entries.
+    # openregister#2288
+    - phpstan-baseline-jsonresponse-invariance.neon
+    # Twenty-one findings surfaced by analysing against nextcloud/ocp 34 instead
+    # of 31 — the version appinfo/info.xml already declares. Pre-existing code,
+    # newly visible; four are real NC 34 API removals. Kept separate so the
+    # reason travels with the entries. openregister#2450
+    - phpstan-baseline-nc34-ocp.neon
+
+parameters:
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
+    excludePaths:
+        # ContentProvider implements OCP\ContextChat\IContentProvider, which ships
+        # with an OPTIONAL Nextcloud component and is therefore absent during
+        # analysis. phpstan refuses to let a class-level "implements unknown
+        # interface" be ignored or baselined — it prescribes excludePaths — and
+        # analysis of the file is unreliable anyway once its interface cannot be
+        # resolved: it produced a FALSE "unknown parameter $_rbac in call to
+        # SchemaMapper::findAll()" here, for a call that is byte-identical to one
+        # phpstan accepts elsewhere. Excluding it removes noise rather than
+        # hiding a finding.
+        - lib/ContextChat/ContentProvider.php
+
+        # `vendor-bin` USED to be excluded by the shared base. It left the base in
+        # conduction/hydra-gates v1.7.3, because a conditional path has no spelling
+        # that is safe on both PHPStan majors: plain aborts 2.x (it validates the
+        # entry), the `(?)` marker makes NEON parse it as an entity and aborts 2.x
+        # differently, and quoting stops 1.x stripping the marker so the exclusion
+        # silently matches nothing. openregister is the ONLY fleet app that has this
+        # directory, so it carries the path itself — where it exists, needs no
+        # marker, and behaves identically on 1.x and 2.x.
+        - vendor-bin
+
+    ignoreErrors:
+        # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
+        # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
+        # PHPDocs (upstream typo — fictitious classes that PHPStan can't
+        # resolve). The actual runtime types are PDFObject / PDFValue
+        # subclasses / string / Buffer respectively. Cleanup goes into
+        # an upstream PR; until then ignore PHPStan's "unknown class
+        # ddn\sapp\<lowercase>" diagnostic chain.
+        - '#on an unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
+        - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'

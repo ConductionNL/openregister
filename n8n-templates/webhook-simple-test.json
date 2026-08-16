@@ -1,0 +1,105 @@
+{
+  "name": "Webhook Simple Test",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "simple-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [20, 300],
+      "webhookId": "simple-test-webhook"
+    },
+    {
+      "parameters": {
+        "command": "docker ps --format 'table {{.Names}}\\t{{.Status}}' | head -5"
+      },
+      "id": "test-docker",
+      "name": "Test Docker",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && php vendor/bin/phpcs --version'"
+      },
+      "id": "test-phpcs",
+      "name": "Test PHPCS Version",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && php vendor/bin/phpcs --report=summary --standard=PSR12 lib/ 2>&1 | head -10 || true'"
+      },
+      "id": "run-phpcs",
+      "name": "Run PHPCS Summary",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = {\n  dockerTest: $input.first().json.stdout,\n  phpcsVersion: $input.all()[1]?.json.stdout,\n  phpcsSummary: $input.all()[2]?.json.stdout,\n  timestamp: new Date().toISOString(),\n  success: true\n};\n\nconsole.log('=== Webhook Test Results ===');\nconsole.log(JSON.stringify(results, null, 2));\n\nreturn [{ json: results }];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Docker"
+          }
+        ]
+      ]
+    },
+    "Test Docker": {
+      "main": [
+        [
+          {
+            "node": "Test PHPCS Version"
+          }
+        ]
+      ]
+    },
+    "Test PHPCS Version": {
+      "main": [
+        [
+          {
+            "node": "Run PHPCS Summary"
+          }
+        ]
+      ]
+    },
+    "Run PHPCS Summary": {
+      "main": [
+        [
+          {
+            "node": "Format Response"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
+

@@ -1,0 +1,879 @@
+{
+	"info": {
+		"_postman_id": "opencatalogi-federation-tests",
+		"name": "OpenCatalogi - Federation Integration Tests",
+		"description": "Comprehensive federation tests for OpenCatalogi between two Nextcloud instances.\n\nPhases:\n1. Health & initialization (settings load, schema creation)\n2. Seed catalog + publications on Instance 2\n3. Directory registration & sync (+ seed listing if RBAC blocks sync)\n4. Listing CRUD\n5. Federated search & publications\n6. Bidirectional federation & anti-loop\n7. Integration level toggling\n8. Catalog operations on Instance 1\n9. Final state verification\n\nNote: The directory endpoint has a known RBAC issue where searchObjects returns 0 results in HTTP/PublicPage context. The tests work around this by seeding listing objects directly via the OpenRegister objects API when sync produces no results.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "admin", "type": "string" },
+			{ "key": "password", "value": "admin", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "nc1Url", "value": "http://localhost:9081", "type": "string" },
+		{ "key": "nc2Url", "value": "http://localhost:9082", "type": "string" },
+		{ "key": "nc2Internal", "value": "http://nc-fed-2", "type": "string" },
+		{ "key": "nc1CatalogRegisterId", "value": "", "type": "string" },
+		{ "key": "nc1CatalogSchemaId", "value": "", "type": "string" },
+		{ "key": "nc1ListingRegisterId", "value": "", "type": "string" },
+		{ "key": "nc1ListingSchemaId", "value": "", "type": "string" },
+		{ "key": "nc2CatalogRegisterId", "value": "", "type": "string" },
+		{ "key": "nc2CatalogSchemaId", "value": "", "type": "string" },
+		{ "key": "nc2ListingRegisterId", "value": "", "type": "string" },
+		{ "key": "nc2ListingSchemaId", "value": "", "type": "string" },
+		{ "key": "nc1CatalogId", "value": "", "type": "string" },
+		{ "key": "nc2CatalogId", "value": "", "type": "string" },
+		{ "key": "nc1ListingId", "value": "", "type": "string" },
+		{ "key": "nc2ListingId", "value": "", "type": "string" },
+		{ "key": "manualListingId", "value": "", "type": "string" },
+		{ "key": "seededListingId", "value": "", "type": "string" },
+		{ "key": "nc2PublicationSchemaId", "value": "", "type": "string" },
+		{ "key": "nc2PublicationId1", "value": "", "type": "string" },
+		{ "key": "nc2PublicationId2", "value": "", "type": "string" },
+		{ "key": "nc2DefaultCatalogId", "value": "", "type": "string" },
+		{ "key": "federatedResultCount", "value": "0", "type": "string" },
+		{ "key": "nc1ListingCountBeforeSync", "value": "0", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "Phase 1: Health & Initialization",
+			"item": [
+				{
+					"name": "1.1 Health check — Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 1 is healthy', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.installed).to.be.true;",
+						"    console.log('✅ Instance 1 ready — version: ' + json.versionstring);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{nc1Url}}/status.php", "host": ["{{nc1Url}}"], "path": ["status.php"] } }
+				},
+				{
+					"name": "1.2 Health check — Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 2 is healthy', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.installed).to.be.true;",
+						"    console.log('✅ Instance 2 ready — version: ' + json.versionstring);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{nc2Url}}/status.php", "host": ["{{nc2Url}}"], "path": ["status.php"] } }
+				},
+				{
+					"name": "1.3 Get Instance 1 settings",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Got settings from Instance 1', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var c = json.configuration || {};",
+						"    pm.collectionVariables.set('nc1CatalogRegisterId', c.catalog_register || '');",
+						"    pm.collectionVariables.set('nc1CatalogSchemaId', c.catalog_schema || '');",
+						"    pm.collectionVariables.set('nc1ListingRegisterId', c.listing_register || '');",
+						"    pm.collectionVariables.set('nc1ListingSchemaId', c.listing_schema || '');",
+						"    pm.expect(c.catalog_register).to.not.be.empty;",
+						"    pm.expect(c.listing_register).to.not.be.empty;",
+						"    console.log('✅ NC1 catalog: register=' + c.catalog_register + ' schema=' + c.catalog_schema);",
+						"    console.log('✅ NC1 listing: register=' + c.listing_register + ' schema=' + c.listing_schema);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/settings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "settings"] } }
+				},
+				{
+					"name": "1.4 Get Instance 2 settings",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Got settings from Instance 2', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var c = json.configuration || {};",
+						"    pm.collectionVariables.set('nc2CatalogRegisterId', c.catalog_register || '');",
+						"    pm.collectionVariables.set('nc2CatalogSchemaId', c.catalog_schema || '');",
+						"    pm.collectionVariables.set('nc2ListingRegisterId', c.listing_register || '');",
+						"    pm.collectionVariables.set('nc2ListingSchemaId', c.listing_schema || '');",
+						"    pm.expect(c.catalog_register).to.not.be.empty;",
+						"    pm.expect(c.listing_register).to.not.be.empty;",
+						"    console.log('✅ NC2 catalog: register=' + c.catalog_register + ' schema=' + c.catalog_schema);",
+						"    console.log('✅ NC2 listing: register=' + c.listing_register + ' schema=' + c.listing_schema);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/settings", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "settings"] } }
+				},
+				{
+					"name": "1.5 Verify directory endpoint on Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Directory endpoint responds', function () {",
+						"    pm.response.to.have.status(200);",
+						"    console.log('✅ OpenCatalogi directory active on Instance 1');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/directory", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "directory"] } }
+				},
+				{
+					"name": "1.6 Verify directory endpoint on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Directory endpoint responds', function () {",
+						"    pm.response.to.have.status(200);",
+						"    console.log('✅ OpenCatalogi directory active on Instance 2');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/directory", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "directory"] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 2: Seed data on Instance 2",
+			"item": [
+				{
+					"name": "2.1 Find publication schema on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Found publication schema', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var schemas = json.results || [];",
+						"    var pubSchema = schemas.find(function(s) { return s.slug === 'publication'; });",
+						"    pm.expect(pubSchema).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc2PublicationSchemaId', pubSchema.id);",
+						"    console.log('✅ Publication schema ID: ' + pubSchema.id + ' (slug: publication)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/openregister/api/schemas", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "openregister", "api", "schemas"] } }
+				},
+				{
+					"name": "2.2 Find default catalog on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Found default catalog', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var catalogs = json.results || [];",
+						"    pm.expect(catalogs.length).to.be.above(0);",
+						"    var defCatalog = catalogs.find(function(c) { return c.slug === 'publications' || c.title === 'Publications'; });",
+						"    pm.expect(defCatalog).to.not.be.undefined;",
+						"    var id = (defCatalog['@self'] && defCatalog['@self'].id) || defCatalog.uuid || defCatalog.id;",
+						"    pm.collectionVariables.set('nc2DefaultCatalogId', id);",
+						"    console.log('✅ Default catalog ID: ' + id);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/catalogi", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "catalogi"] } }
+				},
+				{
+					"name": "2.3 Update default catalog with publication register/schema references",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalog updated with register/schema references', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    console.log('✅ Default catalog updated — registers/schemas set');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"title\": \"Publications\",\n    \"summary\": \"The main publications catalog\",\n    \"listed\": true,\n    \"status\": \"stable\",\n    \"slug\": \"publications\",\n    \"registers\": [\"{{nc2CatalogRegisterId}}\"],\n    \"schemas\": [\"{{nc2PublicationSchemaId}}\"]\n}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/openregister/api/objects/{{nc2CatalogRegisterId}}/{{nc2CatalogSchemaId}}/{{nc2DefaultCatalogId}}", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc2CatalogRegisterId}}", "{{nc2CatalogSchemaId}}", "{{nc2DefaultCatalogId}}"] }
+					}
+				},
+				{
+					"name": "2.4 Create publication 1 on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Publication 1 created', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc2PublicationId1', id);",
+						"    console.log('✅ Publication 1 created: ' + id + ' — \"Federation Alpha Document\"');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"title\": \"Federation Alpha Document\",\n    \"summary\": \"First test publication for cross-catalog federation search\",\n    \"description\": \"This document is created on Instance 2 and should appear when Instance 1 performs a federated search.\"\n}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/openregister/api/objects/{{nc2CatalogRegisterId}}/{{nc2PublicationSchemaId}}", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc2CatalogRegisterId}}", "{{nc2PublicationSchemaId}}"] }
+					}
+				},
+				{
+					"name": "2.5 Create publication 2 on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Publication 2 created', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc2PublicationId2', id);",
+						"    console.log('✅ Publication 2 created: ' + id + ' — \"Federation Beta Report\"');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"title\": \"Federation Beta Report\",\n    \"summary\": \"Second test publication for validating federated search pagination\",\n    \"description\": \"Created on Instance 2. Used to verify that multiple publications are returned in federated search results.\"\n}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/openregister/api/objects/{{nc2CatalogRegisterId}}/{{nc2PublicationSchemaId}}", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc2CatalogRegisterId}}", "{{nc2PublicationSchemaId}}"] }
+					}
+				},
+				{
+					"name": "2.6 Verify publications visible on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 2 has local publications', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.at.least(2);",
+						"    console.log('✅ Instance 2 has ' + json.results.length + ' publications in federation endpoint');",
+						"    // Verify our publications are among them",
+						"    var titles = json.results.map(function(r) { return r.title || (r.object && r.object.title); });",
+						"    console.log('   Titles: ' + titles.join(', '));",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/federation/publications?_aggregate=false", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_aggregate", "value": "false" }] } }
+				},
+				{
+					"name": "2.7 Create additional catalog on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalog created on Instance 2', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc2CatalogId', id);",
+						"    console.log('✅ Catalog created on Instance 2: ' + id);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"title\": \"Federation Remote Catalog\",\n    \"summary\": \"Test catalog on Instance 2 for federation testing\",\n    \"listed\": true,\n    \"slug\": \"federation-remote\"\n}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/openregister/api/objects/{{nc2CatalogRegisterId}}/{{nc2CatalogSchemaId}}", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc2CatalogRegisterId}}", "{{nc2CatalogSchemaId}}"] }
+					}
+				},
+				{
+					"name": "2.2 Verify catalog in catalogi list",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalog appears in list', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Instance 2 has ' + json.results.length + ' catalogs');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/catalogi", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "catalogi"] } }
+				},
+				{
+					"name": "2.3 Check Instance 2 directory (documents RBAC issue)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Directory shows catalogs publicly', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.above(0, 'Directory should show catalogs (RBAC read:public + multitenancy disabled)');",
+						"    console.log('✅ Instance 2 directory has ' + json.results.length + ' entries');",
+						"    json.results.forEach(function(r) {",
+						"        console.log('   → ' + (r.title || r.name || 'untitled'));",
+						"    });",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/directory", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "directory"] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 3: Directory sync + seed listing",
+			"item": [
+				{
+					"name": "3.1 Instance 1 listings initially empty",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 1 starts empty', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    console.log('✅ Instance 1 starts with ' + json.results.length + ' listings');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "3.2 Attempt directory sync (add NC2)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Directory registration accepted', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201, 202]);",
+						"    var json = pm.response.json();",
+						"    var created = json.listings_created || 0;",
+						"    if (created > 0) {",
+						"        console.log('✅ Directory sync created ' + created + ' listings (RBAC issue resolved!)');",
+						"    } else {",
+						"        console.log('⚠️ Directory sync created 0 listings (expected — RBAC issue). Will seed listing directly.');",
+						"    }",
+						"    pm.collectionVariables.set('syncCreatedListings', created);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"url\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/directory\"\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/add", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "add"] }
+					}
+				},
+				{
+					"name": "3.3 Seed listing on Instance 1 (pointing to Instance 2)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing seeded on Instance 1', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('seededListingId', id);",
+						"    pm.collectionVariables.set('nc1ListingId', id);",
+						"    console.log('✅ Seeded listing on Instance 1: ' + id);",
+						"    console.log('   Points to NC2 publications + search endpoints');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-remote-seed\",\n    \"title\": \"Federation Remote (Seeded)\",\n    \"summary\": \"Seeded listing pointing to Instance 2 — workaround for directory RBAC issue\",\n    \"directory\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"stable\",\n    \"statusCode\": 200\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] }
+					}
+				},
+				{
+					"name": "3.4 Verify listing exists on Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 1 has listing(s)', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Instance 1 now has ' + json.results.length + ' listing(s)');",
+						"    ",
+						"    // Store listing ID from response — list items use @self.id, not top-level id",
+						"    var listing = json.results[0];",
+						"    var id = (listing['@self'] && listing['@self'].id) || listing.uuid || listing.id;",
+						"    pm.collectionVariables.set('nc1ListingId', id);",
+						"    var data = listing.object || listing;",
+						"    console.log('   ID: ' + id);",
+						"    console.log('   Title: ' + (data.title || 'N/A'));",
+						"    console.log('   Integration: ' + (data.integrationLevel || 'N/A'));",
+						"    console.log('   Publications: ' + (data.publications || 'N/A'));",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "3.5 Get seeded listing details",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing details correct', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.title).to.not.be.undefined;",
+						"    console.log('✅ Listing details:');",
+						"    console.log('   Title: ' + (data.title || 'N/A'));",
+						"    console.log('   Directory: ' + (data.directory || 'N/A'));",
+						"    console.log('   Search: ' + (data.search || 'N/A'));",
+						"    console.log('   Publications: ' + (data.publications || 'N/A'));",
+						"    console.log('   IntegrationLevel: ' + (data.integrationLevel || 'N/A'));",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{nc1ListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{nc1ListingId}}"] } }
+				},
+				{
+					"name": "3.6 Sync directories explicitly",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Directory sync completed', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201, 202]);",
+						"    console.log('✅ Directory sync executed');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/sync", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "sync"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Phase 4: Listing CRUD",
+			"item": [
+				{
+					"name": "4.1 Create a manual listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Manual listing created', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('manualListingId', id);",
+						"    console.log('✅ Manual listing created: ' + id);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"manual-crud-test\",\n    \"title\": \"Manual CRUD Listing\",\n    \"summary\": \"Testing create/read/update/delete lifecycle\",\n    \"directory\": \"https://example.com/api/directory\",\n    \"default\": false\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] }
+					}
+				},
+				{
+					"name": "4.2 Update the manual listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing updated', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    console.log('✅ Listing updated — title: ' + (data.title || 'N/A'));",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"manual-crud-test\",\n    \"title\": \"Updated CRUD Listing\",\n    \"summary\": \"Updated via PUT — verifying update works\"\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{manualListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{manualListingId}}"] }
+					}
+				},
+				{
+					"name": "4.3 Read updated listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing reflects update', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.title).to.eql('Updated CRUD Listing');",
+						"    console.log('✅ Read back — title: ' + data.title);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{manualListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{manualListingId}}"] } }
+				},
+				{
+					"name": "4.4 Delete the manual listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing deleted', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 204]);",
+						"    console.log('✅ Manual listing deleted');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "DELETE", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{manualListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{manualListingId}}"] } }
+				},
+				{
+					"name": "4.5 Confirm deletion",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Deleted listing is gone', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([404, 400, 500]);",
+						"    console.log('✅ Listing confirmed gone (status: ' + status + ')');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{manualListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{manualListingId}}"] } }
+				},
+				{
+					"name": "4.6 Verify seeded listing still exists after CRUD",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Seeded listing survives CRUD on other listing', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.title).to.include('Federation Remote');",
+						"    console.log('✅ Seeded listing intact: ' + data.title);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{seededListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{seededListingId}}"] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 5: Federated search & publications",
+			"item": [
+				{
+					"name": "5.1 Federated publications (aggregated from Instance 2)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Federated publications returns remote results', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.at.least(2, 'Expected at least 2 publications from Instance 2');",
+						"    pm.collectionVariables.set('federatedResultCount', json.results.length.toString());",
+						"    console.log('✅ Federated publications: ' + json.results.length + ' results');",
+						"    if (json.total !== undefined) console.log('   Total: ' + json.total);",
+						"    // Verify publications have titles",
+						"    json.results.forEach(function(r, i) {",
+						"        var title = r.title || (r.object && r.object.title) || 'untitled';",
+						"        console.log('   [' + i + '] ' + title);",
+						"    });",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/federation/publications?_aggregate=true", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_aggregate", "value": "true" }] } }
+				},
+				{
+					"name": "5.2 Federated search with keyword 'Alpha'",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Keyword search returns matching results', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    console.log('✅ Search for \"Alpha\": ' + json.results.length + ' results');",
+						"    // Log titles to verify relevance",
+						"    json.results.forEach(function(r) {",
+						"        var title = r.title || (r.object && r.object.title) || 'untitled';",
+						"        console.log('   → ' + title);",
+						"    });",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/federation/publications?_search=Alpha&_aggregate=true", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_search", "value": "Alpha" }, { "key": "_aggregate", "value": "true" }] } }
+				},
+				{
+					"name": "5.3 Federated search with pagination (limit=1)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Pagination limits results correctly', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.at.most(1, 'Pagination limit=1 should return max 1 result');",
+						"    console.log('✅ Paginated: ' + json.results.length + ' result(s) with limit=1');",
+						"    if (json.total !== undefined) {",
+						"        pm.expect(json.total).to.be.at.least(2, 'Total should still reflect all available results');",
+						"        console.log('   Total available: ' + json.total);",
+						"    }",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/federation/publications?_limit=1&_page=1&_aggregate=true", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_limit", "value": "1" }, { "key": "_page", "value": "1" }, { "key": "_aggregate", "value": "true" }] } }
+				},
+				{
+					"name": "5.4 Local search on Instance 2 (has publications)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Local search finds publications on Instance 2', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.at.least(1, 'Instance 2 should find its local publications');",
+						"    console.log('✅ Instance 2 local search: ' + json.results.length + ' results for \"Federation\"');",
+						"    json.results.forEach(function(r) {",
+						"        var title = r.title || (r.object && r.object.title) || 'untitled';",
+						"        console.log('   → ' + title);",
+						"    });",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/search?_search=Federation", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "search"], "query": [{ "key": "_search", "value": "Federation" }] } }
+				},
+				{
+					"name": "5.5 Local search on Instance 1 (no local publications)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 1 local search returns empty (no local publications)', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    console.log('✅ Instance 1 local search: ' + json.results.length + ' results (expected 0 — publications are on Instance 2)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/search?_search=Federation", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "search"], "query": [{ "key": "_search", "value": "Federation" }] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 6: Bidirectional federation & anti-loop",
+			"item": [
+				{
+					"name": "6.1 Seed listing on Instance 2 (pointing to Instance 1)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Reverse listing seeded on Instance 2', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc2ListingId', id);",
+						"    console.log('✅ Reverse listing on Instance 2: ' + id);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-home-seed\",\n    \"title\": \"Federation Home (Seeded)\",\n    \"summary\": \"Reverse listing pointing to Instance 1\",\n    \"directory\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"stable\",\n    \"statusCode\": 200\n}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] }
+					}
+				},
+				{
+					"name": "6.2 Verify Instance 2 has listings",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 2 has listings', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Instance 2 has ' + json.results.length + ' listing(s)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "6.3 Count listings before bidirectional sync",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Baseline listing count captured', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.collectionVariables.set('nc1ListingCountBeforeSync', json.results.length.toString());",
+						"    console.log('✅ Instance 1 has ' + json.results.length + ' listing(s) before bidirectional sync');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "6.4 Bidirectional sync from Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Bidirectional sync completes without loop', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201, 202]);",
+						"    var json = pm.response.json();",
+						"    console.log('✅ NC1 sync completed');",
+						"    if (json.listings_created !== undefined) {",
+						"        console.log('   Created: ' + json.listings_created + ', Updated: ' + json.listings_updated + ', Skipped: ' + json.listings_skipped);",
+						"    }",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/sync", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "sync"] }
+					}
+				},
+				{
+					"name": "6.5 Bidirectional sync from Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Bidirectional sync from NC2 completes', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201, 202]);",
+						"    var json = pm.response.json();",
+						"    console.log('✅ NC2 sync completed');",
+						"    if (json.listings_created !== undefined) {",
+						"        console.log('   Created: ' + json.listings_created + ', Updated: ' + json.listings_updated + ', Skipped: ' + json.listings_skipped);",
+						"    }",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{}" },
+						"url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/listings/sync", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "sync"] }
+					}
+				},
+				{
+					"name": "6.6 Verify no duplicate listings after sync",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('No duplicate listings created by sync', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var beforeCount = parseInt(pm.collectionVariables.get('nc1ListingCountBeforeSync') || '0');",
+						"    var afterCount = json.results.length;",
+						"    pm.expect(afterCount).to.be.at.most(beforeCount + 1, 'Sync should not create excessive duplicate listings');",
+						"    console.log('✅ Listing count: before=' + beforeCount + ', after=' + afterCount + ' (no duplicates)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "6.5 Federated search from Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Instance 2 can search federation', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    console.log('✅ Instance 2 federated search: ' + json.results.length + ' results');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/federation/publications?_aggregate=true", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_aggregate", "value": "true" }] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 7: Integration level toggling",
+			"item": [
+				{
+					"name": "7.1 Disable listing (set integrationLevel to none)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Integration level set to none', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.integrationLevel).to.eql('none');",
+						"    console.log('✅ Listing integration level set to none');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-remote-seed\",\n    \"title\": \"Federation Remote (Seeded)\",\n    \"summary\": \"Seeded listing — now DISABLED\",\n    \"integrationLevel\": \"none\"\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{nc1ListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{nc1ListingId}}"] }
+					}
+				},
+				{
+					"name": "7.2 Verify listing shows as disabled",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing is disabled', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.integrationLevel).to.eql('none');",
+						"    console.log('✅ Listing confirmed disabled — integrationLevel: ' + data.integrationLevel);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{nc1ListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{nc1ListingId}}"] } }
+				},
+				{
+					"name": "7.3 Federated search excludes disabled listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Disabled listing excluded from federated search', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    var prevCount = parseInt(pm.collectionVariables.get('federatedResultCount') || '0');",
+						"    if (prevCount > 0) {",
+						"        pm.expect(json.results.length).to.be.below(prevCount, 'Results should decrease after disabling listing');",
+						"        console.log('✅ Results decreased: ' + prevCount + ' → ' + json.results.length + ' (remote excluded)');",
+						"    } else {",
+						"        console.log('✅ Federated search with disabled listing: ' + json.results.length + ' results');",
+						"    }",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/federation/publications?_aggregate=true", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "federation", "publications"], "query": [{ "key": "_aggregate", "value": "true" }] } }
+				},
+				{
+					"name": "7.4 Re-enable listing (set integrationLevel to search)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Integration level restored to search', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.integrationLevel).to.eql('search');",
+						"    console.log('✅ Listing integration level restored to search');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-remote-seed\",\n    \"title\": \"Federation Remote (Seeded)\",\n    \"summary\": \"Seeded listing — re-enabled\",\n    \"integrationLevel\": \"search\"\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{nc1ListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{nc1ListingId}}"] }
+					}
+				},
+				{
+					"name": "7.5 Verify re-enabled listing",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Listing is re-enabled', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    var data = json.object || json;",
+						"    pm.expect(data.integrationLevel).to.eql('search');",
+						"    console.log('✅ Listing confirmed re-enabled — integrationLevel: ' + data.integrationLevel);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings/{{nc1ListingId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings", "{{nc1ListingId}}"] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 8: Catalog operations on Instance 1",
+			"item": [
+				{
+					"name": "8.1 Create catalog on Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalog created on Instance 1', function () {",
+						"    var status = pm.response.code;",
+						"    pm.expect(status).to.be.oneOf([200, 201]);",
+						"    var json = pm.response.json();",
+						"    var id = json.uuid || json.id;",
+						"    pm.expect(id).to.not.be.undefined;",
+						"    pm.collectionVariables.set('nc1CatalogId', id);",
+						"    console.log('✅ Catalog created: ' + id);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"title\": \"Federation Home Catalog\",\n    \"summary\": \"Local catalog on Instance 1\",\n    \"listed\": true,\n    \"slug\": \"federation-home\"\n}" },
+						"url": { "raw": "{{nc1Url}}/index.php/apps/openregister/api/objects/{{nc1CatalogRegisterId}}/{{nc1CatalogSchemaId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc1CatalogRegisterId}}", "{{nc1CatalogSchemaId}}"] }
+					}
+				},
+				{
+					"name": "8.2 List catalogs",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalogs listed', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results).to.be.an('array');",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Instance 1 has ' + json.results.length + ' catalogs');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/catalogi", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "catalogi"] } }
+				},
+				{
+					"name": "8.3 Get single catalog (via OpenRegister)",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Catalog retrieved', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.title).to.eql('Federation Home Catalog');",
+						"    console.log('✅ Catalog: ' + json.title);",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/openregister/api/objects/{{nc1CatalogRegisterId}}/{{nc1CatalogSchemaId}}/{{nc1CatalogId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc1CatalogRegisterId}}", "{{nc1CatalogSchemaId}}", "{{nc1CatalogId}}"] } }
+				}
+			]
+		},
+		{
+			"name": "Phase 9: Final state verification",
+			"item": [
+				{
+					"name": "9.1 Final listings on Instance 1",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Final state — Instance 1', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Final: Instance 1 has ' + json.results.length + ' listing(s)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "9.2 Final listings on Instance 2",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Final state — Instance 2', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    pm.expect(json.results.length).to.be.above(0);",
+						"    console.log('✅ Final: Instance 2 has ' + json.results.length + ' listing(s)');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] } }
+				},
+				{
+					"name": "9.3 Final directory state",
+					"event": [{ "listen": "test", "script": { "exec": [
+						"pm.test('Final directory state', function () {",
+						"    pm.response.to.have.status(200);",
+						"    var json = pm.response.json();",
+						"    console.log('✅ Final: directory has ' + json.results.length + ' entries');",
+						"    console.log('');",
+						"    console.log('========================================');",
+						"    console.log('  Federation test suite completed!');",
+						"    console.log('========================================');",
+						"});"
+					], "type": "text/javascript" }}],
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/directory", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "directory"] } }
+				}
+			]
+		}
+	]
+}

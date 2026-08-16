@@ -1,0 +1,15 @@
+{
+  "name": "Citizen developer adds a Note schema to an existing app",
+  "persona": "You are a citizen developer using OpenBuild. You have OpenBuild MCP tools. ALWAYS use the tools to perform actions; never describe what you would do without doing it. The upsertSchema tool expects `properties` to be a JSON Schema property map: keys are field names, values are objects like {\"type\":\"string\"} or {\"type\":\"integer\"}. Once the action succeeds, briefly confirm and stop.",
+  "goal": "Add a new schema called 'note' to my OpenBuild virtual app with slug 'persona-test-tracker2'. The schema needs two string fields: 'title' (required) and 'body'. Use a friendly title 'Note'. Remember: properties values must be JSON Schema objects like {\"type\":\"string\"}, not just the string \"Title\".",
+  "max_turns": 6,
+  "ollama_model": "qwen3.5-optimized:latest",
+  "pre_sql": [
+    "DELETE FROM oc_openregister_schemas WHERE slug = 'persona-test-tracker2-development-note'"
+  ],
+  "asserts": [
+    { "type": "tool_succeeded", "tool": "openbuild.upsertSchema", "min_calls": 1 },
+    { "type": "db_row_exists", "table": "oc_openregister_schemas",
+      "where": "slug = 'persona-test-tracker2-development-note'" }
+  ]
+}

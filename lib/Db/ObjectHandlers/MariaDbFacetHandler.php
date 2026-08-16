@@ -1,0 +1,1531 @@
+<?php
+
+/**
+ * OpenRegister MariaDB Facet Handler
+ *
+ * This file contains the handler for managing JSON object field facets
+ * using MariaDB JSON functions in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Handler
+ * @package  OCA\OpenRegister\Db\ObjectHandlers
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Db\ObjectHandlers;
+
+use DateTime;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
+
+/**
+ * Handler for JSON object field facets using MariaDB
+ *
+ * This handler provides faceting capabilities for JSON object fields
+ * using MariaDB's JSON functions to extract and aggregate data.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
+class MariaDbFacetHandler {
+	/**
+	 * Constructor for the MariaDbFacetHandler
+	 *
+	 * @param IDBConnection $db The database connection
+	 */
+	public function __construct(
+		private readonly IDBConnection $db,
+	) {
+	}//end __construct()
+
+	/**
+	 * Get terms facet for a JSON object field
+	 *
+	 * Returns unique values and their counts for categorical JSON fields.
+	 * Handles arrays by creating separate facet buckets for each array element.
+	 *
+	 * @param string $field The JSON field name (supports dot notation)
+	 * @param array $baseQuery Base query filters to apply
+	 *
+	 * @phpstan-param string $field
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param string $field
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return ((int|mixed|string)[][]|string)[]
+	 *
+	 * @psalm-return array{type: 'terms', buckets: list<array{key: mixed|non-empty-string, results: int}>}
+	 */
+	public function getTermsFacet(string $field, array $baseQuery = []): array {
+		// Build JSON path for the field.
+		$jsonPath = '$.' . $field;
+
+		// First, check if this field commonly contains arrays.
+		if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery) === true) {
+			return $this->getTermsFacetForArrayField(field: $field, baseQuery: $baseQuery);
+		}
+
+		// For non-array fields, use the standard approach.
+		$queryBuilder = $this->db->getQueryBuilder();
+
+		// Build aggregation query for JSON field.
+		$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+		$queryBuilder->selectAlias(
+			$queryBuilder->createFunction('JSON_UNQUOTE(JSON_EXTRACT(object, ' . $jsonPathParam . '))'),
+			'field_value'
+		)
+			->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+			->from('openregister_objects')
+			->where(
+				$queryBuilder->expr()->isNotNull(
+					$queryBuilder->createFunction('JSON_EXTRACT(object, ' . $jsonPathParam . ')')
+				)
+			)
+			->groupBy('field_value')
+			->orderBy('doc_count', 'DESC');
+		// Note: Still using doc_count in ORDER BY as it's the SQL alias
+		// Apply base filters.
+		$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+		$result = $queryBuilder->executeQuery();
+		$buckets = [];
+
+		while (($row = $result->fetch()) !== false) {
+			$key = $row['field_value'];
+			if ($key !== null && $key !== '') {
+				$buckets[] = [
+					'key' => $key,
+					'results' => (int)$row['doc_count'],
+				];
+			}
+		}
+
+		return [
+			'type' => 'terms',
+			'buckets' => $buckets,
+		];
+	}//end getTermsFacet()
+
+	/**
+	 * Check if a field commonly contains arrays
+	 *
+	 * Samples a few objects to determine if the field typically contains arrays.
+	 *
+	 * @param string $field The JSON field name
+	 * @param array $baseQuery Base query filters to apply
+	 *
+	 * @phpstan-param string $field
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param string $field
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return bool True if the field commonly contains arrays
+	 */
+	private function fieldContainsArrays(string $field, array $baseQuery): bool {
+		$queryBuilder = $this->db->getQueryBuilder();
+		$jsonPath = '$.' . $field;
+
+		// Sample a few objects to check if the field contains arrays.
+		$queryBuilder->select('object')
+			->from('openregister_objects')
+			->where(
+				$queryBuilder->expr()->isNotNull(
+					$queryBuilder->createFunction('JSON_EXTRACT(object, ' . $queryBuilder->createNamedParameter($jsonPath) . ')')
+				)
+			)
+			->setMaxResults(10);
+
+		// Apply base filters.
+		$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+		$result = $queryBuilder->executeQuery();
+		$arrayCount = 0;
+		$totalCount = 0;
+
+		while (($row = $result->fetch()) !== false) {
+			$objectData = json_decode($row['object'], true);
+			if (($objectData !== null) === true && (($objectData[$field] ?? null) !== null) === true) {
+				$totalCount++;
+				if (is_array($objectData[$field]) === true) {
+					$arrayCount++;
+				}
+			}
+		}
+
+		// If more than 50% of sampled objects have arrays for this field, treat it as an array field.
+		return $totalCount > 0 && ($arrayCount / $totalCount) > 0.5;
+	}//end fieldContainsArrays()
+
+	/**
+	 * Get terms facet for an array field
+	 *
+	 * Expands JSON arrays into individual values and creates separate facet buckets.
+	 *
+	 * @param string $field The JSON field name
+	 * @param array $baseQuery Base query filters to apply
+	 *
+	 * @phpstan-param string $field
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param string $field
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return ((int|string)[][]|string)[]
+	 *
+	 * @psalm-return array{type: 'terms',
+	 *     buckets: list<array{key: non-empty-string,
+	 *     results: 0|1|2|3|4}>}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array field faceting requires handling many value types
+	 */
+	private function getTermsFacetForArrayField(string $field, array $baseQuery): array {
+		// Get all objects that have this field.
+		$queryBuilder = $this->db->getQueryBuilder();
+		$jsonPath = '$.' . $field;
+
+		$queryBuilder->select('object')
+			->from('openregister_objects')
+			->where(
+				$queryBuilder->expr()->isNotNull(
+					$queryBuilder->createFunction('JSON_EXTRACT(object, ' . $queryBuilder->createNamedParameter($jsonPath) . ')')
+				)
+			);
+
+		// Apply base filters.
+		$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+		$result = $queryBuilder->executeQuery();
+		$valueCounts = [];
+
+		// Process each object to extract individual array values.
+		while (($row = $result->fetch()) !== false) {
+			$objectData = json_decode($row['object'], true);
+			if (($objectData !== null) === true && (($objectData[$field] ?? null) !== null) === true) {
+				$fieldValue = $objectData[$field];
+
+				// Handle both arrays and single values.
+				if (is_array($fieldValue) === false) {
+					// For single values, count normally.
+					$stringValue = $this->normalizeValue(value: $fieldValue);
+					if ($stringValue !== null && $stringValue !== '') {
+						if (isset($valueCounts[$stringValue]) === false) {
+							$valueCounts[$stringValue] = 0;
+						}
+
+						$valueCounts[$stringValue]++;
+					}
+
+					continue;
+				}
+
+				// For arrays, count each element separately.
+				foreach ($fieldValue as $value) {
+					$stringValue = $this->normalizeValue(value: $value);
+					if ($stringValue !== null && $stringValue !== '') {
+						if (isset($valueCounts[$stringValue]) === false) {
+							$valueCounts[$stringValue] = 0;
+						}
+
+						$valueCounts[$stringValue]++;
+					}
+				}//end foreach
+			}//end if
+		}//end while
+
+		// Sort by count descending.
+		arsort($valueCounts);
+
+		// Convert to buckets format.
+		$buckets = [];
+		foreach ($valueCounts as $key => $count) {
+			$buckets[] = [
+				'key' => $key,
+				'results' => $count,
+			];
+		}
+
+		return [
+			'type' => 'terms',
+			'buckets' => $buckets,
+		];
+	}//end getTermsFacetForArrayField()
+
+	/**
+	 * Normalize a value for faceting
+	 *
+	 * Converts various value types to a consistent string representation.
+	 *
+	 * @param mixed $value The value to normalize
+	 *
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param mixed $value
+	 *
+	 * @return string|null The normalized string value or null if invalid
+	 */
+	private function normalizeValue(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		if (is_bool($value) === true) {
+			if ($value !== true) {
+				return 'false';
+			}
+
+			return 'true';
+		}
+
+		if (is_scalar($value) === true) {
+			return trim((string)$value);
+		}
+
+		// Skip complex types (objects, nested arrays).
+		return null;
+	}//end normalizeValue()
+
+	/**
+	 * Get date histogram facet for a JSON object field
+	 *
+	 * Returns time-based buckets with counts for date JSON fields.
+	 *
+	 * @param string $field The JSON field name (supports dot notation)
+	 * @param string $interval The histogram interval (day, week, month, year)
+	 * @param array $baseQuery Base query filters to apply
+	 *
+	 * @phpstan-param string $field
+	 * @phpstan-param string $interval
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param string $field
+	 * @psalm-param string $interval
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return ((int|mixed)[][]|string)[]
+	 *
+	 * @psalm-return array{type: 'date_histogram', interval: string,
+	 *     buckets: list<array{key: mixed, results: int}>}
+	 */
+	public function getDateHistogramFacet(string $field, string $interval, array $baseQuery = []): array {
+		$queryBuilder = $this->db->getQueryBuilder();
+
+		$jsonPath = '$.' . $field;
+		$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+		$extractSql = 'JSON_UNQUOTE(JSON_EXTRACT(object, ' . $jsonPathParam . '))';
+
+		// Build interval-specific grouping expression.
+		$dateFormat = $this->getDateFormatForInterval(interval: $interval);
+		$dateKeySql = 'DATE_FORMAT(' . $extractSql . ", '$dateFormat')";
+		if ($interval === 'quarter') {
+			$dateKeySql = 'CONCAT(YEAR(' . $extractSql . "), '-Q', QUARTER(" . $extractSql . '))';
+		}
+
+		$queryBuilder->selectAlias(
+			$queryBuilder->createFunction($dateKeySql),
+			'date_key'
+		)
+			->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+			->from('openregister_objects')
+			->where(
+				$queryBuilder->expr()->isNotNull(
+					$queryBuilder->createFunction('JSON_EXTRACT(object, ' . $jsonPathParam . ')')
+				)
+			)
+			->groupBy('date_key')
+			->orderBy('date_key', 'ASC');
+
+		// Apply base filters.
+		$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+		$result = $queryBuilder->executeQuery();
+		$buckets = [];
+
+		while (($row = $result->fetch()) !== false) {
+			if ($row['date_key'] !== null) {
+				$bucket = [
+					'key' => $row['date_key'],
+					'results' => (int)$row['doc_count'],
+				];
+
+				// Add from/to bounds based on interval.
+				$bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+				if ($bounds !== null) {
+					$bucket['from'] = $bounds['from'];
+					$bucket['to'] = $bounds['to'];
+				}
+
+				$buckets[] = $bucket;
+			}
+		}
+
+		return [
+			'type' => 'date_histogram',
+			'interval' => $interval,
+			'buckets' => $buckets,
+		];
+	}//end getDateHistogramFacet()
+
+	/**
+	 * Get date bounds (from/to) for a histogram bucket based on interval.
+	 *
+	 * @param string $dateKey The bucket key (e.g., '2025', '2025-03', '2025-Q1').
+	 * @param string $interval The histogram interval.
+	 *
+	 * @return array{from: string, to: string}|null The date bounds or null if unparseable.
+	 */
+	private function getDateBoundsForBucket(string $dateKey, string $interval): ?array {
+		switch ($interval) {
+			case 'year':
+				$year = (int)$dateKey;
+				return [
+					'from' => $year . '-01-01',
+					'to' => $year . '-12-31',
+				];
+
+			case 'quarter':
+				// Format: 2025-Q1.
+				if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
+					$year = (int)$matches[1];
+					$quarter = (int)$matches[2];
+					$startMonth = (($quarter - 1) * 3) + 1;
+					$endMonth = $startMonth + 2;
+					$lastDay = (int)date('t', mktime(0, 0, 0, $endMonth, 1, $year));
+					return [
+						'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+						'to' => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
+					];
+				}
+				return null;
+			case 'month':
+				// Format: 2025-03.
+				$date = \DateTime::createFromFormat('Y-m', $dateKey);
+				if ($date !== false) {
+					return [
+						'from' => $date->format('Y-m-01'),
+						'to' => $date->format('Y-m-t'),
+					];
+				}
+				return null;
+			case 'week':
+				// Format: 2025-12 (year-week).
+				if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
+					$date = new DateTime();
+					$date->setISODate((int)$matches[1], (int)$matches[2], 1);
+					$from = $date->format('Y-m-d');
+					$date->setISODate((int)$matches[1], (int)$matches[2], 7);
+					$to = $date->format('Y-m-d');
+					return ['from' => $from, 'to' => $to];
+				}
+				return null;
+			case 'day':
+				return ['from' => $dateKey, 'to' => $dateKey];
+			default:
+				return null;
+		}//end switch
+	}//end getDateBoundsForBucket()
+
+	/**
+	 * Get range facet for a JSON object field
+	 *
+	 * Returns range buckets with counts for numeric JSON fields.
+	 *
+	 * @param string $field The JSON field name (supports dot notation)
+	 * @param array $ranges Range definitions with 'from' and/or 'to' keys
+	 * @param array $baseQuery Base query filters to apply
+	 *
+	 * @phpstan-param string $field
+	 * @phpstan-param array<array<string, mixed>> $ranges
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param string $field
+	 * @psalm-param array<array<string, mixed>> $ranges
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return ((int|mixed|string)[][]|string)[]
+	 *
+	 * @psalm-return array{type: 'range',
+	 *     buckets: list<array{from?: mixed, key: string, results: int,
+	 *     to?: mixed}>}
+	 */
+	public function getRangeFacet(string $field, array $ranges, array $baseQuery = []): array {
+		$buckets = [];
+		$jsonPath = '$.' . $field;
+
+		foreach ($ranges as $range) {
+			$queryBuilder = $this->db->getQueryBuilder();
+			$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+			$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
+			$castSql = 'CAST(JSON_UNQUOTE(' . $extractSql . ') AS DECIMAL(10,2))';
+
+			$queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+				->from('openregister_objects')
+				->where(
+					$queryBuilder->expr()->isNotNull(
+						$queryBuilder->createFunction($extractSql)
+					)
+				);
+
+			// Apply range conditions.
+			if (($range['from'] ?? null) !== null) {
+				$fromParam = $queryBuilder->createNamedParameter($range['from']);
+				$queryBuilder->andWhere(
+					$queryBuilder->createFunction($castSql) . ' >= ' . $fromParam
+				);
+			}
+
+			if (($range['to'] ?? null) !== null) {
+				$toParam = $queryBuilder->createNamedParameter($range['to']);
+				$queryBuilder->andWhere(
+					$queryBuilder->createFunction($castSql) . ' < ' . $toParam
+				);
+			}
+
+			// Apply base filters.
+			$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+			$result = $queryBuilder->executeQuery();
+			$count = (int)$result->fetchOne();
+
+			// Generate range key.
+			$key = $this->generateRangeKey(range: $range);
+
+			$bucket = [
+				'key' => $key,
+				'results' => $count,
+			];
+
+			if (($range['from'] ?? null) !== null) {
+				$bucket['from'] = $range['from'];
+			}
+
+			if (($range['to'] ?? null) !== null) {
+				$bucket['to'] = $range['to'];
+			}
+
+			$buckets[] = $bucket;
+		}//end foreach
+
+		return [
+			'type' => 'range',
+			'buckets' => $buckets,
+		];
+	}//end getRangeFacet()
+
+	/**
+	 * Get date range facet for a JSON object field.
+	 *
+	 * Returns named date range buckets with counts. Each range has resolved
+	 * absolute from/to dates and a count of matching objects.
+	 *
+	 * @param string $field The JSON field name (supports dot notation).
+	 * @param array $resolvedRanges Resolved range definitions with absolute from/to dates.
+	 * @param array $baseQuery Base query filters to apply.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 *
+	 * @return array The date_range facet result with buckets.
+	 */
+	public function getDateRangeFacet(string $field, array $resolvedRanges, array $baseQuery = []): array {
+		$buckets = [];
+		$jsonPath = '$.' . $field;
+
+		foreach ($resolvedRanges as $range) {
+			$queryBuilder = $this->db->getQueryBuilder();
+			$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+			$extractSql = 'JSON_UNQUOTE(JSON_EXTRACT(object, ' . $jsonPathParam . '))';
+
+			$queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+				->from('openregister_objects')
+				->where(
+					$queryBuilder->expr()->isNotNull(
+						$queryBuilder->createFunction('JSON_EXTRACT(object, ' . $jsonPathParam . ')')
+					)
+				);
+
+			// Apply date range conditions using string comparison (ISO dates sort correctly).
+			if (($range['from'] ?? null) !== null) {
+				$fromParam = $queryBuilder->createNamedParameter($range['from']);
+				$queryBuilder->andWhere(
+					$queryBuilder->createFunction($extractSql) . ' >= ' . $fromParam
+				);
+			}
+
+			if (($range['to'] ?? null) !== null) {
+				$toParam = $queryBuilder->createNamedParameter($range['to'] . ' 23:59:59');
+				$queryBuilder->andWhere(
+					$queryBuilder->createFunction($extractSql) . ' <= ' . $toParam
+				);
+			}
+
+			// Apply base filters.
+			$this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+			$result = $queryBuilder->executeQuery();
+			$count = (int)$result->fetchOne();
+
+			$buckets[] = [
+				'key' => $range['key'] ?? 'unknown',
+				'label' => $range['label'] ?? $range['key'] ?? 'Unknown',
+				'results' => $count,
+				'from' => $range['from'] ?? null,
+				'to' => $range['to'] ?? null,
+			];
+		}//end foreach
+
+		return [
+			'type' => 'date_range',
+			'buckets' => $buckets,
+		];
+	}//end getDateRangeFacet()
+
+	/**
+	 * Apply base query filters to the query builder
+	 *
+	 * This method applies the base search filters to ensure facets
+	 * are calculated within the context of the current search.
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param array $baseQuery The base query filters
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param array<string, mixed> $baseQuery
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param array<string, mixed> $baseQuery
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter application requires handling many filter types
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Many optional filters need conditional handling
+	 */
+	private function applyBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void {
+		// Apply basic filters like deleted, etc.
+		$includeDeleted = $baseQuery['_includeDeleted'] ?? false;
+		$search = $baseQuery['_search'] ?? null;
+		$ids = $baseQuery['_ids'] ?? null;
+
+		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
+		if ($includeDeleted === false) {
+			$queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
+		}
+
+		// Apply full-text search if provided.
+		if ($search !== null && trim($search) !== '') {
+			$this->applyFullTextSearch(queryBuilder: $queryBuilder, searchTerm: trim($search));
+		}
+
+		// Apply IDs filter if provided.
+		if ($ids !== null && is_array($ids) === true && empty($ids) === false) {
+			$this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
+		}
+
+		// Apply metadata filters from @self.
+		if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
+			$this->applyMetadataFilters(queryBuilder: $queryBuilder, metadataFilters: $baseQuery['@self']);
+		}
+
+		// Apply JSON object field filters (non-@self filters).
+		$objectFilters = array_filter(
+			$baseQuery,
+			function ($key) {
+				return $key !== '@self' && !str_starts_with($key, '_');
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+
+		if (empty($objectFilters) === false) {
+			$this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
+		}
+	}//end applyBaseFilters()
+
+	/**
+	 * Apply full-text search to the query builder
+	 *
+	 * This method applies the same full-text search logic used in the main search
+	 * to ensure facets are calculated within the context of the current search.
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param string $searchTerm The search term to apply
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param string $searchTerm
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param string $searchTerm
+	 *
+	 * @return void
+	 */
+	private function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): void {
+		// Split search terms by ' OR ' to handle multiple search words.
+		$searchTerms = array_filter(
+			array_map('trim', explode(' OR ', $searchTerm)),
+			function ($term) {
+				return empty($term) === false;
+			}
+		);
+
+		// If no valid search terms, return without modifying the query.
+		if (empty($searchTerms) === true) {
+			return;
+		}
+
+		// Create OR conditions for each search term.
+		$orConditions = $queryBuilder->expr()->orX();
+
+		foreach ($searchTerms as $term) {
+			// Clean the search term - remove wildcards and convert to lowercase.
+			$cleanTerm = strtolower(trim($term));
+			$cleanTerm = str_replace(['*', '%'], '', $cleanTerm);
+
+			// Skip empty terms after cleaning.
+			if (empty($cleanTerm) === true) {
+				continue;
+			}
+
+			// Use case-insensitive JSON_SEARCH with partial matching.
+			// This ensures the search is case-insensitive and supports partial matches.
+			$searchParam = $queryBuilder->createNamedParameter('%' . $cleanTerm . '%');
+			$searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $searchParam . ')';
+
+			$orConditions->add(
+				$queryBuilder->expr()->isNotNull(
+					$queryBuilder->createFunction($searchFunction)
+				)
+			);
+		}//end foreach
+
+		// Add the OR conditions to the query if we have any valid terms.
+		if ($orConditions->count() > 0) {
+			$queryBuilder->andWhere($orConditions);
+		}
+	}//end applyFullTextSearch()
+
+	/**
+	 * Apply IDs filter to the query builder
+	 *
+	 * This method filters objects by specific IDs or UUIDs, supporting both
+	 * integer IDs and string UUIDs in the same array.
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param array $ids Array of IDs/UUIDs to filter by
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param array<int|string> $ids
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param array<int|string> $ids
+	 *
+	 * @return void
+	 */
+	private function applyIdsFilter(IQueryBuilder $queryBuilder, array $ids): void {
+		$integerIds = [];
+		$stringIds = [];
+
+		// Separate integer IDs from string UUIDs.
+		foreach ($ids as $id) {
+			if (is_numeric($id) === false) {
+				$stringIds[] = (string)$id;
+				continue;
+			}
+
+			$integerIds[] = (int)$id;
+		}
+
+		// Create OR condition for ID or UUID matching.
+		$orConditions = $queryBuilder->expr()->orX();
+
+		// Add integer ID condition if we have any.
+		if (empty($integerIds) === false) {
+			$orConditions->add(
+				$queryBuilder->expr()->in(
+					'id',
+					$queryBuilder->createNamedParameter($integerIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+		}
+
+		// Add UUID condition if we have any.
+		if (empty($stringIds) === false) {
+			$orConditions->add(
+				$queryBuilder->expr()->in(
+					'uuid',
+					$queryBuilder->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+		}
+
+		// Apply the OR condition if we have any IDs to filter by.
+		if ($orConditions->count() > 0) {
+			$queryBuilder->andWhere($orConditions);
+		}
+	}//end applyIdsFilter()
+
+	/**
+	 * Apply metadata filters with advanced operator support
+	 *
+	 * This method processes @self metadata filters with support for all advanced
+	 * operators: gt, lt, gte, lte, ne, ~, ^, $, ===, exists, empty, null
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param array $metadataFilters Array of metadata field filters
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param array<string, mixed> $metadataFilters
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param array<string, mixed> $metadataFilters
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Metadata filtering requires handling many operator types
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Many filter operators need conditional handling
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive operator support requires extensive code
+	 */
+	private function applyMetadataFilters(IQueryBuilder $queryBuilder, array $metadataFilters): void {
+		foreach ($metadataFilters as $field => $value) {
+			// Handle simple values (backwards compatibility).
+			if (is_array($value) === false) {
+				if ($value === 'IS NOT NULL') {
+					$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+					continue;
+				}
+
+				if ($value === 'IS NULL') {
+					$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+					continue;
+				}
+
+				// Simple equals (case insensitive for strings).
+				$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
+				continue;
+			}
+
+			// Handle array of values (OR condition).
+			if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
+				// This is an array of values, not operators.
+				$queryBuilder->andWhere(
+					$queryBuilder->expr()->in(
+						$field,
+						$queryBuilder->createNamedParameter(
+							$value,
+							IQueryBuilder::PARAM_STR_ARRAY
+						)
+					)
+				);
+				continue;
+			}
+
+			// Handle operator-based filters.
+			foreach ($value as $operator => $operatorValue) {
+				$onParam = $queryBuilder->createNamedParameter($operatorValue);
+				switch ($operator) {
+					case 'gt':
+						$queryBuilder->andWhere($queryBuilder->expr()->gt($field, $onParam));
+						break;
+					case 'lt':
+						$queryBuilder->andWhere($queryBuilder->expr()->lt($field, $onParam));
+						break;
+					case 'gte':
+						$queryBuilder->andWhere($queryBuilder->expr()->gte($field, $onParam));
+						break;
+					case 'lte':
+						$queryBuilder->andWhere($queryBuilder->expr()->lte($field, $onParam));
+						break;
+					case 'ne':
+						$queryBuilder->andWhere($queryBuilder->expr()->neq($field, $onParam));
+						break;
+					case '~':
+						// Contains (case insensitive).
+						$likeParam = $queryBuilder->createNamedParameter('%' . $operatorValue . '%');
+						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $likeParam));
+						break;
+					case '^':
+						// Starts with (case insensitive).
+						$startsParam = $queryBuilder->createNamedParameter($operatorValue . '%');
+						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $startsParam));
+						break;
+					case '$':
+						// Ends with (case insensitive).
+						$endsParam = $queryBuilder->createNamedParameter('%' . $operatorValue);
+						$queryBuilder->andWhere($queryBuilder->expr()->like($field, $endsParam));
+						break;
+					case '===':
+						// Exact match (case sensitive).
+						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $onParam));
+						break;
+					case 'exists':
+						if ($operatorValue !== true && $operatorValue !== 'true') {
+							$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+							break;
+						}
+
+						$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+						break;
+					case 'empty':
+						if ($operatorValue !== true && $operatorValue !== 'true') {
+							$queryBuilder->andWhere(
+								$queryBuilder->expr()->andX(
+									$queryBuilder->expr()->isNotNull($field),
+									$queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
+								)
+							);
+							break;
+						}
+
+						$queryBuilder->andWhere(
+							$queryBuilder->expr()->orX(
+								$queryBuilder->expr()->isNull($field),
+								$queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
+							)
+						);
+						break;
+					case 'null':
+						if ($operatorValue !== true && $operatorValue !== 'true') {
+							$queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+							break;
+						}
+
+						$queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+						break;
+					default:
+						// Default to equals for unknown operators.
+						$defaultParam = $queryBuilder->createNamedParameter($operatorValue);
+						$queryBuilder->andWhere($queryBuilder->expr()->eq($field, $defaultParam));
+						break;
+				}//end switch
+			}//end foreach
+		}//end foreach
+	}//end applyMetadataFilters()
+
+	/**
+	 * Apply object field filters with advanced operator support
+	 *
+	 * This method processes object field filters with support for all advanced
+	 * operators: gt, lt, gte, lte, ne, ~, ^, $, ===, exists, empty, null
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param array $objectFilters Array of object field filters
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param array<string, mixed> $objectFilters
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param array<string, mixed> $objectFilters
+	 *
+	 * @return void
+	 */
+	private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void {
+		foreach ($objectFilters as $field => $value) {
+			$jsonPath = '$.' . $field;
+
+			$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+			$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
+
+			// Handle simple values (backwards compatibility).
+			if (is_array($value) === false) {
+				if ($value === 'IS NOT NULL') {
+					$queryBuilder->andWhere(
+						$queryBuilder->expr()->isNotNull(
+							$queryBuilder->createFunction($extractSql)
+						)
+					);
+					continue;
+				}
+
+				if ($value === 'IS NULL') {
+					$queryBuilder->andWhere(
+						$queryBuilder->expr()->isNull(
+							$queryBuilder->createFunction($extractSql)
+						)
+					);
+					continue;
+				}
+
+				// Simple equals with both exact match and array containment.
+				$this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
+				continue;
+			}//end if
+
+			// Handle array of values (OR condition) - backwards compatibility.
+			if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
+				// This is an array of values, not operators.
+				$orConditions = $queryBuilder->expr()->orX();
+				foreach ($value as $val) {
+					$this->addObjectFieldValueCondition(
+						queryBuilder: $queryBuilder,
+						conditions: $orConditions,
+						jsonPath: $jsonPath,
+						value: $val
+					);
+				}
+
+				$queryBuilder->andWhere($orConditions);
+				continue;
+			}
+
+			// Handle operator-based filters.
+			foreach ($value as $operator => $operatorValue) {
+				$this->applyObjectFieldOperator(
+					queryBuilder: $queryBuilder,
+					jsonPath: $jsonPath,
+					operator: $operator,
+					operatorValue: $operatorValue
+				);
+			}
+		}//end foreach
+	}//end applyObjectFieldFilters()
+
+	/**
+	 * Apply simple object field filter (backwards compatibility)
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param string $jsonPath The JSON path to the field
+	 * @param mixed $value The value to filter by
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param string $jsonPath
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param string $jsonPath
+	 * @psalm-param mixed $value
+	 *
+	 * @return void
+	 */
+	private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void {
+		$singleValConds = $queryBuilder->expr()->orX();
+		$this->addObjectFieldValueCondition(
+			queryBuilder: $queryBuilder,
+			conditions: $singleValConds,
+			jsonPath: $jsonPath,
+			value: $value
+		);
+		$queryBuilder->andWhere($singleValConds);
+	}//end applySimpleObjectFieldFilter()
+
+	/**
+	 * Add object field value condition (exact match and array containment)
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param mixed $conditions The conditions object to add to
+	 * @param string $jsonPath The JSON path to the field
+	 * @param mixed $value The value to match
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param mixed $conditions
+	 * @phpstan-param string $jsonPath
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param mixed $conditions
+	 * @psalm-param string $jsonPath
+	 * @psalm-param mixed $value
+	 *
+	 * @return void
+	 */
+	private function addObjectFieldValueCondition(
+		IQueryBuilder $queryBuilder,
+		mixed $conditions,
+		string $jsonPath,
+		mixed $value,
+	): void {
+		$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+		$valueParam = $queryBuilder->createNamedParameter($value);
+		$unquoteSql = 'JSON_UNQUOTE(JSON_EXTRACT(object, ' . $jsonPathParam . '))';
+
+		// Check for exact match (single value).
+		$conditions->add(
+			$queryBuilder->expr()->eq(
+				$queryBuilder->createFunction($unquoteSql),
+				$valueParam
+			)
+		);
+
+		// Check if the value exists within an array using JSON_CONTAINS.
+		$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
+		$jsonEncodedValue = $queryBuilder->createNamedParameter(json_encode($value));
+		$containsSql = 'JSON_CONTAINS(' . $extractSql . ', ' . $jsonEncodedValue . ')';
+		$conditions->add(
+			$queryBuilder->expr()->eq(
+				$queryBuilder->createFunction($containsSql),
+				$queryBuilder->createNamedParameter(1)
+			)
+		);
+	}//end addObjectFieldValueCondition()
+
+	/**
+	 * Apply object field operator
+	 *
+	 * @param IQueryBuilder $queryBuilder The query builder to modify
+	 * @param string $jsonPath The JSON path to the field
+	 * @param string $operator The operator to apply
+	 * @param mixed $operatorValue The value for the operator
+	 *
+	 * @phpstan-param IQueryBuilder $queryBuilder
+	 * @phpstan-param string $jsonPath
+	 * @phpstan-param string $operator
+	 * @phpstan-param mixed $operatorValue
+	 *
+	 * @psalm-param IQueryBuilder $queryBuilder
+	 * @psalm-param string $jsonPath
+	 * @psalm-param string $operator
+	 * @psalm-param mixed $operatorValue
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Operator switch requires handling all comparison operators
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive operator support requires extensive code
+	 */
+	private function applyObjectFieldOperator(
+		IQueryBuilder $queryBuilder,
+		string $jsonPath,
+		string $operator,
+		mixed $operatorValue,
+	): void {
+		$jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+		$extractSql = 'JSON_EXTRACT(object, ' . $jsonPathParam . ')';
+		$unquoteSql = 'JSON_UNQUOTE(' . $extractSql . ')';
+		$jsonExtract = $queryBuilder->createFunction($unquoteSql);
+		$onParam = $queryBuilder->createNamedParameter($operatorValue);
+
+		switch ($operator) {
+			case 'gt':
+				$queryBuilder->andWhere($queryBuilder->expr()->gt($jsonExtract, $onParam));
+				break;
+			case 'lt':
+				$queryBuilder->andWhere($queryBuilder->expr()->lt($jsonExtract, $onParam));
+				break;
+			case 'gte':
+				$queryBuilder->andWhere($queryBuilder->expr()->gte($jsonExtract, $onParam));
+				break;
+			case 'lte':
+				$queryBuilder->andWhere($queryBuilder->expr()->lte($jsonExtract, $onParam));
+				break;
+			case 'ne':
+				$queryBuilder->andWhere($queryBuilder->expr()->neq($jsonExtract, $onParam));
+				break;
+			case '~':
+				// Contains (case insensitive).
+				$likeParam = $queryBuilder->createNamedParameter('%' . $operatorValue . '%');
+				$queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $likeParam));
+				break;
+			case '^':
+				// Starts with (case insensitive).
+				$startsParam = $queryBuilder->createNamedParameter($operatorValue . '%');
+				$queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $startsParam));
+				break;
+			case '$':
+				// Ends with (case insensitive).
+				$endsParam = $queryBuilder->createNamedParameter('%' . $operatorValue);
+				$queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $endsParam));
+				break;
+			case '===':
+				// Exact match (case sensitive).
+				$queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $onParam));
+				break;
+			case 'exists':
+				$extractFunc = $queryBuilder->createFunction($extractSql);
+				if ($operatorValue !== true && $operatorValue !== 'true') {
+					$queryBuilder->andWhere(
+						$queryBuilder->expr()->isNull($extractFunc)
+					);
+					break;
+				}
+
+				$queryBuilder->andWhere(
+					$queryBuilder->expr()->isNotNull($extractFunc)
+				);
+				break;
+			case 'empty':
+				$extractFunc = $queryBuilder->createFunction($extractSql);
+				$emptyParam = $queryBuilder->createNamedParameter('');
+				if ($operatorValue !== true && $operatorValue !== 'true') {
+					$queryBuilder->andWhere(
+						$queryBuilder->expr()->andX(
+							$queryBuilder->expr()->isNotNull($extractFunc),
+							$queryBuilder->expr()->neq($jsonExtract, $emptyParam)
+						)
+					);
+					break;
+				}
+
+				$queryBuilder->andWhere(
+					$queryBuilder->expr()->orX(
+						$queryBuilder->expr()->isNull($extractFunc),
+						$queryBuilder->expr()->eq($jsonExtract, $emptyParam)
+					)
+				);
+				break;
+			case 'null':
+				$extractFunc = $queryBuilder->createFunction($extractSql);
+				if ($operatorValue !== true && $operatorValue !== 'true') {
+					$queryBuilder->andWhere(
+						$queryBuilder->expr()->isNotNull($extractFunc)
+					);
+					break;
+				}
+
+				$queryBuilder->andWhere(
+					$queryBuilder->expr()->isNull($extractFunc)
+				);
+				break;
+			default:
+				// Default to simple filter for unknown operators.
+				$this->applySimpleObjectFieldFilter(
+					queryBuilder: $queryBuilder,
+					jsonPath: $jsonPath,
+					value: $operatorValue
+				);
+				break;
+		}//end switch
+	}//end applyObjectFieldOperator()
+
+	/**
+	 * Get date format string for histogram interval
+	 *
+	 * @param string $interval The interval (day, week, month, year)
+	 *
+	 * @phpstan-param string $interval
+	 *
+	 * @psalm-param string $interval
+	 *
+	 * @return string MySQL date format string
+	 */
+	private function getDateFormatForInterval(string $interval): string {
+		switch ($interval) {
+			case 'day':
+				return '%Y-%m-%d';
+			case 'week':
+				// ISO 8601 year + ISO 8601 week (Monday-starting). %x is the
+				// ISO year, %v is the ISO week (01-53). Matches PostgreSQL
+				// `IYYY-IW` and the MagicFacetHandler/MetaDataFacetHandler
+				// outputs; required for cross-DB parity at year boundaries
+				// (e.g. 2023-01-01 maps to ISO week 2022-52, not 2023-00).
+				return '%x-%v';
+			case 'month':
+				return '%Y-%m';
+			case 'quarter':
+				// Quarter is handled specially in getDateHistogramFacet via CONCAT.
+				return '%Y-%m';
+			case 'year':
+				return '%Y';
+			default:
+				return '%Y-%m';
+		}
+	}//end getDateFormatForInterval()
+
+	/**
+	 * Generate a human-readable key for a range
+	 *
+	 * @param array $range Range definition with 'from' and/or 'to' keys
+	 *
+	 * @phpstan-param array<string, mixed> $range
+	 *
+	 * @psalm-param array<string, mixed> $range
+	 *
+	 * @return string Human-readable range key
+	 */
+	private function generateRangeKey(array $range): string {
+		if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
+			return $range['from'] . '-' . $range['to'];
+		}
+
+		if (($range['from'] ?? null) !== null) {
+			return $range['from'] . '+';
+		}
+
+		if (($range['to'] ?? null) !== null) {
+			return '0-' . $range['to'];
+		}
+
+		return 'all';
+	}//end generateRangeKey()
+
+	/**
+	 * Analyze fields in an object recursively
+	 *
+	 * @param array $objectData The object data to analyze
+	 * @param array $fieldAnalysis Reference to field analysis array
+	 * @param string $prefix Current field path prefix
+	 * @param int $depth Current recursion depth
+	 *
+	 * @phpstan-param array<string, mixed> $objectData
+	 * @phpstan-param array<string, mixed> $fieldAnalysis
+	 * @phpstan-param string $prefix
+	 * @phpstan-param int $depth
+	 *
+	 * @psalm-param array<string, mixed> $objectData
+	 * @psalm-param array<string, mixed> $fieldAnalysis
+	 * @psalm-param string $prefix
+	 * @psalm-param int $depth
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Field analysis requires handling many value types
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Type detection requires many conditional paths
+	 */
+	private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix = '', int $depth = 0): void {
+		// Limit recursion depth to avoid infinite loops and performance issues.
+		if ($depth > 2) {
+			return;
+		}
+
+		foreach ($objectData as $key => $value) {
+			$fieldPath = $prefix . '.' . $key;
+			if ($prefix === '') {
+				$fieldPath = $key;
+			}
+
+			// Skip system fields.
+			if (str_starts_with($key, '@') === true || str_starts_with($key, '_') === true) {
+				continue;
+			}
+
+			// Initialize field analysis if not exists.
+			if (isset($fieldAnalysis[$fieldPath]) === false) {
+				$fieldAnalysis[$fieldPath] = [
+					'count' => 0,
+					'types' => [],
+					'sample_values' => [],
+					'is_array' => false,
+					'is_nested' => false,
+					'unique_values' => 0,
+				];
+			}
+
+			$fieldAnalysis[$fieldPath]['count']++;
+
+			// Analyze value type and characteristics.
+			if (is_array($value) === true) {
+				$fieldAnalysis[$fieldPath]['is_array'] = true;
+
+				// Check if it's an array of objects (nested structure).
+				if (empty($value) === false && is_array($value[0]) === true) {
+					$fieldAnalysis[$fieldPath]['is_nested'] = true;
+					// Recursively analyze nested objects.
+					$this->analyzeObjectFields(
+						objectData: $value[0],
+						fieldAnalysis: $fieldAnalysis,
+						prefix: $fieldPath,
+						depth: $depth + 1
+					);
+					continue;
+				}
+
+				// Array of simple values - not nested.
+				foreach ($value as $item) {
+					$this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+					$this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+				}
+
+				continue;
+			}//end if
+
+			if (is_object($value) === true) {
+				$fieldAnalysis[$fieldPath]['is_nested'] = true;
+				// Recursively analyze nested object.
+				// Note: is_object($value) and is_array($value) are mutually exclusive.
+				// This code path handles objects that are not arrays.
+				// For array-like objects, convert to array first.
+				if (method_exists($value, '__toArray') === true) {
+					$valueArray = (array)$value->__toArray();
+					$this->analyzeObjectFields(
+						objectData: $valueArray,
+						fieldAnalysis: $fieldAnalysis,
+						prefix: $fieldPath,
+						depth: $depth + 1
+					);
+				}//end if
+
+				continue;
+			}//end if
+
+			// Simple value.
+			$this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
+			$this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
+		}//end foreach
+	}//end analyzeObjectFields()
+
+	/**
+	 * Record the type of a value in field analysis
+	 *
+	 * @param array $fieldAnalysis Reference to field analysis data
+	 * @param mixed $value The value to analyze
+	 *
+	 * @phpstan-param array<string, mixed> $fieldAnalysis
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param array<string, mixed> $fieldAnalysis
+	 * @psalm-param mixed $value
+	 *
+	 * @return void
+	 */
+	private function recordValueType(array &$fieldAnalysis, mixed $value): void {
+		$type = $this->determineValueType(value: $value);
+
+		if (isset($fieldAnalysis['types'][$type]) === false) {
+			$fieldAnalysis['types'][$type] = 0;
+		}
+
+		$fieldAnalysis['types'][$type]++;
+	}//end recordValueType()
+
+	/**
+	 * Record a sample value in field analysis
+	 *
+	 * @param array $fieldAnalysis Reference to field analysis data
+	 * @param mixed $value The value to record
+	 *
+	 * @phpstan-param array<string, mixed> $fieldAnalysis
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param array<string, mixed> $fieldAnalysis
+	 * @psalm-param mixed $value
+	 *
+	 * @return void
+	 */
+	private function recordSampleValue(array &$fieldAnalysis, mixed $value): void {
+		// Convert value to string for storage.
+		$stringValue = $this->valueToString(value: $value);
+
+		$isNotInSamples = in_array($stringValue, $fieldAnalysis['sample_values'], true) === false;
+		$hasRoomForMore = count($fieldAnalysis['sample_values']) < 20;
+		if ($isNotInSamples === true && $hasRoomForMore === true) {
+			$fieldAnalysis['sample_values'][] = $stringValue;
+		}
+	}//end recordSampleValue()
+
+	/**
+	 * Determine the type of a value
+	 *
+	 * @param mixed $value The value to analyze
+	 *
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param mixed $value
+	 *
+	 * @return string The determined type
+	 */
+	private function determineValueType(mixed $value): string {
+		if ($value === null) {
+			return 'null';
+		}
+
+		if (is_bool($value) === true) {
+			return 'boolean';
+		}
+
+		if (is_int($value) === true) {
+			return 'integer';
+		}
+
+		if (is_float($value) === true) {
+			return 'float';
+		}
+
+		if (is_string($value) === true) {
+			// Check if it looks like a date.
+			if ($this->looksLikeDate(value: $value) === true) {
+				return 'date';
+			}
+
+			// Check if it's numeric.
+			if (is_numeric($value) === true) {
+				return 'numeric_string';
+			}
+
+			return 'string';
+		}
+
+		return 'unknown';
+	}//end determineValueType()
+
+	/**
+	 * Check if a string value looks like a date
+	 *
+	 * @param string $value The string to check
+	 *
+	 * @phpstan-param string $value
+	 *
+	 * @psalm-param string $value
+	 *
+	 * @return bool True if it looks like a date
+	 */
+	private function looksLikeDate(string $value): bool {
+		// Common date patterns.
+		$datePatterns = [
+			'/^\d{4}-\d{2}-\d{2}$/',
+			// YYYY-MM-DD.
+			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
+			// ISO 8601.
+			'/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/',
+			// YYYY-MM-DD HH:MM:SS.
+			'/^\d{2}\/\d{2}\/\d{4}$/',
+			// MM/DD/YYYY.
+			'/^\d{2}-\d{2}-\d{4}$/',
+			// MM-DD-YYYY.
+		];
+
+		foreach ($datePatterns as $pattern) {
+			if (preg_match($pattern, $value) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end looksLikeDate()
+
+	/**
+	 * Convert a value to string representation
+	 *
+	 * @param mixed $value The value to convert
+	 *
+	 * @phpstan-param mixed $value
+	 *
+	 * @psalm-param mixed $value
+	 *
+	 * @return string String representation of the value
+	 */
+	private function valueToString(mixed $value): string {
+		if ($value === null) {
+			return 'null';
+		}
+
+		if (is_bool($value) === true) {
+			$result = 'true';
+			if ($value !== true) {
+				$result = 'false';
+			}
+
+			return $result;
+		}
+
+		if (is_array($value) === true || is_object($value) === true) {
+			return json_encode($value);
+		}
+
+		return (string)$value;
+	}//end valueToString()
+}//end class

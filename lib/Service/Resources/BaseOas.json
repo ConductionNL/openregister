@@ -1,0 +1,207 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nextcloud OpenRegister API",
+    "version": "1.0", 
+    "description": "RESTful API for managing registers, schemas, data sources, objects, and audit trails in a Nextcloud environment. This API provides full CRUD operations, advanced filtering, search capabilities, and extensible data management features.",
+    "contact": {
+      "name": "OpenRegister Development Team",
+      "url": "https://www.openregister.app",
+      "email": "info@conduction.nl"
+    },
+    "license": {
+      "name": "EUPL-1.2",
+      "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+    }
+  },
+  "servers": [
+    {
+      "url": "/apps/openregister/api",
+      "description": "Base URL for API endpoints"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Generic",
+      "description": "Operations related to generic objects"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication using username and password. Not recommended for production use."
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth2 authentication using Nextcloud's authentication server. Scopes correspond to Nextcloud group memberships. Each schema defines which groups may create, read, update, or delete its objects. Admin users and object owners always have full access regardless of scopes.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "/apps/oauth2/authorize",
+            "tokenUrl": "/apps/oauth2/api/v1/token",
+            "refreshUrl": "/apps/oauth2/api/v1/token",
+            "scopes": {}
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "description": "RFC 7807 Problem Details for HTTP APIs (https://datatracker.ietf.org/doc/html/rfc7807). Returned with `Content-Type: application/problem+json` for every 4xx / 5xx response.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI reference identifying the problem class. Defaults to `about:blank` when no extension URL is published.",
+            "example": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short, human-readable summary of the problem class. SHOULD NOT change between occurrences.",
+            "example": "Not found"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599,
+            "description": "HTTP status code copied into the body for clients that cannot inspect the wire status.",
+            "example": 404
+          },
+          "detail": {
+            "type": "string",
+            "description": "Per-occurrence human-readable explanation. MAY include user-specific context.",
+            "example": "No object with UUID abc-123 exists in register zaken / schema zaak."
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference",
+            "description": "URI identifying this specific occurrence; MAY be a request-correlation id.",
+            "example": "/api/objects/zaken/zaak/abc-123"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Optional extension: per-field validation errors when `status = 422`. Each entry carries a JSON-pointer `path` and a human-readable `message`.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "example": "/email"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "must be a valid e-mail address"
+                }
+              },
+              "required": ["path", "message"]
+            }
+          },
+          "code": {
+            "type": "integer",
+            "description": "DEPRECATED: legacy alias for `status`. New consumers MUST read `status`. Kept for backward compatibility with pre-RFC-7807 clients.",
+            "example": 404
+          },
+          "error": {
+            "type": "string",
+            "description": "DEPRECATED: legacy alias for `detail`. New consumers MUST read `detail`. Kept for backward compatibility.",
+            "example": "Object not found"
+          }
+        },
+        "required": ["title", "status"]
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "description": "Array of result objects",
+            "items": {
+              "type": "object"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total number of items available",
+            "example": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 10
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Number of items per page",
+            "example": 20
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Number of items skipped",
+            "example": 0
+          }
+        }
+      },
+      "_self": {
+        "type": "object",
+        "description": "Object metadata including timestamps, ownership, and system information",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the object",
+            "example": 123
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique universal identifier for globally unique object identification",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "uri": {
+            "type": "string",
+            "description": "Uniform Resource Identifier for unique addressable location",
+            "example": "/api/objects/123e4567-e89b-12d3-a456-426614174000"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semantic version number to track object versions",
+            "example": "1.0"
+          },
+          "register": {
+            "type": "integer",
+            "description": "Register identifier for object categorization/grouping",
+            "example": 123
+          },
+          "schema": {
+            "type": "integer",
+            "description": "Schema identifier for data validation reference",
+            "example": 123
+          },
+          "owner": {
+            "type": "string",
+            "description": "Nextcloud user identifier for object ownership",
+            "example": "user-12345"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp for change tracking",
+            "example": "2023-05-20T10:15:00Z"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp for lifecycle management",
+            "example": "2023-02-15T14:30:00Z"
+          }
+        }
+      }
+    }
+  }
+}

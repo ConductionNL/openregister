@@ -1,0 +1,144 @@
+{
+  "name": "OpenRegister PHPQA with Auto-Fix",
+  "description": "Complete code quality workflow: 1) Runs initial PHPQA analysis, 2) Automatically fixes code style issues with cs:fix, 3) Re-runs PHPQA to verify improvements. Returns comprehensive before/after comparison. Response time: ~120 seconds.",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-phpqa-autofix",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "openregister-phpqa-autofix-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9090/phpqa",
+        "options": {
+          "timeout": 360000
+        }
+      },
+      "id": "initial-phpqa",
+      "name": "1. Initial PHPQA Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9090/cs-fix",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "run-cs-fix",
+      "name": "2. Run CS Fix",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9090/phpqa",
+        "options": {
+          "timeout": 360000
+        }
+      },
+      "id": "final-phpqa",
+      "name": "3. Final PHPQA Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const initialAnalysis = $('1. Initial PHPQA Analysis').first().json;\nconst fixResults = $('2. Run CS Fix').first().json;\nconst finalAnalysis = $('3. Final PHPQA Analysis').first().json;\n\nreturn {\n  timestamp: new Date().toISOString(),\n  workflow: 'PHPQA with Auto-Fix',\n  steps: {\n    initial_analysis: {\n      status: initialAnalysis.status,\n      exit_code: initialAnalysis.exit_code,\n      timestamp: initialAnalysis.timestamp\n    },\n    auto_fix: {\n      files_fixed: fixResults.files_fixed,\n      status: fixResults.status,\n      message: fixResults.message,\n      timestamp: fixResults.timestamp\n    },\n    final_analysis: {\n      status: finalAnalysis.status,\n      exit_code: finalAnalysis.exit_code,\n      timestamp: finalAnalysis.timestamp\n    }\n  },\n  summary: {\n    improvement: finalAnalysis.exit_code < initialAnalysis.exit_code ? 'improved' : 'no_change',\n    files_fixed: fixResults.files_fixed,\n    final_status: finalAnalysis.status\n  },\n  detailed_reports: {\n    initial: initialAnalysis,\n    fixes: fixResults,\n    final: finalAnalysis\n  }\n};"
+      },
+      "id": "format-response",
+      "name": "4. Format Combined Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Initial PHPQA Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Initial PHPQA Analysis": {
+      "main": [
+        [
+          {
+            "node": "2. Run CS Fix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Run CS Fix": {
+      "main": [
+        [
+          {
+            "node": "3. Final PHPQA Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Final PHPQA Analysis": {
+      "main": [
+        [
+          {
+            "node": "4. Format Combined Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "tags": []
+}

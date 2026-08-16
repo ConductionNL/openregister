@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template>
+    <name>markdown</name>
+    <author>Ruben van der Linde</author>
+    <version>1.0.0</version>
+    <copyright>OpenRegister</copyright>
+    <description>Markdown template for OpenRegister service documentation</description>
+    
+    <transformations>
+        <transformation writer="twig" source="templates/markdown.twig" artifact="index.md"/>
+    </transformations>
+    
+    <parameters>
+        <parameter key="twig-debug">true</parameter>
+    </parameters>
+</template> 

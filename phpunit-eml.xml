@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap-eml.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         beStrictAboutCoverageMetadata="false"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="false">
+
+    <testsuites>
+        <testsuite name="EML Unit Tests">
+            <file>tests/Unit/Service/TextExtraction/EmlParserTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>

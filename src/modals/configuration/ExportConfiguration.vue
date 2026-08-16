@@ -1,0 +1,188 @@
+<script setup>
+import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { configurationStore, navigationStore } from '../../store/store.js'
+</script>
+
+<template>
+	<NcDialog
+		v-if="navigationStore.modal === 'exportConfiguration'"
+		name="export-configuration-dialog"
+		:title="t('openregister', 'Export Configuration')"
+		size="small"
+		:canClose="false">
+		<NcNoteCard v-if="errorMessage" type="error">
+			<p>{{ errorMessage }}</p>
+		</NcNoteCard>
+
+		<div class="formContainer">
+			<p v-if="configTitle">Export configuration "{{ configTitle }}"?</p>
+
+			<NcCheckboxRadioSwitch
+				:modelValue="includeObjects"
+				@update:modelValue="includeObjects = $event">
+				Include related objects
+			</NcCheckboxRadioSwitch>
+		</div>
+
+		<template #actions>
+			<NcButton @click="closeModal">
+				<template #icon>
+					<Cancel :size="20" />
+				</template>
+				Cancel
+			</NcButton>
+			<NcButton
+				:disabled="loading || !isValid"
+				variant="primary"
+				@click="exportConfiguration">
+				<template #icon>
+					<NcLoadingIcon v-if="loading" :size="20" />
+					<Export v-else :size="20" />
+				</template>
+				Export
+			</NcButton>
+		</template>
+	</NcDialog>
+</template>
+
+<script>
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcLoadingIcon,
+	NcNoteCard,
+} from '@nextcloud/vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Export from 'vue-material-design-icons/Export.vue'
+
+export default {
+	name: 'ExportConfiguration',
+	components: {
+		NcDialog,
+		NcButton,
+		NcLoadingIcon,
+		NcNoteCard,
+		NcCheckboxRadioSwitch,
+		// Icons
+		Cancel,
+		Export,
+	},
+
+	data() {
+		return {
+			loading: false,
+			error: null,
+			includeObjects: false,
+		}
+	},
+
+	computed: {
+		/**
+		 * @spec exclude UI display helper — returns the configuration title for the modal heading.
+		 */
+		configTitle() {
+			const item = configurationStore.configurationItem
+			return item?.title || ''
+		},
+
+		/**
+		 * @spec exclude UI state helper — enables the export button when a configuration is selected.
+		 */
+		isValid() {
+			const item = configurationStore.configurationItem
+			return Boolean(item?.id)
+		},
+
+		/**
+		 * @spec exclude UI display helper — derives the reactive error message for the modal.
+		 */
+		errorMessage() {
+			// Computed error message that updates reactively
+			if (!configurationStore.configurationItem?.id) {
+				return 'No configuration selected for export'
+			}
+			return this.error
+		},
+	},
+
+	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — clears modal state.
+		 */
+		closeModal() {
+			navigationStore.setModal(false)
+			this.loading = false
+			this.error = null
+			this.includeObjects = false
+		},
+
+		/**
+		 * @spec exclude Modal action plumbing — triggers configuration export download.
+		 */
+		async exportConfiguration() {
+			const item = configurationStore.configurationItem
+			if (!item?.id) {
+				this.error = 'Invalid configuration selected'
+				return
+			}
+
+			this.loading = true
+			this.error = null
+
+			try {
+				// Generate the export URL with query parameters
+				const url = generateUrl(
+					`/apps/openregister/api/configurations/${item.id}/export`,
+				)
+				const params = { includeObjects: this.includeObjects }
+
+				// Make the API call
+				const response = await axios({
+					url,
+					method: 'GET',
+					params,
+					responseType: 'blob', // Important for file download
+				})
+
+				// Create a download link
+				const blob = new Blob([response.data], { type: 'application/json' })
+				const downloadUrl = window.URL.createObjectURL(blob)
+				const link = document.createElement('a')
+
+				// Get filename from response headers or generate a default one
+				const contentDisposition = response.headers['content-disposition']
+				const filename = contentDisposition
+					? contentDisposition.split('filename=')[1].replace(/"/g, '')
+					: `configuration_${item.id}_${new Date().toISOString().split('T')[0]}.json`
+
+				link.href = downloadUrl
+				link.download = filename
+				document.body.appendChild(link)
+				link.click()
+				document.body.removeChild(link)
+				window.URL.revokeObjectURL(downloadUrl)
+
+				this.closeModal()
+			} catch (error) {
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| 'Failed to export configuration'
+			} finally {
+				this.loading = false
+			}
+		},
+	},
+}
+</script>
+
+<style>
+.formContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+</style>

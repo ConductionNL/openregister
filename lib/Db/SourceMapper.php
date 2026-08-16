@@ -1,0 +1,428 @@
+<?php
+
+/**
+ * OpenRegister Source Mapper
+ *
+ * This file contains the class for handling source mapper related operations
+ * in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
+use Symfony\Component\Uid\Uuid;
+
+/**
+ * The SourceMapper class
+ *
+ * Mapper for Source entities with multi-tenancy and RBAC support.
+ *
+ * @package OCA\OpenRegister\Db
+ *
+ * @method Source insert(Entity $entity)
+ * @method Source update(Entity $entity)
+ * @method Source insertOrUpdate(Entity $entity)
+ * @method Source delete(Entity $entity)
+ * @method Source find(int|string $id)
+ * @method Source findEntity(IQueryBuilder $query)
+ * @method list<Source> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Source>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
+class SourceMapper extends QBMapper {
+	use MultiTenancyTrait;
+
+	/**
+	 * Organisation service for multi-tenancy
+	 *
+	 * @var OrganisationService
+	 */
+	// REMOVED: Services should not be in mappers.
+	// Private OrganisationService $organisationService.
+
+	/**
+	 * User session for current user (read by MultiTenancyTrait via isset guards)
+	 *
+	 * @var IUserSession
+	 */
+	protected IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC (read by MultiTenancyTrait via isset guards)
+	 *
+	 * @var IGroupManager
+	 */
+	protected IGroupManager $groupManager;
+
+	/**
+	 * Event dispatcher for dispatching source events
+	 *
+	 * @var IEventDispatcher
+	 */
+	private IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Organisation mapper for multi-tenancy
+	 *
+	 * @var OrganisationMapper
+	 */
+	protected OrganisationMapper $organisationMapper;
+
+	/**
+	 * App configuration for multitenancy settings
+	 *
+	 * @var IAppConfig
+	 */
+	protected IAppConfig $appConfig;
+
+	/**
+	 * Constructor
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param IUserSession $userSession User session
+	 * @param IGroupManager $groupManager Group manager
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param IAppConfig $appConfig App configuration
+	 */
+	public function __construct(
+		IDBConnection $db,
+		OrganisationMapper $organisationMapper,
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+		IEventDispatcher $eventDispatcher,
+		IAppConfig $appConfig,
+	) {
+		parent::__construct(db: $db, tableName: 'openregister_sources', entityClass: Source::class);
+		$this->organisationMapper = $organisationMapper;
+		$this->userSession = $userSession;
+		$this->groupManager = $groupManager;
+		$this->eventDispatcher = $eventDispatcher;
+		$this->appConfig = $appConfig;
+	}//end __construct()
+
+	/**
+	 * Finds a source by id
+	 *
+	 * @param int $id The id of the source
+	 *
+	 * @return Source The source
+	 * @throws \Exception If user doesn't have read permission
+	 */
+	public function find(int $id): Source {
+		// Verify RBAC permission to read.
+		$this->verifyRbacPermission(action: 'read', entityType: 'source');
+
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_sources')
+			->where(
+				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+			);
+
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->findEntity(query: $qb);
+	}//end find()
+
+	/**
+	 * Finds all sources
+	 *
+	 * @param int|null $limit The limit of the results
+	 * @param int|null $offset The offset of the results
+	 * @param array|null $filters The filters to apply
+	 * @param array|null $searchConditions The search conditions to apply
+	 * @param array|null $searchParams The search parameters to apply
+	 *
+	 * @return Source[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 */
+	public function findAll(
+		?int $limit = null,
+		?int $offset = null,
+		?array $filters = [],
+		?array $searchConditions = [],
+		?array $searchParams = [],
+	): array {
+		// Verify RBAC permission to read.
+		$this->verifyRbacPermission(action: 'read', entityType: 'source');
+
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_sources')
+			->setMaxResults($limit)
+			->setFirstResult($offset);
+
+		foreach ($filters ?? [] as $filter => $value) {
+			if ($value === 'IS NOT NULL') {
+				$qb->andWhere($qb->expr()->isNotNull($filter));
+				continue;
+			}
+
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+		}
+
+		if (empty($searchConditions) === false) {
+			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+			foreach ($searchParams ?? [] as $param => $value) {
+				$qb->setParameter($param, $value);
+			}
+		}
+
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Find all sources that have scheduled sync enabled.
+	 *
+	 * Intended for the SyncDataJob background context which runs as the
+	 * system actor across all organisations; therefore RBAC and the
+	 * organisation filter are intentionally NOT applied here. Each
+	 * returned source still carries its `organisation` field so the
+	 * harvest pipeline can scope the objects it creates.
+	 *
+	 * @return Source[] Sources with sync_enabled = true
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function findBySyncEnabled(): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_sources')
+			->where(
+				$qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findBySyncEnabled()
+
+	/**
+	 * Load a Source by id or uuid for a trusted, code-initiated system lookup —
+	 * intentionally WITHOUT RBAC verification and WITHOUT the organisation filter.
+	 *
+	 * A `Source` is shared infrastructure config (a database connection), not
+	 * tenant-owned data. Its ONLY current caller,
+	 * `DbalObjectSourceProvider::resolveSource()`, resolves the `sourceId`
+	 * named in an already-authorized schema's `x-openregister-object-source`
+	 * config — `ObjectService::paginateObjectSource()` enforces the schema's
+	 * own read RBAC (`checkPermission()`) BEFORE the provider (and therefore
+	 * this lookup) ever runs. Filtering this row by the caller's active
+	 * organisation adds no isolation — the caller never sees the Source row
+	 * itself, only the objects it serves for a schema they were already
+	 * cleared to read — and instead breaks every dbal-backed schema whose
+	 * Source is configured in a different organisation than the reader's
+	 * active one, most visibly under `saasMode: true` where admin override is
+	 * unconditionally disabled (openregister#2089: `resolveSource()` returned
+	 * null and every downstream find/count on the schema silently emptied,
+	 * logged only as a warning).
+	 *
+	 * Mirrors the same rationale as {@see findBySyncEnabled()} (system-actor
+	 * lookup, no tenant scoping) rather than the SystemOperationContext RBAC
+	 * bypass: this method skips the ORGANISATION FILTER on the Source row
+	 * itself, a query-builder concern `SystemOperationContext` does not touch.
+	 *
+	 * SECURITY: this method MUST NOT be exposed to any caller that has not
+	 * already authorized the request at the schema/object level, and MUST
+	 * NOT be used to serve Source data (credentials, connection config)
+	 * directly to a client — only to locate the row so its provider can serve
+	 * the schema's own RBAC-gated objects.
+	 *
+	 * @param string $sourceId The Source id (digits) or uuid.
+	 *
+	 * @return Source|null The source, or null when not found.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
+	 */
+	public function findForSystem(string $sourceId): ?Source {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')->from('openregister_sources');
+
+		if (ctype_digit($sourceId) === true) {
+			$qb->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$sourceId, IQueryBuilder::PARAM_INT)));
+		} else {
+			$qb->where($qb->expr()->eq('uuid', $qb->createNamedParameter($sourceId)));
+		}
+
+		return $this->findEntity(query: $qb);
+	}//end findForSystem()
+
+	/**
+	 * Insert a new source
+	 *
+	 * @param Entity $entity Source entity to insert
+	 *
+	 * @return Source The inserted source
+	 * @throws \Exception If user doesn't have create permission
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+	 */
+	public function insert(Entity $entity): Source {
+		// Verify RBAC permission to create.
+		$this->verifyRbacPermission(action: 'create', entityType: 'source');
+
+		if ($entity instanceof Source) {
+			// Generate UUID if not set.
+			if (empty($entity->getUuid()) === true) {
+				$entity->setUuid((string)Uuid::v4());
+			}
+
+			$entity->setCreated(new DateTime());
+			$entity->setUpdated(new DateTime());
+		}
+
+		// Auto-set organisation from active session.
+		$this->setOrganisationOnCreate(entity: $entity);
+
+		$entity = parent::insert(entity: $entity);
+
+		// Dispatch creation event.
+		$this->eventDispatcher->dispatchTyped(new SourceCreatedEvent(source: $entity));
+
+		return $entity;
+	}//end insert()
+
+	/**
+	 * Update an existing source
+	 *
+	 * @param Entity $entity Source entity to update
+	 *
+	 * @return Source The updated source
+	 * @throws \Exception If user doesn't have update permission or access to this organisation
+	 */
+	public function update(Entity $entity): Source {
+		// Verify RBAC permission to update.
+		$this->verifyRbacPermission(action: 'update', entityType: 'source');
+
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
+
+		// Get old state before update.
+		$oldEntity = $this->find(id: $entity->getId());
+
+		if ($entity instanceof Source) {
+			$entity->setUpdated(new DateTime());
+		}
+
+		$entity = parent::update(entity: $entity);
+
+		// Dispatch update event.
+		$this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent(newSource: $entity, oldSource: $oldEntity));
+
+		return $entity;
+	}//end update()
+
+	/**
+	 * Delete a source
+	 *
+	 * @param Entity $entity Source entity to delete
+	 *
+	 * @return Source The deleted source
+	 * @throws \Exception If user doesn't have delete permission or access to this organisation
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 */
+	public function delete(Entity $entity): Source {
+		// Verify RBAC permission to delete.
+		$this->verifyRbacPermission(action: 'delete', entityType: 'source');
+
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
+
+		$entity = parent::delete(entity: $entity);
+
+		// Dispatch deletion event.
+		$this->eventDispatcher->dispatchTyped(new SourceDeletedEvent(source: $entity));
+
+		return $entity;
+	}//end delete()
+
+	/**
+	 * Creates a source from an array
+	 *
+	 * @param array $object The object to create
+	 *
+	 * @return Source The created source
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+	 */
+	public function createFromArray(array $object): Source {
+		$source = new Source();
+		$source->hydrate(object: $object);
+
+		// Set uuid if not provided.
+		if ($source->getUuid() === null) {
+			$source->setUuid((string)Uuid::v4());
+		}
+
+		return $this->insert(entity: $source);
+	}//end createFromArray()
+
+	/**
+	 * Updates a source from an array
+	 *
+	 * @param int $id The id of the source to update
+	 * @param array $object The object to update
+	 *
+	 * @return Source The updated source
+	 */
+	public function updateFromArray(int $id, array $object): Source {
+		$obj = $this->find(id: $id);
+		$obj->hydrate($object);
+
+		// Set or update the version.
+		if (isset($object['version']) === false) {
+			$version = explode('.', $obj->getVersion() ?? '1.0.0');
+			$version[2] = ((int)$version[2] + 1);
+			$obj->setVersion(implode('.', $version));
+		}
+
+		return $this->update(entity: $obj);
+	}//end updateFromArray()
+}//end class
